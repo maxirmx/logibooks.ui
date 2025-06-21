@@ -74,7 +74,7 @@ function filterUsers(value, query, item) {
   if (
     i.lastName.toLocaleUpperCase().indexOf(q) !== -1 ||
     i.firstName.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.patronimic.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.patronymic.toLocaleUpperCase().indexOf(q) !== -1 ||
     i.email.toLocaleUpperCase().indexOf(q) !== -1
   ) {
     return true

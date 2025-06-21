@@ -89,9 +89,9 @@ export const useUsersStore = defineStore('users', () => {
       user.value = await fetchWrapper.get(`${baseUrl}/${id}`)
       if (trnslt) {
         user.value.isAdmin =
-          user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'JERK'
+          user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'NONE'
         user.value.isLogist =
-          user.value.roles && user.value.roles.includes(roleLogist) ? 'LOGIST' : 'JERK'
+          user.value.roles && user.value.roles.includes(roleLogist) ? 'LOGIST' : 'NONE'
       }
     } catch (error) {
       user.value = { error }

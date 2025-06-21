@@ -86,7 +86,8 @@ function handleResponse(response) {
           }
         }
 
-        const error = (data && data.message) || response.statusText
+        const error =
+          (data && (data.message || data.detail)) || response.statusText
         return Promise.reject(error)
       }
       return data

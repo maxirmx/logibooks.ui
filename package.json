@@ -10,6 +10,7 @@
     "test:unit": "vitest",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
     "format": "prettier --write src/",
+    "coverage": "vitest run --coverage",
     "deploy": "scp -rp dist/* root@kreel0.samsonov.net:/var/www/kreel0"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "@mdi/js": "^7.2.96",
     "@rushstack/eslint-patch": "^1.2.0",
     "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vue/eslint-config-prettier": "^7.1.0",
     "@vue/test-utils": "^2.3.2",
     "eslint": "^8.39.0",

@@ -25,3 +25,14 @@ jobs:
 
     - name: Run linting
       run: npm run lint
+
+    - name: Run tests
+      run: npm run test:unit -- --coverage
+
+    - name: Upload results to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info              
+    - name: Build project
+      run: npm run build

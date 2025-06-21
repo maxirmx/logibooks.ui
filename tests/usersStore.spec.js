@@ -4,14 +4,12 @@ import { useUsersStore } from '@/stores/users.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 
-// Mock localStorage if not already mocked in another test file
-if (!global.localStorage) {
-  global.localStorage = {
-    getItem: vi.fn(() => null),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn()
-  }
+// Mock localStorage
+global.localStorage = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
 }
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({

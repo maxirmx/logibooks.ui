@@ -62,11 +62,11 @@ function getCredentials(item) {
 }
 
 function filterUsers(value, query, item) {
-  if (query == null || item == null) {
+  if (query === null || item === null) {
     return false
   }
   const i = item.raw
-  if (i == null) {
+  if (i === null) {
     return false
   }
   const q = query.toLocaleUpperCase()

@@ -106,14 +106,16 @@ function showAndEditCredentials() {
 }
 
 function getCredentials() {
-  let crd = null
+  const crd = []
   if (user.value) {
-    crd = ''
     if (user.value.roles && user.value.roles.includes('administrator')) {
-      crd = 'Администратор'
+      crd.push('Администратор')
+    }
+    if (user.value.roles && user.value.roles.includes('logist')) {
+      crd.push('Логист')
     }
   }
-  return crd
+  return crd.join(', ')
 }
 
 function onSubmit(values, { setErrors }) {
@@ -146,6 +148,9 @@ function onSubmit(values, { setErrors }) {
         .catch((error) => setErrors({ apiError: error }))
     }
   } else {
+    if (!asAdmin()) {
+      values.roles = user.value.roles
+    }
     return usersStore
       .update(props.id, values, true)
       .then(() =>
@@ -293,7 +298,7 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div v-if="showAndEditCredentials()" class="form-group">
-        <label for="isAdmin" class="label">Права:</label>
+        <label class="label">Права:</label>
         <Field
           id="isAdmin"
           type="checkbox"
@@ -302,6 +307,14 @@ function onSubmit(values, { setErrors }) {
           value="ADMIN"
         />
         <label for="isAdmin">Администратор</label>
+        <Field
+          id="isLogist"
+          type="checkbox"
+          name="isLogist"
+          class="checkbox checkbox-styled"
+          value="LOGIST"
+        />
+        <label for="isLogist">Логист</label>
       </div>
 
       <div class="form-group">

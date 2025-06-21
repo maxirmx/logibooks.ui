@@ -51,14 +51,16 @@ function userSettings(item) {
 }
 
 function getCredentials(item) {
-  let crd = null
+  const crd = []
   if (item) {
-    crd = ''
     if (item.roles && item.roles.includes('administrator')) {
-      crd = 'Администратор'
+      crd.push('Администратор')
+    }
+    if (item.roles && item.roles.includes('logist')) {
+      crd.push('Логист')
     }
   }
-  return crd
+  return crd.join(', ')
 }
 
 function filterUsers(value, query, item) {

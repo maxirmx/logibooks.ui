@@ -118,7 +118,7 @@ router.beforeEach(async (to) => {
       return true
     }
     // (3.1) No need to login, fall through somewhere ...
-    return auth.user.isAdmin ? '/users' : '/user/edit/' + auth.user.id
+    return auth.isAdmin ? '/users' : '/user/edit/' + auth.user.id
   }
 
   // (3.1) Do as requested

@@ -86,7 +86,7 @@ function isRegister() {
 }
 
 function asAdmin() {
-  return authStore.user && authStore.user.isAdmin
+  return authStore.isAdmin
 }
 
 function getTitle() {
@@ -109,7 +109,7 @@ function getCredentials() {
   let crd = null
   if (user.value) {
     crd = ''
-    if (user.value.isAdmin === 'ADMIN') {
+    if (user.value.roles && user.value.roles.includes('administrator')) {
       crd = 'Aдминистратор'
     }
   }
@@ -122,11 +122,11 @@ function onSubmit(values, { setErrors }) {
       return usersStore
         .add(values, true)
         .then(() =>
-          router.push(authStore.user.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
+          router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
         )
         .catch((error) => setErrors({ apiError: error }))
     } else {
-      values.isAdmin = false
+      values.roles = ['logist']
       values.host = window.location.href
       values.host = values.host.substring(0, values.host.lastIndexOf('/'))
       return authStore
@@ -149,7 +149,7 @@ function onSubmit(values, { setErrors }) {
     return usersStore
       .update(props.id, values, true)
       .then(() =>
-        router.push(authStore.user.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
+        router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
       )
       .catch((error) => {
         console.log(error)
@@ -314,7 +314,7 @@ function onSubmit(values, { setErrors }) {
           class="button"
           type="button"
           @click="
-            $router.push(authStore.user.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
+            $router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
           "
         >
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>

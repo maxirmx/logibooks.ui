@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { apiUrl } from '@/helpers/config.js'
@@ -35,66 +36,82 @@ function translate(param) {
   return param
 }
 
-export const useUsersStore = defineStore({
-  id: 'users',
-  state: () => ({
-    users: {},
-    user: {}
-  }),
-  getters: {
-    getUserById: (state) => {
-      return (id) => state.users.find((user) => user.id === id)
+export const useUsersStore = defineStore('users', () => {
+  // state
+  const users = ref({})
+  const user = ref({})
+  
+  // getters
+  const getUserById = (id) => {
+    return users.value.find((user) => user.id === id)
+  }
+  
+  // actions
+  async function add(userParam, trnslt = false) {
+    if (trnslt) {
+      userParam = translate(userParam)
     }
-  },
-  actions: {
-    async add(user, trnslt = false) {
-      if (trnslt) {
-        user = translate(user)
-      }
-      await fetchWrapper.post(`${baseUrl}/add`, user)
-    },
-    async getAll() {
-      this.users = { loading: true }
-      try {
-        this.users = await fetchWrapper.get(baseUrl)
-      } catch (error) {
-        this.users = { error }
-      }
-    },
-    async getById(id, trnslt = false) {
-      this.user = { loading: true }
-      try {
-        this.user = await fetchWrapper.get(`${baseUrl}/${id}`)
-        if (trnslt) {
-          this.user.isAdmin = this.user.isAdmin ? 'ADMIN' : 'JERK'
-        }
-      } catch (error) {
-        this.user = { error }
-      }
-    },
-    async update(id, params, trnslt = false) {
-      if (trnslt) {
-        params = translate(params)
-      }
-      await fetchWrapper.put(`${baseUrl}/${id}`, params)
+    await fetchWrapper.post(`${baseUrl}/add`, userParam)
+  }
 
-      // update stored user if the logged in user updated their own record
-      const authStore = useAuthStore()
-      if (id === authStore.user.id) {
-        // update local storage
-        const user = { ...authStore.user, ...params }
-        localStorage.setItem('user', JSON.stringify(user))
-
-        // update auth user in pinia state
-        authStore.user = user
-      }
-    },
-    async delete(id) {
-      const authStore = useAuthStore()
-      if (id === authStore.user.id) {
-        authStore.logout()
-      }
-      await fetchWrapper.delete(`${baseUrl}/${id}`, {})
+  async function getAll() {
+    users.value = { loading: true }
+    try {
+      users.value = await fetchWrapper.get(baseUrl)
+    } catch (error) {
+      users.value = { error }
     }
+  }
+
+  async function getById(id, trnslt = false) {
+    user.value = { loading: true }
+    try {
+      user.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      if (trnslt) {
+        user.value.isAdmin = user.value.isAdmin ? 'ADMIN' : 'JERK'
+      }
+    } catch (error) {
+      user.value = { error }
+    }
+  }
+
+  async function update(id, params, trnslt = false) {
+    if (trnslt) {
+      params = translate(params)
+    }
+    await fetchWrapper.put(`${baseUrl}/${id}`, params)
+
+    // update stored user if the logged in user updated their own record
+    const authStore = useAuthStore()
+    if (id === authStore.user.id) {
+      // update local storage
+      const updatedUser = { ...authStore.user, ...params }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+
+      // update auth user in pinia state
+      authStore.user = updatedUser
+    }
+  }
+
+  async function deleteUser(id) {
+    const authStore = useAuthStore()
+    if (id === authStore.user.id) {
+      authStore.logout()
+    }
+    await fetchWrapper.delete(`${baseUrl}/${id}`, {})
+  }
+
+  return {
+    // state
+    users,
+    user,
+    // getters
+    getUserById,
+    // actions
+    add,
+    getAll,
+    getById,
+    update,
+    delete: deleteUser
   }
 })

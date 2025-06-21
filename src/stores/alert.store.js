@@ -24,21 +24,31 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-export const useAlertStore = defineStore({
-  id: 'alert',
-  state: () => ({
-    alert: null
-  }),
-  actions: {
-    success(message) {
-      this.alert = { message, type: 'alert-success' }
-    },
-    error(message) {
-      this.alert = { message, type: 'alert-danger' }
-    },
-    clear() {
-      this.alert = null
-    }
+export const useAlertStore = defineStore('alert', () => {
+  // state
+  const alert = ref(null)
+
+  // actions
+  function success(message) {
+    alert.value = { message, type: 'alert-success' }
+  }
+  
+  function error(message) {
+    alert.value = { message, type: 'alert-danger' }
+  }
+  
+  function clear() {
+    alert.value = null
+  }
+
+  return {
+    // state
+    alert,
+    // actions
+    success,
+    error,
+    clear
   }
 })

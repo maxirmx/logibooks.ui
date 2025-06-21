@@ -34,8 +34,6 @@ import { useUsersStore } from '@/stores/users.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
-import { saveAs } from 'file-saver'
-
 const props = defineProps({
   register: {
     type: Boolean,

@@ -1,5 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
+// Place mocks back at the top level, which is fine with isolate: true in config
 vi.mock('@/stores/auth.store.js', () => {
   return {
     useAuthStore: vi.fn(() => ({ user: { token: 'abc' }, logout: vi.fn() }))
@@ -18,6 +19,7 @@ const baseUrl = 'http://localhost:8080/api'
 describe('fetchWrapper', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.resetModules()
   })
 
   it('handles successful json response', async () => {

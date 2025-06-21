@@ -12,7 +12,6 @@ vi.mock('@/helpers/config.js', () => ({
 }))
 
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = 'http://localhost:8080/api'
 

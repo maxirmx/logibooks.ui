@@ -110,7 +110,7 @@ function getCredentials() {
   if (user.value) {
     crd = ''
     if (user.value.roles && user.value.roles.includes('administrator')) {
-      crd = 'Aдминистратор'
+      crd = 'Администратор'
     }
   }
   return crd

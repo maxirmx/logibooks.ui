@@ -1,7 +1,7 @@
 <script setup>
-// Copyright (C) 2023 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of O!Service applcation
+// This file is a part of Logibooks frontend application
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,7 +31,6 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useUsersStore } from '@/stores/users.store.js'
-import { useProfilesStore } from '@/stores/profiles.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -54,7 +53,6 @@ const authStore = useAuthStore()
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
 const pwdReg = /^.*(?=.{8,})((?=.*[!@#$%^&*()\-_=+{};:,<.>]){1})((?=.*\d){1}).*$/
-const profileErr = 'Необходимо указать организацию'
 
 const schema = Yup.object().shape({
   firstName: Yup.string().required('Необходимо указать имя'),
@@ -62,9 +60,6 @@ const schema = Yup.object().shape({
   email: Yup.string()
     .required('Необходимо указать электронную почту')
     .email('Неверный формат электронной почты'),
-  profileId: Yup.number().concat(
-    asAdmin() ? Yup.number().typeError(profileErr).required(profileErr).min(0, profileErr) : null
-  ),
   password: Yup.string().concat(
     isRegister() ? Yup.string().required('Необходимо указать пароль').matches(pwdReg, pwdErr) : null
   ),
@@ -76,23 +71,11 @@ const schema = Yup.object().shape({
     .oneOf([Yup.ref('password')], 'Пароли должны совпадать')
 })
 
-const profilesStore = useProfilesStore()
-const profiles = storeToRefs(profilesStore).profiles
-const profile = storeToRefs(profilesStore).profile
-
-if (asAdmin()) {
-  profilesStore.getAll()
-} else {
-  if (authStore.user) {
-    profilesStore.getById(authStore.user.profileId)
-  }
-}
 
 const showPassword = ref(false)
 const showPassword2 = ref(false)
 
 let user = ref({
-  profileId: 1
 })
 
 if (!isRegister()) {
@@ -177,26 +160,12 @@ function onSubmit(values, { setErrors }) {
   }
 }
 
-async function exportData(u) {
-  const filename = u.email + '.ovpn'
-  const blob = new Blob([u.config], {
-    type: 'text/plain;charset=utf-8'
-  })
-
-  saveAs(blob, filename)
-}
 </script>
 
 <template>
   <div class="settings form-2">
     <h1 class="orange">{{ getTitle() }}</h1>
     <hr class="hr" />
-    <div class="link-crt">
-      <a class="link" @click="exportData(user)">
-        <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />
-        Загрузить конфигурацию
-      </a>
-    </div>
     <Form
       @submit="onSubmit"
       :initial-values="user"
@@ -319,26 +288,6 @@ async function exportData(u) {
         </button>
       </div>
       <div v-if="showCredentials()" class="form-group">
-        <label for="profileId" class="label">Профиль:</label>
-        <span id="profileId"
-          ><em>{{ profile?.name }}</em></span
-        >
-      </div>
-      <div v-if="showAndEditCredentials()" class="form-group">
-        <label for="profileId" class="label">Профиль:</label>
-        <Field
-          name="profileId"
-          as="select"
-          class="form-control input select"
-          :class="{ 'is-invalid': errors.profileId }"
-        >
-          <option value="">Выберите профиль:</option>
-          <option v-for="profile in profiles" :key="profile" :value="profile.id">
-            {{ profile.name }}
-          </option>
-        </Field>
-      </div>
-      <div v-if="showCredentials()" class="form-group">
         <label for="crd" class="label">Права:</label>
         <span id="crd"
           ><em>{{ getCredentials() }}</em></span
@@ -382,7 +331,6 @@ async function exportData(u) {
       <div v-if="errors.email" class="alert alert-danger mt-3 mb-0">{{ errors.email }}</div>
       <div v-if="errors.password" class="alert alert-danger mt-3 mb-0">{{ errors.password }}</div>
       <div v-if="errors.password2" class="alert alert-danger mt-3 mb-0">{{ errors.password2 }}</div>
-      <div v-if="errors.profileId" class="alert alert-danger mt-3 mb-0">{{ errors.profileId }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>

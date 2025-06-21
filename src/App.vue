@@ -1,7 +1,7 @@
 <script setup>
-// Copyright (C) 2023 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of O!Service applcation
+// This file is a part of Logibooks frontend application
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -67,13 +67,13 @@ function getUserName() {
       <template v-slot:prepend>
         <v-app-bar-nav-icon @click.stop="toggleDrawer()" color="blue-darken-2"></v-app-bar-nav-icon>
       </template>
-      <v-app-bar-title class="orange">O!Service {{ getUserName() }} </v-app-bar-title>
+      <v-app-bar-title class="orange">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
       <template v-slot:prepend>
         <div class="pa-2" v-if="height > 480">
-          <img alt="O!Service" class="logo" src="@/assets/logo.png" />
+          <img alt="Logibooks" class="logo" src="@/assets/logo.png" />
         </div>
       </template>
       <v-list v-if="authStore.user">

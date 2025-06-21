@@ -48,7 +48,7 @@ function getUserName() {
         ' ' +
         authStore.user.firstName +
         ' ' +
-        authStore.user.patronimic
+        authStore.user.patronymic
     : ''
 }
 

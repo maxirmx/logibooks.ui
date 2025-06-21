@@ -158,7 +158,7 @@ const headers = [
         class="elevation-1"
       >
         <template v-slot:[`item.id`]="{ item }">
-          {{ item['lastName'] }} {{ item['firstName'] }} {{ item['patronimic'] }}
+          {{ item['lastName'] }} {{ item['firstName'] }} {{ item['patronymic'] }}
         </template>
 
         <template v-slot:[`item.credentials`]="{ item }">

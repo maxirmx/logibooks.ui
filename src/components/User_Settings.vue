@@ -193,13 +193,13 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
       <div class="form-group">
-        <label for="patronimic" class="label">Отчество:</label>
+        <label for="patronymic" class="label">Отчество:</label>
         <Field
-          name="patronimic"
-          id="patronimic"
+          name="patronymic"
+          id="patronymic"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.patronimic }"
+          :class="{ 'is-invalid': errors.patronymic }"
           placeholder="Отчество"
         />
       </div>
@@ -323,8 +323,8 @@ function onSubmit(values, { setErrors }) {
       </div>
       <div v-if="errors.lastName" class="alert alert-danger mt-3 mb-0">{{ errors.lastName }}</div>
       <div v-if="errors.firstName" class="alert alert-danger mt-3 mb-0">{{ errors.firstName }}</div>
-      <div v-if="errors.patronimic" class="alert alert-danger mt-3 mb-0">
-        {{ errors.patronimic }}
+      <div v-if="errors.patronymic" class="alert alert-danger mt-3 mb-0">
+        {{ errors.patronymic }}
       </div>
       <div v-if="errors.email" class="alert alert-danger mt-3 mb-0">{{ errors.email }}</div>
       <div v-if="errors.password" class="alert alert-danger mt-3 mb-0">{{ errors.password }}</div>

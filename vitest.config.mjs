@@ -12,6 +12,11 @@ export default mergeConfig(
       root: fileURLToPath(new URL('./', import.meta.url)),
       transformMode: {
         web: [/\.[jt]sx$/]
+      },
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html'],
+        include: ['src/helpers/*.js', 'src/stores/alert.store.js']
       }
     }
   })

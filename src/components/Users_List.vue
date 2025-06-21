@@ -46,7 +46,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 const confirm = useConfirm()
 
 function userSettings(item) {
-  var id = item.id
+  const id = item.id
   router.push('user/edit/' + id)
 }
 

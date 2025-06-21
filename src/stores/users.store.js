@@ -35,12 +35,23 @@ const roleLogist = 'logist'
 const roleAdmin = 'administrator'
 
 function translate(param) {
-  const roles = [roleLogist]
+  const roles = []
+  if (param.isLogist === 'LOGIST' || param.isLogist === true) {
+    roles.push(roleLogist)
+  }
   if (param.isAdmin === 'ADMIN' || param.isAdmin === true) {
     roles.push(roleAdmin)
   }
+  if (!roles.length) {
+    if (param.roles) {
+      roles.push(...param.roles)
+    } else {
+      roles.push(roleLogist)
+    }
+  }
   const res = { ...param, roles }
   delete res.isAdmin
+  delete res.isLogist
   delete res.password2
   return res
 }
@@ -77,7 +88,10 @@ export const useUsersStore = defineStore('users', () => {
     try {
       user.value = await fetchWrapper.get(`${baseUrl}/${id}`)
       if (trnslt) {
-        user.value.isAdmin = user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'JERK'
+        user.value.isAdmin =
+          user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'JERK'
+        user.value.isLogist =
+          user.value.roles && user.value.roles.includes(roleLogist) ? 'LOGIST' : 'JERK'
       }
     } catch (error) {
       user.value = { error }

@@ -17,9 +17,27 @@ export default mergeConfig(
       },
       coverage: {
         provider: 'v8',
-        reporter: ['text', 'html'],
-        include: ['src/helpers/*.js', 'src/stores/alert.store.js']
-      }
+        reporter: ['text', 'html', 'lcov', 'json'], // Added lcov format for Codecov
+        include: [
+          'src/helpers/**/*.js',
+          'src/stores/**/*.js', 
+          // Add additional source directories as needed:
+          'src/services/**/*.js',
+          'src/components/**/*.vue',
+          'src/views/**/*.vue'
+        ],
+        exclude: [
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/tests/**',
+          '**/*.spec.js'
+        ],
+        // Optional thresholds if you want to enforce minimum coverage
+        statements: 70,
+        branches: 60,
+        functions: 70,
+        lines: 70
+      }    
     }
   })
 )

@@ -26,6 +26,7 @@
 import { useAuthStore } from '@/stores/auth.store.js'
 import { apiUrl } from '@/helpers/config.js'
 import { enableLog } from '@/helpers/config.js'
+
 const baseUrl = `${apiUrl}`
 
 export const fetchWrapper = {
@@ -36,21 +37,48 @@ export const fetchWrapper = {
 }
 
 function request(method) {
-  return async (url, body) => {
-    const requestOptions = {
-      method,
-      headers: authHeader(url)
-    }
-    if (body) {
-      requestOptions.headers['Content-Type'] = 'application/json'
-      requestOptions.body = JSON.stringify(body)
-    }
-    if (enableLog) {
-      console.log(url, requestOptions)
-    }
-    const response = await fetch(url, requestOptions)
-    return handleResponse(response)
-  }
+    return async (url, body) => {
+        const requestOptions = {
+            method,
+            headers: authHeader(url)
+        };
+        if (body) {
+            requestOptions.headers['Content-Type'] = 'application/json';
+            requestOptions.body = JSON.stringify(body);
+        }
+        
+        var response;
+        try {
+            response = await fetch(url, requestOptions);
+        } catch (error) {
+            // Customize your error message here
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
+            } else {
+                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
+            }           
+        }
+            
+        // Check if the response is ok (status in the range 200-299)
+        if (!response.ok) {
+            // If server returned an error response, try to parse it
+            const error = await response.text();
+            let errorMessage;
+            try {
+                // Try to parse as JSON
+                const errorObj = JSON.parse(error);
+                errorMessage = errorObj.msg || `Ошибка ${response.status}`;
+            } catch {
+                // If not valid JSON, use text as is
+                errorMessage = error || `Ошибка ${response.status}`;
+            }
+            
+            // Re-throw the error for further handling if needed
+            throw new Error(errorMessage);
+        }
+        
+        return handleResponse(response);
+    };
 }
 
 // helper functions
@@ -86,7 +114,7 @@ function handleResponse(response) {
           }
         }
 
-        const error = (data && data.message) || response.statusText
+        const error = (data && data.msg) || response.statusText
         return Promise.reject(error)
       }
       return data

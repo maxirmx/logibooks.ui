@@ -53,7 +53,7 @@ function onSubmit(values, { setErrors }) {
         )
       })
     })
-    .catch((error) => setErrors({ apiError: error }))
+    .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
 </script>
 

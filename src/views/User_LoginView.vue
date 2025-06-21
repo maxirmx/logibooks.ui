@@ -53,7 +53,7 @@ function onSubmit(values, { setErrors }) {
   return authStore
     .login(login_email, login_password)
     .then(() => router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id))
-    .catch((error) => setErrors({ apiError: error }))
+    .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
 </script>
 

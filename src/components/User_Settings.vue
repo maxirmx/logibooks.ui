@@ -126,7 +126,7 @@ function onSubmit(values, { setErrors }) {
         .then(() =>
           router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
         )
-        .catch((error) => setErrors({ apiError: error }))
+        .catch((error) => setErrors({ apiError: error.message || String(error) }))
     } else {
       values.roles = ['logist']
       values.host = window.location.href
@@ -145,7 +145,7 @@ function onSubmit(values, { setErrors }) {
             )
           })
         })
-        .catch((error) => setErrors({ apiError: error }))
+        .catch((error) => setErrors({ apiError: error.message || String(error) }))
     }
   } else {
     if (!asAdmin()) {
@@ -156,10 +156,7 @@ function onSubmit(values, { setErrors }) {
       .then(() =>
         router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
       )
-      .catch((error) => {
-        console.log(error)
-        setErrors({ apiError: error })
-      })
+      .catch((error) => setErrors({ apiError: error.message || String(error) }))
   }
 }
 

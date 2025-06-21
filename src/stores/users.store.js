@@ -31,9 +31,18 @@ import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/users`
 
+const roleLogist = 'logist'
+const roleAdmin = 'administrator'
+
 function translate(param) {
-  param.isAdmin = param.isAdmin === 'ADMIN'
-  return param
+  const roles = [roleLogist]
+  if (param.isAdmin === 'ADMIN' || param.isAdmin === true) {
+    roles.push(roleAdmin)
+  }
+  const res = { ...param, roles }
+  delete res.isAdmin
+  delete res.password2
+  return res
 }
 
 export const useUsersStore = defineStore('users', () => {
@@ -51,7 +60,7 @@ export const useUsersStore = defineStore('users', () => {
     if (trnslt) {
       userParam = translate(userParam)
     }
-    await fetchWrapper.post(`${baseUrl}/add`, userParam)
+    await fetchWrapper.post(baseUrl, userParam)
   }
 
   async function getAll() {
@@ -68,7 +77,7 @@ export const useUsersStore = defineStore('users', () => {
     try {
       user.value = await fetchWrapper.get(`${baseUrl}/${id}`)
       if (trnslt) {
-        user.value.isAdmin = user.value.isAdmin ? 'ADMIN' : 'JERK'
+        user.value.isAdmin = user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'JERK'
       }
     } catch (error) {
       user.value = { error }

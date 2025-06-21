@@ -24,7 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
@@ -34,6 +34,9 @@ const baseUrl = `${apiUrl}/auth`
 export const useAuthStore = defineStore('auth', () => {
   // initialize state from local storage to enable user to stay logged in
   const user = ref(JSON.parse(localStorage.getItem('user')))
+  const isAdmin = computed(() =>
+    user.value?.roles?.includes('administrator')
+  )
   const users_per_page = ref(10)
   const users_search = ref('')
   const users_sort_by = ref(['id'])
@@ -88,6 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
     returnUrl,
     re_jwt,
     re_tgt,
+    isAdmin,
     // actions
     check,
     register,

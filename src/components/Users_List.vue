@@ -54,7 +54,7 @@ function getCredentials(item) {
   let crd = null
   if (item) {
     crd = ''
-    if (item.isAdmin) {
+    if (item.roles && item.roles.includes('administrator')) {
       crd = 'Администратор'
     }
   }

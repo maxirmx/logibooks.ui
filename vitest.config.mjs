@@ -15,8 +15,10 @@ export default mergeConfig(
       transformMode: {
         web: [/\.[jt]sx$/]
       },
-      deps: {
-        inline: ['vuetify']
+      server: {
+        deps: {
+          inline: ['vuetify']
+        }
       },
       coverage: {
         provider: 'v8',

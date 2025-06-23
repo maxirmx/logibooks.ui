@@ -35,6 +35,8 @@ export const useStatusStore = defineStore('status', () => {
   const dbVersion = ref('')
 
   async function fetchStatus() {
+    coreVersion.value = undefined
+    dbVersion.value = undefined
     const res = await fetchWrapper.get(`${baseUrl}/status`)
     coreVersion.value = res.appVersion
     dbVersion.value = res.dbVersion

@@ -22,8 +22,8 @@ describe('status store', () => {
 
   it('fetchStatus sets versions from API', async () => {
     fetchWrapper.get.mockResolvedValue({
-      AppVersion: '1.2.3',
-      DbVersion: '20240624'
+      appVersion: '1.2.3',
+      dbVersion: '20240624'
     })
 
     const store = useStatusStore()

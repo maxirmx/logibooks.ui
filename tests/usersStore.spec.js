@@ -1,16 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-
-// Mock localStorage
-global.localStorage = {
-  getItem: vi.fn(() => null),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn()
-}
+import createLocalStorageMock from './__mocks__/localStorage.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -35,11 +28,21 @@ describe('users store', () => {
     logout: vi.fn()
   }
 
+  // Store original localStorage
+  const originalLocalStorage = global.localStorage
+  
   beforeEach(() => {
+    // Set up localStorage mock before each test
+    global.localStorage = createLocalStorageMock()
     setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
     useAuthStore.mockReturnValue(mockAuthStore)
+  })
+  
+  afterEach(() => {
+    // Restore original localStorage after each test
+    global.localStorage = originalLocalStorage
   })
 
   describe('state', () => {

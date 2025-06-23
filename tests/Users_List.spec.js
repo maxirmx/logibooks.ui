@@ -4,11 +4,21 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/components/Users_List.vue'
 
-
+// Centralized mock data
 const mockUsers = ref([
   { id: 1, firstName: 'John', lastName: 'Doe', patronymic: '', email: 'john@example.com', roles: ['administrator'] }
 ])
 
+// Centralized mock functions
+const getAll = vi.hoisted(() => vi.fn())
+const deleteUserFn = vi.hoisted(() => vi.fn())
+const errorFn = vi.hoisted(() => vi.fn())
+const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const router = vi.hoisted(() => ({
+  push: vi.fn()
+}))
+
+// Centralized mocks for all modules
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return {
@@ -17,16 +27,14 @@ vi.mock('pinia', async () => {
   }
 })
 
-const getAll = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/users.store.js', () => ({
   useUsersStore: () => ({
     users: mockUsers,
     getAll,
-    delete: vi.fn()
+    delete: deleteUserFn
   })
 }))
 
-const errorFn = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({ alert: null, error: errorFn, clear: vi.fn() })
 }))
@@ -41,23 +49,20 @@ vi.mock('@/stores/auth.store.js', () => ({
 }))
 
 vi.mock('vuetify-use-dialog', () => ({
-  useConfirm: () => vi.fn()
+  useConfirm: () => confirmMock
 }))
 
+vi.mock('@/router', () => ({
+  default: router
+}), { virtual: true })
 
 describe('Users_List.vue', () => {
-  // Fix router mock issue by using the router mock defined at the top level
-  // Define router mock using vi.hoisted to properly handle hoisting
-  const router = vi.hoisted(() => ({
-    push: vi.fn()
-  }))
-  vi.mock('@/router', () => ({
-    default: router
-  }), { virtual: true })
-
   beforeEach(() => {
     // Clear mocks before each test
     vi.clearAllMocks()
+    
+    // Reset default mock behavior
+    confirmMock.mockResolvedValue(true)
   })
 
   it('calls getAll on mount', () => {
@@ -113,15 +118,6 @@ describe('Users_List.vue', () => {
   })
 
   it('calls delete function when delete button is clicked', async () => {
-    const deleteUserFn = vi.hoisted(() => vi.fn())
-    vi.mock('@/stores/users.store.js', () => ({
-        useUsersStore: () => ({
-          users: mockUsers,
-          getAll,
-          delete: deleteUserFn
-        })
-      }))
-      
     const wrapper = mount(UsersList, {
       global: {
         stubs: {
@@ -216,19 +212,8 @@ describe('Users_List.vue', () => {
   })
 
   it('shows confirmation dialog before deleting a user', async () => {
-    const confirmMock = vi.fn().mockResolvedValue(true)
-    vi.mock('vuetify-use-dialog', () => ({
-      useConfirm: () => confirmMock
-    }))
-    
-    const deleteUserFn = vi.fn()
-    vi.mock('@/stores/users.store.js', () => ({
-      useUsersStore: () => ({
-        users: mockUsers,
-        getAll,
-        delete: deleteUserFn
-      })
-    }))
+    // Configure the confirm mock to return true for this test
+    confirmMock.mockResolvedValue(true)
     
     const wrapper = mount(UsersList, {
       global: {
@@ -253,19 +238,8 @@ describe('Users_List.vue', () => {
   })
 
   it('does not delete user when confirmation is declined', async () => {
-    const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(false))
-    vi.mock('vuetify-use-dialog', () => ({
-      useConfirm: () => confirmMock
-    }))
-    
-    const deleteUserFn = vi.fn()
-    vi.mock('@/stores/users.store.js', () => ({
-      useUsersStore: () => ({
-        users: mockUsers,
-        getAll,
-        delete: deleteUserFn
-      })
-    }))
+    // Configure the confirm mock to return false for this test
+    confirmMock.mockResolvedValue(false)
     
     const wrapper = mount(UsersList, {
       global: {

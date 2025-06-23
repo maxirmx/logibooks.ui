@@ -103,18 +103,14 @@ function getUserName() {
       </v-list>
       <template v-slot:append>
         <div class="pa-2">
-          <span class="orange version"> Версия {{ version }} </span>
-          <span
-            v-if="statusStore.coreVersion"
-            class="orange version"
-          >
-            Core {{ statusStore.coreVersion }}
+          <span class="orange version"> Клиент {{ version }} </span>
+          <br v-if="statusStore.coreVersion"/>
+          <span v-if="statusStore.coreVersion" class="orange version">
+            Сервер {{ statusStore.coreVersion }}
           </span>
-          <span
-            v-if="statusStore.dbVersion"
-            class="orange version"
-          >
-            DB {{ statusStore.dbVersion }}
+          <br v-if="statusStore.dbVersion"/>
+          <span v-if="statusStore.dbVersion" class="orange version"          >
+            БД {{ statusStore.dbVersion }}
           </span>
         </div>
       </template>

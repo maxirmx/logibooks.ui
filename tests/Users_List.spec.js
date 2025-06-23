@@ -1,9 +1,8 @@
 /* @vitest-environment jsdom */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/components/Users_List.vue'
-import { useUsersStore } from '@/stores/users.store.js'
 
 
 const mockUsers = ref([

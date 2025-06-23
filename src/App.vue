@@ -27,12 +27,19 @@
 import { RouterLink, RouterView } from 'vue-router'
 import router from '@/router'
 import { version } from '@/../package'
+import { onMounted } from 'vue'
+import { useStatusStore } from '@/stores/status.store.js'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
 
 import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
+
+const statusStore = useStatusStore()
+onMounted(() => {
+  statusStore.fetchStatus().catch(() => {})
+})
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 
@@ -97,6 +104,18 @@ function getUserName() {
       <template v-slot:append>
         <div class="pa-2">
           <span class="orange version"> Версия {{ version }} </span>
+          <span
+            v-if="statusStore.coreVersion"
+            class="orange version"
+          >
+            Core {{ statusStore.coreVersion }}
+          </span>
+          <span
+            v-if="statusStore.dbVersion"
+            class="orange version"
+          >
+            DB {{ statusStore.dbVersion }}
+          </span>
         </div>
       </template>
     </v-navigation-drawer>

@@ -28,6 +28,7 @@ import { ref, computed } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
+import { useStatusStore } from '@/stores/status.store.js'
 
 const baseUrl = `${apiUrl}/auth`
 
@@ -60,25 +61,63 @@ export const useAuthStore = defineStore('auth', () => {
   async function re() {
     const currentReJwt = re_jwt.value
     re_jwt.value = null
-    const userData = await fetchWrapper.put(`${baseUrl}/${re_tgt.value}`, { jwt: currentReJwt })
-    user.value = userData
-    localStorage.setItem('user', JSON.stringify(userData))
+    
+    // Fetch status information regardless of re-authentication success, failure, or exception
+    const statusStore = useStatusStore()
+    
+    try {
+      const userData = await fetchWrapper.put(`${baseUrl}/${re_tgt.value}`, { jwt: currentReJwt })
+      user.value = userData
+      localStorage.setItem('user', JSON.stringify(userData))
+    } catch (error) {
+      // Ensure status is fetched before re-throwing the error
+      await statusStore.fetchStatus().catch(() => {})
+      throw error
+    }
+    
+    // Fetch status after successful re-authentication as well
+    await statusStore.fetchStatus().catch(() => {})
   }
 
   async function login(email, password) {
-    const userData = await fetchWrapper.post(`${baseUrl}/login`, { email, password })
-    user.value = userData
-    localStorage.setItem('user', JSON.stringify(userData))
-    if (returnUrl.value) {
-      router.push(returnUrl.value)
-      returnUrl.value = null
+    // Fetch status information regardless of login success, failure, or exception
+    const statusStore = useStatusStore()
+    
+    try {
+      const userData = await fetchWrapper.post(`${baseUrl}/login`, { email, password })
+      user.value = userData
+      localStorage.setItem('user', JSON.stringify(userData))
+      
+      if (returnUrl.value) {
+        router.push(returnUrl.value)
+        returnUrl.value = null
+      }
+    } catch (error) {
+      // Ensure status is fetched before re-throwing the error
+      await statusStore.fetchStatus().catch(() => {})
+      throw error
     }
+    
+    // Fetch status after successful login as well
+    await statusStore.fetchStatus().catch(() => {})
   }
 
   function logout() {
-    user.value = null
-    localStorage.removeItem('user')
-    router.push('/login')
+    // Fetch status information regardless of logout success, failure, or exception
+    const statusStore = useStatusStore()
+    
+    try {
+      user.value = null
+      localStorage.removeItem('user')
+      router.push('/login')
+    } catch (error) {
+      // Ensure status is fetched before re-throwing the error
+      statusStore.fetchStatus().catch(() => {})
+      throw error
+    }
+    
+    // Fetch status after successful logout as well
+    statusStore.fetchStatus().catch(() => {})
   }
 
   return {

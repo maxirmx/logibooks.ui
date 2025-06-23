@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useStatusStore } from '@/stores/status.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
 import createLocalStorageMock from './__mocks__/localStorage.js'
@@ -19,6 +20,16 @@ vi.mock('@/router', () => ({
     push: vi.fn()
   }
 }))
+
+// Mock the status store
+vi.mock('@/stores/status.store.js', () => {
+  const fetchStatusMock = vi.fn().mockResolvedValue({})
+  return {
+    useStatusStore: vi.fn(() => ({
+      fetchStatus: fetchStatusMock
+    }))
+  }
+})
 
 describe('auth store', () => {
   // Store original localStorage
@@ -93,10 +104,11 @@ describe('auth store', () => {
       expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/recover'), testUser)
     })
 
-    it('login authenticates the user and stores in localStorage', async () => {
+    it('login authenticates the user, stores in localStorage, and fetches status', async () => {
       const testUser = { id: 1, name: 'Test User', token: 'abc123' }
       fetchWrapper.post.mockResolvedValue(testUser)
       
+      const statusStore = useStatusStore()
       const store = useAuthStore()
       await store.login('test@example.com', 'password')
       
@@ -106,6 +118,23 @@ describe('auth store', () => {
       )
       expect(store.user).toEqual(testUser)
       expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+    
+    it('fetches status even when login fails', async () => {
+      const errorMessage = 'Invalid credentials'
+      fetchWrapper.post.mockRejectedValue(new Error(errorMessage))
+      
+      const statusStore = useStatusStore()
+      const store = useAuthStore()
+      
+      await expect(store.login('test@example.com', 'wrong-password')).rejects.toThrow(errorMessage)
+      
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        expect.stringContaining('/login'),
+        { email: 'test@example.com', password: 'wrong-password' }
+      )
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
     })
 
     it('login redirects to returnUrl if set', async () => {
@@ -121,10 +150,11 @@ describe('auth store', () => {
       expect(store.returnUrl).toBeNull()
     })
 
-    it('logout removes user from store and localStorage', () => {
+    it('logout removes user from store, localStorage, and fetches status', () => {
       const testUser = { id: 1, name: 'Test User' }
       localStorage.setItem('user', JSON.stringify(testUser))
       
+      const statusStore = useStatusStore()
       const store = useAuthStore()
       store.user = testUser
       
@@ -132,13 +162,15 @@ describe('auth store', () => {
       
       expect(store.user).toBeNull()
       expect(localStorage.removeItem).toHaveBeenCalledWith('user')
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
       expect(router.push).toHaveBeenCalledWith('/login')
     })
 
-    it('re process updates user with jwt token', async () => {
+    it('re process updates user with jwt token and fetches status', async () => {
       const testUser = { id: 1, name: 'Updated User' }
       fetchWrapper.put.mockResolvedValue(testUser)
       
+      const statusStore = useStatusStore()
       const store = useAuthStore()
       store.re_jwt = 'jwt-token'
       store.re_tgt = 'reset'
@@ -152,6 +184,26 @@ describe('auth store', () => {
       expect(store.user).toEqual(testUser)
       expect(store.re_jwt).toBeNull()
       expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+    
+    it('fetches status even when re process fails', async () => {
+      const errorMessage = 'Invalid token'
+      fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
+      
+      const statusStore = useStatusStore()
+      const store = useAuthStore()
+      store.re_jwt = 'invalid-token'
+      store.re_tgt = 'reset'
+      
+      await expect(store.re()).rejects.toThrow(errorMessage)
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        expect.stringContaining('/reset'),
+        { jwt: 'invalid-token' }
+      )
+      expect(store.re_jwt).toBeNull()
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
     })
   })
 })

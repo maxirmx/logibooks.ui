@@ -27,6 +27,4 @@
 export const apiUrl = (window.RUNTIME_CONFIG && window.RUNTIME_CONFIG.apiUrl) || 
                       import.meta.env.VITE_API_URL || 
                       'http://localhost:8080/api'
-//export const apiUrl = 'https://kreel0.sw.consulting:8081/api'
-//export const apiUrl = 'http://77.232.136.132:8081/api'
 export const enableLog = true

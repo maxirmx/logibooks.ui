@@ -47,7 +47,8 @@ COPY config/update-config.sh /docker-entrypoint.d/40-update-config.sh
 RUN chmod +x /docker-entrypoint.d/40-update-config.sh
 
 # Set environment variables with defaults
-ENV API_URL=http://api:8084/api
+ARG API_URL=http://api:8084/api
+ENV VITE_API_URL=$API_URL
 
 EXPOSE 8082
 EXPOSE 8083

@@ -3,7 +3,7 @@
 # This script updates the runtime configuration with environment variables
 
 # Default API URL if not provided
-API_URL=${API_URL:-http://localhost:8080/api}
+API_URL=${API_URL:-http://api:8084/api}
 
 # Create the config file with the provided API URL
 echo "window.RUNTIME_CONFIG = {" > /usr/share/nginx/html/config.js

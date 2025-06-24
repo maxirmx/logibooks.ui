@@ -28,7 +28,7 @@ FROM node:18.18.2 AS build
 WORKDIR /app
 
 # Add build argument for API URL with default value
-ARG API_URL=http://localhost:8080/api
+ARG API_URL=http://api:8084/api
 ENV VITE_API_URL=$API_URL
 
 COPY package*.json ./
@@ -38,8 +38,8 @@ RUN npm run build
 
 # Stage for running nginx with static files
 FROM nginx:1.27-alpine AS final
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY config/public /usr/share/nginx/html
+COPY --from=build /app/dist /var/www/logibooks
+COPY config/public /var/www
 COPY config/nginx.conf /etc/nginx/conf.d/default.conf
 COPY config/update-config.sh /docker-entrypoint.d/40-update-config.sh
 
@@ -47,7 +47,7 @@ COPY config/update-config.sh /docker-entrypoint.d/40-update-config.sh
 RUN chmod +x /docker-entrypoint.d/40-update-config.sh
 
 # Set environment variables with defaults
-ENV API_URL=http://localhost:8080/api
+ENV API_URL=http://api:8084/api
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

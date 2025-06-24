@@ -49,5 +49,6 @@ RUN chmod +x /docker-entrypoint.d/40-update-config.sh
 # Set environment variables with defaults
 ENV API_URL=http://api:8084/api
 
-EXPOSE 80
+EXPOSE 8082
+EXPOSE 8083
 CMD ["nginx", "-g", "daemon off;"]

@@ -23,8 +23,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-export const apiUrl = 'http://localhost:8080/api'
-//`${import.meta.env.VITE_API_URL}`
+// Use runtime config if available, fallback to build-time config
+export const apiUrl = (window.RUNTIME_CONFIG && window.RUNTIME_CONFIG.apiUrl) || 
+                      import.meta.env.VITE_API_URL || 
+                      'http://localhost:8080/api'
 //export const apiUrl = 'https://kreel0.sw.consulting:8081/api'
 //export const apiUrl = 'http://77.232.136.132:8081/api'
 export const enableLog = true

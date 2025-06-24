@@ -24,8 +24,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # Stage for building the frontend
-FROM node:20 AS build
+FROM node:18.18.2 AS build
 WORKDIR /app
+
+# Add build argument for API URL with default value
+ARG API_URL=http://localhost:8080/api
+ENV VITE_API_URL=$API_URL
+
 COPY package*.json ./
 RUN npm ci
 COPY . .
@@ -36,5 +41,13 @@ FROM nginx:1.27-alpine AS final
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY config/public /usr/share/nginx/html
 COPY config/nginx.conf /etc/nginx/conf.d/default.conf
+COPY config/update-config.sh /docker-entrypoint.d/40-update-config.sh
+
+# Make the script executable
+RUN chmod +x /docker-entrypoint.d/40-update-config.sh
+
+# Set environment variables with defaults
+ENV API_URL=http://localhost:8080/api
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -5,5 +5,4 @@ Dockerfile
 .git
 .gitignore
 dist
-.tmp
 .tmp*

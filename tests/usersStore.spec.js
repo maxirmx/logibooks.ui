@@ -206,5 +206,47 @@ describe('users store', () => {
       expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/users/2', {})
       expect(mockAuthStore.logout).not.toHaveBeenCalled()
     })
+
+    // Error handling tests
+    it('add propagates errors when API call fails', async () => {
+      const errorMessage = 'Failed to add user'
+      fetchWrapper.post.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useUsersStore()
+      const newUser = { firstName: 'John', lastName: 'Doe', email: 'john@example.com' }
+      
+      await expect(store.add(newUser)).rejects.toThrow(errorMessage)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:8080/api/users',
+        newUser
+      )
+    })
+
+    it('update propagates errors when API call fails', async () => {
+      const errorMessage = 'Failed to update user'
+      fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useUsersStore()
+      const updateData = { firstName: 'Updated' }
+      
+      await expect(store.update(5, updateData)).rejects.toThrow(errorMessage)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:8080/api/users/5',
+        updateData
+      )
+      // Verify that localStorage and authStore were not updated
+      expect(localStorage.setItem).not.toHaveBeenCalled()
+    })
+
+    it('delete propagates errors when API call fails', async () => {
+      const errorMessage = 'Failed to delete user'
+      fetchWrapper.delete.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useUsersStore()
+      
+      await expect(store.delete(3)).rejects.toThrow(errorMessage)
+      expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/users/3', {})
+      expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    })
   })
 })

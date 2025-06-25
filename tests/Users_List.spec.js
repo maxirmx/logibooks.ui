@@ -1,8 +1,9 @@
 /* @vitest-environment jsdom */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/components/Users_List.vue'
+import { resolveAll } from './helpers/test-utils'
 
 // Centralized mock data
 const mockUsers = ref([
@@ -63,6 +64,11 @@ describe('Users_List.vue', () => {
     
     // Reset default mock behavior
     confirmMock.mockResolvedValue(true)
+  })
+  
+  afterEach(() => {
+    // Restore timers if they were mocked
+    vi.useRealTimers()
   })
 
   it('calls getAll on mount', () => {
@@ -263,4 +269,45 @@ describe('Users_List.vue', () => {
     }
   })
 
+  // Error handling test
+  it('calls alertStore.error when deleteUser rejects', async () => {
+    // Configure the confirm mock to return true for this test
+    confirmMock.mockResolvedValue(true)
+    
+    // Set up the delete function to reject with an error
+    const errorMessage = 'Failed to delete user'
+    deleteUserFn.mockRejectedValueOnce(new Error(errorMessage))
+    
+    // Create a mock item
+    const mockItem = { id: 1, firstName: 'John', lastName: 'Doe' }
+    
+    // Call the deleteUser method directly instead of trying to find and click a button
+    const wrapper = mount(UsersList, {
+      global: {
+        stubs: {
+          'v-card': true,
+          'v-data-table': true,
+          'v-text-field': true,
+          'font-awesome-icon': true,
+          'router-link': true
+        }
+      }
+    })
+    
+    // Access the component instance and call the deleteUser method directly
+    wrapper.vm.deleteUser(mockItem)
+    
+    // Wait for all promises to resolve, including the one in the catch block
+    await resolveAll()
+    
+    // Verify that the delete function was called
+    expect(deleteUserFn).toHaveBeenCalledWith(1)
+    
+    // Verify that the error function was called with the error
+    expect(errorFn).toHaveBeenCalledWith(expect.any(Error))
+    expect(errorFn.mock.calls[0][0].message).toBe(errorMessage)
+    
+    // Verify that getAll was not called again (since the delete failed)
+    expect(getAll).toHaveBeenCalledTimes(1) // Only the initial call on mount
+  })
 })

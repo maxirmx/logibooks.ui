@@ -24,6 +24,7 @@ const updateUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const registerUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const routerPush = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const successAlert = vi.hoisted(() => vi.fn())
+const setErrorsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -137,5 +138,67 @@ describe('User_Settings.vue real component', () => {
     const args = updateUser.mock.calls[0]
     expect(args[1].roles).toEqual(['logist'])
     expect(routerPush).toHaveBeenCalledWith('/user/edit/2')
+  })
+
+  // Error handling tests
+  it('sets errors when addUser rejects', async () => {
+    isAdmin = true
+    const errorMessage = 'Failed to add user'
+    addUser.mockRejectedValueOnce(new Error(errorMessage))
+    
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
+    await resolveAll()
+    
+    expect(addUser).toHaveBeenCalled()
+    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('sets errors when updateUser rejects', async () => {
+    const errorMessage = 'Failed to update user'
+    updateUser.mockRejectedValueOnce(new Error(errorMessage))
+    
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 5 },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
+    await resolveAll()
+    
+    expect(updateUser).toHaveBeenCalled()
+    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('sets errors when registerUser rejects', async () => {
+    isAdmin = false
+    const errorMessage = 'Failed to register user'
+    registerUser.mockRejectedValueOnce(new Error(errorMessage))
+    
+    Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
+    await resolveAll()
+    
+    expect(registerUser).toHaveBeenCalled()
+    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(successAlert).not.toHaveBeenCalled()
   })
 })

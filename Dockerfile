@@ -28,7 +28,7 @@ FROM node:18.18.2 AS build
 WORKDIR /app
 
 # Add build arguments with default values
-ARG API_URL=http://api:8080/api
+ARG API_URL=https://logibooks.sw.consulting:8085/api
 ARG ENABLE_LOG=true
 ENV VITE_API_URL=$API_URL
 ENV VITE_ENABLE_LOG=$ENABLE_LOG

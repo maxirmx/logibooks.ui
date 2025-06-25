@@ -37,9 +37,9 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
-onMounted(() => {
+ onMounted(() => {
   statusStore.fetchStatus().catch(() => {})
-})
+ })
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 

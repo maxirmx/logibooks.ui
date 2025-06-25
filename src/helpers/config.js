@@ -27,7 +27,7 @@
 export const config = {
   apiUrl: window.RUNTIME_CONFIG?.apiUrl ||
           import.meta.env.VITE_API_URL ||
-          'http://localhost:8080/api',
+          'https://logibooks.sw.consulting:8085/api',
   enableLog: window.RUNTIME_CONFIG?.enableLog ||
              import.meta.env.VITE_ENABLE_LOG ||
              true

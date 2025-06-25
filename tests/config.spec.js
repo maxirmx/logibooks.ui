@@ -1,9 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { apiUrl, enableLog } from '@/helpers/config.js'
+import { apiUrl, enableLog, config } from '@/helpers/config.js'
 
 describe('config helpers', () => {
   it('exports apiUrl and enableLog', () => {
     expect(apiUrl).toBe('http://localhost:8080/api')
     expect(enableLog).toBe(true)
+  })
+
+  it('exports a config object with all configuration values', () => {
+    expect(config).toHaveProperty('apiUrl')
+    expect(config).toHaveProperty('enableLog')
+    expect(config.apiUrl).toBe('http://localhost:8080/api')
+    expect(config.enableLog).toBe(true)
   })
 })

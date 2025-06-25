@@ -71,6 +71,7 @@ const vuetify = createVuetify({
   }
 })
 
+// Create the app instance but don't mount it yet
 const app = createApp(App)
   .component('font-awesome-icon', FontAwesomeIcon)
   .use(createPinia())
@@ -98,4 +99,18 @@ if (jwt) {
   authStore.re_tgt = tgt
 }
 
-app.mount('#app')
+// Load runtime configuration before mounting the app
+fetch('/config.json')
+  .then(res => res.json())
+  .then(runtimeConfig => {
+    window.RUNTIME_CONFIG = runtimeConfig
+  })
+  .catch(error => {
+    console.error('Failed to load runtime config:', error)
+  })
+  .finally(() => {
+    // Ensure the app is mounted even if config loading fails
+    if (!app._isMounted) {
+      app.mount('#app')
+    }
+  })

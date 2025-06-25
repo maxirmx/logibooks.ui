@@ -27,9 +27,11 @@
 FROM node:18.18.2 AS build
 WORKDIR /app
 
-# Add build argument for API URL with default value
+# Add build arguments with default values
 ARG API_URL=http://api:8080/api
+ARG ENABLE_LOG=true
 ENV VITE_API_URL=$API_URL
+ENV VITE_ENABLE_LOG=$ENABLE_LOG
 
 COPY package*.json ./
 RUN npm ci
@@ -45,10 +47,6 @@ COPY config/update-config.sh /docker-entrypoint.d/40-update-config.sh
 
 # Make the script executable
 RUN chmod +x /docker-entrypoint.d/40-update-config.sh
-
-# Set environment variables with defaults
-ARG API_URL=http://api:8080/api
-ENV VITE_API_URL=$API_URL
 
 EXPOSE 8082
 EXPOSE 8083

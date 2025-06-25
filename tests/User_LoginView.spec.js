@@ -1,7 +1,8 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import UserLoginView from '@/views/User_LoginView.vue'
+import { resolveAll } from './helpers/test-utils'
 
 const routerPush = vi.hoisted(() => vi.fn())
 const loginMock = vi.hoisted(() => vi.fn().mockResolvedValue())
@@ -55,7 +56,7 @@ describe('User_LoginView.vue', () => {
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
     await wrapper.vm.onSubmit({ login_email: 'a', login_password: 'b' }, { setErrors: vi.fn() })
-    await flushPromises()
+    await resolveAll()
     expect(loginMock).toHaveBeenCalledWith('a', 'b')
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
@@ -66,7 +67,7 @@ describe('User_LoginView.vue', () => {
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
     await wrapper.vm.onSubmit({ login_email: 'a', login_password: 'b' }, { setErrors: vi.fn() })
-    await flushPromises()
+    await resolveAll()
     expect(routerPush).toHaveBeenCalledWith('/user/edit/1')
   })
 })

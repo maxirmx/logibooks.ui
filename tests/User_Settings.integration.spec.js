@@ -1,8 +1,9 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UserSettings from '@/components/User_Settings.vue'
+import { resolveAll } from './helpers/test-utils'
 
 // simple stubs for vee-validate components
 const FormStub = {
@@ -72,8 +73,7 @@ describe('User_Settings.vue real component', () => {
       props: { register: false, id: 5 },
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    await flushPromises();
-    await flushPromises();
+    await resolveAll()
     expect(getById).toHaveBeenCalledWith(5, true)
   })
 
@@ -83,11 +83,10 @@ describe('User_Settings.vue real component', () => {
       props: { register: true },
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    await flushPromises();
-    await flushPromises();
+    await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'A' }, { setErrors: vi.fn() })
-    await flushPromises();
+    await resolveAll()
     expect(registerUser).toHaveBeenCalled()
     const arg = registerUser.mock.calls[0][0]
     expect(arg.roles).toEqual(['logist'])
@@ -102,11 +101,10 @@ describe('User_Settings.vue real component', () => {
       props: { register: true },
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    await flushPromises();
-    await flushPromises();
+    await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'B' }, { setErrors: vi.fn() })
-    await flushPromises();
+    await resolveAll()
     expect(addUser).toHaveBeenCalledWith(expect.any(Object), true)
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
@@ -117,11 +115,10 @@ describe('User_Settings.vue real component', () => {
       props: { register: false, id: 7 },
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    await flushPromises();
-    await flushPromises();
+    await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'C' }, { setErrors: vi.fn() })
-    await flushPromises();
+    await resolveAll()
     expect(updateUser).toHaveBeenCalledWith(7, expect.any(Object), true)
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
@@ -132,11 +129,10 @@ describe('User_Settings.vue real component', () => {
       props: { register: false, id: 1 },
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    await flushPromises();
-    await flushPromises();
+    await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'D' }, { setErrors: vi.fn() })
-    await flushPromises();
+    await resolveAll()
     expect(updateUser).toHaveBeenCalled()
     const args = updateUser.mock.calls[0]
     expect(args[1].roles).toEqual(['logist'])

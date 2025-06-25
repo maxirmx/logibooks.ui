@@ -1,36 +1,36 @@
 /* @vitest-environment jsdom */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import UserSettings from '@/components/User_Settings.vue'
+import { resolveAll } from './helpers/test-utils'
 
-// Centralized mock data
-const mockUser = ref({
-  id: 1,
-  firstName: 'John',
-  lastName: 'Doe',
-  patronymic: '',
-  email: 'john@example.com',
-  roles: ['administrator']
+// simple stubs for vee-validate components
+const FormStub = {
+  name: 'Form',
+  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
+}
+const FieldStub = {
+  name: 'Field',
+  props: ['name','id','type'],
+  template: '<input :id="id" :type="type" />'
+}
+
+let isAdmin
+const mockUser = ref({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: ['logist'] })
+const getById = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const addUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const updateUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const registerUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const routerPush = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const successAlert = vi.hoisted(() => vi.fn())
+const setErrorsMock = vi.hoisted(() => vi.fn())
+
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return { ...actual, storeToRefs: () => ({ user: mockUser }) }
 })
 
-// Centralized mock functions
-const getById = vi.hoisted(() => vi.fn())
-const addUser = vi.hoisted(() => vi.fn().mockResolvedValue())
-const updateUser = vi.hoisted(() => vi.fn().mockResolvedValue())
-const registerUser = vi.hoisted(() => vi.fn().mockResolvedValue())
-const successAlert = vi.hoisted(() => vi.fn())
-const errorAlert = vi.hoisted(() => vi.fn())
-const routerPush = vi.hoisted(() => vi.fn())
-
-// Mock isAdmin state
-const isAdmin = ref(true)
-
-// Mock router
-vi.mock('@/router', () => ({
-  default: { push: routerPush }
-}))
-
-// Mock users store
 vi.mock('@/stores/users.store.js', () => ({
   useUsersStore: () => ({
     user: mockUser,
@@ -40,292 +40,165 @@ vi.mock('@/stores/users.store.js', () => ({
   })
 }))
 
-// Mock auth store
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    isAdmin: isAdmin.value,
-    user: { id: 1 },
+    isAdmin,
+    user: { id: 2 },
     register: registerUser
   })
 }))
 
-// Mock alert store
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ 
-    alert: null, 
-    success: successAlert, 
-    error: errorAlert, 
-    clear: vi.fn() 
-  })
+  useAlertStore: () => ({ success: successAlert })
 }))
 
-// Mock the User_Settings component
-vi.mock('@/components/User_Settings.vue', () => ({
-  default: {
-    name: 'UserSettings',
-    props: {
-      register: Boolean,
-      id: Number
-    },
-    setup(props) {
-      if (!props.register) {
-        getById(props.id, true);
-      }
-      
-      return {};
-    },
-    template: `
-      <div class="settings form-2">
-        <h1 class="orange">{{ getTitle() }}</h1>
-        <hr class="hr" />
-        <form @submit.prevent="onSubmit">
-          <div class="form-group">
-            <button class="button" type="submit">{{ getButton() }}</button>
-          </div>
-        </form>
-      </div>
-    `,
-    methods: {
-      getTitle() {
-        if (this.register) {
-          return isAdmin.value ? 'Регистрация пользователя' : 'Регистрация';
-        }
-        return 'Настройки';
-      },
-      getButton() {
-        if (this.register) {
-          return 'Зарегистрировать' + (isAdmin.value ? '' : 'ся');
-        }
-        return 'Сохранить';
-      },
-      onSubmit() {
-        if (this.register) {
-          if (isAdmin.value) {
-            addUser({ 
-              firstName: 'John', 
-              lastName: 'Doe', 
-              email: 'john@example.com' 
-            }, true)
-              .then(() => routerPush('/users'));
-          } else {
-            registerUser({ 
-              firstName: 'John', 
-              lastName: 'Doe', 
-              email: 'john@example.com',
-              roles: ['logist'],
-              host: 'http://localhost'
-            })
-              .then(() => {
-                routerPush('/');
-                successAlert('Registration successful');
-              });
-          }
-        } else {
-          updateUser(this.id, { 
-            firstName: 'John', 
-            lastName: 'Doe', 
-            email: 'john@example.com' 
-          }, true)
-            .then(() => routerPush('/users'));
-        }
-      }
-    }
-  }
+vi.mock('@/router', () => ({
+  default: { push: routerPush }
 }))
 
-// Import the mocked component
-import UserSettings from '@/components/User_Settings.vue'
+const Parent = {
+  components: { UserSettings },
+  props: { register: Boolean, id: Number },
+  template: '<Suspense><UserSettings :register="register" :id="id" /></Suspense>'
+}
 
-describe('User_Settings.vue', () => {
-  beforeEach(() => {
-    // Reset mocks before each test
-    vi.clearAllMocks()
-    
-    // Reset mock data
-    mockUser.value = {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      patronymic: '',
-      email: 'john@example.com',
-      roles: ['administrator']
-    }
-    
-    // Reset isAdmin
-    isAdmin.value = true
+beforeEach(() => {
+  vi.clearAllMocks()
+  isAdmin = false
+  mockUser.value = { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: ['logist'] }
+})
+
+describe('User_Settings.vue real component', () => {
+  it('fetches user by id when editing', async () => {
+    mount(Parent, {
+      props: { register: false, id: 5 },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    expect(getById).toHaveBeenCalledWith(5, true)
   })
 
-  it('does not fetch user when registering', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
+  it('calls auth register when registering as non-admin', async () => {
+    Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    
-    await flushPromises()
-    expect(getById).not.toHaveBeenCalled()
-    expect(wrapper.exists()).toBe(true)
-  })
-
-  it('fetches user data when in edit mode', async () => {
-    mount(UserSettings, {
-      props: {
-        register: false,
-        id: 1
-      }
-    })
-    
-    await flushPromises()
-    expect(getById).toHaveBeenCalledWith(1, true)
-  })
-
-  it('displays correct title for registration as admin', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
-    })
-    
-    await flushPromises()
-    expect(wrapper.find('h1').text()).toBe('Регистрация пользователя')
-  })
-
-  it('displays correct title for registration as non-admin', async () => {
-    isAdmin.value = false
-    
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
-    })
-    
-    await flushPromises()
-    expect(wrapper.find('h1').text()).toBe('Регистрация')
-  })
-
-  it('displays correct title for settings', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: false,
-        id: 1
-      }
-    })
-    
-    await flushPromises()
-    expect(wrapper.find('h1').text()).toBe('Настройки')
-  })
-
-  it('displays correct button text for registration as admin', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
-    })
-    
-    await flushPromises()
-    const button = wrapper.find('button[type="submit"]')
-    expect(button.exists()).toBe(true)
-    expect(button.text()).toBe('Зарегистрировать')
-  })
-
-  it('displays correct button text for registration as non-admin', async () => {
-    isAdmin.value = false
-    
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
-    })
-    
-    await flushPromises()
-    const button = wrapper.find('button[type="submit"]')
-    expect(button.exists()).toBe(true)
-    expect(button.text()).toBe('Зарегистрироваться')
-  })
-
-  it('displays correct button text for settings', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: false,
-        id: 1
-      }
-    })
-    
-    await flushPromises()
-    const button = wrapper.find('button[type="submit"]')
-    expect(button.exists()).toBe(true)
-    expect(button.text()).toBe('Сохранить')
-  })
-
-  it('calls add function when submitting as admin in register mode', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
-    })
-    
-    await flushPromises()
-    
-    // Submit the form
-    await wrapper.find('form').trigger('submit')
-    
-    // Wait for promises to resolve
-    await flushPromises()
-    
-    // Verify the add function was called
-    expect(addUser).toHaveBeenCalled()
-    
-    // Should redirect to users page
-    expect(routerPush).toHaveBeenCalledWith('/users')
-  })
-
-  it('calls register function when submitting as non-admin in register mode', async () => {
-    isAdmin.value = false
-    
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: true
-      }
-    })
-    
-    await flushPromises()
-    
-    // Submit the form
-    await wrapper.find('form').trigger('submit')
-    
-    // Wait for promises to resolve
-    await flushPromises()
-    
-    // Verify the register function was called
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'A' }, { setErrors: vi.fn() })
+    await resolveAll()
     expect(registerUser).toHaveBeenCalled()
-    
-    // Should redirect to home page
+    const arg = registerUser.mock.calls[0][0]
+    expect(arg.roles).toEqual(['logist'])
+    expect(arg.host).toBe('http://localhost')
     expect(routerPush).toHaveBeenCalledWith('/')
-    
-    // Should show success alert
     expect(successAlert).toHaveBeenCalled()
   })
 
-  it('calls update function when submitting in edit mode', async () => {
-    const wrapper = mount(UserSettings, {
-      props: {
-        register: false,
-        id: 1
-      }
+  it('calls add when registering as admin', async () => {
+    isAdmin = true
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
-    
-    await flushPromises()
-    
-    // Submit the form
-    await wrapper.find('form').trigger('submit')
-    
-    // Wait for promises to resolve
-    await flushPromises()
-    
-    // Verify the update function was called
-    expect(updateUser).toHaveBeenCalledWith(1, expect.any(Object), true)
-    
-    // Should redirect to users page
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'B' }, { setErrors: vi.fn() })
+    await resolveAll()
+    expect(addUser).toHaveBeenCalledWith(expect.any(Object), true)
     expect(routerPush).toHaveBeenCalledWith('/users')
+  })
+
+  it('updates user when editing as admin', async () => {
+    isAdmin = true
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 7 },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'C' }, { setErrors: vi.fn() })
+    await resolveAll()
+    expect(updateUser).toHaveBeenCalledWith(7, expect.any(Object), true)
+    expect(routerPush).toHaveBeenCalledWith('/users')
+  })
+
+  it('updates user roles when editing as non-admin', async () => {
+    mockUser.value.roles = ['logist']
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'D' }, { setErrors: vi.fn() })
+    await resolveAll()
+    expect(updateUser).toHaveBeenCalled()
+    const args = updateUser.mock.calls[0]
+    expect(args[1].roles).toEqual(['logist'])
+    expect(routerPush).toHaveBeenCalledWith('/user/edit/2')
+  })
+
+  // Error handling tests
+  it('sets errors when addUser rejects', async () => {
+    isAdmin = true
+    const errorMessage = 'Failed to add user'
+    addUser.mockRejectedValueOnce(new Error(errorMessage))
+    
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
+    await resolveAll()
+    
+    expect(addUser).toHaveBeenCalled()
+    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('sets errors when updateUser rejects', async () => {
+    const errorMessage = 'Failed to update user'
+    updateUser.mockRejectedValueOnce(new Error(errorMessage))
+    
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 5 },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
+    await resolveAll()
+    
+    expect(updateUser).toHaveBeenCalled()
+    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('sets errors when registerUser rejects', async () => {
+    isAdmin = false
+    const errorMessage = 'Failed to register user'
+    registerUser.mockRejectedValueOnce(new Error(errorMessage))
+    
+    Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
+    await resolveAll()
+    
+    expect(registerUser).toHaveBeenCalled()
+    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(successAlert).not.toHaveBeenCalled()
   })
 })

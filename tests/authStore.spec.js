@@ -83,6 +83,16 @@ describe('auth store', () => {
       
       expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining('/check'))
     })
+    
+    it('check propagates errors when API call fails', async () => {
+      const errorMessage = 'Authentication check failed'
+      fetchWrapper.get.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useAuthStore()
+      
+      await expect(store.check()).rejects.toThrow(errorMessage)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining('/check'))
+    })
 
     it('register calls the API with user data', async () => {
       fetchWrapper.post.mockResolvedValue({})
@@ -93,6 +103,17 @@ describe('auth store', () => {
       
       expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/register'), testUser)
     })
+    
+    it('register propagates errors when API call fails', async () => {
+      const errorMessage = 'Failed to register user'
+      fetchWrapper.post.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useAuthStore()
+      const testUser = { email: 'test@example.com', password: 'password' }
+      
+      await expect(store.register(testUser)).rejects.toThrow(errorMessage)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/register'), testUser)
+    })
 
     it('recover calls the API with user data', async () => {
       fetchWrapper.post.mockResolvedValue({})
@@ -101,6 +122,17 @@ describe('auth store', () => {
       const testUser = { email: 'test@example.com' }
       await store.recover(testUser)
       
+      expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/recover'), testUser)
+    })
+    
+    it('recover propagates errors when API call fails', async () => {
+      const errorMessage = 'Failed to recover password'
+      fetchWrapper.post.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useAuthStore()
+      const testUser = { email: 'test@example.com' }
+      
+      await expect(store.recover(testUser)).rejects.toThrow(errorMessage)
       expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/recover'), testUser)
     })
 

@@ -23,8 +23,16 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Use runtime config if available, fallback to build-time config
-export const apiUrl = (window.RUNTIME_CONFIG && window.RUNTIME_CONFIG.apiUrl) || 
-                      import.meta.env.VITE_API_URL || 
-                      'http://localhost:8080/api'
-export const enableLog = true
+// Create a config object that checks runtime first, then build-time, then fallback
+export const config = {
+  apiUrl: window.RUNTIME_CONFIG?.apiUrl ||
+          import.meta.env.VITE_API_URL ||
+          'http://localhost:8080/api',
+  enableLog: window.RUNTIME_CONFIG?.enableLog ||
+             import.meta.env.VITE_ENABLE_LOG ||
+             true
+}
+
+// Export individual config values for backward compatibility
+export const apiUrl = config.apiUrl
+export const enableLog = config.enableLog

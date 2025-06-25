@@ -1,4 +1,4 @@
 {
-  "apiUrl": "http://localhost:8080/api",
+  "apiUrl": "https://logibooks.sw.consulting:8085/api",
   "enableLog": false
 }

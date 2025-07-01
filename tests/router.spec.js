@@ -18,6 +18,7 @@ vi.mock('@/views/User_RecoverView.vue', () => ({ default: { template: '<div />' 
 vi.mock('@/views/User_RegisterView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
 
 import router from '@/router'
 
@@ -28,7 +29,7 @@ async function resetRouter(to = "/recover") {
 
 describe('router guards', () => {
   beforeEach(async () => {
-    authStore = { user: null, returnUrl: null, check: checkMock, isAdmin: false }
+    authStore = { user: null, returnUrl: null, check: checkMock, isAdmin: false, isLogist: false }
     checkMock.mockResolvedValue()
     alertClear.mockClear()
     alertError.mockClear()
@@ -56,5 +57,21 @@ describe('router guards', () => {
     await router.push('/login')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/user/edit/2')
+  })
+
+  it('prevents non-logist user from accessing registers', async () => {
+    authStore.user = { id: 3 }
+    authStore.isLogist = false
+    await router.push('/registers')
+    await router.isReady()
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+  })
+
+  it('allows logist user to access registers', async () => {
+    authStore.user = { id: 4 }
+    authStore.isLogist = true
+    await router.push('/registers')
+    await router.isReady()
+    expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
 })

@@ -29,6 +29,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
+const logistPages = ['/registers']
 
 function routeToLogin(to, auth) {
   if (loginPages.includes(to.path)) {
@@ -65,6 +66,11 @@ const router = createRouter({
       path: '/users',
       name: 'Пользователи',
       component: () => import('@/views/Users_View.vue')
+    },
+    {
+      path: '/registers',
+      name: 'Реестры',
+      component: () => import('@/views/Registers_View.vue')
     },
     {
       path: '/user/edit/:id',
@@ -118,6 +124,10 @@ router.beforeEach(async (to) => {
       return true
     }
     // (3.1) No need to login, fall through somewhere ...
+    return auth.isAdmin ? '/users' : '/user/edit/' + auth.user.id
+  }
+
+  if (logistPages.includes(to.path) && !auth.isLogist) {
     return auth.isAdmin ? '/users' : '/user/edit/' + auth.user.id
   }
 

@@ -93,6 +93,9 @@ function getUserName() {
         <v-list-item v-if="authStore.isAdmin">
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
         </v-list-item>
+        <v-list-item v-if="authStore.isLogist">
+          <RouterLink to="/registers" class="link">Реестры</RouterLink>
+        </v-list-item>
         <v-list-item>
           <RouterLink to="/login" custom v-slot="{ href }">
             <a :href="href" @click="deauth()" class="link">Выход</a>

@@ -44,7 +44,16 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      redirect: ( ) => {
+        const auth = useAuthStore()
+        if (!auth.user) {
+          return '/login'
+        }
+        // Priority: logist > administrator > regular user
+        if (auth.isLogist) return '/registers'
+        if (auth.isAdmin) return '/users'
+        return '/user/edit/' + auth.user.id
+      }
     },
     {
       path: '/login',
@@ -123,12 +132,15 @@ router.beforeEach(async (to) => {
     if (!auth.user) {
       return true
     }
-    // (3.1) No need to login, fall through somewhere ...
-    return auth.isAdmin ? '/users' : '/user/edit/' + auth.user.id
+    // (3.1) No need to login, redirect based on role priority
+    if (auth.isLogist) return '/registers'
+    if (auth.isAdmin) return '/users'
+    return '/user/edit/' + auth.user.id
   }
 
   if (logistPages.includes(to.path) && !auth.isLogist) {
-    return auth.isAdmin ? '/users' : '/user/edit/' + auth.user.id
+    // Redirect to login instead of user edit page
+    return routeToLogin(to, auth)
   }
 
   // (3.1) Do as requested

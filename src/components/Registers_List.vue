@@ -38,7 +38,7 @@ const headers = [
       :loading="loading"
       class="elevation-1"
     >
-      <template #item.actions="{ item }">
+      <template #[`item.actions`]="{ item }">
         <button @click="openOrders(item)" class="anti-btn">
           <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
         </button>

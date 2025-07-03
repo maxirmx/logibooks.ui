@@ -32,6 +32,6 @@ describe('registers store', () => {
     fetchWrapper.get.mockRejectedValue(new Error('fail'))
     const store = useRegistersStore()
     await store.getAll()
-    expect(store.error.value).toBeTruthy()
+    expect(store.error).toBeTruthy()
   })
 })

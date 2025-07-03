@@ -23,7 +23,7 @@ describe('registers store', () => {
     const store = useRegistersStore()
     await store.getAll(2, 5)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/registers?page=2&pageSize=5`
+      `${apiUrl}/registers?page=2&pageSize=5&sortBy=id&sortOrder=asc`
     )
     expect(store.items[0].id).toBe(1)
   })

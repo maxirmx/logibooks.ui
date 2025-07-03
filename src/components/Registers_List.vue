@@ -25,19 +25,36 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 
 const registersStore = useRegistersStore()
-const { items, loading, error, hasNextPage } = storeToRefs(registersStore)
+const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
-const page = ref(1)
-const itemsPerPage = ref(10)
+const authStore = useAuthStore()
+const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
 
-watch([page, itemsPerPage], () => {
-  registersStore.getAll(page.value, itemsPerPage.value)
-}, { immediate: true })
+// Watch for changes in pagination, sorting, or search
+watch([registers_page, registers_per_page, registers_sort_by, registers_search], () => {
+  loadRegisters()
+}, { immediate: true, deep: true })
+
+function loadRegisters() {
+  const sortBy = registers_sort_by.value?.[0]?.key || 'id'
+  const sortOrder = registers_sort_by.value?.[0]?.order || 'asc'
+  
+  registersStore.getAll(
+    registers_page.value,
+    registers_per_page.value,
+    sortBy,
+    sortOrder,
+    registers_search.value
+  )
+}
 
 function openOrders(item) {
   console.log('Open orders for register', item.id)
@@ -70,30 +87,50 @@ const headers = [
   <div class="settings table-2">
     <h1 class="orange">Реестры</h1>
     <hr class="hr" />
-    <v-data-table-server
-      v-model:page="page"
-      v-model:items-per-page="itemsPerPage"
-      :items-length="hasNextPage ? page * itemsPerPage + 1 : (page - 1) * itemsPerPage + items.length"
-      :headers="headers"
-      :items="items"
-      :loading="loading"
-      class="elevation-1"
-    >
-      <template #[`item.date`]="{ item }">
-        {{ formatDate(item.date) }}
-      </template>
-      <template #[`item.ordersTotal`]="{ item }">
-        {{ item.ordersTotal }}
-      </template>
-      <template #[`item.actions`]="{ item }">
-        <button @click="openOrders(item)" class="anti-btn">
-          <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
-        </button>
-      </template>
-    </v-data-table-server>
+
+    <v-card>
+      <v-data-table-server
+        v-if="items?.length || loading"
+        v-model:items-per-page="registers_per_page"
+        items-per-page-text="Реестров на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="registers_page"
+        v-model:sort-by="registers_sort_by"
+        :headers="headers"
+        :items="items"
+        :items-length="totalCount"
+        :loading="loading"
+        class="elevation-1"
+      >
+        <template #[`item.date`]="{ item }">
+          {{ formatDate(item.date) }}
+        </template>
+        <template #[`item.ordersTotal`]="{ item }">
+          {{ item.ordersTotal }}
+        </template>
+        <template #[`item.actions`]="{ item }">
+          <button @click="openOrders(item)" class="anti-btn">
+            <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
+          </button>
+        </template>
+      </v-data-table-server>
+      <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
+      <div v-if="items?.length || loading">
+        <v-text-field
+          v-model="registers_search"
+          :append-inner-icon="mdiMagnify"
+          label="Поиск по любой информации о реестре"
+          variant="solo"
+          hide-details
+        />
+      </div>
+    </v-card>
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
     </div>
   </div>
 </template>
-

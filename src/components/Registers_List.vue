@@ -116,7 +116,7 @@ const headers = [
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
-      <div v-if="items?.length || loading">
+      <div v-if="items?.length || loading || registers_search">
         <v-text-field
           v-model="registers_search"
           :append-inner-icon="mdiMagnify"

@@ -54,6 +54,7 @@ describe('auth store', () => {
       expect(store.user).toBeNull()
       // isAdmin should be falsy when there's no user
       expect(store.isAdmin).toBeFalsy()
+      expect(store.isLogist).toBeFalsy()
       expect(store.users_per_page).toBe(10)
       expect(store.users_search).toBe('')
       expect(store.users_sort_by).toEqual(['id'])
@@ -71,6 +72,7 @@ describe('auth store', () => {
       const store = useAuthStore()
       expect(store.user).toEqual(testUser)
       expect(store.isAdmin).toBe(true)
+      expect(store.isLogist).toBeFalsy()
     })
   })
 

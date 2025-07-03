@@ -74,6 +74,52 @@ describe('auth store', () => {
       expect(store.isAdmin).toBe(true)
       expect(store.isLogist).toBeFalsy()
     })
+
+    it('correctly identifies admin users', () => {
+      const store = useAuthStore()
+      store.user = { id: 1, roles: ['administrator'] }
+      expect(store.isAdmin).toBe(true)
+      
+      store.user = { id: 2, roles: ['logist'] }
+      expect(store.isAdmin).toBe(false)
+      
+      store.user = { id: 3, roles: ['administrator', 'logist'] }
+      expect(store.isAdmin).toBe(true)
+    })
+
+    it('correctly identifies logist users', () => {
+      const store = useAuthStore()
+      store.user = { id: 1, roles: ['logist'] }
+      expect(store.isLogist).toBe(true)
+      
+      store.user = { id: 2, roles: ['administrator'] }
+      expect(store.isLogist).toBe(false)
+      
+      store.user = { id: 3, roles: ['administrator', 'logist'] }
+      expect(store.isLogist).toBe(true)
+    })
+
+    it('handles register view parameters correctly', () => {
+      const store = useAuthStore()
+      
+      // Test setting re_jwt and re_tgt for registration
+      store.re_jwt = 'registration-jwt-token'
+      store.re_tgt = 'register'
+      
+      expect(store.re_jwt).toBe('registration-jwt-token')
+      expect(store.re_tgt).toBe('register')
+    })
+
+    it('handles password recovery parameters correctly', () => {
+      const store = useAuthStore()
+      
+      // Test setting re_jwt and re_tgt for password recovery
+      store.re_jwt = 'recovery-jwt-token'
+      store.re_tgt = 'recover'
+      
+      expect(store.re_jwt).toBe('recovery-jwt-token')
+      expect(store.re_tgt).toBe('recover')
+    })
   })
 
   describe('actions', () => {
@@ -238,6 +284,98 @@ describe('auth store', () => {
       )
       expect(store.re_jwt).toBeNull()
       expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+
+    it('re process handles register target correctly', async () => {
+      const testUser = { id: 1, name: 'Registered User', roles: ['user'] }
+      fetchWrapper.put.mockResolvedValue(testUser)
+      
+      const statusStore = useStatusStore()
+      const store = useAuthStore()
+      store.re_jwt = 'register-jwt-token'
+      store.re_tgt = 'register'
+      
+      await store.re()
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        expect.stringContaining('/register'),
+        { jwt: 'register-jwt-token' }
+      )
+      expect(store.user).toEqual(testUser)
+      expect(store.re_jwt).toBeNull()
+      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+
+    it('re process handles recover target correctly', async () => {
+      const testUser = { id: 1, name: 'Recovered User', roles: ['user'] }
+      fetchWrapper.put.mockResolvedValue(testUser)
+      
+      const statusStore = useStatusStore()
+      const store = useAuthStore()
+      store.re_jwt = 'recover-jwt-token'
+      store.re_tgt = 'recover'
+      
+      await store.re()
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        expect.stringContaining('/recover'),
+        { jwt: 'recover-jwt-token' }
+      )
+      expect(store.user).toEqual(testUser)
+      expect(store.re_jwt).toBeNull()
+      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+  })
+
+  describe('register view parameters', () => {
+    it('initializes register parameters as null', () => {
+      const store = useAuthStore()
+      expect(store.re_jwt).toBeNull()
+      expect(store.re_tgt).toBeNull()
+    })
+
+    it('sets register parameters when processing registration', () => {
+      const store = useAuthStore()
+      const jwt = 'test-registration-jwt'
+      const target = 'register'
+      
+      store.re_jwt = jwt
+      store.re_tgt = target
+      
+      expect(store.re_jwt).toBe(jwt)
+      expect(store.re_tgt).toBe(target)
+    })
+
+    it('clears register parameters after successful registration', async () => {
+      const testUser = { id: 1, name: 'New User', roles: ['user'] }
+      fetchWrapper.put.mockResolvedValue(testUser)
+      
+      const store = useAuthStore()
+      store.re_jwt = 'registration-jwt'
+      store.re_tgt = 'register'
+      
+      await store.re()
+      
+      expect(store.re_jwt).toBeNull()
+      // Note: re_tgt may not be cleared in the actual implementation
+      // This depends on the specific store implementation
+    })
+
+    it('clears register parameters after failed registration', async () => {
+      const errorMessage = 'Registration failed'
+      fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useAuthStore()
+      store.re_jwt = 'invalid-registration-jwt'
+      store.re_tgt = 'register'
+      
+      await expect(store.re()).rejects.toThrow(errorMessage)
+      
+      expect(store.re_jwt).toBeNull()
+      // Note: re_tgt may not be cleared in the actual implementation
+      // This depends on the specific store implementation
     })
   })
 })

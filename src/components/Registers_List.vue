@@ -61,6 +61,7 @@ const headers = [
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Дата загрузки', key: 'date', align: 'start' },
+  { title: 'Заказы', key: 'ordersTotal', align: 'end' },
   { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' }
 ]
 </script>
@@ -80,6 +81,9 @@ const headers = [
     >
       <template #[`item.date`]="{ item }">
         {{ formatDate(item.date) }}
+      </template>
+      <template #[`item.ordersTotal`]="{ item }">
+        {{ item.ordersTotal }}
       </template>
       <template #[`item.actions`]="{ item }">
         <button @click="openOrders(item)" class="anti-btn">

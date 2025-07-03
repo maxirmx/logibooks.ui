@@ -29,7 +29,7 @@ async function resetRouter(to = "/recover") {
 
 describe('router guards', () => {
   beforeEach(async () => {
-    authStore = { user: null, returnUrl: null, check: checkMock, isAdmin: false, isLogist: false }
+    authStore = { user: null, returnUrl: null, check: checkMock, isAdmin: false, isLogist: false, permissionRedirect: false }
     checkMock.mockResolvedValue()
     alertClear.mockClear()
     alertError.mockClear()
@@ -83,16 +83,11 @@ describe('router guards', () => {
     authStore.user = { id: 3 }
     authStore.isLogist = false
     
-    // Simulate the router behavior directly since the test router's
-    // implementation might differ from the production one
     await router.push('/registers')
     await router.isReady()
     
-    // For now, adjust the expectation to match actual behavior
-    expect(router.currentRoute.value.fullPath).toBe('/user/edit/3')
-    
-    // TODO: After implementing the production change to redirect to login,
-    // update this test to expect: '/login'
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+    expect(authStore.returnUrl).toBe('/registers')
   })
 
   it('allows logist user to access registers', async () => {

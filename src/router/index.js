@@ -36,6 +36,8 @@ function routeToLogin(to, auth) {
     return true
   }
   auth.returnUrl = to ? to.fullPath : null
+  // Set a flag to indicate this is a permission redirect
+  auth.permissionRedirect = true
   return '/login'
 }
 
@@ -122,7 +124,12 @@ router.beforeEach(async (to) => {
     return routeToLogin(to, auth)
   }
 
-  // (3) (Implied) user and (implied) auth required
+  // (3) Check role-specific access BEFORE general redirects
+  if (logistPages.includes(to.path) && !auth.isLogist) {
+    return routeToLogin(to, auth)
+  }
+
+  // (4) Handle login page access with role-priority redirect
   if (loginPages.includes(to.path)) {
     try {
       await auth.check()
@@ -132,18 +139,20 @@ router.beforeEach(async (to) => {
     if (!auth.user) {
       return true
     }
-    // (3.1) No need to login, redirect based on role priority
+    
+    // If this is a permission redirect, don't auto-redirect based on role
+    if (auth.permissionRedirect) {
+      auth.permissionRedirect = false
+      return true
+    }
+    
+    // No need to login, redirect based on role priority
     if (auth.isLogist) return '/registers'
     if (auth.isAdmin) return '/users'
     return '/user/edit/' + auth.user.id
   }
 
-  if (logistPages.includes(to.path) && !auth.isLogist) {
-    // Redirect to login instead of user edit page
-    return routeToLogin(to, auth)
-  }
-
-  // (3.1) Do as requested
+  // (5) Allow access to other routes
   return true
 })
 

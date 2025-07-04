@@ -19,10 +19,17 @@ describe('registers store', () => {
   })
 
   describe('getAll method', () => {
-    describe('old API format (array response)', () => {
+    describe('API format with pagination metadata', () => {
       it('fetches data from API with default parameters', async () => {
-        const mockData = [{ id: 1, name: 'Register 1' }, { id: 2, name: 'Register 2' }]
-        fetchWrapper.get.mockResolvedValue(mockData)
+        const mockResponse = {
+          items: [{ id: 1, name: 'Register 1' }, { id: 2, name: 'Register 2' }],
+          pagination: {
+            totalCount: 2,
+            hasNextPage: false,
+            hasPreviousPage: false
+          }
+        }
+        fetchWrapper.get.mockResolvedValue(mockResponse)
         
         const store = useRegistersStore()
         await store.getAll()
@@ -30,14 +37,21 @@ describe('registers store', () => {
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`
         )
-        expect(store.items).toEqual(mockData)
+        expect(store.items).toEqual(mockResponse.items)
         expect(store.loading).toBe(false)
         expect(store.error).toBeNull()
       })
 
       it('fetches data with custom parameters', async () => {
-        const mockData = [{ id: 3, name: 'Register 3' }]
-        fetchWrapper.get.mockResolvedValue(mockData)
+        const mockResponse = {
+          items: [{ id: 3, name: 'Register 3' }],
+          pagination: {
+            totalCount: 1,
+            hasNextPage: false,
+            hasPreviousPage: true
+          }
+        }
+        fetchWrapper.get.mockResolvedValue(mockResponse)
         
         const store = useRegistersStore()
         await store.getAll(2, 5, 'name', 'desc', 'search term')
@@ -45,35 +59,9 @@ describe('registers store', () => {
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&search=search+term`
         )
-        expect(store.items).toEqual(mockData)
+        expect(store.items).toEqual(mockResponse.items)
       })
 
-      it('handles pagination metadata for old format - has next page', async () => {
-        const mockData = Array(10).fill().map((_, i) => ({ id: i + 1, name: `Register ${i + 1}` }))
-        fetchWrapper.get.mockResolvedValue(mockData)
-        
-        const store = useRegistersStore()
-        await store.getAll(2, 10)
-        
-        expect(store.hasNextPage).toBe(true) // Full page suggests more data
-        expect(store.hasPreviousPage).toBe(true) // Page 2 has previous
-        expect(store.totalCount).toBe(21) // (2-1)*10 + 10 + 1
-      })
-
-      it('handles pagination metadata for old format - no next page', async () => {
-        const mockData = Array(5).fill().map((_, i) => ({ id: i + 1, name: `Register ${i + 1}` }))
-        fetchWrapper.get.mockResolvedValue(mockData)
-        
-        const store = useRegistersStore()
-        await store.getAll(1, 10)
-        
-        expect(store.hasNextPage).toBe(false) // Partial page suggests no more data
-        expect(store.hasPreviousPage).toBe(false) // Page 1 has no previous
-        expect(store.totalCount).toBe(5) // (1-1)*10 + 5 + 0
-      })
-    })
-
-    describe('new API format (object with pagination metadata)', () => {
       it('fetches data with new format - basic case', async () => {
         const mockResponse = {
           items: [
@@ -245,7 +233,10 @@ describe('registers store', () => {
         expect(store.error).toBeTruthy()
         
         // Second request succeeds
-        fetchWrapper.get.mockResolvedValue([{ id: 1 }])
+        fetchWrapper.get.mockResolvedValue({
+          items: [{ id: 1 }],
+          pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+        })
         await store.getAll()
         expect(store.error).toBeNull()
         expect(store.items).toEqual([{ id: 1 }])
@@ -263,7 +254,10 @@ describe('registers store', () => {
         
         expect(store.loading).toBe(true)
         
-        resolvePromise([{ id: 1 }])
+        resolvePromise({
+          items: [{ id: 1 }],
+          pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+        })
         await getAllPromise
         
         expect(store.loading).toBe(false)
@@ -288,7 +282,10 @@ describe('registers store', () => {
 
     describe('query parameters handling', () => {
       it('excludes search parameter when empty', async () => {
-        fetchWrapper.get.mockResolvedValue([])
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+        })
         
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', '')
@@ -298,7 +295,10 @@ describe('registers store', () => {
       })
 
       it('includes search parameter when provided', async () => {
-        fetchWrapper.get.mockResolvedValue([])
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+        })
         
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', 'test search')
@@ -309,7 +309,10 @@ describe('registers store', () => {
       })
 
       it('handles special characters in search parameter', async () => {
-        fetchWrapper.get.mockResolvedValue([])
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+        })
         
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', 'test & search + special chars')

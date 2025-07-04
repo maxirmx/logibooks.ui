@@ -219,73 +219,76 @@ function onSubmit(values, { setErrors }) {
       </div>
       <div class="form-group">
         <label for="password" class="label">Пароль:</label>
-        <Field
-          name="password"
-          id="password"
-          ref="password"
-          :type="showPassword ? 'text' : 'password'"
-          class="form-control input password"
-          :class="{ 'is-invalid': errors.password }"
-          placeholder="Пароль"
-        />
-        <button
-          type="button"
-          @click="
-            (event) => {
-              event.preventDefault()
-              showPassword = !showPassword
-            }
-          "
-          class="button-o"
-        >
-          <font-awesome-icon
-            size="1x"
-            v-if="!showPassword"
-            icon="fa-solid fa-eye"
-            class="button-o-c"
+        <div class="password-wrapper">
+          <Field
+            name="password"
+            id="password"
+            ref="password"
+            :type="showPassword ? 'text' : 'password'"
+            class="form-control input password"
+            :class="{ 'is-invalid': errors.password }"
+            placeholder="Пароль"
           />
-          <font-awesome-icon
-            size="1x"
-            v-if="showPassword"
-            icon="fa-solid fa-eye-slash"
-            class="button-o-c"
-          />
-        </button>
+          <button
+            type="button"
+            @click="
+              (event) => {
+                event.preventDefault()
+                showPassword = !showPassword
+              }
+            "
+            class="button-o"
+          >
+            <font-awesome-icon
+              size="1x"
+              v-if="!showPassword"
+              icon="fa-solid fa-eye"
+              class="button-o-c"
+            />
+            <font-awesome-icon
+              size="1x"
+              v-if="showPassword"
+              icon="fa-solid fa-eye-slash"
+              class="button-o-c"
+            />
+          </button>
+        </div>
       </div>
       <div class="form-group">
         <label for="password2" class="label">Пароль ещё раз:</label>
-        <Field
-          name="password2"
-          id="password2"
-          :type="showPassword2 ? 'text' : 'password'"
-          class="form-control input password"
-          :class="{ 'is-invalid': errors.password2 }"
-          placeholder="Пароль"
-        />
-
-        <button
-          type="button"
-          @click="
-            (event) => {
-              event.preventDefault()
-              showPassword2 = !showPassword2
-            }
-          "
-          class="button-o"
-        >
-          <font-awesome-icon
-            size="1x"
-            v-if="!showPassword2"
-            icon="fa-solid fa-eye"
-            class="button-o-c"
+        <div class="password-wrapper">
+          <Field
+            name="password2"
+            id="password2"
+            :type="showPassword2 ? 'text' : 'password'"
+            class="form-control input password"
+            :class="{ 'is-invalid': errors.password2 }"
+            placeholder="Пароль"
           />
-          <font-awesome-icon
-            size="1x"
-            v-if="showPassword2"
-            icon="fa-solid fa-eye-slash"
-            class="button-o-c"
-          />
-        </button>
+          <button
+            type="button"
+            @click="
+              (event) => {
+                event.preventDefault()
+                showPassword2 = !showPassword2
+              }
+            "
+            class="button-o"
+          >
+            <font-awesome-icon
+              size="1x"
+              v-if="!showPassword2"
+              icon="fa-solid fa-eye"
+              class="button-o-c"
+            />
+            <font-awesome-icon
+              size="1x"
+              v-if="showPassword2"
+              icon="fa-solid fa-eye-slash"
+              class="button-o-c"
+            />
+          </button>
+        </div>
       </div>
       <div v-if="showCredentials()" class="form-group">
         <label for="crd" class="label">Права:</label>

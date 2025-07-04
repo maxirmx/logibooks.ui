@@ -111,9 +111,9 @@ const headers = [
     <hr class="hr" />
 
     <div class="link-crt">
-      <button type="button" @click="openFileDialog" class="link">
+      <a @click="openFileDialog" class="link" tabindex="0">
         <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
-      </button>
+      </a>
       <v-file-input
         ref="fileInput"
         style="display: none"

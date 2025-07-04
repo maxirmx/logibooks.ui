@@ -198,8 +198,12 @@ a,
   text-align: right;
   width: 100%;
   padding-top: 10px;
-  padding-right: 16px;
 }
+
+.v-data-table-footer .v-data-table-footer__pagination {
+  padding-top: 17px;
+}
+
 
 .checkbox-styled {
   visibility: hidden;
@@ -267,7 +271,10 @@ a,
     display: inline-block;
     width: auto;
     padding-top: 0;
-    padding-right: 0;
+  }
+
+  .v-data-table-footer .v-data-table__pagination {
+    padding-top: 0;
   }
 }
 

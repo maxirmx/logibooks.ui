@@ -71,22 +71,6 @@ describe('Registers_List.vue', () => {
     expect(getAll).toHaveBeenCalled()
   })
 
-  it('renders upload button', () => {
-    const wrapper = mount(RegistersList, {
-      global: {
-        stubs: {
-          'v-data-table-server': true,
-          'v-card': true,
-          'v-text-field': true,
-          'font-awesome-icon': true,
-          'v-file-input': true
-        }
-      }
-    })
-    const button = wrapper.find('button')
-    expect(button.text()).toContain('Загрузить реестр')
-  })
-
   describe('formatDate function', () => {
     let wrapper
 

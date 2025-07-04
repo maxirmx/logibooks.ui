@@ -144,10 +144,6 @@
   box-shadow: 0px 2px 10px #1976d2;
 }
 
-.button-o-c {
-  color: rgb(75, 75, 75);
-}
-
 .button {
   padding: 0.5rem;
   border-radius: 0.25rem;
@@ -327,9 +323,65 @@ a,
     color: #eeeeee;
     background-color: white;
   }
-  .anti-btn:hover,
-  .button-o-c:hover {
-    color: #1976d2;
-    background-color: white;
+.anti-btn:hover {
+  color: #1976d2;
+  transform: scale(1.2); 
+  transition: all 0.2s ease-in-out;
+}
+}
+
+/* Table header styling for both registers and users tables - Vuetify 3.x */
+.v-data-table thead th,
+.v-data-table-server thead th {
+  background-color: #1976d2 !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 1.1rem !important;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.v-data-table thead th span,
+.v-data-table-server thead th span {
+  color: white !important;
+  font-weight: bold !important;
+}
+
+/* Ensure sort icons are visible on dark background */
+.v-data-table thead th .v-icon,
+.v-data-table-server thead th .v-icon {
+  color: white !important;
+}
+
+/* Alternative selectors for different Vuetify 3 structures */
+.v-table thead th,
+.v-table > .v-table__wrapper > table > thead > tr > th {
+  background-color: #1976d2 !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 1.1rem !important;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Table row hover effects for both users and registers tables */
+@media (hover: hover) {
+  /* Vuetify 3 data table row hover effects */
+  .v-data-table tbody tr:hover,
+  .v-data-table-server tbody tr:hover {
+    background-color: rgba(25, 118, 210, 0.2) !important;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  /* Alternative selectors for different Vuetify 3 table structures */
+  .v-table tbody tr:hover,
+  .v-table > .v-table__wrapper > table > tbody > tr:hover {
+    background-color: rgba(25, 118, 210, 0.2) !important;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  /* Ensure hover effect works on table cells as well */
+  .v-data-table tbody tr:hover td,
+  .v-data-table-server tbody tr:hover td,
+  .v-table tbody tr:hover td {
+    background-color: transparent !important;
   }
 }

@@ -41,10 +41,11 @@ import {
   faPlay,
   faPlus,
   faTrashCan,
-  faUserPlus
+  faUserPlus,
+  faList
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus)
+library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus, faList)
 
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'

@@ -54,10 +54,15 @@ describe('auth store', () => {
       expect(store.user).toBeNull()
       // isAdmin should be falsy when there's no user
       expect(store.isAdmin).toBeFalsy()
+      expect(store.isLogist).toBeFalsy()
       expect(store.users_per_page).toBe(10)
       expect(store.users_search).toBe('')
       expect(store.users_sort_by).toEqual(['id'])
       expect(store.users_page).toBe(1)
+      expect(store.registers_per_page).toBe(10)
+      expect(store.registers_search).toBe('')
+      expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      expect(store.registers_page).toBe(1)
       expect(store.returnUrl).toBeNull()
       expect(store.re_jwt).toBeNull()
       expect(store.re_tgt).toBeNull()
@@ -71,6 +76,53 @@ describe('auth store', () => {
       const store = useAuthStore()
       expect(store.user).toEqual(testUser)
       expect(store.isAdmin).toBe(true)
+      expect(store.isLogist).toBeFalsy()
+    })
+
+    it('correctly identifies admin users', () => {
+      const store = useAuthStore()
+      store.user = { id: 1, roles: ['administrator'] }
+      expect(store.isAdmin).toBe(true)
+      
+      store.user = { id: 2, roles: ['logist'] }
+      expect(store.isAdmin).toBe(false)
+      
+      store.user = { id: 3, roles: ['administrator', 'logist'] }
+      expect(store.isAdmin).toBe(true)
+    })
+
+    it('correctly identifies logist users', () => {
+      const store = useAuthStore()
+      store.user = { id: 1, roles: ['logist'] }
+      expect(store.isLogist).toBe(true)
+      
+      store.user = { id: 2, roles: ['administrator'] }
+      expect(store.isLogist).toBe(false)
+      
+      store.user = { id: 3, roles: ['administrator', 'logist'] }
+      expect(store.isLogist).toBe(true)
+    })
+
+    it('handles register view parameters correctly', () => {
+      const store = useAuthStore()
+      
+      // Test setting re_jwt and re_tgt for registration
+      store.re_jwt = 'registration-jwt-token'
+      store.re_tgt = 'register'
+      
+      expect(store.re_jwt).toBe('registration-jwt-token')
+      expect(store.re_tgt).toBe('register')
+    })
+
+    it('handles password recovery parameters correctly', () => {
+      const store = useAuthStore()
+      
+      // Test setting re_jwt and re_tgt for password recovery
+      store.re_jwt = 'recovery-jwt-token'
+      store.re_tgt = 'recover'
+      
+      expect(store.re_jwt).toBe('recovery-jwt-token')
+      expect(store.re_tgt).toBe('recover')
     })
   })
 
@@ -236,6 +288,171 @@ describe('auth store', () => {
       )
       expect(store.re_jwt).toBeNull()
       expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+
+    it('re process handles register target correctly', async () => {
+      const testUser = { id: 1, name: 'Registered User', roles: ['user'] }
+      fetchWrapper.put.mockResolvedValue(testUser)
+      
+      const statusStore = useStatusStore()
+      const store = useAuthStore()
+      store.re_jwt = 'register-jwt-token'
+      store.re_tgt = 'register'
+      
+      await store.re()
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        expect.stringContaining('/register'),
+        { jwt: 'register-jwt-token' }
+      )
+      expect(store.user).toEqual(testUser)
+      expect(store.re_jwt).toBeNull()
+      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+
+    it('re process handles recover target correctly', async () => {
+      const testUser = { id: 1, name: 'Recovered User', roles: ['user'] }
+      fetchWrapper.put.mockResolvedValue(testUser)
+      
+      const statusStore = useStatusStore()
+      const store = useAuthStore()
+      store.re_jwt = 'recover-jwt-token'
+      store.re_tgt = 'recover'
+      
+      await store.re()
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        expect.stringContaining('/recover'),
+        { jwt: 'recover-jwt-token' }
+      )
+      expect(store.user).toEqual(testUser)
+      expect(store.re_jwt).toBeNull()
+      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
+      expect(statusStore.fetchStatus).toHaveBeenCalled()
+    })
+  })
+
+  describe('registers list parameters', () => {
+    it('initializes registers parameters with default values', () => {
+      const store = useAuthStore()
+      expect(store.registers_per_page).toBe(10)
+      expect(store.registers_search).toBe('')
+      expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      expect(store.registers_page).toBe(1)
+    })
+
+    it('allows updating registers_per_page', () => {
+      const store = useAuthStore()
+      store.registers_per_page = 25
+      expect(store.registers_per_page).toBe(25)
+      
+      store.registers_per_page = 50
+      expect(store.registers_per_page).toBe(50)
+    })
+
+    it('allows updating registers_search', () => {
+      const store = useAuthStore()
+      store.registers_search = 'test search'
+      expect(store.registers_search).toBe('test search')
+      
+      store.registers_search = 'another search term'
+      expect(store.registers_search).toBe('another search term')
+      
+      // Test clearing search
+      store.registers_search = ''
+      expect(store.registers_search).toBe('')
+    })
+
+    it('allows updating registers_sort_by', () => {
+      const store = useAuthStore()
+      
+      // Test sorting by name ascending
+      store.registers_sort_by = [{ key: 'name', order: 'asc' }]
+      expect(store.registers_sort_by).toEqual([{ key: 'name', order: 'asc' }])
+      
+      // Test sorting by name descending
+      store.registers_sort_by = [{ key: 'name', order: 'desc' }]
+      expect(store.registers_sort_by).toEqual([{ key: 'name', order: 'desc' }])
+      
+      // Test sorting by date
+      store.registers_sort_by = [{ key: 'created_at', order: 'desc' }]
+      expect(store.registers_sort_by).toEqual([{ key: 'created_at', order: 'desc' }])
+      
+      // Test multiple sort criteria
+      store.registers_sort_by = [
+        { key: 'name', order: 'asc' },
+        { key: 'id', order: 'desc' }
+      ]
+      expect(store.registers_sort_by).toEqual([
+        { key: 'name', order: 'asc' },
+        { key: 'id', order: 'desc' }
+      ])
+    })
+
+    it('allows updating registers_page', () => {
+      const store = useAuthStore()
+      store.registers_page = 2
+      expect(store.registers_page).toBe(2)
+      
+      store.registers_page = 5
+      expect(store.registers_page).toBe(5)
+      
+      // Test resetting to first page
+      store.registers_page = 1
+      expect(store.registers_page).toBe(1)
+    })
+
+    it('maintains registers parameters independently from users parameters', () => {
+      const store = useAuthStore()
+      
+      // Set different values for users and registers parameters
+      store.users_per_page = 20
+      store.users_search = 'user search'
+      store.users_sort_by = ['name']
+      store.users_page = 3
+      
+      store.registers_per_page = 15
+      store.registers_search = 'register search'
+      store.registers_sort_by = [{ key: 'date', order: 'desc' }]
+      store.registers_page = 2
+      
+      // Verify they are independent
+      expect(store.users_per_page).toBe(20)
+      expect(store.users_search).toBe('user search')
+      expect(store.users_sort_by).toEqual(['name'])
+      expect(store.users_page).toBe(3)
+      
+      expect(store.registers_per_page).toBe(15)
+      expect(store.registers_search).toBe('register search')
+      expect(store.registers_sort_by).toEqual([{ key: 'date', order: 'desc' }])
+      expect(store.registers_page).toBe(2)
+    })
+
+    it('handles edge cases for registers parameters', () => {
+      const store = useAuthStore()
+      
+      // Test zero and negative values for per_page
+      store.registers_per_page = 0
+      expect(store.registers_per_page).toBe(0)
+      
+      store.registers_per_page = -1
+      expect(store.registers_per_page).toBe(-1)
+      
+      // Test zero and negative values for page
+      store.registers_page = 0
+      expect(store.registers_page).toBe(0)
+      
+      store.registers_page = -1
+      expect(store.registers_page).toBe(-1)
+      
+      // Test empty sort_by array
+      store.registers_sort_by = []
+      expect(store.registers_sort_by).toEqual([])
+      
+      // Test null values
+      store.registers_search = null
+      expect(store.registers_search).toBeNull()
     })
   })
 })

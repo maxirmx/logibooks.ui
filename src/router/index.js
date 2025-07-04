@@ -29,12 +29,15 @@ import { useAlertStore } from '@/stores/alert.store.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
+const logistPages = ['/registers']
 
 function routeToLogin(to, auth) {
   if (loginPages.includes(to.path)) {
     return true
   }
   auth.returnUrl = to ? to.fullPath : null
+  // Set a flag to indicate this is a permission redirect
+  auth.permissionRedirect = true
   return '/login'
 }
 
@@ -43,7 +46,16 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      redirect: ( ) => {
+        const auth = useAuthStore()
+        if (!auth.user) {
+          return '/login'
+        }
+        // Priority: logist > administrator > regular user
+        if (auth.isLogist) return '/registers'
+        if (auth.isAdmin) return '/users'
+        return '/user/edit/' + auth.user.id
+      }
     },
     {
       path: '/login',
@@ -65,6 +77,11 @@ const router = createRouter({
       path: '/users',
       name: 'Пользователи',
       component: () => import('@/views/Users_View.vue')
+    },
+    {
+      path: '/registers',
+      name: 'Реестры',
+      component: () => import('@/views/Registers_View.vue')
     },
     {
       path: '/user/edit/:id',
@@ -107,7 +124,12 @@ router.beforeEach(async (to) => {
     return routeToLogin(to, auth)
   }
 
-  // (3) (Implied) user and (implied) auth required
+  // (3) Check role-specific access BEFORE general redirects
+  if (logistPages.includes(to.path) && !auth.isLogist) {
+    return routeToLogin(to, auth)
+  }
+
+  // (4) Handle login page access with role-priority redirect
   if (loginPages.includes(to.path)) {
     try {
       await auth.check()
@@ -117,11 +139,20 @@ router.beforeEach(async (to) => {
     if (!auth.user) {
       return true
     }
-    // (3.1) No need to login, fall through somewhere ...
-    return auth.isAdmin ? '/users' : '/user/edit/' + auth.user.id
+    
+    // If this is a permission redirect, don't auto-redirect based on role
+    if (auth.permissionRedirect) {
+      auth.permissionRedirect = false
+      return true
+    }
+    
+    // No need to login, redirect based on role priority
+    if (auth.isLogist) return '/registers'
+    if (auth.isAdmin) return '/users'
+    return '/user/edit/' + auth.user.id
   }
 
-  // (3.1) Do as requested
+  // (5) Allow access to other routes
   return true
 })
 

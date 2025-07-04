@@ -75,37 +75,39 @@ function onSubmit(values, { setErrors }) {
       </div>
       <div class="form-group">
         <label for="login_password" class="label">Пароль:</label>
-        <Field
-          name="login_password"
-          id="login_password"
-          :type="showPassword ? 'text' : 'password'"
-          class="form-control input password"
-          :class="{ 'is-invalid': errors.login_password }"
-          placeholder="Пароль"
-        />
-        <button
-          type="button"
-          @click="
-            (event) => {
-              event.preventDefault()
-              showPassword = !showPassword
-            }
-          "
-          class="button-o"
-        >
-          <font-awesome-icon
-            size="1x"
-            v-if="!showPassword"
-            icon="fa-solid fa-eye"
-            class="button-o-c"
+        <div class="password-wrapper">
+          <Field
+            name="login_password"
+            id="login_password"
+            :type="showPassword ? 'text' : 'password'"
+            class="form-control input password"
+            :class="{ 'is-invalid': errors.login_password }"
+            placeholder="Пароль"
           />
-          <font-awesome-icon
-            size="1x"
-            v-if="showPassword"
-            icon="fa-solid fa-eye-slash"
-            class="button-o-c"
-          />
-        </button>
+          <button
+            type="button"
+            @click="
+              (event) => {
+                event.preventDefault()
+                showPassword = !showPassword
+              }
+            "
+            class="button-o"
+          >
+            <font-awesome-icon
+              size="1x"
+              v-if="!showPassword"
+              icon="fa-solid fa-eye"
+              class="button-o-c"
+            />
+            <font-awesome-icon
+              size="1x"
+              v-if="showPassword"
+              icon="fa-solid fa-eye-slash"
+              class="button-o-c"
+            />
+          </button>
+        </div>
       </div>
       <div class="form-group">
         <button class="button" type="submit" :disabled="isSubmitting">

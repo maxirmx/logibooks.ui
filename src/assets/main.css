@@ -399,3 +399,29 @@ a,
     background-color: transparent !important;
   }
 }
+
+/* Password field wrapper styles */
+.password-wrapper {
+  display: inline-flex;
+  width: 60%; /* Same as .input width */
+  align-items: center;
+}
+
+.password-wrapper .input.password {
+  width: 100%;
+  flex: 1;
+  margin-right: 5px;
+  margin-bottom: 1rem; /* Keep the original margin for consistent spacing */
+}
+
+.password-wrapper .button-o {
+  width: 40px;
+  min-width: 40px;
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+.password-wrapper .button-o-c {
+  width: auto;
+  padding: 0;
+}

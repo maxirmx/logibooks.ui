@@ -148,6 +148,13 @@
   box-shadow: 0px 2px 10px #1976d2;
 }
 
+.button-o-c {
+  color: rgb(75, 75, 75);
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+
+}
+
 .button {
   padding: 0.5rem;
   border-radius: 0.25rem;
@@ -328,7 +335,9 @@ a,
     color: #eeeeee;
     background-color: white;
   }
-.anti-btn:hover {
+
+ .anti-btn:hover,
+ .button-o-c:hover {
   color: #1976d2;
   transform: scale(1.2); 
   transition: all 0.2s ease-in-out;

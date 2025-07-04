@@ -37,12 +37,23 @@ async function loadConfig() {
   }
 }
 
-// Load config first, then initialize app
-loadConfig().then(() => {
-  // Now import CSS and app modules after config is loaded
+// Initialize the application
+function initializeApplication() {
+  // Import CSS and app modules
   import('@/assets/main.css')
   
   import('./init.app.js').then(({ initializeApp }) => {
     initializeApp()
   })
-})
+}
+
+// Load config first, then initialize app
+loadConfig()
+  .then(() => {
+    initializeApplication()
+  })
+  .catch((error) => {
+    console.error('Failed to initialize app after config load:', error)
+    // Still try to initialize the app even if config loading failed
+    initializeApplication()
+  })

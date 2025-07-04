@@ -30,20 +30,11 @@ export const useRegistersStore = defineStore('registers', () => {
       
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
       
-      // Handle both old format (array) and new format (object with items)
-      if (Array.isArray(response)) {
-        // Backward compatibility with old API format
-        items.value = response
-        hasNextPage.value = response.length === pageSize
-        hasPreviousPage.value = page > 1
-        totalCount.value = (page - 1) * pageSize + response.length + (hasNextPage.value ? 1 : 0)
-      } else {
-        // New API format with pagination metadata
-        items.value = response.items || []
-        totalCount.value = response.pagination?.totalCount || 0
-        hasNextPage.value = response.pagination?.hasNextPage || false
-        hasPreviousPage.value = response.pagination?.hasPreviousPage || false
-      }
+      // API format with pagination metadata
+      items.value = response.items || []
+      totalCount.value = response.pagination?.totalCount || 0
+      hasNextPage.value = response.pagination?.hasNextPage || false
+      hasPreviousPage.value = response.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
     } finally {

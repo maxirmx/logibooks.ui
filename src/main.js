@@ -23,95 +23,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import '@/assets/main.css'
-
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-
-// ------------ fontawesome --------------
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-
-import {
-  faDownload,
-  faEye,
-  faEyeSlash,
-  faHand,
-  faPen,
-  faPlay,
-  faPlus,
-  faTrashCan,
-  faUserPlus,
-  faList
-} from '@fortawesome/free-solid-svg-icons'
-
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus, faList)
-
-import 'vuetify/styles'
-import { createVuetify } from 'vuetify'
-import VuetifyUseDialog from 'vuetify-use-dialog'
-//import { aliases, fa } from 'vuetify/iconsets/fa'
-import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
-
-import App from '@/App.vue'
-import router from '@/router'
-
-import { useAuthStore } from '@/stores/auth.store.js'
-
-const vuetify = createVuetify({
-  breakpoint: {
-    mobileBreakpoint: 'xl' // This is the breakpoint for mobile devices
-  },
-  icons: {
-    defaultSet: 'mdi',
-    aliases,
-    sets: {
-      mdi
-      //      fa,
-    }
-  }
-})
-
-// Create the app instance but don't mount it yet
-const app = createApp(App)
-  .component('font-awesome-icon', FontAwesomeIcon)
-  .use(createPinia())
-  .use(router)
-  .use(vuetify)
-  .use(VuetifyUseDialog)
-
-const queryString = window.location.search
-const urlParams = new URLSearchParams(queryString)
-
-var jwt = null
-var tgt = null
-
-if (urlParams.has('recover')) {
-  jwt = urlParams.get('recover')
-  tgt = 'recover'
-} else if (urlParams.has('register')) {
-  jwt = urlParams.get('register')
-  tgt = 'register'
-}
-
-if (jwt) {
-  const authStore = useAuthStore()
-  authStore.re_jwt = jwt
-  authStore.re_tgt = tgt
-}
-
-// Load runtime configuration before mounting the app
-fetch('/config.json')
-  .then(res => res.json())
-  .then(runtimeConfig => {
+// Load runtime configuration first, before importing other modules
+async function loadConfig() {
+  try {
+    const response = await fetch('/config.json')
+    const runtimeConfig = await response.json()
     window.RUNTIME_CONFIG = runtimeConfig
-  })
-  .catch(error => {
+    return runtimeConfig
+  } catch (error) {
     console.error('Failed to load runtime config:', error)
+    window.RUNTIME_CONFIG = {} // Set empty object as fallback
+    return {}
+  }
+}
+
+// Load config first, then initialize app
+loadConfig().then(() => {
+  // Now import CSS and app modules after config is loaded
+  import('@/assets/main.css')
+  
+  import('./init.app.js').then(({ initializeApp }) => {
+    initializeApp()
   })
-  .finally(() => {
-    // Ensure the app is mounted even if config loading fails
-    if (!app._isMounted) {
-      app.mount('#app')
-    }
-  })
+})

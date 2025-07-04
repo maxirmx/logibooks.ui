@@ -63,6 +63,7 @@ function openOrders(item) {
 function formatDate(dateString) {
   if (!dateString) return ''
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return ''
   return new Intl.DateTimeFormat(navigator.language || 'ru-RU', { 
     year: 'numeric',
     month: '2-digit',

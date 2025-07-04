@@ -1,5 +1,9 @@
 @import './base.css';
 
+:root {
+  --gtc-color-1: #33ABE3;
+}
+
 /*
     #1976D2  -- vuetify 'blue-darken-2'
 */
@@ -175,12 +179,6 @@ a,
   font-size: 1.1rem;
 }
 
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-}
-
 .scrollable {
   overflow-y: scroll;
   height: 90%;
@@ -311,12 +309,12 @@ a,
 @media (hover: hover) {
   a:hover {
     color: #eeeeee;
-    background-color: #2773a6;
+    background-color: var(--gtc-color-1);
   }
 
   .button:hover {
     color: #eeeeee;
-    background-color: #2773a6;
+    background-color: var(--gtc-color-1);
   }
 
   .btn:hover {
@@ -333,7 +331,7 @@ a,
 /* Table header styling for both registers and users tables - Vuetify 3.x */
 .v-data-table thead th,
 .v-data-table-server thead th {
-  background-color: #1976d2 !important;
+  background-color: var(--gtc-color-1) !important;
   color: white !important;
   font-weight: bold !important;
   font-size: 1.1rem !important;
@@ -355,7 +353,7 @@ a,
 /* Alternative selectors for different Vuetify 3 structures */
 .v-table thead th,
 .v-table > .v-table__wrapper > table > thead > tr > th {
-  background-color: #1976d2 !important;
+  background-color: var(--gtc-color-1) !important;
   color: white !important;
   font-weight: bold !important;
   font-size: 1.1rem !important;

@@ -97,9 +97,7 @@ function getUserName() {
           <RouterLink to="/registers" class="link">Реестры</RouterLink>
         </v-list-item>
         <v-list-item>
-          <RouterLink to="/login" custom v-slot="{ href }">
-            <a :href="href" @click="deauth()" class="link">Выход</a>
-          </RouterLink>
+          <RouterLink to="/login" @click="deauth()" class="link">Выход</RouterLink>
         </v-list-item>
       </v-list>
       <v-list v-if="!authStore.user">
@@ -150,7 +148,7 @@ nav {
   width: 100%;
   margin-top: 2rem;
   text-align: left;
-  margin-left: -1rem;
+  margin-left: 1rem;
   font-size: 1rem;
   padding: 1rem 0;
   margin-top: 1rem;
@@ -173,4 +171,16 @@ nav a {
 nav a:first-of-type {
   border: 0;
 }
+
+/* Make the entire menu item hoverable */
+:deep(.v-list-item) {
+  transition: background-color 0.2s ease-in-out;
+}
+
+:deep(.v-list-item:hover) {
+    color: #eeeeee;
+    background-color: var(--gtc-color-1);
+}
+
+
 </style>

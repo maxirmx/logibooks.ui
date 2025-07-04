@@ -42,5 +42,20 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll }
+  async function upload(file) {
+    loading.value = true
+    error.value = null
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload }
 })

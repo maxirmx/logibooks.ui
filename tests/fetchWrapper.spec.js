@@ -47,4 +47,17 @@ describe('fetchWrapper', () => {
     global.fetch = vi.fn(() => Promise.reject(new TypeError('Failed to fetch')))
     await expect(fetchWrapper.get(`${baseUrl}/neterr`)).rejects.toThrow('Не удалось соединиться')
   })
+
+  it('sends FormData with postFile', async () => {
+    const response = { ok: true, status: 200, statusText: 'OK', text: () => Promise.resolve('{}') }
+    global.fetch = vi.fn(() => Promise.resolve(response))
+    const fd = new FormData()
+    fd.append('file', new File(['x'], 'test.txt'))
+    await fetchWrapper.postFile(`${baseUrl}/upload`, fd)
+    expect(global.fetch).toHaveBeenCalledWith(`${baseUrl}/upload`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer abc' },
+      body: fd
+    })
+  })
 })

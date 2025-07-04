@@ -25,9 +25,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { watch } from 'vue'
+import { watch, ref } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -35,8 +36,28 @@ import { storeToRefs } from 'pinia'
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
+const alertStore = useAlertStore()
+
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
+
+const fileInput = ref(null)
+
+function openFileDialog() {
+  fileInput.value?.click()
+}
+
+async function fileSelected(files) {
+  const file = Array.isArray(files) ? files[0] : files
+  if (!file) return
+  try {
+    await registersStore.upload(file)
+    alertStore.success('Реестр успешно загружен')
+    loadRegisters()
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+  }
+}
 
 // Watch for changes in pagination, sorting, or search
 watch([registers_page, registers_per_page, registers_sort_by, registers_search], () => {
@@ -88,6 +109,18 @@ const headers = [
   <div class="settings table-2">
     <h1 class="orange">Реестры</h1>
     <hr class="hr" />
+
+    <div class="link-crt">
+      <button @click="openFileDialog" class="link">
+        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
+      </button>
+      <v-file-input
+        ref="fileInput"
+        style="display: none"
+        accept=".xls,.xlsx,.zip,.rar"
+        @update:model-value="fileSelected"
+      />
+    </div>
 
     <v-card>
       <v-data-table-server

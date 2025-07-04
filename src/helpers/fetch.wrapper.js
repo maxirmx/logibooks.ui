@@ -30,7 +30,8 @@ export const fetchWrapper = {
   get: request('GET'),
   post: request('POST'),
   put: request('PUT'),
-  delete: request('DELETE')
+  delete: request('DELETE'),
+  postFile: requestFile('POST')
 }
 
 function request(method) {
@@ -74,6 +75,43 @@ function request(method) {
             throw new Error(errorMessage);
         }
         
+        return handleResponse(response);
+    };
+}
+
+function requestFile(method) {
+    return async (url, body) => {
+        const requestOptions = {
+            method,
+            headers: authHeader(url)
+        };
+        if (body) {
+            requestOptions.body = body;
+        }
+
+        var response;
+        try {
+            response = await fetch(url, requestOptions);
+        } catch (error) {
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
+            } else {
+                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
+            }
+        }
+
+        if (!response.ok) {
+            const error = await response.text();
+            let errorMessage;
+            try {
+                const errorObj = JSON.parse(error);
+                errorMessage = errorObj.msg || `Ошибка ${response.status}`;
+            } catch {
+                errorMessage = error || `Ошибка ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+
         return handleResponse(response);
     };
 }

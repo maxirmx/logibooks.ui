@@ -44,6 +44,8 @@ export default [
         sessionStorage: 'readonly',
         URLSearchParams: 'readonly',
         URL: 'readonly',
+        FormData: 'readonly',
+        File: 'readonly',
       }
     },
   },

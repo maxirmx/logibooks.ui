@@ -111,7 +111,7 @@ const headers = [
     <hr class="hr" />
 
     <div class="link-crt">
-      <button @click="openFileDialog" class="link">
+      <button type="button" @click="openFileDialog" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
       </button>
       <v-file-input
@@ -144,7 +144,7 @@ const headers = [
           {{ item.ordersTotal }}
         </template>
         <template #[`item.actions`]="{ item }">
-          <button @click="openOrders(item)" class="anti-btn">
+          <button type="button" @click="openOrders(item)" class="anti-btn">
             <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
           </button>
         </template>

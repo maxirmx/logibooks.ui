@@ -30,7 +30,8 @@ export const fetchWrapper = {
   get: request('GET'),
   post: request('POST'),
   put: request('PUT'),
-  delete: request('DELETE')
+  delete: request('DELETE'),
+  postFile: requestFile('POST')
 }
 
 function request(method) {
@@ -44,7 +45,7 @@ function request(method) {
             requestOptions.body = JSON.stringify(body);
         }
         
-        var response;
+        let response;
         try {
             response = await fetch(url, requestOptions);
         } catch (error) {
@@ -59,21 +60,58 @@ function request(method) {
         // Check if the response is ok (status in the range 200-299)
         if (!response.ok) {
             // If server returned an error response, try to parse it
-            const error = await response.text();
+            const errorText = await response.text();
             let errorMessage;
             try {
                 // Try to parse as JSON
-                const errorObj = JSON.parse(error);
+                const errorObj = JSON.parse(errorText);
                 errorMessage = errorObj.msg || `Ошибка ${response.status}`;
             } catch {
                 // If not valid JSON, use text as is
-                errorMessage = error || `Ошибка ${response.status}`;
+                errorMessage = errorText || `Ошибка ${response.status}`;
             }
             
             // Re-throw the error for further handling if needed
             throw new Error(errorMessage);
         }
         
+        return handleResponse(response);
+    };
+}
+
+function requestFile(method) {
+    return async (url, body) => {
+        const requestOptions = {
+            method,
+            headers: authHeader(url)
+        };
+        if (body) {
+            requestOptions.body = body;
+        }
+
+        let response;
+        try {
+            response = await fetch(url, requestOptions);
+        } catch (error) {
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
+            } else {
+                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
+            }
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage;
+            try {
+                const errorObj = JSON.parse(errorText);
+                errorMessage = errorObj.msg || `Ошибка ${response.status}`;
+            } catch {
+                errorMessage = errorText || `Ошибка ${response.status}`;
+            }
+            throw new Error(errorMessage);
+        }
+
         return handleResponse(response);
     };
 }

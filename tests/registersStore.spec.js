@@ -5,7 +5,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn() }
+  fetchWrapper: { get: vi.fn(), postFile: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -333,6 +333,32 @@ describe('registers store', () => {
       expect(store.totalCount).toBe(0)
       expect(store.hasNextPage).toBe(false)
       expect(store.hasPreviousPage).toBe(false)
+    })
+  })
+
+  describe('upload method', () => {
+    it('uploads file via postFile', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      fetchWrapper.postFile.mockResolvedValue({ id: 1 })
+
+      const store = useRegistersStore()
+      await store.upload(file)
+
+      expect(fetchWrapper.postFile).toHaveBeenCalled()
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(`${apiUrl}/registers/upload`)
+      const formData = fetchWrapper.postFile.mock.calls[0][1]
+      expect(formData instanceof FormData).toBe(true)
+      expect(formData.get('file')).toBe(file)
+    })
+
+    it('sets error on failure', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      fetchWrapper.postFile.mockRejectedValue(new Error('fail'))
+
+      const store = useRegistersStore()
+      await expect(store.upload(file)).rejects.toThrow('fail')
+      expect(store.error).toBeTruthy()
+      expect(store.loading).toBe(false)
     })
   })
 })

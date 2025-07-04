@@ -6,6 +6,7 @@ import RegistersList from '@/components/Registers_List.vue'
 
 const mockItems = ref([])
 const getAll = vi.fn()
+const uploadFn = vi.fn()
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -29,7 +30,11 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({ getAll, items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) })
+  useRegistersStore: () => ({ getAll, upload: uploadFn, items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) })
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ success: vi.fn(), error: vi.fn() })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -53,13 +58,14 @@ describe('Registers_List.vue', () => {
 
   it('calls getAll on mount', () => {
     mount(RegistersList, {
-      global: { 
-        stubs: { 
-          'v-data-table-server': true, 
+      global: {
+        stubs: {
+          'v-data-table-server': true,
           'v-card': true,
           'v-text-field': true,
-          'font-awesome-icon': true 
-        } 
+          'font-awesome-icon': true,
+          'v-file-input': true
+        }
       }
     })
     expect(getAll).toHaveBeenCalled()
@@ -71,13 +77,14 @@ describe('Registers_List.vue', () => {
     beforeEach(() => {
       // Mount the component to access its methods
       wrapper = mount(RegistersList, {
-        global: { 
-          stubs: { 
-            'v-data-table-server': true, 
+        global: {
+          stubs: {
+            'v-data-table-server': true,
             'v-card': true,
             'v-text-field': true,
-            'font-awesome-icon': true 
-          } 
+            'font-awesome-icon': true,
+            'v-file-input': true
+          }
         }
       })
     })
@@ -238,12 +245,13 @@ describe('Registers_List.vue', () => {
       ]
 
       const wrapper = mount(RegistersList, {
-        global: { 
-          stubs: { 
+        global: {
+          stubs: {
             'v-card': true,
             'v-text-field': true,
-            'font-awesome-icon': true 
-          } 
+            'font-awesome-icon': true,
+            'v-file-input': true
+          }
         }
       })
 
@@ -257,6 +265,24 @@ describe('Registers_List.vue', () => {
       const formatted = wrapper.vm.formatDate('2025-07-04T14:30:45Z')
       expect(formatted).toBeTruthy()
       expect(formatted).toContain('2025')
+    })
+
+    it('emits file input update and calls upload', async () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: {
+            'v-card': true,
+            'v-text-field': true,
+            'v-data-table-server': true,
+            'font-awesome-icon': true,
+            'v-file-input': true
+          }
+        }
+      })
+
+      const file = new File(['data'], 'test.xlsx')
+      await wrapper.vm.fileSelected([file])
+      expect(uploadFn).toHaveBeenCalledWith(file)
     })
   })
 })

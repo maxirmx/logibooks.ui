@@ -45,7 +45,6 @@ import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 
 function deauth() {
   authStore.logout()
-  router.push('')
 }
 
 function getUserName() {

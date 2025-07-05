@@ -32,6 +32,8 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
+import router from '@/router'
+
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -78,7 +80,7 @@ function loadRegisters() {
 }
 
 function openOrders(item) {
-  console.log('Open orders for register', item.id)
+  router.push(`/registers/${item.id}/orders`)
 }
 
 function formatDate(dateString) {
@@ -97,17 +99,17 @@ function formatDate(dateString) {
 }
 
 const headers = [
+  { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Дата загрузки', key: 'date', align: 'start' },
-  { title: 'Заказы', key: 'ordersTotal', align: 'end' },
-  { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' }
+  { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
 
 <template>
   <div class="settings table-2">
-    <h1 class="orange">Реестры</h1>
+    <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
     <div class="link-crt">
@@ -118,7 +120,8 @@ const headers = [
         ref="fileInput"
         style="display: none"
         accept=".xls,.xlsx,.zip,.rar"
-        @update:model-value="fileSelected"
+        loading-text="Идёт загрузка реестра..."
+        @update:model-value="fileSelected"      
       />
     </div>
 
@@ -134,8 +137,9 @@ const headers = [
         :headers="headers"
         :items="items"
         :items-length="totalCount"
-        :loading="loading"
-        class="elevation-1"
+        :loading="loading"          
+        density="compact"
+        class="elevation-1 interlaced-table"
       >
         <template #[`item.date`]="{ item }">
           {{ formatDate(item.date) }}
@@ -144,9 +148,13 @@ const headers = [
           {{ item.ordersTotal }}
         </template>
         <template #[`item.actions`]="{ item }">
-          <button type="button" @click="openOrders(item)" class="anti-btn">
-            <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
-          </button>
+          <v-tooltip text="Открыть список заказов">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="openOrders(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>

@@ -100,7 +100,7 @@ describe('App Logout Functionality', () => {
           'v-app': { template: '<div class="v-app"><slot /></div>' },
           'v-app-bar': { template: '<div class="v-app-bar"><slot name="prepend" /><slot /></div>' },
           'v-app-bar-nav-icon': { template: '<button class="nav-icon" />' },
-          'v-app-bar-title': { template: '<div class="orange"><slot /></div>' },
+          'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
           'v-navigation-drawer': { 
             template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>' 
@@ -164,7 +164,7 @@ describe('App Logout Functionality', () => {
   })
 
   it('should show user name in app bar when logged in', () => {
-    const appBarTitle = wrapper.find('.orange')
+    const appBarTitle = wrapper.find('.primary-heading')
     expect(appBarTitle.text()).toContain('Logibooks  | Doe John Smith')
   })
 
@@ -173,7 +173,7 @@ describe('App Logout Functionality', () => {
     authStore.user = null
     await wrapper.vm.$nextTick()
 
-    const appBarTitle = wrapper.find('.orange')
+    const appBarTitle = wrapper.find('.primary-heading')
     expect(appBarTitle.text()).toBe('Logibooks')
   })
 })

@@ -41,15 +41,15 @@ import {
   faTrashCan,
   faUserPlus,
   faList,
-  faUpload
+  faUpload,
+  faCog
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload)
+library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog)
 
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import VuetifyUseDialog from 'vuetify-use-dialog'
-//import { aliases, fa } from 'vuetify/iconsets/fa'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 
 import App from '@/App.vue'
@@ -59,6 +59,9 @@ import { useAuthStore } from '@/stores/auth.store.js'
 
 export function initializeApp() {
   const vuetify = createVuetify({
+    locale: {
+      locale: 'ru',
+    },
     breakpoint: {
       mobileBreakpoint: 'xl' // This is the breakpoint for mobile devices
     },

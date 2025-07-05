@@ -133,6 +133,7 @@ function exportAllXml() {
         :items="items"
         :items-length="totalCount"
         :loading="loading"
+        density="compact"
         class="elevation-1"
       >
         <template #[`item.actions1`]="{ item }">

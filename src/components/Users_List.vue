@@ -157,6 +157,7 @@ const headers = [
         v-model:sort-by="authStore.users_sort_by"
         :custom-filter="filterUsers"
         item-value="name"
+        density="compact"
         class="elevation-1"
       >
         <template v-slot:[`item.id`]="{ item }">

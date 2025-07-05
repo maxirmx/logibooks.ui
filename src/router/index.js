@@ -84,6 +84,12 @@ const router = createRouter({
       component: () => import('@/views/Registers_View.vue')
     },
     {
+      path: '/registers/:id/orders',
+      name: 'Заказы',
+      component: () => import('@/views/Orders_View.vue'),
+      props: true
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),
@@ -125,7 +131,7 @@ router.beforeEach(async (to) => {
   }
 
   // (3) Check role-specific access BEFORE general redirects
-  if (logistPages.includes(to.path) && !auth.isLogist) {
+  if (logistPages.some(p => to.path.startsWith(p)) && !auth.isLogist) {
     return routeToLogin(to, auth)
   }
 

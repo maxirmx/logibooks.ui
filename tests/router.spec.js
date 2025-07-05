@@ -98,6 +98,25 @@ describe('router guards', () => {
     expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
 
+  it('prevents non-logist user from accessing orders', async () => {
+    authStore.user = { id: 5 }
+    authStore.isLogist = false
+
+    await router.push('/registers/1/orders')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+    expect(authStore.returnUrl).toBe('/registers/1/orders')
+  })
+
+  it('allows logist user to access orders', async () => {
+    authStore.user = { id: 6 }
+    authStore.isLogist = true
+    await router.push('/registers/1/orders')
+    await router.isReady()
+    expect(router.currentRoute.value.fullPath).toBe('/registers/1/orders')
+  })
+
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {
       authStore.user = null

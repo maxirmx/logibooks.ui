@@ -1,0 +1,145 @@
+<script setup>
+import { watch, ref, computed, onMounted } from 'vue'
+import { useOrdersStore } from '@/stores/orders.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { storeToRefs } from 'pinia'
+import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { apiUrl } from '@/helpers/config.js'
+import { registerColumnTitles } from '@/helpers/register.mapping.js'
+
+const props = defineProps({
+  registerId: { type: Number, required: true }
+})
+
+const ordersStore = useOrdersStore()
+const authStore = useAuthStore()
+
+const { items, loading, error, totalCount } = storeToRefs(ordersStore)
+const {
+  orders_per_page,
+  orders_sort_by,
+  orders_page,
+  orders_status,
+  orders_tnved
+} = storeToRefs(authStore)
+
+const statuses = ref([])
+
+async function fetchRegister() {
+  try {
+    const res = await fetchWrapper.get(`${apiUrl}/registers/${props.registerId}`)
+    const byStatus = res.ordersByStatus || {}
+    statuses.value = Object.keys(byStatus).map((id) => ({
+      id: Number(id),
+      count: byStatus[id]
+    }))
+  } catch {
+    // ignore errors
+  }
+}
+
+function loadOrders() {
+  ordersStore.getAll(
+    props.registerId,
+    orders_status.value ? Number(orders_status.value) : null,
+    orders_tnved.value || null,
+    orders_page.value,
+    orders_per_page.value,
+    orders_sort_by.value?.[0]?.key || 'id',
+    orders_sort_by.value?.[0]?.order || 'asc'
+  )
+}
+
+watch(
+  [orders_page, orders_per_page, orders_sort_by, orders_status, orders_tnved],
+  loadOrders,
+  { immediate: true }
+)
+
+onMounted(fetchRegister)
+
+const statusOptions = computed(() => [
+  { value: null, title: 'Все' },
+  ...statuses.value.map((s) => ({
+    value: s.id,
+    title: `Статус ${s.id} (${s.count})`
+  }))
+])
+
+const headers = computed(() => {
+  return [
+    { title: 'Статус', key: 'statusId', align: 'start' },
+    { title: registerColumnTitles.RowNumber, key: 'rowNumber', align: 'start' },
+    { title: registerColumnTitles.OrderNumber, key: 'orderNumber', align: 'start' },
+    { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start' },
+    { title: '', key: 'actions', sortable: false, align: 'center', width: '10%' }
+  ]
+})
+
+function editOrder(item) {
+  ordersStore.update(item.id, {})
+}
+
+function generateOrder(item) {
+  ordersStore.generate(item.id)
+}
+
+function generateAll() {
+  ordersStore.generateAll(props.registerId)
+}
+</script>
+
+<template>
+  <div class="settings table-2">
+    <h1 class="orange">Заказы</h1>
+    <hr class="hr" />
+
+    <div class="d-flex mb-2">
+      <v-select
+        v-model="orders_status"
+        :items="statusOptions"
+        label="Статус"
+        density="compact"
+        style="max-width: 200px"
+      />
+      <v-text-field
+        v-model="orders_tnved"
+        label="ТН ВЭД"
+        density="compact"
+        style="max-width: 150px; margin-left: 10px"
+      />
+      <v-spacer />
+      <v-btn color="orange-darken-3" @click="generateAll">Сформировать для всех</v-btn>
+    </div>
+
+    <v-card>
+      <v-data-table-server
+        v-if="items?.length || loading"
+        v-model:items-per-page="orders_per_page"
+        items-per-page-text="Заказов на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="orders_page"
+        v-model:sort-by="orders_sort_by"
+        :headers="headers"
+        :items="items"
+        :items-length="totalCount"
+        :loading="loading"
+        class="elevation-1"
+      >
+        <template #[`item.actions`]="{ item }">
+          <v-btn size="small" variant="text" @click="editOrder(item)">Редактировать</v-btn>
+          <v-btn size="small" variant="text" @click="generateOrder(item)">Сформировать</v-btn>
+        </template>
+      </v-data-table-server>
+      <div v-if="!items?.length && !loading" class="text-center m-5">Список заказов пуст</div>
+    </v-card>
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
+    <div v-if="error" class="text-center m-5">
+      <div class="text-danger">Ошибка при загрузке списка заказов: {{ error }}</div>
+    </div>
+  </div>
+</template>

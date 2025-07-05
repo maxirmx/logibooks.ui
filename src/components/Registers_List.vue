@@ -118,6 +118,7 @@ const headers = [
         ref="fileInput"
         style="display: none"
         accept=".xls,.xlsx,.zip,.rar"
+        loading-text="Идёт загрузка реестра..."
         @update:model-value="fileSelected"
       />
     </div>

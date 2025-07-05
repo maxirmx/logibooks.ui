@@ -29,7 +29,6 @@ import { useAlertStore } from '@/stores/alert.store.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
-const logistPages = ['/registers']
 
 function routeToLogin(to, auth) {
   if (loginPages.includes(to.path)) {
@@ -76,18 +75,21 @@ const router = createRouter({
     {
       path: '/users',
       name: 'Пользователи',
-      component: () => import('@/views/Users_View.vue')
+      component: () => import('@/views/Users_View.vue'),
+      meta: { requiresAdmin: true }
     },
     {
       path: '/registers',
       name: 'Реестры',
-      component: () => import('@/views/Registers_View.vue')
+      component: () => import('@/views/Registers_View.vue'),
+      meta: { requiresLogist: true }
     },
     {
       path: '/registers/:id/orders',
       name: 'Заказы',
       component: () => import('@/views/Orders_View.vue'),
-      props: true
+      props: true,
+      meta: { requiresLogist: true }
     },
     {
       path: '/user/edit/:id',
@@ -130,8 +132,12 @@ router.beforeEach(async (to) => {
     return routeToLogin(to, auth)
   }
 
-  // (3) Check role-specific access BEFORE general redirects
-  if (logistPages.some(p => to.path.startsWith(p)) && !auth.isLogist) {
+  // (3) Check role-specific access using metadata
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return routeToLogin(to, auth)
+  }
+
+  if (to.meta.requiresLogist && !auth.isLogist) {
     return routeToLogin(to, auth)
   }
 

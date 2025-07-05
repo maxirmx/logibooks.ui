@@ -218,69 +218,70 @@ function exportAllXml() {
               </button>
             </template>
           </v-tooltip>
-        </template>        </v-data-table-server>
+        </template>        
+      </v-data-table-server>
+    </div>
+      
+    <!-- Custom pagination controls outside the scrollable area -->
+    <div v-if="items?.length || loading" class="v-data-table-footer">
+      <div class="v-data-table-footer__items-per-page">
+        <span>Заказов на странице:</span>
+        <v-select
+          v-model="orders_per_page"
+          :items="itemsPerPageOptions"
+          density="compact"
+          variant="plain"
+          hide-details
+          class="v-data-table-footer__items-per-page-select"
+        />
       </div>
       
-      <!-- Custom pagination controls outside the scrollable area -->
-      <div v-if="items?.length || loading" class="v-data-table-footer">
-        <div class="v-data-table-footer__items-per-page">
-          <span>Заказов на странице:</span>
-          <v-select
-            v-model="orders_per_page"
-            :items="itemsPerPageOptions"
-            density="compact"
-            variant="plain"
-            hide-details
-            class="v-data-table-footer__items-per-page-select"
-          />
-        </div>
-        
-        <div class="v-data-table-footer__info">
-          <div>{{ Math.min((orders_page - 1) * orders_per_page + 1, totalCount) }}-{{ Math.min(orders_page * orders_per_page, totalCount) }} из {{ totalCount }}</div>
-        </div>
-        
-        <div class="v-data-table-footer__pagination">
-          <v-btn
-            variant="text"
-            icon="$first"
-            size="small"
-            :disabled="orders_page <= 1"
-            @click="orders_page = 1"
-          />
-          
-          <v-btn
-            variant="text"
-            icon="$prev"
-            size="small"
-            :disabled="orders_page <= 1"
-            @click="orders_page = Math.max(1, orders_page - 1)"
-          />
-          
-          <v-btn
-            variant="text"
-            icon="$next"
-            size="small"
-            :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
-            @click="orders_page = Math.min(Math.ceil(totalCount / orders_per_page), orders_page + 1)"
-          />
-          
-          <v-btn
-            variant="text"
-            icon="$last"
-            size="small"
-            :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
-            @click="orders_page = Math.ceil(totalCount / orders_per_page)"
-          />
-        </div>
+      <div class="v-data-table-footer__info">
+        <div>{{ Math.min((orders_page - 1) * orders_per_page + 1, totalCount) }}-{{ Math.min(orders_page * orders_per_page, totalCount) }} из {{ totalCount }}</div>
       </div>
       
-      <div v-if="!items?.length && !loading" class="text-center m-5">Список заказов пуст</div>
+      <div class="v-data-table-footer__pagination">
+        <v-btn
+          variant="text"
+          icon="$first"
+          size="small"
+          :disabled="orders_page <= 1"
+          @click="orders_page = 1"
+        />
+        
+        <v-btn
+          variant="text"
+          icon="$prev"
+          size="small"
+          :disabled="orders_page <= 1"
+          @click="orders_page = Math.max(1, orders_page - 1)"
+        />
+        
+        <v-btn
+          variant="text"
+          icon="$next"
+          size="small"
+          :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
+          @click="orders_page = Math.min(Math.ceil(totalCount / orders_per_page), orders_page + 1)"
+        />
+        
+        <v-btn
+          variant="text"
+          icon="$last"
+          size="small"
+          :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
+          @click="orders_page = Math.ceil(totalCount / orders_per_page)"
+        />
+      </div>
+    </div>
+    
+    <div v-if="!items?.length && !loading" class="text-center m-5">Реестр пуст</div>
     </v-card>
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке списка заказов: {{ error }}</div>
+      <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
     </div>
   </div>
 </template>
@@ -304,6 +305,14 @@ function exportAllXml() {
   line-height: 1.0;
   font-weight: 600;
   border-right: 1px solid rgba(var(--v-border-color), 0.12);
+}
+
+/* Remove borders for action button columns */
+.single-line-table :deep(.v-data-table__td:first-child),
+.single-line-table :deep(.v-data-table__td:nth-child(2)),
+.single-line-table :deep(.v-data-table__th:first-child),
+.single-line-table :deep(.v-data-table__th:nth-child(2)) {
+  border-right: none;
 }
 
 /* Remove border from last column */

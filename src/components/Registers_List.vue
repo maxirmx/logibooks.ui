@@ -120,11 +120,9 @@ const headers = [
         ref="fileInput"
         style="display: none"
         accept=".xls,.xlsx,.zip,.rar"
-        
+        loading-text="Идёт загрузка реестра..."
+        @update:model-value="fileSelected"      
       />
-      <div v-if="isLoading" class="text-center mt-2">
-        <span>Идёт загрузка реестра...</span>
-      </div>
     </div>
 
     <v-card>

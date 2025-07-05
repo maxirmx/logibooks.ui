@@ -290,7 +290,9 @@ function exportAllXml() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 4px 8px !important;
+  font-size: 0.8rem;
+  line-height: 1.0;
+  border-right: 1px solid rgba(var(--v-border-color), 0.25);
 }
 
 .single-line-table :deep(.v-data-table__th) {
@@ -298,6 +300,24 @@ function exportAllXml() {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+  font-size: 0.8rem;
+  line-height: 1.0;
+  font-weight: 600;
+  border-right: 1px solid rgba(var(--v-border-color), 0.12);
+}
+
+/* Remove border from last column */
+.single-line-table :deep(.v-data-table__td:last-child),
+.single-line-table :deep(.v-data-table__th:last-child) {
+  border-right: none;
+}
+
+.single-line-table :deep(.v-data-table__tr) {
+  height: 32px !important;
+}
+
+.single-line-table :deep(.v-data-table__thead .v-data-table__tr) {
+  height: 36px !important;
 }
 
 .single-line-table :deep(.v-data-table) {

@@ -59,7 +59,7 @@ function onSubmit(values, { setErrors }) {
 
 <template>
   <div class="settings form-1">
-    <h1 class="orange">Вход</h1>
+    <h1 class="primary-heading">Вход</h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
       <div class="form-group">

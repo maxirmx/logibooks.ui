@@ -73,7 +73,8 @@ const headers = computed(() => {
     { title: registerColumnTitles.RowNumber, key: 'rowNumber', align: 'start' },
     { title: registerColumnTitles.OrderNumber, key: 'orderNumber', align: 'start' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start' },
-    { title: '', key: 'actions', sortable: false, align: 'center', width: '10%' }
+    { title: '', key: 'actions1', sortable: false, align: 'center', width: '5%' },
+    { title: '', key: 'actions2', sortable: false, align: 'center', width: '5%' }
   ]
 })
 
@@ -81,19 +82,25 @@ function editOrder(item) {
   ordersStore.update(item.id, {})
 }
 
-function generateOrder(item) {
+function exportOrderXml(item) {
   ordersStore.generate(item.id)
 }
 
-function generateAll() {
+function exportAllXml() {
   ordersStore.generateAll(props.registerId)
 }
 </script>
 
 <template>
   <div class="settings table-2">
-    <h1 class="orange">Заказы</h1>
+    <h1 class="primary-heading">Заказы</h1>
     <hr class="hr" />
+
+    <div class="link-crt">
+      <a @click="exportAllXml" class="link" tabindex="0">
+        <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />&nbsp;&nbsp;&nbsp;Выгрузить XML для всех заказов
+      </a>
+    </div>
 
     <div class="d-flex mb-2">
       <v-select
@@ -110,7 +117,6 @@ function generateAll() {
         style="max-width: 150px; margin-left: 10px"
       />
       <v-spacer />
-      <v-btn color="orange-darken-3" @click="generateAll">Сформировать для всех</v-btn>
     </div>
 
     <v-card>
@@ -128,9 +134,15 @@ function generateAll() {
         :loading="loading"
         class="elevation-1"
       >
-        <template #[`item.actions`]="{ item }">
-          <v-btn size="small" variant="text" @click="editOrder(item)">Редактировать</v-btn>
-          <v-btn size="small" variant="text" @click="generateOrder(item)">Сформировать</v-btn>
+        <template #[`item.actions1`]="{ item }">
+          <button @click="editOrder(item)" class="anti-btn">
+            <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
+          </button>
+        </template>
+        <template #[`item.actions2`]="{ item }">
+          <button @click="exportOrderXml(item)" class="anti-btn">
+            <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+          </button>
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список заказов пуст</div>

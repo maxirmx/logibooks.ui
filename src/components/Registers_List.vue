@@ -32,6 +32,8 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
+import router from '@/router'
+
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -77,8 +79,6 @@ function loadRegisters() {
   )
 }
 
-import router from '@/router'
-
 function openOrders(item) {
   router.push(`/registers/${item.id}/orders`)
 }
@@ -109,7 +109,7 @@ const headers = [
 
 <template>
   <div class="settings table-2">
-    <h1 class="orange">Реестры</h1>
+    <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
     <div class="link-crt">

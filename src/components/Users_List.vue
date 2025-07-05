@@ -130,7 +130,7 @@ const headers = [
 
 <template>
   <div class="settings table-2">
-    <h1 class="orange">Пользователи</h1>
+    <h1 class="primary-heading">Пользователи</h1>
     <hr class="hr" />
 
     <div class="link-crt">

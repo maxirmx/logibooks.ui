@@ -75,7 +75,7 @@ function getUserName() {
       <template v-slot:prepend>
         <v-app-bar-nav-icon @click.stop="toggleDrawer()" color="blue-darken-2"></v-app-bar-nav-icon>
       </template>
-      <v-app-bar-title class="orange">Logibooks {{ getUserName() }} </v-app-bar-title>
+      <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
@@ -105,13 +105,13 @@ function getUserName() {
       </v-list>
       <template v-slot:append>
         <div class="pa-2">
-          <span class="orange version"> Клиент {{ version }} </span>
+          <span class="primary-heading version-info"> Клиент {{ version }} </span>
           <br v-if="statusStore.coreVersion"/>
-          <span v-if="statusStore.coreVersion" class="orange version">
+          <span v-if="statusStore.coreVersion" class="primary-heading version-info">
             Сервер {{ statusStore.coreVersion }}
           </span>
           <br v-if="statusStore.dbVersion"/>
-          <span v-if="statusStore.dbVersion" class="orange version"          >
+          <span v-if="statusStore.dbVersion" class="primary-heading version-info">
             БД {{ statusStore.dbVersion }}
           </span>
         </div>
@@ -137,9 +137,11 @@ function getUserName() {
   width: 90%;
 }
 
-.version {
-  margin: 2rem;
-  font-size: 1rem;
+.version-info {
+  margin-left: 1rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: smaller;
 }
 
 nav {

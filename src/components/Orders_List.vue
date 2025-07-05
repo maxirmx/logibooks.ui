@@ -1,6 +1,7 @@
 <script setup>
 import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
+import { useOrderStatusStore } from '@/stores/order.status.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
@@ -13,6 +14,7 @@ const props = defineProps({
 })
 
 const ordersStore = useOrdersStore()
+const orderStatusStore = useOrderStatusStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
@@ -57,13 +59,17 @@ watch(
   { immediate: true }
 )
 
-onMounted(fetchRegister)
+onMounted(async () => {
+  // Ensure order statuses are loaded
+  orderStatusStore.ensureStatusesLoaded()
+  await fetchRegister()
+})
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
   ...statuses.value.map((s) => ({
     value: s.id,
-    title: `Статус ${s.id} (${s.count})`
+    title: `${orderStatusStore.getStatusTitle(s.id)} (${s.count})`
   }))
 ])
 
@@ -71,7 +77,7 @@ const headers = computed(() => {
   return [
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
-    { title: 'Статус', key: 'statusId', align: 'start', width: '100px' },
+    { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
     { title: registerColumnTitles.RowNumber, sortable: false, key: 'rowNumber', align: 'start', width: '80px' },
     { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
@@ -193,12 +199,39 @@ function exportAllXml() {
         </template>
         
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div 
             class="truncated-cell" 
             :title="item[header.key] || ''"
           >
             {{ item[header.key] || '' }}
+          </div>
+        </template>
+        
+        <!-- Special template for statusId to display status title -->
+        <template #[`item.statusId`]="{ item }">
+          <div 
+            class="truncated-cell" 
+            :title="orderStatusStore.getStatusTitle(item.statusId)"
+          >
+            {{ orderStatusStore.getStatusTitle(item.statusId) }}
+          </div>
+        </template>
+        
+        <!-- Special template for productLink to display as clickable URL -->
+        <template #[`item.productLink`]="{ item }">
+          <div class="truncated-cell">
+            <a 
+              v-if="item.productLink" 
+              :href="item.productLink" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="product-link"
+              :title="item.productLink"
+            >
+              {{ item.productLink }}
+            </a>
+            <span v-else>-</span>
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">
@@ -343,6 +376,21 @@ function exportAllXml() {
 
 .truncated-cell:hover {
   cursor: help;
+}
+
+.product-link {
+  color: rgba(var(--v-theme-primary), 1);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+}
+
+.product-link:hover {
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 /* Custom pagination styling to match Vuetify's default exactly */

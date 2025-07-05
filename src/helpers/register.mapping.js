@@ -43,5 +43,6 @@ export const registerColumnTitles = {
   PersonalData: 'Персональные данные',
   CustomsClearance: 'Таможенное оформление',
   DutyPayment: 'Оплата пошлины',
-  OtherReason: 'Другая причина'
+  OtherReason: 'Другая причина',
+  Status: 'Статус'
 }

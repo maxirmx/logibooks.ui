@@ -77,8 +77,10 @@ function loadRegisters() {
   )
 }
 
+import router from '@/router'
+
 function openOrders(item) {
-  console.log('Open orders for register', item.id)
+  router.push(`/registers/${item.id}/orders`)
 }
 
 function formatDate(dateString) {

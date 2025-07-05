@@ -119,12 +119,12 @@ async function deleteUser(item) {
 }
 
 const headers = [
-  { title: 'Пользователь', align: 'start', key: 'id' },
-  { title: 'E-mail', align: 'start', key: 'email' },
-  { title: 'Права', align: 'start', key: 'credentials', sortable: false },
   { title: '', align: 'center', key: 'actions0', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' }
+  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: 'Пользователь', align: 'start', key: 'id' },
+  { title: 'E-mail', align: 'start', key: 'email' },
+  { title: 'Права', align: 'start', key: 'credentials', sortable: false }
 ]
 </script>
 
@@ -158,7 +158,7 @@ const headers = [
         :custom-filter="filterUsers"
         item-value="name"
         density="compact"
-        class="elevation-1"
+        class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.id`]="{ item }">
           {{ item['lastName'] }} {{ item['firstName'] }} {{ item['patronymic'] }}
@@ -169,14 +169,22 @@ const headers = [
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">
-          <button @click="userSettings(item)" class="anti-btn">
-            <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-          </button>
+          <v-tooltip text="Редактировать пользователя">
+            <template v-slot:activator="{ props }">
+              <button @click="userSettings(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
         </template>
         <template v-slot:[`item.actions2`]="{ item }">
-          <button @click="deleteUser(item)" class="anti-btn">
-            <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-          </button>
+          <v-tooltip text="Удалить пользователя">
+            <template v-slot:activator="{ props }">
+              <button @click="deleteUser(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table>
       <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>

@@ -99,11 +99,11 @@ function formatDate(dateString) {
 }
 
 const headers = [
+  { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Дата загрузки', key: 'date', align: 'start' },
-  { title: 'Заказы', key: 'ordersTotal', align: 'end' },
-  { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' }
+  { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
 
@@ -137,9 +137,9 @@ const headers = [
         :headers="headers"
         :items="items"
         :items-length="totalCount"
-        :loading="loading"
+        :loading="loading"          
         density="compact"
-        class="elevation-1"
+        class="elevation-1 interlaced-table"
       >
         <template #[`item.date`]="{ item }">
           {{ formatDate(item.date) }}
@@ -148,9 +148,13 @@ const headers = [
           {{ item.ordersTotal }}
         </template>
         <template #[`item.actions`]="{ item }">
-          <button type="button" @click="openOrders(item)" class="anti-btn">
-            <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
-          </button>
+          <v-tooltip text="Открыть список заказов">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="openOrders(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>

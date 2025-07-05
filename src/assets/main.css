@@ -56,6 +56,15 @@
   padding: 0;
 }
 
+/* Common interlaced row backgrounds for better readability */
+.interlaced-table .v-data-table__tr:nth-child(even) {
+  background-color: rgba(var(--v-theme-on-surface), 0.1);
+}
+
+.interlaced-table .v-data-table__tr:nth-child(odd) {
+  background-color: rgba(var(--v-theme-surface), 1);
+}
+
 /* The link to download config */
 .link-crt {
   margin-bottom: 2rem;

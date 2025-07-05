@@ -96,27 +96,28 @@ function exportAllXml() {
     <h1 class="primary-heading">Заказы</h1>
     <hr class="hr" />
 
-    <div class="link-crt">
-      <a @click="exportAllXml" class="link" tabindex="0">
-        <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />&nbsp;&nbsp;&nbsp;Выгрузить XML для всех заказов
-      </a>
-    </div>
 
-    <div class="d-flex mb-2">
-      <v-select
-        v-model="orders_status"
-        :items="statusOptions"
-        label="Статус"
-        density="compact"
-        style="max-width: 200px"
-      />
-      <v-text-field
-        v-model="orders_tnved"
-        label="ТН ВЭД"
-        density="compact"
-        style="max-width: 150px; margin-left: 10px"
-      />
-      <v-spacer />
+    <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <v-select
+          v-model="orders_status"
+          :items="statusOptions"
+          label="Статус"
+          density="compact"
+          style="min-width: 250px"
+        />
+        <v-text-field
+          v-model="orders_tnved"
+          label="ТН ВЭД"
+          density="compact"
+          style="min-width: 200px;"
+        />
+      </div>
+      <div class="link-crt">
+        <a @click="exportAllXml" class="link" tabindex="0">
+          <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />&nbsp;&nbsp;&nbsp;Выгрузить XML для всех заказов
+        </a>
+      </div>
     </div>
 
     <v-card>

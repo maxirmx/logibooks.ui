@@ -54,10 +54,14 @@ export const useAuthStore = defineStore('auth', () => {
   const orders_page = ref(1)
   const orders_status = ref(null)
   const orders_tnved = ref('')
-  const customs_codes_per_page = ref(25)
-  const customs_codes_search = ref('')
-  const customs_codes_sort_by = ref([{ key: 'code', order: 'asc' }])
-  const customs_codes_page = ref(1)
+  const customs_items_per_page = ref(25)
+  const customs_items_search = ref('')
+  const customs_items_sort_by = ref([{ key: 'code', order: 'asc' }])
+  const customs_items_page = ref(1)
+  const customs_exceptions_per_page = ref(25)
+  const customs_exceptions_search = ref('')
+  const customs_exceptions_sort_by = ref([{ key: 'code', order: 'asc' }])
+  const customs_exceptions_page = ref(1)
   const returnUrl = ref(null)
   const re_jwt = ref(null)
   const re_tgt = ref(null)
@@ -152,10 +156,14 @@ export const useAuthStore = defineStore('auth', () => {
     orders_page,
     orders_status,
     orders_tnved,
-    customs_codes_per_page,
-    customs_codes_search,
-    customs_codes_sort_by,
-    customs_codes_page,
+    customs_items_per_page,
+    customs_items_search,
+    customs_items_sort_by,
+    customs_items_page,
+    customs_exceptions_per_page,
+    customs_exceptions_search,
+    customs_exceptions_sort_by,
+    customs_exceptions_page,
     returnUrl,
     re_jwt,
     re_tgt,

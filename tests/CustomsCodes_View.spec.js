@@ -27,10 +27,14 @@ vi.mock('@/stores/alta.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    customs_codes_per_page: { value: 25 },
-    customs_codes_search: { value: '' },
-    customs_codes_sort_by: { value: [{ key: 'code', order: 'asc' }] },
-    customs_codes_page: { value: 1 }
+    customs_items_per_page: 25,
+    customs_items_search: '',
+    customs_items_sort_by: [{ key: 'code', order: 'asc' }],
+    customs_items_page: 1,
+    customs_exceptions_per_page: 25,
+    customs_exceptions_search: '',
+    customs_exceptions_sort_by: [{ key: 'code', order: 'asc' }],
+    customs_exceptions_page: 1
   })
 }))
 

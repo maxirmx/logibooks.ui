@@ -9,20 +9,20 @@ vi.mock('pinia', async () => {
   return { 
     ...actual, 
     storeToRefs: (store) => ({
-      customs_codes_per_page: store.customs_codes_per_page,
-      customs_codes_search: store.customs_codes_search,
-      customs_codes_sort_by: store.customs_codes_sort_by,
-      customs_codes_page: store.customs_codes_page,
       alert: store.alert
     })
   }
 })
 
 const mockAuthStore = {
-  customs_codes_per_page: { value: 25 },
-  customs_codes_search: { value: '' },
-  customs_codes_sort_by: { value: [{ key: 'code', order: 'asc' }] },
-  customs_codes_page: { value: 1 }
+  customs_items_per_page: 25,
+  customs_items_search: '',
+  customs_items_sort_by: [{ key: 'code', order: 'asc' }],
+  customs_items_page: 1,
+  customs_exceptions_per_page: 25,
+  customs_exceptions_search: '',
+  customs_exceptions_sort_by: [{ key: 'code', order: 'asc' }],
+  customs_exceptions_page: 1
 }
 
 const mockAlertStore = {

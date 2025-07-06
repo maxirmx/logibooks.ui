@@ -14,7 +14,29 @@ const props = defineProps({
 })
 
 const authStore = useAuthStore()
-const { customs_codes_per_page, customs_codes_search, customs_codes_sort_by, customs_codes_page } = storeToRefs(authStore)
+
+// Use different state based on the table type
+const statePrefix = computed(() => props.title === 'Запреты' ? 'customs_items' : 'customs_exceptions')
+
+const per_page = computed({
+  get: () => authStore[`${statePrefix.value}_per_page`],
+  set: (val) => { authStore[`${statePrefix.value}_per_page`] = val }
+})
+
+const search = computed({
+  get: () => authStore[`${statePrefix.value}_search`],
+  set: (val) => { authStore[`${statePrefix.value}_search`] = val }
+})
+
+const sort_by = computed({
+  get: () => authStore[`${statePrefix.value}_sort_by`],
+  set: (val) => { authStore[`${statePrefix.value}_sort_by`] = val }
+})
+
+const page = computed({
+  get: () => authStore[`${statePrefix.value}_page`],
+  set: (val) => { authStore[`${statePrefix.value}_page`] = val }
+})
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -70,15 +92,15 @@ const errorMessage = computed(() => {
     <v-card>
       <v-data-table
         v-if="items?.length"
-        v-model:items-per-page="customs_codes_per_page"
+        v-model:items-per-page="per_page"
         items-per-page-text="Записей на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="customs_codes_page"
+        v-model:page="page"
         :headers="headers"
         :items="items"
-        :search="customs_codes_search"
-        v-model:sort-by="customs_codes_sort_by"
+        :search="search"
+        v-model:sort-by="sort_by"
         :custom-filter="filterCustomsCodes"
         item-value="code"
         density="compact"
@@ -91,7 +113,7 @@ const errorMessage = computed(() => {
       
       <div v-if="items?.length">
         <v-text-field
-          v-model="customs_codes_search"
+          v-model="search"
           :append-inner-icon="mdiMagnify"
           :label="searchLabel"
           variant="solo"

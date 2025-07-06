@@ -54,6 +54,7 @@ const router = createRouter({
     { path: '/login', component: { template: '<div>Login</div>' } },
     { path: '/users', component: { template: '<div>Users</div>' } },
     { path: '/registers', component: { template: '<div>Registers</div>' } },
+    { path: '/customs_codes', component: { template: '<div>Customs Codes</div>' } },
     { path: '/user/edit/:id', component: { template: '<div>Edit User</div>' } },
     { path: '/recover', component: { template: '<div>Recover</div>' } },
     { path: '/register', component: { template: '<div>Register</div>' } }
@@ -175,5 +176,69 @@ describe('App Logout Functionality', () => {
 
     const appBarTitle = wrapper.find('.primary-heading')
     expect(appBarTitle.text()).toBe('Logibooks')
+  })
+
+  it('should display navigation links for admin users', async () => {
+    // Set up admin user with proper roles
+    authStore.user = { 
+      id: 1, 
+      firstName: 'Admin', 
+      lastName: 'User', 
+      email: 'admin@example.com',
+      roles: ['administrator'] 
+    }
+    await wrapper.vm.$nextTick()
+
+    // Check that admin and common links are displayed
+    const links = wrapper.findAll('a[class="link"]')
+    const linkTexts = links.map(link => link.text())
+    
+    expect(linkTexts).toContain('Пользователи') // Admin only
+    expect(linkTexts).toContain('Коды ТН ВЭД') // Available to all users
+    expect(linkTexts).toContain('Выход')
+  })
+
+  it('should display navigation links for logist users', async () => {
+    // Set up logist user with proper roles
+    authStore.user = { 
+      id: 1, 
+      firstName: 'Regular', 
+      lastName: 'User', 
+      email: 'user@example.com',
+      roles: ['logist'] 
+    }
+    await wrapper.vm.$nextTick()
+
+    // Check that logist and common links are displayed, but not admin-only links
+    const links = wrapper.findAll('a[class="link"]')
+    const linkTexts = links.map(link => link.text())
+    
+    expect(linkTexts).not.toContain('Пользователи') // Admin only
+    expect(linkTexts).toContain('Коды ТН ВЭД') // Available to all users
+    expect(linkTexts).toContain('Реестры') // Logist only
+    expect(linkTexts).toContain('Настройки') // Non-admin users
+    expect(linkTexts).toContain('Выход')
+  })
+
+  it('should display navigation links for regular users (no special roles)', async () => {
+    // Set up regular user with no special roles
+    authStore.user = { 
+      id: 1, 
+      firstName: 'Regular', 
+      lastName: 'User', 
+      email: 'user@example.com',
+      roles: [] // No special roles
+    }
+    await wrapper.vm.$nextTick()
+
+    // Check that only basic user links are displayed
+    const links = wrapper.findAll('a[class="link"]')
+    const linkTexts = links.map(link => link.text())
+    
+    expect(linkTexts).not.toContain('Пользователи') // Admin only
+    expect(linkTexts).not.toContain('Реестры') // Logist only
+    expect(linkTexts).toContain('Коды ТН ВЭД') // Available to all users
+    expect(linkTexts).toContain('Настройки') // Non-admin users
+    expect(linkTexts).toContain('Выход')
   })
 })

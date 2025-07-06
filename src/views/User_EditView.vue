@@ -28,15 +28,14 @@ import UserSettings from '@/components/User_Settings.vue'
 
 const props = defineProps({
   id: {
-    type: String,
+    type: Number,
     required: true
   }
 })
-const id = parseInt(props.id)
 </script>
 
 <template>
   <Suspense>
-    <UserSettings :register="false" :id="id" />
+    <UserSettings :register="false" :id="props.id" />
   </Suspense>
 </template>

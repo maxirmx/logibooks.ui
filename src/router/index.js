@@ -88,21 +88,28 @@ const router = createRouter({
       path: '/registers/:id/orders',
       name: 'Заказы',
       component: () => import('@/views/Orders_View.vue'),
-      props: true,
+      props: route => ({
+        id: Number(route.params.id)
+      }),
       meta: { requiresLogist: true }
     },
     {
       path: '/registers/:registerId/orders/edit/:id',
       name: 'Редактирование заказа',
       component: () => import('@/views/Order_EditView.vue'),
-      props: true,
+      props: route => ({
+        registerId: Number(route.params.registerId),
+        id: Number(route.params.id)
+      }),
       meta: { requiresLogist: true }
     },
     {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),
-      props: true
+      props: route => ({
+        id: Number(route.params.id)
+      })
     }
   ]
 })

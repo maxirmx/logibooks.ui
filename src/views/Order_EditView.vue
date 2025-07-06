@@ -2,16 +2,13 @@
 import OrderEditDialog from '@/components/Order_EditDialog.vue'
 
 const props = defineProps({
-  registerId: { type: String, required: true },
-  id: { type: String, required: true }
+  registerId: { type: Number, required: true },
+  id: { type: Number, required: true }
 })
-
-const registerId = parseInt(props.registerId)
-const id = parseInt(props.id)
 </script>
 
 <template>
   <Suspense>
-    <OrderEditDialog :register-id="registerId" :id="id" />
+    <OrderEditDialog :register-id="props.registerId" :id="props.id" />
   </Suspense>
 </template>

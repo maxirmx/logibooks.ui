@@ -5,6 +5,7 @@ import * as Yup from 'yup'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusStore } from '@/stores/order.status.store.js'
 import { storeToRefs } from 'pinia'
+import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -15,6 +16,77 @@ const ordersStore = useOrdersStore()
 const statusStore = useOrderStatusStore()
 
 const { item } = storeToRefs(ordersStore)
+
+// Field name mapping from camelCase to PascalCase for registerColumnTitles lookup
+const fieldNameMapping = {
+  statusId: 'Status',
+  orderNumber: 'OrderNumber',
+  invoiceDate: 'InvoiceDate', 
+  sticker: 'Sticker',
+  shk: 'Shk',
+  stickerCode: 'StickerCode',
+  extId: 'ExtId',
+  tnVed: 'TnVed',
+  siteArticle: 'SiteArticle',
+  heelHeight: 'HeelHeight',
+  size: 'Size',
+  productName: 'ProductName',
+  description: 'Description',
+  gender: 'Gender',
+  brand: 'Brand',
+  fabricType: 'FabricType',
+  composition: 'Composition',
+  lining: 'Lining',
+  insole: 'Insole',
+  sole: 'Sole',
+  country: 'Country',
+  factoryAddress: 'FactoryAddress',
+  unit: 'Unit',
+  weightKg: 'WeightKg',
+  quantity: 'Quantity',
+  unitPrice: 'UnitPrice',
+  currency: 'Currency',
+  barcode: 'Barcode',
+  declaration: 'Declaration',
+  productLink: 'ProductLink',
+  recipientName: 'RecipientName',
+  recipientInn: 'RecipientInn',
+  passportNumber: 'PassportNumber',
+  pinfl: 'Pinfl',
+  recipientAddress: 'RecipientAddress',
+  contactPhone: 'ContactPhone',
+  boxNumber: 'BoxNumber',
+  supplier: 'Supplier',
+  supplierInn: 'SupplierInn',
+  category: 'Category',
+  subcategory: 'Subcategory',
+  personalData: 'PersonalData',
+  customsClearance: 'CustomsClearance',
+  dutyPayment: 'DutyPayment',
+  otherReason: 'OtherReason'
+}
+
+// Function to get label for a field
+const getFieldLabel = (fieldName) => {
+  const mappingKey = fieldNameMapping[fieldName]
+  if (!mappingKey) return fieldName
+  
+  const title = registerColumnTitles[mappingKey]
+  const tooltip = registerColumnTooltips[mappingKey]
+  
+  // If there's tooltip text, combine title with tooltip for a more descriptive label
+  if (tooltip) {
+    return `${title} (${tooltip})`
+  }
+  
+  return title
+}
+
+// Function to get tooltip for a field (if available)
+const getFieldTooltip = (fieldName) => {
+  const mappingKey = fieldNameMapping[fieldName]
+  return mappingKey ? registerColumnTooltips[mappingKey] : null
+}
 
 statusStore.ensureStatusesLoaded()
 await ordersStore.getById(props.id)
@@ -47,18 +119,8 @@ function onSubmit(values, { setErrors }) {
       
       <!-- Row 1: Basic Info --> 
       <div class="form-row">
-      <!-- 
         <div class="form-group">
-          <label for="rowNumber" class="label">Номер строки:</label>
-          <Field name="rowNumber" id="rowNumber" type="number" class="form-control input" readonly />
-        </div>
-        <div class="form-group">
-          <label for="orderNumber" class="label">Номер заказа:</label>
-          <Field name="orderNumber" id="orderNumber" type="text" class="form-control input" :class="{ 'is-invalid': errors.orderNumber }" />
-        </div>
-      -->  
-        <div class="form-group">
-          <label for="statusId" class="label">Статус:</label>
+          <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
           <Field as="select" name="statusId" id="statusId" class="form-control input" :class="{ 'is-invalid': errors.statusId }">
             <option v-for="s in statusStore.statuses" :key="s.id" :value="s.id">{{ s.title }}</option>
           </Field>
@@ -68,15 +130,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 2: Order Details -->
       <div class="form-row">
         <div class="form-group">
-          <label for="tnVed" class="label">ТН ВЭД:</label>
+          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
           <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
         </div>
         <div class="form-group">
-          <label for="invoiceDate" class="label">Дата инвойса:</label>
+          <label for="invoiceDate" class="label" :title="getFieldTooltip('invoiceDate')">{{ getFieldLabel('invoiceDate') }}:</label>
           <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" :class="{ 'is-invalid': errors.invoiceDate }" />
         </div>
         <div class="form-group">
-          <label for="extId" class="label">ext_id:</label>
+          <label for="extId" class="label" :title="getFieldTooltip('extId')">{{ getFieldLabel('extId') }}:</label>
           <Field name="extId" id="extId" type="text" class="form-control input" />
         </div>
       </div>
@@ -84,15 +146,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 3: Product Info -->
       <div class="form-row">
         <div class="form-group">
-          <label for="sticker" class="label">Стикер:</label>
+          <label for="sticker" class="label" :title="getFieldTooltip('sticker')">{{ getFieldLabel('sticker') }}:</label>
           <Field name="sticker" id="sticker" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="shk" class="label">ШК:</label>
+          <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
           <Field name="shk" id="shk" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="stickerCode" class="label">Код стикера:</label>
+          <label for="stickerCode" class="label" :title="getFieldTooltip('stickerCode')">{{ getFieldLabel('stickerCode') }}:</label>
           <Field name="stickerCode" id="stickerCode" type="text" class="form-control input" />
         </div>
       </div>
@@ -100,15 +162,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 4: Product Details -->
       <div class="form-row">
         <div class="form-group">
-          <label for="siteArticle" class="label">Артикул сайта:</label>
+          <label for="siteArticle" class="label" :title="getFieldTooltip('siteArticle')">{{ getFieldLabel('siteArticle') }}:</label>
           <Field name="siteArticle" id="siteArticle" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="productName" class="label">Наименование товара:</label>
+          <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
           <Field name="productName" id="productName" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="brand" class="label">Бренд:</label>
+          <label for="brand" class="label" :title="getFieldTooltip('brand')">{{ getFieldLabel('brand') }}:</label>
           <Field name="brand" id="brand" type="text" class="form-control input" />
         </div>
       </div>
@@ -116,15 +178,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 5: Product Specs -->
       <div class="form-row">
         <div class="form-group">
-          <label for="size" class="label">Размер:</label>
+          <label for="size" class="label" :title="getFieldTooltip('size')">{{ getFieldLabel('size') }}:</label>
           <Field name="size" id="size" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="gender" class="label">Пол:</label>
+          <label for="gender" class="label" :title="getFieldTooltip('gender')">{{ getFieldLabel('gender') }}:</label>
           <Field name="gender" id="gender" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="heelHeight" class="label">Высота каблука:</label>
+          <label for="heelHeight" class="label" :title="getFieldTooltip('heelHeight')">{{ getFieldLabel('heelHeight') }}:</label>
           <Field name="heelHeight" id="heelHeight" type="text" class="form-control input" />
         </div>
       </div>
@@ -132,15 +194,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 6: Materials -->
       <div class="form-row">
         <div class="form-group">
-          <label for="fabricType" class="label">Тип ткани:</label>
+          <label for="fabricType" class="label" :title="getFieldTooltip('fabricType')">{{ getFieldLabel('fabricType') }}:</label>
           <Field name="fabricType" id="fabricType" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="composition" class="label">Состав:</label>
+          <label for="composition" class="label" :title="getFieldTooltip('composition')">{{ getFieldLabel('composition') }}:</label>
           <Field name="composition" id="composition" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="lining" class="label">Подкладка:</label>
+          <label for="lining" class="label" :title="getFieldTooltip('lining')">{{ getFieldLabel('lining') }}:</label>
           <Field name="lining" id="lining" type="text" class="form-control input" />
         </div>
       </div>
@@ -148,15 +210,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 7: More Materials -->
       <div class="form-row">
         <div class="form-group">
-          <label for="insole" class="label">Стелька:</label>
+          <label for="insole" class="label" :title="getFieldTooltip('insole')">{{ getFieldLabel('insole') }}:</label>
           <Field name="insole" id="insole" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="sole" class="label">Подошва:</label>
+          <label for="sole" class="label" :title="getFieldTooltip('sole')">{{ getFieldLabel('sole') }}:</label>
           <Field name="sole" id="sole" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="country" class="label">Страна:</label>
+          <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
           <Field name="country" id="country" type="text" class="form-control input" />
         </div>
       </div>
@@ -164,15 +226,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 8: Measurements & Pricing -->
       <div class="form-row">
         <div class="form-group">
-          <label for="weightKg" class="label">Масса, кг:</label>
+          <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>
           <Field name="weightKg" id="weightKg" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
         </div>
         <div class="form-group">
-          <label for="quantity" class="label">Количество:</label>
+          <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
           <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
         </div>
         <div class="form-group">
-          <label for="unitPrice" class="label">Цена за 1 шт:</label>
+          <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
           <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
         </div>
       </div>
@@ -180,15 +242,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 9: Units & Codes -->
       <div class="form-row">
         <div class="form-group">
-          <label for="unit" class="label">Единица измерения:</label>
+          <label for="unit" class="label" :title="getFieldTooltip('unit')">{{ getFieldLabel('unit') }}:</label>
           <Field name="unit" id="unit" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="currency" class="label">Валюта:</label>
+          <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>
           <Field name="currency" id="currency" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="barcode" class="label">Баркод:</label>
+          <label for="barcode" class="label" :title="getFieldTooltip('barcode')">{{ getFieldLabel('barcode') }}:</label>
           <Field name="barcode" id="barcode" type="text" class="form-control input" />
         </div>
       </div>
@@ -196,15 +258,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 10: Documents & Links -->
       <div class="form-row">
         <div class="form-group">
-          <label for="declaration" class="label">ГТД:</label>
+          <label for="declaration" class="label" :title="getFieldTooltip('declaration')">{{ getFieldLabel('declaration') }}:</label>
           <Field name="declaration" id="declaration" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="productLink" class="label">Ссылка на товар:</label>
+          <label for="productLink" class="label" :title="getFieldTooltip('productLink')">{{ getFieldLabel('productLink') }}:</label>
           <Field name="productLink" id="productLink" type="url" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="factoryAddress" class="label">Адрес завода:</label>
+          <label for="factoryAddress" class="label" :title="getFieldTooltip('factoryAddress')">{{ getFieldLabel('factoryAddress') }}:</label>
           <Field name="factoryAddress" id="factoryAddress" type="text" class="form-control input" />
         </div>
       </div>
@@ -212,15 +274,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 11: Recipient Info -->
       <div class="form-row">
         <div class="form-group">
-          <label for="recipientName" class="label">ФИО получателя:</label>
+          <label for="recipientName" class="label" :title="getFieldTooltip('recipientName')">{{ getFieldLabel('recipientName') }}:</label>
           <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="recipientInn" class="label">ИНН получателя:</label>
+          <label for="recipientInn" class="label" :title="getFieldTooltip('recipientInn')">{{ getFieldLabel('recipientInn') }}:</label>
           <Field name="recipientInn" id="recipientInn" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="passportNumber" class="label">Номер паспорта:</label>
+          <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber')">{{ getFieldLabel('passportNumber') }}:</label>
           <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
         </div>
       </div>
@@ -228,15 +290,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 12: More Recipient Info -->
       <div class="form-row">
         <div class="form-group">
-          <label for="pinfl" class="label">Пинфл:</label>
+          <label for="pinfl" class="label" :title="getFieldTooltip('pinfl')">{{ getFieldLabel('pinfl') }}:</label>
           <Field name="pinfl" id="pinfl" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="contactPhone" class="label">Контактный номер:</label>
+          <label for="contactPhone" class="label" :title="getFieldTooltip('contactPhone')">{{ getFieldLabel('contactPhone') }}:</label>
           <Field name="contactPhone" id="contactPhone" type="tel" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="boxNumber" class="label">Номер коробки:</label>
+          <label for="boxNumber" class="label" :title="getFieldTooltip('boxNumber')">{{ getFieldLabel('boxNumber') }}:</label>
           <Field name="boxNumber" id="boxNumber" type="text" class="form-control input" />
         </div>
       </div>
@@ -244,15 +306,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 13: Supplier Info -->
       <div class="form-row">
         <div class="form-group">
-          <label for="supplier" class="label">Поставщик:</label>
+          <label for="supplier" class="label" :title="getFieldTooltip('supplier')">{{ getFieldLabel('supplier') }}:</label>
           <Field name="supplier" id="supplier" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="supplierInn" class="label">ИНН поставщика:</label>
+          <label for="supplierInn" class="label" :title="getFieldTooltip('supplierInn')">{{ getFieldLabel('supplierInn') }}:</label>
           <Field name="supplierInn" id="supplierInn" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="category" class="label">Категория:</label>
+          <label for="category" class="label" :title="getFieldTooltip('category')">{{ getFieldLabel('category') }}:</label>
           <Field name="category" id="category" type="text" class="form-control input" />
         </div>
       </div>
@@ -260,15 +322,15 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 14: Additional Info -->
       <div class="form-row">
         <div class="form-group">
-          <label for="subcategory" class="label">Подкатегория:</label>
+          <label for="subcategory" class="label" :title="getFieldTooltip('subcategory')">{{ getFieldLabel('subcategory') }}:</label>
           <Field name="subcategory" id="subcategory" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="personalData" class="label">Персональные данные:</label>
+          <label for="personalData" class="label" :title="getFieldTooltip('personalData')">{{ getFieldLabel('personalData') }}:</label>
           <Field name="personalData" id="personalData" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="customsClearance" class="label">Таможенное оформление:</label>
+          <label for="customsClearance" class="label" :title="getFieldTooltip('customsClearance')">{{ getFieldLabel('customsClearance') }}:</label>
           <Field name="customsClearance" id="customsClearance" type="text" class="form-control input" />
         </div>
       </div>
@@ -276,11 +338,11 @@ function onSubmit(values, { setErrors }) {
       <!-- Row 15: Final Details -->
       <div class="form-row">
         <div class="form-group">
-          <label for="dutyPayment" class="label">Оплата пошлины:</label>
+          <label for="dutyPayment" class="label" :title="getFieldTooltip('dutyPayment')">{{ getFieldLabel('dutyPayment') }}:</label>
           <Field name="dutyPayment" id="dutyPayment" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="otherReason" class="label">Другая причина:</label>
+          <label for="otherReason" class="label" :title="getFieldTooltip('otherReason')">{{ getFieldLabel('otherReason') }}:</label>
           <Field name="otherReason" id="otherReason" type="text" class="form-control input" />
         </div>
         <div class="form-group">
@@ -290,13 +352,13 @@ function onSubmit(values, { setErrors }) {
 
       <!-- Full width field for address -->
       <div class="form-group full-width">
-        <label for="recipientAddress" class="label">Адрес получателя:</label>
+        <label for="recipientAddress" class="label" :title="getFieldTooltip('recipientAddress')">{{ getFieldLabel('recipientAddress') }}:</label>
         <Field name="recipientAddress" id="recipientAddress" type="text" class="form-control input" />
       </div>
 
       <!-- Full width field for description -->
       <div class="form-group full-width">
-        <label for="description" class="label">Описание:</label>
+        <label for="description" class="label" :title="getFieldTooltip('description')">{{ getFieldLabel('description') }}:</label>
         <Field as="textarea" name="description" id="description" rows="3" class="form-control input" />
       </div>
 
@@ -333,7 +395,7 @@ function onSubmit(values, { setErrors }) {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-bottom: 0rem;
 }
 
@@ -341,6 +403,8 @@ function onSubmit(values, { setErrors }) {
   display: flex;
   flex-direction: column;
   margin-bottom: 0rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .form-group.full-width {
@@ -352,6 +416,13 @@ function onSubmit(values, { setErrors }) {
   font-size: 0.8rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
+  width: 80% !important;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  flex-shrink: 1;
 }
 
 .input {
@@ -360,9 +431,8 @@ function onSubmit(values, { setErrors }) {
   font-size: 0.8rem;
   height: 2rem;
   margin-bottom: 0.1rem;
+  width: 80% !important;
 }
-
-
 
 .input:focus {
   outline: none;
@@ -379,6 +449,7 @@ textarea.input {
   height: auto;
   resize: vertical;
   min-height: 4rem;
+  width: 80%;
 }
 
 @media (max-width: 768px) {
@@ -392,6 +463,7 @@ textarea.input {
 @media (max-width: 1024px) and (min-width: 769px) {
   .form-row {
     grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
   }
 }
 </style>

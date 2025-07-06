@@ -19,6 +19,7 @@ vi.mock('@/views/User_RegisterView.vue', () => ({ default: { template: '<div />'
 vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))
 
 import router from '@/router'
 
@@ -115,6 +116,27 @@ describe('router guards', () => {
     await router.push('/registers/1/orders')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/registers/1/orders')
+  })
+
+  it('prevents non-logist user from accessing order edit', async () => {
+    authStore.user = { id: 7 }
+    authStore.isLogist = false
+
+    await router.push('/registers/1/orders/edit/2')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+    expect(authStore.returnUrl).toBe('/registers/1/orders/edit/2')
+  })
+
+  it('allows logist user to access order edit', async () => {
+    authStore.user = { id: 8 }
+    authStore.isLogist = true
+
+    await router.push('/registers/1/orders/edit/2')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/registers/1/orders/edit/2')
   })
 
   describe('root path redirects', () => {

@@ -7,6 +7,7 @@ const baseUrl = `${apiUrl}/orders`
 
 export const useOrdersStore = defineStore('orders', () => {
   const items = ref([])
+  const item = ref({})
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
@@ -51,6 +52,15 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
+  async function getById(id) {
+    item.value = { loading: true }
+    try {
+      item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+    } catch (err) {
+      item.value = { error: err }
+    }
+  }
+
   async function update(id, data) {
     console.log('stub update order', id, data)
   }
@@ -65,12 +75,14 @@ export const useOrdersStore = defineStore('orders', () => {
 
   return {
     items,
+    item,
     loading,
     error,
     totalCount,
     hasNextPage,
     hasPreviousPage,
     getAll,
+    getById,
     update,
     generate,
     generateAll

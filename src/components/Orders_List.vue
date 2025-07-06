@@ -8,7 +8,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { registerColumnTitles } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -138,6 +138,19 @@ function exportOrderXml(item) {
 function exportAllXml() {
   ordersStore.generateAll(props.registerId)
 }
+
+// Function to get tooltip for column headers
+function getColumnTooltip(key) {
+  // Convert camelCase key to PascalCase to match the mapping keys
+  const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
+  const tooltip = registerColumnTooltips[pascalKey]
+  const title = registerColumnTitles[pascalKey]
+  
+  if (tooltip && title) {
+    return `${title} (${tooltip})`
+  }
+  return title || null
+}
 </script>
 
 <template>
@@ -193,7 +206,7 @@ function exportAllXml() {
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
           <div 
             class="truncated-cell" 
-            :title="column.title || ''"
+            :title="getColumnTooltip(header.key)"
           >
             {{ column.title || '' }}
           </div>

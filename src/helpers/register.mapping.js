@@ -14,17 +14,17 @@ export const registerColumnTitles = {
   Description: 'Описание',
   Gender: 'Пол',
   Brand: 'Бренд',
-  FabricType: 'Тип ткани (для обуви "ОБУВЬ", для одежды "трикотаж", "текстиль")',
-  Composition: 'Состав (для обуви материал верха)',
+  FabricType: 'Тип ткани',
+  Composition: 'Состав',
   Lining: 'Подкладка',
   Insole: 'Стелька',
   Sole: 'Подошва',
-  Country: 'страна',
-  FactoryAddress: 'завод адрес',
-  Unit: 'единица измерения (шт., пара)',
-  WeightKg: 'Масса, кг,',
+  Country: 'Страна',
+  FactoryAddress: 'Завод адрес',
+  Unit: 'Единица измерения',
+  WeightKg: 'Масса, кг',
   Quantity: 'Кол-во',
-  UnitPrice: 'Цена за 1 шт,',
+  UnitPrice: 'Цена за 1 шт',
   Currency: 'Валюта',
   Barcode: 'Баркод',
   Declaration: 'ГТД',
@@ -45,4 +45,16 @@ export const registerColumnTitles = {
   DutyPayment: 'Оплата пошлины',
   OtherReason: 'Другая причина',
   Status: 'Статус'
+}
+
+export const registerColumnTooltips = {
+  FabricType: 'для обуви "ОБУВЬ", для одежды "трикотаж", "текстиль"',
+  Composition: 'для обуви материал верха',
+  Unit: 'шт., пара',
+  WeightKg: 'указывается в килограммах',
+  UnitPrice: 'цена за единицу товара',
+  RecipientName: 'полное имя физического лица получателя',
+  RecipientInn: 'индивидуальный номер налогоплательщика получателя',
+  RecipientAddress: 'полный адрес получателя для доставки',
+  SupplierInn: 'индивидуальный номер налогоплательщика поставщика'
 }

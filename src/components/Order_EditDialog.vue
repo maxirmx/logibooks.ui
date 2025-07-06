@@ -39,12 +39,15 @@ function onSubmit(values, { setErrors }) {
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">Заказ {{ item?.id }}</h1>
+    <h1 class="primary-heading">
+      Заказ {{ item?.orderNumber ? item.orderNumber : '[без номера]' }}
+    </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
       
-      <!-- Row 1: Basic Info -->
+      <!-- Row 1: Basic Info --> 
       <div class="form-row">
+      <!-- 
         <div class="form-group">
           <label for="rowNumber" class="label">Номер строки:</label>
           <Field name="rowNumber" id="rowNumber" type="number" class="form-control input" readonly />
@@ -53,6 +56,7 @@ function onSubmit(values, { setErrors }) {
           <label for="orderNumber" class="label">Номер заказа:</label>
           <Field name="orderNumber" id="orderNumber" type="text" class="form-control input" :class="{ 'is-invalid': errors.orderNumber }" />
         </div>
+      -->  
         <div class="form-group">
           <label for="statusId" class="label">Статус:</label>
           <Field as="select" name="statusId" id="statusId" class="form-control input" :class="{ 'is-invalid': errors.statusId }">
@@ -320,41 +324,44 @@ function onSubmit(values, { setErrors }) {
 </template>
 
 <style scoped>
-.form-condensed {
+.form-3 {
   max-width: 2400px;
   margin: 0 auto;
+  margin-bottom: 0.1rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  margin-bottom: 0rem;
 }
 
 .form-group.full-width {
   grid-column: 1 / -1;
-  margin-bottom: 1rem;
+  margin-bottom: 0rem;
 }
 
 .label {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
   color: var(--text-color);
 }
 
 .input {
-  padding: 0.5rem;
+  padding: 0.1rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.9rem;
-  height: 2.5rem;
+  font-size: 0.8rem;
+  height: 2rem;
+  margin-bottom: 0.1rem;
 }
 
 .input[readonly] {
@@ -384,7 +391,7 @@ function onSubmit(values, { setErrors }) {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -425,9 +432,6 @@ textarea.input {
     gap: 0.5rem;
   }
   
-  .form-condensed {
-    padding: 0 1rem;
-  }
 }
 
 @media (max-width: 1024px) and (min-width: 769px) {

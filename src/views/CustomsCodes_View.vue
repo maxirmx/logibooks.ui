@@ -30,12 +30,14 @@ function parseAlta() {
       title="Запреты"
       :items="store.items"
       :loading="store.loading"
+      :error="store.error"
     />
 
     <CustomsCodesList
       title="Исключения"
       :items="store.exceptions"
       :loading="store.loading"
+      :error="store.error"
     />
   </div>
 </template>

@@ -18,9 +18,25 @@ vi.mock('@/stores/alta.store.js', () => ({
     items: [],
     exceptions: [],
     loading: false,
+    error: null,
     getItems,
     getExceptions,
     parse
+  })
+}))
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({
+    customs_codes_per_page: { value: 25 },
+    customs_codes_search: { value: '' },
+    customs_codes_sort_by: { value: [{ key: 'code', order: 'asc' }] },
+    customs_codes_page: { value: 1 }
+  })
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    clear: vi.fn()
   })
 }))
 

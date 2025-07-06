@@ -6,7 +6,7 @@ import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusStore } from '@/stores/order.status.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
-import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips, getStatusColor } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -95,20 +95,6 @@ const getFieldLabel = (fieldName) => {
 const getFieldTooltip = (fieldName) => {
   const mappingKey = fieldNameMapping[fieldName]
   return mappingKey ? registerColumnTooltips[mappingKey] : null
-}
-
-// Function to get status color based on statusId numeric value
-const getStatusColor = (statusId) => {
-  if (!statusId) return 'default'
-  
-  // Color mapping based on statusId ranges
-  if (statusId <= 100) {
-    return 'blue'   // statusId <= 100
-  } else if (statusId > 100 && statusId <= 200) {
-    return 'red'    // statusId > 100 and <= 200
-  } else {
-    return 'green'  // statusId > 200
-  }
 }
 
 statusStore.ensureStatusesLoaded()

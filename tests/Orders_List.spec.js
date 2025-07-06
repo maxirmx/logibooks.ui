@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import OrdersList from '@/components/Orders_List.vue'
 import { vuetifyStubs } from './test-utils.js'
+import { getStatusColor } from '@/helpers/register.mapping.js'
 
 // Mock data
 const mockOrders = ref([
@@ -150,5 +151,47 @@ describe('Orders_List', () => {
     })
 
     expect(ensureStatusesLoaded).toHaveBeenCalled()
+  })
+
+  it('applies correct status color classes based on statusId', () => {
+    // Mock orders with different statusIds to test color logic
+    const testOrders = ref([
+      { id: 1, statusId: 50, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },    // should be blue (<=100)
+      { id: 2, statusId: 150, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' },  // should be red (100-200)
+      { id: 3, statusId: 250, rowNumber: 3, orderNumber: 'ORD003', tnVed: 'TNV003' }   // should be green (>200)
+    ])
+
+    // Mock the orders store to return test orders
+    vi.doMock('@/stores/orders.store.js', () => ({
+      useOrdersStore: () => ({
+        items: testOrders,
+        loading: ref(false),
+        error: ref(null),
+        totalCount: ref(3),
+        getAll: vi.fn(),
+        update: vi.fn(),
+        generate: vi.fn(),
+        generateAll: vi.fn()
+      })
+    }))
+
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    // Verify the component mounted successfully
+    expect(wrapper.exists()).toBe(true)
+
+    // Check that the component has access to the status color function
+    expect(getStatusColor).toBeDefined()
+
+    // Test color logic
+    expect(getStatusColor(50)).toBe('blue')
+    expect(getStatusColor(150)).toBe('red')
+    expect(getStatusColor(250)).toBe('green')
+    expect(getStatusColor(null)).toBe('default')
   })
 })

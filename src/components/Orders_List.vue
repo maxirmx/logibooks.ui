@@ -8,7 +8,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips, getStatusColor } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -222,10 +222,11 @@ function getColumnTooltip(key) {
           </div>
         </template>
         
-        <!-- Special template for statusId to display status title -->
+        <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
           <div 
-            class="truncated-cell" 
+            class="truncated-cell status-cell" 
+            :class="`status-${getStatusColor(item.statusId)}`"
             :title="orderStatusStore.getStatusTitle(item.statusId)"
           >
             {{ orderStatusStore.getStatusTitle(item.statusId) }}
@@ -405,6 +406,40 @@ function getColumnTooltip(key) {
 .product-link:hover {
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* Status color styling */
+.status-cell {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 8px;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.status-blue {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #1976d2;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.status-red {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #d32f2f;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.status-green {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #388e3c;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-default {
+  background-color: rgba(158, 158, 158, 0.1);
+  color: #616161;
+  border: 1px solid rgba(158, 158, 158, 0.3);
 }
 
 /* Custom pagination styling to match Vuetify's default exactly */

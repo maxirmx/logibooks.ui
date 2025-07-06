@@ -375,21 +375,6 @@ function onSubmit(values, { setErrors }) {
   padding-top: 1rem;
 }
 
-.button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1.2rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 textarea.input {
   height: auto;
   resize: vertical;

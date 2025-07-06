@@ -188,19 +188,39 @@
 }
 
 .button {
-  padding: 0.5rem;
-  border-radius: 0.25rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  background-color: #1976d2;
+  border-radius: 4px;
+  background-color: var(--primary-color);
   color: white;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  font-weight: 500;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  min-width: 25%;
-  align-self: center;
+  transition: all 0.2s;
   margin-bottom: 1rem;
   margin-right: 1rem;
-  max-width: 160px;
+  min-width: 120px;
+}
+
+/* Responsive button sizing */
+@media (min-width: 768px) {
+  .button {
+    min-width: 160px;
+    max-width: 200px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .button {
+    min-width: 250px;
+    max-width: 300px;
+  }
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .button.primary {
@@ -475,3 +495,18 @@ a,
   width: auto;
   padding: 0;
 }
+
+/* Form actions styling - moved from Order_EditDialog.vue */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--form-actions-border);
+}
+
+.form-actions .button {
+  flex: 0 0 auto; /* Don't grow, don't shrink, use natural size */
+}
+
+/* End of form actions styling */

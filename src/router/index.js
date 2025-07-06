@@ -79,6 +79,12 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/customs_codes',
+      name: 'Коды ТН ВЭД',
+      component: () => import('@/views/CustomsCodes_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),

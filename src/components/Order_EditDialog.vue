@@ -352,31 +352,20 @@ function onSubmit(values, { setErrors }) {
   font-size: 0.8rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
-  color: var(--text-color);
 }
 
 .input {
   padding: 0.1rem;
-  border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.8rem;
   height: 2rem;
   margin-bottom: 0.1rem;
 }
 
-.input[readonly] {
-  background-color: #f5f5f5;
-  color: #666;
-}
+
 
 .input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.1);
-}
-
-.input.is-invalid {
-  border-color: #dc3545;
 }
 
 .form-actions {
@@ -384,35 +373,16 @@ function onSubmit(values, { setErrors }) {
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid #eee;
 }
 
 .button {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.button.primary {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.button.primary:hover:not(:disabled) {
-  background-color: var(--primary-color-dark);
-}
-
-.button.secondary {
-  background-color: #6c757d;
-  color: white;
-}
-
-.button.secondary:hover {
-  background-color: #5a6268;
 }
 
 .button:disabled {

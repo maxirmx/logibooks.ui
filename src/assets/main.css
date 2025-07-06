@@ -95,6 +95,34 @@
   padding-right: 10px;
 }
 
+.label-with-link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 35%;
+  padding-right: 10px;
+}
+
+.label-with-link .label {
+  width: auto;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.product-link {
+  color: #2563eb;
+  text-decoration: underline;
+  font-size: 0.875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.product-link:hover {
+  color: #1d4ed8;
+}
+
 .hr {
   position: relative;
   top: 20px;

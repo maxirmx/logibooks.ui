@@ -93,7 +93,6 @@ await ordersStore.getById(props.id)
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
-  orderNumber: Yup.string().required('Необходимо указать номер заказа'),
   tnVed: Yup.string().required('Необходимо указать ТН ВЭД'),
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
@@ -125,17 +124,25 @@ function onSubmit(values, { setErrors }) {
             <option v-for="s in statusStore.statuses" :key="s.id" :value="s.id">{{ s.title }}</option>
           </Field>
         </div>
+        <div class="form-group">
+          <label for="customsClearance" class="label" :title="getFieldTooltip('customsClearance')">{{ getFieldLabel('customsClearance') }}:</label>
+          <Field name="customsClearance" id="customsClearance" type="text" class="form-control input" />
+        </div>
+        <div class="form-group">
+          <label for="dutyPayment" class="label" :title="getFieldTooltip('dutyPayment')">{{ getFieldLabel('dutyPayment') }}:</label>
+          <Field name="dutyPayment" id="dutyPayment" type="text" class="form-control input" />
+        </div>
       </div>
 
       <!-- Row 2: Order Details -->
       <div class="form-row">
         <div class="form-group">
-          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
-          <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
+          <label for="personalData" class="label" :title="getFieldTooltip('personalData')">{{ getFieldLabel('personalData') }}:</label>
+          <Field name="personalData" id="personalData" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="invoiceDate" class="label" :title="getFieldTooltip('invoiceDate')">{{ getFieldLabel('invoiceDate') }}:</label>
-          <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" :class="{ 'is-invalid': errors.invoiceDate }" />
+          <label for="otherReason" class="label" :title="getFieldTooltip('otherReason')">{{ getFieldLabel('otherReason') }}:</label>
+          <Field name="otherReason" id="otherReason" type="text" class="form-control input" />
         </div>
         <div class="form-group">
           <label for="extId" class="label" :title="getFieldTooltip('extId')">{{ getFieldLabel('extId') }}:</label>
@@ -143,27 +150,43 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <!-- Row 3: Product Info -->
+      <!-- Row 3: Product Identification -->
       <div class="form-row">
         <div class="form-group">
-          <label for="sticker" class="label" :title="getFieldTooltip('sticker')">{{ getFieldLabel('sticker') }}:</label>
-          <Field name="sticker" id="sticker" type="text" class="form-control input" />
+          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
+          <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
         </div>
         <div class="form-group">
-          <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
-          <Field name="shk" id="shk" type="text" class="form-control input" />
+          <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
+          <Field name="country" id="country" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="stickerCode" class="label" :title="getFieldTooltip('stickerCode')">{{ getFieldLabel('stickerCode') }}:</label>
-          <Field name="stickerCode" id="stickerCode" type="text" class="form-control input" />
+          <label for="invoiceDate" class="label" :title="getFieldTooltip('invoiceDate')">{{ getFieldLabel('invoiceDate') }}:</label>
+          <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" :class="{ 'is-invalid': errors.invoiceDate }" />
         </div>
       </div>
 
-      <!-- Row 4: Product Details -->
+      <!-- Row 4: Product Basic Info -->
       <div class="form-row">
         <div class="form-group">
           <label for="siteArticle" class="label" :title="getFieldTooltip('siteArticle')">{{ getFieldLabel('siteArticle') }}:</label>
           <Field name="siteArticle" id="siteArticle" type="text" class="form-control input" />
+        </div>
+        <div class="form-group">
+          <label for="barcode" class="label" :title="getFieldTooltip('barcode')">{{ getFieldLabel('barcode') }}:</label>
+          <Field name="barcode" id="barcode" type="text" class="form-control input" />
+        </div>
+        <div class="form-group">
+          <label for="category" class="label" :title="getFieldTooltip('category')">{{ getFieldLabel('category') }}:</label>
+          <Field name="category" id="category" type="text" class="form-control input" />
+        </div>
+      </div>
+
+      <!-- Row 5: Product Specifications -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="subcategory" class="label" :title="getFieldTooltip('subcategory')">{{ getFieldLabel('subcategory') }}:</label>
+          <Field name="subcategory" id="subcategory" type="text" class="form-control input" />
         </div>
         <div class="form-group">
           <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
@@ -175,7 +198,7 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <!-- Row 5: Product Specs -->
+      <!-- Row 6: Materials -->
       <div class="form-row">
         <div class="form-group">
           <label for="size" class="label" :title="getFieldTooltip('size')">{{ getFieldLabel('size') }}:</label>
@@ -191,7 +214,7 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <!-- Row 6: Materials -->
+      <!-- Row 7: More Materials & Origin -->
       <div class="form-row">
         <div class="form-group">
           <label for="fabricType" class="label" :title="getFieldTooltip('fabricType')">{{ getFieldLabel('fabricType') }}:</label>
@@ -207,7 +230,7 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <!-- Row 7: More Materials -->
+      <!-- Row 8: Measurements & Pricing -->
       <div class="form-row">
         <div class="form-group">
           <label for="insole" class="label" :title="getFieldTooltip('insole')">{{ getFieldLabel('insole') }}:</label>
@@ -217,13 +240,9 @@ function onSubmit(values, { setErrors }) {
           <label for="sole" class="label" :title="getFieldTooltip('sole')">{{ getFieldLabel('sole') }}:</label>
           <Field name="sole" id="sole" type="text" class="form-control input" />
         </div>
-        <div class="form-group">
-          <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
-          <Field name="country" id="country" type="text" class="form-control input" />
-        </div>
       </div>
 
-      <!-- Row 8: Measurements & Pricing -->
+      <!-- Row 9: Pricing & Currency -->
       <div class="form-row">
         <div class="form-group">
           <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>
@@ -234,44 +253,44 @@ function onSubmit(values, { setErrors }) {
           <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
         </div>
         <div class="form-group">
-          <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
-          <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
+          <label for="unit" class="label" :title="getFieldTooltip('unit')">{{ getFieldLabel('unit') }}:</label>
+          <Field name="unit" id="unit" type="text" class="form-control input" />
         </div>
       </div>
 
-      <!-- Row 9: Units & Codes -->
+      <!-- Row 10: Tracking & Processing -->
       <div class="form-row">
         <div class="form-group">
-          <label for="unit" class="label" :title="getFieldTooltip('unit')">{{ getFieldLabel('unit') }}:</label>
-          <Field name="unit" id="unit" type="text" class="form-control input" />
+          <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
+          <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
         </div>
         <div class="form-group">
           <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>
           <Field name="currency" id="currency" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="barcode" class="label" :title="getFieldTooltip('barcode')">{{ getFieldLabel('barcode') }}:</label>
-          <Field name="barcode" id="barcode" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 10: Documents & Links -->
-      <div class="form-row">
-        <div class="form-group">
           <label for="declaration" class="label" :title="getFieldTooltip('declaration')">{{ getFieldLabel('declaration') }}:</label>
           <Field name="declaration" id="declaration" type="text" class="form-control input" />
         </div>
+      </div>
+
+      <!-- Row 11: Recipient Personal Info -->
+      <div class="form-row">
         <div class="form-group">
-          <label for="productLink" class="label" :title="getFieldTooltip('productLink')">{{ getFieldLabel('productLink') }}:</label>
-          <Field name="productLink" id="productLink" type="url" class="form-control input" />
+          <label for="sticker" class="label" :title="getFieldTooltip('sticker')">{{ getFieldLabel('sticker') }}:</label>
+          <Field name="sticker" id="sticker" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="factoryAddress" class="label" :title="getFieldTooltip('factoryAddress')">{{ getFieldLabel('factoryAddress') }}:</label>
-          <Field name="factoryAddress" id="factoryAddress" type="text" class="form-control input" />
+          <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
+          <Field name="shk" id="shk" type="text" class="form-control input" />
+        </div>
+        <div class="form-group">
+          <label for="stickerCode" class="label" :title="getFieldTooltip('stickerCode')">{{ getFieldLabel('stickerCode') }}:</label>
+          <Field name="stickerCode" id="stickerCode" type="text" class="form-control input" />
         </div>
       </div>
 
-      <!-- Row 11: Recipient Info -->
+      <!-- Row 12: Recipient Contact Info -->
       <div class="form-row">
         <div class="form-group">
           <label for="recipientName" class="label" :title="getFieldTooltip('recipientName')">{{ getFieldLabel('recipientName') }}:</label>
@@ -287,7 +306,7 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <!-- Row 12: More Recipient Info -->
+      <!-- Row 13: Supplier & Manufacturing -->
       <div class="form-row">
         <div class="form-group">
           <label for="pinfl" class="label" :title="getFieldTooltip('pinfl')">{{ getFieldLabel('pinfl') }}:</label>
@@ -303,7 +322,7 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <!-- Row 13: Supplier Info -->
+      <!-- Row 14: Processing Details -->
       <div class="form-row">
         <div class="form-group">
           <label for="supplier" class="label" :title="getFieldTooltip('supplier')">{{ getFieldLabel('supplier') }}:</label>
@@ -314,39 +333,8 @@ function onSubmit(values, { setErrors }) {
           <Field name="supplierInn" id="supplierInn" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="category" class="label" :title="getFieldTooltip('category')">{{ getFieldLabel('category') }}:</label>
-          <Field name="category" id="category" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 14: Additional Info -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="subcategory" class="label" :title="getFieldTooltip('subcategory')">{{ getFieldLabel('subcategory') }}:</label>
-          <Field name="subcategory" id="subcategory" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="personalData" class="label" :title="getFieldTooltip('personalData')">{{ getFieldLabel('personalData') }}:</label>
-          <Field name="personalData" id="personalData" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="customsClearance" class="label" :title="getFieldTooltip('customsClearance')">{{ getFieldLabel('customsClearance') }}:</label>
-          <Field name="customsClearance" id="customsClearance" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 15: Final Details -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="dutyPayment" class="label" :title="getFieldTooltip('dutyPayment')">{{ getFieldLabel('dutyPayment') }}:</label>
-          <Field name="dutyPayment" id="dutyPayment" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="otherReason" class="label" :title="getFieldTooltip('otherReason')">{{ getFieldLabel('otherReason') }}:</label>
-          <Field name="otherReason" id="otherReason" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <!-- Empty for alignment -->
+          <label for="factoryAddress" class="label" :title="getFieldTooltip('factoryAddress')">{{ getFieldLabel('factoryAddress') }}:</label>
+          <Field name="factoryAddress" id="factoryAddress" type="text" class="form-control input" />
         </div>
       </div>
 
@@ -358,7 +346,12 @@ function onSubmit(values, { setErrors }) {
 
       <!-- Full width field for description -->
       <div class="form-group full-width">
-        <label for="description" class="label" :title="getFieldTooltip('description')">{{ getFieldLabel('description') }}:</label>
+        <div class="label-with-link">
+          <label for="description" class="label" :title="getFieldTooltip('description')">{{ getFieldLabel('description') }}:</label>
+          <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link" :title="item.productLink">
+            {{ getFieldLabel('productLink') }}
+          </a>
+        </div>
         <Field as="textarea" name="description" id="description" rows="3" class="form-control input" />
       </div>
 

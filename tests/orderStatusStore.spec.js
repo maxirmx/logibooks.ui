@@ -47,6 +47,7 @@ describe('order status store', () => {
   })
 
   it('handles fetch error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Network error')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useOrderStatusStore()
@@ -56,6 +57,8 @@ describe('order status store', () => {
     expect(store.statuses).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBe(error)
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch order statuses:', error)
+    consoleSpy.mockRestore()
   })
 
   it('gets status by id', async () => {

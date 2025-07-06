@@ -148,7 +148,7 @@ function onSubmit(values, { setErrors }) {
                    { 'is-invalid': errors.statusId },
                    `status-${getStatusColor(currentStatusId)}`
                  ]"
-                 @change="(e) => currentStatusId = parseInt(e.target.value)">
+                 @change="(e) => currentStatusId.value = parseInt(e.target.value)">
             <option v-for="s in statusStore.statuses" :key="s.id" :value="s.id">{{ s.title }}</option>
           </Field>
         </div>

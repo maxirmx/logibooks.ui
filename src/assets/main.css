@@ -99,15 +99,27 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  width: 35%;
-  padding-right: 10px;
+  justify-content: space-between;
+  width: 80%;
+  margin-bottom: 0.25rem;
 }
 
 .label-with-link .label {
   width: auto;
   flex-shrink: 0;
   margin-bottom: 0;
+}
+
+.description-container {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.description-container .input {
+  flex: 1;
+  min-width: 0;
 }
 
 .product-link {
@@ -117,6 +129,7 @@
   cursor: pointer;
   flex-shrink: 0;
   white-space: nowrap;
+  align-self: center;
 }
 
 .product-link:hover {

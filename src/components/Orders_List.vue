@@ -1,18 +1,21 @@
 <script setup>
 import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
+import { useOrderStatusStore } from '@/stores/order.status.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { registerColumnTitles } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips, getStatusColor } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
 })
 
 const ordersStore = useOrdersStore()
+const orderStatusStore = useOrderStatusStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
@@ -57,13 +60,17 @@ watch(
   { immediate: true }
 )
 
-onMounted(fetchRegister)
+onMounted(async () => {
+  // Ensure order statuses are loaded
+  orderStatusStore.ensureStatusesLoaded()
+  await fetchRegister()
+})
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
   ...statuses.value.map((s) => ({
     value: s.id,
-    title: `Статус ${s.id} (${s.count})`
+    title: `${orderStatusStore.getStatusTitle(s.id)} (${s.count})`
   }))
 ])
 
@@ -71,7 +78,7 @@ const headers = computed(() => {
   return [
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
-    { title: 'Статус', key: 'statusId', align: 'start', width: '100px' },
+    { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
     { title: registerColumnTitles.RowNumber, sortable: false, key: 'rowNumber', align: 'start', width: '80px' },
     { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
@@ -121,7 +128,7 @@ const headers = computed(() => {
 })
 
 function editOrder(item) {
-  ordersStore.update(item.id, {})
+  router.push(`/registers/${props.registerId}/orders/edit/${item.id}`)
 }
 
 function exportOrderXml(item) {
@@ -130,6 +137,19 @@ function exportOrderXml(item) {
 
 function exportAllXml() {
   ordersStore.generateAll(props.registerId)
+}
+
+// Function to get tooltip for column headers
+function getColumnTooltip(key) {
+  // Convert camelCase key to PascalCase to match the mapping keys
+  const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
+  const tooltip = registerColumnTooltips[pascalKey]
+  const title = registerColumnTitles[pascalKey]
+  
+  if (tooltip && title) {
+    return `${title} (${tooltip})`
+  }
+  return title || null
 }
 </script>
 
@@ -186,19 +206,47 @@ function exportAllXml() {
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
           <div 
             class="truncated-cell" 
-            :title="column.title || ''"
+            :title="getColumnTooltip(header.key)"
           >
             {{ column.title || '' }}
           </div>
         </template>
         
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div 
             class="truncated-cell" 
             :title="item[header.key] || ''"
           >
             {{ item[header.key] || '' }}
+          </div>
+        </template>
+        
+        <!-- Special template for statusId to display status title with color -->
+        <template #[`item.statusId`]="{ item }">
+          <div 
+            class="truncated-cell status-cell" 
+            :class="`status-${getStatusColor(item.statusId)}`"
+            :title="orderStatusStore.getStatusTitle(item.statusId)"
+          >
+            {{ orderStatusStore.getStatusTitle(item.statusId) }}
+          </div>
+        </template>
+        
+        <!-- Special template for productLink to display as clickable URL -->
+        <template #[`item.productLink`]="{ item }">
+          <div class="truncated-cell">
+            <a 
+              v-if="item.productLink" 
+              :href="item.productLink" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="product-link"
+              :title="item.productLink"
+            >
+              {{ item.productLink }}
+            </a>
+            <span v-else>-</span>
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">
@@ -343,6 +391,55 @@ function exportAllXml() {
 
 .truncated-cell:hover {
   cursor: help;
+}
+
+.product-link {
+  color: rgba(var(--v-theme-primary), 1);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+}
+
+.product-link:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Status color styling */
+.status-cell {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 8px;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.status-blue {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #1976d2;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.status-red {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #d32f2f;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.status-green {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #388e3c;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-default {
+  background-color: rgba(158, 158, 158, 0.1);
+  color: #616161;
+  border: 1px solid rgba(158, 158, 158, 0.3);
 }
 
 /* Custom pagination styling to match Vuetify's default exactly */

@@ -51,6 +51,7 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import VuetifyUseDialog from 'vuetify-use-dialog'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
+import { ru } from 'vuetify/locale'
 
 import App from '@/App.vue'
 import router from '@/router'
@@ -58,9 +59,40 @@ import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store.js'
 
 export function initializeApp() {
+  // Create custom Russian translations with missing keys
+  const customRu = {
+    ...ru,
+    input: {
+      ...ru.input,
+      prependAction: 'Действие в начале',
+      clear: 'Очистить'
+    },
+    dataIterator: {
+      ...ru.dataIterator,
+      loadingText: 'Загрузка данных...'
+    },
+    open: 'Открыть',
+    pagination: {
+      ...ru.pagination,
+      ariaLabel: {
+        ...ru.pagination?.ariaLabel,
+        root: 'Навигация по страницам'
+      }
+    },
+    dataFooter: {
+      ...ru.dataFooter,
+      firstPage: 'Первая страница',
+      prevPage: 'Предыдущая страница', 
+      nextPage: 'Следующая страница',
+      lastPage: 'Последняя страница'
+    }
+  }
+
   const vuetify = createVuetify({
     locale: {
       locale: 'ru',
+      fallback: 'en',
+      messages: { ru: customRu }
     },
     breakpoint: {
       mobileBreakpoint: 'xl' // This is the breakpoint for mobile devices

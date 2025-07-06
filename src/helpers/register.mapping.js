@@ -14,17 +14,17 @@ export const registerColumnTitles = {
   Description: 'Описание',
   Gender: 'Пол',
   Brand: 'Бренд',
-  FabricType: 'Тип ткани (для обуви "ОБУВЬ", для одежды "трикотаж", "текстиль")',
-  Composition: 'Состав (для обуви материал верха)',
+  FabricType: 'Тип ткани',
+  Composition: 'Состав',
   Lining: 'Подкладка',
   Insole: 'Стелька',
   Sole: 'Подошва',
-  Country: 'страна',
-  FactoryAddress: 'завод адрес',
-  Unit: 'единица измерения (шт., пара)',
-  WeightKg: 'Масса, кг,',
+  Country: 'Страна',
+  FactoryAddress: 'Завод адрес',
+  Unit: 'Единица измерения',
+  WeightKg: 'Масса, кг',
   Quantity: 'Кол-во',
-  UnitPrice: 'Цена за 1 шт,',
+  UnitPrice: 'Цена за 1 шт',
   Currency: 'Валюта',
   Barcode: 'Баркод',
   Declaration: 'ГТД',
@@ -43,5 +43,36 @@ export const registerColumnTitles = {
   PersonalData: 'Персональные данные',
   CustomsClearance: 'Таможенное оформление',
   DutyPayment: 'Оплата пошлины',
-  OtherReason: 'Другая причина'
+  OtherReason: 'Другая причина',
+  Status: 'Статус'
+}
+
+export const registerColumnTooltips = {
+  FabricType: 'для обуви "ОБУВЬ", для одежды "трикотаж", "текстиль"',
+  Composition: 'для обуви материал верха',
+  Unit: 'шт., пара',
+  WeightKg: 'указывается в килограммах',
+  UnitPrice: 'цена за единицу товара',
+  RecipientName: 'полное имя физического лица получателя',
+  RecipientInn: 'индивидуальный номер налогоплательщика получателя',
+  RecipientAddress: 'полный адрес получателя для доставки',
+  SupplierInn: 'индивидуальный номер налогоплательщика поставщика'
+}
+
+/**
+ * Get status color class based on statusId value
+ * @param {number} statusId - The status ID to determine color for
+ * @returns {string} Color class name (blue, red, green, or default)
+ */
+export function getStatusColor(statusId) {
+  if (!statusId) return 'default'
+  
+  // Color mapping based on statusId ranges
+  if (statusId <= 100) {
+    return 'blue'   // statusId <= 100
+  } else if (statusId > 100 && statusId <= 200) {
+    return 'red'    // statusId > 100 and <= 200
+  } else {
+    return 'green'  // statusId > 200
+  }
 }

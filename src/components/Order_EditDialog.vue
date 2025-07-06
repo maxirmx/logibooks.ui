@@ -5,6 +5,7 @@ import * as Yup from 'yup'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusStore } from '@/stores/order.status.store.js'
 import { storeToRefs } from 'pinia'
+import { ref, watch } from 'vue'
 import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
@@ -16,6 +17,14 @@ const ordersStore = useOrdersStore()
 const statusStore = useOrderStatusStore()
 
 const { item } = storeToRefs(ordersStore)
+
+// Reactive reference to track current statusId for color updates
+const currentStatusId = ref(null)
+
+// Watch for changes in item.statusId to initialize currentStatusId
+watch(() => item.value?.statusId, (newStatusId) => {
+  currentStatusId.value = newStatusId
+}, { immediate: true })
 
 // Field name mapping from camelCase to PascalCase for registerColumnTitles lookup
 const fieldNameMapping = {
@@ -88,6 +97,20 @@ const getFieldTooltip = (fieldName) => {
   return mappingKey ? registerColumnTooltips[mappingKey] : null
 }
 
+// Function to get status color based on statusId numeric value
+const getStatusColor = (statusId) => {
+  if (!statusId) return 'default'
+  
+  // Color mapping based on statusId ranges
+  if (statusId <= 100) {
+    return 'blue'   // statusId <= 100
+  } else if (statusId > 100 && statusId <= 200) {
+    return 'red'    // statusId > 100 and <= 200
+  } else {
+    return 'green'  // statusId > 200
+  }
+}
+
 statusStore.ensureStatusesLoaded()
 await ordersStore.getById(props.id)
 
@@ -120,7 +143,12 @@ function onSubmit(values, { setErrors }) {
       <div class="form-row">
         <div class="form-group">
           <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
-          <Field as="select" name="statusId" id="statusId" class="form-control input" :class="{ 'is-invalid': errors.statusId }">
+          <Field as="select" name="statusId" id="statusId" class="form-control input" 
+                 :class="[
+                   { 'is-invalid': errors.statusId },
+                   `status-${getStatusColor(currentStatusId)}`
+                 ]"
+                 @change="(e) => currentStatusId = parseInt(e.target.value)">
             <option v-for="s in statusStore.statuses" :key="s.id" :value="s.id">{{ s.title }}</option>
           </Field>
         </div>
@@ -443,6 +471,25 @@ textarea.input {
   resize: vertical;
   min-height: 4rem;
   width: 80%;
+}
+
+/* Status color indicators */
+.status-blue {
+  background-color: #e3f2fd !important;
+  border-color: #2196f3 !important;
+  color: #1565c0 !important;
+}
+
+.status-red {
+  background-color: #ffebee !important;
+  border-color: #f44336 !important;
+  color: #c62828 !important;
+}
+
+.status-green {
+  background-color: #e8f5e8 !important;
+  border-color: #4caf50 !important;
+  color: #2e7d32 !important;
 }
 
 @media (max-width: 768px) {

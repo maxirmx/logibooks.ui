@@ -49,7 +49,8 @@
 }
 
 /* Tables: --   extra wide */
-.table-3 {
+.table-3,
+.form-3 {
   width: 100%;
   max-width: 2048px;
   margin: 0 auto;

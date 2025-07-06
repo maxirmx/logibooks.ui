@@ -3,6 +3,7 @@ import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusStore } from '@/stores/order.status.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
@@ -127,7 +128,7 @@ const headers = computed(() => {
 })
 
 function editOrder(item) {
-  ordersStore.update(item.id, {})
+  router.push(`/registers/${props.registerId}/orders/edit/${item.id}`)
 }
 
 function exportOrderXml(item) {

@@ -48,4 +48,12 @@ describe('orders store', () => {
     expect(store.hasNextPage).toBe(false)
     expect(store.hasPreviousPage).toBe(false)
   })
+
+  it('fetches order by id', async () => {
+    fetchWrapper.get.mockResolvedValue({ id: 5 })
+    const store = useOrdersStore()
+    await store.getById(5)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/5`)
+    expect(store.item).toEqual({ id: 5 })
+  })
 })

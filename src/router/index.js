@@ -92,6 +92,13 @@ const router = createRouter({
       meta: { requiresLogist: true }
     },
     {
+      path: '/registers/:registerId/orders/edit/:id',
+      name: 'Редактирование заказа',
+      component: () => import('@/views/Order_EditView.vue'),
+      props: true,
+      meta: { requiresLogist: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),

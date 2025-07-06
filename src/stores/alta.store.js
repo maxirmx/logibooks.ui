@@ -11,41 +11,29 @@ export const useAltaStore = defineStore('alta', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  async function getItems(manageLoading = true) {
-    if (manageLoading) {
-      loading.value = true
-      error.value = null
-    }
+  async function getItems() {
+    loading.value = true
+    error.value = null
     try {
       items.value = await fetchWrapper.get(`${baseUrl}/items`)
     } catch (err) {
-      if (manageLoading) {
-        error.value = err
-      }
+      error.value = err
       throw err
     } finally {
-      if (manageLoading) {
-        loading.value = false
-      }
+      loading.value = false
     }
   }
 
-  async function getExceptions(manageLoading = true) {
-    if (manageLoading) {
-      loading.value = true
-      error.value = null
-    }
+  async function getExceptions() {
+    loading.value = true
+    error.value = null
     try {
       exceptions.value = await fetchWrapper.get(`${baseUrl}/exceptions`)
     } catch (err) {
-      if (manageLoading) {
-        error.value = err
-      }
+      error.value = err
       throw err
     } finally {
-      if (manageLoading) {
-        loading.value = false
-      }
+      loading.value = false
     }
   }
 
@@ -54,10 +42,13 @@ export const useAltaStore = defineStore('alta', () => {
     error.value = null
     try {
       await fetchWrapper.post(`${baseUrl}/parse`)
-      await Promise.all([
-        getItems(false),
-        getExceptions(false)
+      // Fetch items and exceptions directly instead of using functions that toggle loading state
+      const [itemsData, exceptionsData] = await Promise.all([
+        fetchWrapper.get(`${baseUrl}/items`),
+        fetchWrapper.get(`${baseUrl}/exceptions`)
       ])
+      items.value = itemsData
+      exceptions.value = exceptionsData
     } catch (err) {
       error.value = err
     } finally {

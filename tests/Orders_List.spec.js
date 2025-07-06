@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import OrdersList from '@/components/Orders_List.vue'
+import { vuetifyStubs } from './test-utils.js'
 
 // Mock data
 const mockOrders = ref([
@@ -85,15 +86,7 @@ vi.mock('@/helpers/config.js', () => ({
 }))
 
 // Mock Vuetify components and other dependencies
-const globalStubs = {
-  'v-select': true,
-  'v-text-field': true,
-  'v-data-table-server': true,
-  'v-card': true,
-  'v-btn': true,
-  'v-tooltip': true,
-  'font-awesome-icon': true
-}
+const globalStubs = vuetifyStubs
 
 describe('Orders_List', () => {
   beforeEach(() => {

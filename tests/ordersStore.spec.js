@@ -5,7 +5,10 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn() }
+  fetchWrapper: {
+    get: vi.fn(),
+    put: vi.fn()
+  }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -55,5 +58,130 @@ describe('orders store', () => {
     await store.getById(5)
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/5`)
     expect(store.item).toEqual({ id: 5 })
+  })
+
+  it('handles getById error', async () => {
+    const error = new Error('Failed to fetch order')
+    fetchWrapper.get.mockRejectedValue(error)
+    const store = useOrdersStore()
+    await store.getById(5)
+    expect(store.item).toEqual({ error })
+  })
+
+  it('handles getAll error', async () => {
+    const error = new Error('Failed to fetch orders')
+    fetchWrapper.get.mockRejectedValue(error)
+    const store = useOrdersStore()
+    await store.getAll(1)
+    expect(store.error).toBe(error)
+    expect(store.loading).toBe(false)
+  })
+
+  describe('update method', () => {
+    it('updates order and calls API with correct parameters', async () => {
+      fetchWrapper.put.mockResolvedValue({ success: true })
+      
+      const store = useOrdersStore()
+      const updateData = { statusId: 2, tnVed: 'Updated' }
+      
+      const result = await store.update(5, updateData)
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        `${apiUrl}/orders/5`,
+        updateData
+      )
+      expect(result).toEqual({ success: true })
+    })
+
+    it('updates item in store when currently loaded item matches', async () => {
+      fetchWrapper.put.mockResolvedValue({ success: true })
+      
+      const store = useOrdersStore()
+      // Set up current item
+      store.item = { id: 5, statusId: 1, tnVed: 'Original' }
+      
+      const updateData = { statusId: 2, tnVed: 'Updated' }
+      await store.update(5, updateData)
+      
+      expect(store.item).toEqual({
+        id: 5,
+        statusId: 2,
+        tnVed: 'Updated'
+      })
+    })
+
+    it('updates item in items array when it exists', async () => {
+      fetchWrapper.put.mockResolvedValue({ success: true })
+      
+      const store = useOrdersStore()
+      // Set up items array
+      store.items = [
+        { id: 4, statusId: 1, tnVed: 'Other' },
+        { id: 5, statusId: 1, tnVed: 'Original' },
+        { id: 6, statusId: 1, tnVed: 'Another' }
+      ]
+      
+      const updateData = { statusId: 2, tnVed: 'Updated' }
+      await store.update(5, updateData)
+      
+      expect(store.items[1]).toEqual({
+        id: 5,
+        statusId: 2,
+        tnVed: 'Updated'
+      })
+      // Check other items weren't affected
+      expect(store.items[0]).toEqual({ id: 4, statusId: 1, tnVed: 'Other' })
+      expect(store.items[2]).toEqual({ id: 6, statusId: 1, tnVed: 'Another' })
+    })
+
+    it('does not update item when loaded item has different id', async () => {
+      fetchWrapper.put.mockResolvedValue({ success: true })
+      
+      const store = useOrdersStore()
+      // Set up current item with different id
+      store.item = { id: 7, statusId: 1, tnVed: 'Different' }
+      
+      const updateData = { statusId: 2, tnVed: 'Updated' }
+      await store.update(5, updateData)
+      
+      // Item should remain unchanged
+      expect(store.item).toEqual({ id: 7, statusId: 1, tnVed: 'Different' })
+    })
+
+    it('propagates errors when API call fails', async () => {
+      const errorMessage = 'Failed to update order'
+      fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
+      
+      const store = useOrdersStore()
+      const updateData = { statusId: 2 }
+      
+      await expect(store.update(5, updateData)).rejects.toThrow(errorMessage)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        `${apiUrl}/orders/5`,
+        updateData
+      )
+    })
+  })
+
+  describe('generate methods', () => {
+    it('generate calls with correct id', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      
+      const store = useOrdersStore()
+      await store.generate(123)
+      
+      expect(consoleSpy).toHaveBeenCalledWith('stub generate order XML', 123)
+      consoleSpy.mockRestore()
+    })
+
+    it('generateAll calls with correct registerId', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      
+      const store = useOrdersStore()
+      await store.generateAll(456)
+      
+      expect(consoleSpy).toHaveBeenCalledWith('stub generate all orders XML', 456)
+      consoleSpy.mockRestore()
+    })
   })
 })

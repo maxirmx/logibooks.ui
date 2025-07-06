@@ -62,15 +62,31 @@ export const useOrdersStore = defineStore('orders', () => {
   }
 
   async function update(id, data) {
-    console.log('stub update order', id, data)
+    const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+    
+    // Update the item in the store if it's currently loaded
+    if (item.value && item.value.id === id) {
+      // Merge the updated data with the existing item
+      item.value = { ...item.value, ...data }
+    }
+    
+    // Update the item in the items array if it exists
+    const itemIndex = items.value.findIndex(order => order.id === id)
+    if (itemIndex !== -1) {
+      items.value[itemIndex] = { ...items.value[itemIndex], ...data }
+    }
+    
+    return response
   }
 
   async function generate(id) {
-    console.log('stub generate order', id)
+    // Generate XML for a specific order - stub implementation
+    console.log('stub generate order XML', id)
   }
 
   async function generateAll(registerId) {
-    console.log('stub generate all orders for register', registerId)
+    // Generate XML for all orders in a register - stub implementation
+    console.log('stub generate all orders XML', registerId)
   }
 
   return {

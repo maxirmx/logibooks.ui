@@ -61,8 +61,8 @@ describe('CountryCodes_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockItems.value = [
-      { IsoNumeric: 840, IsoAlpha2: 'US', NameEnOfficial: 'United States', NameRuOfficial: 'США' },
-      { IsoNumeric: 643, IsoAlpha2: 'RU', NameEnOfficial: 'Russia', NameRuOfficial: 'Россия' }
+      { isoNumeric: 840, isoAlpha2: 'US', nameEnOfficial: 'United States', nameRuOfficial: 'США' },
+      { isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }
     ]
     mockLoading.value = false
     mockError.value = null

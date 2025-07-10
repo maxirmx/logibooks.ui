@@ -31,10 +31,10 @@ function filterCodes(value, query, item) {
   const q = query.toString().toUpperCase()
   const i = item.raw
   return (
-    i.IsoNumeric.toString().includes(q) ||
-    i.IsoAlpha2.toUpperCase().includes(q) ||
-    i.NameEnOfficial.toUpperCase().includes(q) ||
-    i.NameRuOfficial.toUpperCase().includes(q)
+    i.isoNumeric.toString().includes(q) ||
+    i.isoAlpha2.toUpperCase().includes(q) ||
+    i.nameEnOfficial.toUpperCase().includes(q) ||
+    i.nameRuOfficial.toUpperCase().includes(q)
   )
 }
 
@@ -78,7 +78,7 @@ const headers = [
         v-model:page="countries_page"
         :headers="headers"
         :items="countries"
-        :search="countries_search"
+        :search="authStore.countries_search"
         v-model:sort-by="countries_sort_by"
         :custom-filter="filterCodes"
         density="compact"
@@ -87,11 +87,12 @@ const headers = [
       <div v-if="!countries?.length && !loading" class="text-center m-5">
         Список стран пуст
       </div>
+
       <div v-if="countries?.length || countries_search">
         <v-text-field
-          v-model="countries_search"
+          v-model="authStore.countries_search"
           :append-inner-icon="mdiMagnify"
-          label="Поиск по таблице"
+          label="Поиск по любой информации о стране"
           variant="solo"
           hide-details
         />

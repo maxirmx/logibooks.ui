@@ -94,6 +94,17 @@ function getUserName() {
         <v-list-item v-if="authStore.isAdmin">
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
         </v-list-item>
+        
+        <!-- Справочники -->
+        <v-list-group>
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Справочники"></v-list-item>
+          </template>
+          <v-list-item>
+            <RouterLink to="/countrycodes" class="link">Страны</RouterLink>
+          </v-list-item>
+        </v-list-group>
+        
         <v-list-item>
           <RouterLink to="/login" @click="deauth()" class="link">Выход</RouterLink>
         </v-list-item>
@@ -182,5 +193,22 @@ nav a:first-of-type {
     background-color: var(--gtc-color-1);
 }
 
+/* Style for nested menu items */
+:deep(.v-list-group .v-list-item) {
+  padding-left: 2rem;
+}
 
+:deep(.v-list-group .v-list-item .link) {
+  font-size: 1rem;
+}
+
+
+
+/* Ensure menu group activator text matches list items */
+:deep(.v-list-group__header .v-list-item-title) {
+  font-size: 1.2rem !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  color: var(--primary-color) !important;
+}
 </style>

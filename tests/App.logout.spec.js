@@ -31,6 +31,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useStatusStore } from '@/stores/status.store.js'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -40,11 +43,21 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }))
 
 // Mock Vuetify display composable
-vi.mock('vuetify', () => ({
-  useDisplay: () => ({
-    height: { value: 600 }
-  })
-}))
+vi.mock('vuetify', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useDisplay: () => ({
+      height: { value: 600 }
+    })
+  }
+})
+
+// Create a Vuetify instance
+const vuetify = createVuetify({
+  components,
+  directives,
+})
 
 // Mock the router with all necessary routes
 const router = createRouter({
@@ -94,7 +107,7 @@ describe('App Logout Functionality', () => {
 
     wrapper = mount(App, {
       global: {
-        plugins: [router],
+        plugins: [router, vuetify], // <-- add vuetify here
         stubs: {
           RouterView: true,
           'v-app': { template: '<div class="v-app"><slot /></div>' },

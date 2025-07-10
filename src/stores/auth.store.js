@@ -54,6 +54,10 @@ export const useAuthStore = defineStore('auth', () => {
   const orders_page = ref(1)
   const orders_status = ref(null)
   const orders_tnved = ref('')
+  const countries_per_page = ref(10)
+  const countries_search = ref('')
+  const countries_sort_by = ref([])
+  const countries_page = ref(1)
   const returnUrl = ref(null)
   const re_jwt = ref(null)
   const re_tgt = ref(null)
@@ -148,6 +152,10 @@ export const useAuthStore = defineStore('auth', () => {
     orders_page,
     orders_status,
     orders_tnved,
+    countries_per_page,
+    countries_search,
+    countries_sort_by,
+    countries_page,
     returnUrl,
     re_jwt,
     re_tgt,

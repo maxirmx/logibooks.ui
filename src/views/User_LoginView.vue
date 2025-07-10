@@ -31,6 +31,7 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { getHomeRoute } from '@/helpers/login.navigation.js'
 
 const schema = Yup.object().shape({
   login_email: Yup.string()
@@ -52,7 +53,7 @@ function onSubmit(values, { setErrors }) {
 
   return authStore
     .login(login_email, login_password)
-    .then(() => router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id))
+    .then(() => router.push(getHomeRoute()))
     .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
 </script>

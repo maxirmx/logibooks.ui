@@ -16,6 +16,10 @@ export const vuetifyStubs = {
     template: '<textarea class="v-textarea-stub" data-testid="v-textarea"></textarea>',
     props: ['modelValue', 'label', 'rows', 'variant', 'density', 'hideDetails', 'readonly']
   },
+  'v-data-table': {
+    template: '<div class="v-data-table-stub" data-testid="v-data-table"><slot></slot></div>',
+    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density']
+  },
   'v-data-table-server': {
     template: '<div class="v-data-table-stub" data-testid="v-data-table"><slot></slot></div>',
     props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions']

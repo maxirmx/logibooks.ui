@@ -84,8 +84,11 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
       />
-      <div v-if="!items?.length && !loading" class="text-center m-5">
+      <div v-if="!items?.length && !loading && !codes_search" class="text-center m-5">
         Список кодов стран пуст
+      </div>
+      <div v-if="!items?.length && codes_search" class="text-center m-5">
+        Нет результатов, соответствующих вашему запросу
       </div>
       <div v-if="items?.length || codes_search">
         <v-text-field

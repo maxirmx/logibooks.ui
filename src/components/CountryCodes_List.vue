@@ -19,10 +19,10 @@ const { alert } = storeToRefs(alertStore)
 
 const authStore = useAuthStore()
 const {
-  codes_per_page,
-  codes_search,
-  codes_sort_by,
-  codes_page,
+  countries_per_page,
+  countries_search,
+  countries_sort_by,
+  countries_page,
   isAdmin
 } = storeToRefs(authStore)
 
@@ -42,7 +42,7 @@ async function updateCodes() {
   try {
     await countryCodesStore.update()
     await countryCodesStore.getAll()
-    alertStore.success('Коды стран обновлены')
+    alertStore.success('Информация о странах обновлена')
   } catch (err) {
     alertStore.error(err)
   }
@@ -62,24 +62,24 @@ const headers = [
     <hr class="hr" />
 
     <div class="link-crt" v-if="isAdmin">
-      <button @click="updateCodes" class="link">
+      <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />
         &nbsp;&nbsp;&nbsp;Обновить информацию о странах из справочника ООН
-      </button>
+      </a>
     </div>
 
     <v-card>
       <v-data-table
         v-if="countries?.length"
-        v-model:items-per-page="codes_per_page"
+        v-model:items-per-page="countries_per_page"
         items-per-page-text="Стран на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="codes_page"
+        v-model:page="countries_page"
         :headers="headers"
         :items="countries"
-        :search="codes_search"
-        v-model:sort-by="codes_sort_by"
+        :search="countries_search"
+        v-model:sort-by="countries_sort_by"
         :custom-filter="filterCodes"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -87,9 +87,9 @@ const headers = [
       <div v-if="!countries?.length && !loading" class="text-center m-5">
         Список стран пуст
       </div>
-      <div v-if="countries?.length || codes_search">
+      <div v-if="countries?.length || countries_search">
         <v-text-field
-          v-model="codes_search"
+          v-model="countries_search"
           :append-inner-icon="mdiMagnify"
           label="Поиск по таблице"
           variant="solo"

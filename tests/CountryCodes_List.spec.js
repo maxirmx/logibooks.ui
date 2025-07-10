@@ -45,10 +45,10 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    codes_per_page: codesPerPage,
-    codes_search: codesSearch,
-    codes_sort_by: codesSortBy,
-    codes_page: codesPage,
+    countries_per_page: codesPerPage,
+    countries_search: codesSearch,
+    countries_sort_by: codesSortBy,
+    countries_page: codesPage,
     isAdmin: mockIsAdmin
   })
 }))
@@ -94,7 +94,7 @@ describe('CountryCodes_List.vue', () => {
     expect(update).toHaveBeenCalled()
     // called once on mount and once after update
     expect(getAll).toHaveBeenCalledTimes(2)
-    expect(success).toHaveBeenCalledWith('Коды стран обновлены')
+    expect(success).toHaveBeenCalledWith('Информация о странах обновлена')
   })
 
   it('updateCodes displays error alert on failure', async () => {
@@ -107,13 +107,13 @@ describe('CountryCodes_List.vue', () => {
   it('shows empty message when no items', () => {
     mockItems.value = []
     const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Список кодов стран пуст')
+    expect(wrapper.text()).toContain('Список стран пуст')
   })
 
   it('renders admin update button when user is admin', () => {
     mockIsAdmin.value = true
     const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Обновить коды стран')
+    expect(wrapper.text()).toContain('Обновить информацию о странах')
   })
 
   it('shows spinner and error message', () => {
@@ -121,6 +121,6 @@ describe('CountryCodes_List.vue', () => {
     mockError.value = 'bad'
     const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.html()).toContain('spinner-border')
-    expect(wrapper.html()).toContain('Ошибка при загрузке кодов стран')
+    expect(wrapper.html()).toContain('Ошибка при загрузке информации')
   })
 })

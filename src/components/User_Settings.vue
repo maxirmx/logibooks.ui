@@ -28,6 +28,7 @@ import { ref } from 'vue'
 
 import router from '@/router'
 import { storeToRefs } from 'pinia'
+import { getHomeRoute } from '@/helpers/login.navigation.js'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useUsersStore } from '@/stores/users.store.js'
@@ -124,7 +125,7 @@ function onSubmit(values, { setErrors }) {
       return usersStore
         .add(values, true)
         .then(() =>
-          router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
+          router.push(getHomeRoute())
         )
         .catch((error) => setErrors({ apiError: error.message || String(error) }))
     } else {
@@ -154,7 +155,7 @@ function onSubmit(values, { setErrors }) {
     return usersStore
       .update(props.id, values, true)
       .then(() =>
-        router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
+        router.push(getHomeRoute())
       )
       .catch((error) => setErrors({ apiError: error.message || String(error) }))
   }
@@ -327,7 +328,7 @@ function onSubmit(values, { setErrors }) {
           class="button secondary"
           type="button"
           @click="
-            $router.push(authStore.isAdmin ? '/users' : '/user/edit/' + authStore.user.id)
+            $router.push(getHomeRoute())
           "
         >
           Отменить

@@ -26,6 +26,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { getHomeRoute } from '@/helpers/login.navigation.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
@@ -45,16 +46,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: ( ) => {
-        const auth = useAuthStore()
-        if (!auth.user) {
-          return '/login'
-        }
-        // Priority: logist > administrator > regular user
-        if (auth.isLogist) return '/registers'
-        if (auth.isAdmin) return '/users'
-        return '/user/edit/' + auth.user.id
-      }
+      redirect: () => getHomeRoute()
     },
     {
       path: '/login',
@@ -179,9 +171,7 @@ router.beforeEach(async (to) => {
     }
     
     // No need to login, redirect based on role priority
-    if (auth.isLogist) return '/registers'
-    if (auth.isAdmin) return '/users'
-    return '/user/edit/' + auth.user.id
+    return getHomeRoute()
   }
 
   // (5) Allow access to other routes

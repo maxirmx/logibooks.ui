@@ -19,14 +19,14 @@ describe('country codes store', () => {
   })
 
   it('fetches codes from API', async () => {
-    const mockCodes = [{ IsoNumeric: 643, IsoAlpha2: 'RU', NameEnOfficial: 'Russia', NameRuOfficial: 'Россия' }]
+    const mockCodes = [{ isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }]
     fetchWrapper.get.mockResolvedValue(mockCodes)
 
     const store = useCountryCodesStore()
     await store.getAll()
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/countrycodes/compact`)
-    expect(store.items).toEqual(mockCodes)
+    expect(store.countries).toEqual(mockCodes)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })

@@ -5,10 +5,14 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { onMounted } from 'vue'
 
 const countryCodesStore = useCountryCodesStore()
 const { items, loading, error } = storeToRefs(countryCodesStore)
-countryCodesStore.getAll()
+
+onMounted(() => {
+  countryCodesStore.getAll()
+})
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)

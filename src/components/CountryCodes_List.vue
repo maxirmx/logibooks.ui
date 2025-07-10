@@ -13,6 +13,7 @@ const { items, loading, error } = storeToRefs(countryCodesStore)
 onMounted(() => {
   countryCodesStore.getAll()
 })
+
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 

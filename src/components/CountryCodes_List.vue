@@ -8,7 +8,7 @@ import { mdiMagnify } from '@mdi/js'
 import { onMounted } from 'vue'
 
 const countryCodesStore = useCountryCodesStore()
-const { items, loading, error } = storeToRefs(countryCodesStore)
+const { countries, loading, error } = storeToRefs(countryCodesStore)
 
 onMounted(() => {
   countryCodesStore.getAll()
@@ -49,45 +49,45 @@ async function updateCodes() {
 }
 
 const headers = [
-  { title: 'ISO Num', key: 'IsoNumeric', align: 'start', width: '80px' },
-  { title: 'ISO 2', key: 'IsoAlpha2', align: 'start', width: '80px' },
-  { title: 'English', key: 'NameEnOfficial', align: 'start' },
-  { title: 'Русский', key: 'NameRuOfficial', align: 'start' }
+  { title: 'Код', key: 'isoNumeric', align: 'start', width: '80px' },
+  { title: 'Обозначение', key: 'isoAlpha2', align: 'start', width: '80px' },
+  { title: 'Русское название', key: 'nameRuOfficial', align: 'start' },
+  { title: 'Английское название', key: 'nameEnOfficial', align: 'start' },
 ]
 </script>
 
 <template>
   <div class="settings table-2">
-    <h1 class="primary-heading">Коды стран</h1>
+    <h1 class="primary-heading">Cтраны</h1>
     <hr class="hr" />
 
     <div class="link-crt" v-if="isAdmin">
       <button @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />
-        &nbsp;&nbsp;&nbsp;Обновить коды стран
+        &nbsp;&nbsp;&nbsp;Обновить информацию о странах из справочника ООН
       </button>
     </div>
 
     <v-card>
       <v-data-table
-        v-if="items?.length"
+        v-if="countries?.length"
         v-model:items-per-page="codes_per_page"
-        items-per-page-text="Кодов на странице"
+        items-per-page-text="Стран на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
         v-model:page="codes_page"
         :headers="headers"
-        :items="items"
+        :items="countries"
         :search="codes_search"
         v-model:sort-by="codes_sort_by"
         :custom-filter="filterCodes"
         density="compact"
         class="elevation-1 interlaced-table"
       />
-      <div v-if="!items?.length && !loading" class="text-center m-5">
-        Список кодов стран пуст
+      <div v-if="!countries?.length && !loading" class="text-center m-5">
+        Список стран пуст
       </div>
-      <div v-if="items?.length || codes_search">
+      <div v-if="countries?.length || codes_search">
         <v-text-field
           v-model="codes_search"
           :append-inner-icon="mdiMagnify"
@@ -101,7 +101,7 @@ const headers = [
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке кодов стран: {{ error }}</div>
+      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
     </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>

@@ -6,7 +6,7 @@ import { apiUrl } from '@/helpers/config.js'
 const baseUrl = `${apiUrl}/countrycodes`
 
 export const useCountryCodesStore = defineStore('countrycodes', () => {
-  const items = ref([])
+  const countries = ref([])
   const loading = ref(false)
   const error = ref(null)
 
@@ -14,7 +14,7 @@ export const useCountryCodesStore = defineStore('countrycodes', () => {
     loading.value = true
     error.value = null
     try {
-      items.value = await fetchWrapper.get(`${baseUrl}/compact`)
+      countries.value = await fetchWrapper.get(`${baseUrl}/compact`)
     } catch (err) {
       error.value = err
     } finally {
@@ -26,5 +26,5 @@ export const useCountryCodesStore = defineStore('countrycodes', () => {
     await fetchWrapper.post(`${baseUrl}/update`)
   }
 
-  return { items, loading, error, getAll, update }
+  return { countries, loading, error, getAll, update }
 })

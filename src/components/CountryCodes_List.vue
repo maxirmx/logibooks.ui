@@ -64,7 +64,7 @@ const headers = [
     <div class="link-crt" v-if="isAdmin">
       <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />
-        &nbsp;&nbsp;&nbsp;Обновить информацию о странах из справочника ООН
+        &nbsp;&nbsp;&nbsp;Обновить информацию о странах
       </a>
     </div>
 

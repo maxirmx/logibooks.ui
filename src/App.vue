@@ -199,8 +199,16 @@ nav a:first-of-type {
 }
 
 :deep(.v-list-group .v-list-item .link) {
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 
+
+/* Ensure menu group activator text matches list items */
+:deep(.v-list-group__header .v-list-item-title) {
+  font-size: 1.2rem !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  color: var(--primary-color) !important;
+}
 </style>

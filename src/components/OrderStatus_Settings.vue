@@ -51,9 +51,7 @@ const alertStore = useAlertStore()
 const isCreate = computed(() => props.mode === 'create')
 
 let orderStatus = ref({
-  name: '',
-  title: '',
-  description: ''
+  title: ''
 })
 
 if (!isCreate.value) {
@@ -73,11 +71,7 @@ function getButtonText() {
 
 // Validation schema
 const schema = Yup.object({
-  name: Yup.string()
-    .required('Имя обязательно')
-    .matches(/^[a-z_]+$/, 'Имя может содержать только строчные латинские буквы и символ подчеркивания'),
-  title: Yup.string().required('Заголовок обязателен'),
-  description: Yup.string()
+  title: Yup.string().required('Название статуса обязательно')
 })
 
 // Form submission
@@ -121,39 +115,14 @@ function onSubmit(values, { setErrors }) {
       v-slot="{ errors, isSubmitting }"
     >
       <div class="form-group">
-        <label for="name" class="label">Имя:</label>
-        <Field
-          name="name"
-          id="name"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.name }"
-          placeholder="Имя (только строчные латинские буквы и _)"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="title" class="label">Заголовок:</label>
+        <label for="title" class="label">Название статуса:</label>
         <Field
           name="title"
           id="title"
           type="text"
           class="form-control input"
           :class="{ 'is-invalid': errors.title }"
-          placeholder="Заголовок"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="description" class="label">Описание:</label>
-        <Field
-          name="description"
-          id="description"
-          as="textarea"
-          rows="3"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.description }"
-          placeholder="Описание статуса заказа"
+          placeholder="Название статуса"
         />
       </div>
 
@@ -171,9 +140,7 @@ function onSubmit(values, { setErrors }) {
         </button>
       </div>
 
-      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
       <div v-if="errors.title" class="alert alert-danger mt-3 mb-0">{{ errors.title }}</div>
-      <div v-if="errors.description" class="alert alert-danger mt-3 mb-0">{{ errors.description }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>

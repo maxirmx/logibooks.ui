@@ -82,6 +82,21 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/orderstatus/create',
+      name: 'Создание статуса заказа',
+      component: () => import('@/views/OrderStatus_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/orderstatus/edit/:id',
+      name: 'Редактирование статуса заказа',
+      component: () => import('@/views/OrderStatus_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/countries',
       name: 'Страны',
       component: () => import('@/views/Countries_View.vue'),
@@ -129,21 +144,6 @@ const router = createRouter({
       path: '/company/edit/:id',
       name: 'Изменить информацию о компании',
       component: () => import('@/views/Company_EditView.vue'),
-      props: route => ({
-        id: Number(route.params.id)
-      }),
-      meta: { requiresAdmin: true }
-    },
-    {
-      path: '/orderstatus/create',
-      name: 'Создание статуса заказа',
-      component: () => import('@/views/OrderStatus_CreateView.vue'),
-      meta: { requiresAdmin: true }
-    },
-    {
-      path: '/orderstatus/edit/:id',
-      name: 'Редактирование статуса заказа',
-      component: () => import('@/views/OrderStatus_EditView.vue'),
       props: route => ({
         id: Number(route.params.id)
       }),

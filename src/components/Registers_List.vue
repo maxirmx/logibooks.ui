@@ -104,7 +104,7 @@ const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
-  { title: 'Заказчик', key: 'customerId', align: 'start' },
+  { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
@@ -147,8 +147,8 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template #[`item.customerId`]="{ item }">
-          {{ getCustomerName(item.customerId) }}
+        <template #[`item.companyId`]="{ item }">
+          {{ getCustomerName(item.companyId) }}
         </template>
         <template #[`item.ordersTotal`]="{ item }">
           {{ item.ordersTotal }}

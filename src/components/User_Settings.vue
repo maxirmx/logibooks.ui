@@ -91,7 +91,7 @@ function asAdmin() {
 }
 
 function getTitle() {
-  return isRegister() ? (asAdmin() ? 'Регистрация пользователя' : 'Регистрация') : 'Настройки'
+  return isRegister() ? (asAdmin() ? 'Регистрация пользователя' : 'Регистрация') : 'Изменить информацию о пользователе'
 }
 
 function getButton() {

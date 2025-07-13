@@ -120,7 +120,6 @@ async function deleteCompany(company) {
   if (confirmed) {
     try {
       await companiesStore.remove(company.id)
-      alertStore.success('Информация о компании успешно удалена')
     } catch (error) {
       if (error.message?.includes('409')) {
         alertStore.error('Нельзя удалить информацию о компании, у которой есть связанные записи')
@@ -157,7 +156,7 @@ defineExpose({
       <router-link v-if="authStore.isAdmin" to="/company/create" class="link">
         <font-awesome-icon
           size="1x"
-          icon="fa-solid fa-plus"
+          icon="fa-solid fa-building"
           class="link"
         />&nbsp;&nbsp;&nbsp;Регистрировать компанию
       </router-link>

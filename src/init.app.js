@@ -42,10 +42,11 @@ import {
   faUserPlus,
   faList,
   faUpload,
-  faCog
+  faCog,
+  faBuilding
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog)
+library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog, faBuilding)
 
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
@@ -82,7 +83,7 @@ export function initializeApp() {
     dataFooter: {
       ...ru.dataFooter,
       firstPage: 'Первая страница',
-      prevPage: 'Предыдущая страница', 
+      prevPage: 'Предыдущая страница',
       nextPage: 'Следующая страница',
       lastPage: 'Последняя страница'
     }

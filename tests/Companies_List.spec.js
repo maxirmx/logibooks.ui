@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
@@ -9,20 +9,20 @@ import CompaniesListVue from '@/components/Companies_List.vue'
 
 // Mock stores
 const mockCompaniesStore = {
-  companies: [],
-  loading: false,
-  error: null,
+  companies: ref([]),
+  loading: ref(false),
+  error: ref(null),
   getAll: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   remove: vi.fn()
 }
 
-const mockCountryCodesStore = {
-  countries: [
+const mockCountriesStore = {
+  countries: ref([
     { isoNumeric: 643, nameRu: 'Россия' },
     { isoNumeric: 860, nameRu: 'Узбекистан' }
-  ],
+  ]),
   getAll: vi.fn()
 }
 
@@ -40,8 +40,8 @@ vi.mock('@/stores/companies.store.js', () => ({
   useCompaniesStore: () => mockCompaniesStore
 }))
 
-vi.mock('@/stores/countrycodes.store.js', () => ({
-  useCountryCodesStore: () => mockCountryCodesStore
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => mockCountriesStore
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -133,7 +133,7 @@ describe('Companies_List', () => {
   it('calls getAll on mount', () => {
     wrapper = createWrapper()
     expect(mockCompaniesStore.getAll).toHaveBeenCalled()
-    expect(mockCountryCodesStore.getAll).toHaveBeenCalled()
+    expect(mockCountriesStore.getAll).toHaveBeenCalled()
   })
 
   it('shows country names correctly', async () => {

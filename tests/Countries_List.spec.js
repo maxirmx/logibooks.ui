@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import CountryCodesList from '@/components/CountryCodes_List.vue'
+import CountriesList from '@/components/Countries_List.vue'
 import { vuetifyStubs } from './test-utils.js'
 
 const mockItems = ref([
@@ -24,8 +24,8 @@ const success = vi.fn()
 const error = vi.fn()
 const clear = vi.fn()
 
-vi.mock('@/stores/countrycodes.store.js', () => ({
-  useCountryCodesStore: () => ({
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
@@ -57,7 +57,7 @@ vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
 
-describe('CountryCodes_List.vue', () => {
+describe('Countries_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockItems.value = [
@@ -71,14 +71,14 @@ describe('CountryCodes_List.vue', () => {
   })
 
   it('calls getAll on mount', () => {
-    mount(CountryCodesList, {
+    mount(CountriesList, {
       global: { stubs: vuetifyStubs }
     })
     expect(getAll).toHaveBeenCalled()
   })
 
   it('filterCodes matches multiple fields', () => {
-    const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     const item = { raw: mockItems.value[1] }
     const f = wrapper.vm.filterCodes
     expect(f(null, '643', item)).toBe(true)
@@ -89,7 +89,7 @@ describe('CountryCodes_List.vue', () => {
 
   it('updateCodes calls store and alerts on success', async () => {
     update.mockResolvedValue()
-    const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     await wrapper.vm.updateCodes()
     expect(update).toHaveBeenCalled()
     // called once on mount and once after update
@@ -99,27 +99,27 @@ describe('CountryCodes_List.vue', () => {
 
   it('updateCodes displays error alert on failure', async () => {
     update.mockRejectedValueOnce(new Error('fail'))
-    const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     await wrapper.vm.updateCodes()
     expect(error).toHaveBeenCalledWith(expect.any(Error))
   })
 
   it('shows empty message when no items', () => {
     mockItems.value = []
-    const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.text()).toContain('Список стран пуст')
   })
 
   it('renders admin update button when user is admin', () => {
     mockIsAdmin.value = true
-    const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.text()).toContain('Обновить информацию о странах')
   })
 
   it('shows spinner and error message', () => {
     mockLoading.value = true
     mockError.value = 'bad'
-    const wrapper = mount(CountryCodesList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).toContain('Ошибка при загрузке информации')
   })

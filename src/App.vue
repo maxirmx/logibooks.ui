@@ -101,7 +101,7 @@ function getUserName() {
             <v-list-item v-bind="props" title="Справочники"></v-list-item>
           </template>
           <v-list-item>
-            <RouterLink to="/countrycodes" class="link">Страны</RouterLink>
+            <RouterLink to="/countries" class="link">Страны</RouterLink>
           </v-list-item>
            <v-list-item>
             <RouterLink to="/companies" class="link">Компании</RouterLink>

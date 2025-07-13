@@ -1,17 +1,17 @@
 <script setup>
 import { storeToRefs } from 'pinia'
-import { useCountryCodesStore } from '@/stores/countrycodes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { onMounted } from 'vue'
 
-const countryCodesStore = useCountryCodesStore()
-const { countries, loading, error } = storeToRefs(countryCodesStore)
+const countriesStore = useCountriesStore()
+const { countries, loading, error } = storeToRefs(countriesStore)
 
 onMounted(() => {
-  countryCodesStore.getAll()
+  countriesStore.getAll()
 })
 
 const alertStore = useAlertStore()
@@ -40,8 +40,8 @@ function filterCodes(value, query, item) {
 
 async function updateCodes() {
   try {
-    await countryCodesStore.update()
-    await countryCodesStore.getAll()
+    await countriesStore.update()
+    await countriesStore.getAll()
     alertStore.success('Информация о странах обновлена')
   } catch (err) {
     alertStore.error(err)

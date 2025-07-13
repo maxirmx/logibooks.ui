@@ -76,9 +76,9 @@ const router = createRouter({
       component: () => import('@/views/Companies_View.vue'),
     },
     {
-      path: '/countrycodes',
-      name: 'Коды стран',
-      component: () => import('@/views/CountryCodes_View.vue'),
+      path: '/countries',
+      name: 'Страны',
+      component: () => import('@/views/Countries_View.vue'),
     },
     {
       path: '/registers',

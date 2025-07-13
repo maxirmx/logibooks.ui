@@ -25,7 +25,7 @@ export default mergeConfig(
         reporter: ['text', 'html', 'lcov', 'json'], // Added lcov format for Codecov
         include: [
           'src/helpers/**/*.js',
-          'src/stores/**/*.js', 
+          'src/stores/**/*.js',
           // Add additional source directories as needed:
           'src/services/**/*.js',
           'src/components/**/*.vue',
@@ -42,7 +42,10 @@ export default mergeConfig(
         branches: 60,
         functions: 70,
         lines: 70
-      }    
+      }
+    },
+    define: {
+      global: 'globalThis',
     }
   })
 )

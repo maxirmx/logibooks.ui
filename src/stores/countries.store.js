@@ -3,9 +3,9 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/countrycodes`
+const baseUrl = `${apiUrl}/countries`
 
-export const useCountryCodesStore = defineStore('countrycodes', () => {
+export const useCountriesStore = defineStore('countries', () => {
   const countries = ref([])
   const loading = ref(false)
   const error = ref(null)

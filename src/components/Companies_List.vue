@@ -27,7 +27,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCompaniesStore } from '@/stores/companies.store.js'
-import { useCountryCodesStore } from '@/stores/countrycodes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -37,13 +37,13 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify, mdiPlus, mdiPencil, mdiDelete } from '@mdi/js'
 
 const companiesStore = useCompaniesStore()
-const countryCodesStore = useCountryCodesStore()
+const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { companies, loading } = storeToRefs(companiesStore)
-const { countries } = storeToRefs(countryCodesStore)
+const { countries } = storeToRefs(countriesStore)
 const { alert } = storeToRefs(alertStore)
 
 // Dialog states
@@ -163,7 +163,7 @@ async function deleteCompany(company) {
 // Initialize data
 onMounted(async () => {
   await companiesStore.getAll()
-  await countryCodesStore.getAll()
+  await countriesStore.getAll()
 })
 </script>
 
@@ -220,11 +220,11 @@ onMounted(async () => {
           v-model:items-per-page="itemsPerPage"
           class="elevation-1"
         >
-          <template #item.countryIsoNumeric="{ item }">
+        <template v-slot:[`countryIsoNumeric`]="{ item }">
             {{ getCountryName(item.countryIsoNumeric) }}
           </template>
 
-          <template #item.actions="{ item }">
+          <template v-slot:[`actions`]="{ item }">
             <v-btn
               v-if="authStore.isAdmin"
               size="small"

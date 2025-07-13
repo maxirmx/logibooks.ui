@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ref, computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useCompaniesStore } from '@/stores/companies.store.js'

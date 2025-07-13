@@ -57,7 +57,7 @@ vi.mock('@/stores/orders.store.js', () => ({
   useOrdersStore: vi.fn(() => mockOrdersStore)
 }))
 
-vi.mock('@/stores/order.checkstatus.store.js', () => ({
+vi.mock('@/stores/order.checkstatuses.store.js', () => ({
   useOrderCheckStatusStore: vi.fn(() => mockStatusStore)
 }))
 

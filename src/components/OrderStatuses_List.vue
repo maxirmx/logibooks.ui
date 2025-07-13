@@ -24,10 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ref, computed, onMounted } from 'vue'
-import router from '@/router'
+import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useOrderStatusesStore } from '@/stores/orderstatuses.store.js'
+import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -69,7 +68,7 @@ const headers = [
   { title: 'Описание', key: 'description', sortable: true }
 ]
 
-function openEditDialog(orderStatus) {
+function openEditDialog() {
   // TODO: Implement edit routing when OrderStatus_Settings is created
   alertStore.info('Редактирование статуса заказа будет реализовано позже')
 }

@@ -1,7 +1,7 @@
 <script setup>
 import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatus.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'

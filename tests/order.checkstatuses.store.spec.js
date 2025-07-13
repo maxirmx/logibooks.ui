@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatus.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 

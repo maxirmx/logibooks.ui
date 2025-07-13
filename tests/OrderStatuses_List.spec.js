@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import OrderStatusesList from '@/components/OrderStatuses_List.vue'
-import { defaultGlobalStubs, createMockStore, waitForTicks } from './test-utils.js'
+import { defaultGlobalStubs } from './test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues
 const getAllOrderStatuses = vi.hoisted(() => vi.fn())
@@ -34,7 +34,7 @@ const mockOrderStatuses = ref([
 ])
 
 // Mock stores
-vi.mock('@/stores/orderstatuses.store.js', () => ({
+vi.mock('@/stores/order.statuses.store.js', () => ({
   useOrderStatusesStore: () => ({
     orderStatuses: mockOrderStatuses,
     orderStatus: ref({ loading: false }),
@@ -83,9 +83,6 @@ vi.mock('@mdi/js', () => ({
 
 describe('OrderStatuses_List.vue', () => {
   let wrapper
-  let orderStatusesStore
-  let authStore
-  let alertStore
 
   beforeEach(() => {
     // Reset all mocks
@@ -103,9 +100,6 @@ describe('OrderStatuses_List.vue', () => {
         stubs: defaultGlobalStubs
       }
     })
-
-    // Get store references
-    orderStatusesStore = wrapper.vm.$options.__asyncLoader ? null : wrapper.vm
   })
 
   afterEach(() => {

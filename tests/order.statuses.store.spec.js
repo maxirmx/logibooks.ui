@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useOrderStatusesStore } from '@/stores/orderstatuses.store.js'
+import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 
 // Mock functions at top level to avoid hoisting issues
 const mockGet = vi.hoisted(() => vi.fn())
@@ -22,7 +22,7 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:3000/api'
 }))
 
-describe('orderstatuses.store.js', () => {
+describe('order.statuses.store.js', () => {
   let store
   let pinia
 

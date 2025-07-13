@@ -86,7 +86,6 @@ const headers = computed(() => {
     { title: registerColumnTitles.Sticker, sortable: false, key: 'sticker', align: 'start', width: '100px' },
     { title: registerColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
     { title: registerColumnTitles.StickerCode, sortable: false, key: 'stickerCode', align: 'start', width: '120px' },
-    { title: registerColumnTitles.ExtId, sortable: false, key: 'extId', align: 'start', width: '100px' },
     { title: registerColumnTitles.SiteArticle, sortable: false, key: 'siteArticle', align: 'start', width: '120px' },
     { title: registerColumnTitles.HeelHeight, sortable: false, key: 'heelHeight', align: 'start', width: '80px' },
     { title: registerColumnTitles.Size, sortable: false, key: 'size', align: 'start', width: '80px' },
@@ -119,11 +118,7 @@ const headers = computed(() => {
     { title: registerColumnTitles.Supplier, sortable: false, key: 'supplier', align: 'start', width: '150px' },
     { title: registerColumnTitles.SupplierInn, sortable: false, key: 'supplierInn', align: 'start', width: '120px' },
     { title: registerColumnTitles.Category, sortable: false, key: 'category', align: 'start', width: '120px' },
-    { title: registerColumnTitles.Subcategory, sortable: false, key: 'subcategory', align: 'start', width: '120px' },
-    { title: registerColumnTitles.PersonalData, sortable: false, key: 'personalData', align: 'start', width: '150px' },
-    { title: registerColumnTitles.CustomsClearance, sortable: false, key: 'customsClearance', align: 'start', width: '150px' },
-    { title: registerColumnTitles.DutyPayment, sortable: false, key: 'dutyPayment', align: 'start', width: '150px' },
-    { title: registerColumnTitles.OtherReason, sortable: false, key: 'otherReason', align: 'start', width: '150px' }
+    { title: registerColumnTitles.Subcategory, sortable: false, key: 'subcategory', align: 'start', width: '120px' }
   ]
 })
 

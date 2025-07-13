@@ -109,7 +109,6 @@ describe('Order_EditDialog', () => {
       'statusId',
       'tnVed',
       'invoiceDate',
-      'extId',
       'weightKg',
       'quantity',
       'unitPrice',

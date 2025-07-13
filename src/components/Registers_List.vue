@@ -25,8 +25,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { watch, ref } from 'vue'
+import { watch, ref, onMounted } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -38,12 +39,28 @@ import router from '@/router'
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
+const companiesStore = useCompaniesStore()
+const { companies } = storeToRefs(companiesStore)
+
 const alertStore = useAlertStore()
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
 
 const fileInput = ref(null)
+
+// Function to get customer name by customerId
+function getCustomerName(customerId) {
+  if (!customerId || !companies.value) return 'Неизвестно'
+  const company = companies.value.find(c => c.id === customerId)
+  if (!company) return 'Неизвестно'
+  return company.shortName || company.name || 'Неизвестно'
+}
+
+// Load companies on component mount
+onMounted(async () => {
+  await companiesStore.getAll()
+})
 
 function openFileDialog() {
   fileInput.value?.click()
@@ -83,26 +100,11 @@ function openOrders(item) {
   router.push(`/registers/${item.id}/orders`)
 }
 
-function formatDate(dateString) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat(navigator.language || 'ru-RU', { 
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  }).format(date)
-}
-
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
-  { title: 'Дата загрузки', key: 'date', align: 'start' },
+  { title: 'Заказчик', key: 'customerId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
@@ -112,9 +114,9 @@ const headers = [
     <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
-    <div class="link-crt">
+    <div class="link-crt d-flex upload-links">
       <a @click="openFileDialog" class="link" tabindex="0">
-        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
+        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "РВБ"
       </a>
       <v-file-input
         ref="fileInput"
@@ -123,7 +125,11 @@ const headers = [
         loading-text="Идёт загрузка реестра..."
         @update:model-value="fileSelected"      
       />
+      <a @click="console.log('Загружаем реестр Озон')" class="link" tabindex="0">
+        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "Интернет решения"
+      </a>
     </div>
+   
 
     <v-card>
       <v-data-table-server
@@ -141,8 +147,8 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template #[`item.date`]="{ item }">
-          {{ formatDate(item.date) }}
+        <template #[`item.customerId`]="{ item }">
+          {{ getCustomerName(item.customerId) }}
         </template>
         <template #[`item.ordersTotal`]="{ item }">
           {{ item.ordersTotal }}

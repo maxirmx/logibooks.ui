@@ -85,13 +85,15 @@ function filterCompanies(value, query, item) {
 const headers = [
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
-  { title: 'ИНН', key: 'inn', sortable: true },
-  { title: 'КПП', key: 'kpp', sortable: true },
-  { title: 'Название', key: 'name', sortable: true },
-  { title: 'Краткое название', key: 'shortName', sortable: true },
+  { title: 'Название', key: 'displayName', sortable: false },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
   { title: 'Город', key: 'city', sortable: true }
 ]
+
+// Helper function to get display name
+function getDisplayName(company) {
+  return company.shortName && company.shortName.trim() !== '' ? company.shortName : company.name
+}
 
 function openEditDialog(company) {
   router.push('/company/edit/' + company.id)
@@ -186,6 +188,10 @@ defineExpose({
         density="compact"
         class="elevation-1 interlaced-table"
       >
+        <template v-slot:[`item.displayName`]="{ item }">
+          {{ getDisplayName(item) }}
+        </template>
+
         <template v-slot:[`item.countryIsoNumeric`]="{ item }">
           {{ getCountryName(item.countryIsoNumeric) }}
         </template>

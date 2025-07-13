@@ -186,7 +186,10 @@ async function deleteCompany(company) {
 // Initialize data
 onMounted(async () => {
   await companiesStore.getAll()
-  await countriesStore.getAll()
+  // Only fetch countries if not already loaded
+  if (countries.value.length === 0) {
+    await countriesStore.getAll()
+  }
 })
 </script>
 
@@ -243,7 +246,7 @@ onMounted(async () => {
           v-model:items-per-page="itemsPerPage"
           class="elevation-1"
         >
-        <template v-slot:[`countryIsoNumeric`]="{ item }">
+          <template v-slot:[`item.countryIsoNumeric`]="{ item }">
             {{ getCountryName(item.countryIsoNumeric) }}
           </template>
 

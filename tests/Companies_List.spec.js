@@ -165,6 +165,9 @@ describe('Companies_List.vue', () => {
   })
 
   it('calls getAll methods on mount', async () => {
+    // Start with empty countries to test fetching
+    mockCountries.value = []
+    
     const wrapper = mount(CompaniesList, {
       global: {
         stubs: testStubs
@@ -176,6 +179,36 @@ describe('Companies_List.vue', () => {
 
     expect(getAllCompanies).toHaveBeenCalled()
     expect(getAllCountries).toHaveBeenCalled()
+    expect(wrapper.exists()).toBe(true)
+    
+    // Reset mock data for other tests
+    mockCountries.value = [
+      { id: 1, isoNumeric: 643, nameRu: 'Россия' },
+      { id: 2, isoNumeric: 840, nameRu: 'США' }
+    ]
+  })
+
+  it('does not fetch countries if already loaded', async () => {
+    // Clear previous calls
+    getAllCountries.mockClear()
+    
+    // Start with populated countries
+    mockCountries.value = [
+      { id: 1, isoNumeric: 643, nameRu: 'Россия' },
+      { id: 2, isoNumeric: 840, nameRu: 'США' }
+    ]
+    
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    // Wait for the onMounted hook to complete
+    await wrapper.vm.$nextTick()
+
+    expect(getAllCompanies).toHaveBeenCalled()
+    expect(getAllCountries).not.toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
   })
 

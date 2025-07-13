@@ -50,6 +50,7 @@ export const useCompaniesStore = defineStore('companies', () => {
   }
 
   async function getById(id) {
+    company.value = { loading: true }
     loading.value = true
     error.value = null
     try {
@@ -58,6 +59,7 @@ export const useCompaniesStore = defineStore('companies', () => {
     } catch (err) {
       error.value = err
       console.error('Failed to fetch company:', err)
+      company.value = { error: err }
       return null
     } finally {
       loading.value = false

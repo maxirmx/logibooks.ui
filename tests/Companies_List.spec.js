@@ -212,10 +212,10 @@ describe('Companies_List.vue', () => {
         stubs: testStubs
       }
     })
-    
+
     // Get auth store from the wrapper
     const authStore = wrapper.vm.authStore
-    
+
     const searchInput = wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
     if (searchInput.exists()) {
       await searchInput.setValue('Test Company')
@@ -245,7 +245,7 @@ describe('Companies_List.vue', () => {
     // Test search by name - use auth store search property
     authStore.companies_search = 'Test'
     await wrapper.vm.$nextTick()
-    
+
     // Since we're using v-data-table's built-in search now, we can't easily test filteredCompanies
     // Instead, we verify that the search property is set correctly
     expect(authStore.companies_search).toBe('Test')

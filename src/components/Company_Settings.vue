@@ -50,24 +50,25 @@ const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
 
 const { countries } = storeToRefs(countriesStore)
-let { company } = storeToRefs(companiesStore)
-
-// If creating, use a local reactive object
-if (props.mode === 'create') {
-  company = ref({
-    inn: '',
-    kpp: '',
-    name: '',
-    shortName: '',
-    countryIsoNumeric: null,
-    postalCode: '',
-    city: '',
-    street: ''
-  })
-}
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
+
+let company = ref({
+  inn: '',
+  kpp: '',
+  name: '',
+  shortName: '',
+  countryIsoNumeric: null,
+  postalCode: '',
+  city: '',
+  street: ''
+})
+
+if (!isCreate.value) {
+  ;({ company } = storeToRefs(companiesStore))
+  await companiesStore.getById(props.companyId)
+}
 
 // Get page title
 function getTitle() {
@@ -125,17 +126,6 @@ onMounted(async () => {
   // Fetch countries if not already loaded
   if (countries.value.length === 0) {
     await countriesStore.getAll()
-  }
-
-  // If editing, fetch the company data
-  if (!isCreate.value && props.companyId) {
-    try {
-      await companiesStore.getById(props.companyId)
-      // The company data is now available in the reactive company ref from the store
-    } catch (error) {
-      alertStore.error('Ошибка при загрузке данных компании')
-      router.push('/companies')
-    }
   }
 })
 </script>

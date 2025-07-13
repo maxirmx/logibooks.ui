@@ -81,10 +81,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function re() {
     const currentReJwt = re_jwt.value
     re_jwt.value = null
-    
+
     // Fetch status information regardless of re-authentication success, failure, or exception
     const statusStore = useStatusStore()
-    
+
     try {
       const userData = await fetchWrapper.put(`${baseUrl}/${re_tgt.value}`, { jwt: currentReJwt })
       user.value = userData
@@ -94,7 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
       await statusStore.fetchStatus().catch(() => {})
       throw error
     }
-    
+
     // Fetch status after successful re-authentication as well
     await statusStore.fetchStatus().catch(() => {})
   }
@@ -102,12 +102,12 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(email, password) {
     // Fetch status information regardless of login success, failure, or exception
     const statusStore = useStatusStore()
-    
+
     try {
       const userData = await fetchWrapper.post(`${baseUrl}/login`, { email, password })
       user.value = userData
       localStorage.setItem('user', JSON.stringify(userData))
-      
+
       if (returnUrl.value) {
         router.push(returnUrl.value)
         returnUrl.value = null
@@ -117,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
       await statusStore.fetchStatus().catch(() => {})
       throw error
     }
-    
+
     // Fetch status after successful login as well
     await statusStore.fetchStatus().catch(() => {})
   }
@@ -125,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     // Fetch status information regardless of logout success, failure, or exception
     const statusStore = useStatusStore()
-    
+
     try {
       user.value = null
       localStorage.removeItem('user')
@@ -135,7 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
       statusStore.fetchStatus().catch(() => {})
       throw error
     }
-    
+
     // Fetch status after successful logout as well
     statusStore.fetchStatus().catch(() => {})
   }

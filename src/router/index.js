@@ -112,6 +112,21 @@ const router = createRouter({
       props: route => ({
         id: Number(route.params.id)
       })
+    },
+    {
+      path: '/company/create',
+      name: 'Регистрация компании',
+      component: () => import('@/views/Company_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/company/edit/:id',
+      name: 'Изменить информацию о компании',
+      component: () => import('@/views/Company_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
     }
   ]
 })

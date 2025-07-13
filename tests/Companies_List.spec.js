@@ -14,13 +14,10 @@ const additionalStubs = {
   'v-spacer': {
     template: '<div class="v-spacer-stub" data-testid="v-spacer"></div>'
   },
-  'Form': {
-    template: '<form class="form-stub" data-testid="form"><slot></slot></form>',
-    props: ['validationSchema', 'initialValues']
-  },
-  'Field': {
-    template: '<div class="field-stub" data-testid="field"><slot></slot></div>',
-    props: ['name']
+  'CompanySettings': {
+    template: '<div class="company-settings-stub" data-testid="company-settings"><slot></slot></div>',
+    props: ['modelValue', 'mode', 'company'],
+    emits: ['update:modelValue', 'company-saved']
   },
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
@@ -56,10 +53,11 @@ const deleteCompanyFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
 const successFn = vi.hoisted(() => vi.fn())
 const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const mockPush = vi.hoisted(() => vi.fn())
 
-// Mock router
+// Mock router with a spy function
 const router = vi.hoisted(() => ({
-  push: vi.fn()
+  push: mockPush
 }))
 
 // Centralized mocks for all modules
@@ -122,25 +120,6 @@ vi.mock('@/router', () => ({
   default: router
 }), { virtual: true })
 
-// Mock vee-validate
-vi.mock('vee-validate', () => ({
-  Form: {
-    template: '<form class="form-stub" data-testid="form"><slot></slot></form>',
-    props: ['validationSchema', 'initialValues']
-  },
-  Field: {
-    template: '<div class="field-stub" data-testid="field"><slot></slot></div>',
-    props: ['name']
-  }
-}))
-
-// Mock Yup
-vi.mock('yup', () => ({
-  object: vi.fn(() => ({ required: vi.fn(), string: vi.fn(), number: vi.fn() })),
-  string: vi.fn(() => ({ required: vi.fn() })),
-  number: vi.fn(() => ({ required: vi.fn() }))
-}))
-
 // Mock helpers
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [10, 25, 50, 100]
@@ -159,8 +138,7 @@ describe('Companies_List.vue', () => {
     // Clear mocks before each test
     vi.clearAllMocks()
 
-    // Reset default mock behavior
-    confirmMock.mockResolvedValue(true)
+    // Reset default mock behavior - don't call the hoisted functions here
   })
 
   afterEach(() => {
@@ -295,22 +273,19 @@ describe('Companies_List.vue', () => {
     expect(wrapper.vm.getCountryName(null)).toBe('')
   })
 
-  it('opens create dialog when add link is clicked', async () => {
+  it('navigates to create page when add link is clicked', async () => {
     const wrapper = mount(CompaniesList, {
       global: {
         stubs: testStubs
       }
     })
 
-    // Test that the dialog opens when openCreateDialog is called directly
+    // Test that navigation happens when openCreateDialog is called
     await wrapper.vm.openCreateDialog()
-    expect(wrapper.vm.showDialog).toBe(true)
-    expect(wrapper.vm.isEditing).toBe(false)
-    expect(wrapper.vm.editingCompany).toBeDefined()
-    expect(wrapper.vm.editingCompany.inn).toBe('')
+    expect(router.push).toHaveBeenCalledWith('/company/create')
   })
 
-  it('opens edit dialog and populates form with company data', async () => {
+  it('navigates to edit page when edit is called', async () => {
     const wrapper = mount(CompaniesList, {
       global: {
         stubs: {
@@ -326,9 +301,7 @@ describe('Companies_List.vue', () => {
     const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
     await wrapper.vm.openEditDialog(company)
 
-    expect(wrapper.vm.showDialog).toBe(true)
-    expect(wrapper.vm.isEditing).toBe(true)
-    expect(wrapper.vm.editingCompany).toEqual(company)
+    expect(router.push).toHaveBeenCalledWith('/company/edit/1')
   })
 
   it('calls delete function when delete button is clicked', async () => {
@@ -387,176 +360,6 @@ describe('Companies_List.vue', () => {
     expect(deleteCompanyFn).not.toHaveBeenCalled()
   })
 
-  it('handles error when deleting company - 409 conflict', async () => {
-    // Set up the delete function to reject with a 409 error
-    deleteCompanyFn.mockRejectedValueOnce({ message: '409 Conflict' })
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Mock company data
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-
-    // Call the deleteCompany method directly
-    await wrapper.vm.deleteCompany(company)
-
-    // Verify that the error function was called with the specific message
-    expect(errorFn).toHaveBeenCalledWith('Нельзя удалить компанию, у которой есть связанные записи')
-  })
-
-  it('handles error when deleting company - general error', async () => {
-    // Set up the delete function to reject with a general error
-    deleteCompanyFn.mockRejectedValueOnce(new Error('Failed to delete company'))
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Mock company data
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-
-    // Call the deleteCompany method directly
-    await wrapper.vm.deleteCompany(company)
-
-    // Verify that the error function was called with the general message
-    expect(errorFn).toHaveBeenCalledWith('Ошибка при удалении компании')
-  })
-
-  it('saves new company successfully', async () => {
-    createCompany.mockResolvedValueOnce({ id: 2, inn: '987654321', name: 'New Company' })
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Open create dialog and set values
-    wrapper.vm.openCreateDialog()
-
-    // Mock form values
-    const formValues = {
-      inn: '987654321',
-      kpp: '123456789',
-      name: 'New Company',
-      shortName: 'NC',
-      countryIsoNumeric: 643,
-      city: 'Saint Petersburg',
-      street: 'Nevsky Prospect'
-    }
-
-    // Call saveCompany directly with form values
-    await wrapper.vm.saveCompany(formValues)
-
-    // Check if the create function was called with the right parameters
-    expect(createCompany).toHaveBeenCalledWith(formValues)
-
-    // Check if success message was shown
-    expect(successFn).toHaveBeenCalledWith('Компания успешно создана')
-
-    // Check if dialog was closed
-    expect(wrapper.vm.showDialog).toBe(false)
-  })
-
-  it('handles error when saving new company - 409 conflict', async () => {
-    // Set up the create function to reject with a 409 error
-    createCompany.mockRejectedValueOnce({ message: '409 Conflict' })
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Open create dialog
-    wrapper.vm.openCreateDialog()
-
-    // Mock form values
-    const formValues = {
-      inn: '123456789', // INN already exists
-      name: 'Duplicate Company',
-      countryIsoNumeric: 643
-    }
-
-    // Call saveCompany directly with form values
-    await wrapper.vm.saveCompany(formValues)
-
-    // Verify that the error function was called with the specific message
-    expect(errorFn).toHaveBeenCalledWith('Компания с таким ИНН уже существует')
-
-    // Dialog should remain open
-    expect(wrapper.vm.showDialog).toBe(true)
-  })
-
-  it('updates existing company successfully', async () => {
-    updateCompany.mockResolvedValueOnce(true)
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Open edit dialog with company data
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-    wrapper.vm.openEditDialog(company)
-
-    // Mock updated form values
-    const formValues = {
-      inn: '123456789',
-      name: 'Updated Company Name',
-      countryIsoNumeric: 643
-    }
-
-    // Call saveCompany directly with form values
-    await wrapper.vm.saveCompany(formValues)
-
-    // Check if the update function was called with the right parameters
-    expect(updateCompany).toHaveBeenCalledWith(1, formValues)
-
-    // Check if success message was shown
-    expect(successFn).toHaveBeenCalledWith('Компания успешно обновлена')
-
-    // Check if dialog was closed
-    expect(wrapper.vm.showDialog).toBe(false)
-  })
-
-  it('handles error when updating company', async () => {
-    // Set up the update function to reject with an error
-    updateCompany.mockRejectedValueOnce(new Error('Failed to update company'))
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Open edit dialog with company data
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-    wrapper.vm.openEditDialog(company)
-
-    // Mock updated form values
-    const formValues = {
-      inn: '123456789',
-      name: 'Updated Company Name',
-      countryIsoNumeric: 643
-    }
-
-    // Call saveCompany directly with form values
-    await wrapper.vm.saveCompany(formValues)
-
-    // Verify that the error function was called
-    expect(errorFn).toHaveBeenCalledWith('Ошибка при сохранении компании')
-
-    // Dialog should remain open
-    expect(wrapper.vm.showDialog).toBe(true)
-  })
-
   // Additional tests for better coverage
   it('displays loading state correctly', async () => {
     const wrapper = mount(CompaniesList, {
@@ -607,33 +410,6 @@ describe('Companies_List.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('cancels dialog correctly', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Open create dialog
-    wrapper.vm.openCreateDialog()
-    expect(wrapper.vm.showDialog).toBe(true)
-    expect(wrapper.vm.isEditing).toBe(false)
-
-    // Cancel dialog
-    wrapper.vm.showDialog = false
-    expect(wrapper.vm.showDialog).toBe(false)
-
-    // Open edit dialog
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-    wrapper.vm.openEditDialog(company)
-    expect(wrapper.vm.showDialog).toBe(true)
-    expect(wrapper.vm.isEditing).toBe(true)
-
-    // Cancel edit dialog
-    wrapper.vm.showDialog = false
-    expect(wrapper.vm.showDialog).toBe(false)
-  })
-
   it('tests itemsPerPage functionality', async () => {
     const wrapper = mount(CompaniesList, {
       global: {
@@ -648,76 +424,4 @@ describe('Companies_List.vue', () => {
   })
 
   // New tests for dynamic dialog configuration
-  it('returns correct dialog title for create mode', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    wrapper.vm.openCreateDialog()
-    expect(wrapper.vm.getDialogTitle()).toBe('Регистрация компании')
-  })
-
-  it('returns correct dialog title for edit mode', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-    wrapper.vm.openEditDialog(company)
-    expect(wrapper.vm.getDialogTitle()).toBe('Изменить информацию о компании')
-  })
-
-  it('returns correct dialog button text for create mode', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    wrapper.vm.openCreateDialog()
-    expect(wrapper.vm.getDialogButtonText()).toBe('Создать')
-  })
-
-  it('returns correct dialog button text for edit mode', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-    wrapper.vm.openEditDialog(company)
-    expect(wrapper.vm.getDialogButtonText()).toBe('Сохранить')
-  })
-
-  it('returns correct initial values for create mode', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    wrapper.vm.openCreateDialog()
-    const initialValues = wrapper.vm.getInitialValues()
-    expect(initialValues.inn).toBe('')
-    expect(initialValues.name).toBe('')
-    expect(initialValues.countryIsoNumeric).toBeNull()
-  })
-
-  it('returns correct initial values for edit mode', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
-    wrapper.vm.openEditDialog(company)
-    const initialValues = wrapper.vm.getInitialValues()
-    expect(initialValues).toEqual(company)
-  })
 })

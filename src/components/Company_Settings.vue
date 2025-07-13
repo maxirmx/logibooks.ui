@@ -31,7 +31,6 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
-import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
@@ -48,7 +47,6 @@ const props = defineProps({
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
-const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { countries } = storeToRefs(countriesStore)
@@ -129,7 +127,7 @@ onMounted(async () => {
     try {
       const companyData = await companiesStore.getById(props.companyId)
       company.value = { ...companyData }
-    } catch (error) {
+    } catch {
       alertStore.error('Ошибка при загрузке данных компании')
       router.push('/companies')
     }
@@ -157,7 +155,6 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.inn }"
           placeholder="ИНН"
         />
-        <div v-if="errors.inn" class="invalid-feedback">{{ errors.inn }}</div>
       </div>
 
       <div class="form-group">
@@ -170,7 +167,6 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.kpp }"
           placeholder="КПП"
         />
-        <div v-if="errors.kpp" class="invalid-feedback">{{ errors.kpp }}</div>
       </div>
 
       <div class="form-group">
@@ -183,7 +179,6 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название"
         />
-        <div v-if="errors.name" class="invalid-feedback">{{ errors.name }}</div>
       </div>
 
       <div class="form-group">
@@ -196,7 +191,6 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.shortName }"
           placeholder="Краткое название"
         />
-        <div v-if="errors.shortName" class="invalid-feedback">{{ errors.shortName }}</div>
       </div>
 
       <div class="form-group">
@@ -217,7 +211,6 @@ onMounted(async () => {
             {{ country.nameRuOfficial }}
           </option>
         </Field>
-        <div v-if="errors.countryIsoNumeric" class="invalid-feedback">{{ errors.countryIsoNumeric }}</div>
       </div>
 
       <div class="form-group">
@@ -230,7 +223,6 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.postalCode }"
           placeholder="Почтовый индекс"
         />
-        <div v-if="errors.postalCode" class="invalid-feedback">{{ errors.postalCode }}</div>
       </div>
 
       <div class="form-group">
@@ -243,7 +235,6 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.city }"
           placeholder="Город"
         />
-        <div v-if="errors.city" class="invalid-feedback">{{ errors.city }}</div>
       </div>
 
       <div class="form-group">
@@ -256,18 +247,30 @@ onMounted(async () => {
           :class="{ 'is-invalid': errors.street }"
           placeholder="Улица"
         />
-        <div v-if="errors.street" class="invalid-feedback">{{ errors.street }}</div>
       </div>
 
-      <div v-if="errors.apiError" class="alert alert-danger">{{ errors.apiError }}</div>
-
       <div class="form-group">
-        <button :disabled="isSubmitting" class="btn btn-primary">
+        <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           {{ getButtonText() }}
         </button>
-        <router-link to="/companies" class="btn btn-link">Отмена</router-link>
+        <button
+          class="button secondary"
+          type="button"
+          @click="$router.push('/companies')"
+        >
+          Отмена
+        </button>
       </div>
+      <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
+      <div v-if="errors.kpp" class="alert alert-danger mt-3 mb-0">{{ errors.kpp }}</div>
+      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
+      <div v-if="errors.shortName" class="alert alert-danger mt-3 mb-0">{{ errors.shortName }}</div>
+      <div v-if="errors.countryIsoNumeric" class="alert alert-danger mt-3 mb-0">{{ errors.countryIsoNumeric }}</div>
+      <div v-if="errors.postalCode" class="alert alert-danger mt-3 mb-0">{{ errors.postalCode }}</div>
+      <div v-if="errors.city" class="alert alert-danger mt-3 mb-0">{{ errors.city }}</div>
+      <div v-if="errors.street" class="alert alert-danger mt-3 mb-0">{{ errors.street }}</div>
+      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>

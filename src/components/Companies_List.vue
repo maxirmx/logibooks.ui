@@ -81,13 +81,12 @@ const headers = [
   { title: 'Город', key: 'city', sortable: true }
 ]
 
-// CRUD operations
-function openCreateDialog() {
-  router.push('/company/create')
-}
-
 function openEditDialog(company) {
   router.push('/company/edit/' + company.id)
+}
+
+function openCreateDialog() {
+  router.push('/company/create')
 }
 
 async function deleteCompany(company) {
@@ -127,6 +126,13 @@ onMounted(async () => {
   if (countries.value.length === 0) {
     await countriesStore.getAll()
   }
+})
+
+// Expose functions for testing
+defineExpose({
+  openCreateDialog,
+  openEditDialog,
+  deleteCompany
 })
 </script>
 

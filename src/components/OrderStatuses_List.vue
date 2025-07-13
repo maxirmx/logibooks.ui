@@ -32,6 +32,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import router from '@/router'
 
 const orderStatusesStore = useOrderStatusesStore()
 const authStore = useAuthStore()
@@ -68,14 +69,12 @@ const headers = [
   { title: 'Описание', key: 'description', sortable: true }
 ]
 
-function openEditDialog() {
-  // TODO: Implement edit routing when OrderStatus_Settings is created
-  alertStore.info('Редактирование статуса заказа будет реализовано позже')
+function openEditDialog(orderStatus) {
+  router.push('/orderstatus/edit/' + orderStatus.id)
 }
 
 function openCreateDialog() {
-  // TODO: Implement create routing when OrderStatus_Settings is created
-  alertStore.info('Создание статуса заказа будет реализовано позже')
+  router.push('/orderstatus/create')
 }
 
 async function deleteOrderStatus(orderStatus) {

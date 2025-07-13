@@ -133,6 +133,21 @@ const router = createRouter({
         id: Number(route.params.id)
       }),
       meta: { requiresAdmin: true }
+    },
+    {
+      path: '/orderstatus/create',
+      name: 'Создание статуса заказа',
+      component: () => import('@/views/OrderStatus_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/orderstatus/edit/:id',
+      name: 'Редактирование статуса заказа',
+      component: () => import('@/views/OrderStatus_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
     }
   ]
 })

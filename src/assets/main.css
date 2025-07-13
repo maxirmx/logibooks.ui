@@ -2,7 +2,7 @@
 
 :root {
   --gtc-color-1: #33ABE3;
-  
+
   /* Order form colors */
   --input-border-color: #ddd;
   --input-readonly-bg: #f5f5f5;
@@ -45,7 +45,7 @@
   margin: 0 auto;
 }
 
-/* Forms: user settings/register */
+/* Forms: user/company settings/register  */
 .form-2,
 .table-1,
 .list-1 {
@@ -450,7 +450,7 @@ a,
  .anti-btn:hover,
  .button-o-c:hover {
   color: #1976d2;
-  transform: scale(1.2); 
+  transform: scale(1.2);
   transition: all 0.2s ease-in-out;
 }
 }

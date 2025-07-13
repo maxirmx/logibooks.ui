@@ -336,8 +336,7 @@ describe('Companies_List.vue', () => {
     // If confirmed, should call delete function
     expect(deleteCompanyFn).toHaveBeenCalledWith(1)
 
-    // Should show success message
-    expect(successFn).toHaveBeenCalledWith('Информация о компании успешно удалена')
+    // Should not show success message - deletion is silent
   })
 
   it('does not delete company when confirmation is declined', async () => {

@@ -76,6 +76,12 @@ const router = createRouter({
       component: () => import('@/views/Companies_View.vue'),
     },
     {
+      path: '/orderstatuses',
+      name: 'Статусы заказов',
+      component: () => import('@/views/OrderStatuses_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/countries',
       name: 'Страны',
       component: () => import('@/views/Countries_View.vue'),

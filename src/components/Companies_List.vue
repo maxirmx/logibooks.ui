@@ -220,11 +220,11 @@ onMounted(async () => {
           v-model:items-per-page="itemsPerPage"
           class="elevation-1"
         >
-          <template #item.countryIsoNumeric="{ item }">
+        <template v-slot:[`countryIsoNumeric`]="{ item }">
             {{ getCountryName(item.countryIsoNumeric) }}
           </template>
 
-          <template #item.actions="{ item }">
+          <template v-slot:[`actions`]="{ item }">
             <v-btn
               v-if="authStore.isAdmin"
               size="small"

@@ -57,7 +57,7 @@ function getUserName() {
     : ''
 }
 
- 
+
 /*
 <v-list-item>
           <RouterLink to="/register" class="link">Регистрация</RouterLink>
@@ -66,7 +66,7 @@ function getUserName() {
           <RouterLink to="/recover" class="link">Восстановление пароля</RouterLink>
         </v-list-item>
 */
- 
+
 </script>
 
 <template>
@@ -94,17 +94,24 @@ function getUserName() {
         <v-list-item v-if="authStore.isAdmin">
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
         </v-list-item>
-        
+
         <!-- Справочники -->
         <v-list-group>
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Справочники"></v-list-item>
           </template>
           <v-list-item>
-            <RouterLink to="/countrycodes" class="link">Страны</RouterLink>
+            <RouterLink to="/countries" class="link">Страны</RouterLink>
           </v-list-item>
+           <v-list-item>
+            <RouterLink to="/companies" class="link">Компании</RouterLink>
+          </v-list-item>
+          <v-list-item v-if="authStore.isAdmin">
+            <RouterLink to="/orderstatuses" class="link">Статусы заказов</RouterLink>
+          </v-list-item>
+
         </v-list-group>
-        
+
         <v-list-item>
           <RouterLink to="/login" @click="deauth()" class="link">Выход</RouterLink>
         </v-list-item>

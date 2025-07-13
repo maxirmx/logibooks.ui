@@ -119,7 +119,6 @@ async function deleteUser(item) {
 }
 
 const headers = [
-  { title: '', align: 'center', key: 'actions0', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
   { title: 'Пользователь', align: 'start', key: 'id' },

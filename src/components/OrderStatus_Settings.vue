@@ -1,0 +1,180 @@
+<script setup>
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks frontend application
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { ref, computed } from 'vue'
+import router from '@/router'
+import { storeToRefs } from 'pinia'
+import { Form, Field } from 'vee-validate'
+import * as Yup from 'yup'
+import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+
+const props = defineProps({
+  mode: {
+    type: String,
+    required: true,
+    validator: (value) => ['create', 'edit'].includes(value)
+  },
+  orderStatusId: {
+    type: Number,
+    required: false
+  }
+})
+
+const orderStatusesStore = useOrderStatusesStore()
+const alertStore = useAlertStore()
+
+// Check if we're in create mode
+const isCreate = computed(() => props.mode === 'create')
+
+let orderStatus = ref({
+  name: '',
+  title: '',
+  description: ''
+})
+
+if (!isCreate.value) {
+  ;({ orderStatus } = storeToRefs(orderStatusesStore))
+  await orderStatusesStore.getById(props.orderStatusId)
+}
+
+// Get page title
+function getTitle() {
+  return isCreate.value ? 'Создание статуса заказа' : 'Редактирование статуса заказа'
+}
+
+// Get button text
+function getButtonText() {
+  return isCreate.value ? 'Создать' : 'Сохранить'
+}
+
+// Validation schema
+const schema = Yup.object({
+  name: Yup.string()
+    .required('Имя обязательно')
+    .matches(/^[a-z_]+$/, 'Имя может содержать только строчные латинские буквы и символ подчеркивания'),
+  title: Yup.string().required('Заголовок обязателен'),
+  description: Yup.string()
+})
+
+// Form submission
+function onSubmit(values, { setErrors }) {
+  if (isCreate.value) {
+    return orderStatusesStore
+      .create(values)
+      .then(() => {
+        alertStore.success('Статус заказа успешно создан')
+        router.push('/orderstatuses')
+      })
+      .catch((error) => {
+        if (error.message?.includes('409')) {
+          setErrors({ apiError: 'Статус заказа с таким именем уже существует' })
+        } else {
+          setErrors({ apiError: error.message || 'Ошибка при создании статуса заказа' })
+        }
+      })
+  } else {
+    return orderStatusesStore
+      .update(props.orderStatusId, values)
+      .then(() => {
+        alertStore.success('Статус заказа успешно обновлен')
+        router.push('/orderstatuses')
+      })
+      .catch((error) => {
+        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса заказа' })
+      })
+  }
+}
+</script>
+
+<template>
+  <div class="settings form-2">
+    <h1 class="primary-heading">{{ getTitle() }}</h1>
+    <hr class="hr" />
+    <Form
+      @submit="onSubmit"
+      :initial-values="orderStatus"
+      :validation-schema="schema"
+      v-slot="{ errors, isSubmitting }"
+    >
+      <div class="form-group">
+        <label for="name" class="label">Имя:</label>
+        <Field
+          name="name"
+          id="name"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.name }"
+          placeholder="Имя (только строчные латинские буквы и _)"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="title" class="label">Заголовок:</label>
+        <Field
+          name="title"
+          id="title"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.title }"
+          placeholder="Заголовок"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description" class="label">Описание:</label>
+        <Field
+          name="description"
+          id="description"
+          as="textarea"
+          rows="3"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.description }"
+          placeholder="Описание статуса заказа"
+        />
+      </div>
+
+      <div class="form-group">
+        <button class="button primary" type="submit" :disabled="isSubmitting">
+          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          {{ getButtonText() }}
+        </button>
+        <button
+          class="button secondary"
+          type="button"
+          @click="$router.push('/orderstatuses')"
+        >
+          Отмена
+        </button>
+      </div>
+
+      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
+      <div v-if="errors.title" class="alert alert-danger mt-3 mb-0">{{ errors.title }}</div>
+      <div v-if="errors.description" class="alert alert-danger mt-3 mb-0">{{ errors.description }}</div>
+      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+    </Form>
+  </div>
+</template>

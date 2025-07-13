@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useCountryCodesStore } from '@/stores/countrycodes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -12,7 +12,7 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
-describe('country codes store', () => {
+describe('countries store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -22,10 +22,10 @@ describe('country codes store', () => {
     const mockCodes = [{ isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }]
     fetchWrapper.get.mockResolvedValue(mockCodes)
 
-    const store = useCountryCodesStore()
+    const store = useCountriesStore()
     await store.getAll()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/countrycodes/compact`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/countries/compact`)
     expect(store.countries).toEqual(mockCodes)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -34,9 +34,9 @@ describe('country codes store', () => {
   it('calls update endpoint', async () => {
     fetchWrapper.post.mockResolvedValue({})
 
-    const store = useCountryCodesStore()
+    const store = useCountriesStore()
     await store.update()
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/countrycodes/update`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/countries/update`)
   })
 })

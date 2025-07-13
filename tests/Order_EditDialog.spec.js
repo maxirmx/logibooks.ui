@@ -57,8 +57,8 @@ vi.mock('@/stores/orders.store.js', () => ({
   useOrdersStore: vi.fn(() => mockOrdersStore)
 }))
 
-vi.mock('@/stores/order.status.store.js', () => ({
-  useOrderStatusStore: vi.fn(() => mockStatusStore)
+vi.mock('@/stores/order.checkstatuses.store.js', () => ({
+  useOrderCheckStatusStore: vi.fn(() => mockStatusStore)
 }))
 
 describe('Order_EditDialog', () => {
@@ -67,7 +67,7 @@ describe('Order_EditDialog', () => {
   beforeEach(async () => {
     // Reset mocks
     vi.clearAllMocks()
-    
+
     // Create a Suspense wrapper for the async component
     const SuspenseWrapper = {
       template: `
@@ -82,7 +82,7 @@ describe('Order_EditDialog', () => {
         OrderEditDialog
       }
     }
-    
+
     wrapper = mount(SuspenseWrapper, {
       global: {
         stubs: {
@@ -107,7 +107,7 @@ describe('Order_EditDialog', () => {
     // Test some key fields (excluding commented out fields like rowNumber and orderNumber)
     const fieldsToCheck = [
       'statusId',
-      'tnVed', 
+      'tnVed',
       'invoiceDate',
       'extId',
       'weightKg',
@@ -125,7 +125,7 @@ describe('Order_EditDialog', () => {
 
   it('has proper input types for numeric fields', () => {
     const numericFields = ['weightKg', 'quantity', 'unitPrice']
-    
+
     numericFields.forEach(fieldName => {
       const field = wrapper.find(`#${fieldName}`)
       expect(field.exists()).toBe(true)
@@ -136,7 +136,7 @@ describe('Order_EditDialog', () => {
   it('renders save and cancel buttons', () => {
     const buttons = wrapper.findAll('button')
     expect(buttons.length).toBeGreaterThanOrEqual(2)
-    
+
     const buttonTexts = buttons.map(btn => btn.text())
     expect(buttonTexts).toContain('Сохранить')
     expect(buttonTexts).toContain('Отменить')

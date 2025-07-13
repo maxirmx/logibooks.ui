@@ -71,10 +71,20 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
-      path: '/countrycodes',
-      name: 'Коды стран',
-      component: () => import('@/views/CountryCodes_View.vue'),
+      path: '/companies',
+      name: 'Компании',
+      component: () => import('@/views/Companies_View.vue'),
+    },
+    {
+      path: '/orderstatuses',
+      name: 'Статусы заказов',
+      component: () => import('@/views/OrderStatuses_View.vue'),
       meta: { requiresAdmin: true }
+    },
+    {
+      path: '/countries',
+      name: 'Страны',
+      component: () => import('@/views/Countries_View.vue'),
     },
     {
       path: '/registers',
@@ -108,6 +118,36 @@ const router = createRouter({
       props: route => ({
         id: Number(route.params.id)
       })
+    },
+    {
+      path: '/company/create',
+      name: 'Регистрация компании',
+      component: () => import('@/views/Company_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/company/edit/:id',
+      name: 'Изменить информацию о компании',
+      component: () => import('@/views/Company_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/orderstatus/create',
+      name: 'Создание статуса заказа',
+      component: () => import('@/views/OrderStatus_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/orderstatus/edit/:id',
+      name: 'Редактирование статуса заказа',
+      component: () => import('@/views/OrderStatus_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
     }
   ]
 })
@@ -163,13 +203,13 @@ router.beforeEach(async (to) => {
     if (!auth.user) {
       return true
     }
-    
+
     // If this is a permission redirect, don't auto-redirect based on role
     if (auth.permissionRedirect) {
       auth.permissionRedirect = false
       return true
     }
-    
+
     // No need to login, redirect based on role priority
     return getHomeRoute()
   }

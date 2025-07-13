@@ -66,10 +66,15 @@ const router = createRouter({
     { path: '/', component: { template: '<div>Home</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
     { path: '/users', component: { template: '<div>Users</div>' } },
+    { path: '/companies', component: { template: '<div>Companies</div>' } },
+    { path: '/company/create', component: { template: '<div>Create Company</div>' } },
+    { path: '/company/edit/:id', component: { template: '<div>Edit Company</div>' } },
     { path: '/registers', component: { template: '<div>Registers</div>' } },
     { path: '/user/edit/:id', component: { template: '<div>Edit User</div>' } },
     { path: '/recover', component: { template: '<div>Recover</div>' } },
-    { path: '/register', component: { template: '<div>Register</div>' } }
+    { path: '/register', component: { template: '<div>Register</div>' } },
+    { path: '/countries', component: { template: '<div>Countries</div>' } },
+    { path: '/orderstatuses', component: { template: '<div>Order Statuses</div>' } }
   ]
 })
 
@@ -82,10 +87,10 @@ describe('App Logout Functionality', () => {
     setActivePinia(createPinia())
     authStore = useAuthStore()
     statusStore = useStatusStore()
-    
+
     // Mock the status store fetchStatus method
     statusStore.fetchStatus = vi.fn().mockResolvedValue({})
-    
+
     // Set up a logged-in user
     authStore.user = {
       id: 1,
@@ -115,8 +120,8 @@ describe('App Logout Functionality', () => {
           'v-app-bar-nav-icon': { template: '<button class="nav-icon" />' },
           'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
-          'v-navigation-drawer': { 
-            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>' 
+          'v-navigation-drawer': {
+            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
           },
           'v-list': { template: '<ul><slot /></ul>' },
           'v-list-item': { template: '<li><slot /></li>' },
@@ -167,7 +172,7 @@ describe('App Logout Functionality', () => {
   it('should display login link when user is not logged in', async () => {
     // Logout the user
     authStore.user = null
-    
+
     await wrapper.vm.$nextTick()
 
     // Check that login link is displayed

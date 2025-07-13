@@ -45,6 +45,10 @@ export const useAuthStore = defineStore('auth', () => {
   const users_search = ref('')
   const users_sort_by = ref(['id'])
   const users_page = ref(1)
+  const companies_per_page = ref(10)
+  const companies_search = ref('')
+  const companies_sort_by = ref(['id'])
+  const companies_page = ref(1)
   const registers_per_page = ref(10)
   const registers_search = ref('')
   const registers_sort_by = ref([{ key: 'id', order: 'asc' }])
@@ -54,6 +58,10 @@ export const useAuthStore = defineStore('auth', () => {
   const orders_page = ref(1)
   const orders_status = ref(null)
   const orders_tnved = ref('')
+  const orderstatuses_per_page = ref(10)
+  const orderstatuses_search = ref('')
+  const orderstatuses_sort_by = ref(['id'])
+  const orderstatuses_page = ref(1)
   const countries_per_page = ref(10)
   const countries_search = ref('')
   const countries_sort_by = ref([])
@@ -77,10 +85,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function re() {
     const currentReJwt = re_jwt.value
     re_jwt.value = null
-    
+
     // Fetch status information regardless of re-authentication success, failure, or exception
     const statusStore = useStatusStore()
-    
+
     try {
       const userData = await fetchWrapper.put(`${baseUrl}/${re_tgt.value}`, { jwt: currentReJwt })
       user.value = userData
@@ -90,7 +98,7 @@ export const useAuthStore = defineStore('auth', () => {
       await statusStore.fetchStatus().catch(() => {})
       throw error
     }
-    
+
     // Fetch status after successful re-authentication as well
     await statusStore.fetchStatus().catch(() => {})
   }
@@ -98,12 +106,12 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(email, password) {
     // Fetch status information regardless of login success, failure, or exception
     const statusStore = useStatusStore()
-    
+
     try {
       const userData = await fetchWrapper.post(`${baseUrl}/login`, { email, password })
       user.value = userData
       localStorage.setItem('user', JSON.stringify(userData))
-      
+
       if (returnUrl.value) {
         router.push(returnUrl.value)
         returnUrl.value = null
@@ -113,7 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
       await statusStore.fetchStatus().catch(() => {})
       throw error
     }
-    
+
     // Fetch status after successful login as well
     await statusStore.fetchStatus().catch(() => {})
   }
@@ -121,7 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     // Fetch status information regardless of logout success, failure, or exception
     const statusStore = useStatusStore()
-    
+
     try {
       user.value = null
       localStorage.removeItem('user')
@@ -131,7 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
       statusStore.fetchStatus().catch(() => {})
       throw error
     }
-    
+
     // Fetch status after successful logout as well
     statusStore.fetchStatus().catch(() => {})
   }
@@ -143,6 +151,10 @@ export const useAuthStore = defineStore('auth', () => {
     users_search,
     users_sort_by,
     users_page,
+    companies_per_page,
+    companies_search,
+    companies_sort_by,
+    companies_page,
     registers_per_page,
     registers_search,
     registers_sort_by,
@@ -152,6 +164,10 @@ export const useAuthStore = defineStore('auth', () => {
     orders_page,
     orders_status,
     orders_tnved,
+    orderstatuses_per_page,
+    orderstatuses_search,
+    orderstatuses_sort_by,
+    orderstatuses_page,
     countries_per_page,
     countries_search,
     countries_sort_by,

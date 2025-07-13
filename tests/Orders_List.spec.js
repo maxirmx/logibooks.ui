@@ -55,8 +55,8 @@ vi.mock('@/stores/orders.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/order.status.store.js', () => ({
-  useOrderStatusStore: () => ({
+vi.mock('@/stores/order.checkstatuses.store.js', () => ({
+  useOrderCheckStatusStore: () => ({
     statuses: mockStatuses,
     loading: ref(false),
     error: ref(null),
@@ -98,7 +98,7 @@ describe('Orders_List', () => {
     })
   })
 
-  it('imports order status store', () => {
+  it('imports order check status store', () => {
     mount(OrdersList, {
       props: { registerId: 1 },
       global: {
@@ -119,10 +119,10 @@ describe('Orders_List', () => {
 
     // Access the component's computed properties
     const vm = wrapper.vm
-    
+
     // The statusOptions should include status titles from the store
     expect(vm.statusOptions).toBeDefined()
-    
+
     // Check that getStatusTitle is used for displaying status titles
     expect(getStatusTitle).toBeDefined()
   })
@@ -137,7 +137,7 @@ describe('Orders_List', () => {
 
     const vm = wrapper.vm
     const statusHeader = vm.headers.find(h => h.key === 'statusId')
-    
+
     expect(statusHeader).toBeDefined()
     expect(statusHeader.title).toBe('Статус')
   })

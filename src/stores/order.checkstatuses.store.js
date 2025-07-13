@@ -30,11 +30,11 @@ import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/orders`
 
-export const useOrderStatusStore = defineStore('orderStatus', () => {
+export const useOrderCheckStatusStore = defineStore('orderCheckStatus', () => {
   const statuses = ref([])
   const loading = ref(false)
   const error = ref(null)
-  
+
   // Map for quick lookups
   const statusMap = ref(new Map())
 
@@ -42,14 +42,14 @@ export const useOrderStatusStore = defineStore('orderStatus', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetchWrapper.get(`${baseUrl}/statuses`)
+      const response = await fetchWrapper.get(`${baseUrl}/checkstatuses`)
       statuses.value = response || []
-      
+
       // Build a map for quick lookups
       statusMap.value = new Map(statuses.value.map(status => [status.id, status]))
     } catch (err) {
       error.value = err
-      console.error('Failed to fetch order statuses:', err)
+      console.error('Failed to fetch order check statuses:', err)
     } finally {
       loading.value = false
     }

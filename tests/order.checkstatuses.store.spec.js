@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
-import { useOrderStatusStore } from '@/stores/order.status.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -19,14 +19,14 @@ const mockStatuses = [
   { id: 3, name: 'delivered', title: 'Доставлен' }
 ]
 
-describe('order status store', () => {
+describe('order check status store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
   it('initializes with default values', () => {
-    const store = useOrderStatusStore()
+    const store = useOrderCheckStatusStore()
     expect(store.statuses).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -35,11 +35,11 @@ describe('order status store', () => {
 
   it('fetches statuses successfully', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderStatusStore()
-    
+    const store = useOrderCheckStatusStore()
+
     await store.fetchStatuses()
-    
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/statuses`)
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/checkstatuses`)
     expect(store.statuses).toEqual(mockStatuses)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -50,34 +50,34 @@ describe('order status store', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Network error')
     fetchWrapper.get.mockRejectedValue(error)
-    const store = useOrderStatusStore()
-    
+    const store = useOrderCheckStatusStore()
+
     await store.fetchStatuses()
-    
+
     expect(store.statuses).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBe(error)
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch order statuses:', error)
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch order check statuses:', error)
     consoleSpy.mockRestore()
   })
 
   it('gets status by id', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderStatusStore()
+    const store = useOrderCheckStatusStore()
     await store.fetchStatuses()
-    
+
     const status = store.getStatusById(2)
     expect(status).toEqual({ id: 2, name: 'processed', title: 'Обработан' })
-    
+
     const nonExistentStatus = store.getStatusById(999)
     expect(nonExistentStatus).toBeNull()
   })
 
   it('gets status title', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderStatusStore()
+    const store = useOrderCheckStatusStore()
     await store.fetchStatuses()
-    
+
     expect(store.getStatusTitle(1)).toBe('Загружен')
     expect(store.getStatusTitle(2)).toBe('Обработан')
     expect(store.getStatusTitle(999)).toBe('Статус 999')
@@ -85,9 +85,9 @@ describe('order status store', () => {
 
   it('gets status name', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderStatusStore()
+    const store = useOrderCheckStatusStore()
     await store.fetchStatuses()
-    
+
     expect(store.getStatusName(1)).toBe('loaded')
     expect(store.getStatusName(2)).toBe('processed')
     expect(store.getStatusName(999)).toBe('status_999')
@@ -95,36 +95,36 @@ describe('order status store', () => {
 
   it('ensures statuses are loaded only once', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderStatusStore()
-    
+    const store = useOrderCheckStatusStore()
+
     // Call ensureStatusesLoaded multiple times
     store.ensureStatusesLoaded()
     store.ensureStatusesLoaded()
     store.ensureStatusesLoaded()
-    
+
     // Wait for async operations
     await nextTick()
-    
+
     // Should only call fetchWrapper.get once
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
   })
 
   it('handles empty response', async () => {
     fetchWrapper.get.mockResolvedValue([])
-    const store = useOrderStatusStore()
-    
+    const store = useOrderCheckStatusStore()
+
     await store.fetchStatuses()
-    
+
     expect(store.statuses).toEqual([])
     expect(store.statusMap.size).toBe(0)
   })
 
   it('handles null response', async () => {
     fetchWrapper.get.mockResolvedValue(null)
-    const store = useOrderStatusStore()
-    
+    const store = useOrderCheckStatusStore()
+
     await store.fetchStatuses()
-    
+
     expect(store.statuses).toEqual([])
     expect(store.statusMap.size).toBe(0)
   })

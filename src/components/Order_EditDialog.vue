@@ -3,7 +3,7 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderStatusStore } from '@/stores/order.status.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatus.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 import { registerColumnTitles, registerColumnTooltips, getStatusColor } from '@/helpers/register.mapping.js'
@@ -14,7 +14,7 @@ const props = defineProps({
 })
 
 const ordersStore = useOrdersStore()
-const statusStore = useOrderStatusStore()
+const statusStore = useOrderCheckStatusStore()
 
 const { item } = storeToRefs(ordersStore)
 
@@ -30,7 +30,7 @@ watch(() => item.value?.statusId, (newStatusId) => {
 const fieldNameMapping = {
   statusId: 'Status',
   orderNumber: 'OrderNumber',
-  invoiceDate: 'InvoiceDate', 
+  invoiceDate: 'InvoiceDate',
   sticker: 'Sticker',
   shk: 'Shk',
   stickerCode: 'StickerCode',
@@ -79,15 +79,15 @@ const fieldNameMapping = {
 const getFieldLabel = (fieldName) => {
   const mappingKey = fieldNameMapping[fieldName]
   if (!mappingKey) return fieldName
-  
+
   const title = registerColumnTitles[mappingKey]
   const tooltip = registerColumnTooltips[mappingKey]
-  
+
   // If there's tooltip text, combine title with tooltip for a more descriptive label
   if (tooltip) {
     return `${title} (${tooltip})`
   }
-  
+
   return title
 }
 
@@ -124,12 +124,12 @@ function onSubmit(values, { setErrors }) {
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
-      
-      <!-- Row 1: Basic Info --> 
+
+      <!-- Row 1: Basic Info -->
       <div class="form-row">
         <div class="form-group">
           <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
-          <Field as="select" name="statusId" id="statusId" class="form-control input" 
+          <Field as="select" name="statusId" id="statusId" class="form-control input"
                  :class="[
                    { 'is-invalid': errors.statusId },
                    `status-${getStatusColor(currentStatusId)}`
@@ -379,10 +379,10 @@ function onSubmit(values, { setErrors }) {
           Отменить
         </button>
       </div>
-      
+
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
-    
+
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
@@ -483,7 +483,7 @@ textarea.input {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-  
+
 }
 
 @media (max-width: 1024px) and (min-width: 769px) {

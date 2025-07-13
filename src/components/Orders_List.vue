@@ -1,7 +1,7 @@
 <script setup>
 import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderStatusStore } from '@/stores/order.status.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatus.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -15,7 +15,7 @@ const props = defineProps({
 })
 
 const ordersStore = useOrdersStore()
-const orderStatusStore = useOrderStatusStore()
+const orderStatusStore = useOrderCheckStatusStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
@@ -145,7 +145,7 @@ function getColumnTooltip(key) {
   const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
   const tooltip = registerColumnTooltips[pascalKey]
   const title = registerColumnTitles[pascalKey]
-  
+
   if (tooltip && title) {
     return `${title} (${tooltip})`
   }
@@ -204,42 +204,42 @@ function getColumnTooltip(key) {
         >
         <!-- Add tooltip templates for header cells -->
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
-          <div 
-            class="truncated-cell" 
+          <div
+            class="truncated-cell"
             :title="getColumnTooltip(header.key)"
           >
             {{ column.title || '' }}
           </div>
         </template>
-        
+
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <div 
-            class="truncated-cell" 
+          <div
+            class="truncated-cell"
             :title="item[header.key] || ''"
           >
             {{ item[header.key] || '' }}
           </div>
         </template>
-        
+
         <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
-          <div 
-            class="truncated-cell status-cell" 
+          <div
+            class="truncated-cell status-cell"
             :class="`status-${getStatusColor(item.statusId)}`"
             :title="orderStatusStore.getStatusTitle(item.statusId)"
           >
             {{ orderStatusStore.getStatusTitle(item.statusId) }}
           </div>
         </template>
-        
+
         <!-- Special template for productLink to display as clickable URL -->
         <template #[`item.productLink`]="{ item }">
           <div class="truncated-cell">
-            <a 
-              v-if="item.productLink" 
-              :href="item.productLink" 
-              target="_blank" 
+            <a
+              v-if="item.productLink"
+              :href="item.productLink"
+              target="_blank"
               rel="noopener noreferrer"
               class="product-link"
               :title="item.productLink"
@@ -266,10 +266,10 @@ function getColumnTooltip(key) {
               </button>
             </template>
           </v-tooltip>
-        </template>        
+        </template>
       </v-data-table-server>
     </div>
-      
+
     <!-- Custom pagination controls outside the scrollable area -->
     <div v-if="items?.length || loading" class="v-data-table-footer">
       <div class="v-data-table-footer__items-per-page">
@@ -283,11 +283,11 @@ function getColumnTooltip(key) {
           class="v-data-table-footer__items-per-page-select"
         />
       </div>
-      
+
       <div class="v-data-table-footer__info">
         <div>{{ Math.min((orders_page - 1) * orders_per_page + 1, totalCount) }}-{{ Math.min(orders_page * orders_per_page, totalCount) }} из {{ totalCount }}</div>
       </div>
-      
+
       <div class="v-data-table-footer__pagination">
         <v-btn
           variant="text"
@@ -296,7 +296,7 @@ function getColumnTooltip(key) {
           :disabled="orders_page <= 1"
           @click="orders_page = 1"
         />
-        
+
         <v-btn
           variant="text"
           icon="$prev"
@@ -304,7 +304,7 @@ function getColumnTooltip(key) {
           :disabled="orders_page <= 1"
           @click="orders_page = Math.max(1, orders_page - 1)"
         />
-        
+
         <v-btn
           variant="text"
           icon="$next"
@@ -312,7 +312,7 @@ function getColumnTooltip(key) {
           :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
           @click="orders_page = Math.min(Math.ceil(totalCount / orders_per_page), orders_page + 1)"
         />
-        
+
         <v-btn
           variant="text"
           icon="$last"
@@ -322,7 +322,7 @@ function getColumnTooltip(key) {
         />
       </div>
     </div>
-    
+
     <div v-if="!items?.length && !loading" class="text-center m-5">Реестр пуст</div>
     </v-card>
     <div v-if="loading" class="text-center m-5">
@@ -510,14 +510,14 @@ function getColumnTooltip(key) {
   .v-data-table-footer__items-per-page {
     padding-inline-end: 24px;
   }
-  
+
   .v-data-table-footer__info {
     display: inline-block;
     width: auto;
     padding-top: 0;
     padding-inline-end: 24px;
   }
-  
+
   .v-data-table-footer__pagination {
     padding-top: 0;
   }

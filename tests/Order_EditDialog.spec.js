@@ -57,8 +57,8 @@ vi.mock('@/stores/orders.store.js', () => ({
   useOrdersStore: vi.fn(() => mockOrdersStore)
 }))
 
-vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: vi.fn(() => mockStatusStore)
+vi.mock('@/stores/order.statuses.store.js', () => ({
+  useOrderStatusesStore: vi.fn(() => mockStatusStore)
 }))
 
 describe('Order_EditDialog', () => {
@@ -108,7 +108,6 @@ describe('Order_EditDialog', () => {
     const fieldsToCheck = [
       'statusId',
       'tnVed',
-      'invoiceDate',
       'weightKg',
       'quantity',
       'unitPrice',

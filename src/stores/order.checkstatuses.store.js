@@ -64,11 +64,6 @@ export const useOrderCheckStatusStore = defineStore('orderCheckStatus', () => {
     return status ? status.title : `Статус ${id}`
   }
 
-  function getStatusName(id) {
-    const status = getStatusById(id)
-    return status ? status.name : `status_${id}`
-  }
-
   // Auto-fetch statuses when store is initialized (only once)
   let initialized = false
   function ensureStatusesLoaded() {
@@ -86,7 +81,6 @@ export const useOrderCheckStatusStore = defineStore('orderCheckStatus', () => {
     fetchStatuses,
     getStatusById,
     getStatusTitle,
-    getStatusName,
     ensureStatusesLoaded
   }
 })

@@ -13,8 +13,8 @@ const mockOrders = ref([
 ])
 
 const mockStatuses = ref([
-  { id: 1, name: 'loaded', title: 'Загружен' },
-  { id: 2, name: 'processed', title: 'Обработан' }
+  { id: 1,  title: 'Загружен' },
+  { id: 2,  title: 'Обработан' }
 ])
 
 // Mock functions
@@ -55,15 +55,14 @@ vi.mock('@/stores/orders.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: () => ({
+vi.mock('@/stores/order.statuses.store.js', () => ({
+  useOrderStatusesStore: () => ({
     statuses: mockStatuses,
     loading: ref(false),
     error: ref(null),
     fetchStatuses,
     getStatusTitle,
     getStatusById: vi.fn(),
-    getStatusName: vi.fn(),
     ensureStatusesLoaded
   })
 }))

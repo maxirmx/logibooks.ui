@@ -35,11 +35,14 @@ export const useOrderStatusesStore = defineStore('orderStatuses', () => {
   const orderStatus = ref({ loading: true })
   const loading = ref(false)
 
+  const statusMap = ref(new Map())
+
   async function getAll() {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
       orderStatuses.value = response || []
+      statusMap.value = new Map(orderStatuses.value.map(status => [status.id, status]))
     } catch (error) {
       console.error('Failed to fetch order statuses:', error)
       throw error
@@ -98,10 +101,32 @@ export const useOrderStatusesStore = defineStore('orderStatuses', () => {
     }
   }
 
+  function getStatusById(id) {
+    return statusMap.value.get(id) || null
+  }
+
+  function getStatusTitle(id) {
+    const status = getStatusById(id)
+    return status ? status.title : `Статус ${id}`
+  }
+
+  // Auto-fetch statuses when store is initialized (only once)
+  let initialized = false
+  function ensureStatusesLoaded() {
+    if (!initialized && orderStatuses.value.length === 0 && !loading.value) {
+      initialized = true
+      getAll()
+    }
+  }
+
   return {
+    ensureStatusesLoaded,
+    getStatusById,
+    getStatusTitle,
     orderStatuses,
     orderStatus,
     loading,
+    statusMap,
     getAll,
     getById,
     create,

@@ -14,9 +14,9 @@ vi.mock('@/helpers/config.js', () => ({
 }))
 
 const mockStatuses = [
-  { id: 1, name: 'loaded', title: 'Загружен' },
-  { id: 2, name: 'processed', title: 'Обработан' },
-  { id: 3, name: 'delivered', title: 'Доставлен' }
+  { id: 1, title: 'Загружен' },
+  { id: 2, title: 'Обработан' },
+  { id: 3, title: 'Доставлен' }
 ]
 
 describe('order check status store', () => {
@@ -67,7 +67,7 @@ describe('order check status store', () => {
     await store.fetchStatuses()
 
     const status = store.getStatusById(2)
-    expect(status).toEqual({ id: 2, name: 'processed', title: 'Обработан' })
+    expect(status).toEqual({ id: 2,  title: 'Обработан' })
 
     const nonExistentStatus = store.getStatusById(999)
     expect(nonExistentStatus).toBeNull()
@@ -87,10 +87,6 @@ describe('order check status store', () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
     const store = useOrderCheckStatusStore()
     await store.fetchStatuses()
-
-    expect(store.getStatusName(1)).toBe('loaded')
-    expect(store.getStatusName(2)).toBe('processed')
-    expect(store.getStatusName(999)).toBe('status_999')
   })
 
   it('ensures statuses are loaded only once', async () => {

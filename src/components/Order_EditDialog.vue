@@ -3,10 +3,10 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
-import { registerColumnTitles, registerColumnTooltips, getStatusColor } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -14,7 +14,7 @@ const props = defineProps({
 })
 
 const ordersStore = useOrdersStore()
-const statusStore = useOrderCheckStatusStore()
+const statusStore = useOrderStatusesStore()
 
 const { item } = storeToRefs(ordersStore)
 
@@ -130,12 +130,8 @@ function onSubmit(values, { setErrors }) {
         <div class="form-group">
           <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
           <Field as="select" name="statusId" id="statusId" class="form-control input"
-                 :class="[
-                   { 'is-invalid': errors.statusId },
-                   `status-${getStatusColor(currentStatusId)}`
-                 ]"
                  @change="(e) => currentStatusId = parseInt(e.target.value)">
-            <option v-for="s in statusStore.statuses" :key="s.id" :value="s.id">{{ s.title }}</option>
+            <option v-for="s in statusStore.orderStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
           </Field>
         </div>
       </div>
@@ -150,87 +146,16 @@ function onSubmit(values, { setErrors }) {
           <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
           <Field name="country" id="country" type="text" class="form-control input" />
         </div>
-        <div class="form-group">
-          <label for="invoiceDate" class="label" :title="getFieldTooltip('invoiceDate')">{{ getFieldLabel('invoiceDate') }}:</label>
-          <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" :class="{ 'is-invalid': errors.invoiceDate }" />
-        </div>
-      </div>
-
-      <!-- Row 3: Product Basic Info -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="siteArticle" class="label" :title="getFieldTooltip('siteArticle')">{{ getFieldLabel('siteArticle') }}:</label>
-          <Field name="siteArticle" id="siteArticle" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="barcode" class="label" :title="getFieldTooltip('barcode')">{{ getFieldLabel('barcode') }}:</label>
-          <Field name="barcode" id="barcode" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="category" class="label" :title="getFieldTooltip('category')">{{ getFieldLabel('category') }}:</label>
-          <Field name="category" id="category" type="text" class="form-control input" />
-        </div>
       </div>
 
       <!-- Row 4: Product Specifications -->
       <div class="form-row">
         <div class="form-group">
-          <label for="subcategory" class="label" :title="getFieldTooltip('subcategory')">{{ getFieldLabel('subcategory') }}:</label>
-          <Field name="subcategory" id="subcategory" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
           <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
           <Field name="productName" id="productName" type="text" class="form-control input" />
         </div>
-        <div class="form-group">
-          <label for="brand" class="label" :title="getFieldTooltip('brand')">{{ getFieldLabel('brand') }}:</label>
-          <Field name="brand" id="brand" type="text" class="form-control input" />
-        </div>
       </div>
 
-      <!-- Row 5: Materials -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="size" class="label" :title="getFieldTooltip('size')">{{ getFieldLabel('size') }}:</label>
-          <Field name="size" id="size" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="gender" class="label" :title="getFieldTooltip('gender')">{{ getFieldLabel('gender') }}:</label>
-          <Field name="gender" id="gender" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="heelHeight" class="label" :title="getFieldTooltip('heelHeight')">{{ getFieldLabel('heelHeight') }}:</label>
-          <Field name="heelHeight" id="heelHeight" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 6: More Materials & Origin -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="fabricType" class="label" :title="getFieldTooltip('fabricType')">{{ getFieldLabel('fabricType') }}:</label>
-          <Field name="fabricType" id="fabricType" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="composition" class="label" :title="getFieldTooltip('composition')">{{ getFieldLabel('composition') }}:</label>
-          <Field name="composition" id="composition" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="lining" class="label" :title="getFieldTooltip('lining')">{{ getFieldLabel('lining') }}:</label>
-          <Field name="lining" id="lining" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 7: Measurements & Pricing -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="insole" class="label" :title="getFieldTooltip('insole')">{{ getFieldLabel('insole') }}:</label>
-          <Field name="insole" id="insole" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="sole" class="label" :title="getFieldTooltip('sole')">{{ getFieldLabel('sole') }}:</label>
-          <Field name="sole" id="sole" type="text" class="form-control input" />
-        </div>
-      </div>
 
       <!-- Row 8: Pricing & Currency -->
       <div class="form-row">
@@ -241,10 +166,6 @@ function onSubmit(values, { setErrors }) {
         <div class="form-group">
           <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
           <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
-        </div>
-        <div class="form-group">
-          <label for="unit" class="label" :title="getFieldTooltip('unit')">{{ getFieldLabel('unit') }}:</label>
-          <Field name="unit" id="unit" type="text" class="form-control input" />
         </div>
       </div>
 
@@ -258,25 +179,13 @@ function onSubmit(values, { setErrors }) {
           <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>
           <Field name="currency" id="currency" type="text" class="form-control input" />
         </div>
-        <div class="form-group">
-          <label for="declaration" class="label" :title="getFieldTooltip('declaration')">{{ getFieldLabel('declaration') }}:</label>
-          <Field name="declaration" id="declaration" type="text" class="form-control input" />
-        </div>
       </div>
 
       <!-- Row 10: Recipient Personal Info -->
       <div class="form-row">
         <div class="form-group">
-          <label for="sticker" class="label" :title="getFieldTooltip('sticker')">{{ getFieldLabel('sticker') }}:</label>
-          <Field name="sticker" id="sticker" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
           <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
           <Field name="shk" id="shk" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="stickerCode" class="label" :title="getFieldTooltip('stickerCode')">{{ getFieldLabel('stickerCode') }}:</label>
-          <Field name="stickerCode" id="stickerCode" type="text" class="form-control input" />
         </div>
       </div>
 
@@ -287,62 +196,14 @@ function onSubmit(values, { setErrors }) {
           <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
         </div>
         <div class="form-group">
-          <label for="recipientInn" class="label" :title="getFieldTooltip('recipientInn')">{{ getFieldLabel('recipientInn') }}:</label>
-          <Field name="recipientInn" id="recipientInn" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
           <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber')">{{ getFieldLabel('passportNumber') }}:</label>
           <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
         </div>
-      </div>
-
-      <!-- Row 12: Supplier & Manufacturing -->
-      <div class="form-row">
         <div class="form-group">
-          <label for="pinfl" class="label" :title="getFieldTooltip('pinfl')">{{ getFieldLabel('pinfl') }}:</label>
-          <Field name="pinfl" id="pinfl" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="contactPhone" class="label" :title="getFieldTooltip('contactPhone')">{{ getFieldLabel('contactPhone') }}:</label>
-          <Field name="contactPhone" id="contactPhone" type="tel" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="boxNumber" class="label" :title="getFieldTooltip('boxNumber')">{{ getFieldLabel('boxNumber') }}:</label>
-          <Field name="boxNumber" id="boxNumber" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 13: Processing Details -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="supplier" class="label" :title="getFieldTooltip('supplier')">{{ getFieldLabel('supplier') }}:</label>
-          <Field name="supplier" id="supplier" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="supplierInn" class="label" :title="getFieldTooltip('supplierInn')">{{ getFieldLabel('supplierInn') }}:</label>
-          <Field name="supplierInn" id="supplierInn" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="factoryAddress" class="label" :title="getFieldTooltip('factoryAddress')">{{ getFieldLabel('factoryAddress') }}:</label>
-          <Field name="factoryAddress" id="factoryAddress" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Full width field for address -->
-      <div class="form-group full-width">
-        <label for="recipientAddress" class="label" :title="getFieldTooltip('recipientAddress')">{{ getFieldLabel('recipientAddress') }}:</label>
-        <Field name="recipientAddress" id="recipientAddress" type="text" class="form-control input" />
-      </div>
-
-      <!-- Full width field for description -->
-      <div class="form-group full-width">
-        <div class="label-with-link">
-          <label for="description" class="label" :title="getFieldTooltip('description')">{{ getFieldLabel('description') }}:</label>
           <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link" :title="item.productLink">
             {{ getFieldLabel('productLink') }}
           </a>
         </div>
-        <Field as="textarea" name="description" id="description" rows="3" class="form-control input" />
       </div>
 
       <!-- Action buttons -->

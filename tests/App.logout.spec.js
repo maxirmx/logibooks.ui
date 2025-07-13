@@ -86,10 +86,10 @@ describe('App Logout Functionality', () => {
     setActivePinia(createPinia())
     authStore = useAuthStore()
     statusStore = useStatusStore()
-    
+
     // Mock the status store fetchStatus method
     statusStore.fetchStatus = vi.fn().mockResolvedValue({})
-    
+
     // Set up a logged-in user
     authStore.user = {
       id: 1,
@@ -119,8 +119,8 @@ describe('App Logout Functionality', () => {
           'v-app-bar-nav-icon': { template: '<button class="nav-icon" />' },
           'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
-          'v-navigation-drawer': { 
-            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>' 
+          'v-navigation-drawer': {
+            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
           },
           'v-list': { template: '<ul><slot /></ul>' },
           'v-list-item': { template: '<li><slot /></li>' },
@@ -171,7 +171,7 @@ describe('App Logout Functionality', () => {
   it('should display login link when user is not logged in', async () => {
     // Logout the user
     authStore.user = null
-    
+
     await wrapper.vm.$nextTick()
 
     // Check that login link is displayed

@@ -45,9 +45,7 @@ const { companies, loading } = storeToRefs(companiesStore)
 const { countries } = storeToRefs(countriesStore)
 const { alert } = storeToRefs(alertStore)
 
-// Search and pagination
-const search = ref('')
-const itemsPerPage = ref(10)
+// Remove local search and itemsPerPage refs - use auth store instead
 
 // Get country name by ISO numeric code
 function getCountryName(isoNumeric) {
@@ -55,19 +53,33 @@ function getCountryName(isoNumeric) {
   return country ? country.nameRuOfficial : isoNumeric ? `Код: ${isoNumeric}` : ''
 }
 
-// Filtered companies based on search
-const filteredCompanies = computed(() => {
-  if (!search.value) return companies.value
+// Custom filter function for v-data-table
+function filterCompanies(value, query, item) {
+  if (query === null || item === null) {
+    return false
+  }
+  const i = item.raw
+  if (i === null) {
+    return false
+  }
+  const q = query.toLocaleUpperCase()
 
-  const searchTerm = search.value.toLowerCase()
-  return companies.value.filter(company =>
-    company.name?.toLowerCase().includes(searchTerm) ||
-    company.shortName?.toLowerCase().includes(searchTerm) ||
-    company.inn?.toLowerCase().includes(searchTerm) ||
-    company.kpp?.toLowerCase().includes(searchTerm) ||
-    getCountryName(company.countryIsoNumeric)?.toLowerCase().includes(searchTerm)
-  )
-})
+  if (
+    i.name?.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.shortName?.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.inn?.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.kpp?.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.city?.toLocaleUpperCase().indexOf(q) !== -1
+  ) {
+    return true
+  }
+
+  const countryName = getCountryName(i.countryIsoNumeric)
+  if (countryName?.toLocaleUpperCase().indexOf(q) !== -1) {
+    return true
+  }
+  return false
+}
 
 // Table headers
 const headers = [
@@ -108,12 +120,12 @@ async function deleteCompany(company) {
   if (confirmed) {
     try {
       await companiesStore.remove(company.id)
-      alertStore.success('Компания успешно удалена')
+      alertStore.success('Информация о компании успешно удалена')
     } catch (error) {
       if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить компанию, у которой есть связанные записи')
+        alertStore.error('Нельзя удалить информацию о компании, у которой есть связанные записи')
       } else {
-        alertStore.error('Ошибка при удалении компании')
+        alertStore.error('Ошибка при удалении информации о компании')
       }
     }
   }
@@ -159,13 +171,17 @@ defineExpose({
 
     <v-card>
       <v-data-table
-        v-if="filteredCompanies?.length"
-        v-model:items-per-page="itemsPerPage"
+        v-if="companies?.length"
+        v-model:items-per-page="authStore.companies_per_page"
         items-per-page-text="Компаний на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
+        v-model:page="authStore.companies_page"
         :headers="headers"
-        :items="filteredCompanies"
+        :items="companies"
+        :search="authStore.companies_search"
+        v-model:sort-by="authStore.companies_sort_by"
+        :custom-filter="filterCompanies"
         :loading="loading"
         item-value="name"
         density="compact"
@@ -176,7 +192,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать компанию">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать информацию о компании">
             <template v-slot:activator="{ props }">
               <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -186,7 +202,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить компанию">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить информацию о компании">
             <template v-slot:activator="{ props }">
               <button @click="deleteCompany(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
@@ -196,11 +212,11 @@ defineExpose({
         </template>
       </v-data-table>
 
-      <div v-if="!filteredCompanies?.length" class="text-center m-5">Список компаний пуст</div>
+      <div v-if="!companies?.length" class="text-center m-5">Список компаний пуст</div>
 
-      <div v-if="filteredCompanies?.length">
+      <div v-if="companies?.length">
         <v-text-field
-          v-model="search"
+          v-model="authStore.companies_search"
           :append-inner-icon="mdiMagnify"
           label="Поиск по любой информации о компании"
           variant="solo"

@@ -50,16 +50,21 @@ const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
 
 const { countries } = storeToRefs(countriesStore)
-const company = ref({
-  inn: '',
-  kpp: '',
-  name: '',
-  shortName: '',
-  countryIsoNumeric: null,
-  postalCode: '',
-  city: '',
-  street: ''
-})
+let { company } = storeToRefs(companiesStore)
+
+// If creating, use a local reactive object
+if (props.mode === 'create') {
+  company = ref({
+    inn: '',
+    kpp: '',
+    name: '',
+    shortName: '',
+    countryIsoNumeric: null,
+    postalCode: '',
+    city: '',
+    street: ''
+  })
+}
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
@@ -125,9 +130,9 @@ onMounted(async () => {
   // If editing, fetch the company data
   if (!isCreate.value && props.companyId) {
     try {
-      const companyData = await companiesStore.getById(props.companyId)
-      company.value = { ...companyData }
-    } catch {
+      await companiesStore.getById(props.companyId)
+      // The company data is now available in the reactive company ref from the store
+    } catch (error) {
       alertStore.error('Ошибка при загрузке данных компании')
       router.push('/companies')
     }

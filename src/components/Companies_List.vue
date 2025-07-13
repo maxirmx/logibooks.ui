@@ -34,7 +34,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { mdiMagnify, mdiPlus, mdiPencil, mdiDelete } from '@mdi/js'
+import { mdiMagnify } from '@mdi/js'
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
@@ -58,7 +58,7 @@ const itemsPerPage = ref(10)
 // Get country name by ISO numeric code
 function getCountryName(isoNumeric) {
   const country = countries.value.find(c => c.isoNumeric === isoNumeric)
-  return country ? country.nameRu : isoNumeric ? `Код: ${isoNumeric}` : ''
+  return country ? country.nameRuOfficial : isoNumeric ? `Код: ${isoNumeric}` : ''
 }
 
 // Filtered companies based on search
@@ -77,13 +77,14 @@ const filteredCompanies = computed(() => {
 
 // Table headers
 const headers = [
+  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
   { title: 'ИНН', key: 'inn', sortable: true },
   { title: 'КПП', key: 'kpp', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Краткое название', key: 'shortName', sortable: true },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
-  { title: 'Город', key: 'city', sortable: true },
-  { title: 'Действия', key: 'actions', sortable: false, width: '120px' }
+  { title: 'Город', key: 'city', sortable: true }
 ]
 
 // Validation schema
@@ -194,87 +195,81 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-container>
-    <v-row>
-      <v-col>
-        <h1>Компании</h1>
+  <div class="settings table-2">
+    <h1 class="primary-heading">Компании</h1>
+    <hr class="hr" />
 
-        <!-- Alert -->
-        <v-alert
-          v-if="alert"
-          :type="alert.type"
-          :text="alert.message"
-          class="mb-4"
-          dismissible
-          @click:close="alertStore.clear()"
+    <div class="link-crt">
+      <router-link v-if="authStore.isAdmin" to="#" @click.prevent="openCreateDialog" class="link">
+        <font-awesome-icon
+          size="1x"
+          icon="fa-solid fa-plus"
+          class="link"
+        />&nbsp;&nbsp;&nbsp;Регистрировать компанию
+      </router-link>
+    </div>
+
+    <!-- Alert -->
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+
+    <v-card>
+      <v-data-table
+        v-if="filteredCompanies?.length"
+        v-model:items-per-page="itemsPerPage"
+        items-per-page-text="Компаний на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        :headers="headers"
+        :items="filteredCompanies"
+        :loading="loading"
+        item-value="name"
+        density="compact"
+        class="elevation-1 interlaced-table"
+      >
+        <template v-slot:[`item.countryIsoNumeric`]="{ item }">
+          {{ getCountryName(item.countryIsoNumeric) }}
+        </template>
+
+        <template v-slot:[`item.actions1`]="{ item }">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать компанию">
+            <template v-slot:activator="{ props }">
+              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+
+        <template v-slot:[`item.actions2`]="{ item }">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить компанию">
+            <template v-slot:activator="{ props }">
+              <button @click="deleteCompany(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+      </v-data-table>
+
+      <div v-if="!filteredCompanies?.length" class="text-center m-5">Список компаний пуст</div>
+
+      <div v-if="filteredCompanies?.length">
+        <v-text-field
+          v-model="search"
+          :append-inner-icon="mdiMagnify"
+          label="Поиск по любой информации о компании"
+          variant="solo"
+          hide-details
         />
+      </div>
+    </v-card>
 
-        <!-- Toolbar -->
-        <v-card class="mb-4">
-          <v-card-text>
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="search"
-                  :prepend-inner-icon="mdiMagnify"
-                  label="Поиск компаний"
-                  single-line
-                  hide-details
-                  clearable
-                />
-              </v-col>
-              <v-col cols="12" md="6" class="text-right">
-                <v-btn
-                  v-if="authStore.isAdmin"
-                  color="primary"
-                  :prepend-icon="mdiPlus"
-                  @click="openCreateDialog"
-                >
-                  Регистрировать компанию
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-
-        <!-- Data table -->
-        <v-data-table
-          :headers="headers"
-          :items="filteredCompanies"
-          :loading="loading"
-          :items-per-page-options="itemsPerPageOptions"
-          v-model:items-per-page="itemsPerPage"
-          class="elevation-1"
-        >
-          <template v-slot:[`item.countryIsoNumeric`]="{ item }">
-            {{ getCountryName(item.countryIsoNumeric) }}
-          </template>
-
-          <template v-slot:[`actions`]="{ item }">
-            <v-btn
-              v-if="authStore.isAdmin"
-              size="small"
-              variant="text"
-              :icon="mdiPencil"
-              @click="openEditDialog(item)"
-            />
-            <v-btn
-              v-if="authStore.isAdmin"
-              size="small"
-              variant="text"
-              :icon="mdiDelete"
-              @click="deleteCompany(item)"
-            />
-          </template>
-
-          <template #no-data>
-            <div class="text-center pa-4">
-              <p>Компании не найдены</p>
-            </div>
-          </template>
-        </v-data-table>
-      </v-col>
-    </v-row>
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
 
     <!-- Company Dialog -->
     <v-dialog v-model="showDialog" max-width="600px" persistent>
@@ -326,7 +321,7 @@ onMounted(async () => {
                   <v-select
                     v-bind="field"
                     :items="countries"
-                    item-title="nameRu"
+                    item-title="nameRuOfficial"
                     item-value="isoNumeric"
                     label="Страна *"
                     :error-messages="errors"
@@ -371,5 +366,5 @@ onMounted(async () => {
         </Form>
       </v-card>
     </v-dialog>
-  </v-container>
+  </div>
 </template>

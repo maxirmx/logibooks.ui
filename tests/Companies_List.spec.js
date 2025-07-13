@@ -7,10 +7,6 @@ import { defaultGlobalStubs } from './test-utils'
 
 // Additional stubs for components not in defaultGlobalStubs
 const additionalStubs = {
-  'v-container': {
-    template: '<div class="v-container-stub" data-testid="v-container"><slot></slot></div>',
-    props: ['fluid']
-  },
   'v-alert': {
     template: '<div class="v-alert-stub" data-testid="v-alert"><slot></slot></div>',
     props: ['type', 'text', 'dismissible']
@@ -25,6 +21,14 @@ const additionalStubs = {
   'Field': {
     template: '<div class="field-stub" data-testid="field"><slot></slot></div>',
     props: ['name']
+  },
+  'font-awesome-icon': {
+    template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
+    props: ['size', 'icon', 'class']
+  },
+  'router-link': {
+    template: '<a class="router-link-stub" data-testid="router-link"><slot></slot></a>',
+    props: ['to']
   }
 }
 
@@ -39,8 +43,8 @@ const mockCompanies = ref([
 ])
 
 const mockCountries = ref([
-  { id: 1, isoNumeric: 643, nameRu: 'Россия' },
-  { id: 2, isoNumeric: 840, nameRu: 'США' }
+  { id: 1, isoNumeric: 643, nameRuOfficial: 'Россия' },
+  { id: 2, isoNumeric: 840, nameRuOfficial: 'США' }
 ])
 
 // Centralized mock functions
@@ -167,7 +171,7 @@ describe('Companies_List.vue', () => {
   it('calls getAll methods on mount', async () => {
     // Start with empty countries to test fetching
     mockCountries.value = []
-    
+
     const wrapper = mount(CompaniesList, {
       global: {
         stubs: testStubs
@@ -180,24 +184,24 @@ describe('Companies_List.vue', () => {
     expect(getAllCompanies).toHaveBeenCalled()
     expect(getAllCountries).toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
-    
+
     // Reset mock data for other tests
     mockCountries.value = [
-      { id: 1, isoNumeric: 643, nameRu: 'Россия' },
-      { id: 2, isoNumeric: 840, nameRu: 'США' }
+      { id: 1, isoNumeric: 643, nameRuOfficial: 'Россия' },
+      { id: 2, isoNumeric: 840, nameRuOfficial: 'США' }
     ]
   })
 
   it('does not fetch countries if already loaded', async () => {
     // Clear previous calls
     getAllCountries.mockClear()
-    
+
     // Start with populated countries
     mockCountries.value = [
-      { id: 1, isoNumeric: 643, nameRu: 'Россия' },
-      { id: 2, isoNumeric: 840, nameRu: 'США' }
+      { id: 1, isoNumeric: 643, nameRuOfficial: 'Россия' },
+      { id: 2, isoNumeric: 840, nameRuOfficial: 'США' }
     ]
-    
+
     const wrapper = mount(CompaniesList, {
       global: {
         stubs: testStubs
@@ -291,21 +295,19 @@ describe('Companies_List.vue', () => {
     expect(wrapper.vm.getCountryName(null)).toBe('')
   })
 
-  it('opens create dialog when add button is clicked', async () => {
+  it('opens create dialog when add link is clicked', async () => {
     const wrapper = mount(CompaniesList, {
       global: {
         stubs: testStubs
       }
     })
 
-    const addButton = wrapper.find('button.v-btn-stub')
-    if (addButton.exists()) {
-      await addButton.trigger('click')
-      expect(wrapper.vm.showDialog).toBe(true)
-      expect(wrapper.vm.isEditing).toBe(false)
-      expect(wrapper.vm.editingCompany).toBeDefined()
-      expect(wrapper.vm.editingCompany.inn).toBe('')
-    }
+    // Test that the dialog opens when openCreateDialog is called directly
+    await wrapper.vm.openCreateDialog()
+    expect(wrapper.vm.showDialog).toBe(true)
+    expect(wrapper.vm.isEditing).toBe(false)
+    expect(wrapper.vm.editingCompany).toBeDefined()
+    expect(wrapper.vm.editingCompany.inn).toBe('')
   })
 
   it('opens edit dialog and populates form with company data', async () => {
@@ -314,7 +316,7 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template: '<div><slot name="item.actions1" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }
@@ -335,7 +337,7 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template: '<div><slot name="item.actions2" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }
@@ -366,7 +368,7 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template: '<div><slot name="item.actions2" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }

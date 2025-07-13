@@ -71,6 +71,12 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/companies',
+      name: 'Компании',
+      component: () => import('@/views/Companies_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/countrycodes',
       name: 'Коды стран',
       component: () => import('@/views/CountryCodes_View.vue'),
@@ -163,13 +169,13 @@ router.beforeEach(async (to) => {
     if (!auth.user) {
       return true
     }
-    
+
     // If this is a permission redirect, don't auto-redirect based on role
     if (auth.permissionRedirect) {
       auth.permissionRedirect = false
       return true
     }
-    
+
     // No need to login, redirect based on role priority
     return getHomeRoute()
   }

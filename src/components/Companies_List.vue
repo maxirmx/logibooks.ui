@@ -47,8 +47,8 @@ const { countries } = storeToRefs(countriesStore)
 const { alert } = storeToRefs(alertStore)
 
 // Dialog states
-const showCreateDialog = ref(false)
-const showEditDialog = ref(false)
+const showDialog = ref(false)
+const isEditing = ref(false)
 const editingCompany = ref(null)
 
 // Search and pagination
@@ -98,8 +98,31 @@ const validationSchema = Yup.object({
   street: Yup.string()
 })
 
+// Helper functions for dynamic dialog configuration
+function getDialogTitle() {
+  return isEditing.value ? 'Изменить информацию о компании' : 'Регистрация компании'
+}
+
+function getDialogButtonText() {
+  return isEditing.value ? 'Сохранить' : 'Создать'
+}
+
+function getInitialValues() {
+  return isEditing.value ? editingCompany.value : {
+    inn: '',
+    kpp: '',
+    name: '',
+    shortName: '',
+    countryIsoNumeric: null,
+    postalCode: '',
+    city: '',
+    street: ''
+  }
+}
+
 // CRUD operations
 function openCreateDialog() {
+  isEditing.value = false
   editingCompany.value = {
     inn: '',
     kpp: '',
@@ -110,25 +133,25 @@ function openCreateDialog() {
     city: '',
     street: ''
   }
-  showCreateDialog.value = true
+  showDialog.value = true
 }
 
 function openEditDialog(company) {
+  isEditing.value = true
   editingCompany.value = { ...company }
-  showEditDialog.value = true
+  showDialog.value = true
 }
 
 async function saveCompany(values) {
   try {
-    if (editingCompany.value.id) {
+    if (isEditing.value && editingCompany.value.id) {
       await companiesStore.update(editingCompany.value.id, values)
       alertStore.success('Компания успешно обновлена')
     } else {
       await companiesStore.create(values)
       alertStore.success('Компания успешно создана')
     }
-    showCreateDialog.value = false
-    showEditDialog.value = false
+    showDialog.value = false
   } catch (error) {
     if (error.message?.includes('409')) {
       alertStore.error('Компания с таким ИНН уже существует')
@@ -250,11 +273,11 @@ onMounted(async () => {
       </v-col>
     </v-row>
 
-    <!-- Create Dialog -->
-    <v-dialog v-model="showCreateDialog" max-width="600px" persistent>
+    <!-- Company Dialog -->
+    <v-dialog v-model="showDialog" max-width="600px" persistent>
       <v-card>
-        <v-card-title>Регистрация компании</v-card-title>
-        <Form :validation-schema="validationSchema" @submit="saveCompany">
+        <v-card-title>{{ getDialogTitle() }}</v-card-title>
+        <Form :validation-schema="validationSchema" :initial-values="getInitialValues()" @submit="saveCompany">
           <v-card-text>
             <v-row>
               <v-col cols="12" md="6">
@@ -339,104 +362,8 @@ onMounted(async () => {
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn @click="showCreateDialog = false">Отмена</v-btn>
-            <v-btn type="submit" color="primary">Создать</v-btn>
-          </v-card-actions>
-        </Form>
-      </v-card>
-    </v-dialog>
-
-    <!-- Edit Dialog -->
-    <v-dialog v-model="showEditDialog" max-width="600px" persistent>
-      <v-card>
-        <v-card-title>Изменить информацию о компании</v-card-title>
-        <Form :validation-schema="validationSchema" :initial-values="editingCompany" @submit="saveCompany">
-          <v-card-text>
-            <v-row>
-              <v-col cols="12" md="6">
-                <Field name="inn" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="ИНН *"
-                    :error-messages="errors"
-                    required
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12" md="6">
-                <Field name="kpp" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="КПП"
-                    :error-messages="errors"
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12">
-                <Field name="name" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="Название *"
-                    :error-messages="errors"
-                    required
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12">
-                <Field name="shortName" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="Краткое название"
-                    :error-messages="errors"
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12">
-                <Field name="countryIsoNumeric" v-slot="{ field, errors }">
-                  <v-select
-                    v-bind="field"
-                    :items="countries"
-                    item-title="nameRu"
-                    item-value="isoNumeric"
-                    label="Страна *"
-                    :error-messages="errors"
-                    required
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12" md="4">
-                <Field name="postalCode" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="Почтовый индекс"
-                    :error-messages="errors"
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12" md="8">
-                <Field name="city" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="Город"
-                    :error-messages="errors"
-                  />
-                </Field>
-              </v-col>
-              <v-col cols="12">
-                <Field name="street" v-slot="{ field, errors }">
-                  <v-text-field
-                    v-bind="field"
-                    label="Улица"
-                    :error-messages="errors"
-                  />
-                </Field>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn @click="showEditDialog = false">Отмена</v-btn>
-            <v-btn type="submit" color="primary">Сохранить</v-btn>
+            <v-btn @click="showDialog = false">Отмена</v-btn>
+            <v-btn type="submit" color="primary">{{ getDialogButtonText() }}</v-btn>
           </v-card-actions>
         </Form>
       </v-card>

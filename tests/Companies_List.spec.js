@@ -268,7 +268,8 @@ describe('Companies_List.vue', () => {
     const addButton = wrapper.find('button.v-btn-stub')
     if (addButton.exists()) {
       await addButton.trigger('click')
-      expect(wrapper.vm.showCreateDialog).toBe(true)
+      expect(wrapper.vm.showDialog).toBe(true)
+      expect(wrapper.vm.isEditing).toBe(false)
       expect(wrapper.vm.editingCompany).toBeDefined()
       expect(wrapper.vm.editingCompany.inn).toBe('')
     }
@@ -290,7 +291,8 @@ describe('Companies_List.vue', () => {
     const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
     await wrapper.vm.openEditDialog(company)
 
-    expect(wrapper.vm.showEditDialog).toBe(true)
+    expect(wrapper.vm.showDialog).toBe(true)
+    expect(wrapper.vm.isEditing).toBe(true)
     expect(wrapper.vm.editingCompany).toEqual(company)
   })
 
@@ -423,7 +425,7 @@ describe('Companies_List.vue', () => {
     expect(successFn).toHaveBeenCalledWith('Компания успешно создана')
 
     // Check if dialog was closed
-    expect(wrapper.vm.showCreateDialog).toBe(false)
+    expect(wrapper.vm.showDialog).toBe(false)
   })
 
   it('handles error when saving new company - 409 conflict', async () => {
@@ -453,7 +455,7 @@ describe('Companies_List.vue', () => {
     expect(errorFn).toHaveBeenCalledWith('Компания с таким ИНН уже существует')
 
     // Dialog should remain open
-    expect(wrapper.vm.showCreateDialog).toBe(true)
+    expect(wrapper.vm.showDialog).toBe(true)
   })
 
   it('updates existing company successfully', async () => {
@@ -486,7 +488,7 @@ describe('Companies_List.vue', () => {
     expect(successFn).toHaveBeenCalledWith('Компания успешно обновлена')
 
     // Check if dialog was closed
-    expect(wrapper.vm.showEditDialog).toBe(false)
+    expect(wrapper.vm.showDialog).toBe(false)
   })
 
   it('handles error when updating company', async () => {
@@ -517,7 +519,7 @@ describe('Companies_List.vue', () => {
     expect(errorFn).toHaveBeenCalledWith('Ошибка при сохранении компании')
 
     // Dialog should remain open
-    expect(wrapper.vm.showEditDialog).toBe(true)
+    expect(wrapper.vm.showDialog).toBe(true)
   })
 
   // Additional tests for better coverage
@@ -579,20 +581,22 @@ describe('Companies_List.vue', () => {
 
     // Open create dialog
     wrapper.vm.openCreateDialog()
-    expect(wrapper.vm.showCreateDialog).toBe(true)
+    expect(wrapper.vm.showDialog).toBe(true)
+    expect(wrapper.vm.isEditing).toBe(false)
 
     // Cancel dialog
-    wrapper.vm.showCreateDialog = false
-    expect(wrapper.vm.showCreateDialog).toBe(false)
+    wrapper.vm.showDialog = false
+    expect(wrapper.vm.showDialog).toBe(false)
 
     // Open edit dialog
     const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
     wrapper.vm.openEditDialog(company)
-    expect(wrapper.vm.showEditDialog).toBe(true)
+    expect(wrapper.vm.showDialog).toBe(true)
+    expect(wrapper.vm.isEditing).toBe(true)
 
     // Cancel edit dialog
-    wrapper.vm.showEditDialog = false
-    expect(wrapper.vm.showEditDialog).toBe(false)
+    wrapper.vm.showDialog = false
+    expect(wrapper.vm.showDialog).toBe(false)
   })
 
   it('tests itemsPerPage functionality', async () => {
@@ -606,5 +610,79 @@ describe('Companies_List.vue', () => {
     expect(wrapper.vm.itemsPerPage).toBe(10)
     wrapper.vm.itemsPerPage = 25
     expect(wrapper.vm.itemsPerPage).toBe(25)
+  })
+
+  // New tests for dynamic dialog configuration
+  it('returns correct dialog title for create mode', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    wrapper.vm.openCreateDialog()
+    expect(wrapper.vm.getDialogTitle()).toBe('Регистрация компании')
+  })
+
+  it('returns correct dialog title for edit mode', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
+    wrapper.vm.openEditDialog(company)
+    expect(wrapper.vm.getDialogTitle()).toBe('Изменить информацию о компании')
+  })
+
+  it('returns correct dialog button text for create mode', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    wrapper.vm.openCreateDialog()
+    expect(wrapper.vm.getDialogButtonText()).toBe('Создать')
+  })
+
+  it('returns correct dialog button text for edit mode', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
+    wrapper.vm.openEditDialog(company)
+    expect(wrapper.vm.getDialogButtonText()).toBe('Сохранить')
+  })
+
+  it('returns correct initial values for create mode', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    wrapper.vm.openCreateDialog()
+    const initialValues = wrapper.vm.getInitialValues()
+    expect(initialValues.inn).toBe('')
+    expect(initialValues.name).toBe('')
+    expect(initialValues.countryIsoNumeric).toBeNull()
+  })
+
+  it('returns correct initial values for edit mode', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    const company = { id: 1, inn: '123456789', name: 'Test Company', countryIsoNumeric: 643 }
+    wrapper.vm.openEditDialog(company)
+    const initialValues = wrapper.vm.getInitialValues()
+    expect(initialValues).toEqual(company)
   })
 })

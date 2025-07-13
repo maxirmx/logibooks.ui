@@ -163,11 +163,19 @@ async function saveCompany(values) {
 }
 
 async function deleteCompany(company) {
+  const content = 'Удалить компанию "' + company.name + '" ?'
   const confirmed = await confirm({
-    title: 'Подтвердите удаление',
-    text: `Вы уверены, что хотите удалить компанию "${company.name}"?`,
+    title: 'Подтверждение',
     confirmationText: 'Удалить',
-    cancellationText: 'Отмена'
+    cancellationText: 'Не удалять',
+    dialogProps: {
+      width: '30%',
+      minWidth: '250px'
+    },
+    confirmationButtonProps: {
+      color: 'orange-darken-3'
+    },
+    content: content
   })
 
   if (confirmed) {

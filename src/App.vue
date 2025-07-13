@@ -94,9 +94,6 @@ function getUserName() {
         <v-list-item v-if="authStore.isAdmin">
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
         </v-list-item>
-        <v-list-item v-if="authStore.isAdmin">
-          <RouterLink to="/companies" class="link">Компании</RouterLink>
-        </v-list-item>
 
         <!-- Справочники -->
         <v-list-group>
@@ -106,6 +103,10 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/countrycodes" class="link">Страны</RouterLink>
           </v-list-item>
+           <v-list-item>
+            <RouterLink to="/companies" class="link">Компании</RouterLink>
+          </v-list-item>
+
         </v-list-group>
 
         <v-list-item>

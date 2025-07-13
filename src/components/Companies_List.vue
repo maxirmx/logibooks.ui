@@ -204,7 +204,7 @@ onMounted(async () => {
                   :prepend-icon="mdiPlus"
                   @click="openCreateDialog"
                 >
-                  Добавить компанию
+                  Регистрировать компанию
                 </v-btn>
               </v-col>
             </v-row>
@@ -253,7 +253,7 @@ onMounted(async () => {
     <!-- Create Dialog -->
     <v-dialog v-model="showCreateDialog" max-width="600px" persistent>
       <v-card>
-        <v-card-title>Создать компанию</v-card-title>
+        <v-card-title>Регистрация компании</v-card-title>
         <Form :validation-schema="validationSchema" @submit="saveCompany">
           <v-card-text>
             <v-row>
@@ -349,7 +349,7 @@ onMounted(async () => {
     <!-- Edit Dialog -->
     <v-dialog v-model="showEditDialog" max-width="600px" persistent>
       <v-card>
-        <v-card-title>Редактировать компанию</v-card-title>
+        <v-card-title>Изменить информацию о компании</v-card-title>
         <Form :validation-schema="validationSchema" :initial-values="editingCompany" @submit="saveCompany">
           <v-card-text>
             <v-row>

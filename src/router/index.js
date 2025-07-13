@@ -74,13 +74,11 @@ const router = createRouter({
       path: '/companies',
       name: 'Компании',
       component: () => import('@/views/Companies_View.vue'),
-      meta: { requiresAdmin: true }
     },
     {
       path: '/countrycodes',
       name: 'Коды стран',
       component: () => import('@/views/CountryCodes_View.vue'),
-      meta: { requiresAdmin: true }
     },
     {
       path: '/registers',

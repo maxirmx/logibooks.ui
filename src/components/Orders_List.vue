@@ -76,49 +76,32 @@ const statusOptions = computed(() => [
 
 const headers = computed(() => {
   return [
+    // Actions - Always first for easy access
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
+    
+    // Order Identification & Status - Key identifiers and current state
     { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    // { title: registerColumnTitles.RowNumber, sortable: false, key: 'rowNumber', align: 'start', width: '80px' },
     { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
-    // { title: registerColumnTitles.InvoiceDate, sortable: false, key: 'invoiceDate', align: 'start', width: '120px' },
-    // { title: registerColumnTitles.Sticker, sortable: false, key: 'sticker', align: 'start', width: '100px' },
+    
+    // Product Identification & Details - What the order contains
     { title: registerColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
-    // { title: registerColumnTitles.StickerCode, sortable: false, key: 'stickerCode', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.SiteArticle, sortable: false, key: 'siteArticle', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.HeelHeight, sortable: false, key: 'heelHeight', align: 'start', width: '80px' },
-    //{ title: registerColumnTitles.Size, sortable: false, key: 'size', align: 'start', width: '80px' },
     { title: registerColumnTitles.ProductName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    //{ title: registerColumnTitles.Description, sortable: false, key: 'description', align: 'start', width: '200px' },
-    //{ title: registerColumnTitles.Gender, sortable: false, key: 'gender', align: 'start', width: '80px' },
-    //{ title: registerColumnTitles.Brand, sortable: false, key: 'brand', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.FabricType, sortable: false, key: 'fabricType', align: 'start', width: '150px' },
-    //{ title: registerColumnTitles.Composition, sortable: false, key: 'composition', align: 'start', width: '150px' },
-    //{ title: registerColumnTitles.Lining, sortable: false, key: 'lining', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.Insole, sortable: false, key: 'insole', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.Sole, sortable: false, key: 'sole', align: 'start', width: '120px' },
+    { title: registerColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    
+    // Physical Properties - Tangible characteristics
     { title: registerColumnTitles.Country, sortable: false, key: 'country', align: 'start', width: '100px' },
-    //{ title: registerColumnTitles.FactoryAddress, sortable: false, key: 'factoryAddress', align: 'start', width: '200px' },
-    //{ title: registerColumnTitles.Unit, sortable: false, key: 'unit', align: 'start', width: '80px' },
     { title: registerColumnTitles.WeightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
     { title: registerColumnTitles.Quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
+    
+    // Financial Information - Pricing and currency
     { title: registerColumnTitles.UnitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
     { title: registerColumnTitles.Currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
-    //{ title: registerColumnTitles.Barcode, sortable: false, key: 'barcode', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.Declaration, sortable: false, key: 'declaration', align: 'start', width: '120px' },
-    { title: registerColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    
+    // Recipient Information - Who receives the order
     { title: registerColumnTitles.RecipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    //{ title: registerColumnTitles.RecipientInn, sortable: false, key: 'recipientInn', align: 'start', width: '120px' },
-    { title: registerColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.Pinfl, sortable: false, key: 'pinfl', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.RecipientAddress, sortable: false, key: 'recipientAddress', align: 'start', width: '200px' },
-    //{ title: registerColumnTitles.ContactPhone, sortable: false, key: 'contactPhone', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.BoxNumber, sortable: false, key: 'boxNumber', align: 'start', width: '100px' },
-    //{ title: registerColumnTitles.Supplier, sortable: false, key: 'supplier', align: 'start', width: '150px' },
-    //{ title: registerColumnTitles.SupplierInn, sortable: false, key: 'supplierInn', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.Category, sortable: false, key: 'category', align: 'start', width: '120px' },
-    //{ title: registerColumnTitles.Subcategory, sortable: false, key: 'subcategory', align: 'start', width: '120px' }
+    { title: registerColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 

@@ -125,84 +125,92 @@ function onSubmit(values, { setErrors }) {
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
 
-      <!-- Row 1: Basic Info -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
-          <Field as="select" name="statusId" id="statusId" class="form-control input"
-                 @change="(e) => currentStatusId = parseInt(e.target.value)">
-            <option v-for="s in statusStore.orderStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
-          </Field>
+      <!-- Order Identification & Status Section -->
+      <div class="form-section">
+        <h3 class="section-title">Идентификация и статус заказа</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
+            <Field as="select" name="statusId" id="statusId" class="form-control input"
+                   @change="(e) => currentStatusId = parseInt(e.target.value)">
+              <option v-for="s in statusStore.orderStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
+            </Field>
+          </div>
+          <div class="form-group">
+            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
+            <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
+          </div>
         </div>
       </div>
 
-      <!-- Row 2: Product Identification -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
-          <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
-        </div>
-        <div class="form-group">
-          <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
-          <Field name="country" id="country" type="text" class="form-control input" />
-        </div>
-      </div>
-
-      <!-- Row 4: Product Specifications -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
-          <Field name="productName" id="productName" type="text" class="form-control input" />
-        </div>
-      </div>
-
-
-      <!-- Row 8: Pricing & Currency -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>
-          <Field name="weightKg" id="weightKg" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
-        </div>
-        <div class="form-group">
-          <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
-          <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
+      <!-- Product Identification & Details Section -->
+      <div class="form-section">
+        <h3 class="section-title">Информация о товаре</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
+            <Field name="shk" id="shk" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
+            <Field name="productName" id="productName" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label class="label">{{ getFieldLabel('productLink') }}:</label>
+            <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link" :title="item.productLink">
+              Ссылка на товар
+            </a>
+            <span v-else class="no-link">Ссылка отсутствует</span>
+          </div>
         </div>
       </div>
 
-      <!-- Row 9: Tracking & Processing -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
-          <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
-        </div>
-        <div class="form-group">
-          <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>
-          <Field name="currency" id="currency" type="text" class="form-control input" />
+      <!-- Physical Properties Section -->
+      <div class="form-section">
+        <h3 class="section-title">Физические характеристики</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
+            <Field name="country" id="country" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>
+            <Field name="weightKg" id="weightKg" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
+          </div>
+          <div class="form-group">
+            <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
+            <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
+          </div>
         </div>
       </div>
 
-      <!-- Row 10: Recipient Personal Info -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
-          <Field name="shk" id="shk" type="text" class="form-control input" />
+      <!-- Financial Information Section -->
+      <div class="form-section">
+        <h3 class="section-title">Финансовая информация</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
+            <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
+          </div>
+          <div class="form-group">
+            <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>
+            <Field name="currency" id="currency" type="text" class="form-control input" />
+          </div>
         </div>
       </div>
 
-      <!-- Row 11: Recipient Contact Info -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="recipientName" class="label" :title="getFieldTooltip('recipientName')">{{ getFieldLabel('recipientName') }}:</label>
-          <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber')">{{ getFieldLabel('passportNumber') }}:</label>
-          <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
-        </div>
-        <div class="form-group">
-          <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link" :title="item.productLink">
-            {{ getFieldLabel('productLink') }}
-          </a>
+      <!-- Recipient Information Section -->
+      <div class="form-section">
+        <h3 class="section-title">Информация о получателе</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="recipientName" class="label" :title="getFieldTooltip('recipientName')">{{ getFieldLabel('recipientName') }}:</label>
+            <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber')">{{ getFieldLabel('passportNumber') }}:</label>
+            <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
+          </div>
         </div>
       </div>
 
@@ -236,6 +244,23 @@ function onSubmit(values, { setErrors }) {
   margin-bottom: 0.1rem;
 }
 
+.form-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #333;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -251,10 +276,7 @@ function onSubmit(values, { setErrors }) {
   overflow: hidden;
 }
 
-.form-group.full-width {
-  grid-column: 1 / -1;
-  margin-bottom: 0rem;
-}
+
 
 .label {
   font-size: 0.8rem;
@@ -289,30 +311,27 @@ function onSubmit(values, { setErrors }) {
   padding-top: 1rem;
 }
 
-textarea.input {
-  height: auto;
-  resize: vertical;
-  min-height: 4rem;
-  width: 80%;
+
+
+
+
+.product-link {
+  color: rgba(var(--v-theme-primary), 1);
+  text-decoration: none;
+  padding: 0.1rem 0;
+  display: inline-block;
+  font-size: 0.8rem;
 }
 
-/* Status color indicators */
-.status-blue {
-  background-color: #e3f2fd !important;
-  border-color: #2196f3 !important;
-  color: #1565c0 !important;
+.product-link:hover {
+  text-decoration: underline;
+  cursor: pointer;
 }
 
-.status-red {
-  background-color: #ffebee !important;
-  border-color: #f44336 !important;
-  color: #c62828 !important;
-}
-
-.status-green {
-  background-color: #e8f5e8 !important;
-  border-color: #4caf50 !important;
-  color: #2e7d32 !important;
+.no-link {
+  color: #999;
+  font-style: italic;
+  font-size: 0.8rem;
 }
 
 @media (max-width: 768px) {

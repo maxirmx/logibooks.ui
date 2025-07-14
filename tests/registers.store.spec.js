@@ -361,4 +361,82 @@ describe('registers store', () => {
       expect(store.loading).toBe(false)
     })
   })
+
+  describe('setOrderStatuses method', () => {
+    beforeEach(() => {
+      // Mock fetchWrapper.put for setOrderStatuses tests
+      fetchWrapper.put = vi.fn()
+    })
+
+    it('successfully sets order statuses', async () => {
+      const mockResponse = { success: true, message: 'Statuses updated' }
+      fetchWrapper.put.mockResolvedValue(mockResponse)
+
+      const store = useRegistersStore()
+      const result = await store.setOrderStatuses(123, 456)
+
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/123/setorderstatuses/456`)
+      expect(result).toEqual(mockResponse)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('handles error in setOrderStatuses', async () => {
+      const errorMessage = 'Failed to update statuses'
+      const error = new Error(errorMessage)
+      fetchWrapper.put.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      
+      await expect(store.setOrderStatuses(123, 456)).rejects.toThrow(errorMessage)
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+
+    it('sets loading state during setOrderStatuses request', async () => {
+      let resolvePromise
+      const promise = new Promise(resolve => { resolvePromise = resolve })
+      fetchWrapper.put.mockReturnValue(promise)
+
+      const store = useRegistersStore()
+      const setOrderStatusesPromise = store.setOrderStatuses(123, 456)
+
+      expect(store.loading).toBe(true)
+
+      resolvePromise({ success: true })
+      await setOrderStatusesPromise
+
+      expect(store.loading).toBe(false)
+    })
+
+    it('sets loading to false even when setOrderStatuses request fails', async () => {
+      let rejectPromise
+      const promise = new Promise((resolve, reject) => { rejectPromise = reject })
+      fetchWrapper.put.mockReturnValue(promise)
+
+      const store = useRegistersStore()
+      const setOrderStatusesPromise = store.setOrderStatuses(123, 456)
+
+      expect(store.loading).toBe(true)
+
+      rejectPromise(new Error('Test error'))
+      await expect(setOrderStatusesPromise).rejects.toThrow('Test error')
+
+      expect(store.loading).toBe(false)
+    })
+
+    it('clears previous error on successful setOrderStatuses request', async () => {
+      const store = useRegistersStore()
+      
+      // First request fails
+      fetchWrapper.put.mockRejectedValueOnce(new Error('First error'))
+      await expect(store.setOrderStatuses(123, 456)).rejects.toThrow('First error')
+      expect(store.error).toBeTruthy()
+      
+      // Second request succeeds
+      fetchWrapper.put.mockResolvedValue({ success: true })
+      await store.setOrderStatuses(123, 456)
+      expect(store.error).toBeNull()
+    })
+  })
 })

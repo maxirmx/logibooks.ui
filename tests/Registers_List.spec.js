@@ -3,12 +3,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
+import { vuetifyStubs } from './test-utils.js'
 
 const mockItems = ref([])
 const mockCompanies = ref([])
+const mockOrderStatuses = ref([])
 const getAll = vi.fn()
 const uploadFn = vi.fn()
+const setOrderStatusesFn = vi.fn()
 const getCompaniesAll = vi.fn()
+const getOrderStatusesAll = vi.fn()
+const generateAllFn = vi.fn()
+const alertSuccessFn = vi.fn()
+const alertErrorFn = vi.fn()
+
+// Import router mock after vi.mock calls
+let router
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -21,13 +35,17 @@ vi.mock('pinia', async () => {
       } else if (store.getAll && !store.upload && store.companies) {
         // companies store
         return { companies: mockCompanies }
+      } else if (store.getAll && store.orderStatuses) {
+        // order statuses store
+        return { orderStatuses: mockOrderStatuses }
       } else {
         // auth store or other stores - return safe defaults
         return { 
           registers_per_page: ref(10), 
           registers_search: ref(''), 
           registers_sort_by: ref([{ key: 'id', order: 'asc' }]), 
-          registers_page: ref(1) 
+          registers_page: ref(1),
+          alert: ref(null)
         }
       }
     }
@@ -35,23 +53,40 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({ getAll, upload: uploadFn, setOrderStatuses: vi.fn(), items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) })
+  useRegistersStore: () => ({ 
+    getAll, 
+    upload: uploadFn, 
+    setOrderStatuses: setOrderStatusesFn, 
+    items: mockItems, 
+    loading: ref(false), 
+    error: ref(null), 
+    totalCount: ref(0) 
+  })
 }))
 
 vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: () => ({ generateAll: vi.fn() })
+  useOrdersStore: () => ({ generateAll: generateAllFn })
 }))
 
 vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({ getAll: vi.fn(), orderStatuses: ref([]) })
+  useOrderStatusesStore: () => ({ 
+    getAll: getOrderStatusesAll, 
+    orderStatuses: mockOrderStatuses 
+  })
 }))
 
 vi.mock('@/stores/companies.store.js', () => ({
-  useCompaniesStore: () => ({ getAll: getCompaniesAll, companies: mockCompanies })
+  useCompaniesStore: () => ({ 
+    getAll: getCompaniesAll, 
+    companies: mockCompanies 
+  })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ success: vi.fn(), error: vi.fn() })
+  useAlertStore: () => ({ 
+    success: alertSuccessFn, 
+    error: alertErrorFn 
+  })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -76,22 +111,22 @@ describe('Registers_List.vue', () => {
     vi.clearAllMocks()
     mockItems.value = []
     mockCompanies.value = []
+    mockOrderStatuses.value = []
   })
 
-  it('calls getAll on mount for both registers and companies', () => {
+  it('calls getAll on mount for both registers and companies', async () => {
     mount(RegistersList, {
       global: {
-        stubs: {
-          'v-data-table-server': true,
-          'v-card': true,
-          'v-text-field': true,
-          'font-awesome-icon': true,
-          'v-file-input': true
-        }
+        stubs: vuetifyStubs
       }
     })
+    
+    // Wait for onMounted to complete
+    await vi.waitFor(() => {
+      expect(getCompaniesAll).toHaveBeenCalled()
+      expect(getOrderStatusesAll).toHaveBeenCalled()
+    })
     expect(getAll).toHaveBeenCalled()
-    expect(getCompaniesAll).toHaveBeenCalled()
   })
 
   describe('getCustomerName function', () => {
@@ -107,13 +142,7 @@ describe('Registers_List.vue', () => {
 
       wrapper = mount(RegistersList, {
         global: {
-          stubs: {
-            'v-data-table-server': true,
-            'v-card': true,
-            'v-text-field': true,
-            'font-awesome-icon': true,
-            'v-file-input': true
-          }
+          stubs: vuetifyStubs
         }
       })
     })
@@ -181,12 +210,7 @@ describe('Registers_List.vue', () => {
 
       const wrapper = mount(RegistersList, {
         global: {
-          stubs: {
-            'v-card': true,
-            'v-text-field': true,
-            'font-awesome-icon': true,
-            'v-file-input': true
-          }
+          stubs: vuetifyStubs
         }
       })
 
@@ -200,19 +224,235 @@ describe('Registers_List.vue', () => {
     it('emits file input update and calls upload', async () => {
       const wrapper = mount(RegistersList, {
         global: {
-          stubs: {
-            'v-card': true,
-            'v-text-field': true,
-            'v-data-table-server': true,
-            'font-awesome-icon': true,
-            'v-file-input': true
-          }
+          stubs: vuetifyStubs
         }
       })
 
       const file = new File(['data'], 'test.xlsx')
       await wrapper.vm.fileSelected([file])
       expect(uploadFn).toHaveBeenCalledWith(file)
+    })
+  })
+
+  describe('bulk status change functionality', () => {
+    let wrapper
+
+    beforeEach(() => {
+      mockOrderStatuses.value = [
+        { id: 1, title: 'Новый' },
+        { id: 2, title: 'В обработке' },
+        { id: 3, title: 'Выполнен' }
+      ]
+
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('toggles edit mode when bulkChangeStatus is called', () => {
+      const registerId = 1
+      
+      // Initially not in edit mode
+      expect(wrapper.vm.bulkStatusState[registerId]?.editMode).toBeFalsy()
+      
+      // Enter edit mode
+      wrapper.vm.bulkChangeStatus(registerId)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(true)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+      
+      // Exit edit mode
+      wrapper.vm.bulkChangeStatus(registerId)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+    })
+
+    it('does not toggle edit mode when loading', () => {
+      const registerId = 1
+      
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+      
+      // Mock loading value directly on the store using the storeToRefs
+      wrapper.vm.loading = true
+      
+      // Initial state should not exist
+      expect(wrapper.vm.bulkStatusState[registerId]).toBeUndefined()
+      
+      wrapper.vm.bulkChangeStatus(registerId)
+      
+      // State gets initialized but edit mode should remain false due to loading
+      expect(wrapper.vm.bulkStatusState[registerId]).toBeDefined()
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+    })
+
+    it('cancels status change and resets state', () => {
+      const registerId = 1
+      
+      // Set up edit state
+      wrapper.vm.bulkChangeStatus(registerId)
+      wrapper.vm.bulkStatusState[registerId].selectedStatusId = 2
+      
+      // Cancel
+      wrapper.vm.cancelStatusChange(registerId)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+    })
+
+    it('handles applyStatusToAllOrders success', async () => {
+      const registerId = 1
+      const statusId = 2
+      
+      setOrderStatusesFn.mockResolvedValueOnce({ success: true })
+      
+      // Set up edit state
+      wrapper.vm.bulkChangeStatus(registerId)
+      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
+      
+      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
+      
+      expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Статус успешно применен ко всем заказам в реестре')
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+      expect(getAll).toHaveBeenCalled() // loadRegisters called
+    })
+
+    it('handles applyStatusToAllOrders error', async () => {
+      const registerId = 1
+      const statusId = 2
+      const errorMessage = 'Server error'
+      
+      setOrderStatusesFn.mockRejectedValueOnce(new Error(errorMessage))
+      
+      // Set up edit state
+      wrapper.vm.bulkChangeStatus(registerId)
+      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
+      
+      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
+      
+      expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
+      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+    })
+
+    it('validates registerId and statusId in applyStatusToAllOrders', async () => {
+      // Clear previous calls
+      alertErrorFn.mockClear()
+      
+      // Test missing registerId
+      await wrapper.vm.applyStatusToAllOrders(null, 1)
+      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
+      
+      alertErrorFn.mockClear()
+      // Test missing statusId
+      await wrapper.vm.applyStatusToAllOrders(1, null)
+      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
+      
+      alertErrorFn.mockClear()
+      // Test statusId = 0 (falsy, so it triggers the first validation)
+      await wrapper.vm.applyStatusToAllOrders(1, 0)
+      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
+      
+      alertErrorFn.mockClear()
+      // Test invalid statusId (negative number to test numeric validation)
+      await wrapper.vm.applyStatusToAllOrders(1, -1)
+      expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
+      
+      alertErrorFn.mockClear()
+      // Test invalid statusId (string)
+      await wrapper.vm.applyStatusToAllOrders(1, 'invalid')
+      expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
+    })
+  })
+
+  describe('navigation functions', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('navigates to orders when openOrders is called', async () => {
+      const item = { id: 123 }
+      const router = (await import('@/router')).default
+      
+      wrapper.vm.openOrders(item)
+      expect(router.push).toHaveBeenCalledWith('/registers/123/orders')
+    })
+
+    it('calls generateAll when exportAllXml is called', () => {
+      const item = { id: 456 }
+      wrapper.vm.exportAllXml(item)
+      expect(generateAllFn).toHaveBeenCalledWith(456)
+    })
+  })
+
+  describe('file upload functionality', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('opens file dialog when openFileDialog is called', () => {
+      const mockClick = vi.fn()
+      wrapper.vm.fileInput = { click: mockClick }
+      
+      wrapper.vm.openFileDialog()
+      expect(mockClick).toHaveBeenCalled()
+    })
+
+    it('handles file selection with array input', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      uploadFn.mockResolvedValueOnce({ success: true })
+      
+      await wrapper.vm.fileSelected([file])
+      
+      expect(uploadFn).toHaveBeenCalledWith(file)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+      expect(getAll).toHaveBeenCalled()
+    })
+
+    it('handles file selection with single file input', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      uploadFn.mockResolvedValueOnce({ success: true })
+      
+      await wrapper.vm.fileSelected(file)
+      
+      expect(uploadFn).toHaveBeenCalledWith(file)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+    })
+
+    it('handles file upload error', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const errorMessage = 'Upload failed'
+      uploadFn.mockRejectedValueOnce(new Error(errorMessage))
+      
+      await wrapper.vm.fileSelected(file)
+      
+      expect(uploadFn).toHaveBeenCalledWith(file)
+      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+    })
+
+    it('handles empty file selection', async () => {
+      await wrapper.vm.fileSelected(null)
+      expect(uploadFn).not.toHaveBeenCalled()
+      
+      await wrapper.vm.fileSelected([])
+      expect(uploadFn).not.toHaveBeenCalled()
     })
   })
 })

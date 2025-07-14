@@ -17,9 +17,6 @@ const generateAllFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertErrorFn = vi.fn()
 
-// Import router mock after vi.mock calls
-let router
-
 beforeEach(() => {
   vi.clearAllMocks()
 })

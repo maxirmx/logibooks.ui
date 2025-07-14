@@ -84,6 +84,20 @@
   margin-bottom: 2rem;
 }
 
+/* Upload links spacing using flexbox */
+.upload-links {
+  gap: 32px;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+/* On smaller screens, stack vertically */
+@media (max-width: 768px) {
+  .upload-links {
+    flex-direction: column;
+  }
+}
+
 .title {
   font-size: 2rem;
   margin-bottom: 1rem;

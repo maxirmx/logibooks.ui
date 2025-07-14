@@ -28,9 +28,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockOrderStatuses = ref([
-  { id: 1, name: 'draft', title: 'Черновик', description: 'Заказ в черновике' },
-  { id: 2, name: 'confirmed', title: 'Подтвержден', description: 'Заказ подтвержден' },
-  { id: 3, name: 'completed', title: 'Выполнен', description: 'Заказ выполнен' }
+  { id: 1, title: 'Черновик' },
+  { id: 2, title: 'Подтвержден' },
+  { id: 3, title: 'Выполнен' }
 ])
 
 // Mock stores
@@ -90,9 +90,9 @@ describe('OrderStatuses_List.vue', () => {
 
     // Reset reactive data
     mockOrderStatuses.value = [
-      { id: 1, name: 'draft', title: 'Черновик', description: 'Заказ в черновике' },
-      { id: 2, name: 'confirmed', title: 'Подтвержден', description: 'Заказ подтвержден' },
-      { id: 3, name: 'completed', title: 'Выполнен', description: 'Заказ выполнен' }
+      { id: 1, title: 'Черновик' },
+      { id: 2, title: 'Подтвержден' },
+      { id: 3, title: 'Выполнен' }
     ]
 
     wrapper = mount(OrderStatusesList, {
@@ -225,32 +225,26 @@ describe('OrderStatuses_List.vue', () => {
   })
 
   describe('Search and Filter', () => {
-    it('filters order statuses by name', () => {
-      const mockItem = { raw: { name: 'draft', title: 'Черновик', description: 'Заказ в черновике' } }
-      const result = wrapper.vm.filterOrderStatuses(null, 'draft', mockItem)
+    it('filters order statuses by title', () => {
+      const mockItem = { raw: { title: 'Черновик' } }
+      const result = wrapper.vm.filterOrderStatuses(null, 'черновик', mockItem)
       expect(result).toBe(true)
     })
 
-    it('filters order statuses by title', () => {
-      const mockItem = { raw: { name: 'confirmed', title: 'Подтвержден', description: 'Заказ подтвержден' } }
+    it('filters order statuses by title case insensitive', () => {
+      const mockItem = { raw: { title: 'Подтвержден' } }
       const result = wrapper.vm.filterOrderStatuses(null, 'подтвержден', mockItem)
       expect(result).toBe(true)
     })
 
-    it('filters order statuses by description', () => {
-      const mockItem = { raw: { name: 'completed', title: 'Выполнен', description: 'Заказ выполнен' } }
-      const result = wrapper.vm.filterOrderStatuses(null, 'выполнен', mockItem)
-      expect(result).toBe(true)
-    })
-
     it('returns false for non-matching search', () => {
-      const mockItem = { raw: { name: 'draft', title: 'Черновик', description: 'Заказ в черновике' } }
+      const mockItem = { raw: { title: 'Черновик' } }
       const result = wrapper.vm.filterOrderStatuses(null, 'nonexistent', mockItem)
       expect(result).toBe(false)
     })
 
     it('handles null query', () => {
-      const mockItem = { raw: { name: 'draft', title: 'Черновик', description: 'Заказ в черновике' } }
+      const mockItem = { raw: { title: 'Черновик' } }
       const result = wrapper.vm.filterOrderStatuses(null, null, mockItem)
       expect(result).toBe(false)
     })
@@ -277,9 +271,7 @@ describe('OrderStatuses_List.vue', () => {
       expect(headers).toEqual([
         { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
         { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
-        { title: 'Имя', key: 'name', sortable: true },
-        { title: 'Заголовок', key: 'title', sortable: true },
-        { title: 'Описание', key: 'description', sortable: true }
+        { title: 'Название статуса', key: 'title', sortable: true }
       ])
     })
   })

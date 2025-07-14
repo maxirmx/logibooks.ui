@@ -57,6 +57,10 @@ export const vuetifyStubs = {
     template: '<div class="v-col-stub" data-testid="v-col"><slot></slot></div>',
     props: ['cols', 'sm', 'md', 'lg', 'xl']
   },
+  'v-file-input': {
+    template: '<input type="file" class="v-file-input-stub" data-testid="v-file-input" />',
+    props: ['modelValue', 'accept', 'multiple', 'loading-text']
+  },
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
     props: ['icon', 'size', 'color']

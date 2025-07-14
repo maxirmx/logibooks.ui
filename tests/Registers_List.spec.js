@@ -3,26 +3,46 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
+import { vuetifyStubs } from './test-utils.js'
 
 const mockItems = ref([])
+const mockCompanies = ref([])
+const mockOrderStatuses = ref([])
 const getAll = vi.fn()
 const uploadFn = vi.fn()
+const setOrderStatusesFn = vi.fn()
+const getCompaniesAll = vi.fn()
+const getOrderStatusesAll = vi.fn()
+const generateAllFn = vi.fn()
+const alertSuccessFn = vi.fn()
+const alertErrorFn = vi.fn()
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return { 
     ...actual, 
     storeToRefs: (store) => {
-      if (store.getAll) {
+      if (store.getAll && store.upload && store.setOrderStatuses) {
         // registers store
         return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) }
+      } else if (store.getAll && !store.upload && store.companies) {
+        // companies store
+        return { companies: mockCompanies }
+      } else if (store.getAll && store.orderStatuses) {
+        // order statuses store
+        return { orderStatuses: mockOrderStatuses }
       } else {
-        // auth store
+        // auth store or other stores - return safe defaults
         return { 
           registers_per_page: ref(10), 
           registers_search: ref(''), 
           registers_sort_by: ref([{ key: 'id', order: 'asc' }]), 
-          registers_page: ref(1) 
+          registers_page: ref(1),
+          alert: ref(null)
         }
       }
     }
@@ -30,11 +50,40 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({ getAll, upload: uploadFn, items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) })
+  useRegistersStore: () => ({ 
+    getAll, 
+    upload: uploadFn, 
+    setOrderStatuses: setOrderStatusesFn, 
+    items: mockItems, 
+    loading: ref(false), 
+    error: ref(null), 
+    totalCount: ref(0) 
+  })
+}))
+
+vi.mock('@/stores/orders.store.js', () => ({
+  useOrdersStore: () => ({ generateAll: generateAllFn })
+}))
+
+vi.mock('@/stores/order.statuses.store.js', () => ({
+  useOrderStatusesStore: () => ({ 
+    getAll: getOrderStatusesAll, 
+    orderStatuses: mockOrderStatuses 
+  })
+}))
+
+vi.mock('@/stores/companies.store.js', () => ({
+  useCompaniesStore: () => ({ 
+    getAll: getCompaniesAll, 
+    companies: mockCompanies 
+  })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ success: vi.fn(), error: vi.fn() })
+  useAlertStore: () => ({ 
+    success: alertSuccessFn, 
+    error: alertErrorFn 
+  })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -50,239 +99,357 @@ vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
 
+vi.mock('@/router', () => ({
+  default: { push: vi.fn() }
+}))
+
 describe('Registers_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockItems.value = []
+    mockCompanies.value = []
+    mockOrderStatuses.value = []
   })
 
-  it('calls getAll on mount', () => {
+  it('calls getAll on mount for both registers and companies', async () => {
     mount(RegistersList, {
       global: {
-        stubs: {
-          'v-data-table-server': true,
-          'v-card': true,
-          'v-text-field': true,
-          'font-awesome-icon': true,
-          'v-file-input': true
-        }
+        stubs: vuetifyStubs
       }
+    })
+    
+    // Wait for onMounted to complete
+    await vi.waitFor(() => {
+      expect(getCompaniesAll).toHaveBeenCalled()
+      expect(getOrderStatusesAll).toHaveBeenCalled()
     })
     expect(getAll).toHaveBeenCalled()
   })
 
-  describe('formatDate function', () => {
+  describe('getCustomerName function', () => {
     let wrapper
 
     beforeEach(() => {
-      // Mount the component to access its methods
+      // Set up mock companies data
+      mockCompanies.value = [
+        { id: 1, name: 'ООО "РВБ"', shortName: 'РВБ' },
+        { id: 2, name: 'ООО "Интернет решения"', shortName: null },
+        { id: 3, name: 'ООО "Длинное название компании"', shortName: '' }
+      ]
+
       wrapper = mount(RegistersList, {
         global: {
-          stubs: {
-            'v-data-table-server': true,
-            'v-card': true,
-            'v-text-field': true,
-            'font-awesome-icon': true,
-            'v-file-input': true
-          }
+          stubs: vuetifyStubs
         }
       })
     })
 
-    it('formats valid date string correctly', () => {
-      const testDate = '2025-07-04T14:30:45.123Z'
-      const formatted = wrapper.vm.formatDate(testDate)
-      
-      // Should format as date and time, exact format depends on locale
-      expect(formatted).toBeTruthy()
-      expect(formatted).toContain('2025')
-      expect(formatted).toMatch(/\d{2}:\d{2}:\d{2}/)
+    it('returns shortName when available', () => {
+      const customerName = wrapper.vm.getCustomerName(1)
+      expect(customerName).toBe('РВБ')
     })
 
-    it('formats date with different time zones consistently', () => {
-      const testDate = '2025-12-25T23:59:59.000Z'
-      const formatted = wrapper.vm.formatDate(testDate)
-      
-      // Should contain the expected date components
-      expect(formatted).toContain('2025')
-      expect(formatted).toMatch(/\d{2}:\d{2}:\d{2}/)
+    it('returns name when shortName is null', () => {
+      const customerName = wrapper.vm.getCustomerName(2)
+      expect(customerName).toBe('ООО "Интернет решения"')
     })
 
-    it('formats date without time component', () => {
-      const testDate = '2025-01-01T00:00:00.000Z'
-      const formatted = wrapper.vm.formatDate(testDate)
-      
-      expect(formatted).toBeTruthy()
-      expect(formatted).toContain('2025')
-      expect(formatted).toContain('01')
-      expect(formatted).toMatch(/\d{2}:\d{2}:\d{2}/)
+    it('returns name when shortName is empty string', () => {
+      const customerName = wrapper.vm.getCustomerName(3)
+      expect(customerName).toBe('ООО "Длинное название компании"')
     })
 
-    it('handles different date string formats', () => {
-      const isoDate = '2025-06-15T12:30:45Z'
-      const localDate = '2025-06-15T12:30:45'
-      
-      const formattedISO = wrapper.vm.formatDate(isoDate)
-      const formattedLocal = wrapper.vm.formatDate(localDate)
-      
-      expect(formattedISO).toBeTruthy()
-      expect(formattedLocal).toBeTruthy()
-      expect(formattedISO).toContain('2025')
-      expect(formattedLocal).toContain('2025')
+    it('returns "Неизвестно" for non-existent customer ID', () => {
+      const customerName = wrapper.vm.getCustomerName(999)
+      expect(customerName).toBe('Неизвестно')
     })
 
-    it('returns empty string for null input', () => {
-      const formatted = wrapper.vm.formatDate(null)
-      expect(formatted).toBe('')
+    it('returns "Неизвестно" for null customer ID', () => {
+      const customerName = wrapper.vm.getCustomerName(null)
+      expect(customerName).toBe('Неизвестно')
     })
 
-    it('returns empty string for undefined input', () => {
-      const formatted = wrapper.vm.formatDate(undefined)
-      expect(formatted).toBe('')
+    it('returns "Неизвестно" for undefined customer ID', () => {
+      const customerName = wrapper.vm.getCustomerName(undefined)
+      expect(customerName).toBe('Неизвестно')
     })
 
-    it('returns empty string for empty string input', () => {
-      const formatted = wrapper.vm.formatDate('')
-      expect(formatted).toBe('')
-    })
-
-    it('handles invalid date strings gracefully', () => {
-      const invalidDates = ['invalid-date', 'not-a-date', '2025-13-45', 'abcdef']
-      
-      invalidDates.forEach(invalidDate => {
-        const formatted = wrapper.vm.formatDate(invalidDate)
-        expect(formatted).toBe('')
-      })
-    })
-
-    it('formats dates with milliseconds correctly', () => {
-      const testDate = '2025-03-20T08:15:30.999Z'
-      const formatted = wrapper.vm.formatDate(testDate)
-      
-      expect(formatted).toBeTruthy()
-      expect(formatted).toContain('2025')
-      expect(formatted).toContain('20')
-      expect(formatted).toMatch(/\d{2}:\d{2}:\d{2}/)
-    })
-
-    it('formats dates across different months correctly', () => {
-      const dates = [
-        '2025-01-15T10:00:00Z', // January
-        '2025-06-15T10:00:00Z', // June
-        '2025-12-15T10:00:00Z'  // December
-      ]
-      
-      dates.forEach(date => {
-        const formatted = wrapper.vm.formatDate(date)
-        expect(formatted).toBeTruthy()
-        expect(formatted).toContain('2025')
-        expect(formatted).toMatch(/\d{2}:\d{2}:\d{2}/)
-      })
-    })
-
-    it('handles leap year dates correctly', () => {
-      const leapYearDate = '2024-02-29T12:00:00Z' // Feb 29 in leap year
-      const formatted = wrapper.vm.formatDate(leapYearDate)
-      
-      expect(formatted).toBeTruthy()
-      expect(formatted).toContain('2024')
-      expect(formatted).toContain('29')
-      expect(formatted).toMatch(/\d{2}:\d{2}:\d{2}/)
-    })
-
-    it('handles dates at year boundaries', () => {
-      const newYearDate = '2025-01-01T00:00:00Z'
-      const newYearEveDate = '2024-12-31T23:59:59Z'
-      
-      const formattedNewYear = wrapper.vm.formatDate(newYearDate)
-      const formattedNewYearEve = wrapper.vm.formatDate(newYearEveDate)
-      
-      expect(formattedNewYear).toBeTruthy()
-      expect(formattedNewYear).toContain('01')
-      expect(formattedNewYearEve).toBeTruthy()
-      // The exact date/time depends on timezone, just check it's formatted
-      expect(formattedNewYearEve).toMatch(/\d{2}:\d{2}:\d{2}/)
-    })
-
-    it('formats date consistently regardless of input timezone', () => {
-      const utcDate = '2025-07-04T12:00:00Z'
-      const localDate = '2025-07-04T12:00:00'
-      
-      const formattedUTC = wrapper.vm.formatDate(utcDate)
-      const formattedLocal = wrapper.vm.formatDate(localDate)
-      
-      expect(formattedUTC).toBeTruthy()
-      expect(formattedLocal).toBeTruthy()
-      expect(formattedUTC).toContain('2025')
-      expect(formattedLocal).toContain('2025')
-    })
-
-    it('handles edge case timestamps', () => {
-      const epochDate = '1970-01-01T00:00:00Z'
-      const futureDate = '2099-12-31T23:59:59Z'
-      
-      const formattedEpoch = wrapper.vm.formatDate(epochDate)
-      const formattedFuture = wrapper.vm.formatDate(futureDate)
-      
-      expect(formattedEpoch).toBeTruthy()
-      expect(formattedEpoch).toContain('1970')
-      expect(formattedFuture).toBeTruthy()
-      // The exact year might differ due to timezone, but should be close to 2099/2100
-      expect(formattedFuture).toMatch(/2(099|100)/)
+    it('returns "Неизвестно" when companies array is empty', () => {
+      mockCompanies.value = []
+      const customerName = wrapper.vm.getCustomerName(1)
+      expect(customerName).toBe('Неизвестно')
     })
   })
 
   describe('component integration', () => {
-    it('shows formatted dates in the component when items are present', async () => {
-      // Set up mock items with dates
+    it('displays customer names correctly when items and companies are present', async () => {
+      // Set up mock companies
+      mockCompanies.value = [
+        { id: 1, name: 'ООО "РВБ"', shortName: 'РВБ' },
+        { id: 2, name: 'ООО "Интернет решения"', shortName: null }
+      ]
+
+      // Set up mock items with customer IDs
       mockItems.value = [
         { 
           id: 1, 
           fileName: 'register1.csv', 
-          date: '2025-07-04T14:30:45Z', 
+          customerId: 1, 
           ordersTotal: 10 
+        },
+        { 
+          id: 2, 
+          fileName: 'register2.csv', 
+          customerId: 2, 
+          ordersTotal: 5 
         }
       ]
 
       const wrapper = mount(RegistersList, {
         global: {
-          stubs: {
-            'v-card': true,
-            'v-text-field': true,
-            'font-awesome-icon': true,
-            'v-file-input': true
-          }
+          stubs: vuetifyStubs
         }
       })
 
       await wrapper.vm.$nextTick()
 
-      // The component should render and the formatDate function should be available
-      expect(wrapper.vm.formatDate).toBeDefined()
-      expect(typeof wrapper.vm.formatDate).toBe('function')
-      
-      // Test that formatDate works with the mock data
-      const formatted = wrapper.vm.formatDate('2025-07-04T14:30:45Z')
-      expect(formatted).toBeTruthy()
-      expect(formatted).toContain('2025')
+      // Test that getCustomerName works with the mock data
+      expect(wrapper.vm.getCustomerName(1)).toBe('РВБ')
+      expect(wrapper.vm.getCustomerName(2)).toBe('ООО "Интернет решения"')
     })
 
     it('emits file input update and calls upload', async () => {
       const wrapper = mount(RegistersList, {
         global: {
-          stubs: {
-            'v-card': true,
-            'v-text-field': true,
-            'v-data-table-server': true,
-            'font-awesome-icon': true,
-            'v-file-input': true
-          }
+          stubs: vuetifyStubs
         }
       })
 
       const file = new File(['data'], 'test.xlsx')
       await wrapper.vm.fileSelected([file])
       expect(uploadFn).toHaveBeenCalledWith(file)
+    })
+  })
+
+  describe('bulk status change functionality', () => {
+    let wrapper
+
+    beforeEach(() => {
+      mockOrderStatuses.value = [
+        { id: 1, title: 'Новый' },
+        { id: 2, title: 'В обработке' },
+        { id: 3, title: 'Выполнен' }
+      ]
+
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('toggles edit mode when bulkChangeStatus is called', () => {
+      const registerId = 1
+      
+      // Initially not in edit mode
+      expect(wrapper.vm.bulkStatusState[registerId]?.editMode).toBeFalsy()
+      
+      // Enter edit mode
+      wrapper.vm.bulkChangeStatus(registerId)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(true)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+      
+      // Exit edit mode
+      wrapper.vm.bulkChangeStatus(registerId)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+    })
+
+    it('does not toggle edit mode when loading', () => {
+      const registerId = 1
+      
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+      
+      // Mock loading value directly on the store using the storeToRefs
+      wrapper.vm.loading = true
+      
+      // Initial state should not exist
+      expect(wrapper.vm.bulkStatusState[registerId]).toBeUndefined()
+      
+      wrapper.vm.bulkChangeStatus(registerId)
+      
+      // State gets initialized but edit mode should remain false due to loading
+      expect(wrapper.vm.bulkStatusState[registerId]).toBeDefined()
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+    })
+
+    it('cancels status change and resets state', () => {
+      const registerId = 1
+      
+      // Set up edit state
+      wrapper.vm.bulkChangeStatus(registerId)
+      wrapper.vm.bulkStatusState[registerId].selectedStatusId = 2
+      
+      // Cancel
+      wrapper.vm.cancelStatusChange(registerId)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+    })
+
+    it('handles applyStatusToAllOrders success', async () => {
+      const registerId = 1
+      const statusId = 2
+      
+      setOrderStatusesFn.mockResolvedValueOnce({ success: true })
+      
+      // Set up edit state
+      wrapper.vm.bulkChangeStatus(registerId)
+      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
+      
+      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
+      
+      expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Статус успешно применен ко всем заказам в реестре')
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+      expect(getAll).toHaveBeenCalled() // loadRegisters called
+    })
+
+    it('handles applyStatusToAllOrders error', async () => {
+      const registerId = 1
+      const statusId = 2
+      const errorMessage = 'Server error'
+      
+      setOrderStatusesFn.mockRejectedValueOnce(new Error(errorMessage))
+      
+      // Set up edit state
+      wrapper.vm.bulkChangeStatus(registerId)
+      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
+      
+      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
+      
+      expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
+      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
+      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
+    })
+
+    it('validates registerId and statusId in applyStatusToAllOrders', async () => {
+      // Clear previous calls
+      alertErrorFn.mockClear()
+      
+      // Test missing registerId
+      await wrapper.vm.applyStatusToAllOrders(null, 1)
+      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
+      
+      alertErrorFn.mockClear()
+      // Test missing statusId
+      await wrapper.vm.applyStatusToAllOrders(1, null)
+      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
+      
+      alertErrorFn.mockClear()
+      // Test statusId = 0 (falsy, so it triggers the first validation)
+      await wrapper.vm.applyStatusToAllOrders(1, 0)
+      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
+      
+      alertErrorFn.mockClear()
+      // Test invalid statusId (negative number to test numeric validation)
+      await wrapper.vm.applyStatusToAllOrders(1, -1)
+      expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
+      
+      alertErrorFn.mockClear()
+      // Test invalid statusId (string)
+      await wrapper.vm.applyStatusToAllOrders(1, 'invalid')
+      expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
+    })
+  })
+
+  describe('navigation functions', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('navigates to orders when openOrders is called', async () => {
+      const item = { id: 123 }
+      const router = (await import('@/router')).default
+      
+      wrapper.vm.openOrders(item)
+      expect(router.push).toHaveBeenCalledWith('/registers/123/orders')
+    })
+
+    it('calls generateAll when exportAllXml is called', () => {
+      const item = { id: 456 }
+      wrapper.vm.exportAllXml(item)
+      expect(generateAllFn).toHaveBeenCalledWith(456)
+    })
+  })
+
+  describe('file upload functionality', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('opens file dialog when openFileDialog is called', () => {
+      const mockClick = vi.fn()
+      wrapper.vm.fileInput = { click: mockClick }
+      
+      wrapper.vm.openFileDialog()
+      expect(mockClick).toHaveBeenCalled()
+    })
+
+    it('handles file selection with array input', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      uploadFn.mockResolvedValueOnce({ success: true })
+      
+      await wrapper.vm.fileSelected([file])
+      
+      expect(uploadFn).toHaveBeenCalledWith(file)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+      expect(getAll).toHaveBeenCalled()
+    })
+
+    it('handles file selection with single file input', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      uploadFn.mockResolvedValueOnce({ success: true })
+      
+      await wrapper.vm.fileSelected(file)
+      
+      expect(uploadFn).toHaveBeenCalledWith(file)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+    })
+
+    it('handles file upload error', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const errorMessage = 'Upload failed'
+      uploadFn.mockRejectedValueOnce(new Error(errorMessage))
+      
+      await wrapper.vm.fileSelected(file)
+      
+      expect(uploadFn).toHaveBeenCalledWith(file)
+      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+    })
+
+    it('handles empty file selection', async () => {
+      await wrapper.vm.fileSelected(null)
+      expect(uploadFn).not.toHaveBeenCalled()
+      
+      await wrapper.vm.fileSelected([])
+      expect(uploadFn).not.toHaveBeenCalled()
     })
   })
 })

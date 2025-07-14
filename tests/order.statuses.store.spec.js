@@ -27,12 +27,12 @@ describe('order.statuses.store.js', () => {
   let pinia
 
   const mockOrderStatuses = [
-    { id: 1, name: 'draft', title: 'Черновик', description: 'Заказ в черновике' },
-    { id: 2, name: 'confirmed', title: 'Подтвержден', description: 'Заказ подтвержден' },
-    { id: 3, name: 'completed', title: 'Выполнен', description: 'Заказ выполнен' }
+    { id: 1, title: 'Черновик' },
+    { id: 2, title: 'Подтвержден' },
+    { id: 3, title: 'Выполнен' }
   ]
 
-  const mockOrderStatus = { id: 1, name: 'draft', title: 'Черновик', description: 'Заказ в черновике' }
+  const mockOrderStatus = { id: 1, title: 'Черновик' }
 
   beforeEach(() => {
     pinia = createPinia()
@@ -130,7 +130,7 @@ describe('order.statuses.store.js', () => {
     })
 
     it('does not set loading state when refresh is false', async () => {
-      store.orderStatus = { id: 999, name: 'existing' }
+      store.orderStatus = { id: 999, title: 'existing' }
       mockGet.mockResolvedValue(mockOrderStatus)
 
       await store.getById(1, false)
@@ -153,7 +153,7 @@ describe('order.statuses.store.js', () => {
 
   describe('create', () => {
     it('creates order status successfully', async () => {
-      const newOrderStatus = { name: 'new_status', title: 'Новый статус', description: 'Описание нового статуса' }
+      const newOrderStatus = { title: 'Новый статус' }
       const createdOrderStatus = { id: 4, ...newOrderStatus }
 
       mockPost.mockResolvedValue(createdOrderStatus)

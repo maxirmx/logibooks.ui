@@ -25,8 +25,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { watch, ref } from 'vue'
+import { watch, ref, onMounted, reactive } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useOrdersStore } from '@/stores/orders.store.js'
+import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -38,12 +41,102 @@ import router from '@/router'
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
+const ordersStore = useOrdersStore()
+
+const orderStatusesStore = useOrderStatusesStore()
+
+const companiesStore = useCompaniesStore()
+const { companies } = storeToRefs(companiesStore)
+
 const alertStore = useAlertStore()
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
 
 const fileInput = ref(null)
+
+// State for bulk status change
+const bulkStatusState = reactive({})
+
+// Step 1: Toggle edit mode
+function bulkChangeStatus(registerId) {
+  if (!bulkStatusState[registerId]) {
+    bulkStatusState[registerId] = { 
+      editMode: false, 
+      selectedStatusId: null
+    }
+  }
+  
+  // Don't allow interaction while loading
+  if (loading.value) {
+    return
+  }
+  
+  // Toggle edit mode
+  bulkStatusState[registerId].editMode = !bulkStatusState[registerId].editMode
+  
+  // Clear selection when entering edit mode
+  if (bulkStatusState[registerId].editMode) {
+    bulkStatusState[registerId].selectedStatusId = null
+  }
+}
+
+// Cancel status change
+function cancelStatusChange(registerId) {
+  if (bulkStatusState[registerId]) {
+    bulkStatusState[registerId].editMode = false
+    bulkStatusState[registerId].selectedStatusId = null
+  }
+}
+
+// Step 2: Apply selected status to all orders in register
+async function applyStatusToAllOrders(registerId, statusId) {
+  if (!registerId || !statusId) {
+    alertStore.error('Не указан реестр или статус для изменения')
+    return
+  }
+  
+  // Ensure statusId is a number
+  const numericStatusId = Number(statusId)
+  if (isNaN(numericStatusId) || numericStatusId <= 0) {
+    alertStore.error('Некорректный идентификатор статуса')
+    return
+  }
+  
+  try {
+    await registersStore.setOrderStatuses(registerId, numericStatusId)
+    
+    // Success: show message and reset state
+    alertStore.success('Статус успешно применен ко всем заказам в реестре')
+    bulkStatusState[registerId].editMode = false
+    bulkStatusState[registerId].selectedStatusId = null
+    // Reload data to reflect changes
+    loadRegisters()
+  } catch (error) {
+    // The store already handles setting the error state
+    // Just provide user-friendly error message from the store error
+    const errorMessage = error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов заказов'
+    alertStore.error(errorMessage)
+    
+    // Exit edit mode on error
+    bulkStatusState[registerId].editMode = false
+    bulkStatusState[registerId].selectedStatusId = null
+  }
+}
+
+// Function to get customer name by customerId
+function getCustomerName(customerId) {
+  if (!customerId || !companies.value) return 'Неизвестно'
+  const company = companies.value.find(c => c.id === customerId)
+  if (!company) return 'Неизвестно'
+  return company.shortName || company.name || 'Неизвестно'
+}
+
+// Load companies and order statuses on component mount
+onMounted(async () => {
+  await companiesStore.getAll()
+  await orderStatusesStore.getAll()
+})
 
 function openFileDialog() {
   fileInput.value?.click()
@@ -83,26 +176,17 @@ function openOrders(item) {
   router.push(`/registers/${item.id}/orders`)
 }
 
-function formatDate(dateString) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat(navigator.language || 'ru-RU', { 
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  }).format(date)
+function exportAllXml(item) {
+  ordersStore.generateAll(item.id)
 }
 
 const headers = [
-  { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' },
+  { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
+  { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
+  { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
-  { title: 'Дата загрузки', key: 'date', align: 'start' },
+  { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
@@ -112,9 +196,9 @@ const headers = [
     <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
-    <div class="link-crt">
+    <div class="link-crt d-flex upload-links">
       <a @click="openFileDialog" class="link" tabindex="0">
-        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
+        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "РВБ"
       </a>
       <v-file-input
         ref="fileInput"
@@ -123,7 +207,11 @@ const headers = [
         loading-text="Идёт загрузка реестра..."
         @update:model-value="fileSelected"      
       />
+      <a @click="console.log('Загружаем реестр Озон')" class="link" tabindex="0">
+        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "Интернет решения"
+      </a>
     </div>
+   
 
     <v-card>
       <v-data-table-server
@@ -141,17 +229,91 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template #[`item.date`]="{ item }">
-          {{ formatDate(item.date) }}
+        <template #[`item.companyId`]="{ item }">
+          {{ getCustomerName(item.companyId) }}
         </template>
         <template #[`item.ordersTotal`]="{ item }">
           {{ item.ordersTotal }}
         </template>
-        <template #[`item.actions`]="{ item }">
+        <template #[`item.actions1`]="{ item }">
           <v-tooltip text="Открыть список заказов">
             <template v-slot:activator="{ props }">
               <button type="button" @click="openOrders(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions2`]="{ item }">
+          <div class="bulk-status-container">
+            <!-- Edit mode with dropdown and save/cancel buttons -->
+            <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
+              <v-select
+                v-model="bulkStatusState[item.id].selectedStatusId"
+                :items="orderStatusesStore.orderStatuses"
+                item-title="title"
+                item-value="id"
+                label="Выберите статус"
+                variant="outlined"
+                density="compact"
+                hide-details
+                hide-no-data
+                :disabled="loading"
+                style="min-width: 150px; max-width: 200px;"
+              />
+              
+              <!-- Save button (checkmark) -->
+              <v-tooltip text="Применить статус">
+                <template v-slot:activator="{ props }">
+                  <button 
+                    type="button"
+                    @click="applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)"
+                    :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
+                    class="anti-btn"
+                    v-bind="props"
+                  >
+                    <font-awesome-icon size="1x" icon="fa-solid fa-check" class="anti-btn" />
+                  </button>
+                </template>
+              </v-tooltip>
+              
+              <!-- Cancel button (X) -->
+              <v-tooltip text="Отменить">
+                <template v-slot:activator="{ props }">
+                  <button 
+                    type="button"
+                    @click="cancelStatusChange(item.id)"
+                    :disabled="loading"
+                    class="anti-btn"
+                    v-bind="props"
+                  >
+                    <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="anti-btn" />
+                  </button>
+                </template>
+              </v-tooltip>
+            </div>
+            
+            <!-- Default mode with pen-to-square icon -->
+            <v-tooltip v-else text="Изменить статус всех заказов в реестре">
+              <template v-slot:activator="{ props }">
+                <button 
+                  type="button" 
+                  @click="bulkChangeStatus(item.id)" 
+                  class="anti-btn" 
+                  :disabled="loading"
+                  v-bind="props"
+                >
+                  <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />
+                </button>
+              </template>
+            </v-tooltip>
+          </div>
+        </template>
+        <template #[`item.actions3`]="{ item }">
+          <v-tooltip text="Выгрузить накладные для всех заказов в реестре">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
@@ -176,3 +338,65 @@ const headers = [
     </div>
   </div>
 </template>
+
+<style scoped>
+.bulk-status-container {
+  min-width: 60px;
+  padding: 2px;
+  transition: min-width 0.2s ease;
+}
+
+.bulk-status-container:has(.status-selector) {
+  min-width: 200px;
+}
+
+.status-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-selector .v-select {
+  font-size: 0.875rem;
+}
+
+.status-selector .v-select :deep(.v-field__input) {
+  font-size: 0.875rem;
+  min-height: 32px;
+}
+
+.status-selector .v-select :deep(.v-field__field) {
+  font-size: 0.875rem;
+}
+
+.status-selector .v-select :deep(.v-list-item) {
+  font-size: 0.875rem;
+  min-height: 36px;
+}
+
+.status-selector .v-select :deep(.v-list-item__title) {
+  font-size: 0.875rem;
+}
+
+.action-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.anti-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

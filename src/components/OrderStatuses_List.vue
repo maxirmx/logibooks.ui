@@ -26,13 +26,13 @@
 
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import router from '@/router'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import router from '@/router'
 
 const orderStatusesStore = useOrderStatusesStore()
 const authStore = useAuthStore()
@@ -54,9 +54,7 @@ function filterOrderStatuses(value, query, item) {
   const q = query.toLocaleUpperCase()
 
   return (
-    i.name?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.title?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.description?.toLocaleUpperCase().indexOf(q) !== -1
+    i.title?.toLocaleUpperCase().indexOf(q) !== -1
   )
 }
 
@@ -64,13 +62,11 @@ function filterOrderStatuses(value, query, item) {
 const headers = [
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
-  { title: 'Имя', key: 'name', sortable: true },
-  { title: 'Заголовок', key: 'title', sortable: true },
-  { title: 'Описание', key: 'description', sortable: true }
+  { title: 'Название статуса', key: 'title', sortable: true }
 ]
 
-function openEditDialog(orderStatus) {
-  router.push('/orderstatus/edit/' + orderStatus.id)
+function openEditDialog(item) {
+  router.push(`/orderstatus/edit/${item.id}`)
 }
 
 function openCreateDialog() {
@@ -185,7 +181,7 @@ defineExpose({
         <v-text-field
           v-model="authStore.orderstatuses_search"
           :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о статусе заказа"
+          label="Поиск по названию статуса"
           variant="solo"
           hide-details
         />

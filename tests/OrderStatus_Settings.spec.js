@@ -9,9 +9,7 @@ import { resolveAll } from './helpers/test-utils.js'
 // Mock dependencies at the top level
 const mockOrderStatus = {
   id: 1,
-  name: 'draft',
-  title: 'Черновик',
-  description: 'Заказ в черновике'
+  title: 'Черновик'
 }
 
 // Mock stores using test-utils
@@ -160,10 +158,8 @@ describe('OrderStatus_Settings.vue', () => {
 
       await resolveAll()
 
-      // Check that all form fields are present
-      expect(wrapper.find('#name').exists()).toBe(true)
+      // Check that the title form field is present
       expect(wrapper.find('#title').exists()).toBe(true)
-      expect(wrapper.find('#description').exists()).toBe(true)
     })
 
     it('renders form labels correctly', async () => {
@@ -176,9 +172,7 @@ describe('OrderStatus_Settings.vue', () => {
 
       await resolveAll()
 
-      expect(wrapper.text()).toContain('Имя:')
-      expect(wrapper.text()).toContain('Заголовок:')
-      expect(wrapper.text()).toContain('Описание:')
+      expect(wrapper.text()).toContain('Название статуса:')
     })
 
     it('shows loading fallback initially', async () => {
@@ -568,13 +562,11 @@ describe('OrderStatus_Settings.vue', () => {
       const formComponent = wrapper.findComponent({ name: 'Form' })
       if (formComponent.exists()) {
         formComponent.vm.setErrors({
-          name: 'Имя обязательно',
-          title: 'Заголовок обязателен'
+          title: 'Название статуса обязательно'
         })
         await resolveAll()
 
-        expect(wrapper.text()).toContain('Имя обязательно')
-        expect(wrapper.text()).toContain('Заголовок обязателен')
+        expect(wrapper.text()).toContain('Название статуса обязательно')
       }
     })
   })

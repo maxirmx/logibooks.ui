@@ -58,10 +58,20 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function setOrderStatuses(registerId, statusId) {
-    const response = await fetchWrapper.put(`${baseUrl}/${registerId}/setorderstatuses`, {
-      statusId: statusId
-    })
-    return response
+    loading.value = true
+    error.value = null
+    try {
+      console.log('Store: setOrderStatuses called with:', { registerId, statusId, type: typeof statusId })
+      const response = await fetchWrapper.put(`${baseUrl}/${registerId}/setorderstatuses/${statusId}`)
+      console.log('Store: Response received:', response)
+      return response
+    } catch (err) {
+      console.error('Store: Error in setOrderStatuses:', err)
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload, setOrderStatuses }

@@ -15,14 +15,14 @@ vi.mock('pinia', async () => {
   return { 
     ...actual, 
     storeToRefs: (store) => {
-      if (store.getAll && store.upload) {
+      if (store.getAll && store.upload && store.setOrderStatuses) {
         // registers store
         return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) }
-      } else if (store.getAll && !store.upload) {
+      } else if (store.getAll && !store.upload && store.companies) {
         // companies store
         return { companies: mockCompanies }
       } else {
-        // auth store
+        // auth store or other stores - return safe defaults
         return { 
           registers_per_page: ref(10), 
           registers_search: ref(''), 
@@ -35,7 +35,15 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({ getAll, upload: uploadFn, items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) })
+  useRegistersStore: () => ({ getAll, upload: uploadFn, setOrderStatuses: vi.fn(), items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) })
+}))
+
+vi.mock('@/stores/orders.store.js', () => ({
+  useOrdersStore: () => ({ generateAll: vi.fn() })
+}))
+
+vi.mock('@/stores/order.statuses.store.js', () => ({
+  useOrderStatusesStore: () => ({ getAll: vi.fn(), orderStatuses: ref([]) })
 }))
 
 vi.mock('@/stores/companies.store.js', () => ({
@@ -57,6 +65,10 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
+}))
+
+vi.mock('@/router', () => ({
+  default: { push: vi.fn() }
 }))
 
 describe('Registers_List.vue', () => {

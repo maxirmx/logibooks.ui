@@ -49,6 +49,7 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const alertStore = useAlertStore()
+const { alert } = storeToRefs(alertStore)
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
@@ -63,15 +64,19 @@ function bulkChangeStatus(registerId) {
   if (!bulkStatusState[registerId]) {
     bulkStatusState[registerId] = { 
       editMode: false, 
-      selectedStatusId: null, 
-      loading: false 
+      selectedStatusId: null
     }
+  }
+  
+  // Don't allow interaction while loading
+  if (loading.value) {
+    return
   }
   
   if (!bulkStatusState[registerId].editMode) {
     // First click: Enter edit mode (show dropdown)
     bulkStatusState[registerId].editMode = true
-    bulkStatusState[registerId].selectedStatusId = null
+    // Don't reset selectedStatusId here - keep any previously selected value
   } else if (bulkStatusState[registerId].selectedStatusId) {
     // Second click with selection: Apply status to all orders
     applyStatusToAllOrders(registerId, bulkStatusState[registerId].selectedStatusId)
@@ -83,23 +88,36 @@ function bulkChangeStatus(registerId) {
 
 // Step 2: Apply selected status to all orders in register
 async function applyStatusToAllOrders(registerId, statusId) {
-  if (!registerId || !statusId) return
+  if (!registerId || !statusId) {
+    alertStore.error('Не указан реестр или статус для изменения')
+    return
+  }
   
-  bulkStatusState[registerId].loading = true
+  // Ensure statusId is a number
+  const numericStatusId = Number(statusId)
+  if (isNaN(numericStatusId) || numericStatusId <= 0) {
+    alertStore.error('Некорректный идентификатор статуса')
+    return
+  }
   
   try {
-    await registersStore.setOrderStatuses(registerId, statusId)
+    await registersStore.setOrderStatuses(registerId, numericStatusId)
     
+    // Success: show message and reset state
     alertStore.success('Статус успешно применен ко всем заказам в реестре')
-    // Reset state
     bulkStatusState[registerId].editMode = false
     bulkStatusState[registerId].selectedStatusId = null
-    // Optionally reload data
+    // Reload data to reflect changes
     loadRegisters()
   } catch (error) {
-    alertStore.error(error.message || 'Ошибка при обновлении статусов заказов')
-  } finally {
-    bulkStatusState[registerId].loading = false
+    // The store already handles setting the error state
+    // Just provide user-friendly error message from the store error
+    const errorMessage = error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов заказов'
+    alertStore.error(errorMessage)
+    
+    // Exit edit mode on error
+    bulkStatusState[registerId].editMode = false
+    bulkStatusState[registerId].selectedStatusId = null
   }
 }
 
@@ -230,12 +248,13 @@ const headers = [
               <v-select
                 v-model="bulkStatusState[item.id].selectedStatusId"
                 :items="orderStatusesStore.orderStatuses"
-                item-title="name"
+                item-title="title"
                 item-value="id"
                 label="Выберите статус"
                 variant="outlined"
                 density="compact"
                 hide-details
+                :disabled="loading"
                 style="min-width: 150px; max-width: 200px;"
               />
               <v-btn
@@ -243,8 +262,8 @@ const headers = [
                 icon
                 variant="text"
                 @click="bulkChangeStatus(item.id)"
-                :loading="bulkStatusState[item.id]?.loading"
-                :disabled="bulkStatusState[item.id]?.loading"
+                :loading="loading"
+                :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
                 class="ml-1"
               >
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" />
@@ -258,6 +277,7 @@ const headers = [
                   type="button" 
                   @click="bulkChangeStatus(item.id)" 
                   class="anti-btn" 
+                  :disabled="loading"
                   v-bind="props"
                 >
                   <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />

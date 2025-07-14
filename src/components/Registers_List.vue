@@ -49,7 +49,6 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
@@ -73,16 +72,20 @@ function bulkChangeStatus(registerId) {
     return
   }
   
-  if (!bulkStatusState[registerId].editMode) {
-    // First click: Enter edit mode (show dropdown)
-    bulkStatusState[registerId].editMode = true
-    // Don't reset selectedStatusId here - keep any previously selected value
-  } else if (bulkStatusState[registerId].selectedStatusId) {
-    // Second click with selection: Apply status to all orders
-    applyStatusToAllOrders(registerId, bulkStatusState[registerId].selectedStatusId)
-  } else {
-    // Second click without selection: Cancel edit mode
+  // Toggle edit mode
+  bulkStatusState[registerId].editMode = !bulkStatusState[registerId].editMode
+  
+  // Clear selection when entering edit mode
+  if (bulkStatusState[registerId].editMode) {
+    bulkStatusState[registerId].selectedStatusId = null
+  }
+}
+
+// Cancel status change
+function cancelStatusChange(registerId) {
+  if (bulkStatusState[registerId]) {
     bulkStatusState[registerId].editMode = false
+    bulkStatusState[registerId].selectedStatusId = null
   }
 }
 
@@ -243,7 +246,7 @@ const headers = [
         </template>
         <template #[`item.actions2`]="{ item }">
           <div class="bulk-status-container">
-            <!-- Edit mode with dropdown -->
+            <!-- Edit mode with dropdown and save/cancel buttons -->
             <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
               <v-select
                 v-model="bulkStatusState[item.id].selectedStatusId"
@@ -254,20 +257,40 @@ const headers = [
                 variant="outlined"
                 density="compact"
                 hide-details
+                hide-no-data
                 :disabled="loading"
                 style="min-width: 150px; max-width: 200px;"
               />
-              <v-btn
-                size="small"
-                icon
-                variant="text"
-                @click="bulkChangeStatus(item.id)"
-                :loading="loading"
-                :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
-                class="ml-1"
-              >
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" />
-              </v-btn>
+              
+              <!-- Save button (checkmark) -->
+              <v-tooltip text="Применить статус">
+                <template v-slot:activator="{ props }">
+                  <button 
+                    type="button"
+                    @click="applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)"
+                    :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
+                    class="anti-btn"
+                    v-bind="props"
+                  >
+                    <font-awesome-icon size="1x" icon="fa-solid fa-check" class="anti-btn" />
+                  </button>
+                </template>
+              </v-tooltip>
+              
+              <!-- Cancel button (X) -->
+              <v-tooltip text="Отменить">
+                <template v-slot:activator="{ props }">
+                  <button 
+                    type="button"
+                    @click="cancelStatusChange(item.id)"
+                    :disabled="loading"
+                    class="anti-btn"
+                    v-bind="props"
+                  >
+                    <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="anti-btn" />
+                  </button>
+                </template>
+              </v-tooltip>
             </div>
             
             <!-- Default mode with pen-to-square icon -->
@@ -318,14 +341,58 @@ const headers = [
 
 <style scoped>
 .bulk-status-container {
-  min-width: 200px;
+  min-width: 60px;
   padding: 2px;
+  transition: min-width 0.2s ease;
+}
+
+.bulk-status-container:has(.status-selector) {
+  min-width: 200px;
 }
 
 .status-selector {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.status-selector .v-select {
+  font-size: 0.875rem;
+}
+
+.status-selector .v-select :deep(.v-field__input) {
+  font-size: 0.875rem;
+  min-height: 32px;
+}
+
+.status-selector .v-select :deep(.v-field__field) {
+  font-size: 0.875rem;
+}
+
+.status-selector .v-select :deep(.v-list-item) {
+  font-size: 0.875rem;
+  min-height: 36px;
+}
+
+.status-selector .v-select :deep(.v-list-item__title) {
+  font-size: 0.875rem;
+}
+
+.action-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .anti-btn:disabled {

@@ -27,6 +27,7 @@
 
 import { watch, ref, onMounted } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useOrdersStore } from '@/stores/orders.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -38,6 +39,8 @@ import router from '@/router'
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
+
+const ordersStore = useOrdersStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -100,8 +103,20 @@ function openOrders(item) {
   router.push(`/registers/${item.id}/orders`)
 }
 
+function bulkChangeStatus(item) {
+  // TODO: Implement bulk status change functionality for register
+  console.log('Bulk status change for register:', item.id, item.fileName)
+  // This will open a dialog to select new status and apply to all orders in this register
+}
+
+function exportAllXml(item) {
+  ordersStore.generateAll(item.id)
+}
+
 const headers = [
-  { title: '', key: 'actions', sortable: false, align: 'center', width: '5%' },
+  { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
+  { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
+  { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
@@ -153,11 +168,29 @@ const headers = [
         <template #[`item.ordersTotal`]="{ item }">
           {{ item.ordersTotal }}
         </template>
-        <template #[`item.actions`]="{ item }">
+        <template #[`item.actions1`]="{ item }">
           <v-tooltip text="Открыть список заказов">
             <template v-slot:activator="{ props }">
               <button type="button" @click="openOrders(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions2`]="{ item }">
+          <v-tooltip text="Изменить статус всех заказов в реестре">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="bulkChangeStatus(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions3`]="{ item }">
+          <v-tooltip text="Выгрузить накладные для всех заказов в реестре">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

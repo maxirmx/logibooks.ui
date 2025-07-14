@@ -153,11 +153,6 @@ function getColumnTooltip(key) {
           style="min-width: 200px;"
         />
       </div>
-      <div class="link-crt">
-        <a @click="exportAllXml" class="link" tabindex="0">
-          <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />&nbsp;&nbsp;&nbsp;Выгрузить XML для всех заказов
-        </a>
-      </div>
     </div>
 
     <v-card>
@@ -236,7 +231,7 @@ function getColumnTooltip(key) {
           </v-tooltip>
         </template>
         <template #[`item.actions2`]="{ item }">
-          <v-tooltip text="Выгрузить XML для заказа">
+          <v-tooltip text="Выгрузить накладную для заказа">
             <template v-slot:activator="{ props }">
               <button @click="exportOrderXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />

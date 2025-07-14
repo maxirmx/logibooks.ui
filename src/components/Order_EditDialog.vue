@@ -127,7 +127,6 @@ function onSubmit(values, { setErrors }) {
 
       <!-- Order Identification & Status Section -->
       <div class="form-section">
-        <h3 class="section-title">Идентификация и статус заказа</h3>
         <div class="form-row">
           <div class="form-group">
             <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
@@ -136,10 +135,6 @@ function onSubmit(values, { setErrors }) {
               <option v-for="s in statusStore.orderStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
-          <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
-            <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
-          </div>
         </div>
       </div>
 
@@ -147,6 +142,10 @@ function onSubmit(values, { setErrors }) {
       <div class="form-section">
         <h3 class="section-title">Информация о товаре</h3>
         <div class="form-row">
+          <div class="form-group">
+            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
+            <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
+          </div>
           <div class="form-group">
             <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
             <Field name="shk" id="shk" type="text" class="form-control input" />
@@ -158,17 +157,10 @@ function onSubmit(values, { setErrors }) {
           <div class="form-group">
             <label class="label">{{ getFieldLabel('productLink') }}:</label>
             <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link" :title="item.productLink">
-              Ссылка на товар
+              {{ item.productLink }}
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Physical Properties Section -->
-      <div class="form-section">
-        <h3 class="section-title">Физические характеристики</h3>
-        <div class="form-row">
           <div class="form-group">
             <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
             <Field name="country" id="country" type="text" class="form-control input" />
@@ -181,13 +173,6 @@ function onSubmit(values, { setErrors }) {
             <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
             <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
           </div>
-        </div>
-      </div>
-
-      <!-- Financial Information Section -->
-      <div class="form-section">
-        <h3 class="section-title">Финансовая информация</h3>
-        <div class="form-row">
           <div class="form-group">
             <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
             <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
@@ -245,59 +230,62 @@ function onSubmit(values, { setErrors }) {
 }
 
 .form-section {
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background-color: #fafafa;
 }
 
 .section-title {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: #333;
   border-bottom: 2px solid #ddd;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
   margin-bottom: 0rem;
 }
 
 .form-group {
   display: flex;
-  flex-direction: column;
-  margin-bottom: 0rem;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 0.5rem;
   min-width: 0;
   overflow: hidden;
+  gap: 0.5rem;
 }
 
 
 
 .label {
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 500;
-  margin-bottom: 0.25rem;
-  width: 80% !important;
-  min-width: 0;
+  margin-bottom: 0;
+  width: 40%;
+  min-width: 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 
 .input {
-  padding: 0.1rem;
+  padding: 0.25rem;
   border-radius: 4px;
-  font-size: 0.8rem;
-  height: 2rem;
-  margin-bottom: 0.1rem;
-  width: 80% !important;
+  font-size: 1rem;
+  height: 2.25rem;
+  margin-bottom: 0;
+  width: 60%;
+  flex-grow: 1;
 }
 
 .input:focus {
@@ -307,20 +295,19 @@ function onSubmit(values, { setErrors }) {
 .form-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
 }
-
-
-
 
 
 .product-link {
   color: rgba(var(--v-theme-primary), 1);
   text-decoration: none;
-  padding: 0.1rem 0;
+  padding: 0.25rem 0;
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: 1rem;
+  width: 60%;
+  flex-grow: 1;
 }
 
 .product-link:hover {
@@ -331,21 +318,15 @@ function onSubmit(values, { setErrors }) {
 .no-link {
   color: #999;
   font-style: italic;
-  font-size: 0.8rem;
+  font-size: 1rem;
+  width: 60%;
+  flex-grow: 1;
 }
 
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-}
-
-@media (max-width: 1024px) and (min-width: 769px) {
-  .form-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 }
 </style>

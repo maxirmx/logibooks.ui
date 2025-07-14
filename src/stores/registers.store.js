@@ -57,5 +57,12 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload }
+  async function setOrderStatuses(registerId, statusId) {
+    const response = await fetchWrapper.put(`${baseUrl}/${registerId}/setorderstatuses`, {
+      statusId: statusId
+    })
+    return response
+  }
+
+  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload, setOrderStatuses }
 })

@@ -25,9 +25,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { watch, ref, onMounted } from 'vue'
+import { watch, ref, onMounted, reactive } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useOrdersStore } from '@/stores/orders.store.js'
+import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -42,6 +43,8 @@ const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const ordersStore = useOrdersStore()
 
+const orderStatusesStore = useOrderStatusesStore()
+
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
@@ -52,6 +55,54 @@ const { registers_per_page, registers_search, registers_sort_by, registers_page 
 
 const fileInput = ref(null)
 
+// State for bulk status change
+const bulkStatusState = reactive({})
+
+// Step 1: Toggle edit mode
+function bulkChangeStatus(registerId) {
+  if (!bulkStatusState[registerId]) {
+    bulkStatusState[registerId] = { 
+      editMode: false, 
+      selectedStatusId: null, 
+      loading: false 
+    }
+  }
+  
+  if (!bulkStatusState[registerId].editMode) {
+    // First click: Enter edit mode (show dropdown)
+    bulkStatusState[registerId].editMode = true
+    bulkStatusState[registerId].selectedStatusId = null
+  } else if (bulkStatusState[registerId].selectedStatusId) {
+    // Second click with selection: Apply status to all orders
+    applyStatusToAllOrders(registerId, bulkStatusState[registerId].selectedStatusId)
+  } else {
+    // Second click without selection: Cancel edit mode
+    bulkStatusState[registerId].editMode = false
+  }
+}
+
+// Step 2: Apply selected status to all orders in register
+async function applyStatusToAllOrders(registerId, statusId) {
+  if (!registerId || !statusId) return
+  
+  bulkStatusState[registerId].loading = true
+  
+  try {
+    await registersStore.setOrderStatuses(registerId, statusId)
+    
+    alertStore.success('Статус успешно применен ко всем заказам в реестре')
+    // Reset state
+    bulkStatusState[registerId].editMode = false
+    bulkStatusState[registerId].selectedStatusId = null
+    // Optionally reload data
+    loadRegisters()
+  } catch (error) {
+    alertStore.error(error.message || 'Ошибка при обновлении статусов заказов')
+  } finally {
+    bulkStatusState[registerId].loading = false
+  }
+}
+
 // Function to get customer name by customerId
 function getCustomerName(customerId) {
   if (!customerId || !companies.value) return 'Неизвестно'
@@ -60,9 +111,10 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
-// Load companies on component mount
+// Load companies and order statuses on component mount
 onMounted(async () => {
   await companiesStore.getAll()
+  await orderStatusesStore.getAll()
 })
 
 function openFileDialog() {
@@ -101,12 +153,6 @@ function loadRegisters() {
 
 function openOrders(item) {
   router.push(`/registers/${item.id}/orders`)
-}
-
-function bulkChangeStatus(item) {
-  // TODO: Implement bulk status change functionality for register
-  console.log('Bulk status change for register:', item.id, item.fileName)
-  // This will open a dialog to select new status and apply to all orders in this register
 }
 
 function exportAllXml(item) {
@@ -178,13 +224,47 @@ const headers = [
           </v-tooltip>
         </template>
         <template #[`item.actions2`]="{ item }">
-          <v-tooltip text="Изменить статус всех заказов в реестре">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="bulkChangeStatus(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <div class="bulk-status-container">
+            <!-- Edit mode with dropdown -->
+            <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
+              <v-select
+                v-model="bulkStatusState[item.id].selectedStatusId"
+                :items="orderStatusesStore.orderStatuses"
+                item-title="name"
+                item-value="id"
+                label="Выберите статус"
+                variant="outlined"
+                density="compact"
+                hide-details
+                style="min-width: 150px; max-width: 200px;"
+              />
+              <v-btn
+                size="small"
+                icon
+                variant="text"
+                @click="bulkChangeStatus(item.id)"
+                :loading="bulkStatusState[item.id]?.loading"
+                :disabled="bulkStatusState[item.id]?.loading"
+                class="ml-1"
+              >
+                <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" />
+              </v-btn>
+            </div>
+            
+            <!-- Default mode with pen-to-square icon -->
+            <v-tooltip v-else text="Изменить статус всех заказов в реестре">
+              <template v-slot:activator="{ props }">
+                <button 
+                  type="button" 
+                  @click="bulkChangeStatus(item.id)" 
+                  class="anti-btn" 
+                  v-bind="props"
+                >
+                  <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />
+                </button>
+              </template>
+            </v-tooltip>
+          </div>
         </template>
         <template #[`item.actions3`]="{ item }">
           <v-tooltip text="Выгрузить накладные для всех заказов в реестре">
@@ -215,3 +295,21 @@ const headers = [
     </div>
   </div>
 </template>
+
+<style scoped>
+.bulk-status-container {
+  min-width: 200px;
+  padding: 2px;
+}
+
+.status-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.anti-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

@@ -113,10 +113,6 @@ function exportOrderXml(item) {
   ordersStore.generate(item.id)
 }
 
-function exportAllXml() {
-  ordersStore.generateAll(props.registerId)
-}
-
 // Function to get tooltip for column headers
 function getColumnTooltip(key) {
   // Convert camelCase key to PascalCase to match the mapping keys

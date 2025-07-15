@@ -97,6 +97,27 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/stopwords',
+      name: 'Стоп-слова',
+      component: () => import('@/views/StopWords_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/stopword/create',
+      name: 'Создание стоп-слова',
+      component: () => import('@/views/StopWord_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/stopword/edit/:id',
+      name: 'Редактирование стоп-слова',
+      component: () => import('@/views/StopWord_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/countries',
       name: 'Страны',
       component: () => import('@/views/Countries_View.vue'),

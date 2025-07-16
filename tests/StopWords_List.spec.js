@@ -54,9 +54,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockStopWords = ref([
-  { id: 1, word: 'и', exact_match: false },
-  { id: 2, word: 'или', exact_match: true },
-  { id: 3, word: 'но', exact_match: false }
+  { id: 1, word: 'и', exactMatch: false },
+  { id: 2, word: 'или', exactMatch: true },
+  { id: 3, word: 'но', exactMatch: false }
 ])
 
 // Mock stores
@@ -140,9 +140,9 @@ describe('StopWords_List.vue', () => {
 
     // Reset reactive data
     mockStopWords.value = [
-      { id: 1, word: 'и', exact_match: false },
-      { id: 2, word: 'или', exact_match: true },
-      { id: 3, word: 'но', exact_match: false }
+      { id: 1, word: 'и', exactMatch: false },
+      { id: 2, word: 'или', exactMatch: true },
+      { id: 3, word: 'но', exactMatch: false }
     ]
 
     wrapper = mount(StopWordsList, {
@@ -376,8 +376,8 @@ describe('StopWords_List.vue', () => {
       expect(headers).toEqual([
         { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
         { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
-        { title: 'Стоп-слово', key: 'word', sortable: true },
-        { title: 'Тип соответствия', key: 'exact_match', sortable: true }
+        { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
+        { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
       ])
     })
   })
@@ -467,7 +467,7 @@ describe('StopWords_List.vue', () => {
   describe('Reactive State', () => {
     it('updates when stop words change', async () => {
       const newStopWords = [
-        { id: 4, word: 'новое', exact_match: true }
+        { id: 4, word: 'новое', exactMatch: true }
       ]
       
       mockStopWords.value = newStopWords
@@ -496,7 +496,7 @@ describe('StopWords_List.vue', () => {
       const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
         id: i + 1,
         word: `слово${i}`,
-        exact_match: i % 2 === 0
+        exactMatch: i % 2 === 0
       }))
       
       mockStopWords.value = largeDataset

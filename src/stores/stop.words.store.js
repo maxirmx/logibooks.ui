@@ -65,10 +65,9 @@ export const useStopWordsStore = defineStore('stopWords', () => {
 
   async function create(data) {
     try {
-      const response = await fetchWrapper.post(baseUrl, data)
-      // Add to local state immediately for better UX
-      stopWords.value.push(response)
-      return response
+      await fetchWrapper.post(baseUrl, data)
+      // Refresh the list after creation
+      await getAll()
     } catch (error) {
       console.error('Failed to create stop word:', error)
       throw error
@@ -77,13 +76,9 @@ export const useStopWordsStore = defineStore('stopWords', () => {
 
   async function update(id, data) {
     try {
-      const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
-      // Update local state immediately
-      const index = stopWords.value.findIndex(sw => sw.id === id)
-      if (index !== -1) {
-        stopWords.value[index] = response
-      }
-      return response
+      await fetchWrapper.put(`${baseUrl}/${id}`, data)
+      // Refresh the list after update
+      await getAll()
     } catch (error) {
       console.error('Failed to update stop word:', error)
       throw error
@@ -93,8 +88,8 @@ export const useStopWordsStore = defineStore('stopWords', () => {
   async function remove(id) {
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      // Remove from local state immediately
-      stopWords.value = stopWords.value.filter(sw => sw.id !== id)
+      // Refresh the list after deletion
+      await getAll()
     } catch (error) {
       console.error('Failed to delete stop word:', error)
       throw error

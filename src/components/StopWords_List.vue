@@ -63,8 +63,8 @@ function filterStopWords(value, query, item) {
 const headers = [
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
-  { title: 'Стоп-слово', key: 'word', sortable: true },
-  { title: 'Тип соответствия', key: 'exact_match', sortable: true }
+  { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
+  { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
 ]
 
 function getMatchTypeText(exactMatch) {
@@ -157,7 +157,6 @@ defineExpose({
         v-model:sort-by="authStore.stopwords_sort_by"
         :custom-filter="filterStopWords"
         :loading="loading"
-        item-value="name"
         density="compact"
         class="elevation-1 interlaced-table"
       >
@@ -181,8 +180,8 @@ defineExpose({
           </v-tooltip>
         </template>
 
-        <template v-slot:[`item.exact_match`]="{ item }">
-          {{ getMatchTypeText(item.exact_match) }}
+        <template v-slot:[`item.exactMatch`]="{ item }">
+          {{ getMatchTypeText(item.exactMatch) }}
         </template>
       </v-data-table>
 

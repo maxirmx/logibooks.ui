@@ -23,90 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<template>
-  <div class="settings form-2">
-    <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</h1>
-    <hr class="hr" />
-    
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
-    
-    <form v-else @submit.prevent="onSubmit">
-      <div class="form-group">
-        <label for="word" class="label">Стоп-слово или фраза:</label>
-        <input
-          name="word"
-          id="word"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.word }"
-          placeholder="Стоп-слово или фраза"
-          v-model="word"
-          @input="onWordInput"
-        />
-        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
-      </div>
-
-      <div class="form-group">
-        <label class="label">Тип соответствия:</label>
-        <div class="radio-group">
-          <label class="radio-styled">
-            <input
-              type="radio"
-              name="exactMatch"
-              :value="true"
-              :checked="exactMatch === true"
-              @change="exactMatch = true"
-              :disabled="forceExactMatch"
-            />
-            <span class="radio-mark"></span>
-            Точное соответствие
-          </label>
-          
-          <label class="radio-styled">
-            <input
-              type="radio"
-              name="exactMatch"
-              :value="false"
-              :checked="exactMatch === false"
-              @change="exactMatch = false"
-              :disabled="forceExactMatch"
-            />
-            <span class="radio-mark"></span>
-            Морфологическое соответствие
-          </label>
-        </div>
-        <div v-if="errors.exactMatch" class="invalid-feedback">{{ errors.exactMatch }}</div>
-      </div>
-
-      <div class="form-group">
-        <button class="button primary" type="submit" :disabled="saving">
-          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
-          Сохранить
-        </button>
-        <button
-          class="button secondary"
-          type="button"
-          @click="cancel"
-        >
-          Отмена
-        </button>
-      </div>
-
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
-    </form>
-
-    <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
@@ -146,12 +64,49 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     word: '',
-    exactMatch: false
+    exactMatch: false  // Ensure default value is set
   }
 })
 
 const { value: word } = useField('word')
 const { value: exactMatch } = useField('exactMatch')
+
+// Watch exactMatch and force a default value if undefined
+watch(exactMatch, (newValue) => {
+  if (newValue === undefined || newValue === null) {
+    console.log('exactMatch is undefined, setting to false')
+    setFieldValue('exactMatch', false)
+  }
+}, { immediate: true })
+
+// Ensure initial value is properly set for create mode
+onMounted(async () => {
+  if (isEdit.value) {
+    loading.value = true
+    try {
+      const loadedStopWord = await stopWordsStore.getById(props.id)
+      if (loadedStopWord) {
+        resetForm({
+          values: {
+            word: loadedStopWord.word,
+            exactMatch: loadedStopWord.exactMatch
+          }
+        })
+        // Ensure UI updates after form reset
+        await nextTick()
+      }
+    } catch {
+      alertStore.error('Ошибка при загрузке данных стоп-слова')
+      router.push('/stopwords')
+    } finally {
+      loading.value = false
+    }
+  } else {
+    // For create mode, ensure exactMatch has a default value
+    setFieldValue('exactMatch', false)
+    await nextTick()
+  }
+})
 
 // Check if word contains multiple words (spaces)  
 const forceExactMatch = computed(() => {
@@ -177,7 +132,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
   
   const stopWordData = {
     word: values.word.trim(),
-    exact_match: values.exactMatch
+    exactMatch: values.exactMatch  // Use camelCase to match API
   }
 
   try {
@@ -189,7 +144,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     router.push('/stopwords')
   } catch (error) {
     if (error.message?.includes('409')) {
-      setErrors({ apiError: 'Такое стоп-слово уже задано' })
+      setErrors({ apiError: 'Такое стоп-слово или фраза уже заданы' })
     } else {
       setErrors({ apiError: 'Ошибка при сохранении стоп-слова' })
     }
@@ -202,29 +157,6 @@ function cancel() {
   router.push('/stopwords')
 }
 
-// Load data for editing
-onMounted(async () => {
-  if (isEdit.value) {
-    loading.value = true
-    try {
-      const loadedStopWord = await stopWordsStore.getById(props.id)
-      if (loadedStopWord) {
-        resetForm({
-          values: {
-            word: loadedStopWord.word,
-            exactMatch: loadedStopWord.exact_match
-          }
-        })
-      }
-    } catch {
-      alertStore.error('Ошибка при загрузке данных стоп-слова')
-      router.push('/stopwords')
-    } finally {
-      loading.value = false
-    }
-  }
-})
-
 // Expose functions for testing
 defineExpose({
   onSubmit,
@@ -232,3 +164,85 @@ defineExpose({
   onWordInput
 })
 </script>
+
+<template>
+  <div class="settings form-2">
+    <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</h1>
+    <hr class="hr" />
+    
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
+    
+    <form v-else @submit.prevent="onSubmit">
+      <div class="form-group">
+        <label for="word" class="label">Стоп-слово или фраза:</label>
+        <input
+          name="word"
+          id="word"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.word }"
+          placeholder="Стоп-слово или фраза"
+          v-model="word"
+          @input="onWordInput"
+        />
+        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
+      </div>
+
+      <div class="form-group">
+        <label class="label">Тип соответствия:</label>
+        <div class="radio-group">
+          <label class="radio-styled">
+            <input
+              type="radio"
+              name="exactMatch"
+              :value="true"
+              :checked="exactMatch === true"
+              @change="setFieldValue('exactMatch', true)"
+              :disabled="forceExactMatch"
+            />
+            <span class="radio-mark"></span>
+            Точное соответствие
+          </label>
+          
+          <label class="radio-styled">
+            <input
+              type="radio"
+              name="exactMatch"
+              :value="false"
+              :checked="exactMatch === false"
+              @change="setFieldValue('exactMatch', false)"
+              :disabled="forceExactMatch"
+            />
+            <span class="radio-mark"></span>
+            Морфологическое соответствие
+          </label>
+        </div>
+        <div v-if="errors.exactMatch" class="invalid-feedback">{{ errors.exactMatch }}</div>
+      </div>
+
+      <div class="form-group">
+        <button class="button primary" type="submit" :disabled="saving">
+          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
+          Сохранить
+        </button>
+        <button
+          class="button secondary"
+          type="button"
+          @click="cancel"
+        >
+          Отмена
+        </button>
+      </div>
+
+      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+    </form>
+
+    <!-- Alert -->
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+  </div>
+</template>

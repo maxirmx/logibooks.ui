@@ -118,7 +118,7 @@ export const vuetifyStubs = {
     emits: ['input', 'update:modelValue']
   },
   'v-radio': {
-    template: '<input type="radio" class="v-radio-stub" data-testid="v-radio" />{{ label }}',
+    template: '<label class="v-radio-stub" data-testid="v-radio"><input type="radio" />{{ label }}</label>',
     props: ['label', 'value', 'disabled', 'style'],
     inheritAttrs: false
   },

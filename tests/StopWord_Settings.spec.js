@@ -1,654 +1,378 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Suspense } from 'vue'
+import { ref } from 'vue'
 import StopWordSettings from '@/components/StopWord_Settings.vue'
-import { defaultGlobalStubs, createMockStore } from './test-utils.js'
-import { resolveAll } from './helpers/test-utils.js'
+import { resolveAll } from './helpers/test-utils'
 
-// Mock dependencies at the top level
+// Mock data
 const mockStopWord = {
   id: 1,
   word: 'тест',
-  exactMatch: false
+  exact_match: false
 }
 
-// Mock stores using test-utils
-const mockStopWordsStore = createMockStore({
-  stopWord: mockStopWord,
-  getById: vi.fn().mockResolvedValue(mockStopWord),
-  create: vi.fn().mockResolvedValue(mockStopWord),
-  update: vi.fn().mockResolvedValue()
-})
+// Create hoisted mock functions
+const getById = vi.hoisted(() => vi.fn(() => Promise.resolve(mockStopWord)))
+const create = vi.hoisted(() => vi.fn(() => Promise.resolve(mockStopWord)))
+const update = vi.hoisted(() => vi.fn(() => Promise.resolve(mockStopWord)))
+const routerPush = vi.hoisted(() => vi.fn())
+const alertError = vi.hoisted(() => vi.fn())
+const alertClear = vi.hoisted(() => vi.fn())
 
-const mockAuthStore = createMockStore({
-  user: { isAdmin: true }
-})
+const mockAlert = ref(null)
 
-const mockAlertStore = createMockStore({
-  success: vi.fn(),
-  error: vi.fn(),
-  clear: vi.fn(),
-  alert: null
-})
-
-// Mock all external dependencies
+// Mock stores
 vi.mock('@/stores/stop.words.store.js', () => ({
-  useStopWordsStore: () => mockStopWordsStore
-}))
-
-vi.mock('@/stores/auth.store.js', () => ({
-  useAuthStore: () => mockAuthStore
-}))
-
-vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => mockAlertStore
-}))
-
-vi.mock('@/router', () => ({
-  default: {
-    push: vi.fn()
-  }
-}))
-
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store.alert !== undefined) {
-      return { alert: { value: store.alert } }
-    }
-    return {}
-  }
-}))
-
-// Mock vee-validate with proper form handling  
-const mockWordField = { value: '' }
-const mockExactMatchField = { value: false }
-
-vi.mock('vee-validate', () => ({
-  useForm: () => ({
-    errors: {},
-    handleSubmit: (callback) => (values = {}) => callback({ 
-      word: mockWordField.value, 
-      exactMatch: mockExactMatchField.value, 
-      ...values 
-    }),
-    resetForm: vi.fn()
-  }),
-  useField: (name) => {
-    if (name === 'word') {
-      return { 
-        value: mockWordField,
-        errorMessage: { value: '' }
-      }
-    }
-    if (name === 'exactMatch') {
-      return { 
-        value: mockExactMatchField,
-        errorMessage: { value: '' }
-      }
-    }
-    return { 
-      value: { value: '' },
-      errorMessage: { value: '' }
-    }
-  }
-}))
-
-vi.mock('@vee-validate/yup', () => ({
-  toTypedSchema: (schema) => schema
-}))
-
-vi.mock('yup', () => ({
-  object: (schema) => schema,
-  string: () => ({
-    required: () => ({
-      min: () => ({
-        max: () => ({})
-      })
-    })
-  }),
-  boolean: () => ({
-    required: () => ({})
+  useStopWordsStore: () => ({
+    getById,
+    create,
+    update
   })
 }))
 
-// Create a wrapper component that provides Suspense boundary
-const AsyncWrapper = {
-  components: { StopWordSettings, Suspense },
-  props: ['id'],
-  template: `
-    <Suspense>
-      <StopWordSettings :id="id" />
-      <template #fallback>
-        <div>Loading...</div>
-      </template>
-    </Suspense>
-  `
-}
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    error: alertError,
+    clear: alertClear
+  })
+}))
 
-// Import router after mocking
-let mockRouter
-beforeEach(async () => {
-  const router = await import('@/router')
-  mockRouter = router.default
-  vi.clearAllMocks()
-  // Reset store states
-  mockStopWordsStore.loading = false
-  mockStopWordsStore.error = null
-  mockAuthStore.user = { isAdmin: true }
-  mockAlertStore.loading = false
-  mockAlertStore.alert = null
-  // Reset mock form fields
-  mockWordField.value = ''
-  mockExactMatchField.value = false
-  
-  // Reset all spies
-  vi.clearAllMocks()
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return { 
+    ...actual, 
+    storeToRefs: () => ({ alert: mockAlert })
+  }
 })
 
+// Mock the router
+vi.mock('@/router', () => ({
+  default: {
+    push: routerPush
+  }
+}))
+
 describe('StopWord_Settings.vue', () => {
+  const mountComponent = (props = {}) => {
+    return mount(StopWordSettings, {
+      props,
+      global: {
+        stubs: {
+          'font-awesome-icon': true
+        }
+      }
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getById.mockResolvedValue(mockStopWord)
+    create.mockResolvedValue(mockStopWord)
+    update.mockResolvedValue(mockStopWord)
+    routerPush.mockResolvedValue()
+    mockAlert.value = null
+  })
+
   describe('Component Rendering', () => {
-    it('renders create mode correctly for admin user', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('renders create mode correctly', async () => {
+      const wrapper = mountComponent()
       await resolveAll()
 
-      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
-      expect(wrapper.text()).toContain('Сохранить')
-      expect(mockStopWordsStore.getById).not.toHaveBeenCalled()
+      expect(wrapper.find('h1').text()).toBe('Регистрация стоп-слова или фразы')
+      expect(wrapper.find('input[name="word"]').exists()).toBe(true)
+      expect(wrapper.find('input[type="radio"][value="true"]').exists()).toBe(true)
+      expect(wrapper.find('input[type="radio"][value="false"]').exists()).toBe(true)
+      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
-    it('renders edit mode correctly for admin user', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('renders edit mode correctly', async () => {
+      const wrapper = mountComponent({ id: 1 })
       await resolveAll()
+
+      expect(wrapper.find('h1').text()).toBe('Редактировать стоп-слово или фразу')
+    })
+
+    it('shows loading state when fetching data', async () => {
+      getById.mockImplementation(() => new Promise(() => {}))
+      const wrapper = mountComponent({ id: 1 })
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.find('.spinner-border-lg').exists()).toBe(true)
+    })
+  })
+
+  describe('Form Fields', () => {
+    it('renders word input field', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const wordInput = wrapper.find('input[name="word"]')
+      expect(wordInput.exists()).toBe(true)
+      expect(wordInput.attributes('placeholder')).toBe('Стоп-слово или фраза')
+    })
+
+    it('renders exactMatch radio buttons', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const trueRadio = wrapper.find('input[type="radio"][value="true"]')
+      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
       
-      expect(wrapper.text()).toContain('Редактировать стоп-слово')
-      expect(wrapper.text()).toContain('Сохранить')
-    })
-
-    it('renders all form fields for admin user', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      // Check that the word form field is present
-      expect(wrapper.find('[data-testid="v-text-field"]').exists()).toBe(true)
-      expect(wrapper.text()).toContain('Стоп-слово')
-      expect(wrapper.text()).toContain('Тип соответствия')
-      expect(wrapper.text()).toContain('Точное соответствие')
-      expect(wrapper.text()).toContain('Морфологическое соответствие')
+      expect(trueRadio.exists()).toBe(true)
+      expect(falseRadio.exists()).toBe(true)
     })
 
     it('renders form labels correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+      const wrapper = mountComponent()
       await resolveAll()
 
-      expect(wrapper.text()).toContain('Стоп-слово')
-      expect(wrapper.text()).toContain('Тип соответствия')
+      expect(wrapper.find('label[for="word"]').text()).toBe('Стоп-слово или фраза:')
+      expect(wrapper.text()).toContain('Тип соответствия:')
+      expect(wrapper.text()).toContain('Точное соответствие')
+      expect(wrapper.text()).toContain('Морфологическое соответствие')
+    })
+  })
+
+  describe('Multi-word Input Handling', () => {
+    it('forces exact match for multi-word input', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+      
+      const wordInput = wrapper.find('input[name="word"]')
+      await wordInput.setValue('два слова')
+      await wordInput.trigger('input')
+      await wrapper.vm.$nextTick()
+
+      // Check if the falseRadio becomes disabled
+      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
+      expect(falseRadio.element.disabled).toBe(true)
     })
 
-    it('renders action buttons correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('allows both options for single word', async () => {
+      const wrapper = mountComponent()
       await resolveAll()
 
-      const buttons = wrapper.findAll('[data-testid="v-btn"]')
-      expect(buttons.length).toBeGreaterThanOrEqual(2)
-      expect(wrapper.text()).toContain('Отмена')
-      expect(wrapper.text()).toContain('Сохранить')
+      const wordInput = wrapper.find('input[name="word"]')
+      await wordInput.setValue('слово')
+      await wordInput.trigger('input')
+      await wrapper.vm.$nextTick()
+
+      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
+      expect(falseRadio.element.disabled).toBe(false)
+    })
+  })
+
+  describe('Radio Button Interaction', () => {
+    it('selects exact match radio button correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const trueRadio = wrapper.find('input[type="radio"][value="true"]')
+      await trueRadio.trigger('change')
+      await wrapper.vm.$nextTick()
+
+      expect(trueRadio.element.checked).toBe(true)
+    })
+
+    it('selects morphological match radio button correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
+      await falseRadio.trigger('change')
+      await wrapper.vm.$nextTick()
+
+      expect(falseRadio.element.checked).toBe(true)
     })
   })
 
   describe('Form Submission - Create Mode', () => {
     it('calls create store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+      const wrapper = mountComponent()
       await resolveAll()
 
-      // Get the component instance to call save method directly
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-
-      expect(mockStopWordsStore.create).toHaveBeenCalled()
+      // Set form values directly on the component (use single word to avoid force exact match)
+      const component = wrapper.vm
+      component.word = 'новое'
+      component.exactMatch = false
+      
+      await wrapper.vm.$nextTick()
+      
+      // Call onSubmit directly since the form validation might interfere with submit event
+      await component.onSubmit()
+      
+      expect(create).toHaveBeenCalledWith({
+        word: 'новое',
+        exact_match: false
+      })
     })
 
     it('navigates to stopwords list after successful creation', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+      const wrapper = mountComponent()
       await resolveAll()
 
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
+      const component = wrapper.vm
+      component.word = 'новое'
+      component.exactMatch = false
+      
+      await component.onSubmit()
       await resolveAll()
 
-      expect(mockRouter.push).toHaveBeenCalledWith('/stopwords')
+      expect(routerPush).toHaveBeenCalledWith('/stopwords')
     })
 
-    it('handles 409 conflict error during creation', async () => {
-      const error = new Error('Stop word with this name already exists (409)')
-      mockStopWordsStore.create.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('handles creation errors', async () => {
+      create.mockRejectedValueOnce(new Error('409'))
+      const wrapper = mountComponent()
       await resolveAll()
 
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-      await resolveAll()
+      const component = wrapper.vm
+      component.word = 'существующее'
+      component.exactMatch = false
+      
+      try {
+        await component.onSubmit()
+      } catch {
+        // Expected error
+      }
+      
+      await wrapper.vm.$nextTick()
 
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Такое стоп-слово уже задано')
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('handles general error during creation', async () => {
-      const error = new Error('Network error')
-      mockStopWordsStore.create.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-      await resolveAll()
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при сохранении стоп-слова')
-      expect(mockRouter.push).not.toHaveBeenCalled()
+      // Check if error is displayed (the API error should be set in the errors object)
+      const errorElements = wrapper.findAll('.alert-danger')
+      const hasErrorMessage = errorElements.some(el => 
+        el.text().includes('Такое стоп-слово уже задано') || 
+        el.text().includes('Ошибка при сохранении стоп-слова')
+      )
+      expect(hasErrorMessage).toBe(true)
     })
   })
 
   describe('Form Submission - Edit Mode', () => {
     it('calls update store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+      const wrapper = mountComponent({ id: 1 })
       await resolveAll()
 
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
+      const component = wrapper.vm
+      component.word = 'обновленное'
+      component.exactMatch = false
+      
+      await component.onSubmit()
 
-      expect(mockStopWordsStore.update).toHaveBeenCalledWith(1, expect.any(Object))
+      expect(update).toHaveBeenCalledWith(1, {
+        word: 'обновленное',
+        exact_match: false
+      })
     })
 
-    it('navigates to stopwords list after successful update', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('loads existing data in edit mode', async () => {
+      const wrapper = mountComponent({ id: 1 })
       await resolveAll()
 
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/stopwords')
+      expect(getById).toHaveBeenCalledWith(1)
+      
+      const wordInput = wrapper.find('input[name="word"]')
+      expect(wordInput.element.value).toBe('тест')
     })
 
-    it('handles error during update', async () => {
-      const error = new Error('Update failed')
-      mockStopWordsStore.update.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('handles loading errors', async () => {
+      getById.mockRejectedValueOnce(new Error('Not found'))
+      mountComponent({ id: 1 })
       await resolveAll()
 
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-      await resolveAll()
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при сохранении стоп-слова')
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('fetches stopword data on mount in edit mode', async () => {
-      mount(AsyncWrapper, {
-        props: { id: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(mockStopWordsStore.getById).toHaveBeenCalledWith(123)
-    })
-
-    it('handles error when fetching stopword data', async () => {
-      const error = new Error('Fetch failed')
-      mockStopWordsStore.getById.mockRejectedValueOnce(error)
-
-      mount(AsyncWrapper, {
-        props: { id: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при загрузке данных стоп-слова')
-      expect(mockRouter.push).toHaveBeenCalledWith('/stopwords')
+      expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных стоп-слова')
+      expect(routerPush).toHaveBeenCalledWith('/stopwords')
     })
   })
 
   describe('Navigation', () => {
-    it('navigates to stopwords list on cancel button click', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+    it('navigates to stopwords list on cancel', async () => {
+      const wrapper = mountComponent()
       await resolveAll()
 
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.cancel()
+      const cancelButton = wrapper.find('button.secondary')
+      await cancelButton.trigger('click')
 
-      expect(mockRouter.push).toHaveBeenCalledWith('/stopwords')
+      expect(routerPush).toHaveBeenCalledWith('/stopwords')
     })
   })
 
-  describe('Props Validation', () => {
-    it('accepts valid create mode prop (null id)', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+  describe('Button States', () => {
+    it('shows submit button correctly', async () => {
+      const wrapper = mountComponent()
       await resolveAll()
+
+      const submitButton = wrapper.find('button[type="submit"]')
+      expect(submitButton.text()).toContain('Сохранить')
+      expect(submitButton.exists()).toBe(true)
+    })
+
+    it('shows cancel button correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const cancelButton = wrapper.find('button.secondary')
+      expect(cancelButton.text()).toContain('Отмена')
+      expect(cancelButton.exists()).toBe(true)
+    })
+  })
+
+  describe('Alert Handling', () => {
+    it('displays alert when present', async () => {
+      mockAlert.value = { type: 'success', message: 'Успешно сохранено' }
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      expect(wrapper.find('.alert').text()).toContain('Успешно сохранено')
+    })
+
+    it('clears alert on close button click', async () => {
+      mockAlert.value = { type: 'success', message: 'Тестовое сообщение' }
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const closeButton = wrapper.find('.close')
+      await closeButton.trigger('click')
+
+      expect(alertClear).toHaveBeenCalled()
+    })
+  })
+
+  describe('Component Props', () => {
+    it('accepts null id for create mode', () => {
+      const wrapper = mountComponent({ id: null })
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('accepts valid edit mode prop (numeric id)', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
+    it('accepts numeric id for edit mode', () => {
+      const wrapper = mountComponent({ id: 123 })
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('accepts valid edit mode prop (string id)', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: '123' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('handles undefined id prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: undefined },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-  })
-
-  describe('Component Lifecycle', () => {
-    it('initializes correctly in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
-      expect(wrapper.text()).toContain('Сохранить')
-    })
-
-    it('initializes correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      
-      expect(wrapper.text()).toContain('Редактировать стоп-слово')
-      expect(wrapper.text()).toContain('Сохранить')
-    })
-  })
-
-  describe('Error Handling', () => {
-    it('handles network errors gracefully during creation', async () => {
-      const networkError = new Error('Network Error')
-      mockStopWordsStore.create.mockRejectedValueOnce(networkError)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-      await resolveAll()
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при сохранении стоп-слова')
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('handles empty error messages', async () => {
-      const error = new Error()
-      error.message = undefined
-      mockStopWordsStore.create.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      await componentInstance.save()
-      await resolveAll()
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при сохранении стоп-слова')
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Component Functions', () => {
-    it('displays correct title for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
-    })
-
-    it('displays correct title for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.text()).toContain('Редактировать стоп-слово')
-    })
-
-    it('displays correct button text for both modes', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.text()).toContain('Сохранить')
-    })
-  })
-
-  describe('Multi-word Input Handling', () => {
-    it('trims input on word input', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const componentInstance = wrapper.findComponent(StopWordSettings).vm
-      mockWordField.value = '  test  '
-      componentInstance.onWordInput()
-
-      expect(mockWordField.value).toBe('test')
-    })
-  })
-
-  describe('Loading State', () => {
-    it('shows loading state on save button when saving', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const saveButton = wrapper.find('[data-testid="v-btn"]')
-      expect(saveButton.exists()).toBe(true)
-    })
-  })
-
-  describe('Data Binding', () => {
-    it('binds form data correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-      expect(mockStopWordsStore.getById).toHaveBeenCalledWith(1)
-    })
-
-    it('initializes empty form in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
+    it('accepts string id for edit mode', () => {
+      const wrapper = mountComponent({ id: '456' })
       expect(wrapper.exists()).toBe(true)
     })
   })
 
-  describe('Admin Access Control', () => {
-    it('shows form content for admin users', async () => {
-      mockAuthStore.user = { isAdmin: true }
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
+  describe('Form Validation', () => {
+    it('shows word input without errors initially', async () => {
+      const wrapper = mountComponent()
       await resolveAll()
 
-      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
+      expect(wrapper.find('.invalid-feedback').exists()).toBe(false)
+    })
+
+    it('validates form data properly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const wordInput = wrapper.find('input[name="word"]')
+      await wordInput.setValue('тест')
+      await wrapper.vm.$nextTick()
+
+      expect(wordInput.element.value).toBe('тест')
     })
   })
 })

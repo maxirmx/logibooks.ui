@@ -24,101 +24,93 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <template>
-  <v-card>
-    <v-card-title>
-      <span class="text-h5">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</span>
-    </v-card-title>
+  <div class="settings form-2">
+    <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</h1>
+    <hr class="hr" />
     
-    <v-divider></v-divider>
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
     
-    <v-card-text>
-      <v-container>
-        <v-form @submit.prevent="save">
-          <v-row>
-            <v-col cols="12">
-              <v-text-field
-                v-model="word"
-                :error-messages="errors.word"
-                label="Стоп-слово"
-                required
-                clearable
-                @input="onWordInput"
-              ></v-text-field>
-            </v-col>
-          </v-row>
+    <form v-else @submit.prevent="onSubmit">
+      <div class="form-group">
+        <label for="word" class="label">Стоп-слово или фраза:</label>
+        <input
+          name="word"
+          id="word"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.word }"
+          placeholder="Стоп-слово или фраза"
+          v-model="word"
+          @input="onWordInput"
+        />
+        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
+      </div>
 
-          <v-row>
-            <v-col cols="12">
-              <v-radio-group
-                v-model="exactMatch"
-                :error-messages="errors.exactMatch"
-                label="Тип соответствия"
-                :disabled="forceExactMatch"
-              >
-                <v-radio
-                  label="Точное соответствие"
-                  :value="true"
-                ></v-radio>
-                <v-radio
-                  label="Морфологическое соответствие"
-                  :value="false"
-                  :disabled="forceExactMatch"
-                ></v-radio>
-              </v-radio-group>
-              <v-alert 
-                v-if="forceExactMatch"
-                type="info"
-                variant="outlined"
-                density="compact"
-                class="mt-2"
-              >
-                Для многословных фраз доступно только точное соответствие
-              </v-alert>
-            </v-col>
-          </v-row>
+      <div class="form-group">
+        <label class="label">Тип соответствия:</label>
+        <div class="radio-group">
+          <label class="radio-styled">
+            <input
+              type="radio"
+              name="exactMatch"
+              :value="true"
+              :checked="exactMatch === true"
+              @change="exactMatch = true"
+              :disabled="forceExactMatch"
+            />
+            <span class="radio-mark"></span>
+            Точное соответствие
+          </label>
+          
+          <label class="radio-styled">
+            <input
+              type="radio"
+              name="exactMatch"
+              :value="false"
+              :checked="exactMatch === false"
+              @change="exactMatch = false"
+              :disabled="forceExactMatch"
+            />
+            <span class="radio-mark"></span>
+            Морфологическое соответствие
+          </label>
+        </div>
+        <div v-if="errors.exactMatch" class="invalid-feedback">{{ errors.exactMatch }}</div>
+      </div>
 
-          <v-row v-if="alert">
-            <v-col>
-              <v-alert
-                :type="alert.type"
-                :text="alert.message"
-                variant="outlined"
-                closable
-                @click:close="alertStore.clear()"
-              ></v-alert>
-            </v-col>
-          </v-row>
-        </v-form>
-      </v-container>
-    </v-card-text>
+      <div class="form-group">
+        <button class="button primary" type="submit" :disabled="saving">
+          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
+          Сохранить
+        </button>
+        <button
+          class="button secondary"
+          type="button"
+          @click="cancel"
+        >
+          Отмена
+        </button>
+      </div>
 
-    <v-card-actions>
-      <v-spacer></v-spacer>
-      <v-btn
-        color="blue-darken-1"
-        variant="text"
-        @click="cancel"
-      >
-        Отмена
-      </v-btn>
-      <v-btn
-        color="blue-darken-1"
-        variant="text"
-        @click="save"
-        :loading="saving"
-      >
-        Сохранить
-      </v-btn>
-    </v-card-actions>
-  </v-card>
+      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+    </form>
+
+    <!-- Alert -->
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useField, useForm } from 'vee-validate'
+import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
-import * as yup from 'yup'
+import * as Yup from 'yup'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -137,28 +129,31 @@ const { alert } = storeToRefs(alertStore)
 
 const isEdit = computed(() => props.id !== null && props.id !== undefined)
 const saving = ref(false)
+const loading = ref(false)
 
 // Validation schema
-const schema = toTypedSchema(
-  yup.object({
-    word: yup
-      .string()
-      .required('Необходимо ввести стоп-слово или фразу')
-      .min(1, 'Стоп-слово должно содержать хотя бы один символ'),
-    exactMatch: yup
-      .boolean()
-      .required('Необходимо выбрать тип соответствия')
-  })
-)
+const schema = toTypedSchema(Yup.object().shape({
+  word: Yup
+    .string()
+    .required('Необходимо ввести стоп-слово или фразу')
+    .min(1, 'Стоп-слово должно содержать хотя бы один символ'),
+  exactMatch: Yup
+    .boolean()
+    .required('Необходимо выбрать тип соответствия')
+}))
 
-const { errors, handleSubmit, resetForm } = useForm({
-  validationSchema: schema
+const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
+  validationSchema: schema,
+  initialValues: {
+    word: '',
+    exactMatch: false
+  }
 })
 
 const { value: word } = useField('word')
 const { value: exactMatch } = useField('exactMatch')
 
-// Check if word contains multiple words (spaces)
+// Check if word contains multiple words (spaces)  
 const forceExactMatch = computed(() => {
   const trimmedWord = word.value?.trim() || ''
   return trimmedWord.includes(' ')
@@ -167,36 +162,36 @@ const forceExactMatch = computed(() => {
 // Watch for multi-word input and force exact match
 watch(forceExactMatch, (newValue) => {
   if (newValue) {
-    exactMatch.value = true
+    setFieldValue('exactMatch', true)
   }
 })
 
-function onWordInput() {
-  // Trim spaces from the input
-  if (word.value) {
-    word.value = word.value.trim()
-  }
+function onWordInput(event) {
+  // The field value is automatically updated by vee-validate
+  // We just need to update our internal tracking
+  word.value = event.target.value
 }
 
-const save = handleSubmit(async (values) => {
+const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
-  try {
-    const stopWordData = {
-      word: values.word.trim(),
-      exactMatch: values.exactMatch
-    }
+  
+  const stopWordData = {
+    word: values.word.trim(),
+    exact_match: values.exactMatch
+  }
 
+  try {
     if (isEdit.value) {
       await stopWordsStore.update(props.id, stopWordData)
     } else {
       await stopWordsStore.create(stopWordData)
     }
     router.push('/stopwords')
-  } catch (err) {
-    if (err.message?.includes('409')) {
-      alertStore.error('Такое стоп-слово уже задано')
+  } catch (error) {
+    if (error.message?.includes('409')) {
+      setErrors({ apiError: 'Такое стоп-слово уже задано' })
     } else {
-      alertStore.error('Ошибка при сохранении стоп-слова')
+      setErrors({ apiError: 'Ошибка при сохранении стоп-слова' })
     }
   } finally {
     saving.value = false
@@ -210,34 +205,29 @@ function cancel() {
 // Load data for editing
 onMounted(async () => {
   if (isEdit.value) {
+    loading.value = true
     try {
-      const stopWord = await stopWordsStore.getById(props.id)
-      if (stopWord) {
+      const loadedStopWord = await stopWordsStore.getById(props.id)
+      if (loadedStopWord) {
         resetForm({
           values: {
-            word: stopWord.word,
-            exactMatch: stopWord.exactMatch
+            word: loadedStopWord.word,
+            exactMatch: loadedStopWord.exact_match
           }
         })
       }
     } catch {
       alertStore.error('Ошибка при загрузке данных стоп-слова')
       router.push('/stopwords')
+    } finally {
+      loading.value = false
     }
-  } else {
-    // Set default values for new stopword
-    resetForm({
-      values: {
-        word: '',
-        exactMatch: false
-      }
-    })
   }
 })
 
 // Expose functions for testing
 defineExpose({
-  save,
+  onSubmit,
   cancel,
   onWordInput
 })

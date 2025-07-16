@@ -251,8 +251,6 @@ describe('Orders_List', () => {
   })
 
   it('validateOrder function calls store validate method', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
@@ -265,9 +263,6 @@ describe('Orders_List', () => {
     await wrapper.vm.validateOrder(testOrder)
 
     expect(wrapper.vm.ordersStore.validate).toHaveBeenCalledWith(123)
-    expect(consoleSpy).toHaveBeenCalledWith('Order validated successfully:', 123)
-    
-    consoleSpy.mockRestore()
   })
 
   it('marks rows with issues using getRowProps', () => {

@@ -126,12 +126,10 @@ function exportOrderXml(item) {
 async function validateOrder(item) {
   try {
     await ordersStore.validate(item.id)
-    console.log('Order validated successfully:', item.id)
-    // Optionally refresh the orders list to reflect any status changes
     loadOrders()
   } catch (error) {
     console.error('Failed to validate order:', error)
-    // You could show a user-friendly error message here
+    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке заказа.'
   }
 }
 

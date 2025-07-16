@@ -74,7 +74,6 @@ const { value: exactMatch } = useField('exactMatch')
 // Watch exactMatch and force a default value if undefined
 watch(exactMatch, (newValue) => {
   if (newValue === undefined || newValue === null) {
-    console.log('exactMatch is undefined, setting to false')
     setFieldValue('exactMatch', false)
   }
 }, { immediate: true })

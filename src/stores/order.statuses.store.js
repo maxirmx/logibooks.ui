@@ -43,9 +43,6 @@ export const useOrderStatusesStore = defineStore('orderStatuses', () => {
       const response = await fetchWrapper.get(baseUrl)
       orderStatuses.value = response || []
       statusMap.value = new Map(orderStatuses.value.map(status => [status.id, status]))
-    } catch (error) {
-      console.error('Failed to fetch order statuses:', error)
-      throw error
     } finally {
       loading.value = false
     }

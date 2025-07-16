@@ -100,13 +100,8 @@ describe('order.statuses.store.js', () => {
       const error = new Error('Network error')
       mockGet.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.getAll()).rejects.toThrow('Network error')
       expect(store.loading).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch order statuses:', error)
-
-      consoleSpy.mockRestore()
     })
   })
 

@@ -2,6 +2,7 @@
 import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -16,6 +17,7 @@ const props = defineProps({
 
 const ordersStore = useOrdersStore()
 const orderStatusStore = useOrderStatusesStore()
+const orderCheckStatusStore = useOrderCheckStatusStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
@@ -63,6 +65,7 @@ watch(
 onMounted(async () => {
   // Ensure order statuses are loaded
   orderStatusStore.ensureStatusesLoaded()
+  orderCheckStatusStore.ensureStatusesLoaded()
   await fetchRegister()
 })
 
@@ -79,9 +82,11 @@ const headers = computed(() => {
     // Actions - Always first for easy access
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
+    { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
     
     // Order Identification & Status - Key identifiers and current state
     { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
+    { title: registerColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
     
@@ -111,6 +116,13 @@ function editOrder(item) {
 
 function exportOrderXml(item) {
   ordersStore.generate(item.id)
+}
+
+function validateOrder(item) {
+  // TODO: Implement validate functionality
+  console.log('Validating order:', item.id)
+  // You could navigate to a validation page or show a validation dialog
+  // For now, just log the action
 }
 
 // Function to get tooltip for column headers
@@ -182,7 +194,7 @@ function getColumnTooltip(key) {
         </template>
 
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId' && h.key !== 'checkStatusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div
             class="truncated-cell"
             :title="item[header.key] || ''"
@@ -198,6 +210,16 @@ function getColumnTooltip(key) {
             :title="orderStatusStore.getStatusTitle(item.statusId)"
           >
             {{ orderStatusStore.getStatusTitle(item.statusId) }}
+          </div>
+        </template>
+
+        <!-- Special template for checkStatusId to display check status title -->
+        <template #[`item.checkStatusId`]="{ item }">
+          <div
+            class="truncated-cell status-cell"
+            :title="orderCheckStatusStore.getStatusTitle(item.checkStatusId)"
+          >
+            {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>
         </template>
 
@@ -231,6 +253,15 @@ function getColumnTooltip(key) {
             <template v-slot:activator="{ props }">
               <button @click="exportOrderXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions3`]="{ item }">
+          <v-tooltip text="Проверить заказ">
+            <template v-slot:activator="{ props }">
+              <button @click="validateOrder(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

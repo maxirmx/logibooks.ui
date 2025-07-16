@@ -46,10 +46,11 @@ import {
   faCog,
   faBuilding,
   faCheck,
-  faXmark
+  faXmark,
+  faClipboardCheck
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPenToSquare, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog, faBuilding, faCheck, faXmark)
+library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPenToSquare, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog, faBuilding, faCheck, faXmark, faClipboardCheck)
 
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'

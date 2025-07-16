@@ -180,10 +180,17 @@ function exportAllXml(item) {
   ordersStore.generateAll(item.id)
 }
 
+function validateRegister(item) {
+  // TODO: Implement validate functionality
+  console.log('Validating register:', item.id)
+  alertStore.info(`Проверка реестра ${item.id} будет реализована`)
+}
+
 const headers = [
   { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
   { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
+  { title: '', key: 'actions4', sortable: false, align: 'center', width: '60px' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
@@ -314,6 +321,15 @@ const headers = [
             <template v-slot:activator="{ props }">
               <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions4`]="{ item }">
+          <v-tooltip text="Проверить реестр">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="validateRegister(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

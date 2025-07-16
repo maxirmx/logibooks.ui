@@ -8,8 +8,8 @@ import { getStatusColor } from '@/helpers/register.mapping.js'
 
 // Mock data
 const mockOrders = ref([
-  { id: 1, statusId: 1, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },
-  { id: 2, statusId: 2, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' }
+  { id: 1, statusId: 1, checkStatusId: 1, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },
+  { id: 2, statusId: 2, checkStatusId: 2, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' }
 ])
 
 const mockStatuses = ref([
@@ -17,11 +17,18 @@ const mockStatuses = ref([
   { id: 2,  title: 'Обработан' }
 ])
 
+const mockCheckStatuses = ref([
+  { id: 1, title: 'Не проверен' },
+  { id: 2, title: 'Проверен' }
+])
+
 // Mock functions
 const getAll = vi.hoisted(() => vi.fn())
 const fetchStatuses = vi.hoisted(() => vi.fn())
 const getStatusTitle = vi.hoisted(() => vi.fn())
 const ensureStatusesLoaded = vi.hoisted(() => vi.fn())
+const getCheckStatusTitle = vi.hoisted(() => vi.fn())
+const ensureCheckStatusesLoaded = vi.hoisted(() => vi.fn())
 
 // Setup mocks
 vi.mock('pinia', async () => {
@@ -67,6 +74,18 @@ vi.mock('@/stores/order.statuses.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/order.checkstatuses.store.js', () => ({
+  useOrderCheckStatusStore: () => ({
+    statuses: mockCheckStatuses,
+    loading: ref(false),
+    error: ref(null),
+    fetchStatuses: vi.fn(),
+    getStatusTitle: getCheckStatusTitle,
+    getStatusById: vi.fn(),
+    ensureStatusesLoaded: ensureCheckStatusesLoaded
+  })
+}))
+
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     orders_per_page: ref(10),
@@ -93,6 +112,10 @@ describe('Orders_List', () => {
     vi.clearAllMocks()
     getStatusTitle.mockImplementation((id) => {
       const status = mockStatuses.value.find(s => s.id === id)
+      return status ? status.title : `Статус ${id}`
+    })
+    getCheckStatusTitle.mockImplementation((id) => {
+      const status = mockCheckStatuses.value.find(s => s.id === id)
       return status ? status.title : `Статус ${id}`
     })
   })
@@ -141,7 +164,22 @@ describe('Orders_List', () => {
     expect(statusHeader.title).toBe('Статус')
   })
 
-  it('calls ensureStatusesLoaded on mount', () => {
+  it('includes checkStatusId column in headers', () => {
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    const vm = wrapper.vm
+    const checkStatusHeader = vm.headers.find(h => h.key === 'checkStatusId')
+
+    expect(checkStatusHeader).toBeDefined()
+    expect(checkStatusHeader.title).toBe('Проверка')
+  })
+
+  it('calls ensureStatusesLoaded on mount for both status stores', () => {
     mount(OrdersList, {
       props: { registerId: 1 },
       global: {
@@ -150,14 +188,49 @@ describe('Orders_List', () => {
     })
 
     expect(ensureStatusesLoaded).toHaveBeenCalled()
+    expect(ensureCheckStatusesLoaded).toHaveBeenCalled()
+  })
+
+  it('includes actions3 column in headers', () => {
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    const vm = wrapper.vm
+    const actions3Header = vm.headers.find(h => h.key === 'actions3')
+
+    expect(actions3Header).toBeDefined()
+    expect(actions3Header.sortable).toBe(false)
+    expect(actions3Header.align).toBe('center')
+  })
+
+  it('validateOrder function logs the order id', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    const testOrder = { id: 123 }
+    wrapper.vm.validateOrder(testOrder)
+
+    expect(consoleSpy).toHaveBeenCalledWith('Validating order:', 123)
+    
+    consoleSpy.mockRestore()
   })
 
   it('applies correct status color classes based on statusId', () => {
     // Mock orders with different statusIds to test color logic
     const testOrders = ref([
-      { id: 1, statusId: 50, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },    // should be blue (<=100)
-      { id: 2, statusId: 150, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' },  // should be red (100-200)
-      { id: 3, statusId: 250, rowNumber: 3, orderNumber: 'ORD003', tnVed: 'TNV003' }   // should be green (>200)
+      { id: 1, statusId: 50, checkStatusId: 1, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },    // should be blue (<=100)
+      { id: 2, statusId: 150, checkStatusId: 2, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' },  // should be red (100-200)
+      { id: 3, statusId: 250, checkStatusId: 1, rowNumber: 3, orderNumber: 'ORD003', tnVed: 'TNV003' }   // should be green (>200)
     ])
 
     // Mock the orders store to return test orders

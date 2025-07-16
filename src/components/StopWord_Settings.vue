@@ -132,7 +132,12 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
   
   const stopWordData = {
     word: values.word.trim(),
-    exactMatch: values.exactMatch  // Use camelCase to match API
+    exactMatch: values.exactMatch  
+  }
+
+  // Include id for updates
+  if (isEdit.value) {
+    stopWordData.id = props.id
   }
 
   try {

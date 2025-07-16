@@ -261,6 +261,7 @@ describe('StopWord_Settings.vue', () => {
       await component.onSubmit()
 
       expect(update).toHaveBeenCalledWith(1, {
+        id: 1,
         word: 'обновленное',
         exactMatch: false
       })

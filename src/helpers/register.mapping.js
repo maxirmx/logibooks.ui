@@ -44,7 +44,8 @@ export const registerColumnTitles = {
   CustomsClearance: 'Таможенное оформление',
   DutyPayment: 'Оплата пошлины',
   OtherReason: 'Другая причина',
-  Status: 'Статус'
+  Status: 'Статус',
+  CheckStatusId: 'Проверка'
 }
 
 export const registerColumnTooltips = {

@@ -3,6 +3,7 @@ import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -18,9 +19,11 @@ const props = defineProps({
 const ordersStore = useOrdersStore()
 const orderStatusStore = useOrderStatusesStore()
 const orderCheckStatusStore = useOrderCheckStatusStore()
+const stopWordsStore = useStopWordsStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
+const { stopWords } = storeToRefs(stopWordsStore)
 const {
   orders_per_page,
   orders_sort_by,
@@ -66,6 +69,8 @@ onMounted(async () => {
   // Ensure order statuses are loaded
   orderStatusStore.ensureStatusesLoaded()
   orderCheckStatusStore.ensureStatusesLoaded()
+  // Load all stop words once to reduce network traffic
+  await stopWordsStore.getAll()
   await fetchRegister()
 })
 
@@ -141,6 +146,26 @@ function getColumnTooltip(key) {
     return `${title} (${tooltip})`
   }
   return title || null
+}
+
+// Function to get tooltip for checkStatusId with stopwords if there are issues
+function getCheckStatusTooltip(item) {
+  const baseTitle = orderCheckStatusStore.getStatusTitle(item.checkStatusId)
+
+  if (HasIssues(item.checkStatusId) && item.stopWordIds && item.stopWordIds.length > 0) {
+    // Get stopwords for the referenced IDs
+    const stopWordsList = item.stopWordIds
+      .map(id => stopWords.value.find(sw => sw.id === id))
+      .filter(sw => sw) // Remove any undefined values
+      .map(sw => `'${sw.word}'`)
+      .join(', ')
+    
+    if (stopWordsList) {
+      return `${baseTitle}\nСтоп-слова и фразы: ${stopWordsList}`
+    }
+  }
+  
+  return baseTitle
 }
 
 function getRowProps(data) {
@@ -226,8 +251,8 @@ function getRowProps(data) {
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
           <div
-            class="status-cell"
-            :title="orderCheckStatusStore.getStatusTitle(item.checkStatusId)"
+            class="truncated-cell status-cell"
+            :title="getCheckStatusTooltip(item)"
           >
             {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>

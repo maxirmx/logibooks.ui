@@ -81,7 +81,8 @@
 
 /* Highlight rows that have issues */
 .order-has-issues {
-  color: rgba(var(--input-invalid-border), 1) !important;
+  color: #d3223f !important;
+  background-color: #dc7786;
 }
 
 .order-has-issues:hover {

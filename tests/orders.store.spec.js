@@ -7,7 +7,8 @@ import { apiUrl } from '@/helpers/config.js'
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
-    put: vi.fn()
+    put: vi.fn(),
+    post: vi.fn()
   }
 }))
 
@@ -182,6 +183,28 @@ describe('orders store', () => {
       
       expect(consoleSpy).toHaveBeenCalledWith('stub generate all orders XML', 456)
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('validate method', () => {
+    it('calls validate endpoint with correct id', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined) // 204 No Content
+      
+      const store = useOrdersStore()
+      const result = await store.validate(789)
+      
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
+      expect(result).toBe(true)
+    })
+
+    it('throws error when validate fails', async () => {
+      const error = new Error('Validation failed')
+      fetchWrapper.post.mockRejectedValue(error)
+      
+      const store = useOrdersStore()
+      
+      await expect(store.validate(789)).rejects.toThrow('Validation failed')
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
     })
   })
 })

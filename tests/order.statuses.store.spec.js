@@ -141,13 +141,7 @@ describe('order.statuses.store.js', () => {
     it('handles fetch by id error', async () => {
       const error = new Error('Not found')
       mockGet.mockRejectedValue(error)
-
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.getById(1)).rejects.toThrow('Not found')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch order status:', error)
-
-      consoleSpy.mockRestore()
     })
   })
 
@@ -170,12 +164,7 @@ describe('order.statuses.store.js', () => {
       const error = new Error('Validation error')
       mockPost.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.create({})).rejects.toThrow('Validation error')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create order status:', error)
-
-      consoleSpy.mockRestore()
     })
   })
 
@@ -198,12 +187,7 @@ describe('order.statuses.store.js', () => {
       const error = new Error('Update failed')
       mockPut.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.update(1, {})).rejects.toThrow('Update failed')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to update order status:', error)
-
-      consoleSpy.mockRestore()
     })
   })
 
@@ -222,12 +206,7 @@ describe('order.statuses.store.js', () => {
       const error = new Error('Delete failed')
       mockDelete.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete order status:', error)
-
-      consoleSpy.mockRestore()
     })
   })
 

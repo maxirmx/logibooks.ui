@@ -60,45 +60,29 @@ export const useOrderStatusesStore = defineStore('orderStatuses', () => {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
       orderStatus.value = response
       return response
-    } catch (error) {
-      console.error('Failed to fetch order status:', error)
-      throw error
-    }
+    } finally {
+      loading.value = false
+    }  
   }
 
   async function create(data) {
-    try {
-      const response = await fetchWrapper.post(baseUrl, data)
-      // Refresh the list after creation
-      await getAll()
-      return response
-    } catch (error) {
-      console.error('Failed to create order status:', error)
-      throw error
-    }
+    const response = await fetchWrapper.post(baseUrl, data)
+    // Refresh the list after creation
+    await getAll()
+    return response
   }
 
   async function update(id, data) {
-    try {
-      const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
-      // Refresh the list after update
-      await getAll()
-      return response
-    } catch (error) {
-      console.error('Failed to update order status:', error)
-      throw error
-    }
+    const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+    // Refresh the list after update
+    await getAll()
+    return response
   }
 
   async function remove(id) {
-    try {
-      await fetchWrapper.delete(`${baseUrl}/${id}`)
-      // Refresh the list after deletion
-      await getAll()
-    } catch (error) {
-      console.error('Failed to delete order status:', error)
-      throw error
-    }
+    await fetchWrapper.delete(`${baseUrl}/${id}`)
+    // Refresh the list after deletion
+    await getAll()
   }
 
   function getStatusById(id) {

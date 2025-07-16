@@ -118,11 +118,16 @@ function exportOrderXml(item) {
   ordersStore.generate(item.id)
 }
 
-function validateOrder(item) {
-  // TODO: Implement validate functionality
-  console.log('Validating order:', item.id)
-  // You could navigate to a validation page or show a validation dialog
-  // For now, just log the action
+async function validateOrder(item) {
+  try {
+    await ordersStore.validate(item.id)
+    console.log('Order validated successfully:', item.id)
+    // Optionally refresh the orders list to reflect any status changes
+    loadOrders()
+  } catch (error) {
+    console.error('Failed to validate order:', error)
+    // You could show a user-friendly error message here
+  }
 }
 
 // Function to get tooltip for column headers

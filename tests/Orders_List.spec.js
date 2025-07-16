@@ -58,7 +58,8 @@ vi.mock('@/stores/orders.store.js', () => ({
     getAll,
     update: vi.fn(),
     generate: vi.fn(),
-    generateAll: vi.fn()
+    generateAll: vi.fn(),
+    validate: vi.fn()
   })
 }))
 
@@ -207,7 +208,7 @@ describe('Orders_List', () => {
     expect(actions3Header.align).toBe('center')
   })
 
-  it('validateOrder function logs the order id', () => {
+  it('validateOrder function calls store validate method', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     
     const wrapper = mount(OrdersList, {
@@ -218,9 +219,10 @@ describe('Orders_List', () => {
     })
 
     const testOrder = { id: 123 }
-    wrapper.vm.validateOrder(testOrder)
+    await wrapper.vm.validateOrder(testOrder)
 
-    expect(consoleSpy).toHaveBeenCalledWith('Validating order:', 123)
+    expect(wrapper.vm.ordersStore.validate).toHaveBeenCalledWith(123)
+    expect(consoleSpy).toHaveBeenCalledWith('Order validated successfully:', 123)
     
     consoleSpy.mockRestore()
   })
@@ -243,7 +245,8 @@ describe('Orders_List', () => {
         getAll: vi.fn(),
         update: vi.fn(),
         generate: vi.fn(),
-        generateAll: vi.fn()
+        generateAll: vi.fn(),
+        validate: vi.fn()
       })
     }))
 

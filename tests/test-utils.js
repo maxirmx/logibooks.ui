@@ -10,7 +10,7 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-text-field': {
-    template: '<input class="v-text-field-stub" data-testid="v-text-field" />{{ label }}',
+    template: '<label class="v-text-field-stub" data-testid="v-text-field"><span>{{ label }}</span><input /></label>',
     props: ['modelValue', 'label', 'clearable', 'prefix', 'type', 'variant', 'density', 'hideDetails', 'readonly', 'style', 'errorMessages', 'required', 'disabled', 'placeholder'],
     inheritAttrs: false,
     emits: ['input', 'update:modelValue']

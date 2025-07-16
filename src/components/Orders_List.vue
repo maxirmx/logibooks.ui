@@ -92,7 +92,7 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
     { title: registerColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
+    // { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
     
     // Product Identification & Details - What the order contains

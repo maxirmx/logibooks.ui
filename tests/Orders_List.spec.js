@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import { createPinia } from 'pinia'
 import OrdersList from '@/components/Orders_List.vue'
 import { vuetifyStubs } from './test-utils.js'
 
@@ -22,6 +23,11 @@ const mockCheckStatuses = ref([
   { id: 2, title: 'Проверен' }
 ])
 
+const mockStopWords = ref([
+  { id: 1, word: 'test1' },
+  { id: 2, word: 'test2' }
+])
+
 // Mock functions
 const getAll = vi.hoisted(() => vi.fn())
 const fetchStatuses = vi.hoisted(() => vi.fn())
@@ -29,6 +35,7 @@ const getStatusTitle = vi.hoisted(() => vi.fn())
 const ensureStatusesLoaded = vi.hoisted(() => vi.fn())
 const getCheckStatusTitle = vi.hoisted(() => vi.fn())
 const ensureCheckStatusesLoaded = vi.hoisted(() => vi.fn())
+const getAllStopWords = vi.hoisted(() => vi.fn())
 
 // Setup mocks
 vi.mock('pinia', async () => {
@@ -38,6 +45,7 @@ vi.mock('pinia', async () => {
     storeToRefs: vi.fn((store) => {
       if (store.orders) return { items: mockOrders, loading: ref(false), error: ref(null), totalCount: ref(2) }
       if (store.statuses) return { statuses: mockStatuses }
+      if (store.stopWords) return { stopWords: mockStopWords }
       return {
         orders_per_page: ref(10),
         orders_sort_by: ref([{ key: 'id', order: 'asc' }]),
@@ -87,6 +95,19 @@ vi.mock('@/stores/order.checkstatuses.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/stop.words.store.js', () => ({
+  useStopWordsStore: () => ({
+    stopWords: mockStopWords,
+    loading: ref(false),
+    error: ref(null),
+    getAll: getAllStopWords,
+    getById: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn()
+  })
+}))
+
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     orders_per_page: ref(10),
@@ -109,8 +130,11 @@ vi.mock('@/helpers/config.js', () => ({
 const globalStubs = vuetifyStubs
 
 describe('Orders_List', () => {
+  let pinia
+
   beforeEach(() => {
     vi.clearAllMocks()
+    pinia = createPinia()
     getStatusTitle.mockImplementation((id) => {
       const status = mockStatuses.value.find(s => s.id === id)
       return status ? status.title : `Статус ${id}`
@@ -125,6 +149,7 @@ describe('Orders_List', () => {
     mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -136,6 +161,7 @@ describe('Orders_List', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -154,6 +180,7 @@ describe('Orders_List', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -169,6 +196,7 @@ describe('Orders_List', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -184,6 +212,7 @@ describe('Orders_List', () => {
     mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -192,10 +221,23 @@ describe('Orders_List', () => {
     expect(ensureCheckStatusesLoaded).toHaveBeenCalled()
   })
 
+  it('loads stopwords on mount', () => {
+    mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [pinia],
+        stubs: globalStubs
+      }
+    })
+
+    expect(getAllStopWords).toHaveBeenCalled()
+  })
+
   it('includes actions3 column in headers', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -214,6 +256,7 @@ describe('Orders_List', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -231,6 +274,7 @@ describe('Orders_List', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
+        plugins: [pinia],
         stubs: globalStubs
       }
     })
@@ -244,5 +288,49 @@ describe('Orders_List', () => {
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 50 } })).toEqual({ class: '' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 100 } })).toEqual({ class: '' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 250 } })).toEqual({ class: '' })
+  })
+
+  it('generates stopwords tooltip for checkStatusId when HasIssues is true', () => {
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [pinia],
+        stubs: globalStubs
+      }
+    })
+
+    const vm = wrapper.vm
+    
+    // Test item with issues and stopwords
+    const itemWithStopwords = {
+      checkStatusId: 150, // HasIssues returns true for 101-200
+      stopWordIds: [1, 2]
+    }
+    
+    const tooltip = vm.getCheckStatusTooltip(itemWithStopwords)
+    expect(tooltip).toContain('Статус 150')
+    expect(tooltip).toContain('Стоп-слова и фразы:')
+    expect(tooltip).toContain("'test1'")
+    expect(tooltip).toContain("'test2'")
+    
+    // Test item with issues but no stopwords
+    const itemWithoutStopwords = {
+      checkStatusId: 150,
+      stopWordIds: []
+    }
+    
+    const tooltipNoStopwords = vm.getCheckStatusTooltip(itemWithoutStopwords)
+    expect(tooltipNoStopwords).toBe('Статус 150')
+    expect(tooltipNoStopwords).not.toContain('Стоп-слова и фразы:')
+    
+    // Test item without issues
+    const itemNoIssues = {
+      checkStatusId: 50, // HasIssues returns false for <=100
+      stopWordIds: [1, 2]
+    }
+    
+    const tooltipNoIssues = vm.getCheckStatusTooltip(itemNoIssues)
+    expect(tooltipNoIssues).toBe('Статус 50')
+    expect(tooltipNoIssues).not.toContain('Стоп-слова и фразы:')
   })
 })

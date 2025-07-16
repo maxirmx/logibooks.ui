@@ -82,7 +82,7 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такой статус заказауже существует' })
+          setErrors({ apiError: 'Такой статус заказа уже существует' })
         } else {
           setErrors({ apiError: error.message || 'Ошибка при создании статуса заказа' })
         }

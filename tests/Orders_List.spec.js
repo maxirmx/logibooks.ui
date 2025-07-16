@@ -286,4 +286,17 @@ describe('Orders_List', () => {
     expect(wrapper.vm.getCheckStatusColorClass(250)).toBe('check-status-green')   // > 200
     expect(wrapper.vm.getCheckStatusColorClass(1000)).toBe('check-status-green')  // > 200
   })
+
+  it('marks rows with issues using getRowClass', () => {
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    expect(wrapper.vm.getRowClass({ checkStatusId: 150 })).toBe('row-has-issues')
+    expect(wrapper.vm.getRowClass({ checkStatusId: 50 })).toBe('')
+    expect(wrapper.vm.getRowClass({ checkStatusId: 250 })).toBe('')
+  })
 })

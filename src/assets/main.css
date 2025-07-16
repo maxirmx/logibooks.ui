@@ -79,6 +79,11 @@
   background-color: rgba(var(--v-theme-surface), 1);
 }
 
+/* Highlight rows that have issues */
+.row-has-issues {
+  background-color: #ffebee !important;
+}
+
 /* The link to download config */
 .link-crt {
   margin-bottom: 2rem;

@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import OrdersList from '@/components/Orders_List.vue'
 import { vuetifyStubs } from './test-utils.js'
-import { getStatusColor } from '@/helpers/register.mapping.js'
+
 
 // Mock data
 const mockOrders = ref([
@@ -227,29 +227,7 @@ describe('Orders_List', () => {
     consoleSpy.mockRestore()
   })
 
-  it('applies correct status color classes based on statusId', () => {
-    // Mock orders with different statusIds to test color logic
-    const testOrders = ref([
-      { id: 1, statusId: 50, checkStatusId: 1, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },    // should be blue (<=100)
-      { id: 2, statusId: 150, checkStatusId: 2, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' },  // should be red (100-200)
-      { id: 3, statusId: 250, checkStatusId: 1, rowNumber: 3, orderNumber: 'ORD003', tnVed: 'TNV003' }   // should be green (>200)
-    ])
-
-    // Mock the orders store to return test orders
-    vi.doMock('@/stores/orders.store.js', () => ({
-      useOrdersStore: () => ({
-        items: testOrders,
-        loading: ref(false),
-        error: ref(null),
-        totalCount: ref(3),
-        getAll: vi.fn(),
-        update: vi.fn(),
-        generate: vi.fn(),
-        generateAll: vi.fn(),
-        validate: vi.fn()
-      })
-    }))
-
+  it('marks rows with issues using getRowProps', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
@@ -257,46 +235,14 @@ describe('Orders_List', () => {
       }
     })
 
-    // Verify the component mounted successfully
-    expect(wrapper.exists()).toBe(true)
-
-    // Check that the component has access to the status color function
-    expect(getStatusColor).toBeDefined()
-
-    // Test color logic
-    expect(getStatusColor(50)).toBe('blue')
-    expect(getStatusColor(150)).toBe('red')
-    expect(getStatusColor(250)).toBe('green')
-    expect(getStatusColor(null)).toBe('default')
-  })
-
-  it('applies correct check status color classes based on checkStatusId', () => {
-    const wrapper = mount(OrdersList, {
-      props: { registerId: 1 },
-      global: {
-        stubs: globalStubs
-      }
-    })
-
-    // Test the getCheckStatusColorClass function
-    expect(wrapper.vm.getCheckStatusColorClass(50)).toBe('check-status-blue')     // <= 100
-    expect(wrapper.vm.getCheckStatusColorClass(100)).toBe('check-status-blue')    // <= 100
-    expect(wrapper.vm.getCheckStatusColorClass(150)).toBe('check-status-red')     // 100 < x <= 200
-    expect(wrapper.vm.getCheckStatusColorClass(200)).toBe('check-status-red')     // 100 < x <= 200
-    expect(wrapper.vm.getCheckStatusColorClass(250)).toBe('check-status-green')   // > 200
-    expect(wrapper.vm.getCheckStatusColorClass(1000)).toBe('check-status-green')  // > 200
-  })
-
-  it('marks rows with issues using getRowClass', () => {
-    const wrapper = mount(OrdersList, {
-      props: { registerId: 1 },
-      global: {
-        stubs: globalStubs
-      }
-    })
-
-    expect(wrapper.vm.getRowClass({ checkStatusId: 150 })).toBe('row-has-issues')
-    expect(wrapper.vm.getRowClass({ checkStatusId: 50 })).toBe('')
-    expect(wrapper.vm.getRowClass({ checkStatusId: 250 })).toBe('')
+    // Test checkStatusId that has issues (>100 and <=200)
+    expect(wrapper.vm.getRowProps({ item: { checkStatusId: 150 } })).toEqual({ class: 'order-has-issues' })
+    expect(wrapper.vm.getRowProps({ item: { checkStatusId: 101 } })).toEqual({ class: 'order-has-issues' })
+    expect(wrapper.vm.getRowProps({ item: { checkStatusId: 200 } })).toEqual({ class: 'order-has-issues' })
+    
+    // Test checkStatusId that doesn't have issues (<=100 or >200)
+    expect(wrapper.vm.getRowProps({ item: { checkStatusId: 50 } })).toEqual({ class: '' })
+    expect(wrapper.vm.getRowProps({ item: { checkStatusId: 100 } })).toEqual({ class: '' })
+    expect(wrapper.vm.getRowProps({ item: { checkStatusId: 250 } })).toEqual({ class: '' })
   })
 })

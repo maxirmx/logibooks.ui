@@ -143,20 +143,8 @@ function getColumnTooltip(key) {
   return title || null
 }
 
-// Function to get check status color class based on checkStatusId
-function getCheckStatusColorClass(checkStatusId) {
-  if (checkStatusId <= 100) {
-    return 'check-status-blue'
-  } else if (checkStatusId > 100 && checkStatusId <= 200) {
-    return 'check-status-red'
-  } else {
-    return 'check-status-green'
-  }
-}
-
-// Function to determine row class based on checkStatusId
-function getRowClass(item) {
-  return HasIssues(item.checkStatusId) ? 'row-has-issues' : ''
+function getRowProps(data) {
+  return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
 }
 </script>
 
@@ -196,7 +184,7 @@ function getRowClass(item) {
           v-model:sort-by="orders_sort_by"
           :headers="headers"
           :items="items"
-          :item-class="getRowClass"
+          :row-props="getRowProps"
           :items-length="totalCount"
           :loading="loading"
           density="compact"
@@ -239,7 +227,6 @@ function getRowClass(item) {
         <template #[`item.checkStatusId`]="{ item }">
           <div
             class="status-cell"
-            :class="getCheckStatusColorClass(item.checkStatusId)"
             :title="orderCheckStatusStore.getStatusTitle(item.checkStatusId)"
           >
             {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}
@@ -438,6 +425,19 @@ function getRowClass(item) {
   display: inline-block;
   min-width: 80px;
   text-align: center;
+}
+
+/* Row background colors based on checkStatusId */
+:deep(.v-data-table__tbody tr.row-has-issues) {
+  background-color: rgba(244, 67, 54, 0.08) !important; /* Light red background for issues */
+}
+
+:deep(.v-data-table__tbody tr.row-has-issues:hover) {
+  background-color: rgba(244, 67, 54, 0.12) !important; /* Darker red on hover */
+}
+
+:deep(.v-data-table__tbody tr.row-has-issues td) {
+  background-color: transparent !important; /* Ensure cells don't override row background */
 }
 
 /* Custom pagination styling to match Vuetify's default exactly */

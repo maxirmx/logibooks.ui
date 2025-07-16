@@ -80,8 +80,12 @@
 }
 
 /* Highlight rows that have issues */
-.row-has-issues {
-  background-color: #ffebee !important;
+.order-has-issues {
+  color: rgba(var(--input-invalid-border), 1) !important;
+}
+
+.order-has-issues:hover {
+  color: #d80327 !important;
 }
 
 /* The link to download config */

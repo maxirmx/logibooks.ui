@@ -61,24 +61,6 @@ export const registerColumnTooltips = {
 }
 
 /**
- * Get status color class based on statusId value
- * @param {number} statusId - The status ID to determine color for
- * @returns {string} Color class name (blue, red, green, or default)
- */
-export function getStatusColor(statusId) {
-  if (!statusId) return 'default'
-  
-  // Color mapping based on statusId ranges
-  if (statusId <= 100) {
-    return 'blue'   // statusId <= 100
-  } else if (statusId > 100 && statusId <= 200) {
-    return 'red'    // statusId > 100 and <= 200
-  } else {
-    return 'green'  // statusId > 200
-  }
-}
-
-/**
  * Determine if a check status id indicates issues
  * @param {number} checkStatusId - The check status identifier
  * @returns {boolean} True if the id is > 100 and <= 200

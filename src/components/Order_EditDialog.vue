@@ -4,9 +4,10 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
-import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -15,6 +16,7 @@ const props = defineProps({
 
 const ordersStore = useOrdersStore()
 const statusStore = useOrderStatusesStore()
+const orderCheckStatusStore = useOrderCheckStatusStore()
 
 const { item } = storeToRefs(ordersStore)
 
@@ -29,6 +31,7 @@ watch(() => item.value?.statusId, (newStatusId) => {
 // Field name mapping from camelCase to PascalCase for registerColumnTitles lookup
 const fieldNameMapping = {
   statusId: 'Status',
+  checkStatusId: 'CheckStatusId',
   orderNumber: 'OrderNumber',
   invoiceDate: 'InvoiceDate',
   sticker: 'Sticker',
@@ -98,6 +101,7 @@ const getFieldTooltip = (fieldName) => {
 }
 
 statusStore.ensureStatusesLoaded()
+orderCheckStatusStore.ensureStatusesLoaded()
 await ordersStore.getById(props.id)
 
 const schema = Yup.object().shape({
@@ -134,6 +138,12 @@ function onSubmit(values, { setErrors }) {
                    @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.orderStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
+          </div>
+          <div class="form-group">
+            <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId')">{{ getFieldLabel('checkStatusId') }}:</label>
+            <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
+              {{ orderCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
+            </div>
           </div>
         </div>
       </div>
@@ -321,6 +331,37 @@ function onSubmit(values, { setErrors }) {
   font-size: 1rem;
   width: 60%;
   flex-grow: 1;
+}
+
+/* Readonly field styling */
+.readonly-field {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  color: #495057;
+  font-size: 1rem;
+  height: 2.25rem;
+  width: 60%;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* Status cell styling similar to Orders_List */
+.status-cell {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 8px;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Highlight status when there are issues */
+.status-cell.has-issues {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: #d32f2f;
+  border: 1px solid rgba(244, 67, 54, 0.3);
 }
 
 @media (max-width: 768px) {

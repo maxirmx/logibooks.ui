@@ -49,6 +49,19 @@ const mockStatusStore = {
     { id: 1, title: 'Status 1' },
     { id: 2, title: 'Status 2' }
   ],
+  orderStatuses: [
+    { id: 1, title: 'Status 1' },
+    { id: 2, title: 'Status 2' }
+  ],
+  ensureStatusesLoaded: vi.fn()
+}
+
+const mockCheckStatusStore = {
+  statuses: [
+    { id: 1, title: 'Не проверен' },
+    { id: 2, title: 'Проверен' }
+  ],
+  getStatusTitle: vi.fn((id) => `Статус ${id}`),
   ensureStatusesLoaded: vi.fn()
 }
 
@@ -59,6 +72,10 @@ vi.mock('@/stores/orders.store.js', () => ({
 
 vi.mock('@/stores/order.statuses.store.js', () => ({
   useOrderStatusesStore: vi.fn(() => mockStatusStore)
+}))
+
+vi.mock('@/stores/order.checkstatuses.store.js', () => ({
+  useOrderCheckStatusStore: vi.fn(() => mockCheckStatusStore)
 }))
 
 describe('Order_EditDialog', () => {
@@ -146,5 +163,9 @@ describe('Order_EditDialog', () => {
 
   it('calls ensureStatusesLoaded on mount', () => {
     expect(mockStatusStore.ensureStatusesLoaded).toHaveBeenCalled()
+  })
+
+  it('calls check status store ensureStatusesLoaded on mount', () => {
+    expect(mockCheckStatusStore.ensureStatusesLoaded).toHaveBeenCalled()
   })
 })

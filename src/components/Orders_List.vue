@@ -11,6 +11,7 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
+import { getStopWordsText } from '@/helpers/stopwords.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -150,13 +151,8 @@ function getColumnTooltip(key) {
 function getCheckStatusTooltip(item) {
   const baseTitle = orderCheckStatusStore.getStatusTitle(item.checkStatusId)
 
-  if (HasIssues(item.checkStatusId) && item.stopWordIds && item.stopWordIds.length > 0) {
-    // Get stopwords for the referenced IDs
-    const stopWordsList = item.stopWordIds
-      .map(id => stopWords.value.find(sw => sw.id === id))
-      .filter(sw => sw) // Remove any undefined values
-      .map(sw => `'${sw.word}'`)
-      .join(', ')
+  if (HasIssues(item.checkStatusId)) {
+    const stopWordsList = getStopWordsText(item, stopWords.value)
     
     if (stopWordsList) {
       return `${baseTitle}\nСтоп-слова и фразы: ${stopWordsList}`

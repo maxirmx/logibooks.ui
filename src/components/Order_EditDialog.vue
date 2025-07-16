@@ -5,9 +5,11 @@ import * as Yup from 'yup'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
+import { getStopWordsInfo } from '@/helpers/stopwords.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -17,8 +19,10 @@ const props = defineProps({
 const ordersStore = useOrdersStore()
 const statusStore = useOrderStatusesStore()
 const orderCheckStatusStore = useOrderCheckStatusStore()
+const stopWordsStore = useStopWordsStore()
 
 const { item } = storeToRefs(ordersStore)
+const { stopWords } = storeToRefs(stopWordsStore)
 
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
@@ -102,6 +106,7 @@ const getFieldTooltip = (fieldName) => {
 
 statusStore.ensureStatusesLoaded()
 orderCheckStatusStore.ensureStatusesLoaded()
+await stopWordsStore.getAll()
 await ordersStore.getById(props.id)
 
 const schema = Yup.object().shape({
@@ -143,6 +148,12 @@ function onSubmit(values, { setErrors }) {
             <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId')">{{ getFieldLabel('checkStatusId') }}:</label>
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
               {{ orderCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
+            </div>
+          </div>
+          <!-- Stopwords information when there are issues -->
+          <div v-if="HasIssues(item?.checkStatusId) && getStopWordsInfo(item, stopWords)" class="form-group stopwords-info">
+            <div class="stopwords-text">
+              {{ getStopWordsInfo(item, stopWords) }}
             </div>
           </div>
         </div>
@@ -259,7 +270,8 @@ function onSubmit(values, { setErrors }) {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  column-gap: 5rem;   /* Increase horizontal gap */
+  row-gap: 1rem;      /* Keep vertical gap as 1rem */
   margin-bottom: 0rem;
 }
 
@@ -272,8 +284,6 @@ function onSubmit(values, { setErrors }) {
   overflow: hidden;
   gap: 0.5rem;
 }
-
-
 
 .label {
   font-size: 1rem;
@@ -364,10 +374,44 @@ function onSubmit(values, { setErrors }) {
   border: 1px solid rgba(244, 67, 54, 0.3);
 }
 
+/* Stopwords information styling */
+.stopwords-info {
+  grid-column: 2; /* Only span the second column to align with checkStatusId field */
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(244, 67, 54, 0.05);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.stopwords-info .label {
+  color: #d32f2f;
+  font-weight: 600;
+  width: 40%;
+  min-width: 140px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stopwords-text {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  font-style: italic;
+  width: 60%;
+  flex-grow: 1;
+  word-wrap: break-word;
+}
+
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 1rem;
   }
 }
 </style>

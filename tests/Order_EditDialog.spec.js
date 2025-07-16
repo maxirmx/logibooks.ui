@@ -65,6 +65,14 @@ const mockCheckStatusStore = {
   ensureStatusesLoaded: vi.fn()
 }
 
+const mockStopWordsStore = {
+  stopWords: [
+    { id: 1, word: 'test1' },
+    { id: 2, word: 'test2' }
+  ],
+  getAll: vi.fn().mockResolvedValue([])
+}
+
 // Mock stores
 vi.mock('@/stores/orders.store.js', () => ({
   useOrdersStore: vi.fn(() => mockOrdersStore)
@@ -76,6 +84,10 @@ vi.mock('@/stores/order.statuses.store.js', () => ({
 
 vi.mock('@/stores/order.checkstatuses.store.js', () => ({
   useOrderCheckStatusStore: vi.fn(() => mockCheckStatusStore)
+}))
+
+vi.mock('@/stores/stop.words.store.js', () => ({
+  useStopWordsStore: vi.fn(() => mockStopWordsStore)
 }))
 
 describe('Order_EditDialog', () => {
@@ -167,5 +179,9 @@ describe('Order_EditDialog', () => {
 
   it('calls check status store ensureStatusesLoaded on mount', () => {
     expect(mockCheckStatusStore.ensureStatusesLoaded).toHaveBeenCalled()
+  })
+
+  it('loads stopwords on mount', () => {
+    expect(mockStopWordsStore.getAll).toHaveBeenCalled()
   })
 })

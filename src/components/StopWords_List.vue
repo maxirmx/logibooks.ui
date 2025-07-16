@@ -25,7 +25,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -42,10 +42,6 @@ const confirm = useConfirm()
 
 const { stopWords, loading } = storeToRefs(stopWordsStore)
 const { alert } = storeToRefs(alertStore)
-
-// Reactive state
-const search = ref('')
-const page = ref(1)
 
 // Custom filter function for v-data-table
 function filterStopWords(value, query, item) {
@@ -68,7 +64,7 @@ const headers = [
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
   { title: 'Стоп-слово', key: 'word', sortable: true },
-  { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
+  { title: 'Тип соответствия', key: 'exact_match', sortable: true }
 ]
 
 function getMatchTypeText(exactMatch) {
@@ -127,99 +123,86 @@ defineExpose({
 </script>
 
 <template>
-  <v-container fluid>
-    <v-row v-if="!authStore.isAdmin">
-      <v-col>
-        <v-alert type="warning" variant="outlined">
-          Доступ к управлению стоп-словами разрешен только администраторам
-        </v-alert>
-      </v-col>
-    </v-row>
-    
-    <v-row v-else>
-      <v-col>
-        <v-card elevation="0">
-          <v-card-title class="d-flex align-center pe-2">
-            <v-icon :icon="mdiMagnify"></v-icon> &nbsp; Стоп-слова
-            <v-spacer></v-spacer>
-            <v-btn 
-              color="primary" 
-              @click="openCreateDialog"
-              prepend-icon="mdi-plus"
-            >
-              Создать
-            </v-btn>
-          </v-card-title>
+  <div class="settings table-2" data-testid="stop-words-list">
+    <h1 class="primary-heading">Стоп-слова</h1>
+    <hr class="hr" />
 
-          <v-divider></v-divider>
+    <div class="link-crt">
+      <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
+        <font-awesome-icon
+          size="1x"
+          icon="fa-solid fa-plus"
+          class="link"
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать стоп-слово или фразу
+      </a>
+    </div>
 
-          <v-data-table
-            v-model:page="page"
-            :loading="loading"
-            :headers="headers"
-            :items="stopWords"
-            :search="search"
-            :custom-filter="filterStopWords"
-            :items-per-page-options="itemsPerPageOptions"
-            class="elevation-1"
-            item-value="id"
-          >
-            <template v-slot:top>
-              <v-toolbar flat>
-                <v-text-field
-                  v-model="search"
-                  clearable
-                  hide-details
-                  placeholder="Поиск"
-                  prepend-inner-icon="mdi-magnify"
-                ></v-text-field>
-              </v-toolbar>
+    <!-- Alert -->
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+
+    <v-card>
+      <v-data-table
+        v-if="stopWords?.length"
+        v-model:items-per-page="authStore.stopwords_per_page"
+        items-per-page-text="Стоп-слов на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="authStore.stopwords_page"
+        :headers="headers"
+        :items="stopWords"
+        :search="authStore.stopwords_search"
+        v-model:sort-by="authStore.stopwords_sort_by"
+        :custom-filter="filterStopWords"
+        :loading="loading"
+        item-value="name"
+        density="compact"
+        class="elevation-1 interlaced-table"
+      >
+        <template v-slot:[`item.actions1`]="{ item }">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать стоп-слово">
+            <template v-slot:activator="{ props }">
+              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
+              </button>
             </template>
+          </v-tooltip>
+        </template>
 
-            <template v-slot:[`item.actions1`]="{ item }">
-              <v-icon
-                color="blue"
-                icon="mdi-pencil"
-                size="small"
-                @click="openEditDialog(item)"
-              ></v-icon>
+        <template v-slot:[`item.actions2`]="{ item }">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить стоп-слово">
+            <template v-slot:activator="{ props }">
+              <button @click="deleteStopWord(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
+              </button>
             </template>
+          </v-tooltip>
+        </template>
 
-            <template v-slot:[`item.actions2`]="{ item }">
-              <v-icon
-                color="red"
-                icon="mdi-delete"
-                size="small"
-                @click="deleteStopWord(item)"
-              ></v-icon>
-            </template>
+        <template v-slot:[`item.exact_match`]="{ item }">
+          {{ getMatchTypeText(item.exact_match) }}
+        </template>
+      </v-data-table>
 
-            <template v-slot:[`item.exactMatch`]="{ item }">
-              {{ getMatchTypeText(item.exactMatch) }}
-            </template>
+      <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов пуст</div>
 
-            <template v-slot:no-data>
-              <v-btn color="primary" @click="stopWordsStore.getAll()">
-                Перезагрузить
-              </v-btn>
-            </template>
-          </v-data-table>
-        </v-card>
-      </v-col>
-    </v-row>
+      <div v-if="stopWords?.length">
+        <v-text-field
+          v-model="authStore.stopwords_search"
+          :append-inner-icon="mdiMagnify"
+          label="Поиск по стоп-слову"
+          variant="solo"
+          hide-details
+        />
+      </div>
+    </v-card>
 
-    <v-row v-if="alert">
-      <v-col>
-        <v-alert
-          :type="alert.type"
-          :text="alert.message"
-          variant="outlined"
-          closable
-          @click:close="alertStore.clear()"
-        ></v-alert>
-      </v-col>
-    </v-row>
-  </v-container>
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
+  </div>
 </template>
 
 

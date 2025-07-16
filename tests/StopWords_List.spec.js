@@ -54,9 +54,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockStopWords = ref([
-  { id: 1, word: 'и', exactMatch: false },
-  { id: 2, word: 'или', exactMatch: true },
-  { id: 3, word: 'но', exactMatch: false }
+  { id: 1, word: 'и', exact_match: false },
+  { id: 2, word: 'или', exact_match: true },
+  { id: 3, word: 'но', exact_match: false }
 ])
 
 // Mock stores
@@ -109,53 +109,25 @@ vi.mock('@mdi/js', () => ({
 
 const extendedStubs = {
   ...defaultGlobalStubs,
-  'v-container': {
-    template: '<div data-testid="v-container"><slot></slot></div>',
-    props: ['fluid']
-  },
-  'v-row': {
-    template: '<div data-testid="v-row"><slot></slot></div>'
-  },
-  'v-col': {
-    template: '<div data-testid="v-col"><slot></slot></div>'
-  },
-  'v-alert': {
-    template: '<div data-testid="v-alert"><slot></slot></div>',
-    props: ['type', 'variant', 'text', 'closable']
-  },
   'v-card': {
     template: '<div data-testid="v-card"><slot></slot></div>',
     props: ['elevation']
   },
-  'v-card-title': {
-    template: '<div data-testid="v-card-title"><slot></slot></div>',
-    props: ['class']
-  },
-  'v-spacer': {
-    template: '<div data-testid="v-spacer"></div>'
-  },
-  'v-divider': {
-    template: '<div data-testid="v-divider"></div>'
-  },
-  'v-btn': {
-    template: '<button data-testid="v-btn" @click="$emit(\'click\')"><slot></slot></button>',
-    props: ['color', 'prepend-icon']
-  },
   'v-data-table': {
     template: '<div data-testid="v-data-table"><slot name="top"></slot><slot></slot></div>',
-    props: ['loading', 'headers', 'items', 'search', 'custom-filter', 'items-per-page-options', 'class', 'item-value', 'page']
-  },
-  'v-toolbar': {
-    template: '<div data-testid="v-toolbar"><slot></slot></div>',
-    props: ['flat']
+    props: ['loading', 'headers', 'items', 'search', 'custom-filter', 'items-per-page-options', 'class', 'item-value', 'page', 'v-model:items-per-page', 'items-per-page-text', 'page-text', 'v-model:page', 'v-model:sort-by', 'density']
   },
   'v-text-field': {
     template: '<input data-testid="v-text-field" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-    props: ['modelValue', 'clearable', 'hide-details', 'placeholder', 'prepend-inner-icon']
+    props: ['modelValue', 'append-inner-icon', 'label', 'variant', 'hide-details']
   },
-  'v-icon': {
-    template: '<span data-testid="v-icon">{{ icon }}</span>',
-    props: ['icon', 'color', 'size']
+  'v-tooltip': {
+    template: '<div data-testid="v-tooltip"><slot name="activator" :props="{}" /><slot /></div>',
+    props: ['text']
+  },
+  'font-awesome-icon': {
+    template: '<span data-testid="font-awesome-icon">{{ icon }}</span>',
+    props: ['size', 'icon', 'class']
   }
 }
 
@@ -168,9 +140,9 @@ describe('StopWords_List.vue', () => {
 
     // Reset reactive data
     mockStopWords.value = [
-      { id: 1, word: 'и', exactMatch: false },
-      { id: 2, word: 'или', exactMatch: true },
-      { id: 3, word: 'но', exactMatch: false }
+      { id: 1, word: 'и', exact_match: false },
+      { id: 2, word: 'или', exact_match: true },
+      { id: 3, word: 'но', exact_match: false }
     ]
 
     wrapper = mount(StopWordsList, {
@@ -189,13 +161,13 @@ describe('StopWords_List.vue', () => {
   describe('Component Mounting', () => {
     it('renders correctly', () => {
       expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('[data-testid="v-card"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="stop-words-list"]').exists()).toBe(true)
     })
 
     it('displays the correct heading', () => {
-      const cardTitle = wrapper.find('[data-testid="v-card-title"]')
-      expect(cardTitle.exists()).toBe(true)
-      expect(cardTitle.text()).toContain('Стоп-слова')
+      const heading = wrapper.find('.primary-heading')
+      expect(heading.exists()).toBe(true)
+      expect(heading.text()).toContain('Стоп-слова')
     })
 
     it('calls getAll on mount', () => {
@@ -230,15 +202,15 @@ describe('StopWords_List.vue', () => {
     })
 
     it('shows create button', () => {
-      const createButton = wrapper.find('[data-testid="v-btn"]')
+      const createButton = wrapper.find('.link')
       expect(createButton.exists()).toBe(true)
-      expect(createButton.text()).toContain('Создать')
+      expect(createButton.text()).toContain('Зарегистрировать стоп-слово или фразу')
     })
   })
 
   describe('Admin Actions', () => {
     it('calls openCreateDialog when create button is clicked', async () => {
-      const createButton = wrapper.find('[data-testid="v-btn"]')
+      const createButton = wrapper.find('.link')
       await createButton.trigger('click')
 
       expect(mockPush).toHaveBeenCalledWith('/stopword/create')
@@ -405,7 +377,7 @@ describe('StopWords_List.vue', () => {
         { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
         { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
         { title: 'Стоп-слово', key: 'word', sortable: true },
-        { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
+        { title: 'Тип соответствия', key: 'exact_match', sortable: true }
       ])
     })
   })
@@ -460,8 +432,9 @@ describe('StopWords_List.vue', () => {
       mockStopWords.value = []
       await wrapper.vm.$nextTick()
 
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
+      // With the new structure, empty list shows a message instead of the table
+      const emptyMessage = wrapper.find('.text-center')
+      expect(emptyMessage.exists()).toBe(true)
     })
 
     it('handles stop word with special characters', () => {
@@ -494,7 +467,7 @@ describe('StopWords_List.vue', () => {
   describe('Reactive State', () => {
     it('updates when stop words change', async () => {
       const newStopWords = [
-        { id: 4, word: 'новое', exactMatch: true }
+        { id: 4, word: 'новое', exact_match: true }
       ]
       
       mockStopWords.value = newStopWords
@@ -507,18 +480,14 @@ describe('StopWords_List.vue', () => {
       const searchField = wrapper.find('[data-testid="v-text-field"]')
       expect(searchField.exists()).toBe(true)
       
-      // Test that search is reactive
-      wrapper.vm.search = 'test'
-      await wrapper.vm.$nextTick()
-      
-      expect(wrapper.vm.search).toBe('test')
+      // Test that search is accessible through authStore
+      expect(wrapper.vm.authStore.stopwords_search).toBeDefined()
     })
 
     it('updates page reactively', async () => {
-      wrapper.vm.page = 2
-      await wrapper.vm.$nextTick()
-      
-      expect(wrapper.vm.page).toBe(2)
+      // Test that page is accessible through authStore
+      expect(wrapper.vm.authStore.stopwords_page).toBeDefined()
+      expect(wrapper.vm.authStore.stopwords_page.value).toBe(1)
     })
   })
 
@@ -527,7 +496,7 @@ describe('StopWords_List.vue', () => {
       const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
         id: i + 1,
         word: `слово${i}`,
-        exactMatch: i % 2 === 0
+        exact_match: i % 2 === 0
       }))
       
       mockStopWords.value = largeDataset

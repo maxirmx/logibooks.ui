@@ -34,7 +34,7 @@
 
   <v-card v-else>
     <v-card-title>
-      <span class="text-h5">{{ isEdit ? 'Редактировать стоп-слово' : 'Создать стоп-слово' }}</span>
+      <span class="text-h5">{{ isEdit ? 'Редактировать стоп-слово' : 'Зарегистрировать стоп-слово или фразу' }}</span>
     </v-card-title>
     
     <v-divider></v-divider>

@@ -454,6 +454,5 @@ describe('stop.words.store.js', () => {
 
       consoleSpy.mockRestore()
     })
-
   })
 })

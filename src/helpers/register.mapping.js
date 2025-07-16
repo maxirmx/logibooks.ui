@@ -77,3 +77,12 @@ export function getStatusColor(statusId) {
     return 'green'  // statusId > 200
   }
 }
+
+/**
+ * Determine if a check status id indicates issues
+ * @param {number} checkStatusId - The check status identifier
+ * @returns {boolean} True if the id is > 100 and <= 200
+ */
+export function HasIssues(checkStatusId) {
+  return checkStatusId > 100 && checkStatusId <= 200
+}

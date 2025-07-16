@@ -9,7 +9,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -153,6 +153,11 @@ function getCheckStatusColorClass(checkStatusId) {
     return 'check-status-green'
   }
 }
+
+// Function to determine row class based on checkStatusId
+function getRowClass(item) {
+  return HasIssues(item.checkStatusId) ? 'row-has-issues' : ''
+}
 </script>
 
 <template>
@@ -191,6 +196,7 @@ function getCheckStatusColorClass(checkStatusId) {
           v-model:sort-by="orders_sort_by"
           :headers="headers"
           :items="items"
+          :item-class="getRowClass"
           :items-length="totalCount"
           :loading="loading"
           density="compact"

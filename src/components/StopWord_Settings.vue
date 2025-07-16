@@ -24,17 +24,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <template>
-  <v-card v-if="!authStore.user?.isAdmin">
-    <v-card-text>
-      <v-alert type="warning" variant="outlined">
-        Доступ к управлению стоп-словами разрешен только администраторам
-      </v-alert>
-    </v-card-text>
-  </v-card>
-
-  <v-card v-else>
+  <v-card>
     <v-card-title>
-      <span class="text-h5">{{ isEdit ? 'Редактировать стоп-слово' : 'Зарегистрировать стоп-слово или фразу' }}</span>
+      <span class="text-h5">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</span>
     </v-card-title>
     
     <v-divider></v-divider>
@@ -129,7 +121,6 @@ import { toTypedSchema } from '@vee-validate/yup'
 import * as yup from 'yup'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
-import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
@@ -140,7 +131,6 @@ const props = defineProps({
 })
 
 const stopWordsStore = useStopWordsStore()
-const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)

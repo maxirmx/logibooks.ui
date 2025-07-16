@@ -157,8 +157,8 @@ describe('StopWord_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.text()).toContain('Зарегистрировать стоп-слово или фразу')
+
+      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
       expect(wrapper.text()).toContain('Сохранить')
       expect(mockStopWordsStore.getById).not.toHaveBeenCalled()
     })
@@ -175,21 +175,6 @@ describe('StopWord_Settings.vue', () => {
       
       expect(wrapper.text()).toContain('Редактировать стоп-слово')
       expect(wrapper.text()).toContain('Сохранить')
-    })
-
-    it('renders access denied message for non-admin user', async () => {
-      mockAuthStore.user = { isAdmin: false }
-      
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      
-      expect(wrapper.text()).toContain('Доступ к управлению стоп-словами разрешен только администраторам')
     })
 
     it('renders all form fields for admin user', async () => {
@@ -483,8 +468,8 @@ describe('StopWord_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.text()).toContain('Зарегистрировать стоп-слово или фразу')
+
+      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
       expect(wrapper.text()).toContain('Сохранить')
     })
 
@@ -558,7 +543,7 @@ describe('StopWord_Settings.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.text()).toContain('Зарегистрировать стоп-слово или фразу')
+      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
     })
 
     it('displays correct title for edit mode', async () => {
@@ -663,39 +648,7 @@ describe('StopWord_Settings.vue', () => {
 
       await resolveAll()
 
-      expect(wrapper.text()).toContain('Зарегистрировать стоп-слово или фразу')
-      expect(wrapper.text()).not.toContain('Доступ к управлению стоп-словами разрешен только администраторам')
-    })
-
-    it('hides form content for non-admin users', async () => {
-      mockAuthStore.user = { isAdmin: false }
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('Доступ к управлению стоп-словами разрешен только администраторам')
-      expect(wrapper.text()).not.toContain('Зарегистрировать стоп-слово или фразу')
-    })
-
-    it('handles null user gracefully', async () => {
-      mockAuthStore.user = null
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { id: null },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('Доступ к управлению стоп-словами разрешен только администраторам')
+      expect(wrapper.text()).toContain('Регистрация стоп-слова или фразы')
     })
   })
 })

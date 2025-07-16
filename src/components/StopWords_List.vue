@@ -124,7 +124,7 @@ defineExpose({
 
 <template>
   <div class="settings table-2" data-testid="stop-words-list">
-    <h1 class="primary-heading">Стоп-слова</h1>
+    <h1 class="primary-heading">Стоп-слова и фразы</h1>
     <hr class="hr" />
 
     <div class="link-crt">
@@ -162,7 +162,7 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать стоп-слово">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать стоп-слово или фразу">
             <template v-slot:activator="{ props }">
               <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -172,7 +172,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить стоп-слово">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить стоп-слово или фразу">
             <template v-slot:activator="{ props }">
               <button @click="deleteStopWord(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
@@ -186,13 +186,13 @@ defineExpose({
         </template>
       </v-data-table>
 
-      <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов пуст</div>
+      <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов и фраз пуст</div>
 
       <div v-if="stopWords?.length">
         <v-text-field
           v-model="authStore.stopwords_search"
           :append-inner-icon="mdiMagnify"
-          label="Поиск по стоп-слову"
+          label="Поиск по стоп-словам и фразам"
           variant="solo"
           hide-details
         />

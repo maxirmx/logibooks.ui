@@ -160,7 +160,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-building"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Регистрировать компанию
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать компанию
       </router-link>
     </div>
 

@@ -269,4 +269,21 @@ describe('Orders_List', () => {
     expect(getStatusColor(250)).toBe('green')
     expect(getStatusColor(null)).toBe('default')
   })
+
+  it('applies correct check status color classes based on checkStatusId', () => {
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: globalStubs
+      }
+    })
+
+    // Test the getCheckStatusColorClass function
+    expect(wrapper.vm.getCheckStatusColorClass(50)).toBe('check-status-blue')     // <= 100
+    expect(wrapper.vm.getCheckStatusColorClass(100)).toBe('check-status-blue')    // <= 100
+    expect(wrapper.vm.getCheckStatusColorClass(150)).toBe('check-status-red')     // 100 < x <= 200
+    expect(wrapper.vm.getCheckStatusColorClass(200)).toBe('check-status-red')     // 100 < x <= 200
+    expect(wrapper.vm.getCheckStatusColorClass(250)).toBe('check-status-green')   // > 200
+    expect(wrapper.vm.getCheckStatusColorClass(1000)).toBe('check-status-green')  // > 200
+  })
 })

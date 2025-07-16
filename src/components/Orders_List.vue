@@ -142,6 +142,17 @@ function getColumnTooltip(key) {
   }
   return title || null
 }
+
+// Function to get check status color class based on checkStatusId
+function getCheckStatusColorClass(checkStatusId) {
+  if (checkStatusId <= 100) {
+    return 'check-status-blue'
+  } else if (checkStatusId > 100 && checkStatusId <= 200) {
+    return 'check-status-red'
+  } else {
+    return 'check-status-green'
+  }
+}
 </script>
 
 <template>
@@ -221,7 +232,8 @@ function getColumnTooltip(key) {
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
           <div
-            class="truncated-cell status-cell"
+            class="status-cell"
+            :class="getCheckStatusColorClass(item.checkStatusId)"
             :title="orderCheckStatusStore.getStatusTitle(item.checkStatusId)"
           >
             {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}

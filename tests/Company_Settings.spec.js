@@ -361,7 +361,6 @@ describe('Company_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockAlertStore.success).toHaveBeenCalledWith('Компания успешно создана')
       expect(mockRouter.push).toHaveBeenCalledWith('/companies')
     })
 
@@ -453,7 +452,6 @@ describe('Company_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockAlertStore.success).toHaveBeenCalledWith('Компания успешно обновлена')
       expect(mockRouter.push).toHaveBeenCalledWith('/companies')
     })
 

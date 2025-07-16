@@ -1,21 +1,34 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn(), postFile: vi.fn() }
+  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
+// Mock console methods to reduce test output clutter
+const originalConsoleLog = console.log
+const originalConsoleError = console.error
+
 describe('registers store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    // Suppress console output during tests
+    console.log = vi.fn()
+    console.error = vi.fn()
+  })
+
+  afterEach(() => {
+    // Restore original console methods
+    console.log = originalConsoleLog
+    console.error = originalConsoleError
   })
 
   describe('getAll method', () => {

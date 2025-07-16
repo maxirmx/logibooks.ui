@@ -31,7 +31,6 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
   mode: {
@@ -47,7 +46,6 @@ const props = defineProps({
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
-const alertStore = useAlertStore()
 
 const { countries } = storeToRefs(countriesStore)
 
@@ -98,25 +96,23 @@ function onSubmit(values, { setErrors }) {
     return companiesStore
       .create(values)
       .then(() => {
-        alertStore.success('Компания успешно создана')
         router.push('/companies')
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
           setErrors({ apiError: 'Компания с таким ИНН уже существует' })
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании компании' })
+          setErrors({ apiError: error.message || 'Ошибка при регистрации компании' })
         }
       })
   } else {
     return companiesStore
       .update(props.companyId, values)
       .then(() => {
-        alertStore.success('Компания успешно обновлена')
         router.push('/companies')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении компании' })
+        setErrors({ apiError: error.message || 'Ошибка при сохранении информации о компании' })
       })
   }
 }

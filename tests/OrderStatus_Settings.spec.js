@@ -224,7 +224,6 @@ describe('OrderStatus_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockAlertStore.success).toHaveBeenCalledWith('Статус заказа успешно создан')
       expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
     })
 
@@ -300,7 +299,6 @@ describe('OrderStatus_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockAlertStore.success).toHaveBeenCalledWith('Статус заказа успешно обновлен')
       expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
     })
 

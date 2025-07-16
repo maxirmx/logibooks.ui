@@ -153,9 +153,8 @@ const schema = toTypedSchema(
   yup.object({
     word: yup
       .string()
-      .required('Поле "Стоп-слово" обязательно для заполнения')
-      .min(1, 'Стоп-слово должно содержать хотя бы один символ')
-      .max(100, 'Стоп-слово не может быть длиннее 100 символов'),
+      .required('Необходимо ввести стоп-слово или фразу')
+      .min(1, 'Стоп-слово должно содержать хотя бы один символ'),
     exactMatch: yup
       .boolean()
       .required('Необходимо выбрать тип соответствия')
@@ -205,7 +204,7 @@ const save = handleSubmit(async (values) => {
     router.push('/stopwords')
   } catch (err) {
     if (err.message?.includes('409')) {
-      alertStore.error('Стоп-слово с таким названием уже существует')
+      alertStore.error('Такое стоп-слово уже задано')
     } else {
       alertStore.error('Ошибка при сохранении стоп-слова')
     }

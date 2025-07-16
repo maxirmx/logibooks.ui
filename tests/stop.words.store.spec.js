@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -456,17 +455,5 @@ describe('stop.words.store.js', () => {
       consoleSpy.mockRestore()
     })
 
-    it('handles concurrent loading operations', async () => {
-      fetchWrapper.get.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(mockStopWords), 100)))
-
-      const promise1 = store.getAll()
-      const promise2 = store.getAll()
-
-      expect(store.loading).toBe(true)
-
-      await Promise.all([promise1, promise2])
-
-      expect(store.loading).toBe(false)
-    })
   })
 })

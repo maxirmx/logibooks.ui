@@ -30,7 +30,6 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
   mode: {
@@ -45,7 +44,6 @@ const props = defineProps({
 })
 
 const orderStatusesStore = useOrderStatusesStore()
-const alertStore = useAlertStore()
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
@@ -80,12 +78,11 @@ function onSubmit(values, { setErrors }) {
     return orderStatusesStore
       .create(values)
       .then(() => {
-        alertStore.success('Статус заказа успешно создан')
         router.push('/orderstatuses')
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Статус заказа с таким именем уже существует' })
+          setErrors({ apiError: 'Такой статус заказауже существует' })
         } else {
           setErrors({ apiError: error.message || 'Ошибка при создании статуса заказа' })
         }
@@ -94,7 +91,6 @@ function onSubmit(values, { setErrors }) {
     return orderStatusesStore
       .update(props.orderStatusId, values)
       .then(() => {
-        alertStore.success('Статус заказа успешно обновлен')
         router.push('/orderstatuses')
       })
       .catch((error) => {

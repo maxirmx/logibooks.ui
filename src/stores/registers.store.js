@@ -79,6 +79,7 @@ export const useRegistersStore = defineStore('registers', () => {
       const result = await fetchWrapper.post(`${baseUrl}/${registerId}/validate`)
       return result
     } catch (err) {
+      error.value = err
       throw err
     }
   }
@@ -87,6 +88,7 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       return await fetchWrapper.get(`${baseUrl}/validate/${handleId}`)
     } catch (err) {
+      error.value = err
       throw err
     }
   }
@@ -95,6 +97,7 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       await fetchWrapper.delete(`${baseUrl}/validate/${handleId}`)
     } catch (err) {
+      error.value = err
       throw err
     }
   }

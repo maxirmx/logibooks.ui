@@ -129,7 +129,7 @@ function onSubmit(values, { setErrors }) {
 <template>
   <div class="settings form-3">
     <h1 class="primary-heading">
-      Заказ {{ item?.orderNumber ? item.orderNumber : '[без номера]' }}
+      Заказ {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
@@ -188,15 +188,15 @@ function onSubmit(values, { setErrors }) {
           </div>
           <div class="form-group">
             <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>
-            <Field name="weightKg" id="weightKg" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
+            <Field name="weightKg" id="weightKg" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
           </div>
           <div class="form-group">
             <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
-            <Field name="quantity" id="quantity" type="number" step="0.001" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
+            <Field name="quantity" id="quantity" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
           </div>
           <div class="form-group">
             <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
-            <Field name="unitPrice" id="unitPrice" type="number" step="0.01" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
+            <Field name="unitPrice" id="unitPrice" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
           </div>
           <div class="form-group">
             <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>

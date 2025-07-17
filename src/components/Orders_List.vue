@@ -447,15 +447,15 @@ function getRowProps(data) {
 }
 
 /* Row background colors based on checkStatusId */
-:deep(.v-data-table__tbody tr.row-has-issues) {
+:deep(.v-data-table__tbody tr.order-has-issues) {
   background-color: rgba(244, 67, 54, 0.08) !important; /* Light red background for issues */
 }
 
-:deep(.v-data-table__tbody tr.row-has-issues:hover) {
+:deep(.v-data-table__tbody tr.order-has-issues:hover) {
   background-color: rgba(244, 67, 54, 0.12) !important; /* Darker red on hover */
 }
 
-:deep(.v-data-table__tbody tr.row-has-issues td) {
+:deep(.v-data-table__tbody tr.order-has-issues td) {
   background-color: transparent !important; /* Ensure cells don't override row background */
 }
 

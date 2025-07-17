@@ -28,21 +28,21 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/orderstatuses`
+const baseUrl = `${apiUrl}/stopwords`
 
-export const useOrderStatusesStore = defineStore('orderStatuses', () => {
-  const orderStatuses = ref([])
-  const orderStatus = ref({ loading: true })
+export const useStopWordsStore = defineStore('stopWords', () => {
+  const stopWords = ref([])
+  const stopWord = ref({ loading: true })
   const loading = ref(false)
-
-  const statusMap = ref(new Map())
 
   async function getAll() {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
-      orderStatuses.value = response || []
-      statusMap.value = new Map(orderStatuses.value.map(status => [status.id, status]))
+      stopWords.value = response || []
+    } catch (error) {
+      console.error('Failed to fetch stop words:', error)
+      throw error
     } finally {
       loading.value = false
     }
@@ -50,64 +50,56 @@ export const useOrderStatusesStore = defineStore('orderStatuses', () => {
 
   async function getById(id, refresh = false) {
     if (refresh) {
-      orderStatus.value = { loading: true }
+      stopWord.value = { loading: true }
     }
 
     try {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      orderStatus.value = response
+      stopWord.value = response
       return response
-    } finally {
-      loading.value = false
-    }  
+    } catch (error) {
+      console.error('Failed to fetch stop word:', error)
+      throw error
+    }
   }
 
   async function create(data) {
-    const response = await fetchWrapper.post(baseUrl, data)
-    // Refresh the list after creation
-    await getAll()
-    return response
+    try {
+      await fetchWrapper.post(baseUrl, data)
+      // Refresh the list after creation
+      await getAll()
+    } catch (error) {
+      console.error('Failed to create stop word:', error)
+      throw error
+    }
   }
 
   async function update(id, data) {
-    const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
-    // Refresh the list after update
-    await getAll()
-    return response
+    try {
+      await fetchWrapper.put(`${baseUrl}/${id}`, data)
+      // Refresh the list after update
+      await getAll()
+    } catch (error) {
+      console.error('Failed to update stop word:', error)
+      throw error
+    }
   }
 
   async function remove(id) {
-    await fetchWrapper.delete(`${baseUrl}/${id}`)
-    // Refresh the list after deletion
-    await getAll()
-  }
-
-  function getStatusById(id) {
-    return statusMap.value.get(id) || null
-  }
-
-  function getStatusTitle(id) {
-    const status = getStatusById(id)
-    return status ? status.title : `Статус ${id}`
-  }
-
-  // Auto-fetch statuses when store is initialized (only once)
-  let initialized = false
-  function ensureStatusesLoaded() {
-    if (!initialized && orderStatuses.value.length === 0 && !loading.value) {
-      initialized = true
-      getAll()
+    try {
+      await fetchWrapper.delete(`${baseUrl}/${id}`)
+      // Refresh the list after deletion
+      await getAll()
+    } catch (error) {
+      console.error('Failed to delete stop word:', error)
+      throw error
     }
   }
 
   return {
-    ensureStatusesLoaded,
-    getStatusById,
-    getStatusTitle,
-    orderStatuses,
-    orderStatus,
+    stopWords,
+    stopWord,
     loading,
-    statusMap,
     getAll,
     getById,
     create,

@@ -25,7 +25,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { watch, ref, onMounted, reactive } from 'vue'
+import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
@@ -36,6 +36,19 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
+
+const validationState = reactive({
+  show: false,
+  handleId: null,
+  total: 0,
+  processed: 0
+})
+let progressTimer = null
+const POLLING_INTERVAL_MS = 1000
+const progressPercent = computed(() => {
+  if (!validationState.total || validationState.total <= 0) return 0
+  return Math.round((validationState.processed / validationState.total) * 100)
+})
 
 
 const registersStore = useRegistersStore()
@@ -138,6 +151,10 @@ onMounted(async () => {
   await orderStatusesStore.getAll()
 })
 
+onUnmounted(() => {
+  stopPolling()
+})
+
 function openFileDialog() {
   fileInput.value?.click()
 }
@@ -180,11 +197,58 @@ function exportAllXml(item) {
   ordersStore.generateAll(item.id)
 }
 
+async function pollValidation() {
+  if (!validationState.handleId) return
+  try {
+    const progress = await registersStore.getValidationProgress(validationState.handleId)
+    validationState.total = progress.total
+    validationState.processed = progress.processed
+    if (progress.finished || progress.total === -1 || progress.processed === -1) {
+      validationState.show = false
+      stopPolling()
+    }
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+    validationState.show = false
+    stopPolling()
+  }
+}
+
+function stopPolling() {
+  if (progressTimer) {
+    clearInterval(progressTimer)
+    progressTimer = null
+  }
+}
+
+async function validateRegister(item) {
+  try {
+    stopPolling(); 
+    const res = await registersStore.validate(item.id)
+    validationState.handleId = res.id
+    validationState.total = 0
+    validationState.processed = 0
+    validationState.show = true
+    pollValidation()
+    progressTimer = setInterval(pollValidation, POLLING_INTERVAL_MS)
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+  }
+}
+
+function cancelValidation() {
+  if (validationState.handleId) {
+    registersStore.cancelValidation(validationState.handleId).catch(() => {})
+  }
+  validationState.show = false
+  stopPolling()
+}
+
 const headers = [
   { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
   { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
-  { title: '№', key: 'id', align: 'start' },
+  { title: '', key: 'actions4', sortable: false, align: 'center', width: '60px' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
@@ -318,6 +382,15 @@ const headers = [
             </template>
           </v-tooltip>
         </template>
+        <template #[`item.actions4`]="{ item }">
+          <v-tooltip text="Проверить реестр">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="validateRegister(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
       <div v-if="items?.length || loading || registers_search">
@@ -336,6 +409,20 @@ const headers = [
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
     </div>
+
+    <v-dialog v-model="validationState.show" width="300">
+      <v-card>
+        <v-card-title class="primary-heading">Проверка реестра</v-card-title>
+        <v-card-text class="text-center">
+          <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">
+            {{ progressPercent }}%
+          </v-progress-circular>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="cancelValidation">Отменить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

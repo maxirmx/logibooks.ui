@@ -2,13 +2,16 @@
 import { watch, ref, computed, onMounted } from 'vue'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { registerColumnTitles, registerColumnTooltips } from '@/helpers/register.mapping.js'
+import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
+import { getStopWordsText } from '@/helpers/stopwords.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -16,9 +19,12 @@ const props = defineProps({
 
 const ordersStore = useOrdersStore()
 const orderStatusStore = useOrderStatusesStore()
+const orderCheckStatusStore = useOrderCheckStatusStore()
+const stopWordsStore = useStopWordsStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
+const { stopWords } = storeToRefs(stopWordsStore)
 const {
   orders_per_page,
   orders_sort_by,
@@ -63,6 +69,9 @@ watch(
 onMounted(async () => {
   // Ensure order statuses are loaded
   orderStatusStore.ensureStatusesLoaded()
+  orderCheckStatusStore.ensureStatusesLoaded()
+  // Load all stop words once to reduce network traffic
+  await stopWordsStore.getAll()
   await fetchRegister()
 })
 
@@ -79,10 +88,12 @@ const headers = computed(() => {
     // Actions - Always first for easy access
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
+    { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
     
     // Order Identification & Status - Key identifiers and current state
     { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
+    { title: registerColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    // { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
     
     // Product Identification & Details - What the order contains
@@ -113,6 +124,16 @@ function exportOrderXml(item) {
   ordersStore.generate(item.id)
 }
 
+async function validateOrder(item) {
+  try {
+    await ordersStore.validate(item.id)
+    loadOrders()
+  } catch (error) {
+    console.error('Failed to validate order:', error)
+    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке заказа.'
+  }
+}
+
 // Function to get tooltip for column headers
 function getColumnTooltip(key) {
   // Convert camelCase key to PascalCase to match the mapping keys
@@ -124,6 +145,25 @@ function getColumnTooltip(key) {
     return `${title} (${tooltip})`
   }
   return title || null
+}
+
+// Function to get tooltip for checkStatusId with stopwords if there are issues
+function getCheckStatusTooltip(item) {
+  const baseTitle = orderCheckStatusStore.getStatusTitle(item.checkStatusId)
+
+  if (HasIssues(item.checkStatusId)) {
+    const stopWordsList = getStopWordsText(item, stopWords.value)
+    
+    if (stopWordsList) {
+      return `${baseTitle}\nСтоп-слова и фразы: ${stopWordsList}`
+    }
+  }
+  
+  return baseTitle
+}
+
+function getRowProps(data) {
+  return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
 }
 </script>
 
@@ -163,6 +203,7 @@ function getColumnTooltip(key) {
           v-model:sort-by="orders_sort_by"
           :headers="headers"
           :items="items"
+          :row-props="getRowProps"
           :items-length="totalCount"
           :loading="loading"
           density="compact"
@@ -182,7 +223,7 @@ function getColumnTooltip(key) {
         </template>
 
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId' && h.key !== 'checkStatusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div
             class="truncated-cell"
             :title="item[header.key] || ''"
@@ -198,6 +239,16 @@ function getColumnTooltip(key) {
             :title="orderStatusStore.getStatusTitle(item.statusId)"
           >
             {{ orderStatusStore.getStatusTitle(item.statusId) }}
+          </div>
+        </template>
+
+        <!-- Special template for checkStatusId to display check status title -->
+        <template #[`item.checkStatusId`]="{ item }">
+          <div
+            class="truncated-cell status-cell"
+            :title="getCheckStatusTooltip(item)"
+          >
+            {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>
         </template>
 
@@ -231,6 +282,15 @@ function getColumnTooltip(key) {
             <template v-slot:activator="{ props }">
               <button @click="exportOrderXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions3`]="{ item }">
+          <v-tooltip text="Проверить заказ">
+            <template v-slot:activator="{ props }">
+              <button @click="validateOrder(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
@@ -384,6 +444,19 @@ function getColumnTooltip(key) {
   display: inline-block;
   min-width: 80px;
   text-align: center;
+}
+
+/* Row background colors based on checkStatusId */
+:deep(.v-data-table__tbody tr.order-has-issues) {
+  background-color: rgba(244, 67, 54, 0.08) !important; /* Light red background for issues */
+}
+
+:deep(.v-data-table__tbody tr.order-has-issues:hover) {
+  background-color: rgba(244, 67, 54, 0.12) !important; /* Darker red on hover */
+}
+
+:deep(.v-data-table__tbody tr.order-has-issues td) {
+  background-color: transparent !important; /* Ensure cells don't override row background */
 }
 
 /* Custom pagination styling to match Vuetify's default exactly */

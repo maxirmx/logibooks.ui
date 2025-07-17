@@ -1,4 +1,5 @@
 <script setup>
+
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -25,36 +26,25 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { onMounted } from 'vue'
-import router from '@/router'
 import { storeToRefs } from 'pinia'
-import { useCompaniesStore } from '@/stores/companies.store.js'
-import { useCountriesStore } from '@/stores/countries.store.js'
+import router from '@/router'
+import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
-const companiesStore = useCompaniesStore()
-const countriesStore = useCountriesStore()
+const stopWordsStore = useStopWordsStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
 
-const { companies, loading } = storeToRefs(companiesStore)
-const { countries } = storeToRefs(countriesStore)
+const { stopWords, loading } = storeToRefs(stopWordsStore)
 const { alert } = storeToRefs(alertStore)
 
-// Remove local search and itemsPerPage refs - use auth store instead
-
-// Get country name by ISO numeric code
-function getCountryName(isoNumeric) {
-  const country = countries.value.find(c => c.isoNumeric === isoNumeric)
-  return country ? country.nameRuOfficial : isoNumeric ? `Код: ${isoNumeric}` : ''
-}
-
 // Custom filter function for v-data-table
-function filterCompanies(value, query, item) {
+function filterStopWords(value, query, item) {
   if (query === null || item === null) {
     return false
   }
@@ -64,47 +54,33 @@ function filterCompanies(value, query, item) {
   }
   const q = query.toLocaleUpperCase()
 
-  if (
-    i.name?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.shortName?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.inn?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.kpp?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.city?.toLocaleUpperCase().indexOf(q) !== -1
-  ) {
-    return true
-  }
-
-  const countryName = getCountryName(i.countryIsoNumeric)
-  if (countryName?.toLocaleUpperCase().indexOf(q) !== -1) {
-    return true
-  }
-  return false
+  return (
+    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+  )
 }
 
 // Table headers
 const headers = [
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
-  { title: 'Название', key: 'displayName', sortable: false },
-  { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
-  { title: 'Город', key: 'city', sortable: true }
+  { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
+  { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
 ]
 
-// Helper function to get display name
-function getDisplayName(company) {
-  return company.shortName && company.shortName.trim() !== '' ? company.shortName : company.name
+function getMatchTypeText(exactMatch) {
+  return exactMatch ? 'Точное соответствие' : 'Морфологическое соответствие'
 }
 
-function openEditDialog(company) {
-  router.push('/company/edit/' + company.id)
+function openEditDialog(item) {
+  router.push(`/stopword/edit/${item.id}`)
 }
 
 function openCreateDialog() {
-  router.push('/company/create')
+  router.push('/stopword/create')
 }
 
-async function deleteCompany(company) {
-  const content = 'Удалить компанию "' + company.name + '" ?'
+async function deleteStopWord(stopWord) {
+  const content = 'Удалить стоп-слово "' + stopWord.word + '" ?'
   const confirmed = await confirm({
     title: 'Подтверждение',
     confirmationText: 'Удалить',
@@ -121,12 +97,12 @@ async function deleteCompany(company) {
 
   if (confirmed) {
     try {
-      await companiesStore.remove(company.id)
+      await stopWordsStore.remove(stopWord.id)
     } catch (error) {
       if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить информацию о компании, у которой есть связанные записи')
+        alertStore.error('Нельзя удалить стоп-слово, у которого есть связанные записи')
       } else {
-        alertStore.error('Ошибка при удалении информации о компании')
+        alertStore.error('Ошибка при удалении стоп-слова')
       }
     }
   }
@@ -134,34 +110,31 @@ async function deleteCompany(company) {
 
 // Initialize data
 onMounted(async () => {
-  await companiesStore.getAll()
-  // Only fetch countries if not already loaded
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
+  await stopWordsStore.getAll()
 })
 
 // Expose functions for testing
 defineExpose({
   openCreateDialog,
   openEditDialog,
-  deleteCompany
+  deleteStopWord,
+  getMatchTypeText
 })
 </script>
 
 <template>
-  <div class="settings table-2">
-    <h1 class="primary-heading">Компании</h1>
+  <div class="settings table-2" data-testid="stop-words-list">
+    <h1 class="primary-heading">Стоп-слова и фразы</h1>
     <hr class="hr" />
 
     <div class="link-crt">
-      <router-link v-if="authStore.isAdmin" to="/company/create" class="link">
+      <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
-          icon="fa-solid fa-building"
+          icon="fa-solid fa-plus"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать компанию
-      </router-link>
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать стоп-слово или фразу
+      </a>
     </div>
 
     <!-- Alert -->
@@ -172,32 +145,23 @@ defineExpose({
 
     <v-card>
       <v-data-table
-        v-if="companies?.length"
-        v-model:items-per-page="authStore.companies_per_page"
-        items-per-page-text="Компаний на странице"
+        v-if="stopWords?.length"
+        v-model:items-per-page="authStore.stopwords_per_page"
+        items-per-page-text="Стоп-слов на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="authStore.companies_page"
+        v-model:page="authStore.stopwords_page"
         :headers="headers"
-        :items="companies"
-        :search="authStore.companies_search"
-        v-model:sort-by="authStore.companies_sort_by"
-        :custom-filter="filterCompanies"
+        :items="stopWords"
+        :search="authStore.stopwords_search"
+        v-model:sort-by="authStore.stopwords_sort_by"
+        :custom-filter="filterStopWords"
         :loading="loading"
-        item-value="name"
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template v-slot:[`item.displayName`]="{ item }">
-          {{ getDisplayName(item) }}
-        </template>
-
-        <template v-slot:[`item.countryIsoNumeric`]="{ item }">
-          {{ getCountryName(item.countryIsoNumeric) }}
-        </template>
-
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать информацию о компании">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать стоп-слово или фразу">
             <template v-slot:activator="{ props }">
               <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -207,23 +171,27 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить информацию о компании">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить стоп-слово или фразу">
             <template v-slot:activator="{ props }">
-              <button @click="deleteCompany(item)" class="anti-btn" v-bind="props">
+              <button @click="deleteStopWord(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
         </template>
+
+        <template v-slot:[`item.exactMatch`]="{ item }">
+          {{ getMatchTypeText(item.exactMatch) }}
+        </template>
       </v-data-table>
 
-      <div v-if="!companies?.length" class="text-center m-5">Список компаний пуст</div>
+      <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов и фраз пуст</div>
 
-      <div v-if="companies?.length">
+      <div v-if="stopWords?.length">
         <v-text-field
-          v-model="authStore.companies_search"
+          v-model="authStore.stopwords_search"
           :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о компании"
+          label="Поиск по стоп-словам и фразам"
           variant="solo"
           hide-details
         />
@@ -235,3 +203,5 @@ defineExpose({
     </div>
   </div>
 </template>
+
+

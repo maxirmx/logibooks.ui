@@ -126,7 +126,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-plus"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Создать статус заказа
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать статус заказа
       </a>
     </div>
 

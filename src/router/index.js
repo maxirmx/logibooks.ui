@@ -83,7 +83,7 @@ const router = createRouter({
     },
     {
       path: '/orderstatus/create',
-      name: 'Создание статуса заказа',
+      name: 'Регистрация статуса заказа',
       component: () => import('@/views/OrderStatus_CreateView.vue'),
       meta: { requiresAdmin: true }
     },
@@ -91,6 +91,27 @@ const router = createRouter({
       path: '/orderstatus/edit/:id',
       name: 'Редактирование статуса заказа',
       component: () => import('@/views/OrderStatus_EditView.vue'),
+      props: route => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/stopwords',
+      name: 'Стоп-слова и фразы',
+      component: () => import('@/views/StopWords_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/stopword/create',
+      name: 'Регистрация стоп-слова или фразы',
+      component: () => import('@/views/StopWord_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/stopword/edit/:id',
+      name: 'Редактирование стоп-слова или фразы',
+      component: () => import('@/views/StopWord_EditView.vue'),
       props: route => ({
         id: Number(route.params.id)
       }),

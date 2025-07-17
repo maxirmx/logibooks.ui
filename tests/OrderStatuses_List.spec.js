@@ -149,7 +149,7 @@ describe('OrderStatuses_List.vue', () => {
     it('shows create button for admin users', () => {
       const createLink = wrapper.find('.link-crt a')
       expect(createLink.exists()).toBe(true)
-      expect(createLink.text()).toContain('Создать статус заказа')
+      expect(createLink.text()).toContain('Зарегистрировать статус заказа')
     })
 
     it('calls openCreateDialog when create button is clicked', async () => {

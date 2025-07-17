@@ -89,6 +89,12 @@ export const useOrdersStore = defineStore('orders', () => {
     console.log('stub generate all orders XML', registerId)
   }
 
+  async function validate(id) {
+      await fetchWrapper.post(`${baseUrl}/${id}/validate`)
+      // The API returns 204 No Content on success
+      return true
+  }
+
   return {
     items,
     item,
@@ -101,6 +107,7 @@ export const useOrdersStore = defineStore('orders', () => {
     getById,
     update,
     generate,
-    generateAll
+    generateAll,
+    validate
   }
 })

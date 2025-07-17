@@ -25,7 +25,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { watch, ref, onMounted, reactive } from 'vue'
+import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
@@ -36,6 +36,18 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
+
+const validationState = reactive({
+  show: false,
+  handleId: null,
+  total: 0,
+  processed: 0
+})
+let progressTimer = null
+const progressPercent = computed(() => {
+  if (!validationState.total || validationState.total <= 0) return 0
+  return Math.round((validationState.processed / validationState.total) * 100)
+})
 
 
 const registersStore = useRegistersStore()
@@ -138,6 +150,10 @@ onMounted(async () => {
   await orderStatusesStore.getAll()
 })
 
+onUnmounted(() => {
+  stopPolling()
+})
+
 function openFileDialog() {
   fileInput.value?.click()
 }
@@ -180,10 +196,50 @@ function exportAllXml(item) {
   ordersStore.generateAll(item.id)
 }
 
-function validateRegister(item) {
-  // TODO: Implement validate functionality
-  console.log('Validating register:', item.id)
-  alertStore.info(`Проверка реестра ${item.id} будет реализована`)
+async function pollValidation() {
+  if (!validationState.handleId) return
+  try {
+    const progress = await registersStore.getValidationProgress(validationState.handleId)
+    validationState.total = progress.total
+    validationState.processed = progress.processed
+    if (progress.finished || progress.total === -1 || progress.processed === -1) {
+      validationState.show = false
+      stopPolling()
+    }
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+    validationState.show = false
+    stopPolling()
+  }
+}
+
+function stopPolling() {
+  if (progressTimer) {
+    clearInterval(progressTimer)
+    progressTimer = null
+  }
+}
+
+async function validateRegister(item) {
+  try {
+    const res = await registersStore.validate(item.id)
+    validationState.handleId = res.id
+    validationState.total = 0
+    validationState.processed = 0
+    validationState.show = true
+    pollValidation()
+    progressTimer = setInterval(pollValidation, 1000)
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+  }
+}
+
+function cancelValidation() {
+  if (validationState.handleId) {
+    registersStore.cancelValidation(validationState.handleId).catch(() => {})
+  }
+  validationState.show = false
+  stopPolling()
 }
 
 const headers = [
@@ -352,6 +408,20 @@ const headers = [
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
     </div>
+
+    <v-dialog v-model="validationState.show" width="300">
+      <v-card>
+        <v-card-title class="primary-heading">Проверка реестра</v-card-title>
+        <v-card-text class="text-center">
+          <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">
+            {{ progressPercent }}%
+          </v-progress-circular>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="cancelValidation">Отменить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

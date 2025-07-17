@@ -344,7 +344,7 @@ describe('StopWords_List.vue', () => {
     it('handles item with missing word property', () => {
       const mockItem = { raw: {} }
       const result = wrapper.vm.filterStopWords(null, 'test', mockItem)
-      expect(result).toBe(true) // undefined.indexOf !== -1 is true in JS
+      expect(result).toBe(false) 
     })
   })
 

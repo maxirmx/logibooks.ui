@@ -5,7 +5,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn() }
+  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -450,6 +450,39 @@ describe('registers store', () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
       await store.setOrderStatuses(123, 456)
       expect(store.error).toBeNull()
+    })
+  })
+
+  describe('validation API', () => {
+    it('starts validation and returns handle', async () => {
+      const handle = { id: '1234' }
+      fetchWrapper.post.mockResolvedValue(handle)
+
+      const store = useRegistersStore()
+      const result = await store.validate(1)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/validate`)
+      expect(result).toEqual(handle)
+    })
+
+    it('gets validation progress', async () => {
+      const progress = { total: 10, processed: 5, finished: false }
+      fetchWrapper.get.mockResolvedValue(progress)
+
+      const store = useRegistersStore()
+      const result = await store.getValidationProgress('abcd')
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
+      expect(result).toEqual(progress)
+    })
+
+    it('cancels validation', async () => {
+      fetchWrapper.delete.mockResolvedValue(undefined)
+
+      const store = useRegistersStore()
+      await store.cancelValidation('abcd')
+
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
     })
   })
 })

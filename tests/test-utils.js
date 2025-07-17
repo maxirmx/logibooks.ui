@@ -63,6 +63,11 @@ export const vuetifyStubs = {
     props: ['modelValue', 'width', 'maxWidth', 'persistent', 'style'],
     inheritAttrs: false
   },
+  'v-progress-circular': {
+    template: '<div class="v-progress-circular-stub" data-testid="v-progress-circular">{{ modelValue }}%</div>',
+    props: ['modelValue', 'size', 'width', 'color'],
+    inheritAttrs: false
+  },
   'v-row': {
     template: '<div class="v-row-stub" data-testid="v-row"><slot></slot></div>',
     props: ['noGutters', 'align', 'justify', 'style'],

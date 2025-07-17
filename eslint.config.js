@@ -46,6 +46,10 @@ export default [
         URL: 'readonly',
         FormData: 'readonly',
         File: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       }
     },
   },

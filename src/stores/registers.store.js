@@ -74,5 +74,33 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload, setOrderStatuses }
+  async function validate(registerId) {
+    try {
+      const result = await fetchWrapper.post(`${baseUrl}/${registerId}/validate`)
+      return result
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function getValidationProgress(handleId) {
+    try {
+      return await fetchWrapper.get(`${baseUrl}/validate/${handleId}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function cancelValidation(handleId) {
+    try {
+      await fetchWrapper.delete(`${baseUrl}/validate/${handleId}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload, setOrderStatuses, validate, getValidationProgress, cancelValidation }
 })

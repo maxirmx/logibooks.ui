@@ -55,7 +55,7 @@ function filterStopWords(value, query, item) {
   const q = query.toLocaleUpperCase()
 
   return (
-    i.word?.toLocaleUpperCase().indexOf(q) !== -1
+    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
   )
 }
 

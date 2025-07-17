@@ -44,6 +44,7 @@ const validationState = reactive({
   processed: 0
 })
 let progressTimer = null
+const POLLING_INTERVAL_MS = 1000
 const progressPercent = computed(() => {
   if (!validationState.total || validationState.total <= 0) return 0
   return Math.round((validationState.processed / validationState.total) * 100)
@@ -222,13 +223,14 @@ function stopPolling() {
 
 async function validateRegister(item) {
   try {
+    stopPolling(); 
     const res = await registersStore.validate(item.id)
     validationState.handleId = res.id
     validationState.total = 0
     validationState.processed = 0
     validationState.show = true
     pollValidation()
-    progressTimer = setInterval(pollValidation, 1000)
+    progressTimer = setInterval(pollValidation, POLLING_INTERVAL_MS)
   } catch (err) {
     alertStore.error(err.message || String(err))
   }
@@ -247,7 +249,6 @@ const headers = [
   { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '60px' },
-  { title: '№', key: 'id', align: 'start' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }

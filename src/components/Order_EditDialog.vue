@@ -124,6 +124,18 @@ function onSubmit(values, { setErrors }) {
     .then(() => router.push(`/registers/${props.registerId}/orders`))
     .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
+
+
+async function validateOrder() {
+  try {
+    await ordersStore.validate(item.value.id)
+    // Optionally reload the order data to reflect any changes
+    await ordersStore.getById(props.id)
+  } catch (error) {
+    console.error('Failed to validate order:', error)
+    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке заказа.'
+  }  
+}
 </script>
 
 <template>
@@ -149,6 +161,9 @@ function onSubmit(values, { setErrors }) {
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
               {{ orderCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
+            <button class="validate-btn" @click="validateOrder" type="button" title="Проверить заказ">
+              <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
+            </button>
           </div>
           <!-- Stopwords information when there are issues -->
           <div v-if="HasIssues(item?.checkStatusId) && getStopWordsInfo(item, stopWords)" class="form-group stopwords-info">
@@ -221,6 +236,7 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <!-- Action buttons -->
+
       <div class="form-actions">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
@@ -406,6 +422,44 @@ function onSubmit(values, { setErrors }) {
   width: 60%;
   flex-grow: 1;
   word-wrap: break-word;
+}
+
+/* Validate button styling */
+.validate-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  margin-left: 0.5rem;
+  border-radius: 4px;
+  color: #495057;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.validate-btn:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  color: #212529;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.validate-btn:active {
+  background-color: #dee2e6;
+  border-color: #adb5bd;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.validate-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 @media (max-width: 768px) {

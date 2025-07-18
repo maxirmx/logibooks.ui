@@ -123,6 +123,11 @@ const router = createRouter({
       component: () => import('@/views/Countries_View.vue'),
     },
     {
+      path: '/feacn',
+      name: 'Коды ТН ВЭД',
+      component: () => import('@/views/FeacnCodes_View.vue'),
+    },
+    {
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),

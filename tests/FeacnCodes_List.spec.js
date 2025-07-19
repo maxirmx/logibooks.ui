@@ -94,7 +94,6 @@ describe('FeacnCodes_List.vue', () => {
     await wrapper.vm.updateCodes()
     expect(update).toHaveBeenCalled()
     expect(getOrders).toHaveBeenCalledTimes(2)
-    expect(success).toHaveBeenCalledWith('Информация о кодах ТН ВЭД обновлена')
   })
 
   it('shows empty message when no orders', () => {

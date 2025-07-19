@@ -70,6 +70,14 @@ export const useAuthStore = defineStore('auth', () => {
   const stopwords_search = ref('')
   const stopwords_sort_by = ref(['id'])
   const stopwords_page = ref(1)
+  const feacnorders_per_page = ref(10)
+  const feacnorders_search = ref('')
+  const feacnorders_sort_by = ref([])
+  const feacnorders_page = ref(1)
+  const feacnprefixes_per_page = ref(10)
+  const feacnprefixes_search = ref('')
+  const feacnprefixes_sort_by = ref([])
+  const feacnprefixes_page = ref(1)
   const returnUrl = ref(null)
   const re_jwt = ref(null)
   const re_tgt = ref(null)
@@ -180,6 +188,14 @@ export const useAuthStore = defineStore('auth', () => {
     stopwords_search,
     stopwords_sort_by,
     stopwords_page,
+    feacnorders_per_page,
+    feacnorders_search,
+    feacnorders_sort_by,
+    feacnorders_page,
+    feacnprefixes_per_page,
+    feacnprefixes_search,
+    feacnprefixes_sort_by,
+    feacnprefixes_page,
     returnUrl,
     re_jwt,
     re_tgt,

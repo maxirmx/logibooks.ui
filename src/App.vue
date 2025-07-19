@@ -103,6 +103,9 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/countries" class="link">Страны</RouterLink>
           </v-list-item>
+          <v-list-item>
+            <RouterLink to="/feacn" class="link">Коды ТН ВЭД</RouterLink>
+          </v-list-item>
            <v-list-item>
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>

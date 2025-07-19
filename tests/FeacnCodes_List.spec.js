@@ -115,4 +115,139 @@ describe('FeacnCodes_List.vue', () => {
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).toContain('Ошибка при загрузке информации')
   })
+
+  describe('filterOrders function', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
+    })
+
+    it('returns true when no query is provided', () => {
+      const result = wrapper.vm.filterOrders(null, '', { raw: { title: 'Test', url: 'http://test.com' } })
+      expect(result).toBe(true)
+    })
+
+    it('returns true when query is null', () => {
+      const result = wrapper.vm.filterOrders(null, null, { raw: { title: 'Test', url: 'http://test.com' } })
+      expect(result).toBe(true)
+    })
+
+    it('filters by title case-insensitive', () => {
+      const item = { raw: { title: 'Test Document', url: 'http://test.com' } }
+      
+      expect(wrapper.vm.filterOrders(null, 'test', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'TEST', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'document', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'xyz', item)).toBe(false)
+    })
+
+    it('filters by url case-insensitive', () => {
+      const item = { raw: { title: 'Test Document', url: 'http://example.com' } }
+      
+      expect(wrapper.vm.filterOrders(null, 'example', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'EXAMPLE', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'http', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'xyz', item)).toBe(false)
+    })
+
+    it('handles missing url field', () => {
+      const item = { raw: { title: 'Test Document' } }
+      
+      expect(wrapper.vm.filterOrders(null, 'test', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'xyz', item)).toBe(false)
+    })
+
+    it('handles null url field', () => {
+      const item = { raw: { title: 'Test Document', url: null } }
+      
+      expect(wrapper.vm.filterOrders(null, 'test', item)).toBe(true)
+      expect(wrapper.vm.filterOrders(null, 'xyz', item)).toBe(false)
+    })
+  })
+
+  describe('filterPrefixes function', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
+    })
+
+    it('returns true when no query is provided', () => {
+      const result = wrapper.vm.filterPrefixes(null, '', { 
+        raw: { code: '1234', description: 'Test desc', comment: 'Test comment', exceptions: 'exc1,exc2' } 
+      })
+      expect(result).toBe(true)
+    })
+
+    it('returns true when query is null', () => {
+      const result = wrapper.vm.filterPrefixes(null, null, { 
+        raw: { code: '1234', description: 'Test desc', comment: 'Test comment', exceptions: 'exc1,exc2' } 
+      })
+      expect(result).toBe(true)
+    })
+
+    it('filters by code case-insensitive', () => {
+      const item = { raw: { code: '1234.56', description: 'Test', comment: 'Test', exceptions: 'Test' } }
+      
+      expect(wrapper.vm.filterPrefixes(null, '1234', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, '56', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, '9999', item)).toBe(false)
+    })
+
+    it('filters by description case-insensitive', () => {
+      const item = { raw: { code: '1234', description: 'Test Description', comment: 'Test', exceptions: 'Test' } }
+      
+      expect(wrapper.vm.filterPrefixes(null, 'description', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'DESCRIPTION', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'test', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'xyz', item)).toBe(false)
+    })
+
+    it('filters by comment case-insensitive', () => {
+      const item = { raw: { code: '1234', description: 'Test', comment: 'Important Comment', exceptions: 'Test' } }
+      
+      expect(wrapper.vm.filterPrefixes(null, 'important', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'COMMENT', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'xyz', item)).toBe(false)
+    })
+
+    it('filters by exceptions case-insensitive', () => {
+      const item = { raw: { code: '1234', description: 'Test', comment: 'Test', exceptions: 'Exception List' } }
+      
+      expect(wrapper.vm.filterPrefixes(null, 'exception', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'LIST', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'xyz', item)).toBe(false)
+    })
+
+    it('handles missing optional fields', () => {
+      const item = { raw: { code: '1234' } }
+      
+      expect(wrapper.vm.filterPrefixes(null, '1234', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'xyz', item)).toBe(false)
+    })
+
+    it('handles null optional fields', () => {
+      const item = { raw: { code: '1234', description: null, comment: null, exceptions: null } }
+      
+      expect(wrapper.vm.filterPrefixes(null, '1234', item)).toBe(true)
+      expect(wrapper.vm.filterPrefixes(null, 'xyz', item)).toBe(false)
+    })
+
+    it('matches across multiple fields', () => {
+      const item = { raw: { 
+        code: '1234', 
+        description: 'Leather goods', 
+        comment: 'Special handling', 
+        exceptions: 'Children items' 
+      } }
+      
+      // Should match any of the fields
+      expect(wrapper.vm.filterPrefixes(null, '1234', item)).toBe(true)      // code
+      expect(wrapper.vm.filterPrefixes(null, 'leather', item)).toBe(true)   // description
+      expect(wrapper.vm.filterPrefixes(null, 'special', item)).toBe(true)   // comment
+      expect(wrapper.vm.filterPrefixes(null, 'children', item)).toBe(true)  // exceptions
+      expect(wrapper.vm.filterPrefixes(null, 'notfound', item)).toBe(false) // no match
+    })
+  })
 })

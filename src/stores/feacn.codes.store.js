@@ -40,7 +40,15 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
   }
 
   async function update() {
-    await fetchWrapper.post(`${baseUrl}/update`)
+   loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/update`)
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
   }
 
   return { orders, prefixes, loading, error, getOrders, getPrefixes, update }

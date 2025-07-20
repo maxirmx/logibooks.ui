@@ -49,7 +49,7 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
   }
 
   async function update() {
-   loading.value = true
+    loading.value = true
     error.value = null
     try {
       await fetchWrapper.post(`${baseUrl}/update`)

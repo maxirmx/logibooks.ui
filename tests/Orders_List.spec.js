@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia } from 'pinia'
 import OrdersList from '@/components/Orders_List.vue'
-import { vuetifyStubs } from './test-utils.js'
+import { vuetifyStubs, createMockStore } from './test-utils.js'
 
 
 // Mock data
@@ -28,6 +28,11 @@ const mockStopWords = ref([
   { id: 2, word: 'test2' }
 ])
 
+const mockFeacnOrders = ref([
+  { id: 1, comment: 'Test feacn order 1' },
+  { id: 2, comment: 'Test feacn order 2' }
+])
+
 // Mock functions
 const getAll = vi.hoisted(() => vi.fn())
 const fetchStatuses = vi.hoisted(() => vi.fn())
@@ -36,6 +41,8 @@ const ensureStatusesLoaded = vi.hoisted(() => vi.fn())
 const getCheckStatusTitle = vi.hoisted(() => vi.fn())
 const ensureCheckStatusesLoaded = vi.hoisted(() => vi.fn())
 const getAllStopWords = vi.hoisted(() => vi.fn())
+const getOrdersFeacn = vi.hoisted(() => vi.fn())
+const ensureOrdersLoadedFeacn = vi.hoisted(() => vi.fn())
 
 // Setup mocks
 vi.mock('pinia', async () => {
@@ -43,25 +50,25 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: vi.fn((store) => {
-      if (store.orders) return { items: mockOrders, loading: ref(false), error: ref(null), totalCount: ref(2) }
-      if (store.statuses) return { statuses: mockStatuses }
-      if (store.stopWords) return { stopWords: mockStopWords }
-      return {
-        orders_per_page: ref(10),
-        orders_sort_by: ref([{ key: 'id', order: 'asc' }]),
-        orders_page: ref(1),
-        orders_status: ref(null),
-        orders_tnved: ref('')
+      // Return appropriate refs based on store properties
+      if (store.items) return { items: store.items, loading: store.loading, error: store.error, totalCount: store.totalCount }
+      if (store.stopWords) return { stopWords: store.stopWords }
+      if (store.orders && store.prefixes) return { orders: store.orders }
+      if (store.orders_per_page) return {
+        orders_per_page: store.orders_per_page,
+        orders_sort_by: store.orders_sort_by,
+        orders_page: store.orders_page,
+        orders_status: store.orders_status,
+        orders_tnved: store.orders_tnved
       }
+      return {}
     })
   }
 })
 
 vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: () => ({
+  useOrdersStore: () => createMockStore({
     items: mockOrders,
-    loading: ref(false),
-    error: ref(null),
     totalCount: ref(2),
     getAll,
     update: vi.fn(),
@@ -72,10 +79,8 @@ vi.mock('@/stores/orders.store.js', () => ({
 }))
 
 vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({
+  useOrderStatusesStore: () => createMockStore({
     statuses: mockStatuses,
-    loading: ref(false),
-    error: ref(null),
     fetchStatuses,
     getStatusTitle,
     getStatusById: vi.fn(),
@@ -84,10 +89,8 @@ vi.mock('@/stores/order.statuses.store.js', () => ({
 }))
 
 vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: () => ({
+  useOrderCheckStatusStore: () => createMockStore({
     statuses: mockCheckStatuses,
-    loading: ref(false),
-    error: ref(null),
     fetchStatuses: vi.fn(),
     getStatusTitle: getCheckStatusTitle,
     getStatusById: vi.fn(),
@@ -96,15 +99,25 @@ vi.mock('@/stores/order.checkstatuses.store.js', () => ({
 }))
 
 vi.mock('@/stores/stop.words.store.js', () => ({
-  useStopWordsStore: () => ({
+  useStopWordsStore: () => createMockStore({
     stopWords: mockStopWords,
-    loading: ref(false),
-    error: ref(null),
     getAll: getAllStopWords,
     getById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/feacn.codes.store.js', () => ({
+  useFeacnCodesStore: () => createMockStore({
+    orders: mockFeacnOrders,
+    prefixes: ref([]),
+    isInitialized: ref(true),
+    getOrders: getOrdersFeacn,
+    getPrefixes: vi.fn(),
+    update: vi.fn(),
+    ensureOrdersLoaded: ensureOrdersLoadedFeacn
   })
 }))
 
@@ -233,6 +246,21 @@ describe('Orders_List', () => {
     expect(getAllStopWords).toHaveBeenCalled()
   })
 
+  it('loads feacn orders on mount', async () => {
+    const wrapper = mount(OrdersList, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [pinia],
+        stubs: globalStubs
+      }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    
+    expect(ensureOrdersLoadedFeacn).toHaveBeenCalled()
+  })
+
   it('includes actions3 column in headers', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
@@ -285,7 +313,7 @@ describe('Orders_List', () => {
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 250 } })).toEqual({ class: '' })
   })
 
-  it('generates stopwords tooltip for checkStatusId when HasIssues is true', () => {
+  it('generates combined status info tooltip for checkStatusId when HasIssues is true', () => {
     const wrapper = mount(OrdersList, {
       props: { registerId: 1 },
       global: {
@@ -296,36 +324,40 @@ describe('Orders_List', () => {
 
     const vm = wrapper.vm
     
-    // Test item with issues and stopwords
-    const itemWithStopwords = {
+    // Test item with issues and both stopwords and feacn orders
+    const itemWithBoth = {
       checkStatusId: 150, // HasIssues returns true for 101-200
-      stopWordIds: [1, 2]
+      stopWordIds: [1, 2],
+      feacnOrderIds: [1, 2]
     }
     
-    const tooltip = vm.getCheckStatusTooltip(itemWithStopwords)
+    const tooltip = vm.getCheckStatusTooltip(itemWithBoth)
     expect(tooltip).toContain('Статус 150')
+    expect(tooltip).toContain('Ограничения по коду ТН ВЭД:')
     expect(tooltip).toContain('Стоп-слова и фразы:')
-    expect(tooltip).toContain("'test1'")
-    expect(tooltip).toContain("'test2'")
     
-    // Test item with issues but no stopwords
-    const itemWithoutStopwords = {
+    // Test item with issues but no stopwords or feacn orders
+    const itemEmpty = {
       checkStatusId: 150,
-      stopWordIds: []
+      stopWordIds: [],
+      feacnOrderIds: []
     }
     
-    const tooltipNoStopwords = vm.getCheckStatusTooltip(itemWithoutStopwords)
-    expect(tooltipNoStopwords).toBe('Статус 150')
-    expect(tooltipNoStopwords).not.toContain('Стоп-слова и фразы:')
+    const tooltipEmpty = vm.getCheckStatusTooltip(itemEmpty)
+    expect(tooltipEmpty).toBe('Статус 150')
+    expect(tooltipEmpty).not.toContain('Стоп-слова и фразы:')
+    expect(tooltipEmpty).not.toContain('Ограничения по коду ТН ВЭД:')
     
     // Test item without issues
     const itemNoIssues = {
       checkStatusId: 50, // HasIssues returns false for <=100
-      stopWordIds: [1, 2]
+      stopWordIds: [1, 2],
+      feacnOrderIds: [1, 2]
     }
     
     const tooltipNoIssues = vm.getCheckStatusTooltip(itemNoIssues)
     expect(tooltipNoIssues).toBe('Статус 50')
     expect(tooltipNoIssues).not.toContain('Стоп-слова и фразы:')
+    expect(tooltipNoIssues).not.toContain('Ограничения по коду ТН ВЭД:')
   })
 })

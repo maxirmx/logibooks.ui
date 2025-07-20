@@ -94,7 +94,6 @@ describe('Countries_List.vue', () => {
     expect(update).toHaveBeenCalled()
     // called once on mount and once after update
     expect(getAll).toHaveBeenCalledTimes(2)
-    expect(success).toHaveBeenCalledWith('Информация о странах обновлена')
   })
 
   it('updateCodes displays error alert on failure', async () => {

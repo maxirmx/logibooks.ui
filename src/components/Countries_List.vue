@@ -42,7 +42,6 @@ async function updateCodes() {
   try {
     await countriesStore.update()
     await countriesStore.getAll()
-    alertStore.success('Информация о странах обновлена')
   } catch (err) {
     alertStore.error(err)
   }

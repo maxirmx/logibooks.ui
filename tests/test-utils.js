@@ -2,6 +2,8 @@
  * Shared test utilities and configurations
  */
 
+import { vi } from 'vitest'
+
 // Comprehensive Vuetify component stubs that handle common props
 export const vuetifyStubs = {
   'v-select': {
@@ -160,5 +162,84 @@ export async function waitForTicks(ticks = 2) {
   const { nextTick } = await import('vue')
   for (let i = 0; i < ticks; i++) {
     await nextTick()
+  }
+}
+
+/**
+ * Creates standard mock data for testing components
+ * @param {Object} overrides - Override default values
+ * @returns {Object} Mock data
+ */
+export function createMockData(overrides = {}) {
+  return {
+    loading: false,
+    error: null,
+    items: [],
+    totalCount: 0,
+    ...overrides
+  }
+}
+
+/**
+ * Helper to create mock store with standard patterns including storeToRefs
+ * @param {Object} storeData - The store data to mock
+ * @returns {Object} Mock store with storeToRefs support
+ */
+export function createMockStoreWithRefs(storeData = {}) {
+  const store = createMockStore(storeData)
+  
+  return {
+    ...store,
+    // Mock storeToRefs behavior by returning refs for reactive properties
+    $refs: () => {
+      const refs = {}
+      Object.keys(store).forEach(key => {
+        if (typeof store[key] !== 'function') {
+          refs[key] = store[key]
+        }
+      })
+      return refs
+    }
+  }
+}
+
+/**
+ * Mock fetch responses for testing
+ * @param {*} data - Data to return from fetch
+ * @param {boolean} isError - Whether to return an error
+ * @returns {Function} Mock fetch function
+ */
+export function createMockFetch(data = {}, isError = false) {
+  return vi.fn().mockImplementation(() => {
+    if (isError) {
+      return Promise.reject(new Error('Fetch error'))
+    }
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(data),
+      text: () => Promise.resolve(JSON.stringify(data))
+    })
+  })
+}
+
+/**
+ * Helper to create mock router for testing
+ * @returns {Object} Mock router
+ */
+export function createMockRouter() {
+  return {
+    push: vi.fn(),
+    replace: vi.fn(),
+    go: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    currentRoute: {
+      value: {
+        path: '/',
+        params: {},
+        query: {},
+        name: 'home'
+      }
+    }
   }
 }

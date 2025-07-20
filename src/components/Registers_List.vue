@@ -245,10 +245,10 @@ function cancelValidation() {
 }
 
 const headers = [
-  { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
-  { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
-  { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
-  { title: '', key: 'actions4', sortable: false, align: 'center', width: '60px' },
+  { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
+  { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
+  { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
+  { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }

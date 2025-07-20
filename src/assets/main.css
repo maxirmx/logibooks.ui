@@ -346,6 +346,15 @@ a,
   padding-top: 17px;
 }
 
+/* Make items-per-page dropdown wider to accommodate text like "Все" */
+.v-data-table-footer .v-data-table-footer__items-per-page {
+  min-width: 120px !important;
+}
+
+.v-data-table-footer .v-field__input {
+  min-width: 80px !important;
+}
+
 
 .checkbox-styled {
   visibility: hidden;

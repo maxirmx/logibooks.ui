@@ -2,12 +2,33 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
+import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import OrderEditDialog from '@/components/Order_EditDialog.vue'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
   default: { push: vi.fn() }
 }))
+
+// Mock Pinia's storeToRefs to return the mock values
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: vi.fn((store) => {
+      if (store.item) {
+        return { item: store.item }
+      }
+      if (store.stopWords) {
+        return { stopWords: store.stopWords }
+      }
+      if (store.orders) {
+        return { orders: store.orders }
+      }
+      return {}
+    })
+  }
+})
 
 // Simple stubs for vee-validate components
 const FormStub = {
@@ -38,13 +59,13 @@ const mockItem = ref({
   recipientName: 'Test Recipient'
 })
 
-const mockOrdersStore = {
+const mockOrdersStore = createMockStore({
   item: mockItem,
   getById: vi.fn().mockResolvedValue(mockItem.value),
   update: vi.fn().mockResolvedValue({})
-}
+})
 
-const mockStatusStore = {
+const mockStatusStore = createMockStore({
   statuses: [
     { id: 1, title: 'Status 1' },
     { id: 2, title: 'Status 2' }
@@ -54,24 +75,32 @@ const mockStatusStore = {
     { id: 2, title: 'Status 2' }
   ],
   ensureStatusesLoaded: vi.fn()
-}
+})
 
-const mockCheckStatusStore = {
+const mockCheckStatusStore = createMockStore({
   statuses: [
     { id: 1, title: 'Не проверен' },
     { id: 2, title: 'Проверен' }
   ],
   getStatusTitle: vi.fn((id) => `Статус ${id}`),
   ensureStatusesLoaded: vi.fn()
-}
+})
 
-const mockStopWordsStore = {
+const mockStopWordsStore = createMockStore({
   stopWords: [
     { id: 1, word: 'test1' },
     { id: 2, word: 'test2' }
   ],
   getAll: vi.fn().mockResolvedValue([])
-}
+})
+
+const mockFeacnCodesStore = createMockStore({
+  orders: [
+    { id: 1, comment: 'Test feacn order 1' },
+    { id: 2, comment: 'Test feacn order 2' }
+  ],
+  getAll: vi.fn().mockResolvedValue([])
+})
 
 // Mock stores
 vi.mock('@/stores/orders.store.js', () => ({
@@ -88,6 +117,10 @@ vi.mock('@/stores/order.checkstatuses.store.js', () => ({
 
 vi.mock('@/stores/stop.words.store.js', () => ({
   useStopWordsStore: vi.fn(() => mockStopWordsStore)
+}))
+
+vi.mock('@/stores/feacn.codes.store.js', () => ({
+  useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
 }))
 
 describe('Order_EditDialog', () => {
@@ -115,6 +148,7 @@ describe('Order_EditDialog', () => {
     wrapper = mount(SuspenseWrapper, {
       global: {
         stubs: {
+          ...defaultGlobalStubs,
           Form: FormStub,
           Field: FieldStub
         }

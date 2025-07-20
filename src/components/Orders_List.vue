@@ -4,6 +4,7 @@ import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -11,7 +12,7 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
-import { getStopWordsText } from '@/helpers/stopwords.helper.js'
+import { getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -21,10 +22,12 @@ const ordersStore = useOrdersStore()
 const orderStatusStore = useOrderStatusesStore()
 const orderCheckStatusStore = useOrderCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
+const feacnCodesStore = useFeacnCodesStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(ordersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
+const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
 const {
   orders_per_page,
   orders_sort_by,
@@ -72,6 +75,8 @@ onMounted(async () => {
   orderCheckStatusStore.ensureStatusesLoaded()
   // Load all stop words once to reduce network traffic
   await stopWordsStore.getAll()
+  // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
+  await feacnCodesStore.ensureOrdersLoaded()
   await fetchRegister()
 })
 
@@ -86,9 +91,9 @@ const statusOptions = computed(() => [
 const headers = computed(() => {
   return [
     // Actions - Always first for easy access
-    { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
-    { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
-    { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
+    { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
     
     // Order Identification & Status - Key identifiers and current state
     { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
@@ -147,15 +152,14 @@ function getColumnTooltip(key) {
   return title || null
 }
 
-// Function to get tooltip for checkStatusId with stopwords if there are issues
+// Function to get tooltip for checkStatusId with combined status info
 function getCheckStatusTooltip(item) {
   const baseTitle = orderCheckStatusStore.getStatusTitle(item.checkStatusId)
 
   if (HasIssues(item.checkStatusId)) {
-    const stopWordsList = getStopWordsText(item, stopWords.value)
-    
-    if (stopWordsList) {
-      return `${baseTitle}\nСтоп-слова и фразы: ${stopWordsList}`
+    const checkInfo = getCheckStatusInfo(item, feacnOrders.value, stopWords.value)
+    if (checkInfo) {
+      return `${baseTitle}\n${checkInfo}`
     }
   }
   

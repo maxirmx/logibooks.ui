@@ -10,16 +10,25 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
   const prefixes = ref([])
   const loading = ref(false)
   const error = ref(null)
+  const isInitialized = ref(false)
 
   async function getOrders() {
     loading.value = true
     error.value = null
     try {
       orders.value = await fetchWrapper.get(`${baseUrl}/orders`)
+      isInitialized.value = true
     } catch (err) {
       error.value = err
     } finally {
       loading.value = false
+    }
+  }
+
+  // Global initialization function - loads orders once and marks as initialized
+  async function ensureOrdersLoaded() {
+    if (!isInitialized.value && !loading.value) {
+      await getOrders()
     }
   }
 
@@ -40,8 +49,28 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
   }
 
   async function update() {
-    await fetchWrapper.post(`${baseUrl}/update`)
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/update`)
+      // Reload orders after update
+      await getOrders()
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
   }
 
-  return { orders, prefixes, loading, error, getOrders, getPrefixes, update }
+  return { 
+    orders, 
+    prefixes, 
+    loading, 
+    error, 
+    isInitialized, 
+    getOrders, 
+    getPrefixes, 
+    update, 
+    ensureOrdersLoaded 
+  }
 })

@@ -1,6 +1,6 @@
 {
   "name": "logibooks-ui",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,8 +10,7 @@
     "test": "vitest",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix",
     "format": "prettier --write src/",
-    "coverage": "vitest run --coverage",
-    "deploy": "scp -rp dist/* root@kreel0.samsonov.net:/var/www/kreel0"
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.4.0",

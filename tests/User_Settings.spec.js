@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UserSettings from '@/components/User_Settings.vue'
+import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import { resolveAll } from './helpers/test-utils'
 
 // simple stubs for vee-validate components
@@ -32,7 +33,7 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/users.store.js', () => ({
-  useUsersStore: () => ({
+  useUsersStore: () => createMockStore({
     user: mockUser,
     getById,
     add: addUser,
@@ -72,7 +73,13 @@ describe('User_Settings.vue real component', () => {
   it('fetches user by id when editing', async () => {
     mount(Parent, {
       props: { register: false, id: 5 },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     expect(getById).toHaveBeenCalledWith(5, true)
@@ -82,7 +89,13 @@ describe('User_Settings.vue real component', () => {
     Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
@@ -100,7 +113,13 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
@@ -114,7 +133,13 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: false, id: 7 },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
@@ -128,7 +153,13 @@ describe('User_Settings.vue real component', () => {
     mockUser.value.roles = ['logist']
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
@@ -148,7 +179,13 @@ describe('User_Settings.vue real component', () => {
     
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     
@@ -167,7 +204,13 @@ describe('User_Settings.vue real component', () => {
     
     const wrapper = mount(Parent, {
       props: { register: false, id: 5 },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     
@@ -188,7 +231,13 @@ describe('User_Settings.vue real component', () => {
     Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
     })
     await resolveAll()
     

@@ -84,7 +84,6 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
 export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollection) {
   const feacnInfo = getFeacnOrdersInfo(item, feacnOrdersCollection)
   const stopWordsInfo = getStopWordsInfo(item, stopWordsCollection)
-  
   if (feacnInfo && stopWordsInfo) {
     return `${feacnInfo}; ${stopWordsInfo}`
   }

@@ -6,10 +6,11 @@ import { useOrdersStore } from '@/stores/orders.store.js'
 import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
 import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
-import { getStopWordsInfo } from '@/helpers/orders.check.helper.js'
+import { getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -20,9 +21,11 @@ const ordersStore = useOrdersStore()
 const statusStore = useOrderStatusesStore()
 const orderCheckStatusStore = useOrderCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
+const feacnCodesStore = useFeacnCodesStore()
 
 const { item } = storeToRefs(ordersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
+const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
 
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
@@ -166,9 +169,9 @@ async function validateOrder() {
             </button>
           </div>
           <!-- Stopwords information when there are issues -->
-          <div v-if="HasIssues(item?.checkStatusId) && getStopWordsInfo(item, stopWords)" class="form-group stopwords-info">
+          <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords)" class="form-group stopwords-info">
             <div class="stopwords-text">
-              {{ getStopWordsInfo(item, stopWords) }}
+              {{ getCheckStatusInfo(item, feacnOrders, stopWords) }}
             </div>
           </div>
         </div>

@@ -1,9 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { createMockStore } from './test-utils.js'
 
 // Place mocks back at the top level, which is fine with isolate: true in config
 vi.mock('@/stores/auth.store.js', () => {
   return {
-    useAuthStore: vi.fn(() => ({ user: { token: 'abc' }, logout: vi.fn() }))
+    useAuthStore: vi.fn(() => createMockStore({ 
+      user: { token: 'abc' }, 
+      logout: vi.fn() 
+    }))
   }
 })
 

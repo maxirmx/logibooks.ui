@@ -29,7 +29,8 @@ watch(selectedOrderId, async (id) => {
 })
 
 onMounted(async () => {
-  await feacnStore.getOrders()
+  // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
+  await feacnStore.ensureOrdersLoaded()
   // Set selectedOrderId to the first order's ID by default
   if (orders.value?.length > 0) {
     selectedOrderId.value = orders.value[0].id
@@ -38,8 +39,7 @@ onMounted(async () => {
 
 async function updateCodes() {
   try {
-    await feacnStore.update()
-    await feacnStore.getOrders()
+    await feacnStore.update()  // This already reloads orders automatically
     if (selectedOrderId.value) {
       await feacnStore.getPrefixes(selectedOrderId.value)
     }

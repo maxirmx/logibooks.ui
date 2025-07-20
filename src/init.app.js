@@ -62,6 +62,7 @@ import App from '@/App.vue'
 import router from '@/router'
 
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -119,6 +120,14 @@ export function initializeApp() {
     .use(router)
     .use(vuetify)
     .use(VuetifyUseDialog)
+
+  // Initialize global data after Pinia is set up
+  const feacnCodesStore = useFeacnCodesStore()
+  
+  // Load feacnOrders globally at app startup
+  feacnCodesStore.ensureOrdersLoaded().catch(error => {
+    console.warn('Failed to load feacn orders at startup:', error)
+  })
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

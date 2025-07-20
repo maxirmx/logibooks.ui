@@ -14,7 +14,10 @@ const authStore = useAuthStore()
 const { orders, prefixes, loading, error } = storeToRefs(feacnStore)
 const { alert } = storeToRefs(alertStore)
 const {
+  feacnorders_per_page,
+  feacnorders_search,
   feacnorders_sort_by,
+  feacnorders_page,
   feacnprefixes_per_page,
   feacnprefixes_search,
   feacnprefixes_sort_by,
@@ -77,14 +80,14 @@ const prefixItems = computed(() =>
 )
 
 const orderHeaders = [
-  { title: 'Нормативный документ', key: 'title', align: 'start', width: '70%' },
-  { title: 'Ссылка', key: 'url', align: 'start', width: '30%' }
+  { title: 'Нормативный документ', key: 'title', align: 'start' },
+  { title: 'Ссылка', key: 'url', align: 'start' }
 ]
 
 const prefixHeaders = [
-  { title: 'Префикс', key: 'code', align: 'start', width: '10%' },
-  { title: 'Описание', key: 'description', align: 'start', width: '50%' },
-  { title: 'Исключения', key: 'exceptions', align: 'start', width: '40%' }
+  { title: 'Префикс', key: 'code', align: 'start', width: '120px' },
+  { title: 'Описание', key: 'description', align: 'start' },
+  { title: 'Исключения', key: 'exceptions', align: 'start' }
 ]
 </script>
 
@@ -103,37 +106,39 @@ const prefixHeaders = [
     <v-card>
       <v-data-table
         v-if="orders?.length"
+        v-model:items-per-page="feacnorders_per_page"
+        items-per-page-text="Документов на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="feacnorders_page"
         :headers="orderHeaders"
         :items="orders"
         :search="authStore.feacnorders_search"
         v-model:sort-by="feacnorders_sort_by"
         :custom-filter="filterOrders"
         density="compact"
-        class="elevation-1 interlaced-table single-line-table"
-        hide-default-footer
+        class="elevation-1 interlaced-table"
         :row-props="(data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })"
         @click:row="(event, { item }) => { selectedOrderId = item.id }"
       >
-        <template v-for="h in orderHeaders" :key="`header-${h.key}`" #[`header.${h.key}`]="{ column }">
-          <div class="truncated-cell" :title="column.title">
-            {{ column.title }}
-          </div>
-        </template>
         <template #[`item.url`]="{ item }">
-          <div class="truncated-cell">
-            <a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="product-link" :title="item.url">
-              {{ item.url }}
-            </a>
-            <span v-else>-</span>
-          </div>
-        </template>
-        <template v-for="h in orderHeaders.filter(h => h.key !== 'url')" :key="h.key" #[`item.${h.key}`]="{ item }">
-          <div class="truncated-cell" :title="item[h.key] || ''">
-            {{ item[h.key] }}
-          </div>
+          <a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="product-link">
+            {{ item.url }}
+          </a>
+          <span v-else>-</span>
         </template>
       </v-data-table>
       <div v-if="!orders?.length && !loading" class="text-center m-5">Список документов пуст</div>
+
+      <div v-if="orders?.length || feacnorders_search">
+        <v-text-field
+          v-model="authStore.feacnorders_search"
+          :append-inner-icon="mdiMagnify"
+          label="Поиск по документам"
+          variant="solo"
+          hide-details
+        />
+      </div>
     </v-card>
 
     <v-card class="mt-8">
@@ -150,17 +155,10 @@ const prefixHeaders = [
         v-model:sort-by="feacnprefixes_sort_by"
         :custom-filter="filterPrefixes"
         density="compact"
-        class="elevation-1 interlaced-table single-line-table"
+        class="elevation-1 interlaced-table"
       >
-        <template v-for="h in prefixHeaders" :key="`pheader-${h.key}`" #[`header.${h.key}`]="{ column }">
-          <div class="truncated-cell" :title="column.title">
-            {{ column.title }}
-          </div>
-        </template>
         <template v-for="h in prefixHeaders" :key="h.key" #[`item.${h.key}`]="{ item }">
-          <div class="truncated-cell" :title="item[h.key] || ''">
-            {{ item[h.key] || '-' }}
-          </div>
+          {{ item[h.key] || '-' }}
         </template>
       </v-data-table>
       <div v-if="!prefixItems?.length && !loading" class="text-center m-5">Список кодов пуст</div>
@@ -190,14 +188,10 @@ const prefixHeaders = [
 </template>
 
 <style scoped>
-.truncated-cell {
-  cursor: help;
-}
-
 /* Visual emphasis for the selected order row */
 :deep(.selected-order-row) {
   background-color: rgba(25, 118, 210, 0.08) !important;
-  border-left: 14px solid #1976d2 !important;
+  border-left: 4px solid #1976d2 !important;
 }
 
 :deep(.selected-order-row:hover) {

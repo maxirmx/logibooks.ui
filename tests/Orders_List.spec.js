@@ -333,7 +333,7 @@ describe('Orders_List', () => {
     
     const tooltip = vm.getCheckStatusTooltip(itemWithBoth)
     expect(tooltip).toContain('Статус 150')
-    expect(tooltip).toContain('Ограничения по коду ТН ВЭД:')
+    expect(tooltip).toContain('Возможные ограничения по коду ТН ВЭД:')
     expect(tooltip).toContain('Стоп-слова и фразы:')
     
     // Test item with issues but no stopwords or feacn orders
@@ -346,7 +346,7 @@ describe('Orders_List', () => {
     const tooltipEmpty = vm.getCheckStatusTooltip(itemEmpty)
     expect(tooltipEmpty).toBe('Статус 150')
     expect(tooltipEmpty).not.toContain('Стоп-слова и фразы:')
-    expect(tooltipEmpty).not.toContain('Ограничения по коду ТН ВЭД:')
+    expect(tooltipEmpty).not.toContain('Возможные ограничения по коду ТН ВЭД:')
     
     // Test item without issues
     const itemNoIssues = {
@@ -358,6 +358,6 @@ describe('Orders_List', () => {
     const tooltipNoIssues = vm.getCheckStatusTooltip(itemNoIssues)
     expect(tooltipNoIssues).toBe('Статус 50')
     expect(tooltipNoIssues).not.toContain('Стоп-слова и фразы:')
-    expect(tooltipNoIssues).not.toContain('Ограничения по коду ТН ВЭД:')
+    expect(tooltipNoIssues).not.toContain('Возможные ограничения по коду ТН ВЭД:')
   })
 })

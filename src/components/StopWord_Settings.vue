@@ -147,11 +147,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     }
     router.push('/stopwords')
   } catch (error) {
-    if (error.message === '409') {
-      setErrors({ apiError: 'Такое стоп-слово или фраза уже заданы' })
-    } else {
-      setErrors({ apiError: 'Ошибка при сохранении стоп-слова' })
-    }
+    setErrors({ apiError: error.message })
   } finally {
     saving.value = false
   }

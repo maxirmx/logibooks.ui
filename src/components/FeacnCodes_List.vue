@@ -14,10 +14,8 @@ const authStore = useAuthStore()
 const { orders, prefixes, loading, error } = storeToRefs(feacnStore)
 const { alert } = storeToRefs(alertStore)
 const {
-  feacnorders_per_page,
   feacnorders_search,
   feacnorders_sort_by,
-  feacnorders_page,
   feacnprefixes_per_page,
   feacnprefixes_search,
   feacnprefixes_sort_by,
@@ -106,11 +104,6 @@ const prefixHeaders = [
     <v-card>
       <v-data-table
         v-if="orders?.length"
-        v-model:items-per-page="feacnorders_per_page"
-        items-per-page-text="Документов на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
-        v-model:page="feacnorders_page"
         :headers="orderHeaders"
         :items="orders"
         :search="authStore.feacnorders_search"
@@ -118,6 +111,7 @@ const prefixHeaders = [
         :custom-filter="filterOrders"
         density="compact"
         class="elevation-1 interlaced-table"
+        hide-default-footer
         :row-props="(data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })"
         @click:row="(event, { item }) => { selectedOrderId = item.id }"
       >

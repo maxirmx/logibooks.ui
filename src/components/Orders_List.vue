@@ -11,7 +11,7 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
-import { getStopWordsText } from '@/helpers/stopwords.helper.js'
+import { getStopWordsText } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }

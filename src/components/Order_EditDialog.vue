@@ -9,7 +9,7 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
-import { getStopWordsInfo } from '@/helpers/stopwords.helper.js'
+import { getStopWordsInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },

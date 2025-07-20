@@ -116,7 +116,8 @@ describe('Order_EditDialog', () => {
       global: {
         stubs: {
           Form: FormStub,
-          Field: FieldStub
+          Field: FieldStub,
+          'font-awesome-icon': true
         }
       }
     })

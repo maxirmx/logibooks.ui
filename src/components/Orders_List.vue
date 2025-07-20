@@ -91,9 +91,9 @@ const statusOptions = computed(() => [
 const headers = computed(() => {
   return [
     // Actions - Always first for easy access
-    { title: '', key: 'actions1', sortable: false, align: 'center', width: '60px' },
-    { title: '', key: 'actions2', sortable: false, align: 'center', width: '60px' },
-    { title: '', key: 'actions3', sortable: false, align: 'center', width: '60px' },
+    { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
     
     // Order Identification & Status - Key identifiers and current state
     { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },

@@ -140,7 +140,7 @@ describe('orders.check.helper', () => {
     it('returns formatted info text with prefix', () => {
       const item = { feacnOrderIds: [1, 2] }
       const result = getFeacnOrdersInfo(item, mockFeacnOrders)
-      expect(result).toBe("Ограничения по коду ТН ВЭД: 'Restricted chemicals', 'Dangerous goods'")
+      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals', 'Dangerous goods'")
     })
 
     it('returns null when feacn orders text is empty', () => {
@@ -154,13 +154,13 @@ describe('orders.check.helper', () => {
     it('returns combined information when both feacn orders and stopwords are present', () => {
       const item = { feacnOrderIds: [1, 2], stopWordIds: [1, 2] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Ограничения по коду ТН ВЭД: 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'")
+      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'")
     })
 
     it('returns only feacn orders information when only feacn orders are present', () => {
       const item = { feacnOrderIds: [1], stopWordIds: [] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Ограничения по коду ТН ВЭД: 'Restricted chemicals'")
+      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals'")
     })
 
     it('returns only stopwords information when only stopwords are present', () => {
@@ -195,7 +195,7 @@ describe('orders.check.helper', () => {
     it('handles case when stopwords have invalid IDs', () => {
       const item = { feacnOrderIds: [1], stopWordIds: [999] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Ограничения по коду ТН ВЭД: 'Restricted chemicals'")
+      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals'")
     })
 
     it('handles case when feacn orders have invalid IDs', () => {

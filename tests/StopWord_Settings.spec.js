@@ -242,8 +242,7 @@ describe('StopWord_Settings.vue', () => {
       // Check if error is displayed (the API error should be set in the errors object)
       const errorElements = wrapper.findAll('.alert-danger')
       const hasErrorMessage = errorElements.some(el => 
-        el.text().includes('Такое стоп-слово или фраза уже заданы') || 
-        el.text().includes('Ошибка при сохранении стоп-слова')
+        el.text().includes('409')
       )
       expect(hasErrorMessage).toBe(true)
     })

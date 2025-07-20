@@ -68,7 +68,7 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
   const feacnOrdersList = getFeacnOrdersText(item, feacnOrdersCollection)
   
   if (feacnOrdersList) {
-    return `Ограничения по коду ТН ВЭД: ${feacnOrdersList}`
+    return `Возможные ограничения по коду ТН ВЭД: ${feacnOrdersList}`
   }
   
   return null

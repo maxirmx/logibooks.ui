@@ -34,7 +34,6 @@ const mockFeacnOrders = ref([
 ])
 
 // Mock functions
-const getAll = vi.hoisted(() => vi.fn())
 const fetchStatuses = vi.hoisted(() => vi.fn())
 const getStatusTitle = vi.hoisted(() => vi.fn())
 const ensureStatusesLoaded = vi.hoisted(() => vi.fn())

@@ -314,7 +314,7 @@ const headers = [
             <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
               <v-select
                 v-model="bulkStatusState[item.id].selectedStatusId"
-                :items="parcelStatusesStore.orderStatuses"
+                :items="parcelStatusesStore.parcelStatuses"
                 item-title="title"
                 item-value="id"
                 label="Выберите статус"

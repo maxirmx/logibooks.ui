@@ -8,7 +8,7 @@ import { defaultGlobalStubs } from './test-utils.js'
 vi.mock('@/components/ParcelStatuses_List.vue', () => ({
   default: {
     name: 'ParcelStatusesList',
-    template: '<div class="order-statuses-list-stub" data-testid="order-statuses-list">OrderStatuses List Component</div>'
+    template: '<div class="parcel-statuses-list-stub" data-testid="parcel-statuses-list">ParcelStatuses List Component</div>'
   }
 }))
 
@@ -34,20 +34,20 @@ describe('ParcelStatuses_View.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('renders the OrderStatuses component', () => {
-      const orderStatusesList = wrapper.find('[data-testid="order-statuses-list"]')
-      expect(orderStatusesList.exists()).toBe(true)
+    it('renders the ParcelStatuses component', () => {
+      const parcelStatusesList = wrapper.find('[data-testid="parcel-statuses-list"]')
+      expect(parcelStatusesList.exists()).toBe(true)
     })
 
     it('has the correct component structure', () => {
-      expect(wrapper.find('.order-statuses-list-stub').exists()).toBe(true)
+      expect(wrapper.find('.parcel-statuses-list-stub').exists()).toBe(true)
     })
   })
 
   describe('Component Integration', () => {
     it('properly imports and uses ParcelStatuses_List component', () => {
-      const orderStatusesComponent = wrapper.find('[data-testid="order-statuses-list"]')
-      expect(orderStatusesComponent.exists()).toBe(true)
+      const parcelStatusesComponent = wrapper.find('[data-testid="parcel-statuses-list"]')
+      expect(parcelStatusesComponent.exists()).toBe(true)
     })
   })
 
@@ -55,7 +55,7 @@ describe('ParcelStatuses_View.vue', () => {
     it('has a clean template structure', () => {
       // Should only contain the OrderStatuses component
       const html = wrapper.html()
-      expect(html).toContain('order-statuses-list-stub')
+      expect(html).toContain('parcel-statuses-list-stub')
     })
 
     it('does not add unnecessary wrapper elements', () => {

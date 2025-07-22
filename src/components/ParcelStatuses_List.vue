@@ -116,7 +116,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="order-statuses-list">
+  <div class="settings table-2" data-testid="parcel-statuses-list">
     <h1 class="primary-heading">Статусы посылок</h1>
     <hr class="hr" />
 

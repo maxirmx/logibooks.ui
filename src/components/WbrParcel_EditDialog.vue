@@ -156,7 +156,7 @@ async function validateParcel() {
             <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
                    @change="(e) => currentStatusId = parseInt(e.target.value)">
-              <option v-for="s in statusStore.orderStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
+              <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">

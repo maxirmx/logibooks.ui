@@ -352,13 +352,14 @@ describe('registers store', () => {
   describe('upload method', () => {
     it('uploads file via postFile', async () => {
       const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
       fetchWrapper.postFile.mockResolvedValue({ id: 1 })
 
       const store = useRegistersStore()
-      await store.upload(file)
+      await store.upload(file, customerId)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(`${apiUrl}/registers/upload`)
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(`${apiUrl}/registers/upload/${customerId}`)
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
@@ -366,10 +367,11 @@ describe('registers store', () => {
 
     it('sets error on failure', async () => {
       const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
       fetchWrapper.postFile.mockRejectedValue(new Error('fail'))
 
       const store = useRegistersStore()
-      await expect(store.upload(file)).rejects.toThrow('fail')
+      await expect(store.upload(file, customerId)).rejects.toThrow('fail')
       expect(store.error).toBeTruthy()
       expect(store.loading).toBe(false)
     })

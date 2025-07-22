@@ -38,7 +38,7 @@ describe('Parcels_View', () => {
   })
 
   it('renders WbrParcels_List when register has WBR customerId', async () => {
-    mockGet.mockResolvedValue({ customerId: WBR_COMPANY_ID })
+    mockGet.mockResolvedValue({ companyId: WBR_COMPANY_ID })
     
     const wrapper = mount(ParcelsView, {
       props: {
@@ -55,7 +55,7 @@ describe('Parcels_View', () => {
   })
 
   it('renders OzonParcels_List when register has OZON customerId', async () => {
-    mockGet.mockResolvedValue({ customerId: OZON_COMPANY_ID })
+    mockGet.mockResolvedValue({ companyId: OZON_COMPANY_ID })
     
     const wrapper = mount(ParcelsView, {
       props: {
@@ -72,7 +72,7 @@ describe('Parcels_View', () => {
   })
 
   it('renders nothing when customerId is unknown', async () => {
-    mockGet.mockResolvedValue({ customerId: 999 }) // Unknown company ID
+    mockGet.mockResolvedValue({ companyId: 999 }) // Unknown company ID
     
     const wrapper = mount(ParcelsView, {
       props: {
@@ -89,7 +89,7 @@ describe('Parcels_View', () => {
   })
 
   it('passes the register id prop to the selected component', async () => {
-    mockGet.mockResolvedValue({ customerId: WBR_COMPANY_ID })
+    mockGet.mockResolvedValue({ companyId: WBR_COMPANY_ID })
     
     const wrapper = mount(ParcelsView, {
       props: {

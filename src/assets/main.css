@@ -942,8 +942,8 @@ a,
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 5rem;
-  row-gap: 1rem;
+  column-gap: 5rem;   /* Increase horizontal gap */
+  row-gap: 1rem;      /* Keep vertical gap as 1rem */
   margin-bottom: 0rem;
 }
 
@@ -957,6 +957,33 @@ a,
   gap: 0.5rem;
 }
 
+.label {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0;
+  width: 40%;
+  min-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  flex-shrink: 0;
+}
+
+.input {
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  height: 2.25rem;
+  margin-bottom: 0;
+  width: 60%;
+  flex-grow: 1;
+}
+
+.input:focus {
+  outline: none;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -964,7 +991,8 @@ a,
   padding-top: 0.75rem;
 }
 
-.product-link-inline {
+
+.product-link {
   color: rgba(var(--v-theme-primary), 1);
   text-decoration: none;
   padding: 0.25rem 0;
@@ -974,7 +1002,7 @@ a,
   flex-grow: 1;
 }
 
-.product-link-inline:hover {
+.product-link:hover {
   text-decoration: underline;
   cursor: pointer;
 }
@@ -987,6 +1015,7 @@ a,
   flex-grow: 1;
 }
 
+/* Readonly field styling */
 .readonly-field {
   padding: 0.25rem 0.5rem;
   border: 1px solid #e0e0e0;
@@ -1001,14 +1030,25 @@ a,
   align-items: center;
 }
 
+/* Status cell styling similar to Orders_List */
+.status-cell {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 8px;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Highlight status when there are issues */
 .status-cell.has-issues {
   background-color: rgba(244, 67, 54, 0.15);
   color: #d32f2f;
   border: 1px solid rgba(244, 67, 54, 0.3);
 }
 
+/* Stopwords information styling */
 .stopwords-info {
-  grid-column: 2;
+  grid-column: 2; /* Only span the second column to align with checkStatusId field */
   margin-top: 0.5rem;
   padding: 0.5rem;
   background-color: rgba(244, 67, 54, 0.05);
@@ -1040,6 +1080,7 @@ a,
   word-wrap: break-word;
 }
 
+/* Validate button styling */
 .validate-btn {
   background-color: #f8f9fa;
   border: 1px solid #ced4da;

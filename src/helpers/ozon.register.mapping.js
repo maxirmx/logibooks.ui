@@ -40,18 +40,4 @@ export const ozonRegisterColumnTitles = {
 }
 
 export const ozonRegisterColumnTooltips = {
-  PostingNumber: ozonRegisterColumnTitles.PostingNumber,
-  OzonId: ozonRegisterColumnTitles.OzonId,
-  Country: ozonRegisterColumnTitles.Country,
-  WeightKg: ozonRegisterColumnTitles.WeightKg,
-  Quantity: ozonRegisterColumnTitles.Quantity,
-  UnitPrice: ozonRegisterColumnTitles.UnitPrice,
-  Currency: ozonRegisterColumnTitles.Currency,
-  ProductLink: ozonRegisterColumnTitles.ProductLink,
-  PassportNumber: ozonRegisterColumnTitles.PassportNumber,
-  PlacesCount: ozonRegisterColumnTitles.PlacesCount,
-  Article: ozonRegisterColumnTitles.Article,
-  LastName: ozonRegisterColumnTitles.LastName,
-  FirstName: ozonRegisterColumnTitles.FirstName,
-  Patronymic: ozonRegisterColumnTitles.Patronymic
 }

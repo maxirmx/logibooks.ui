@@ -516,22 +516,10 @@ describe('Registers_List.vue', () => {
       expect(removeFn).not.toHaveBeenCalled()
     })
 
-    it('handles delete error with 409 status', async () => {
-      confirmMock.mockResolvedValue(true)
-      const error = new Error('409 Conflict')
-      removeFn.mockRejectedValueOnce(error)
-      const item = { id: 4, fileName: 'file.xlsx' }
-
-      await wrapper.vm.deleteRegister(item)
-
-      expect(removeFn).toHaveBeenCalledWith(item.id)
-      expect(alertErrorFn).toHaveBeenCalledWith('Нельзя удалить реестр, у которого есть связанные записи')
-    })
-
-    it('handles generic delete error', async () => {
+    it('handles delete error', async () => {
       confirmMock.mockResolvedValue(true)
       removeFn.mockRejectedValueOnce(new Error('Network error'))
-      const item = { id: 5, fileName: 'file.xlsx' }
+      const item = { id: 4, fileName: 'file.xlsx' }
 
       await wrapper.vm.deleteRegister(item)
 

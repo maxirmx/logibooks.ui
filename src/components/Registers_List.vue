@@ -219,11 +219,7 @@ async function deleteRegister(item) {
     try {
       await registersStore.remove(item.id)
     } catch (error) {
-      if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить реестр, у которого есть связанные записи')
-      } else {
-        alertStore.error('Ошибка при удалении реестра')
-      }
+      alertStore.error('Ошибка при удалении реестра')
     }
   }
 }

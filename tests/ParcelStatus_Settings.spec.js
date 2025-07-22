@@ -67,7 +67,7 @@ vi.mock('vee-validate', () => ({
     },
     methods: {
       handleSubmit() {
-        const actions = { 
+        const actions = {
           setErrors: this.setErrors.bind(this)
         }
         this.$emit('submit', this.$props.initialValues || {}, actions)
@@ -128,8 +128,8 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Создание статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
       expect(mockOrderStatusesStore.getById).not.toHaveBeenCalled()
     })
@@ -143,8 +143,8 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -185,9 +185,9 @@ describe('ParcelStatus_Settings.vue', () => {
 
       // Before resolving, should show loading
       expect(wrapper.text()).toContain('Loading...')
-      
+
       await resolveAll()
-      
+
       // After resolving, should show actual content
       expect(wrapper.text()).not.toContain('Loading...')
     })
@@ -224,7 +224,7 @@ describe('ParcelStatus_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
+      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
 
     it('handles 409 conflict error during creation', async () => {
@@ -299,7 +299,7 @@ describe('ParcelStatus_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
+      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
 
     it('handles error during update', async () => {
@@ -355,7 +355,7 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(cancelButton.text()).toBe('Отмена')
 
       await cancelButton.trigger('click')
-      expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
+      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
   })
 
@@ -407,8 +407,8 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Создание статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     })
 
@@ -421,8 +421,8 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
   })
@@ -493,7 +493,7 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Создание статуса заказа')
+      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
     })
 
     it('displays correct title for edit mode', async () => {
@@ -505,7 +505,7 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса заказа')
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
     })
 
     it('displays correct button text for create mode', async () => {
@@ -607,9 +607,9 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       expect(wrapper.text()).toContain('Loading...')
-      
+
       await resolveAll()
-      
+
       expect(wrapper.text()).not.toContain('Loading...')
       expect(wrapper.find('h1').exists()).toBe(true)
     })

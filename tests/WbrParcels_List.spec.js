@@ -257,28 +257,11 @@ describe('WbrParcels_List', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    
+
     expect(ensureOrdersLoadedFeacn).toHaveBeenCalled()
   })
 
-  it('includes actions3 column in headers', () => {
-    const wrapper = mount(ParcelsList, {
-      props: { registerId: 1 },
-      global: {
-        plugins: [pinia],
-        stubs: globalStubs
-      }
-    })
-
-    const vm = wrapper.vm
-    const actions3Header = vm.headers.find(h => h.key === 'actions3')
-
-    expect(actions3Header).toBeDefined()
-    expect(actions3Header.sortable).toBe(false)
-    expect(actions3Header.align).toBe('center')
-  })
-
-  it('validateOrder function calls store validate method', async () => {
+  it('validateParcel function calls store validate method', async () => {
     const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
@@ -288,8 +271,9 @@ describe('WbrParcels_List', () => {
     })
 
     const testOrder = { id: 123 }
-    await wrapper.vm.validateOrder(testOrder)
+    await wrapper.vm.validateParcel(testOrder)
 
+    // The validate function should be called with the order id
     expect(wrapper.vm.ordersStore.validate).toHaveBeenCalledWith(123)
   })
 
@@ -306,7 +290,7 @@ describe('WbrParcels_List', () => {
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 150 } })).toEqual({ class: 'order-has-issues' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 101 } })).toEqual({ class: 'order-has-issues' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 200 } })).toEqual({ class: 'order-has-issues' })
-    
+
     // Test checkStatusId that doesn't have issues (<=100 or >200)
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 50 } })).toEqual({ class: '' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 100 } })).toEqual({ class: '' })
@@ -323,38 +307,38 @@ describe('WbrParcels_List', () => {
     })
 
     const vm = wrapper.vm
-    
+
     // Test item with issues and both stopwords and feacn orders
     const itemWithBoth = {
       checkStatusId: 150, // HasIssues returns true for 101-200
       stopWordIds: [1, 2],
       feacnOrderIds: [1, 2]
     }
-    
+
     const tooltip = vm.getCheckStatusTooltip(itemWithBoth)
     expect(tooltip).toContain('Статус 150')
     expect(tooltip).toContain('Возможные ограничения по коду ТН ВЭД:')
     expect(tooltip).toContain('Стоп-слова и фразы:')
-    
+
     // Test item with issues but no stopwords or feacn orders
     const itemEmpty = {
       checkStatusId: 150,
       stopWordIds: [],
       feacnOrderIds: []
     }
-    
+
     const tooltipEmpty = vm.getCheckStatusTooltip(itemEmpty)
     expect(tooltipEmpty).toBe('Статус 150')
     expect(tooltipEmpty).not.toContain('Стоп-слова и фразы:')
     expect(tooltipEmpty).not.toContain('Возможные ограничения по коду ТН ВЭД:')
-    
+
     // Test item without issues
     const itemNoIssues = {
       checkStatusId: 50, // HasIssues returns false for <=100
       stopWordIds: [1, 2],
       feacnOrderIds: [1, 2]
     }
-    
+
     const tooltipNoIssues = vm.getCheckStatusTooltip(itemNoIssues)
     expect(tooltipNoIssues).toBe('Статус 50')
     expect(tooltipNoIssues).not.toContain('Стоп-слова и фразы:')

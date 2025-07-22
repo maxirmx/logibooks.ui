@@ -136,15 +136,15 @@ async function validateParcel() {
     await ordersStore.getById(props.id)
   } catch (error) {
     console.error('Failed to validate parcel:', error)
-    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки.'
-  }  
+    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
+  }
 }
 </script>
 
 <template>
   <div class="settings form-3">
     <h1 class="primary-heading">
-      Посылка {{ item?.shk ? item.shk : '[без номера]' }}
+      Заказ {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
@@ -164,7 +164,7 @@ async function validateParcel() {
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
               {{ orderCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
-            <button class="validate-btn" @click="validateParcel" type="button" title="Проверить посылку">
+            <button class="validate-btn" @click="validateParcel" type="button" title="Проверить заказ">
               <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
             </button>
           </div>
@@ -257,7 +257,7 @@ async function validateParcel() {
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <div v-if="item?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке посылки: {{ item.error }}</div>
+      <div class="text-danger">Ошибка при загрузке информации о посылке: {{ item.error }}</div>
     </div>
   </div>
 </template>

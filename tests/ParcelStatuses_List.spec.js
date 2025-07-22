@@ -117,7 +117,7 @@ describe('ParcelStatuses_List.vue', () => {
     it('displays the correct heading', () => {
       const heading = wrapper.find('.primary-heading')
       expect(heading.exists()).toBe(true)
-      expect(heading.text()).toBe('Статусы заказов')
+      expect(heading.text()).toBe('Статусы посылок')
     })
 
     it('calls getAll on mount', () => {
@@ -136,7 +136,7 @@ describe('ParcelStatuses_List.vue', () => {
       await wrapper.vm.$nextTick()
 
       const emptyMessage = wrapper.find('.text-center')
-      expect(emptyMessage.text()).toBe('Список статусов заказов пуст')
+      expect(emptyMessage.text()).toBe('Список статусов посылок пуст')
     })
 
     it('displays search field when order statuses exist', () => {
@@ -149,7 +149,7 @@ describe('ParcelStatuses_List.vue', () => {
     it('shows create button for admin users', () => {
       const createLink = wrapper.find('.link-crt a')
       expect(createLink.exists()).toBe(true)
-      expect(createLink.text()).toContain('Зарегистрировать статус заказа')
+      expect(createLink.text()).toContain('Зарегистрировать статус посылки')
     })
 
     it('calls openCreateDialog when create button is clicked', async () => {

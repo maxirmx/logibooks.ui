@@ -74,20 +74,20 @@ const bulkStatusState = reactive({})
 // Step 1: Toggle edit mode
 function bulkChangeStatus(registerId) {
   if (!bulkStatusState[registerId]) {
-    bulkStatusState[registerId] = { 
-      editMode: false, 
+    bulkStatusState[registerId] = {
+      editMode: false,
       selectedStatusId: null
     }
   }
-  
+
   // Don't allow interaction while loading
   if (loading.value) {
     return
   }
-  
+
   // Toggle edit mode
   bulkStatusState[registerId].editMode = !bulkStatusState[registerId].editMode
-  
+
   // Clear selection when entering edit mode
   if (bulkStatusState[registerId].editMode) {
     bulkStatusState[registerId].selectedStatusId = null
@@ -108,17 +108,17 @@ async function applyStatusToAllOrders(registerId, statusId) {
     alertStore.error('Не указан реестр или статус для изменения')
     return
   }
-  
+
   // Ensure statusId is a number
   const numericStatusId = Number(statusId)
   if (isNaN(numericStatusId) || numericStatusId <= 0) {
     alertStore.error('Некорректный идентификатор статуса')
     return
   }
-  
+
   try {
     await registersStore.setOrderStatuses(registerId, numericStatusId)
-    
+
     // Success: show message and reset state
     alertStore.success('Статус успешно применен ко всем посылкам в реестре')
     bulkStatusState[registerId].editMode = false
@@ -130,7 +130,7 @@ async function applyStatusToAllOrders(registerId, statusId) {
     // Just provide user-friendly error message from the store error
     const errorMessage = error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов посылок'
     alertStore.error(errorMessage)
-    
+
     // Exit edit mode on error
     bulkStatusState[registerId].editMode = false
     bulkStatusState[registerId].selectedStatusId = null
@@ -179,7 +179,7 @@ watch([registers_page, registers_per_page, registers_sort_by, registers_search],
 function loadRegisters() {
   const sortBy = registers_sort_by.value?.[0]?.key || 'id'
   const sortOrder = registers_sort_by.value?.[0]?.order || 'asc'
-  
+
   registersStore.getAll(
     registers_page.value,
     registers_per_page.value,
@@ -223,7 +223,7 @@ function stopPolling() {
 
 async function validateRegister(item) {
   try {
-    stopPolling(); 
+    stopPolling();
     const res = await registersStore.validate(item.id)
     validationState.handleId = res.id
     validationState.total = 0
@@ -251,7 +251,7 @@ const headers = [
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
-  { title: 'Посылки', key: 'ordersTotal', align: 'end' }
+  { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
 
@@ -269,13 +269,13 @@ const headers = [
         style="display: none"
         accept=".xls,.xlsx,.zip,.rar"
         loading-text="Идёт загрузка реестра..."
-        @update:model-value="fileSelected"      
+        @update:model-value="fileSelected"
       />
       <a @click="console.log('Загружаем реестр Озон')" class="link" tabindex="0">
         <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "Интернет решения"
       </a>
     </div>
-   
+
 
     <v-card>
       <v-data-table-server
@@ -289,7 +289,7 @@ const headers = [
         :headers="headers"
         :items="items"
         :items-length="totalCount"
-        :loading="loading"          
+        :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
       >
@@ -325,11 +325,11 @@ const headers = [
                 :disabled="loading"
                 style="min-width: 150px; max-width: 200px;"
               />
-              
+
               <!-- Save button (checkmark) -->
               <v-tooltip text="Применить статус">
                 <template v-slot:activator="{ props }">
-                  <button 
+                  <button
                     type="button"
                     @click="applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)"
                     :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
@@ -340,11 +340,11 @@ const headers = [
                   </button>
                 </template>
               </v-tooltip>
-              
+
               <!-- Cancel button (X) -->
               <v-tooltip text="Отменить">
                 <template v-slot:activator="{ props }">
-                  <button 
+                  <button
                     type="button"
                     @click="cancelStatusChange(item.id)"
                     :disabled="loading"
@@ -356,14 +356,14 @@ const headers = [
                 </template>
               </v-tooltip>
             </div>
-            
+
             <!-- Default mode with pen-to-square icon -->
             <v-tooltip v-else text="Изменить статус всех посылок в реестре">
               <template v-slot:activator="{ props }">
-                <button 
-                  type="button" 
-                  @click="bulkChangeStatus(item.id)" 
-                  class="anti-btn" 
+                <button
+                  type="button"
+                  @click="bulkChangeStatus(item.id)"
+                  class="anti-btn"
                   :disabled="loading"
                   v-bind="props"
                 >

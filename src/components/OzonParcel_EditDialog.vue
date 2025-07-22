@@ -9,7 +9,7 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
-import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
+import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
@@ -35,54 +35,25 @@ watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
 
-// Field name mapping from camelCase to PascalCase for wbrRegisterColumnTitles lookup
+// Field name mapping from camelCase to PascalCase for ozonRegisterColumnTitles lookup
 const fieldNameMapping = {
   statusId: 'Status',
   checkStatusId: 'CheckStatusId',
-  orderNumber: 'OrderNumber',
-  invoiceDate: 'InvoiceDate',
-  sticker: 'Sticker',
-  shk: 'Shk',
-  stickerCode: 'StickerCode',
-  extId: 'ExtId',
-  tnVed: 'TnVed',
-  siteArticle: 'SiteArticle',
-  heelHeight: 'HeelHeight',
-  size: 'Size',
-  productName: 'ProductName',
-  description: 'Description',
-  gender: 'Gender',
-  brand: 'Brand',
-  fabricType: 'FabricType',
-  composition: 'Composition',
-  lining: 'Lining',
-  insole: 'Insole',
-  sole: 'Sole',
+  postingNumber: 'PostingNumber',
+  placesCount: 'PlacesCount',
+  article: 'Article',
   country: 'Country',
-  factoryAddress: 'FactoryAddress',
-  unit: 'Unit',
+  productName: 'ProductName',
   weightKg: 'WeightKg',
-  quantity: 'Quantity',
   unitPrice: 'UnitPrice',
   currency: 'Currency',
-  barcode: 'Barcode',
-  declaration: 'Declaration',
+  quantity: 'Quantity',
   productLink: 'ProductLink',
-  recipientName: 'RecipientName',
-  recipientInn: 'RecipientInn',
-  passportNumber: 'PassportNumber',
-  pinfl: 'Pinfl',
-  recipientAddress: 'RecipientAddress',
-  contactPhone: 'ContactPhone',
-  boxNumber: 'BoxNumber',
-  supplier: 'Supplier',
-  supplierInn: 'SupplierInn',
-  category: 'Category',
-  subcategory: 'Subcategory',
-  personalData: 'PersonalData',
-  customsClearance: 'CustomsClearance',
-  dutyPayment: 'DutyPayment',
-  otherReason: 'OtherReason'
+  tnVed: 'TnVed',
+  lastName: 'LastName',
+  firstName: 'FirstName',
+  patronymic: 'Patronymic',
+  passportNumber: 'PassportNumber'
 }
 
 // Function to get label for a field
@@ -90,8 +61,8 @@ const getFieldLabel = (fieldName) => {
   const mappingKey = fieldNameMapping[fieldName]
   if (!mappingKey) return fieldName
 
-  const title = wbrRegisterColumnTitles[mappingKey]
-  const tooltip = wbrRegisterColumnTooltips[mappingKey]
+  const title = ozonRegisterColumnTitles[mappingKey]
+  const tooltip = ozonRegisterColumnTooltips[mappingKey]
 
   // If there's tooltip text, combine title with tooltip for a more descriptive label
   if (tooltip) {
@@ -104,7 +75,7 @@ const getFieldLabel = (fieldName) => {
 // Function to get tooltip for a field (if available)
 const getFieldTooltip = (fieldName) => {
   const mappingKey = fieldNameMapping[fieldName]
-  return mappingKey ? wbrRegisterColumnTooltips[mappingKey] : null
+  return mappingKey ? ozonRegisterColumnTooltips[mappingKey] : null
 }
 
 statusStore.ensureStatusesLoaded()
@@ -144,7 +115,7 @@ async function validateParcel() {
 <template>
   <div class="settings form-3">
     <h1 class="primary-heading">
-      Заказ {{ item?.shk ? item.shk : '[без номера]' }}
+      Отправление {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
@@ -186,8 +157,16 @@ async function validateParcel() {
             <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
           </div>
           <div class="form-group">
-            <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
-            <Field name="shk" id="shk" type="text" class="form-control input" />
+            <label for="postingNumber" class="label" :title="getFieldTooltip('postingNumber')">{{ getFieldLabel('postingNumber') }}:</label>
+            <Field name="postingNumber" id="postingNumber" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="placesCount" class="label" :title="getFieldTooltip('placesCount')">{{ getFieldLabel('placesCount') }}:</label>
+            <Field name="placesCount" id="placesCount" type="number" step="1" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="article" class="label" :title="getFieldTooltip('article')">{{ getFieldLabel('article') }}:</label>
+            <Field name="article" id="article" type="text" class="form-control input" />
           </div>
           <div class="form-group">
             <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
@@ -228,8 +207,16 @@ async function validateParcel() {
         <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
           <div class="form-group">
-            <label for="recipientName" class="label" :title="getFieldTooltip('recipientName')">{{ getFieldLabel('recipientName') }}:</label>
-            <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
+            <label for="lastName" class="label" :title="getFieldTooltip('lastName')">{{ getFieldLabel('lastName') }}:</label>
+            <Field name="lastName" id="lastName" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="firstName" class="label" :title="getFieldTooltip('firstName')">{{ getFieldLabel('firstName') }}:</label>
+            <Field name="firstName" id="firstName" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="patronymic" class="label" :title="getFieldTooltip('patronymic')">{{ getFieldLabel('patronymic') }}:</label>
+            <Field name="patronymic" id="patronymic" type="text" class="form-control input" />
           </div>
           <div class="form-group">
             <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber')">{{ getFieldLabel('passportNumber') }}:</label>

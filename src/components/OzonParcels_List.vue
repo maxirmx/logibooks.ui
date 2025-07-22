@@ -11,7 +11,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
+import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
@@ -96,28 +96,23 @@ const headers = computed(() => {
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
 
     // Order Identification & Status - Key identifiers and current state
-    { title: wbrRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    // { title: wbrRegisterColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
-
-    // Product Identification & Details - What the order contains
-    { title: wbrRegisterColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.ProductName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
-
-    // Physical Properties - Tangible characteristics
-    { title: wbrRegisterColumnTitles.Country, sortable: false, key: 'country', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.WeightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.Quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
-
-    // Financial Information - Pricing and currency
-    { title: wbrRegisterColumnTitles.UnitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.Currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
-
-    // Recipient Information - Who receives the order
-    { title: wbrRegisterColumnTitles.RecipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.PostingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.PlacesCount, key: 'placesCount', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.Article, key: 'article', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.Country, key: 'country', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.ProductName, key: 'productName', align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.WeightKg, key: 'weightKg', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.UnitPrice, key: 'unitPrice', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.Currency, key: 'currency', align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.Quantity, key: 'quantity', align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.ProductLink, key: 'productLink', align: 'start', width: '150px' },
+    { title: ozonRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.LastName, key: 'lastName', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.FirstName, key: 'firstName', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.Patronymic, key: 'patronymic', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.PassportNumber, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 
@@ -143,8 +138,8 @@ async function validateParcel(item) {
 function getColumnTooltip(key) {
   // Convert camelCase key to PascalCase to match the mapping keys
   const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-  const tooltip = wbrRegisterColumnTooltips[pascalKey]
-  const title = wbrRegisterColumnTitles[pascalKey]
+  const tooltip = ozonRegisterColumnTooltips[pascalKey]
+  const title = ozonRegisterColumnTitles[pascalKey]
 
   if (tooltip && title) {
     return `${title} (${tooltip})`

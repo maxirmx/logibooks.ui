@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -68,7 +69,8 @@ const confirm = useConfirm()
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
 
-const fileInput = ref(null)
+const wbrFileInput = ref(null)
+const ozonFileInput = ref(null)
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -157,15 +159,31 @@ onUnmounted(() => {
   stopPolling()
 })
 
-function openFileDialog() {
-  fileInput.value?.click()
+function openWbrFileDialog() {
+  wbrFileInput.value?.click()
 }
 
-async function fileSelected(files) {
+function openOzonFileDialog() {
+  ozonFileInput.value?.click()
+}
+
+async function wbrFileSelected(files) {
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
   try {
-    await registersStore.upload(file)
+    await registersStore.upload(file, WBR_COMPANY_ID)
+    alertStore.success('Реестр успешно загружен')
+    loadRegisters()
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+  }
+}
+
+async function ozonFileSelected(files) {
+  const file = Array.isArray(files) ? files[0] : files
+  if (!file) return
+  try {
+    await registersStore.upload(file, OZON_COMPANY_ID)
     alertStore.success('Реестр успешно загружен')
     loadRegisters()
   } catch (err) {
@@ -290,19 +308,26 @@ const headers = [
     <hr class="hr" />
 
     <div class="link-crt d-flex upload-links">
-      <a @click="openFileDialog" class="link" tabindex="0">
+      <a @click="openWbrFileDialog" class="link" tabindex="0">
         <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "РВБ"
       </a>
       <v-file-input
-        ref="fileInput"
+        ref="wbrFileInput"
         style="display: none"
         accept=".xls,.xlsx,.zip,.rar"
         loading-text="Идёт загрузка реестра..."
-        @update:model-value="fileSelected"
+        @update:model-value="wbrFileSelected"
       />
-      <a @click="console.log('Загружаем реестр Озон')" class="link" tabindex="0">
+      <a @click="openOzonFileDialog" class="link" tabindex="0">
         <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "Интернет решения"
       </a>
+      <v-file-input
+        ref="ozonFileInput"
+        style="display: none"
+        accept=".xls,.xlsx,.zip,.rar"
+        loading-text="Идёт загрузка реестра..."
+        @update:model-value="ozonFileSelected"
+      />
     </div>
 
 

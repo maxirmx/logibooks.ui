@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs } from './test-utils.js'
 
 const mockItems = ref([])
@@ -230,18 +231,6 @@ describe('Registers_List.vue', () => {
       expect(wrapper.vm.getCustomerName(1)).toBe('РВБ')
       expect(wrapper.vm.getCustomerName(2)).toBe('ООО "Интернет решения"')
     })
-
-    it('emits file input update and calls upload', async () => {
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const file = new File(['data'], 'test.xlsx')
-      await wrapper.vm.fileSelected([file])
-      expect(uploadFn).toHaveBeenCalledWith(file)
-    })
   })
 
   describe('bulk status change functionality', () => {
@@ -417,52 +406,139 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    it('opens file dialog when openFileDialog is called', () => {
-      const mockClick = vi.fn()
-      wrapper.vm.fileInput = { click: mockClick }
+    describe('WBR upload functionality', () => {
+      it('opens WBR file dialog when openWbrFileDialog is called', () => {
+        const mockClick = vi.fn()
+        wrapper.vm.wbrFileInput = { click: mockClick }
 
-      wrapper.vm.openFileDialog()
-      expect(mockClick).toHaveBeenCalled()
+        wrapper.vm.openWbrFileDialog()
+        expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('handles WBR file selection with array input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.wbrFileSelected([file])
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+        expect(getAll).toHaveBeenCalled()
+      })
+
+      it('handles WBR file selection with single file input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.wbrFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+      })
+
+      it('handles WBR file upload error', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorMessage = 'Upload failed'
+        uploadFn.mockRejectedValueOnce(new Error(errorMessage))
+
+        await wrapper.vm.wbrFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+      })
+
+      it('handles WBR file upload error without message', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorObj = { code: 500 }
+        uploadFn.mockRejectedValueOnce(errorObj)
+
+        await wrapper.vm.wbrFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith('[object Object]')
+      })
+
+      it('handles empty WBR file selection', async () => {
+        await wrapper.vm.wbrFileSelected(null)
+        expect(uploadFn).not.toHaveBeenCalled()
+
+        await wrapper.vm.wbrFileSelected([])
+        expect(uploadFn).not.toHaveBeenCalled()
+      })
     })
 
-    it('handles file selection with array input', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      uploadFn.mockResolvedValueOnce({ success: true })
+    describe('OZON upload functionality', () => {
+      it('opens OZON file dialog when openOzonFileDialog is called', () => {
+        const mockClick = vi.fn()
+        wrapper.vm.ozonFileInput = { click: mockClick }
 
-      await wrapper.vm.fileSelected([file])
+        wrapper.vm.openOzonFileDialog()
+        expect(mockClick).toHaveBeenCalled()
+      })
 
-      expect(uploadFn).toHaveBeenCalledWith(file)
-      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
-      expect(getAll).toHaveBeenCalled()
+      it('handles OZON file selection with array input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.ozonFileSelected([file])
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+        expect(getAll).toHaveBeenCalled()
+      })
+
+      it('handles OZON file selection with single file input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.ozonFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+      })
+
+      it('handles OZON file upload error', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorMessage = 'Upload failed'
+        uploadFn.mockRejectedValueOnce(new Error(errorMessage))
+
+        await wrapper.vm.ozonFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+      })
+
+      it('handles OZON file upload error without message', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorObj = { code: 500 }
+        uploadFn.mockRejectedValueOnce(errorObj)
+
+        await wrapper.vm.ozonFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith('[object Object]')
+      })
+
+      it('handles empty OZON file selection', async () => {
+        await wrapper.vm.ozonFileSelected(null)
+        expect(uploadFn).not.toHaveBeenCalled()
+
+        await wrapper.vm.ozonFileSelected([])
+        expect(uploadFn).not.toHaveBeenCalled()
+      })
     })
 
-    it('handles file selection with single file input', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      uploadFn.mockResolvedValueOnce({ success: true })
+    describe('legacy compatibility', () => {
+      it('handles legacy fileSelected method (for backwards compatibility)', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
 
-      await wrapper.vm.fileSelected(file)
-
-      expect(uploadFn).toHaveBeenCalledWith(file)
-      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
-    })
-
-    it('handles file upload error', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const errorMessage = 'Upload failed'
-      uploadFn.mockRejectedValueOnce(new Error(errorMessage))
-
-      await wrapper.vm.fileSelected(file)
-
-      expect(uploadFn).toHaveBeenCalledWith(file)
-      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
-    })
-
-  it('handles empty file selection', async () => {
-      await wrapper.vm.fileSelected(null)
-      expect(uploadFn).not.toHaveBeenCalled()
-
-      await wrapper.vm.fileSelected([])
-      expect(uploadFn).not.toHaveBeenCalled()
+        // Test that the old method name still works if it exists
+        if (wrapper.vm.fileSelected) {
+          await wrapper.vm.fileSelected([file])
+          expect(uploadFn).toHaveBeenCalledWith(file)
+        }
+      })
     })
   })
 

@@ -131,7 +131,7 @@ const router = createRouter({
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
-      meta: { requiresLogist: true }
+      meta: { requiresLogist: true, hideSidebar: true }
     },
     {
       path: '/registers/:id/parcels',
@@ -140,7 +140,7 @@ const router = createRouter({
       props: route => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresLogist: true }
+      meta: { requiresLogist: true, hideSidebar: true }
     },
     {
       path: '/registers/:registerId/parcels/edit/:id',
@@ -150,7 +150,7 @@ const router = createRouter({
         registerId: Number(route.params.registerId),
         id: Number(route.params.id)
       }),
-      meta: { requiresLogist: true }
+      meta: { requiresLogist: true, hideSidebar: true }
     },
     {
       path: '/user/edit/:id',

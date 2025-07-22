@@ -37,6 +37,7 @@ const {
 } = storeToRefs(authStore)
 
 const statuses = ref([])
+const registerFileName = ref('')
 
 async function fetchRegister() {
   try {
@@ -46,6 +47,7 @@ async function fetchRegister() {
       id: Number(id),
       count: byStatus[id]
     }))
+    registerFileName.value = res.fileName || ''
   } catch {
     // ignore errors
   }
@@ -173,7 +175,9 @@ function getRowProps(data) {
 
 <template>
   <div class="settings table-3">
-    <h1 class="primary-heading"></h1>
+    <h1 class="primary-heading">
+      {{ registerFileName || 'Загрузка...' }}
+    </h1>
     <hr class="hr" />
 
 

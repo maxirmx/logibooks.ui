@@ -330,7 +330,6 @@ const headers = [
       />
     </div>
 
-
     <v-card>
       <v-data-table-server
         v-if="items?.length || loading"

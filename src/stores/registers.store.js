@@ -48,7 +48,7 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      await fetchWrapper.postFile(`${baseUrl}/upload/2`, formData)
+      await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
     } catch (err) {
       error.value = err
       throw err

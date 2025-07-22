@@ -1,6 +1,7 @@
 /* @vitest-environment jsdom */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 
@@ -20,50 +21,85 @@ vi.mock('@/components/OzonParcels_List.vue', () => ({
   }
 }))
 
+// Mock the fetchWrapper
+vi.mock('@/helpers/fetch.wrapper.js', () => ({
+  fetchWrapper: {
+    get: vi.fn()
+  }
+}))
+
 describe('Parcels_View', () => {
-  it('renders WbrParcels_List when companyId is WBR', () => {
+  const mockGet = vi.hoisted(() => vi.fn())
+  
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    const { fetchWrapper } = await import('@/helpers/fetch.wrapper.js')
+    fetchWrapper.get.mockImplementation(mockGet)
+  })
+
+  it('renders WbrParcels_List when register has WBR customerId', async () => {
+    mockGet.mockResolvedValue({ customerId: WBR_COMPANY_ID })
+    
     const wrapper = mount(ParcelsView, {
       props: {
-        id: 1,
-        companyId: WBR_COMPANY_ID
+        id: 1
       }
     })
+
+    // Wait for async data to load
+    await nextTick()
+    await nextTick()
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })
 
-  it('renders OzonParcels_List when companyId is OZON', () => {
+  it('renders OzonParcels_List when register has OZON customerId', async () => {
+    mockGet.mockResolvedValue({ customerId: OZON_COMPANY_ID })
+    
     const wrapper = mount(ParcelsView, {
       props: {
-        id: 2,
-        companyId: OZON_COMPANY_ID
+        id: 2
       }
     })
+
+    // Wait for async data to load
+    await nextTick()
+    await nextTick()
 
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
   })
 
-  it('renders nothing when companyId is unknown', () => {
+  it('renders nothing when customerId is unknown', async () => {
+    mockGet.mockResolvedValue({ customerId: 999 }) // Unknown company ID
+    
     const wrapper = mount(ParcelsView, {
       props: {
-        id: 3,
-        companyId: 999 // Unknown company ID
+        id: 3
       }
     })
+
+    // Wait for async data to load
+    await nextTick()
+    await nextTick()
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })
 
-  it('passes the register id prop to the selected component', () => {
+  it('passes the register id prop to the selected component', async () => {
+    mockGet.mockResolvedValue({ customerId: WBR_COMPANY_ID })
+    
     const wrapper = mount(ParcelsView, {
       props: {
-        id: 123,
-        companyId: WBR_COMPANY_ID
+        id: 123
       }
     })
+
+    // Wait for async data to load
+    await nextTick()
+    await nextTick()
 
     // Check that the WBR list component is rendered and receives the register-id prop
     const wbrList = wrapper.find('[data-test="wbr-list"]')

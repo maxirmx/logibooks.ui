@@ -19,6 +19,8 @@ const alertErrorFn = vi.fn()
 const validateFn = vi.fn()
 const getValidationProgressFn = vi.fn()
 const cancelValidationFn = vi.fn()
+const removeFn = vi.fn()
+const confirmMock = vi.fn()
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -60,6 +62,7 @@ vi.mock('@/stores/registers.store.js', () => ({
     validate: validateFn,
     getValidationProgress: getValidationProgressFn,
     cancelValidation: cancelValidationFn,
+    remove: removeFn,
     items: mockItems,
     loading: ref(false),
     error: ref(null),
@@ -107,6 +110,10 @@ vi.mock('@/helpers/items.per.page.js', () => ({
 
 vi.mock('@/router', () => ({
   default: { push: vi.fn() }
+}))
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
 }))
 
 describe('Registers_List.vue', () => {
@@ -450,12 +457,86 @@ describe('Registers_List.vue', () => {
       expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
     })
 
-    it('handles empty file selection', async () => {
+  it('handles empty file selection', async () => {
       await wrapper.vm.fileSelected(null)
       expect(uploadFn).not.toHaveBeenCalled()
 
       await wrapper.vm.fileSelected([])
       expect(uploadFn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('delete functionality', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+    })
+
+    it('shows confirmation dialog when delete is clicked', async () => {
+      confirmMock.mockResolvedValue(true)
+      const item = { id: 1, fileName: 'reg.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Подтверждение',
+        confirmationText: 'Удалить',
+        cancellationText: 'Не удалять',
+        dialogProps: {
+          width: '30%',
+          minWidth: '250px'
+        },
+        confirmationButtonProps: {
+          color: 'orange-darken-3'
+        },
+        content: 'Удалить реестр "' + item.fileName + '" ?'
+      })
+    })
+
+    it('calls remove when deletion is confirmed', async () => {
+      confirmMock.mockResolvedValue(true)
+      const item = { id: 2, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).toHaveBeenCalledWith(item.id)
+    })
+
+    it('does not call remove when deletion is cancelled', async () => {
+      confirmMock.mockResolvedValue(false)
+      const item = { id: 3, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).not.toHaveBeenCalled()
+    })
+
+    it('handles delete error with 409 status', async () => {
+      confirmMock.mockResolvedValue(true)
+      const error = new Error('409 Conflict')
+      removeFn.mockRejectedValueOnce(error)
+      const item = { id: 4, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).toHaveBeenCalledWith(item.id)
+      expect(alertErrorFn).toHaveBeenCalledWith('Нельзя удалить реестр, у которого есть связанные записи')
+    })
+
+    it('handles generic delete error', async () => {
+      confirmMock.mockResolvedValue(true)
+      removeFn.mockRejectedValueOnce(new Error('Network error'))
+      const item = { id: 5, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).toHaveBeenCalledWith(item.id)
+      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении реестра')
     })
   })
 

@@ -485,4 +485,26 @@ describe('registers store', () => {
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
     })
   })
+
+  describe('remove', () => {
+    it('removes register successfully', async () => {
+      fetchWrapper.delete.mockResolvedValue({})
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false } })
+
+      const store = useRegistersStore()
+      await store.remove(1)
+
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/1`)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`)
+    })
+
+    it('handles remove error', async () => {
+      const error = new Error('Delete failed')
+      fetchWrapper.delete.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.remove(1)).rejects.toThrow('Delete failed')
+    })
+  })
 })

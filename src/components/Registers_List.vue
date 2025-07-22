@@ -36,6 +36,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
+import { useConfirm } from 'vuetify-use-dialog'
 
 const validationState = reactive({
   show: false,
@@ -62,6 +63,7 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const alertStore = useAlertStore()
+const confirm = useConfirm()
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
@@ -197,6 +199,35 @@ function exportAllXml(item) {
   parcelsStore.generateAll(item.id)
 }
 
+async function deleteRegister(item) {
+  const content = 'Удалить реестр "' + item.fileName + '" ?'
+  const confirmed = await confirm({
+    title: 'Подтверждение',
+    confirmationText: 'Удалить',
+    cancellationText: 'Не удалять',
+    dialogProps: {
+      width: '30%',
+      minWidth: '250px'
+    },
+    confirmationButtonProps: {
+      color: 'orange-darken-3'
+    },
+    content: content
+  })
+
+  if (confirmed) {
+    try {
+      await registersStore.remove(item.id)
+    } catch (error) {
+      if (error.message?.includes('409')) {
+        alertStore.error('Нельзя удалить реестр, у которого есть связанные записи')
+      } else {
+        alertStore.error('Ошибка при удалении реестра')
+      }
+    }
+  }
+}
+
 async function pollValidation() {
   if (!validationState.handleId) return
   try {
@@ -249,6 +280,7 @@ const headers = [
   { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
+  { title: '', key: 'actions5', sortable: false, align: 'center', width: '10px' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
@@ -387,6 +419,15 @@ const headers = [
             <template v-slot:activator="{ props }">
               <button type="button" @click="validateRegister(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions5`]="{ item }">
+          <v-tooltip text="Удалить реестр">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="deleteRegister(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

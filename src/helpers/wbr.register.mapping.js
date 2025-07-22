@@ -1,4 +1,4 @@
-export const registerColumnTitles = {
+export const wbrRegisterColumnTitles = {
   RowNumber: 'п/п',
   OrderNumber: 'Номер заказа',
   InvoiceDate: 'Дата инвойса',
@@ -48,7 +48,7 @@ export const registerColumnTitles = {
   CheckStatusId: 'Проверка'
 }
 
-export const registerColumnTooltips = {
+export const wbrRegisterColumnTooltips = {
   FabricType: 'для обуви "ОБУВЬ", для одежды "трикотаж", "текстиль"',
   Composition: 'для обуви материал верха',
   Unit: 'шт., пара',
@@ -58,13 +58,4 @@ export const registerColumnTooltips = {
   RecipientInn: 'индивидуальный номер налогоплательщика получателя',
   RecipientAddress: 'полный адрес получателя для доставки',
   SupplierInn: 'индивидуальный номер налогоплательщика поставщика'
-}
-
-/**
- * Determine if a check status id indicates issues
- * @param {number} checkStatusId - The check status identifier
- * @returns {boolean} True if the id is > 100 and <= 200
- */
-export function HasIssues(checkStatusId) {
-  return checkStatusId > 100 && checkStatusId <= 200
 }

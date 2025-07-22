@@ -9,8 +9,8 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
-import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
-import { getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
+import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -35,7 +35,7 @@ watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
 
-// Field name mapping from camelCase to PascalCase for registerColumnTitles lookup
+// Field name mapping from camelCase to PascalCase for wbrRegisterColumnTitles lookup
 const fieldNameMapping = {
   statusId: 'Status',
   checkStatusId: 'CheckStatusId',
@@ -90,8 +90,8 @@ const getFieldLabel = (fieldName) => {
   const mappingKey = fieldNameMapping[fieldName]
   if (!mappingKey) return fieldName
 
-  const title = registerColumnTitles[mappingKey]
-  const tooltip = registerColumnTooltips[mappingKey]
+  const title = wbrRegisterColumnTitles[mappingKey]
+  const tooltip = wbrRegisterColumnTooltips[mappingKey]
 
   // If there's tooltip text, combine title with tooltip for a more descriptive label
   if (tooltip) {
@@ -104,7 +104,7 @@ const getFieldLabel = (fieldName) => {
 // Function to get tooltip for a field (if available)
 const getFieldTooltip = (fieldName) => {
   const mappingKey = fieldNameMapping[fieldName]
-  return mappingKey ? registerColumnTooltips[mappingKey] : null
+  return mappingKey ? wbrRegisterColumnTooltips[mappingKey] : null
 }
 
 statusStore.ensureStatusesLoaded()
@@ -377,7 +377,7 @@ async function validateOrder() {
   align-items: center;
 }
 
-/* Status cell styling similar to Orders_List */
+/* Status cell styling similar to WbrOrders_List */
 .status-cell {
   font-weight: 500;
   border-radius: 4px;

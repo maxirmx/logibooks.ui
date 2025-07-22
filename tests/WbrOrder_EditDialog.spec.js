@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
-import OrderEditDialog from '@/components/Order_EditDialog.vue'
+import OrderEditDialog from '@/components/WbrOrder_EditDialog.vue'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -123,7 +123,7 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
 }))
 
-describe('Order_EditDialog', () => {
+describe('WbrOrder_EditDialog', () => {
   let wrapper
 
   beforeEach(async () => {

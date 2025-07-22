@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -19,14 +19,14 @@ const mockStatuses = [
   { id: 3, title: 'Доставлен' }
 ]
 
-describe('order check status store', () => {
+describe('parcel check status store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
   it('initializes with default values', () => {
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
     expect(store.statuses).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -35,7 +35,7 @@ describe('order check status store', () => {
 
   it('fetches statuses successfully', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
 
     await store.fetchStatuses()
 
@@ -50,20 +50,20 @@ describe('order check status store', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Network error')
     fetchWrapper.get.mockRejectedValue(error)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
 
     await store.fetchStatuses()
 
     expect(store.statuses).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBe(error)
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch order check statuses:', error)
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch parcel check statuses:', error)
     consoleSpy.mockRestore()
   })
 
   it('gets status by id', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
     await store.fetchStatuses()
 
     const status = store.getStatusById(2)
@@ -75,7 +75,7 @@ describe('order check status store', () => {
 
   it('gets status title', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
     await store.fetchStatuses()
 
     expect(store.getStatusTitle(1)).toBe('Загружен')
@@ -85,13 +85,13 @@ describe('order check status store', () => {
 
   it('gets status name', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
     await store.fetchStatuses()
   })
 
   it('ensures statuses are loaded only once', async () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
 
     // Call ensureStatusesLoaded multiple times
     store.ensureStatusesLoaded()
@@ -107,7 +107,7 @@ describe('order check status store', () => {
 
   it('handles empty response', async () => {
     fetchWrapper.get.mockResolvedValue([])
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
 
     await store.fetchStatuses()
 
@@ -117,7 +117,7 @@ describe('order check status store', () => {
 
   it('handles null response', async () => {
     fetchWrapper.get.mockResolvedValue(null)
-    const store = useOrderCheckStatusStore()
+    const store = useParcelCheckStatusStore()
 
     await store.fetchStatuses()
 

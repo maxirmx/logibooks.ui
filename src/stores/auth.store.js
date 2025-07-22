@@ -53,15 +53,15 @@ export const useAuthStore = defineStore('auth', () => {
   const registers_search = ref('')
   const registers_sort_by = ref([{ key: 'id', order: 'asc' }])
   const registers_page = ref(1)
-  const orders_per_page = ref(100)
-  const orders_sort_by = ref([{ key: 'id', order: 'asc' }])
-  const orders_page = ref(1)
-  const orders_status = ref(null)
-  const orders_tnved = ref('')
-  const orderstatuses_per_page = ref(10)
-  const orderstatuses_search = ref('')
-  const orderstatuses_sort_by = ref(['id'])
-  const orderstatuses_page = ref(1)
+  const parcels_per_page = ref(100)
+  const parcels_sort_by = ref([{ key: 'id', order: 'asc' }])
+  const parcels_page = ref(1)
+  const parcels_status = ref(null)
+  const parcels_tnved = ref('')
+  const parcelstatuses_per_page = ref(10)
+  const parcelstatuses_search = ref('')
+  const parcelstatuses_sort_by = ref(['id'])
+  const parcelstatuses_page = ref(1)
   const countries_per_page = ref(10)
   const countries_search = ref('')
   const countries_sort_by = ref([])
@@ -171,15 +171,15 @@ export const useAuthStore = defineStore('auth', () => {
     registers_search,
     registers_sort_by,
     registers_page,
-    orders_per_page,
-    orders_sort_by,
-    orders_page,
-    orders_status,
-    orders_tnved,
-    orderstatuses_per_page,
-    orderstatuses_search,
-    orderstatuses_sort_by,
-    orderstatuses_page,
+    parcels_per_page,
+    parcels_sort_by,
+    parcels_page,
+    parcels_status,
+    parcels_tnved,
+    parcelstatuses_per_page,
+    parcelstatuses_search,
+    parcelstatuses_sort_by,
+    parcelstatuses_page,
     countries_per_page,
     countries_search,
     countries_sort_by,

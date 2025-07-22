@@ -1,8 +1,8 @@
 <script setup>
 import { watch, ref, computed, onMounted } from 'vue'
-import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -18,22 +18,22 @@ const props = defineProps({
   registerId: { type: Number, required: true }
 })
 
-const ordersStore = useOrdersStore()
-const orderStatusStore = useOrderStatusesStore()
-const orderCheckStatusStore = useOrderCheckStatusStore()
+const parcelsStore = useParcelsStore()
+const parcelStatusStore = useParcelStatusesStore()
+const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const authStore = useAuthStore()
 
-const { items, loading, error, totalCount } = storeToRefs(ordersStore)
+const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
 const {
-  orders_per_page,
-  orders_sort_by,
-  orders_page,
-  orders_status,
-  orders_tnved
+  parcels_per_page,
+  parcels_sort_by,
+  parcels_page,
+  parcels_status,
+  parcels_tnved
 } = storeToRefs(authStore)
 
 const statuses = ref([])
@@ -52,27 +52,27 @@ async function fetchRegister() {
 }
 
 function loadOrders() {
-  ordersStore.getAll(
+  parcelsStore.getAll(
     props.registerId,
-    orders_status.value ? Number(orders_status.value) : null,
-    orders_tnved.value || null,
-    orders_page.value,
-    orders_per_page.value,
-    orders_sort_by.value?.[0]?.key || 'id',
-    orders_sort_by.value?.[0]?.order || 'asc'
+    parcels_status.value ? Number(parcels_status.value) : null,
+    parcels_tnved.value || null,
+    parcels_page.value,
+    parcels_per_page.value,
+    parcels_sort_by.value?.[0]?.key || 'id',
+    parcels_sort_by.value?.[0]?.order || 'asc'
   )
 }
 
 watch(
-  [orders_page, orders_per_page, orders_sort_by, orders_status, orders_tnved],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
   loadOrders,
   { immediate: true }
 )
 
 onMounted(async () => {
   // Ensure order statuses are loaded
-  orderStatusStore.ensureStatusesLoaded()
-  orderCheckStatusStore.ensureStatusesLoaded()
+  parcelStatusStore.ensureStatusesLoaded()
+  parcelCheckStatusStore.ensureStatusesLoaded()
   // Load all stop words once to reduce network traffic
   await stopWordsStore.getAll()
   // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
@@ -84,7 +84,7 @@ const statusOptions = computed(() => [
   { value: null, title: 'Все' },
   ...statuses.value.map((s) => ({
     value: s.id,
-    title: `${orderStatusStore.getStatusTitle(s.id)} (${s.count})`
+    title: `${parcelStatusStore.getStatusTitle(s.id)} (${s.count})`
   }))
 ])
 
@@ -94,48 +94,48 @@ const headers = computed(() => {
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
-    
+
     // Order Identification & Status - Key identifiers and current state
     { title: wbrRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     // { title: wbrRegisterColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
-    
+
     // Product Identification & Details - What the order contains
     { title: wbrRegisterColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.ProductName, sortable: false, key: 'productName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
-    
+
     // Physical Properties - Tangible characteristics
     { title: wbrRegisterColumnTitles.Country, sortable: false, key: 'country', align: 'start', width: '100px' },
     { title: wbrRegisterColumnTitles.WeightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
     { title: wbrRegisterColumnTitles.Quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
-    
+
     // Financial Information - Pricing and currency
     { title: wbrRegisterColumnTitles.UnitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
     { title: wbrRegisterColumnTitles.Currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
-    
+
     // Recipient Information - Who receives the order
     { title: wbrRegisterColumnTitles.RecipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 
-function editOrder(item) {
-  router.push(`/registers/${props.registerId}/orders/edit/${item.id}`)
+function editParcel(item) {
+  router.push(`/registers/${props.registerId}/parcels/edit/${item.id}`)
 }
 
-function exportOrderXml(item) {
-  ordersStore.generate(item.id)
+function exportParcelXml(item) {
+  parcelsStore.generate(item.id)
 }
 
-async function validateOrder(item) {
+async function validateParcel(item) {
   try {
-    await ordersStore.validate(item.id)
+    await parcelsStore.validate(item.id)
     loadOrders()
   } catch (error) {
-    console.error('Failed to validate order:', error)
-    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке заказа.'
+    console.error('Failed to validate parcel:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
   }
 }
 
@@ -154,7 +154,7 @@ function getColumnTooltip(key) {
 
 // Function to get tooltip for checkStatusId with combined status info
 function getCheckStatusTooltip(item) {
-  const baseTitle = orderCheckStatusStore.getStatusTitle(item.checkStatusId)
+  const baseTitle = parcelCheckStatusStore.getStatusTitle(item.checkStatusId)
 
   if (HasIssues(item.checkStatusId)) {
     const checkInfo = getCheckStatusInfo(item, feacnOrders.value, stopWords.value)
@@ -162,7 +162,7 @@ function getCheckStatusTooltip(item) {
       return `${baseTitle}\n${checkInfo}`
     }
   }
-  
+
   return baseTitle
 }
 
@@ -173,21 +173,21 @@ function getRowProps(data) {
 
 <template>
   <div class="settings table-3">
-    <h1 class="primary-heading">Заказы</h1>
+    <h1 class="primary-heading"></h1>
     <hr class="hr" />
 
 
     <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
       <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <v-select
-          v-model="orders_status"
+          v-model="parcels_status"
           :items="statusOptions"
           label="Статус"
           density="compact"
           style="min-width: 250px"
         />
         <v-text-field
-          v-model="orders_tnved"
+          v-model="parcels_tnved"
           label="ТН ВЭД"
           density="compact"
           style="min-width: 200px;"
@@ -199,12 +199,12 @@ function getRowProps(data) {
       <div style="overflow-x: auto;">
         <v-data-table-server
           v-if="items?.length || loading"
-          v-model:items-per-page="orders_per_page"
-          items-per-page-text="Заказов на странице"
+          v-model:items-per-page="parcels_per_page"
+          items-per-page-text="Посылок на странице"
           :items-per-page-options="itemsPerPageOptions"
           page-text="{0}-{1} из {2}"
-          v-model:page="orders_page"
-          v-model:sort-by="orders_sort_by"
+          v-model:page="parcels_page"
+          v-model:sort-by="parcels_sort_by"
           :headers="headers"
           :items="items"
           :row-props="getRowProps"
@@ -240,9 +240,9 @@ function getRowProps(data) {
         <template #[`item.statusId`]="{ item }">
           <div
             class="truncated-cell status-cell"
-            :title="orderStatusStore.getStatusTitle(item.statusId)"
+            :title="parcelStatusStore.getStatusTitle(item.statusId)"
           >
-            {{ orderStatusStore.getStatusTitle(item.statusId) }}
+            {{ parcelStatusStore.getStatusTitle(item.statusId) }}
           </div>
         </template>
 
@@ -252,7 +252,7 @@ function getRowProps(data) {
             class="truncated-cell status-cell"
             :title="getCheckStatusTooltip(item)"
           >
-            {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}
+            {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>
         </template>
 
@@ -273,27 +273,27 @@ function getRowProps(data) {
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать заказ">
+          <v-tooltip text="Редактировать посылку">
             <template v-slot:activator="{ props }">
-              <button @click="editOrder(item)" class="anti-btn" v-bind="props">
+              <button @click="editParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
         </template>
         <template #[`item.actions2`]="{ item }">
-          <v-tooltip text="Выгрузить накладную для заказа">
+          <v-tooltip text="Выгрузить накладную для посылки">
             <template v-slot:activator="{ props }">
-              <button @click="exportOrderXml(item)" class="anti-btn" v-bind="props">
+              <button @click="exportParcelXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
         </template>
         <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Проверить заказ">
+          <v-tooltip text="Проверить посылку">
             <template v-slot:activator="{ props }">
-              <button @click="validateOrder(item)" class="anti-btn" v-bind="props">
+              <button @click="validateParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
               </button>
             </template>
@@ -305,9 +305,9 @@ function getRowProps(data) {
     <!-- Custom pagination controls outside the scrollable area -->
     <div v-if="items?.length || loading" class="v-data-table-footer">
       <div class="v-data-table-footer__items-per-page">
-        <span>Заказов на странице:</span>
+        <span>Посылок на странице:</span>
         <v-select
-          v-model="orders_per_page"
+          v-model="parcels_per_page"
           :items="itemsPerPageOptions"
           density="compact"
           variant="plain"
@@ -317,7 +317,7 @@ function getRowProps(data) {
       </div>
 
       <div class="v-data-table-footer__info">
-        <div>{{ Math.min((orders_page - 1) * orders_per_page + 1, totalCount) }}-{{ Math.min(orders_page * orders_per_page, totalCount) }} из {{ totalCount }}</div>
+        <div>{{ Math.min((parcels_page - 1) * parcels_per_page + 1, totalCount) }}-{{ Math.min(parcels_page * parcels_per_page, totalCount) }} из {{ totalCount }}</div>
       </div>
 
       <div class="v-data-table-footer__pagination">
@@ -325,32 +325,32 @@ function getRowProps(data) {
           variant="text"
           icon="$first"
           size="small"
-          :disabled="orders_page <= 1"
-          @click="orders_page = 1"
+          :disabled="parcels_page <= 1"
+          @click="parcels_page = 1"
         />
 
         <v-btn
           variant="text"
           icon="$prev"
           size="small"
-          :disabled="orders_page <= 1"
-          @click="orders_page = Math.max(1, orders_page - 1)"
+          :disabled="parcels_page <= 1"
+          @click="parcels_page = Math.max(1, parcels_page - 1)"
         />
 
         <v-btn
           variant="text"
           icon="$next"
           size="small"
-          :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
-          @click="orders_page = Math.min(Math.ceil(totalCount / orders_per_page), orders_page + 1)"
+          :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
+          @click="parcels_page = Math.min(Math.ceil(totalCount / parcels_per_page), parcels_page + 1)"
         />
 
         <v-btn
           variant="text"
           icon="$last"
           size="small"
-          :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
-          @click="orders_page = Math.ceil(totalCount / orders_per_page)"
+          :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
+          @click="parcels_page = Math.ceil(totalCount / parcels_per_page)"
         />
       </div>
     </div>

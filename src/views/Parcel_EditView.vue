@@ -1,5 +1,5 @@
 <script setup>
-import OrderEditDialog from '@/components/WbrOrder_EditDialog.vue'
+import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -9,6 +9,6 @@ const props = defineProps({
 
 <template>
   <Suspense>
-    <OrderEditDialog :register-id="props.registerId" :id="props.id" />
+    <ParcelEditDialog :register-id="props.registerId" :id="props.id" />
   </Suspense>
 </template>

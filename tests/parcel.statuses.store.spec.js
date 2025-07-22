@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 
 // Mock functions at top level to avoid hoisting issues
 const mockGet = vi.hoisted(() => vi.fn())
@@ -22,22 +22,22 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:3000/api'
 }))
 
-describe('order.statuses.store.js', () => {
+describe('parcel.statuses.store.js', () => {
   let store
   let pinia
 
-  const mockOrderStatuses = [
+  const mockParcelStatuses = [
     { id: 1, title: 'Черновик' },
     { id: 2, title: 'Подтвержден' },
     { id: 3, title: 'Выполнен' }
   ]
 
-  const mockOrderStatus = { id: 1, title: 'Черновик' }
+  const mockParcelStatus = { id: 1, title: 'Черновик' }
 
   beforeEach(() => {
     pinia = createPinia()
     setActivePinia(pinia)
-    store = useOrderStatusesStore()
+    store = useParcelStatusesStore()
 
     // Reset all mocks
     vi.clearAllMocks()
@@ -49,8 +49,8 @@ describe('order.statuses.store.js', () => {
 
   describe('Store Initialization', () => {
     it('initializes with correct default state', () => {
-      expect(store.orderStatuses).toEqual([])
-      expect(store.orderStatus).toEqual({ loading: true })
+      expect(store.parcelStatuses).toEqual([])
+      expect(store.parcelStatus).toEqual({ loading: true })
       expect(store.loading).toBe(false)
     })
 
@@ -65,12 +65,12 @@ describe('order.statuses.store.js', () => {
 
   describe('getAll', () => {
     it('fetches all order statuses successfully', async () => {
-      mockGet.mockResolvedValue(mockOrderStatuses)
+      mockGet.mockResolvedValue(mockParcelStatuses)
 
       await store.getAll()
 
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
-      expect(store.orderStatuses).toEqual(mockOrderStatuses)
+      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
       expect(store.loading).toBe(false)
     })
 
@@ -79,7 +79,7 @@ describe('order.statuses.store.js', () => {
 
       await store.getAll()
 
-      expect(store.orderStatuses).toEqual([])
+      expect(store.parcelStatuses).toEqual([])
       expect(store.loading).toBe(false)
     })
 
@@ -87,7 +87,7 @@ describe('order.statuses.store.js', () => {
       let loadingDuringFetch = false
       mockGet.mockImplementation(async () => {
         loadingDuringFetch = store.loading
-        return mockOrderStatuses
+        return mockParcelStatuses
       })
 
       await store.getAll()
@@ -107,30 +107,30 @@ describe('order.statuses.store.js', () => {
 
   describe('getById', () => {
     it('fetches order status by id successfully', async () => {
-      mockGet.mockResolvedValue(mockOrderStatus)
+      mockGet.mockResolvedValue(mockParcelStatus)
 
       const result = await store.getById(1)
 
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses/1')
-      expect(store.orderStatus).toEqual(mockOrderStatus)
-      expect(result).toEqual(mockOrderStatus)
+      expect(store.parcelStatus).toEqual(mockParcelStatus)
+      expect(result).toEqual(mockParcelStatus)
     })
 
     it('sets loading state when refresh is true', async () => {
-      mockGet.mockResolvedValue(mockOrderStatus)
+      mockGet.mockResolvedValue(mockParcelStatus)
 
       await store.getById(1, true)
 
-      expect(store.orderStatus).toEqual(mockOrderStatus)
+      expect(store.parcelStatus).toEqual(mockParcelStatus)
     })
 
     it('does not set loading state when refresh is false', async () => {
-      store.orderStatus = { id: 999, title: 'existing' }
-      mockGet.mockResolvedValue(mockOrderStatus)
+      store.parcelStatus = { id: 999, title: 'existing' }
+      mockGet.mockResolvedValue(mockParcelStatus)
 
       await store.getById(1, false)
 
-      expect(store.orderStatus).toEqual(mockOrderStatus)
+      expect(store.parcelStatus).toEqual(mockParcelStatus)
     })
 
     it('handles fetch by id error', async () => {
@@ -146,7 +146,7 @@ describe('order.statuses.store.js', () => {
       const createdOrderStatus = { id: 4, ...newOrderStatus }
 
       mockPost.mockResolvedValue(createdOrderStatus)
-      mockGet.mockResolvedValue([...mockOrderStatuses, createdOrderStatus])
+      mockGet.mockResolvedValue([...mockParcelStatuses, createdOrderStatus])
 
       const result = await store.create(newOrderStatus)
 
@@ -166,10 +166,10 @@ describe('order.statuses.store.js', () => {
   describe('update', () => {
     it('updates order status successfully', async () => {
       const updateData = { title: 'Обновленный заголовок' }
-      const updatedOrderStatus = { ...mockOrderStatus, ...updateData }
+      const updatedOrderStatus = { ...mockParcelStatus, ...updateData }
 
       mockPut.mockResolvedValue(updatedOrderStatus)
-      mockGet.mockResolvedValue(mockOrderStatuses.map(s => s.id === 1 ? updatedOrderStatus : s))
+      mockGet.mockResolvedValue(mockParcelStatuses.map(s => s.id === 1 ? updatedOrderStatus : s))
 
       const result = await store.update(1, updateData)
 
@@ -189,7 +189,7 @@ describe('order.statuses.store.js', () => {
   describe('remove', () => {
     it('removes order status successfully', async () => {
       mockDelete.mockResolvedValue()
-      mockGet.mockResolvedValue(mockOrderStatuses.filter(s => s.id !== 1))
+      mockGet.mockResolvedValue(mockParcelStatuses.filter(s => s.id !== 1))
 
       await store.remove(1)
 
@@ -207,16 +207,16 @@ describe('order.statuses.store.js', () => {
 
   describe('Store State Management', () => {
     it('maintains reactive state', async () => {
-      expect(store.orderStatuses).toEqual([])
+      expect(store.parcelStatuses).toEqual([])
 
-      mockGet.mockResolvedValue(mockOrderStatuses)
+      mockGet.mockResolvedValue(mockParcelStatuses)
       await store.getAll()
 
-      expect(store.orderStatuses).toEqual(mockOrderStatuses)
+      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
     })
 
     it('handles multiple simultaneous operations', async () => {
-      mockGet.mockResolvedValue(mockOrderStatuses)
+      mockGet.mockResolvedValue(mockParcelStatuses)
 
       const promises = [
         store.getAll(),
@@ -227,7 +227,7 @@ describe('order.statuses.store.js', () => {
       await Promise.all(promises)
 
       expect(mockGet).toHaveBeenCalledTimes(3)
-      expect(store.orderStatuses).toEqual(mockOrderStatuses)
+      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
     })
   })
 

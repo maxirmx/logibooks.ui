@@ -2,21 +2,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { Suspense } from 'vue'
-import OrderStatusSettings from '@/components/OrderStatus_Settings.vue'
+import ParcelStatusSettings from '@/components/ParcelStatus_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
 
 // Mock dependencies at the top level
-const mockOrderStatus = {
+const mockParcelStatus = {
   id: 1,
   title: 'Черновик'
 }
 
 // Mock stores using test-utils
-const mockOrderStatusesStore = createMockStore({
-  orderStatus: mockOrderStatus,
-  getById: vi.fn().mockResolvedValue(mockOrderStatus),
-  create: vi.fn().mockResolvedValue(mockOrderStatus),
+const mockParcelStatusesStore = createMockStore({
+  parcelStatus: mockParcelStatus,
+  getById: vi.fn().mockResolvedValue(mockParcelStatus),
+  create: vi.fn().mockResolvedValue(mockParcelStatus),
   update: vi.fn().mockResolvedValue()
 })
 
@@ -25,8 +25,8 @@ const mockAlertStore = createMockStore({
 })
 
 // Mock all external dependencies
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => mockOrderStatusesStore
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => mockParcelStatusesStore
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -41,8 +41,8 @@ vi.mock('@/router', () => ({
 
 vi.mock('pinia', () => ({
   storeToRefs: (store) => {
-    if (store.orderStatus !== undefined) {
-      return { orderStatus: { value: store.orderStatus } }
+    if (store.parcelStatus !== undefined) {
+      return { parcelStatus: { value: store.parcelStatus } }
     }
     return {}
   }
@@ -67,7 +67,7 @@ vi.mock('vee-validate', () => ({
     },
     methods: {
       handleSubmit() {
-        const actions = { 
+        const actions = {
           setErrors: this.setErrors.bind(this)
         }
         this.$emit('submit', this.$props.initialValues || {}, actions)
@@ -92,11 +92,11 @@ vi.mock('vee-validate', () => ({
 
 // Create a wrapper component that provides Suspense boundary
 const AsyncWrapper = {
-  components: { OrderStatusSettings, Suspense },
-  props: ['mode', 'orderStatusId'],
+  components: { ParcelStatusSettings, Suspense },
+  props: ['mode', 'parcelStatusId'],
   template: `
     <Suspense>
-      <OrderStatusSettings :mode="mode" :order-status-id="orderStatusId" />
+      <ParcelStatusSettings :mode="mode" :order-status-id="parcelStatusId" />
       <template #fallback>
         <div>Loading...</div>
       </template>
@@ -111,13 +111,13 @@ beforeEach(async () => {
   mockRouter = router.default
   vi.clearAllMocks()
   // Reset store states
-  mockOrderStatusesStore.loading = false
-  mockOrderStatusesStore.error = null
+  mockParcelStatusesStore.loading = false
+  mockParcelStatusesStore.error = null
   mockAlertStore.loading = false
   mockAlertStore.error = null
 })
 
-describe('OrderStatus_Settings.vue', () => {
+describe('ParcelStatus_Settings.vue', () => {
   describe('Component Rendering', () => {
     it('renders create mode correctly', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -128,23 +128,23 @@ describe('OrderStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Создание статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-      expect(mockOrderStatusesStore.getById).not.toHaveBeenCalled()
+      expect(mockParcelStatusesStore.getById).not.toHaveBeenCalled()
     })
 
     it('renders edit mode correctly', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -185,9 +185,9 @@ describe('OrderStatus_Settings.vue', () => {
 
       // Before resolving, should show loading
       expect(wrapper.text()).toContain('Loading...')
-      
+
       await resolveAll()
-      
+
       // After resolving, should show actual content
       expect(wrapper.text()).not.toContain('Loading...')
     })
@@ -207,7 +207,7 @@ describe('OrderStatus_Settings.vue', () => {
       const form = wrapper.find('form')
       await form.trigger('submit')
 
-      expect(mockOrderStatusesStore.create).toHaveBeenCalled()
+      expect(mockParcelStatusesStore.create).toHaveBeenCalled()
     })
 
     it('shows success message and redirects after successful creation', async () => {
@@ -224,12 +224,12 @@ describe('OrderStatus_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
+      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
 
     it('handles 409 conflict error during creation', async () => {
       const error = new Error('Order status with this name already exists (409)')
-      mockOrderStatusesStore.create.mockRejectedValueOnce(error)
+      mockParcelStatusesStore.create.mockRejectedValueOnce(error)
 
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -249,7 +249,7 @@ describe('OrderStatus_Settings.vue', () => {
 
     it('handles general error during creation', async () => {
       const error = new Error('Network error')
-      mockOrderStatusesStore.create.mockRejectedValueOnce(error)
+      mockParcelStatusesStore.create.mockRejectedValueOnce(error)
 
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -271,7 +271,7 @@ describe('OrderStatus_Settings.vue', () => {
   describe('Form Submission - Edit Mode', () => {
     it('calls update store method on form submission', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -282,12 +282,12 @@ describe('OrderStatus_Settings.vue', () => {
       const form = wrapper.find('form')
       await form.trigger('submit')
 
-      expect(mockOrderStatusesStore.update).toHaveBeenCalledWith(1, { value: mockOrderStatus })
+      expect(mockParcelStatusesStore.update).toHaveBeenCalledWith(1, { value: mockParcelStatus })
     })
 
     it('shows success message and redirects after successful update', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -299,15 +299,15 @@ describe('OrderStatus_Settings.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
+      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
 
     it('handles error during update', async () => {
       const error = new Error('Update failed')
-      mockOrderStatusesStore.update.mockRejectedValueOnce(error)
+      mockParcelStatusesStore.update.mockRejectedValueOnce(error)
 
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -324,7 +324,7 @@ describe('OrderStatus_Settings.vue', () => {
 
     it('fetches order status data on mount in edit mode', async () => {
       mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 123 },
+        props: { mode: 'edit', parcelStatusId: 123 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -332,7 +332,7 @@ describe('OrderStatus_Settings.vue', () => {
 
       await resolveAll()
 
-      expect(mockOrderStatusesStore.getById).toHaveBeenCalledWith(123)
+      expect(mockParcelStatusesStore.getById).toHaveBeenCalledWith(123)
     })
   })
 
@@ -355,7 +355,7 @@ describe('OrderStatus_Settings.vue', () => {
       expect(cancelButton.text()).toBe('Отмена')
 
       await cancelButton.trigger('click')
-      expect(mockRouter.push).toHaveBeenCalledWith('/orderstatuses')
+      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
   })
 
@@ -374,7 +374,7 @@ describe('OrderStatus_Settings.vue', () => {
 
     it('accepts valid edit mode prop', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 123 },
+        props: { mode: 'edit', parcelStatusId: 123 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -384,7 +384,7 @@ describe('OrderStatus_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('handles missing orderStatusId in edit mode', async () => {
+    it('handles missing parcelStatusId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit' },
         global: {
@@ -407,22 +407,22 @@ describe('OrderStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Создание статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     })
 
     it('initializes correctly in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
       })
 
       await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса заказа')
+
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
   })
@@ -430,7 +430,7 @@ describe('OrderStatus_Settings.vue', () => {
   describe('Error Handling', () => {
     it('handles network errors gracefully during creation', async () => {
       const networkError = new Error('Network Error')
-      mockOrderStatusesStore.create.mockRejectedValueOnce(networkError)
+      mockParcelStatusesStore.create.mockRejectedValueOnce(networkError)
 
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -464,7 +464,7 @@ describe('OrderStatus_Settings.vue', () => {
     it('handles empty error messages', async () => {
       const error = new Error()
       error.message = undefined
-      mockOrderStatusesStore.create.mockRejectedValueOnce(error)
+      mockParcelStatusesStore.create.mockRejectedValueOnce(error)
 
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -493,19 +493,19 @@ describe('OrderStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Создание статуса заказа')
+      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
     })
 
     it('displays correct title for edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
       })
 
       await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса заказа')
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
     })
 
     it('displays correct button text for create mode', async () => {
@@ -522,7 +522,7 @@ describe('OrderStatus_Settings.vue', () => {
 
     it('displays correct button text for edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -572,7 +572,7 @@ describe('OrderStatus_Settings.vue', () => {
   describe('Data Binding', () => {
     it('binds form data correctly in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', orderStatusId: 1 },
+        props: { mode: 'edit', parcelStatusId: 1 },
         global: {
           stubs: defaultGlobalStubs
         }
@@ -607,9 +607,9 @@ describe('OrderStatus_Settings.vue', () => {
       })
 
       expect(wrapper.text()).toContain('Loading...')
-      
+
       await resolveAll()
-      
+
       expect(wrapper.text()).not.toContain('Loading...')
       expect(wrapper.find('h1').exists()).toBe(true)
     })

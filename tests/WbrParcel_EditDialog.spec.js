@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
-import OrderEditDialog from '@/components/WbrOrder_EditDialog.vue'
+import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -70,7 +70,7 @@ const mockStatusStore = createMockStore({
     { id: 1, title: 'Status 1' },
     { id: 2, title: 'Status 2' }
   ],
-  orderStatuses: [
+  parcelStatuses: [
     { id: 1, title: 'Status 1' },
     { id: 2, title: 'Status 2' }
   ],
@@ -103,16 +103,16 @@ const mockFeacnCodesStore = createMockStore({
 })
 
 // Mock stores
-vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: vi.fn(() => mockOrdersStore)
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: vi.fn(() => mockOrdersStore)
 }))
 
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: vi.fn(() => mockStatusStore)
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: vi.fn(() => mockStatusStore)
 }))
 
-vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: vi.fn(() => mockCheckStatusStore)
+vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
+  useParcelCheckStatusStore: vi.fn(() => mockCheckStatusStore)
 }))
 
 vi.mock('@/stores/stop.words.store.js', () => ({
@@ -123,7 +123,7 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
 }))
 
-describe('WbrOrder_EditDialog', () => {
+describe('WbrParcel_EditDialog', () => {
   let wrapper
 
   beforeEach(async () => {
@@ -134,14 +134,14 @@ describe('WbrOrder_EditDialog', () => {
     const SuspenseWrapper = {
       template: `
         <Suspense>
-          <OrderEditDialog :registerId="1" :id="1" />
+          <ParcelEditDialog :registerId="1" :id="1" />
           <template #fallback>
             <div>Loading...</div>
           </template>
         </Suspense>
       `,
       components: {
-        OrderEditDialog
+        ParcelEditDialog
       }
     }
 

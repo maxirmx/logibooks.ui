@@ -74,7 +74,7 @@ const router = createRouter({
     { path: '/recover', component: { template: '<div>Recover</div>' } },
     { path: '/register', component: { template: '<div>Register</div>' } },
     { path: '/countries', component: { template: '<div>Countries</div>' } },
-    { path: '/orderstatuses', component: { template: '<div>Order Statuses</div>' } },
+    { path: '/parcelstatuses', component: { template: '<div>Parcel Statuses</div>' } },
     { path: '/stopwords', component: { template: '<div>Stop Words</div>' } },
     { path: '/stopword/create', component: { template: '<div>Create Stop Word</div>' } },
     { path: '/stopword/edit/:id', component: { template: '<div>Edit Stop Word</div>' } },

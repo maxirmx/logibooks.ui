@@ -29,7 +29,7 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 
 const props = defineProps({
   mode: {
@@ -43,23 +43,23 @@ const props = defineProps({
   }
 })
 
-const orderStatusesStore = useOrderStatusesStore()
+const parcelStatusesStore = useParcelStatusesStore()
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
 
-let orderStatus = ref({
+let parcelStatus = ref({
   title: ''
 })
 
 if (!isCreate.value) {
-  ;({ orderStatus } = storeToRefs(orderStatusesStore))
-  await orderStatusesStore.getById(props.orderStatusId)
+  ;({ parcelStatus } = storeToRefs(parcelStatusesStore))
+  await parcelStatusesStore.getById(props.orderStatusId)
 }
 
 // Get page title
 function getTitle() {
-  return isCreate.value ? 'Создание статуса заказа' : 'Редактирование статуса заказа'
+  return isCreate.value ? 'Создание статуса посылки' : 'Редактирование статуса посылки'
 }
 
 // Get button text
@@ -75,26 +75,26 @@ const schema = Yup.object({
 // Form submission
 function onSubmit(values, { setErrors }) {
   if (isCreate.value) {
-    return orderStatusesStore
+    return parcelStatusesStore
       .create(values)
       .then(() => {
-        router.push('/orderstatuses')
+        router.push('/parcelstatuses')
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такой статус заказа уже существует' })
+          setErrors({ apiError: 'Такой статус посылки уже существует' })
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании статуса заказа' })
+          setErrors({ apiError: error.message || 'Ошибка при создании статуса посылки' })
         }
       })
   } else {
-    return orderStatusesStore
+    return parcelStatusesStore
       .update(props.orderStatusId, values)
       .then(() => {
-        router.push('/orderstatuses')
+        router.push('/parcelstatuses')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса заказа' })
+        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса посылки' })
       })
   }
 }
@@ -106,7 +106,7 @@ function onSubmit(values, { setErrors }) {
     <hr class="hr" />
     <Form
       @submit="onSubmit"
-      :initial-values="orderStatus"
+      :initial-values="parcelStatus"
       :validation-schema="schema"
       v-slot="{ errors, isSubmitting }"
     >
@@ -130,7 +130,7 @@ function onSubmit(values, { setErrors }) {
         <button
           class="button secondary"
           type="button"
-          @click="$router.push('/orderstatuses')"
+          @click="$router.push('/parcelstatuses')"
         >
           Отмена
         </button>

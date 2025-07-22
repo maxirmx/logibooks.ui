@@ -24,9 +24,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import OrderStatuses from '@/components/OrderStatuses_List.vue'
+import ParcelStatuses from '@/components/ParcelStatuses_List.vue'
 </script>
 
 <template>
-  <OrderStatuses />
+  <ParcelStatuses />
 </template>

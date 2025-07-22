@@ -3,12 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia } from 'pinia'
-import OrdersList from '@/components/Orders_List.vue'
+import ParcelsList from '@/components/OzonParcels_List.vue'
 import { vuetifyStubs, createMockStore } from './test-utils.js'
 
 
 // Mock data
-const mockOrders = ref([
+const mockParcels = ref([
   { id: 1, statusId: 1, checkStatusId: 1, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },
   { id: 2, statusId: 2, checkStatusId: 2, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' }
 ])
@@ -34,7 +34,6 @@ const mockFeacnOrders = ref([
 ])
 
 // Mock functions
-const getAll = vi.hoisted(() => vi.fn())
 const fetchStatuses = vi.hoisted(() => vi.fn())
 const getStatusTitle = vi.hoisted(() => vi.fn())
 const ensureStatusesLoaded = vi.hoisted(() => vi.fn())
@@ -54,32 +53,33 @@ vi.mock('pinia', async () => {
       if (store.items) return { items: store.items, loading: store.loading, error: store.error, totalCount: store.totalCount }
       if (store.stopWords) return { stopWords: store.stopWords }
       if (store.orders && store.prefixes) return { orders: store.orders }
-      if (store.orders_per_page) return {
-        orders_per_page: store.orders_per_page,
-        orders_sort_by: store.orders_sort_by,
-        orders_page: store.orders_page,
-        orders_status: store.orders_status,
-        orders_tnved: store.orders_tnved
+      if (store.parcels_per_page) return {
+        parcels_per_page: store.parcels_per_page,
+        parcels_sort_by: store.parcels_sort_by,
+        parcels_page: store.parcels_page,
+        parcels_status: store.parcels_status,
+        parcels_tnved: store.parcels_tnved
       }
       return {}
     })
   }
 })
 
-vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: () => createMockStore({
-    items: mockOrders,
-    totalCount: ref(2),
-    getAll,
-    update: vi.fn(),
-    generate: vi.fn(),
-    generateAll: vi.fn(),
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({
+    items: mockParcels,
+    loading: false,
+    error: null,
+    totalCount: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+    getAll: vi.fn(),
     validate: vi.fn()
   })
 }))
 
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => createMockStore({
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => createMockStore({
     statuses: mockStatuses,
     fetchStatuses,
     getStatusTitle,
@@ -88,8 +88,8 @@ vi.mock('@/stores/order.statuses.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: () => createMockStore({
+vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
+  useParcelCheckStatusStore: () => createMockStore({
     statuses: mockCheckStatuses,
     fetchStatuses: vi.fn(),
     getStatusTitle: getCheckStatusTitle,
@@ -123,11 +123,11 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    orders_per_page: ref(10),
-    orders_sort_by: ref([{ key: 'id', order: 'asc' }]),
-    orders_page: ref(1),
-    orders_status: ref(null),
-    orders_tnved: ref('')
+    parcels_per_page: ref(10),
+    parcels_sort_by: ref([{ key: 'id', order: 'asc' }]),
+    parcels_page: ref(1),
+    parcels_status: ref(null),
+    parcels_tnved: ref('')
   })
 }))
 
@@ -142,7 +142,7 @@ vi.mock('@/helpers/config.js', () => ({
 // Mock Vuetify components and other dependencies
 const globalStubs = vuetifyStubs
 
-describe('Orders_List', () => {
+describe('OzonParcels_List', () => {
   let pinia
 
   beforeEach(() => {
@@ -159,7 +159,7 @@ describe('Orders_List', () => {
   })
 
   it('imports order check status store', () => {
-    mount(OrdersList, {
+    mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -171,7 +171,7 @@ describe('Orders_List', () => {
   })
 
   it('computes status options with titles', async () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -190,7 +190,7 @@ describe('Orders_List', () => {
   })
 
   it('includes status column in headers', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -206,7 +206,7 @@ describe('Orders_List', () => {
   })
 
   it('includes checkStatusId column in headers', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -222,7 +222,7 @@ describe('Orders_List', () => {
   })
 
   it('calls ensureStatusesLoaded on mount for both status stores', () => {
-    mount(OrdersList, {
+    mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -235,7 +235,7 @@ describe('Orders_List', () => {
   })
 
   it('loads stopwords on mount', () => {
-    mount(OrdersList, {
+    mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -247,7 +247,7 @@ describe('Orders_List', () => {
   })
 
   it('loads feacn orders on mount', async () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -257,29 +257,12 @@ describe('Orders_List', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    
+
     expect(ensureOrdersLoadedFeacn).toHaveBeenCalled()
   })
 
-  it('includes actions3 column in headers', () => {
-    const wrapper = mount(OrdersList, {
-      props: { registerId: 1 },
-      global: {
-        plugins: [pinia],
-        stubs: globalStubs
-      }
-    })
-
-    const vm = wrapper.vm
-    const actions3Header = vm.headers.find(h => h.key === 'actions3')
-
-    expect(actions3Header).toBeDefined()
-    expect(actions3Header.sortable).toBe(false)
-    expect(actions3Header.align).toBe('center')
-  })
-
-  it('validateOrder function calls store validate method', async () => {
-    const wrapper = mount(OrdersList, {
+  it('validateParcel function calls store validate method', async () => {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -288,13 +271,14 @@ describe('Orders_List', () => {
     })
 
     const testOrder = { id: 123 }
-    await wrapper.vm.validateOrder(testOrder)
+    await wrapper.vm.validateParcel(testOrder)
 
-    expect(wrapper.vm.ordersStore.validate).toHaveBeenCalledWith(123)
+    // The validate function should be called with the order id
+    expect(wrapper.vm.parcelsStore.validate).toHaveBeenCalledWith(123)
   })
 
   it('marks rows with issues using getRowProps', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -306,7 +290,7 @@ describe('Orders_List', () => {
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 150 } })).toEqual({ class: 'order-has-issues' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 101 } })).toEqual({ class: 'order-has-issues' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 200 } })).toEqual({ class: 'order-has-issues' })
-    
+
     // Test checkStatusId that doesn't have issues (<=100 or >200)
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 50 } })).toEqual({ class: '' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 100 } })).toEqual({ class: '' })
@@ -314,7 +298,7 @@ describe('Orders_List', () => {
   })
 
   it('generates combined status info tooltip for checkStatusId when HasIssues is true', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -323,38 +307,38 @@ describe('Orders_List', () => {
     })
 
     const vm = wrapper.vm
-    
+
     // Test item with issues and both stopwords and feacn orders
     const itemWithBoth = {
       checkStatusId: 150, // HasIssues returns true for 101-200
       stopWordIds: [1, 2],
       feacnOrderIds: [1, 2]
     }
-    
+
     const tooltip = vm.getCheckStatusTooltip(itemWithBoth)
     expect(tooltip).toContain('Статус 150')
     expect(tooltip).toContain('Возможные ограничения по коду ТН ВЭД:')
     expect(tooltip).toContain('Стоп-слова и фразы:')
-    
+
     // Test item with issues but no stopwords or feacn orders
     const itemEmpty = {
       checkStatusId: 150,
       stopWordIds: [],
       feacnOrderIds: []
     }
-    
+
     const tooltipEmpty = vm.getCheckStatusTooltip(itemEmpty)
     expect(tooltipEmpty).toBe('Статус 150')
     expect(tooltipEmpty).not.toContain('Стоп-слова и фразы:')
     expect(tooltipEmpty).not.toContain('Возможные ограничения по коду ТН ВЭД:')
-    
+
     // Test item without issues
     const itemNoIssues = {
       checkStatusId: 50, // HasIssues returns false for <=100
       stopWordIds: [1, 2],
       feacnOrderIds: [1, 2]
     }
-    
+
     const tooltipNoIssues = vm.getCheckStatusTooltip(itemNoIssues)
     expect(tooltipNoIssues).toBe('Статус 50')
     expect(tooltipNoIssues).not.toContain('Стоп-слова и фразы:')

@@ -76,21 +76,21 @@ const router = createRouter({
       component: () => import('@/views/Companies_View.vue'),
     },
     {
-      path: '/orderstatuses',
-      name: 'Статусы заказов',
-      component: () => import('@/views/OrderStatuses_View.vue'),
+      path: '/parcelstatuses',
+      name: 'Статусы посылок',
+      component: () => import('@/views/ParcelStatuses_View.vue'),
       meta: { requiresAdmin: true }
     },
     {
-      path: '/orderstatus/create',
-      name: 'Регистрация статуса заказа',
-      component: () => import('@/views/OrderStatus_CreateView.vue'),
+      path: '/parcelstatus/create',
+      name: 'Регистрация статуса посылки',
+      component: () => import('@/views/ParcelStatus_CreateView.vue'),
       meta: { requiresAdmin: true }
     },
     {
-      path: '/orderstatus/edit/:id',
-      name: 'Редактирование статуса заказа',
-      component: () => import('@/views/OrderStatus_EditView.vue'),
+      path: '/parcelstatus/edit/:id',
+      name: 'Редактирование статуса посылки',
+      component: () => import('@/views/ParcelStatus_EditView.vue'),
       props: route => ({
         id: Number(route.params.id)
       }),
@@ -131,26 +131,26 @@ const router = createRouter({
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
-      meta: { requiresLogist: true }
+      meta: { requiresLogist: true, hideSidebar: true }
     },
     {
-      path: '/registers/:id/orders',
-      name: 'Заказы',
-      component: () => import('@/views/Orders_View.vue'),
+      path: '/registers/:id/parcels',
+      name: 'Посылки',
+      component: () => import('@/views/Parcels_View.vue'),
       props: route => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresLogist: true }
+      meta: { requiresLogist: true, hideSidebar: true }
     },
     {
-      path: '/registers/:registerId/orders/edit/:id',
-      name: 'Редактирование заказа',
-      component: () => import('@/views/Order_EditView.vue'),
+      path: '/registers/:registerId/parcels/edit/:id',
+      name: 'Редактирование посылки',
+      component: () => import('@/views/Parcel_EditView.vue'),
       props: route => ({
         registerId: Number(route.params.registerId),
         id: Number(route.params.id)
       }),
-      meta: { requiresLogist: true }
+      meta: { requiresLogist: true, hideSidebar: true }
     },
     {
       path: '/user/edit/:id',

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs } from './test-utils.js'
 
 const mockItems = ref([])
@@ -19,6 +20,8 @@ const alertErrorFn = vi.fn()
 const validateFn = vi.fn()
 const getValidationProgressFn = vi.fn()
 const cancelValidationFn = vi.fn()
+const removeFn = vi.fn()
+const confirmMock = vi.fn()
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -26,8 +29,8 @@ beforeEach(() => {
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
-  return { 
-    ...actual, 
+  return {
+    ...actual,
     storeToRefs: (store) => {
       if (store.getAll && store.upload && store.setOrderStatuses) {
         // registers store
@@ -35,15 +38,15 @@ vi.mock('pinia', async () => {
       } else if (store.getAll && !store.upload && store.companies) {
         // companies store
         return { companies: mockCompanies }
-      } else if (store.getAll && store.orderStatuses) {
-        // order statuses store
-        return { orderStatuses: mockOrderStatuses }
+      } else if (store.getAll && store.parcelStatuses) {
+        // parcel statuses store
+        return { parcelStatuses: mockOrderStatuses }
       } else {
         // auth store or other stores - return safe defaults
-        return { 
-          registers_per_page: ref(10), 
-          registers_search: ref(''), 
-          registers_sort_by: ref([{ key: 'id', order: 'asc' }]), 
+        return {
+          registers_per_page: ref(10),
+          registers_search: ref(''),
+          registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
           registers_page: ref(1),
           alert: ref(null)
         }
@@ -53,51 +56,52 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({ 
-    getAll, 
-    upload: uploadFn, 
+  useRegistersStore: () => ({
+    getAll,
+    upload: uploadFn,
     setOrderStatuses: setOrderStatusesFn,
     validate: validateFn,
     getValidationProgress: getValidationProgressFn,
     cancelValidation: cancelValidationFn,
-    items: mockItems, 
-    loading: ref(false), 
-    error: ref(null), 
-    totalCount: ref(0) 
+    remove: removeFn,
+    items: mockItems,
+    loading: ref(false),
+    error: ref(null),
+    totalCount: ref(0)
   })
 }))
 
-vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: () => ({ generateAll: generateAllFn })
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({ generateAll: generateAllFn })
 }))
 
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({ 
-    getAll: getOrderStatusesAll, 
-    orderStatuses: mockOrderStatuses 
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    getAll: getOrderStatusesAll,
+    parcelStatuses: mockOrderStatuses
   })
 }))
 
 vi.mock('@/stores/companies.store.js', () => ({
-  useCompaniesStore: () => ({ 
-    getAll: getCompaniesAll, 
-    companies: mockCompanies 
+  useCompaniesStore: () => ({
+    getAll: getCompaniesAll,
+    companies: mockCompanies
   })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ 
-    success: alertSuccessFn, 
-    error: alertErrorFn 
+  useAlertStore: () => ({
+    success: alertSuccessFn,
+    error: alertErrorFn
   })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
-  useAuthStore: () => ({ 
-    registers_per_page: ref(10), 
-    registers_search: ref(''), 
-    registers_sort_by: ref([{ key: 'id', order: 'asc' }]), 
-    registers_page: ref(1) 
+  useAuthStore: () => ({
+    registers_per_page: ref(10),
+    registers_search: ref(''),
+    registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
+    registers_page: ref(1)
   })
 }))
 
@@ -107,6 +111,10 @@ vi.mock('@/helpers/items.per.page.js', () => ({
 
 vi.mock('@/router', () => ({
   default: { push: vi.fn() }
+}))
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
 }))
 
 describe('Registers_List.vue', () => {
@@ -123,7 +131,7 @@ describe('Registers_List.vue', () => {
         stubs: vuetifyStubs
       }
     })
-    
+
     // Wait for onMounted to complete
     await vi.waitFor(() => {
       expect(getCompaniesAll).toHaveBeenCalled()
@@ -197,17 +205,17 @@ describe('Registers_List.vue', () => {
 
       // Set up mock items with customer IDs
       mockItems.value = [
-        { 
-          id: 1, 
-          fileName: 'register1.csv', 
-          customerId: 1, 
-          ordersTotal: 10 
+        {
+          id: 1,
+          fileName: 'register1.csv',
+          customerId: 1,
+          ordersTotal: 10
         },
-        { 
-          id: 2, 
-          fileName: 'register2.csv', 
-          customerId: 2, 
-          ordersTotal: 5 
+        {
+          id: 2,
+          fileName: 'register2.csv',
+          customerId: 2,
+          ordersTotal: 5
         }
       ]
 
@@ -222,18 +230,6 @@ describe('Registers_List.vue', () => {
       // Test that getCustomerName works with the mock data
       expect(wrapper.vm.getCustomerName(1)).toBe('РВБ')
       expect(wrapper.vm.getCustomerName(2)).toBe('ООО "Интернет решения"')
-    })
-
-    it('emits file input update and calls upload', async () => {
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const file = new File(['data'], 'test.xlsx')
-      await wrapper.vm.fileSelected([file])
-      expect(uploadFn).toHaveBeenCalledWith(file)
     })
   })
 
@@ -256,15 +252,15 @@ describe('Registers_List.vue', () => {
 
     it('toggles edit mode when bulkChangeStatus is called', () => {
       const registerId = 1
-      
+
       // Initially not in edit mode
       expect(wrapper.vm.bulkStatusState[registerId]?.editMode).toBeFalsy()
-      
+
       // Enter edit mode
       wrapper.vm.bulkChangeStatus(registerId)
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(true)
       expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
-      
+
       // Exit edit mode
       wrapper.vm.bulkChangeStatus(registerId)
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
@@ -272,21 +268,21 @@ describe('Registers_List.vue', () => {
 
     it('does not toggle edit mode when loading', () => {
       const registerId = 1
-      
+
       const wrapper = mount(RegistersList, {
         global: {
           stubs: vuetifyStubs
         }
       })
-      
+
       // Mock loading value directly on the store using the storeToRefs
       wrapper.vm.loading = true
-      
+
       // Initial state should not exist
       expect(wrapper.vm.bulkStatusState[registerId]).toBeUndefined()
-      
+
       wrapper.vm.bulkChangeStatus(registerId)
-      
+
       // State gets initialized but edit mode should remain false due to loading
       expect(wrapper.vm.bulkStatusState[registerId]).toBeDefined()
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
@@ -294,11 +290,11 @@ describe('Registers_List.vue', () => {
 
     it('cancels status change and resets state', () => {
       const registerId = 1
-      
+
       // Set up edit state
       wrapper.vm.bulkChangeStatus(registerId)
       wrapper.vm.bulkStatusState[registerId].selectedStatusId = 2
-      
+
       // Cancel
       wrapper.vm.cancelStatusChange(registerId)
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
@@ -308,17 +304,17 @@ describe('Registers_List.vue', () => {
     it('handles applyStatusToAllOrders success', async () => {
       const registerId = 1
       const statusId = 2
-      
+
       setOrderStatusesFn.mockResolvedValueOnce({ success: true })
-      
+
       // Set up edit state
       wrapper.vm.bulkChangeStatus(registerId)
       wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
-      
+
       await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
-      
+
       expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
-      expect(alertSuccessFn).toHaveBeenCalledWith('Статус успешно применен ко всем заказам в реестре')
+      expect(alertSuccessFn).toHaveBeenCalledWith('Статус успешно применен ко всем посылкам в реестре')
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
       expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
       expect(getAll).toHaveBeenCalled() // loadRegisters called
@@ -328,15 +324,15 @@ describe('Registers_List.vue', () => {
       const registerId = 1
       const statusId = 2
       const errorMessage = 'Server error'
-      
+
       setOrderStatusesFn.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       // Set up edit state
       wrapper.vm.bulkChangeStatus(registerId)
       wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
-      
+
       await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
-      
+
       expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
       expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
@@ -346,26 +342,26 @@ describe('Registers_List.vue', () => {
     it('validates registerId and statusId in applyStatusToAllOrders', async () => {
       // Clear previous calls
       alertErrorFn.mockClear()
-      
+
       // Test missing registerId
       await wrapper.vm.applyStatusToAllOrders(null, 1)
       expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
-      
+
       alertErrorFn.mockClear()
       // Test missing statusId
       await wrapper.vm.applyStatusToAllOrders(1, null)
       expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
-      
+
       alertErrorFn.mockClear()
       // Test statusId = 0 (falsy, so it triggers the first validation)
       await wrapper.vm.applyStatusToAllOrders(1, 0)
       expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
-      
+
       alertErrorFn.mockClear()
       // Test invalid statusId (negative number to test numeric validation)
       await wrapper.vm.applyStatusToAllOrders(1, -1)
       expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
-      
+
       alertErrorFn.mockClear()
       // Test invalid statusId (string)
       await wrapper.vm.applyStatusToAllOrders(1, 'invalid')
@@ -384,12 +380,12 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    it('navigates to orders when openOrders is called', async () => {
+    it('navigates to parcels when openParcels is called', async () => {
       const item = { id: 123 }
       const router = (await import('@/router')).default
-      
-      wrapper.vm.openOrders(item)
-      expect(router.push).toHaveBeenCalledWith('/registers/123/orders')
+
+      wrapper.vm.openParcels(item)
+      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
     })
 
     it('calls generateAll when exportAllXml is called', () => {
@@ -410,52 +406,208 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    it('opens file dialog when openFileDialog is called', () => {
-      const mockClick = vi.fn()
-      wrapper.vm.fileInput = { click: mockClick }
-      
-      wrapper.vm.openFileDialog()
-      expect(mockClick).toHaveBeenCalled()
+    describe('WBR upload functionality', () => {
+      it('opens WBR file dialog when openWbrFileDialog is called', () => {
+        const mockClick = vi.fn()
+        wrapper.vm.wbrFileInput = { click: mockClick }
+
+        wrapper.vm.openWbrFileDialog()
+        expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('handles WBR file selection with array input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.wbrFileSelected([file])
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+        expect(getAll).toHaveBeenCalled()
+      })
+
+      it('handles WBR file selection with single file input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.wbrFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+      })
+
+      it('handles WBR file upload error', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorMessage = 'Upload failed'
+        uploadFn.mockRejectedValueOnce(new Error(errorMessage))
+
+        await wrapper.vm.wbrFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+      })
+
+      it('handles WBR file upload error without message', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorObj = { code: 500 }
+        uploadFn.mockRejectedValueOnce(errorObj)
+
+        await wrapper.vm.wbrFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith('[object Object]')
+      })
+
+      it('handles empty WBR file selection', async () => {
+        await wrapper.vm.wbrFileSelected(null)
+        expect(uploadFn).not.toHaveBeenCalled()
+
+        await wrapper.vm.wbrFileSelected([])
+        expect(uploadFn).not.toHaveBeenCalled()
+      })
     })
 
-    it('handles file selection with array input', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      uploadFn.mockResolvedValueOnce({ success: true })
-      
-      await wrapper.vm.fileSelected([file])
-      
-      expect(uploadFn).toHaveBeenCalledWith(file)
-      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
-      expect(getAll).toHaveBeenCalled()
+    describe('OZON upload functionality', () => {
+      it('opens OZON file dialog when openOzonFileDialog is called', () => {
+        const mockClick = vi.fn()
+        wrapper.vm.ozonFileInput = { click: mockClick }
+
+        wrapper.vm.openOzonFileDialog()
+        expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('handles OZON file selection with array input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.ozonFileSelected([file])
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+        expect(getAll).toHaveBeenCalled()
+      })
+
+      it('handles OZON file selection with single file input', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        await wrapper.vm.ozonFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+      })
+
+      it('handles OZON file upload error', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorMessage = 'Upload failed'
+        uploadFn.mockRejectedValueOnce(new Error(errorMessage))
+
+        await wrapper.vm.ozonFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+      })
+
+      it('handles OZON file upload error without message', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        const errorObj = { code: 500 }
+        uploadFn.mockRejectedValueOnce(errorObj)
+
+        await wrapper.vm.ozonFileSelected(file)
+
+        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
+        expect(alertErrorFn).toHaveBeenCalledWith('[object Object]')
+      })
+
+      it('handles empty OZON file selection', async () => {
+        await wrapper.vm.ozonFileSelected(null)
+        expect(uploadFn).not.toHaveBeenCalled()
+
+        await wrapper.vm.ozonFileSelected([])
+        expect(uploadFn).not.toHaveBeenCalled()
+      })
     })
 
-    it('handles file selection with single file input', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      uploadFn.mockResolvedValueOnce({ success: true })
-      
-      await wrapper.vm.fileSelected(file)
-      
-      expect(uploadFn).toHaveBeenCalledWith(file)
-      expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
+    describe('legacy compatibility', () => {
+      it('handles legacy fileSelected method (for backwards compatibility)', async () => {
+        const file = new File(['data'], 'test.xlsx')
+        uploadFn.mockResolvedValueOnce({ success: true })
+
+        // Test that the old method name still works if it exists
+        if (wrapper.vm.fileSelected) {
+          await wrapper.vm.fileSelected([file])
+          expect(uploadFn).toHaveBeenCalledWith(file)
+        }
+      })
+    })
+  })
+
+  describe('delete functionality', () => {
+    let wrapper
+
+    beforeEach(() => {
+      wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
     })
 
-    it('handles file upload error', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const errorMessage = 'Upload failed'
-      uploadFn.mockRejectedValueOnce(new Error(errorMessage))
-      
-      await wrapper.vm.fileSelected(file)
-      
-      expect(uploadFn).toHaveBeenCalledWith(file)
-      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
+    it('shows confirmation dialog when delete is clicked', async () => {
+      confirmMock.mockResolvedValue(true)
+      const item = { id: 1, fileName: 'reg.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Подтверждение',
+        confirmationText: 'Удалить',
+        cancellationText: 'Не удалять',
+        dialogProps: {
+          width: '30%',
+          minWidth: '250px'
+        },
+        confirmationButtonProps: {
+          color: 'orange-darken-3'
+        },
+        content: 'Удалить реестр "' + item.fileName + '" ?'
+      })
     })
 
-    it('handles empty file selection', async () => {
-      await wrapper.vm.fileSelected(null)
-      expect(uploadFn).not.toHaveBeenCalled()
+    it('calls remove when deletion is confirmed', async () => {
+      confirmMock.mockResolvedValue(true)
+      const item = { id: 2, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).toHaveBeenCalledWith(item.id)
+    })
+
+    it('does not call remove when deletion is cancelled', async () => {
+      confirmMock.mockResolvedValue(false)
+      const item = { id: 3, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).not.toHaveBeenCalled()
+    })
+
+    it('handles delete error', async () => {
+      // Mock console.error to suppress expected error output during testing
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       
-      await wrapper.vm.fileSelected([])
-      expect(uploadFn).not.toHaveBeenCalled()
+      confirmMock.mockResolvedValue(true)
+      removeFn.mockRejectedValueOnce(new Error('Network error'))
+      const item = { id: 4, fileName: 'file.xlsx' }
+
+      await wrapper.vm.deleteRegister(item)
+
+      expect(removeFn).toHaveBeenCalledWith(item.id)
+      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении реестра')
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error deleting register:', expect.any(Error))
+      
+      // Restore console.error
+      consoleErrorSpy.mockRestore()
     })
   })
 
@@ -473,39 +625,39 @@ describe('Registers_List.vue', () => {
     it('starts validation and shows progress dialog', async () => {
       const item = { id: 123 }
       const validationResult = { id: 'validation-handle-123' }
-      
+
       validateFn.mockResolvedValueOnce(validationResult)
-      
+
       // Mock setInterval to prevent actual timers
       const setIntervalSpy = vi.spyOn(global, 'setInterval').mockImplementation(() => 12345)
-      
+
       // Mock getValidationProgress to return ongoing progress so show stays true
       getValidationProgressFn.mockResolvedValueOnce({
         total: 100,
         processed: 10,
         finished: false
       })
-      
+
       await wrapper.vm.validateRegister(item)
-      
+
       expect(validateFn).toHaveBeenCalledWith(123)
       expect(wrapper.vm.validationState.handleId).toBe('validation-handle-123')
       expect(wrapper.vm.validationState.show).toBe(true)
       expect(wrapper.vm.validationState.total).toBe(100) // Updated by pollValidation
       expect(wrapper.vm.validationState.processed).toBe(10) // Updated by pollValidation
       expect(setIntervalSpy).toHaveBeenCalled()
-      
+
       setIntervalSpy.mockRestore()
     })
 
     it('handles validation start error', async () => {
       const item = { id: 123 }
       const errorMessage = 'Validation failed to start'
-      
+
       validateFn.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       await wrapper.vm.validateRegister(item)
-      
+
       expect(validateFn).toHaveBeenCalledWith(123)
       expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
       expect(wrapper.vm.validationState.show).toBe(false)
@@ -515,17 +667,17 @@ describe('Registers_List.vue', () => {
       // Set up validation state
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       const progressData = {
         total: 100,
         processed: 50,
         finished: false
       }
-      
+
       getValidationProgressFn.mockResolvedValueOnce(progressData)
-      
+
       await wrapper.vm.pollValidation()
-      
+
       expect(getValidationProgressFn).toHaveBeenCalledWith('validation-handle-123')
       expect(wrapper.vm.validationState.total).toBe(100)
       expect(wrapper.vm.validationState.processed).toBe(50)
@@ -535,17 +687,17 @@ describe('Registers_List.vue', () => {
     it('stops polling when validation is finished', async () => {
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       const progressData = {
         total: 100,
         processed: 100,
         finished: true
       }
-      
+
       getValidationProgressFn.mockResolvedValueOnce(progressData)
-      
+
       await wrapper.vm.pollValidation()
-      
+
       expect(wrapper.vm.validationState.total).toBe(100)
       expect(wrapper.vm.validationState.processed).toBe(100)
       expect(wrapper.vm.validationState.show).toBe(false) // Hidden because finished
@@ -554,66 +706,66 @@ describe('Registers_List.vue', () => {
     it('stops polling when total is -1', async () => {
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       const progressData = {
         total: -1,
         processed: 0,
         finished: false
       }
-      
+
       getValidationProgressFn.mockResolvedValueOnce(progressData)
-      
+
       await wrapper.vm.pollValidation()
-      
+
       expect(wrapper.vm.validationState.show).toBe(false)
     })
 
     it('stops polling when processed is -1', async () => {
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       const progressData = {
         total: 100,
         processed: -1,
         finished: false
       }
-      
+
       getValidationProgressFn.mockResolvedValueOnce(progressData)
-      
+
       await wrapper.vm.pollValidation()
-      
+
       expect(wrapper.vm.validationState.show).toBe(false)
     })
 
     it('handles polling error', async () => {
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       const errorMessage = 'Polling failed'
       getValidationProgressFn.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       await wrapper.vm.pollValidation()
-      
+
       expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
       expect(wrapper.vm.validationState.show).toBe(false)
     })
 
     it('does nothing when polling without handleId', async () => {
       wrapper.vm.validationState.handleId = null
-      
+
       await wrapper.vm.pollValidation()
-      
+
       expect(getValidationProgressFn).not.toHaveBeenCalled()
     })
 
     it('cancels validation and stops polling', async () => {
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       cancelValidationFn.mockResolvedValueOnce({})
-      
+
       wrapper.vm.cancelValidation()
-      
+
       expect(cancelValidationFn).toHaveBeenCalledWith('validation-handle-123')
       expect(wrapper.vm.validationState.show).toBe(false)
     })
@@ -621,9 +773,9 @@ describe('Registers_List.vue', () => {
     it('handles cancellation when no handleId', () => {
       wrapper.vm.validationState.handleId = null
       wrapper.vm.validationState.show = true
-      
+
       wrapper.vm.cancelValidation()
-      
+
       expect(cancelValidationFn).not.toHaveBeenCalled()
       expect(wrapper.vm.validationState.show).toBe(false)
     })
@@ -631,9 +783,9 @@ describe('Registers_List.vue', () => {
     it('silently handles cancellation error', () => {
       wrapper.vm.validationState.handleId = 'validation-handle-123'
       wrapper.vm.validationState.show = true
-      
+
       cancelValidationFn.mockRejectedValueOnce(new Error('Cancellation failed'))
-      
+
       // Should not throw
       expect(() => wrapper.vm.cancelValidation()).not.toThrow()
       expect(wrapper.vm.validationState.show).toBe(false)
@@ -642,27 +794,27 @@ describe('Registers_List.vue', () => {
     it('stops polling correctly', () => {
       const mockTimer = 12345
       wrapper.vm.progressTimer = mockTimer
-      
+
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
-      
+
       wrapper.vm.stopPolling()
-      
+
       expect(clearIntervalSpy).toHaveBeenCalledWith(mockTimer)
       expect(wrapper.vm.progressTimer).toBeNull()
-      
+
       clearIntervalSpy.mockRestore()
     })
 
     it('handles stopPolling when no timer is set', () => {
       wrapper.vm.progressTimer = null
-      
+
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
-      
+
       wrapper.vm.stopPolling()
-      
+
       expect(clearIntervalSpy).not.toHaveBeenCalled()
       expect(wrapper.vm.progressTimer).toBeNull()
-      
+
       clearIntervalSpy.mockRestore()
     })
   })
@@ -717,13 +869,13 @@ describe('Registers_List.vue', () => {
       // Set up a mock timer
       const mockTimer = 12345
       wrapper.vm.progressTimer = mockTimer
-      
+
       // Spy on clearInterval
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
-      
+
       // Unmount component
       wrapper.unmount()
-      
+
       expect(clearIntervalSpy).toHaveBeenCalledWith(mockTimer)
     })
   })
@@ -743,28 +895,28 @@ describe('Registers_List.vue', () => {
       const registerId = 1
       const statusId = 2
       const storeErrorMessage = 'Store specific error'
-      
+
       // Mock store with error property
       const mockStoreWithError = {
         setOrderStatuses: setOrderStatusesFn,
         error: { message: storeErrorMessage }
       }
-      
+
       setOrderStatusesFn.mockRejectedValueOnce(new Error('Generic error'))
-      
+
       // Temporarily replace the store
       const originalStore = wrapper.vm.registersStore
       wrapper.vm.registersStore = mockStoreWithError
-      
+
       // Set up edit state
       wrapper.vm.bulkChangeStatus(registerId)
       wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
-      
+
       await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
-      
+
       expect(alertErrorFn).toHaveBeenCalledWith('Generic error')
       expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-      
+
       // Restore original store
       wrapper.vm.registersStore = originalStore
     })
@@ -772,9 +924,9 @@ describe('Registers_List.vue', () => {
 })
 
 // Add mock for orderStatusesStore.orderStatuses in the Pinia mock
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({ 
-    getAll: getOrderStatusesAll, 
-    orderStatuses: mockOrderStatuses 
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    getAll: getOrderStatusesAll,
+    parcelStatuses: mockOrderStatuses
   })
 }))

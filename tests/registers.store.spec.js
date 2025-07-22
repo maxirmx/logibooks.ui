@@ -352,13 +352,14 @@ describe('registers store', () => {
   describe('upload method', () => {
     it('uploads file via postFile', async () => {
       const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
       fetchWrapper.postFile.mockResolvedValue({ id: 1 })
 
       const store = useRegistersStore()
-      await store.upload(file)
+      await store.upload(file, customerId)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(`${apiUrl}/registers/upload`)
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(`${apiUrl}/registers/upload/${customerId}`)
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
@@ -366,10 +367,11 @@ describe('registers store', () => {
 
     it('sets error on failure', async () => {
       const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
       fetchWrapper.postFile.mockRejectedValue(new Error('fail'))
 
       const store = useRegistersStore()
-      await expect(store.upload(file)).rejects.toThrow('fail')
+      await expect(store.upload(file, customerId)).rejects.toThrow('fail')
       expect(store.error).toBeTruthy()
       expect(store.loading).toBe(false)
     })
@@ -483,6 +485,28 @@ describe('registers store', () => {
       await store.cancelValidation('abcd')
 
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
+    })
+  })
+
+  describe('remove', () => {
+    it('removes register successfully', async () => {
+      fetchWrapper.delete.mockResolvedValue({})
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false } })
+
+      const store = useRegistersStore()
+      await store.remove(1)
+
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/1`)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`)
+    })
+
+    it('handles remove error', async () => {
+      const error = new Error('Delete failed')
+      fetchWrapper.delete.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.remove(1)).rejects.toThrow('Delete failed')
     })
   })
 })

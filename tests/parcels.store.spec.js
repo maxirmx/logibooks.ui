@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useOrdersStore } from '@/stores/orders.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -16,7 +16,7 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
-describe('orders store', () => {
+describe('parcels store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -27,7 +27,7 @@ describe('orders store', () => {
       items: [],
       pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
     })
-    const store = useOrdersStore()
+    const store = useParcelsStore()
     await store.getAll(1)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/orders?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
@@ -36,7 +36,7 @@ describe('orders store', () => {
 
   it('fetches data with custom parameters', async () => {
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useOrdersStore()
+    const store = useParcelsStore()
     await store.getAll(2, 3, 'AA', 4, 50, 'tnVed', 'desc')
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/orders?registerId=2&page=4&pageSize=50&sortBy=tnVed&sortOrder=desc&statusId=3&tnVed=AA`
@@ -44,7 +44,7 @@ describe('orders store', () => {
   })
 
   it('initializes with default values', () => {
-    const store = useOrdersStore()
+    const store = useParcelsStore()
     expect(store.items).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -55,7 +55,7 @@ describe('orders store', () => {
 
   it('fetches order by id', async () => {
     fetchWrapper.get.mockResolvedValue({ id: 5 })
-    const store = useOrdersStore()
+    const store = useParcelsStore()
     await store.getById(5)
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/5`)
     expect(store.item).toEqual({ id: 5 })
@@ -64,7 +64,7 @@ describe('orders store', () => {
   it('handles getById error', async () => {
     const error = new Error('Failed to fetch order')
     fetchWrapper.get.mockRejectedValue(error)
-    const store = useOrdersStore()
+    const store = useParcelsStore()
     await store.getById(5)
     expect(store.item).toEqual({ error })
   })
@@ -72,7 +72,7 @@ describe('orders store', () => {
   it('handles getAll error', async () => {
     const error = new Error('Failed to fetch orders')
     fetchWrapper.get.mockRejectedValue(error)
-    const store = useOrdersStore()
+    const store = useParcelsStore()
     await store.getAll(1)
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)
@@ -81,12 +81,12 @@ describe('orders store', () => {
   describe('update method', () => {
     it('updates order and calls API with correct parameters', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       const updateData = { statusId: 2, tnVed: 'Updated' }
-      
+
       const result = await store.update(5, updateData)
-      
+
       expect(fetchWrapper.put).toHaveBeenCalledWith(
         `${apiUrl}/orders/5`,
         updateData
@@ -96,14 +96,14 @@ describe('orders store', () => {
 
     it('updates item in store when currently loaded item matches', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       // Set up current item
       store.item = { id: 5, statusId: 1, tnVed: 'Original' }
-      
+
       const updateData = { statusId: 2, tnVed: 'Updated' }
       await store.update(5, updateData)
-      
+
       expect(store.item).toEqual({
         id: 5,
         statusId: 2,
@@ -113,18 +113,18 @@ describe('orders store', () => {
 
     it('updates item in items array when it exists', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       // Set up items array
       store.items = [
         { id: 4, statusId: 1, tnVed: 'Other' },
         { id: 5, statusId: 1, tnVed: 'Original' },
         { id: 6, statusId: 1, tnVed: 'Another' }
       ]
-      
+
       const updateData = { statusId: 2, tnVed: 'Updated' }
       await store.update(5, updateData)
-      
+
       expect(store.items[1]).toEqual({
         id: 5,
         statusId: 2,
@@ -137,14 +137,14 @@ describe('orders store', () => {
 
     it('does not update item when loaded item has different id', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       // Set up current item with different id
       store.item = { id: 7, statusId: 1, tnVed: 'Different' }
-      
+
       const updateData = { statusId: 2, tnVed: 'Updated' }
       await store.update(5, updateData)
-      
+
       // Item should remain unchanged
       expect(store.item).toEqual({ id: 7, statusId: 1, tnVed: 'Different' })
     })
@@ -152,10 +152,10 @@ describe('orders store', () => {
     it('propagates errors when API call fails', async () => {
       const errorMessage = 'Failed to update order'
       fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       const updateData = { statusId: 2 }
-      
+
       await expect(store.update(5, updateData)).rejects.toThrow(errorMessage)
       expect(fetchWrapper.put).toHaveBeenCalledWith(
         `${apiUrl}/orders/5`,
@@ -167,21 +167,21 @@ describe('orders store', () => {
   describe('generate methods', () => {
     it('generate calls with correct id', async () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       await store.generate(123)
-      
-      expect(consoleSpy).toHaveBeenCalledWith('stub generate order XML', 123)
+
+      expect(consoleSpy).toHaveBeenCalledWith('stub generate parcel XML', 123)
       consoleSpy.mockRestore()
     })
 
     it('generateAll calls with correct registerId', async () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       await store.generateAll(456)
-      
-      expect(consoleSpy).toHaveBeenCalledWith('stub generate all orders XML', 456)
+
+      expect(consoleSpy).toHaveBeenCalledWith('stub generate all parcels XML', 456)
       consoleSpy.mockRestore()
     })
   })
@@ -189,10 +189,10 @@ describe('orders store', () => {
   describe('validate method', () => {
     it('calls validate endpoint with correct id', async () => {
       fetchWrapper.post.mockResolvedValue(undefined) // 204 No Content
-      
-      const store = useOrdersStore()
+
+      const store = useParcelsStore()
       const result = await store.validate(789)
-      
+
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
       expect(result).toBe(true)
     })
@@ -200,9 +200,9 @@ describe('orders store', () => {
     it('throws error when validate fails', async () => {
       const error = new Error('Validation failed')
       fetchWrapper.post.mockRejectedValue(error)
-      
-      const store = useOrdersStore()
-      
+
+      const store = useParcelsStore()
+
       await expect(store.validate(789)).rejects.toThrow('Validation failed')
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
     })

@@ -2,15 +2,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import OrderStatusesList from '@/components/OrderStatuses_List.vue'
+import ParcelStatusesList from '@/components/ParcelStatuses_List.vue'
 import { defaultGlobalStubs } from './test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues
-const getAllOrderStatuses = vi.hoisted(() => vi.fn())
-const createOrderStatus = vi.hoisted(() => vi.fn())
-const updateOrderStatus = vi.hoisted(() => vi.fn())
-const removeOrderStatus = vi.hoisted(() => vi.fn())
-const getOrderStatusById = vi.hoisted(() => vi.fn())
+const getAllParcelStatuses = vi.hoisted(() => vi.fn())
+const createParcelStatus = vi.hoisted(() => vi.fn())
+const updateParcelStatus = vi.hoisted(() => vi.fn())
+const removeParcelStatus = vi.hoisted(() => vi.fn())
+const getParcelStatusById = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
 
@@ -27,23 +27,23 @@ vi.mock('vuetify-use-dialog', () => ({
 }))
 
 // Centralized mock data
-const mockOrderStatuses = ref([
+const mockParcelStatuses = ref([
   { id: 1, title: 'Черновик' },
   { id: 2, title: 'Подтвержден' },
   { id: 3, title: 'Выполнен' }
 ])
 
 // Mock stores
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({
-    orderStatuses: mockOrderStatuses,
-    orderStatus: ref({ loading: false }),
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    parcelStatuses: mockParcelStatuses,
+    parcelStatus: ref({ loading: false }),
     loading: ref(false),
-    getAll: getAllOrderStatuses,
-    getById: getOrderStatusById,
-    create: createOrderStatus,
-    update: updateOrderStatus,
-    remove: removeOrderStatus
+    getAll: getAllParcelStatuses,
+    getById: getParcelStatusById,
+    create: createParcelStatus,
+    update: updateParcelStatus,
+    remove: removeParcelStatus
   })
 }))
 
@@ -51,10 +51,10 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     isAdmin: ref(true),
     user: ref({ id: 1, roles: ['administrator'] }),
-    orderstatuses_per_page: ref(10),
-    orderstatuses_search: ref(''),
-    orderstatuses_sort_by: ref(['id']),
-    orderstatuses_page: ref(1)
+    parcelstatuses_per_page: ref(10),
+    parcelstatuses_search: ref(''),
+    parcelstatuses_sort_by: ref(['id']),
+    parcelstatuses_page: ref(1)
   })
 }))
 
@@ -81,7 +81,7 @@ vi.mock('@mdi/js', () => ({
   mdiMagnify: 'mdi-magnify'
 }))
 
-describe('OrderStatuses_List.vue', () => {
+describe('ParcelStatuses_List.vue', () => {
   let wrapper
 
   beforeEach(() => {
@@ -89,13 +89,13 @@ describe('OrderStatuses_List.vue', () => {
     vi.clearAllMocks()
 
     // Reset reactive data
-    mockOrderStatuses.value = [
+    mockParcelStatuses.value = [
       { id: 1, title: 'Черновик' },
       { id: 2, title: 'Подтвержден' },
       { id: 3, title: 'Выполнен' }
     ]
 
-    wrapper = mount(OrderStatusesList, {
+    wrapper = mount(ParcelStatusesList, {
       global: {
         stubs: defaultGlobalStubs
       }
@@ -117,11 +117,11 @@ describe('OrderStatuses_List.vue', () => {
     it('displays the correct heading', () => {
       const heading = wrapper.find('.primary-heading')
       expect(heading.exists()).toBe(true)
-      expect(heading.text()).toBe('Статусы заказов')
+      expect(heading.text()).toBe('Статусы посылок')
     })
 
     it('calls getAll on mount', () => {
-      expect(getAllOrderStatuses).toHaveBeenCalledOnce()
+      expect(getAllParcelStatuses).toHaveBeenCalledOnce()
     })
   })
 
@@ -132,11 +132,11 @@ describe('OrderStatuses_List.vue', () => {
     })
 
     it('shows empty message when no order statuses', async () => {
-      mockOrderStatuses.value = []
+      mockParcelStatuses.value = []
       await wrapper.vm.$nextTick()
 
       const emptyMessage = wrapper.find('.text-center')
-      expect(emptyMessage.text()).toBe('Список статусов заказов пуст')
+      expect(emptyMessage.text()).toBe('Список статусов посылок пуст')
     })
 
     it('displays search field when order statuses exist', () => {
@@ -149,7 +149,7 @@ describe('OrderStatuses_List.vue', () => {
     it('shows create button for admin users', () => {
       const createLink = wrapper.find('.link-crt a')
       expect(createLink.exists()).toBe(true)
-      expect(createLink.text()).toContain('Зарегистрировать статус заказа')
+      expect(createLink.text()).toContain('Зарегистрировать статус посылки')
     })
 
     it('calls openCreateDialog when create button is clicked', async () => {
@@ -163,9 +163,9 @@ describe('OrderStatuses_List.vue', () => {
     it('shows edit and delete buttons in table rows', () => {
       // Since v-data-table is stubbed, test that the methods exist instead
       expect(wrapper.vm.openEditDialog).toBeDefined()
-      expect(wrapper.vm.deleteOrderStatus).toBeDefined()
+      expect(wrapper.vm.deleteParcelStatus).toBeDefined()
       expect(typeof wrapper.vm.openEditDialog).toBe('function')
-      expect(typeof wrapper.vm.deleteOrderStatus).toBe('function')
+      expect(typeof wrapper.vm.deleteParcelStatus).toBe('function')
     })
   })
 
@@ -184,73 +184,73 @@ describe('OrderStatuses_List.vue', () => {
 
     it('calls remove when deletion is confirmed', async () => {
       mockConfirm.mockResolvedValue(true)
-      const testOrderStatus = mockOrderStatuses.value[0]
+      const testParcelStatus = mockParcelStatuses.value[0]
 
-      await wrapper.vm.deleteOrderStatus(testOrderStatus)
+      await wrapper.vm.deleteParcelStatus(testParcelStatus)
 
-      expect(removeOrderStatus).toHaveBeenCalledWith(testOrderStatus.id)
+      expect(removeParcelStatus).toHaveBeenCalledWith(testParcelStatus.id)
     })
 
     it('does not call remove when deletion is cancelled', async () => {
       mockConfirm.mockResolvedValue(false)
-      const testOrderStatus = mockOrderStatuses.value[0]
+      const testParcelStatus = mockParcelStatuses.value[0]
 
-      await wrapper.vm.deleteOrderStatus(testOrderStatus)
+      await wrapper.vm.deleteParcelStatus(testParcelStatus)
 
-      expect(removeOrderStatus).not.toHaveBeenCalled()
+      expect(removeParcelStatus).not.toHaveBeenCalled()
     })
 
     it('handles delete error with 409 status', async () => {
       mockConfirm.mockResolvedValue(true)
       const error = new Error('409 Conflict')
       error.message = '409 Conflict'
-      removeOrderStatus.mockRejectedValue(error)
+      removeParcelStatus.mockRejectedValue(error)
 
-      const testOrderStatus = mockOrderStatuses.value[0]
-      await wrapper.vm.deleteOrderStatus(testOrderStatus)
+      const testParcelStatus = mockParcelStatuses.value[0]
+      await wrapper.vm.deleteParcelStatus(testParcelStatus)
 
       // Check that error handling was triggered
-      expect(removeOrderStatus).toHaveBeenCalledWith(testOrderStatus.id)
+      expect(removeParcelStatus).toHaveBeenCalledWith(testParcelStatus.id)
     })
 
     it('handles generic delete error', async () => {
       mockConfirm.mockResolvedValue(true)
-      removeOrderStatus.mockRejectedValue(new Error('Network error'))
+      removeParcelStatus.mockRejectedValue(new Error('Network error'))
 
-      const testOrderStatus = mockOrderStatuses.value[0]
-      await wrapper.vm.deleteOrderStatus(testOrderStatus)
+      const testParcelStatus = mockParcelStatuses.value[0]
+      await wrapper.vm.deleteParcelStatus(testParcelStatus)
 
-      expect(removeOrderStatus).toHaveBeenCalledWith(testOrderStatus.id)
+      expect(removeParcelStatus).toHaveBeenCalledWith(testParcelStatus.id)
     })
   })
 
   describe('Search and Filter', () => {
     it('filters order statuses by title', () => {
       const mockItem = { raw: { title: 'Черновик' } }
-      const result = wrapper.vm.filterOrderStatuses(null, 'черновик', mockItem)
+      const result = wrapper.vm.filterParcelStatuses(null, 'черновик', mockItem)
       expect(result).toBe(true)
     })
 
     it('filters order statuses by title case insensitive', () => {
       const mockItem = { raw: { title: 'Подтвержден' } }
-      const result = wrapper.vm.filterOrderStatuses(null, 'подтвержден', mockItem)
+      const result = wrapper.vm.filterParcelStatuses(null, 'подтвержден', mockItem)
       expect(result).toBe(true)
     })
 
     it('returns false for non-matching search', () => {
       const mockItem = { raw: { title: 'Черновик' } }
-      const result = wrapper.vm.filterOrderStatuses(null, 'nonexistent', mockItem)
+      const result = wrapper.vm.filterParcelStatuses(null, 'nonexistent', mockItem)
       expect(result).toBe(false)
     })
 
     it('handles null query', () => {
       const mockItem = { raw: { title: 'Черновик' } }
-      const result = wrapper.vm.filterOrderStatuses(null, null, mockItem)
+      const result = wrapper.vm.filterParcelStatuses(null, null, mockItem)
       expect(result).toBe(false)
     })
 
     it('handles null item', () => {
-      const result = wrapper.vm.filterOrderStatuses(null, 'test', null)
+      const result = wrapper.vm.filterParcelStatuses(null, 'test', null)
       expect(result).toBe(false)
     })
   })
@@ -258,7 +258,7 @@ describe('OrderStatuses_List.vue', () => {
   describe('Loading States', () => {
     it('shows loading spinner when loading', async () => {
       // Since components are stubbed, test loading state directly
-      const loading = wrapper.vm.orderStatusesStore.loading
+      const loading = wrapper.vm.parcelStatusesStore.loading
       expect(loading).toBeDefined()
       expect(typeof loading.value).toBe('boolean')
       expect(loading.value).toBe(false)
@@ -280,7 +280,7 @@ describe('OrderStatuses_List.vue', () => {
     it('exposes necessary functions for testing', () => {
       expect(wrapper.vm.openCreateDialog).toBeDefined()
       expect(wrapper.vm.openEditDialog).toBeDefined()
-      expect(wrapper.vm.deleteOrderStatus).toBeDefined()
+      expect(wrapper.vm.deleteParcelStatus).toBeDefined()
     })
   })
 
@@ -299,13 +299,13 @@ describe('OrderStatuses_List.vue', () => {
     })
 
     it('openEditDialog shows info message', async () => {
-      const testOrderStatus = mockOrderStatuses.value[0]
+      const testParcelStatus = mockParcelStatuses.value[0]
       const alertStore = {
         info: vi.fn()
       }
 
       wrapper.vm.alertStore = alertStore
-      await wrapper.vm.openEditDialog(testOrderStatus)
+      await wrapper.vm.openEditDialog(testParcelStatus)
 
       expect(wrapper.vm.openEditDialog).toBeDefined()
     })
@@ -318,7 +318,7 @@ describe('OrderStatuses_List.vue', () => {
 
       // Check that table is configured properly through the component
       expect(wrapper.vm.headers).toBeDefined()
-      expect(wrapper.vm.filterOrderStatuses).toBeDefined()
+      expect(wrapper.vm.filterParcelStatuses).toBeDefined()
     })
 
     it('uses correct search field props', () => {
@@ -329,7 +329,7 @@ describe('OrderStatuses_List.vue', () => {
 
   describe('Store Integration', () => {
     it('properly integrates with order statuses store', () => {
-      expect(wrapper.vm.orderStatuses).toBeDefined()
+      expect(wrapper.vm.parcelStatuses).toBeDefined()
       expect(wrapper.vm.loading).toBeDefined()
     })
 

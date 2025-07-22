@@ -27,23 +27,23 @@
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
-const orderStatusesStore = useOrderStatusesStore()
+const parcelStatusesStore = useParcelStatusesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
 
-const { orderStatuses, loading } = storeToRefs(orderStatusesStore)
+const { parcelStatuses, loading } = storeToRefs(parcelStatusesStore)
 const { alert } = storeToRefs(alertStore)
 
 // Custom filter function for v-data-table
-function filterOrderStatuses(value, query, item) {
+function filterParcelStatuses(value, query, item) {
   if (query === null || item === null) {
     return false
   }
@@ -66,15 +66,15 @@ const headers = [
 ]
 
 function openEditDialog(item) {
-  router.push(`/orderstatus/edit/${item.id}`)
+  router.push(`/parcelstatus/edit/${item.id}`)
 }
 
 function openCreateDialog() {
-  router.push('/orderstatus/create')
+  router.push('/parcelstatus/create')
 }
 
-async function deleteOrderStatus(orderStatus) {
-  const content = 'Удалить статус заказа "' + orderStatus.title + '" ?'
+async function deleteParcelStatus(parcelStatus) {
+  const content = 'Удалить статус посылки "' + parcelStatus.title + '" ?'
   const confirmed = await confirm({
     title: 'Подтверждение',
     confirmationText: 'Удалить',
@@ -91,12 +91,12 @@ async function deleteOrderStatus(orderStatus) {
 
   if (confirmed) {
     try {
-      await orderStatusesStore.remove(orderStatus.id)
+      await parcelStatusesStore.remove(parcelStatus.id)
     } catch (error) {
       if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить статус заказа, у которого есть связанные записи')
+        alertStore.error('Нельзя удалить статус посылки, у которого есть связанные записи')
       } else {
-        alertStore.error('Ошибка при удалении статуса заказа')
+        alertStore.error('Ошибка при удалении статуса посылки')
       }
     }
   }
@@ -104,20 +104,20 @@ async function deleteOrderStatus(orderStatus) {
 
 // Initialize data
 onMounted(async () => {
-  await orderStatusesStore.getAll()
+  await parcelStatusesStore.getAll()
 })
 
 // Expose functions for testing
 defineExpose({
   openCreateDialog,
   openEditDialog,
-  deleteOrderStatus
+  deleteParcelStatus
 })
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="order-statuses-list">
-    <h1 class="primary-heading">Статусы заказов</h1>
+  <div class="settings table-2" data-testid="parcel-statuses-list">
+    <h1 class="primary-heading">Статусы посылок</h1>
     <hr class="hr" />
 
     <div class="link-crt">
@@ -126,7 +126,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-plus"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать статус заказа
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать статус посылки
       </a>
     </div>
 
@@ -138,24 +138,24 @@ defineExpose({
 
     <v-card>
       <v-data-table
-        v-if="orderStatuses?.length"
-        v-model:items-per-page="authStore.orderstatuses_per_page"
+        v-if="parcelStatuses?.length"
+        v-model:items-per-page="authStore.parcelstatuses_per_page"
         items-per-page-text="Статусов на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="authStore.orderstatuses_page"
+        v-model:page="authStore.parcelstatuses_page"
         :headers="headers"
-        :items="orderStatuses"
-        :search="authStore.orderstatuses_search"
-        v-model:sort-by="authStore.orderstatuses_sort_by"
-        :custom-filter="filterOrderStatuses"
+        :items="parcelStatuses"
+        :search="authStore.parcelstatuses_search"
+        v-model:sort-by="authStore.parcelstatuses_sort_by"
+        :custom-filter="filterParcelStatuses"
         :loading="loading"
         item-value="name"
         density="compact"
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать статус заказа">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать статус посылки">
             <template v-slot:activator="{ props }">
               <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -165,9 +165,9 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить статус заказа">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить статус посылки">
             <template v-slot:activator="{ props }">
-              <button @click="deleteOrderStatus(item)" class="anti-btn" v-bind="props">
+              <button @click="deleteParcelStatus(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
               </button>
             </template>
@@ -175,11 +175,11 @@ defineExpose({
         </template>
       </v-data-table>
 
-      <div v-if="!orderStatuses?.length" class="text-center m-5">Список статусов заказов пуст</div>
+      <div v-if="!parcelStatuses?.length" class="text-center m-5">Список статусов посылок пуст</div>
 
-      <div v-if="orderStatuses?.length">
+      <div v-if="parcelStatuses?.length">
         <v-text-field
-          v-model="authStore.orderstatuses_search"
+          v-model="authStore.parcelstatuses_search"
           :append-inner-icon="mdiMagnify"
           label="Поиск по названию статуса"
           variant="solo"

@@ -1,4 +1,5 @@
 <script setup>
+
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,11 +25,46 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import OrderStatusSettings from '@/components/OrderStatus_Settings.vue'
+import { computed, ref, onMounted } from 'vue'
+import OzonParcelsList from '@/components/OzonParcels_List.vue'
+import WbrParcelsList from '@/components/WbrParcels_List.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { apiUrl } from '@/helpers/config.js'
+
+const props = defineProps({
+  id: { type: Number, required: true }
+})
+
+const register = ref(null)
+const loading = ref(true)
+const error = ref(null)
+
+const listComponent = computed(() => {
+  if (!register.value) return null
+  const companyId = register.value.companyId
+  if (companyId === OZON_COMPANY_ID) return OzonParcelsList
+  if (companyId === WBR_COMPANY_ID) return WbrParcelsList
+  return null
+})
+
+onMounted(async () => {
+  try {
+    loading.value = true
+    register.value = await fetchWrapper.get(`${apiUrl}/registers/${props.id}`)
+  } catch (err) {
+    error.value = err
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
-  <Suspense>
-    <OrderStatusSettings :mode="'create'" />
+  <div v-if="loading">Загрузка...</div>
+  <div v-else-if="error">Ошибка загрузки: {{ error.message }}</div>
+  <Suspense v-else>
+    <component v-if="listComponent" :is="listComponent" :register-id="props.id" />
+    <div v-else>Неизвестный тип компании</div>
   </Suspense>
 </template>

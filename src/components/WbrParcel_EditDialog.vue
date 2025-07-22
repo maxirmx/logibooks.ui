@@ -164,7 +164,7 @@ async function validateParcel() {
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
-            <button class="validate-btn" @click="validateParcel" type="button" title="Проверить заказ">
+            <button class="validate-btn" @click="validateParcel" type="button" title="Проверить посылку">
               <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
             </button>
           </div>

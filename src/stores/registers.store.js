@@ -23,13 +23,13 @@ export const useRegistersStore = defineStore('registers', () => {
         sortBy,
         sortOrder
       })
-      
+
       if (search) {
         queryParams.append('search', search)
       }
-      
+
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
-      
+
       // API format with pagination metadata
       items.value = response.items || []
       totalCount.value = response.pagination?.totalCount || 0
@@ -102,5 +102,30 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  return { items, loading, error, totalCount, hasNextPage, hasPreviousPage, getAll, upload, setOrderStatuses, validate, getValidationProgress, cancelValidation }
+  async function remove(id) {
+   try {
+      await fetchWrapper.delete(`${baseUrl}/${id}`)
+      // Refresh the list after deletion
+      await getAll()
+    } catch (error) {
+      console.error('Failed to delete register:', error)
+      throw error
+    }
+  }
+
+  return {
+    items,
+    loading,
+    error,
+    totalCount,
+    hasNextPage,
+    hasPreviousPage,
+    getAll,
+    upload,
+    setOrderStatuses,
+    validate,
+    getValidationProgress,
+    cancelValidation,
+    remove
+  }
 })

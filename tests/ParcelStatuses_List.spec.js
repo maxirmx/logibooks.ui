@@ -51,10 +51,10 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     isAdmin: ref(true),
     user: ref({ id: 1, roles: ['administrator'] }),
-    orderstatuses_per_page: ref(10),
-    orderstatuses_search: ref(''),
-    orderstatuses_sort_by: ref(['id']),
-    orderstatuses_page: ref(1)
+    parcelstatuses_per_page: ref(10),
+    parcelstatuses_search: ref(''),
+    parcelstatuses_sort_by: ref(['id']),
+    parcelstatuses_page: ref(1)
   })
 }))
 

@@ -53,12 +53,12 @@ vi.mock('pinia', async () => {
       if (store.items) return { items: store.items, loading: store.loading, error: store.error, totalCount: store.totalCount }
       if (store.stopWords) return { stopWords: store.stopWords }
       if (store.orders && store.prefixes) return { orders: store.orders }
-      if (store.orders_per_page) return {
-        orders_per_page: store.orders_per_page,
-        orders_sort_by: store.orders_sort_by,
-        orders_page: store.orders_page,
-        orders_status: store.orders_status,
-        orders_tnved: store.orders_tnved
+      if (store.parcels_per_page) return {
+        parcels_per_page: store.parcels_per_page,
+        parcels_sort_by: store.parcels_sort_by,
+        parcels_page: store.parcels_page,
+        parcels_status: store.parcels_status,
+        parcels_tnved: store.parcels_tnved
       }
       return {}
     })
@@ -123,11 +123,11 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    orders_per_page: ref(10),
-    orders_sort_by: ref([{ key: 'id', order: 'asc' }]),
-    orders_page: ref(1),
-    orders_status: ref(null),
-    orders_tnved: ref('')
+    parcels_per_page: ref(10),
+    parcels_sort_by: ref([{ key: 'id', order: 'asc' }]),
+    parcels_page: ref(1),
+    parcels_status: ref(null),
+    parcels_tnved: ref('')
   })
 }))
 

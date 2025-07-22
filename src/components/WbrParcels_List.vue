@@ -29,11 +29,11 @@ const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
 const {
-  orders_per_page,
-  orders_sort_by,
-  orders_page,
-  orders_status,
-  orders_tnved
+  parcels_per_page,
+  parcels_sort_by,
+  parcels_page,
+  parcels_status,
+  parcels_tnved
 } = storeToRefs(authStore)
 
 const statuses = ref([])
@@ -54,17 +54,17 @@ async function fetchRegister() {
 function loadOrders() {
   parcelsStore.getAll(
     props.registerId,
-    orders_status.value ? Number(orders_status.value) : null,
-    orders_tnved.value || null,
-    orders_page.value,
-    orders_per_page.value,
-    orders_sort_by.value?.[0]?.key || 'id',
-    orders_sort_by.value?.[0]?.order || 'asc'
+    parcels_status.value ? Number(parcels_status.value) : null,
+    parcels_tnved.value || null,
+    parcels_page.value,
+    parcels_per_page.value,
+    parcels_sort_by.value?.[0]?.key || 'id',
+    parcels_sort_by.value?.[0]?.order || 'asc'
   )
 }
 
 watch(
-  [orders_page, orders_per_page, orders_sort_by, orders_status, orders_tnved],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
   loadOrders,
   { immediate: true }
 )
@@ -180,14 +180,14 @@ function getRowProps(data) {
     <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
       <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <v-select
-          v-model="orders_status"
+          v-model="parcels_status"
           :items="statusOptions"
           label="Статус"
           density="compact"
           style="min-width: 250px"
         />
         <v-text-field
-          v-model="orders_tnved"
+          v-model="parcels_tnved"
           label="ТН ВЭД"
           density="compact"
           style="min-width: 200px;"
@@ -199,12 +199,12 @@ function getRowProps(data) {
       <div style="overflow-x: auto;">
         <v-data-table-server
           v-if="items?.length || loading"
-          v-model:items-per-page="orders_per_page"
+          v-model:items-per-page="parcels_per_page"
           items-per-page-text="Посылок на странице"
           :items-per-page-options="itemsPerPageOptions"
           page-text="{0}-{1} из {2}"
-          v-model:page="orders_page"
-          v-model:sort-by="orders_sort_by"
+          v-model:page="parcels_page"
+          v-model:sort-by="parcels_sort_by"
           :headers="headers"
           :items="items"
           :row-props="getRowProps"
@@ -307,7 +307,7 @@ function getRowProps(data) {
       <div class="v-data-table-footer__items-per-page">
         <span>Посылок на странице:</span>
         <v-select
-          v-model="orders_per_page"
+          v-model="parcels_per_page"
           :items="itemsPerPageOptions"
           density="compact"
           variant="plain"
@@ -317,7 +317,7 @@ function getRowProps(data) {
       </div>
 
       <div class="v-data-table-footer__info">
-        <div>{{ Math.min((orders_page - 1) * orders_per_page + 1, totalCount) }}-{{ Math.min(orders_page * orders_per_page, totalCount) }} из {{ totalCount }}</div>
+        <div>{{ Math.min((parcels_page - 1) * parcels_per_page + 1, totalCount) }}-{{ Math.min(parcels_page * parcels_per_page, totalCount) }} из {{ totalCount }}</div>
       </div>
 
       <div class="v-data-table-footer__pagination">
@@ -325,32 +325,32 @@ function getRowProps(data) {
           variant="text"
           icon="$first"
           size="small"
-          :disabled="orders_page <= 1"
-          @click="orders_page = 1"
+          :disabled="parcels_page <= 1"
+          @click="parcels_page = 1"
         />
 
         <v-btn
           variant="text"
           icon="$prev"
           size="small"
-          :disabled="orders_page <= 1"
-          @click="orders_page = Math.max(1, orders_page - 1)"
+          :disabled="parcels_page <= 1"
+          @click="parcels_page = Math.max(1, parcels_page - 1)"
         />
 
         <v-btn
           variant="text"
           icon="$next"
           size="small"
-          :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
-          @click="orders_page = Math.min(Math.ceil(totalCount / orders_per_page), orders_page + 1)"
+          :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
+          @click="parcels_page = Math.min(Math.ceil(totalCount / parcels_per_page), parcels_page + 1)"
         />
 
         <v-btn
           variant="text"
           icon="$last"
           size="small"
-          :disabled="orders_page >= Math.ceil(totalCount / orders_per_page)"
-          @click="orders_page = Math.ceil(totalCount / orders_per_page)"
+          :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
+          @click="parcels_page = Math.ceil(totalCount / parcels_per_page)"
         />
       </div>
     </div>

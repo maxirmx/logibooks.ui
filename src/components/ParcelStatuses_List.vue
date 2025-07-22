@@ -139,15 +139,15 @@ defineExpose({
     <v-card>
       <v-data-table
         v-if="parcelStatuses?.length"
-        v-model:items-per-page="authStore.orderstatuses_per_page"
+        v-model:items-per-page="authStore.parcelstatuses_per_page"
         items-per-page-text="Статусов на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="authStore.orderstatuses_page"
+        v-model:page="authStore.parcelstatuses_page"
         :headers="headers"
         :items="parcelStatuses"
-        :search="authStore.orderstatuses_search"
-        v-model:sort-by="authStore.orderstatuses_sort_by"
+        :search="authStore.parcelstatuses_search"
+        v-model:sort-by="authStore.parcelstatuses_sort_by"
         :custom-filter="filterParcelStatuses"
         :loading="loading"
         item-value="name"
@@ -179,7 +179,7 @@ defineExpose({
 
       <div v-if="parcelStatuses?.length">
         <v-text-field
-          v-model="authStore.orderstatuses_search"
+          v-model="authStore.parcelstatuses_search"
           :append-inner-icon="mdiMagnify"
           label="Поиск по названию статуса"
           variant="solo"

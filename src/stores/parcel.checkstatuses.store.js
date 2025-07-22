@@ -28,58 +28,31 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/orderstatuses`
+const baseUrl = `${apiUrl}/orders`
 
-export const useOrderStatusesStore = defineStore('orderStatuses', () => {
-  const orderStatuses = ref([])
-  const orderStatus = ref({ loading: true })
+export const useParcelCheckStatusStore = defineStore('parcelCheckStatus', () => {
+  const statuses = ref([])
   const loading = ref(false)
+  const error = ref(null)
 
+  // Map for quick lookups
   const statusMap = ref(new Map())
 
-  async function getAll() {
+  async function fetchStatuses() {
     loading.value = true
+    error.value = null
     try {
-      const response = await fetchWrapper.get(baseUrl)
-      orderStatuses.value = response || []
-      statusMap.value = new Map(orderStatuses.value.map(status => [status.id, status]))
+      const response = await fetchWrapper.get(`${baseUrl}/checkstatuses`)
+      statuses.value = response || []
+
+      // Build a map for quick lookups
+      statusMap.value = new Map(statuses.value.map(status => [status.id, status]))
+    } catch (err) {
+      error.value = err
+      console.error('Failed to fetch parcel check statuses:', err)
     } finally {
       loading.value = false
     }
-  }
-
-  async function getById(id, refresh = false) {
-    if (refresh) {
-      orderStatus.value = { loading: true }
-    }
-
-    try {
-      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      orderStatus.value = response
-      return response
-    } finally {
-      loading.value = false
-    }  
-  }
-
-  async function create(data) {
-    const response = await fetchWrapper.post(baseUrl, data)
-    // Refresh the list after creation
-    await getAll()
-    return response
-  }
-
-  async function update(id, data) {
-    const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
-    // Refresh the list after update
-    await getAll()
-    return response
-  }
-
-  async function remove(id) {
-    await fetchWrapper.delete(`${baseUrl}/${id}`)
-    // Refresh the list after deletion
-    await getAll()
   }
 
   function getStatusById(id) {
@@ -94,24 +67,20 @@ export const useOrderStatusesStore = defineStore('orderStatuses', () => {
   // Auto-fetch statuses when store is initialized (only once)
   let initialized = false
   function ensureStatusesLoaded() {
-    if (!initialized && orderStatuses.value.length === 0 && !loading.value) {
+    if (!initialized && statuses.value.length === 0 && !loading.value) {
       initialized = true
-      getAll()
+      fetchStatuses()
     }
   }
 
   return {
-    ensureStatusesLoaded,
+    statuses,
+    loading,
+    error,
+    statusMap,
+    fetchStatuses,
     getStatusById,
     getStatusTitle,
-    orderStatuses,
-    orderStatus,
-    loading,
-    statusMap,
-    getAll,
-    getById,
-    create,
-    update,
-    remove
+    ensureStatusesLoaded
   }
 })

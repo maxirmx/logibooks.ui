@@ -8,7 +8,7 @@ import { vuetifyStubs, createMockStore } from './test-utils.js'
 
 
 // Mock data
-const mockOrders = ref([
+const mockParcels = ref([
   { id: 1, statusId: 1, checkStatusId: 1, rowNumber: 1, orderNumber: 'ORD001', tnVed: 'TNV001' },
   { id: 2, statusId: 2, checkStatusId: 2, rowNumber: 2, orderNumber: 'ORD002', tnVed: 'TNV002' }
 ])
@@ -66,20 +66,21 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: () => createMockStore({
-    items: mockOrders,
-    totalCount: ref(2),
-    getAll,
-    update: vi.fn(),
-    generate: vi.fn(),
-    generateAll: vi.fn(),
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({
+    items: mockParcels,
+    loading: false,
+    error: null,
+    totalCount: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+    getAll: vi.fn(),
     validate: vi.fn()
   })
 }))
 
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => createMockStore({
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => createMockStore({
     statuses: mockStatuses,
     fetchStatuses,
     getStatusTitle,
@@ -88,8 +89,8 @@ vi.mock('@/stores/order.statuses.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: () => createMockStore({
+vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
+  useParcelCheckStatusStore: () => createMockStore({
     statuses: mockCheckStatuses,
     fetchStatuses: vi.fn(),
     getStatusTitle: getCheckStatusTitle,
@@ -274,7 +275,7 @@ describe('WbrParcels_List', () => {
     await wrapper.vm.validateParcel(testOrder)
 
     // The validate function should be called with the order id
-    expect(wrapper.vm.ordersStore.validate).toHaveBeenCalledWith(123)
+    expect(wrapper.vm.parcelsStore.validate).toHaveBeenCalledWith(123)
   })
 
   it('marks rows with issues using getRowProps', () => {

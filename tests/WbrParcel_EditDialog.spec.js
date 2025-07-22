@@ -70,7 +70,7 @@ const mockStatusStore = createMockStore({
     { id: 1, title: 'Status 1' },
     { id: 2, title: 'Status 2' }
   ],
-  orderStatuses: [
+  parcelStatuses: [
     { id: 1, title: 'Status 1' },
     { id: 2, title: 'Status 2' }
   ],
@@ -103,16 +103,16 @@ const mockFeacnCodesStore = createMockStore({
 })
 
 // Mock stores
-vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: vi.fn(() => mockOrdersStore)
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: vi.fn(() => mockOrdersStore)
 }))
 
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: vi.fn(() => mockStatusStore)
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: vi.fn(() => mockStatusStore)
 }))
 
-vi.mock('@/stores/order.checkstatuses.store.js', () => ({
-  useOrderCheckStatusStore: vi.fn(() => mockCheckStatusStore)
+vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
+  useParcelCheckStatusStore: vi.fn(() => mockCheckStatusStore)
 }))
 
 vi.mock('@/stores/stop.words.store.js', () => ({

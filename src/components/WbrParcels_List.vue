@@ -1,8 +1,8 @@
 <script setup>
 import { watch, ref, computed, onMounted } from 'vue'
-import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -18,14 +18,14 @@ const props = defineProps({
   registerId: { type: Number, required: true }
 })
 
-const ordersStore = useOrdersStore()
-const orderStatusStore = useOrderStatusesStore()
-const orderCheckStatusStore = useOrderCheckStatusStore()
+const parcelsStore = useParcelsStore()
+const parcelStatusStore = useParcelStatusesStore()
+const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const authStore = useAuthStore()
 
-const { items, loading, error, totalCount } = storeToRefs(ordersStore)
+const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
 const {
@@ -52,7 +52,7 @@ async function fetchRegister() {
 }
 
 function loadOrders() {
-  ordersStore.getAll(
+  parcelsStore.getAll(
     props.registerId,
     orders_status.value ? Number(orders_status.value) : null,
     orders_tnved.value || null,
@@ -71,8 +71,8 @@ watch(
 
 onMounted(async () => {
   // Ensure order statuses are loaded
-  orderStatusStore.ensureStatusesLoaded()
-  orderCheckStatusStore.ensureStatusesLoaded()
+  parcelStatusStore.ensureStatusesLoaded()
+  parcelCheckStatusStore.ensureStatusesLoaded()
   // Load all stop words once to reduce network traffic
   await stopWordsStore.getAll()
   // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
@@ -84,7 +84,7 @@ const statusOptions = computed(() => [
   { value: null, title: 'Все' },
   ...statuses.value.map((s) => ({
     value: s.id,
-    title: `${orderStatusStore.getStatusTitle(s.id)} (${s.count})`
+    title: `${parcelStatusStore.getStatusTitle(s.id)} (${s.count})`
   }))
 ])
 
@@ -126,16 +126,16 @@ function editParcel(item) {
 }
 
 function exportParcelXml(item) {
-  ordersStore.generate(item.id)
+  parcelsStore.generate(item.id)
 }
 
 async function validateParcel(item) {
   try {
-    await ordersStore.validate(item.id)
+    await parcelsStore.validate(item.id)
     loadOrders()
   } catch (error) {
     console.error('Failed to validate parcel:', error)
-    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
   }
 }
 
@@ -154,7 +154,7 @@ function getColumnTooltip(key) {
 
 // Function to get tooltip for checkStatusId with combined status info
 function getCheckStatusTooltip(item) {
-  const baseTitle = orderCheckStatusStore.getStatusTitle(item.checkStatusId)
+  const baseTitle = parcelCheckStatusStore.getStatusTitle(item.checkStatusId)
 
   if (HasIssues(item.checkStatusId)) {
     const checkInfo = getCheckStatusInfo(item, feacnOrders.value, stopWords.value)
@@ -240,9 +240,9 @@ function getRowProps(data) {
         <template #[`item.statusId`]="{ item }">
           <div
             class="truncated-cell status-cell"
-            :title="orderStatusStore.getStatusTitle(item.statusId)"
+            :title="parcelStatusStore.getStatusTitle(item.statusId)"
           >
-            {{ orderStatusStore.getStatusTitle(item.statusId) }}
+            {{ parcelStatusStore.getStatusTitle(item.statusId) }}
           </div>
         </template>
 
@@ -252,7 +252,7 @@ function getRowProps(data) {
             class="truncated-cell status-cell"
             :title="getCheckStatusTooltip(item)"
           >
-            {{ orderCheckStatusStore.getStatusTitle(item.checkStatusId) }}
+            {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>
         </template>
 

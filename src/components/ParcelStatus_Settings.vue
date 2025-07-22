@@ -29,7 +29,7 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 
 const props = defineProps({
   mode: {
@@ -43,18 +43,18 @@ const props = defineProps({
   }
 })
 
-const orderStatusesStore = useOrderStatusesStore()
+const parcelStatusesStore = useParcelStatusesStore()
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
 
-let orderStatus = ref({
+let parcelStatus = ref({
   title: ''
 })
 
 if (!isCreate.value) {
-  ;({ orderStatus } = storeToRefs(orderStatusesStore))
-  await orderStatusesStore.getById(props.orderStatusId)
+  ;({ parcelStatus } = storeToRefs(parcelStatusesStore))
+  await parcelStatusesStore.getById(props.orderStatusId)
 }
 
 // Get page title
@@ -75,7 +75,7 @@ const schema = Yup.object({
 // Form submission
 function onSubmit(values, { setErrors }) {
   if (isCreate.value) {
-    return orderStatusesStore
+    return parcelStatusesStore
       .create(values)
       .then(() => {
         router.push('/parcelstatuses')
@@ -88,7 +88,7 @@ function onSubmit(values, { setErrors }) {
         }
       })
   } else {
-    return orderStatusesStore
+    return parcelStatusesStore
       .update(props.orderStatusId, values)
       .then(() => {
         router.push('/parcelstatuses')
@@ -106,7 +106,7 @@ function onSubmit(values, { setErrors }) {
     <hr class="hr" />
     <Form
       @submit="onSubmit"
-      :initial-values="orderStatus"
+      :initial-values="parcelStatus"
       :validation-schema="schema"
       v-slot="{ errors, isSubmitting }"
     >

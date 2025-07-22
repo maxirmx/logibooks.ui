@@ -2,9 +2,9 @@
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
-import { useOrderCheckStatusStore } from '@/stores/order.checkstatuses.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { storeToRefs } from 'pinia'
@@ -17,13 +17,13 @@ const props = defineProps({
   id: { type: Number, required: true }
 })
 
-const ordersStore = useOrdersStore()
-const statusStore = useOrderStatusesStore()
-const orderCheckStatusStore = useOrderCheckStatusStore()
+const parcelsStore = useParcelsStore()
+const statusStore = useParcelStatusesStore()
+const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 
-const { item } = storeToRefs(ordersStore)
+const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
 
@@ -108,9 +108,9 @@ const getFieldTooltip = (fieldName) => {
 }
 
 statusStore.ensureStatusesLoaded()
-orderCheckStatusStore.ensureStatusesLoaded()
+parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
-await ordersStore.getById(props.id)
+await parcelsStore.getById(props.id)
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
@@ -122,7 +122,7 @@ const schema = Yup.object().shape({
 })
 
 function onSubmit(values, { setErrors }) {
-  return ordersStore
+  return parcelsStore
     .update(props.id, values)
     .then(() => router.push(`/registers/${props.registerId}/parcels`))
     .catch((error) => setErrors({ apiError: error.message || String(error) }))
@@ -131,12 +131,12 @@ function onSubmit(values, { setErrors }) {
 
 async function validateParcel() {
   try {
-    await ordersStore.validate(item.value.id)
+    await parcelsStore.validate(item.value.id)
     // Optionally reload the order data to reflect any changes
-    await ordersStore.getById(props.id)
+    await parcelsStore.getById(props.id)
   } catch (error) {
     console.error('Failed to validate parcel:', error)
-    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
   }
 }
 </script>
@@ -162,7 +162,7 @@ async function validateParcel() {
           <div class="form-group">
             <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId')">{{ getFieldLabel('checkStatusId') }}:</label>
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
-              {{ orderCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
+              {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
             <button class="validate-btn" @click="validateParcel" type="button" title="Проверить заказ">
               <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />

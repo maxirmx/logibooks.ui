@@ -66,11 +66,11 @@ const headers = [
 ]
 
 function openEditDialog(item) {
-  router.push(`/parcelstatus/edit/${item.id}`)
+  router.push(`/orderstatus/edit/${item.id}`)
 }
 
 function openCreateDialog() {
-  router.push('/parcelstatus/create')
+  router.push('/orderstatus/create')
 }
 
 async function deleteParcelStatus(parcelStatus) {

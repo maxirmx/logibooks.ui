@@ -27,8 +27,8 @@
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import { useOrdersStore } from '@/stores/orders.store.js'
-import { useOrderStatusesStore } from '@/stores/order.statuses.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -54,9 +54,9 @@ const progressPercent = computed(() => {
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
-const ordersStore = useOrdersStore()
+const parcelsStore = useParcelsStore()
 
-const orderStatusesStore = useOrderStatusesStore()
+const parcelStatusesStore = useParcelStatusesStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -148,7 +148,7 @@ function getCustomerName(customerId) {
 // Load companies and order statuses on component mount
 onMounted(async () => {
   await companiesStore.getAll()
-  await orderStatusesStore.getAll()
+  await parcelStatusesStore.getAll()
 })
 
 onUnmounted(() => {
@@ -194,7 +194,7 @@ function openParcels(item) {
 }
 
 function exportAllXml(item) {
-  ordersStore.generateAll(item.id)
+  parcelsStore.generateAll(item.id)
 }
 
 async function pollValidation() {
@@ -314,7 +314,7 @@ const headers = [
             <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
               <v-select
                 v-model="bulkStatusState[item.id].selectedStatusId"
-                :items="orderStatusesStore.orderStatuses"
+                :items="parcelStatusesStore.orderStatuses"
                 item-title="title"
                 item-value="id"
                 label="Выберите статус"

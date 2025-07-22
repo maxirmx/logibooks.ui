@@ -35,9 +35,9 @@ vi.mock('pinia', async () => {
       } else if (store.getAll && !store.upload && store.companies) {
         // companies store
         return { companies: mockCompanies }
-      } else if (store.getAll && store.orderStatuses) {
-        // order statuses store
-        return { orderStatuses: mockOrderStatuses }
+      } else if (store.getAll && store.parcelStatuses) {
+        // parcel statuses store
+        return { parcelStatuses: mockOrderStatuses }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -67,14 +67,14 @@ vi.mock('@/stores/registers.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/orders.store.js', () => ({
-  useOrdersStore: () => ({ generateAll: generateAllFn })
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({ generateAll: generateAllFn })
 }))
 
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    orderStatuses: mockOrderStatuses
+    parcelStatuses: mockOrderStatuses
   })
 }))
 
@@ -772,9 +772,9 @@ describe('Registers_List.vue', () => {
 })
 
 // Add mock for orderStatusesStore.orderStatuses in the Pinia mock
-vi.mock('@/stores/order.statuses.store.js', () => ({
-  useOrderStatusesStore: () => ({
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    orderStatuses: mockOrderStatuses
+    parcelStatuses: mockOrderStatuses
   })
 }))

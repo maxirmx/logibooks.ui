@@ -200,7 +200,7 @@ function exportAllXml(item) {
 }
 
 async function deleteRegister(item) {
-  const content = 'Удалить реестр "' + item.fileName + '" ?'
+  const content = `Удалить реестр "${item.fileName}" ?`
   const confirmed = await confirm({
     title: 'Подтверждение',
     confirmationText: 'Удалить',

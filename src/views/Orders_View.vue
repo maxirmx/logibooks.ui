@@ -1,5 +1,5 @@
 <script setup>
-import OrdersList from '@/components/Orders_List.vue'
+import OrdersList from '@/components/WbrOrders_List.vue'
 const props = defineProps({ id: { type: Number, required: true } })
 </script>
 

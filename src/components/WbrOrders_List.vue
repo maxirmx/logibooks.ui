@@ -11,8 +11,8 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { registerColumnTitles, registerColumnTooltips, HasIssues } from '@/helpers/register.mapping.js'
-import { getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
+import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -96,28 +96,28 @@ const headers = computed(() => {
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
     
     // Order Identification & Status - Key identifiers and current state
-    { title: registerColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    { title: registerColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    // { title: registerColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
-    { title: registerColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    // { title: wbrRegisterColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
     
     // Product Identification & Details - What the order contains
-    { title: registerColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
-    { title: registerColumnTitles.ProductName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    { title: registerColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    { title: wbrRegisterColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.ProductName, sortable: false, key: 'productName', align: 'start', width: '200px' },
+    { title: wbrRegisterColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
     
     // Physical Properties - Tangible characteristics
-    { title: registerColumnTitles.Country, sortable: false, key: 'country', align: 'start', width: '100px' },
-    { title: registerColumnTitles.WeightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: registerColumnTitles.Quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
+    { title: wbrRegisterColumnTitles.Country, sortable: false, key: 'country', align: 'start', width: '100px' },
+    { title: wbrRegisterColumnTitles.WeightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
+    { title: wbrRegisterColumnTitles.Quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
     
     // Financial Information - Pricing and currency
-    { title: registerColumnTitles.UnitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: registerColumnTitles.Currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
+    { title: wbrRegisterColumnTitles.UnitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
+    { title: wbrRegisterColumnTitles.Currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
     
     // Recipient Information - Who receives the order
-    { title: registerColumnTitles.RecipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: registerColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: wbrRegisterColumnTitles.RecipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
+    { title: wbrRegisterColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 
@@ -143,8 +143,8 @@ async function validateOrder(item) {
 function getColumnTooltip(key) {
   // Convert camelCase key to PascalCase to match the mapping keys
   const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-  const tooltip = registerColumnTooltips[pascalKey]
-  const title = registerColumnTitles[pascalKey]
+  const tooltip = wbrRegisterColumnTooltips[pascalKey]
+  const title = wbrRegisterColumnTitles[pascalKey]
 
   if (tooltip && title) {
     return `${title} (${tooltip})`

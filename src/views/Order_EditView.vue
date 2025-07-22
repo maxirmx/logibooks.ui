@@ -1,5 +1,5 @@
 <script setup>
-import OrderEditDialog from '@/components/Order_EditDialog.vue'
+import OrderEditDialog from '@/components/WbrOrder_EditDialog.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },

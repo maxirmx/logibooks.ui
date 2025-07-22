@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia } from 'pinia'
-import OrdersList from '@/components/Orders_List.vue'
+import OrdersList from '@/components/WbrOrders_List.vue'
 import { vuetifyStubs, createMockStore } from './test-utils.js'
 
 
@@ -142,7 +142,7 @@ vi.mock('@/helpers/config.js', () => ({
 // Mock Vuetify components and other dependencies
 const globalStubs = vuetifyStubs
 
-describe('Orders_List', () => {
+describe('WbrOrders_List', () => {
   let pinia
 
   beforeEach(() => {

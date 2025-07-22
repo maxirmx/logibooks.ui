@@ -121,21 +121,21 @@ const headers = computed(() => {
   ]
 })
 
-function editOrder(item) {
-  router.push(`/registers/${props.registerId}/orders/edit/${item.id}`)
+function editParcel(item) {
+  router.push(`/registers/${props.registerId}/parcels/edit/${item.id}`)
 }
 
-function exportOrderXml(item) {
+function exportParcelXml(item) {
   ordersStore.generate(item.id)
 }
 
-async function validateOrder(item) {
+async function validateParcel(item) {
   try {
     await ordersStore.validate(item.id)
     loadOrders()
   } catch (error) {
-    console.error('Failed to validate order:', error)
-    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке заказа.'
+    console.error('Failed to validate parcel:', error)
+    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки.'
   }
 }
 
@@ -173,7 +173,7 @@ function getRowProps(data) {
 
 <template>
   <div class="settings table-3">
-    <h1 class="primary-heading">Заказы</h1>
+    <h1 class="primary-heading">Посылки</h1>
     <hr class="hr" />
 
 
@@ -200,7 +200,7 @@ function getRowProps(data) {
         <v-data-table-server
           v-if="items?.length || loading"
           v-model:items-per-page="orders_per_page"
-          items-per-page-text="Заказов на странице"
+          items-per-page-text="Посылок на странице"
           :items-per-page-options="itemsPerPageOptions"
           page-text="{0}-{1} из {2}"
           v-model:page="orders_page"
@@ -273,27 +273,27 @@ function getRowProps(data) {
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать заказ">
+          <v-tooltip text="Редактировать посылку">
             <template v-slot:activator="{ props }">
-              <button @click="editOrder(item)" class="anti-btn" v-bind="props">
+              <button @click="editParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
         </template>
         <template #[`item.actions2`]="{ item }">
-          <v-tooltip text="Выгрузить накладную для заказа">
+          <v-tooltip text="Выгрузить накладную для посылки">
             <template v-slot:activator="{ props }">
-              <button @click="exportOrderXml(item)" class="anti-btn" v-bind="props">
+              <button @click="exportParcelXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
         </template>
         <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Проверить заказ">
+          <v-tooltip text="Проверить посылку">
             <template v-slot:activator="{ props }">
-              <button @click="validateOrder(item)" class="anti-btn" v-bind="props">
+              <button @click="validateParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
               </button>
             </template>
@@ -305,7 +305,7 @@ function getRowProps(data) {
     <!-- Custom pagination controls outside the scrollable area -->
     <div v-if="items?.length || loading" class="v-data-table-footer">
       <div class="v-data-table-footer__items-per-page">
-        <span>Заказов на странице:</span>
+        <span>Посылок на странице:</span>
         <v-select
           v-model="orders_per_page"
           :items="itemsPerPageOptions"

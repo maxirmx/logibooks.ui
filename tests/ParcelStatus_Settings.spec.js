@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { Suspense } from 'vue'
-import OrderStatusSettings from '@/components/OrderStatus_Settings.vue'
+import ParcelStatusSettings from '@/components/ParcelStatus_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
 
@@ -92,11 +92,11 @@ vi.mock('vee-validate', () => ({
 
 // Create a wrapper component that provides Suspense boundary
 const AsyncWrapper = {
-  components: { OrderStatusSettings, Suspense },
+  components: { ParcelStatusSettings, Suspense },
   props: ['mode', 'orderStatusId'],
   template: `
     <Suspense>
-      <OrderStatusSettings :mode="mode" :order-status-id="orderStatusId" />
+      <ParcelStatusSettings :mode="mode" :order-status-id="orderStatusId" />
       <template #fallback>
         <div>Loading...</div>
       </template>
@@ -117,7 +117,7 @@ beforeEach(async () => {
   mockAlertStore.error = null
 })
 
-describe('OrderStatus_Settings.vue', () => {
+describe('ParcelStatus_Settings.vue', () => {
   describe('Component Rendering', () => {
     it('renders create mode correctly', async () => {
       const wrapper = mount(AsyncWrapper, {

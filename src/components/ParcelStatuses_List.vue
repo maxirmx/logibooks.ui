@@ -66,15 +66,15 @@ const headers = [
 ]
 
 function openEditDialog(item) {
-  router.push(`/orderstatus/edit/${item.id}`)
+  router.push(`/parcelstatus/edit/${item.id}`)
 }
 
 function openCreateDialog() {
-  router.push('/orderstatus/create')
+  router.push('/parcelstatus/create')
 }
 
 async function deleteOrderStatus(orderStatus) {
-  const content = 'Удалить статус заказа "' + orderStatus.title + '" ?'
+  const content = 'Удалить статус посылки "' + orderStatus.title + '" ?'
   const confirmed = await confirm({
     title: 'Подтверждение',
     confirmationText: 'Удалить',
@@ -94,9 +94,9 @@ async function deleteOrderStatus(orderStatus) {
       await orderStatusesStore.remove(orderStatus.id)
     } catch (error) {
       if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить статус заказа, у которого есть связанные записи')
+        alertStore.error('Нельзя удалить статус посылки, у которого есть связанные записи')
       } else {
-        alertStore.error('Ошибка при удалении статуса заказа')
+        alertStore.error('Ошибка при удалении статуса посылки')
       }
     }
   }
@@ -117,7 +117,7 @@ defineExpose({
 
 <template>
   <div class="settings table-2" data-testid="order-statuses-list">
-    <h1 class="primary-heading">Статусы заказов</h1>
+    <h1 class="primary-heading">Статусы посылок</h1>
     <hr class="hr" />
 
     <div class="link-crt">
@@ -126,7 +126,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-plus"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать статус заказа
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать статус посылки
       </a>
     </div>
 
@@ -155,7 +155,7 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать статус заказа">
+          <v-tooltip v-if="authStore.isAdmin" text="Редактировать статус посылки">
             <template v-slot:activator="{ props }">
               <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -165,7 +165,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить статус заказа">
+          <v-tooltip v-if="authStore.isAdmin" text="Удалить статус посылки">
             <template v-slot:activator="{ props }">
               <button @click="deleteOrderStatus(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
@@ -175,7 +175,7 @@ defineExpose({
         </template>
       </v-data-table>
 
-      <div v-if="!orderStatuses?.length" class="text-center m-5">Список статусов заказов пуст</div>
+      <div v-if="!orderStatuses?.length" class="text-center m-5">Список статусов посылок пуст</div>
 
       <div v-if="orderStatuses?.length">
         <v-text-field

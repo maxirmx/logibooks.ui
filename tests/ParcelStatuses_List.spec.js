@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import OrderStatusesList from '@/components/OrderStatuses_List.vue'
+import ParcelStatusesList from '@/components/ParcelStatuses_List.vue'
 import { defaultGlobalStubs } from './test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues
@@ -81,7 +81,7 @@ vi.mock('@mdi/js', () => ({
   mdiMagnify: 'mdi-magnify'
 }))
 
-describe('OrderStatuses_List.vue', () => {
+describe('ParcelStatuses_List.vue', () => {
   let wrapper
 
   beforeEach(() => {
@@ -95,7 +95,7 @@ describe('OrderStatuses_List.vue', () => {
       { id: 3, title: 'Выполнен' }
     ]
 
-    wrapper = mount(OrderStatusesList, {
+    wrapper = mount(ParcelStatusesList, {
       global: {
         stubs: defaultGlobalStubs
       }

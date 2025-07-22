@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia } from 'pinia'
-import OrdersList from '@/components/WbrOrders_List.vue'
+import ParcelsList from '@/components/WbrParcels_List.vue'
 import { vuetifyStubs, createMockStore } from './test-utils.js'
 
 
@@ -142,7 +142,7 @@ vi.mock('@/helpers/config.js', () => ({
 // Mock Vuetify components and other dependencies
 const globalStubs = vuetifyStubs
 
-describe('WbrOrders_List', () => {
+describe('WbrParcels_List', () => {
   let pinia
 
   beforeEach(() => {
@@ -159,7 +159,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('imports order check status store', () => {
-    mount(OrdersList, {
+    mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -171,7 +171,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('computes status options with titles', async () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -190,7 +190,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('includes status column in headers', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -206,7 +206,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('includes checkStatusId column in headers', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -222,7 +222,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('calls ensureStatusesLoaded on mount for both status stores', () => {
-    mount(OrdersList, {
+    mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -235,7 +235,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('loads stopwords on mount', () => {
-    mount(OrdersList, {
+    mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -247,7 +247,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('loads feacn orders on mount', async () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -262,7 +262,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('includes actions3 column in headers', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -279,7 +279,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('validateOrder function calls store validate method', async () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -294,7 +294,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('marks rows with issues using getRowProps', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],
@@ -314,7 +314,7 @@ describe('WbrOrders_List', () => {
   })
 
   it('generates combined status info tooltip for checkStatusId when HasIssues is true', () => {
-    const wrapper = mount(OrdersList, {
+    const wrapper = mount(ParcelsList, {
       props: { registerId: 1 },
       global: {
         plugins: [pinia],

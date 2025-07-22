@@ -124,19 +124,19 @@ const schema = Yup.object().shape({
 function onSubmit(values, { setErrors }) {
   return ordersStore
     .update(props.id, values)
-    .then(() => router.push(`/registers/${props.registerId}/orders`))
+    .then(() => router.push(`/registers/${props.registerId}/parcels`))
     .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
 
 
-async function validateOrder() {
+async function validateParcel() {
   try {
     await ordersStore.validate(item.value.id)
     // Optionally reload the order data to reflect any changes
     await ordersStore.getById(props.id)
   } catch (error) {
-    console.error('Failed to validate order:', error)
-    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке заказа.'
+    console.error('Failed to validate parcel:', error)
+    ordersStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки.'
   }  
 }
 </script>
@@ -144,7 +144,7 @@ async function validateOrder() {
 <template>
   <div class="settings form-3">
     <h1 class="primary-heading">
-      Заказ {{ item?.shk ? item.shk : '[без номера]' }}
+      Посылка {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
@@ -164,7 +164,7 @@ async function validateOrder() {
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
               {{ orderCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
-            <button class="validate-btn" @click="validateOrder" type="button" title="Проверить заказ">
+            <button class="validate-btn" @click="validateParcel" type="button" title="Проверить посылку">
               <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
             </button>
           </div>
@@ -245,7 +245,7 @@ async function validateOrder() {
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           Сохранить
         </button>
-        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/orders`)">
+        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)">
           Отменить
         </button>
       </div>
@@ -257,7 +257,7 @@ async function validateOrder() {
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <div v-if="item?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке заказа: {{ item.error }}</div>
+      <div class="text-danger">Ошибка при загрузке посылки: {{ item.error }}</div>
     </div>
   </div>
 </template>

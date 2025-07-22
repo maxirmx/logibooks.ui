@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
-import OrderEditDialog from '@/components/WbrOrder_EditDialog.vue'
+import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -123,7 +123,7 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
 }))
 
-describe('WbrOrder_EditDialog', () => {
+describe('WbrParcel_EditDialog', () => {
   let wrapper
 
   beforeEach(async () => {
@@ -134,14 +134,14 @@ describe('WbrOrder_EditDialog', () => {
     const SuspenseWrapper = {
       template: `
         <Suspense>
-          <OrderEditDialog :registerId="1" :id="1" />
+          <ParcelEditDialog :registerId="1" :id="1" />
           <template #fallback>
             <div>Loading...</div>
           </template>
         </Suspense>
       `,
       components: {
-        OrderEditDialog
+        ParcelEditDialog
       }
     }
 

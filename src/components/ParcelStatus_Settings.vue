@@ -59,7 +59,7 @@ if (!isCreate.value) {
 
 // Get page title
 function getTitle() {
-  return isCreate.value ? 'Создание статуса заказа' : 'Редактирование статуса заказа'
+  return isCreate.value ? 'Создание статуса посылки' : 'Редактирование статуса посылки'
 }
 
 // Get button text
@@ -78,23 +78,23 @@ function onSubmit(values, { setErrors }) {
     return orderStatusesStore
       .create(values)
       .then(() => {
-        router.push('/orderstatuses')
+        router.push('/parcelstatuses')
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такой статус заказа уже существует' })
+          setErrors({ apiError: 'Такой статус посылки уже существует' })
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании статуса заказа' })
+          setErrors({ apiError: error.message || 'Ошибка при создании статуса посылки' })
         }
       })
   } else {
     return orderStatusesStore
       .update(props.orderStatusId, values)
       .then(() => {
-        router.push('/orderstatuses')
+        router.push('/parcelstatuses')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса заказа' })
+        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса посылки' })
       })
   }
 }
@@ -130,7 +130,7 @@ function onSubmit(values, { setErrors }) {
         <button
           class="button secondary"
           type="button"
-          @click="$router.push('/orderstatuses')"
+          @click="$router.push('/parcelstatuses')"
         >
           Отмена
         </button>

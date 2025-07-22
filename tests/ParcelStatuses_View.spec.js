@@ -1,22 +1,22 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import OrderStatusesView from '@/views/OrderStatuses_View.vue'
+import ParcelStatusesView from '@/views/ParcelStatuses_View.vue'
 import { defaultGlobalStubs } from './test-utils.js'
 
-// Mock the OrderStatuses_List component
-vi.mock('@/components/OrderStatuses_List.vue', () => ({
+// Mock the ParcelStatuses_List component
+vi.mock('@/components/ParcelStatuses_List.vue', () => ({
   default: {
-    name: 'OrderStatusesList',
+    name: 'ParcelStatusesList',
     template: '<div class="order-statuses-list-stub" data-testid="order-statuses-list">OrderStatuses List Component</div>'
   }
 }))
 
-describe('OrderStatuses_View.vue', () => {
+describe('ParcelStatuses_View.vue', () => {
   let wrapper
 
   beforeEach(() => {
-    wrapper = mount(OrderStatusesView, {
+    wrapper = mount(ParcelStatusesView, {
       global: {
         stubs: defaultGlobalStubs
       }
@@ -45,7 +45,7 @@ describe('OrderStatuses_View.vue', () => {
   })
 
   describe('Component Integration', () => {
-    it('properly imports and uses OrderStatuses_List component', () => {
+    it('properly imports and uses ParcelStatuses_List component', () => {
       const orderStatusesComponent = wrapper.find('[data-testid="order-statuses-list"]')
       expect(orderStatusesComponent.exists()).toBe(true)
     })

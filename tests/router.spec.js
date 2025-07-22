@@ -99,44 +99,44 @@ describe('router guards', () => {
     expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
 
-  it('prevents non-logist user from accessing orders', async () => {
+  it('prevents non-logist user from accessing parcels', async () => {
     authStore.user = { id: 5 }
     authStore.isLogist = false
 
-    await router.push('/registers/1/orders')
+    await router.push('/registers/1/parcels')
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers/1/orders')
+    expect(authStore.returnUrl).toBe('/registers/1/parcels')
   })
 
-  it('allows logist user to access orders', async () => {
+  it('allows logist user to access parcels', async () => {
     authStore.user = { id: 6 }
     authStore.isLogist = true
-    await router.push('/registers/1/orders')
+    await router.push('/registers/1/parcels')
     await router.isReady()
-    expect(router.currentRoute.value.fullPath).toBe('/registers/1/orders')
+    expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels')
   })
 
-  it('prevents non-logist user from accessing order edit', async () => {
+  it('prevents non-logist user from accessing parcel edit', async () => {
     authStore.user = { id: 7 }
     authStore.isLogist = false
 
-    await router.push('/registers/1/orders/edit/2')
+    await router.push('/registers/1/parcels/edit/2')
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers/1/orders/edit/2')
+    expect(authStore.returnUrl).toBe('/registers/1/parcels/edit/2')
   })
 
-  it('allows logist user to access order edit', async () => {
+  it('allows logist user to access parcel edit', async () => {
     authStore.user = { id: 8 }
     authStore.isLogist = true
 
-    await router.push('/registers/1/orders/edit/2')
+    await router.push('/registers/1/parcels/edit/2')
     await router.isReady()
 
-    expect(router.currentRoute.value.fullPath).toBe('/registers/1/orders/edit/2')
+    expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels/edit/2')
   })
 
   describe('root path redirects', () => {

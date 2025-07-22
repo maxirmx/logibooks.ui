@@ -384,12 +384,12 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    it('navigates to orders when openOrders is called', async () => {
+    it('navigates to parcels when openParcels is called', async () => {
       const item = { id: 123 }
       const router = (await import('@/router')).default
       
-      wrapper.vm.openOrders(item)
-      expect(router.push).toHaveBeenCalledWith('/registers/123/orders')
+      wrapper.vm.openParcels(item)
+      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
     })
 
     it('calls generateAll when exportAllXml is called', () => {

@@ -24,11 +24,18 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import OrderStatusSettings from '@/components/OrderStatus_Settings.vue'
+import ParcelStatusSettings from '@/components/ParcelStatus_Settings.vue'
+
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true
+  }
+})
 </script>
 
 <template>
   <Suspense>
-    <OrderStatusSettings :mode="'create'" />
+    <ParcelStatusSettings :mode="'edit'" :order-status-id="props.id" />
   </Suspense>
 </template>

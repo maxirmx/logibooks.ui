@@ -120,7 +120,7 @@ async function applyStatusToAllOrders(registerId, statusId) {
     await registersStore.setOrderStatuses(registerId, numericStatusId)
     
     // Success: show message and reset state
-    alertStore.success('Статус успешно применен ко всем заказам в реестре')
+    alertStore.success('Статус успешно применен ко всем посылкам в реестре')
     bulkStatusState[registerId].editMode = false
     bulkStatusState[registerId].selectedStatusId = null
     // Reload data to reflect changes
@@ -128,7 +128,7 @@ async function applyStatusToAllOrders(registerId, statusId) {
   } catch (error) {
     // The store already handles setting the error state
     // Just provide user-friendly error message from the store error
-    const errorMessage = error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов заказов'
+    const errorMessage = error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов посылок'
     alertStore.error(errorMessage)
     
     // Exit edit mode on error
@@ -189,8 +189,8 @@ function loadRegisters() {
   )
 }
 
-function openOrders(item) {
-  router.push(`/registers/${item.id}/orders`)
+function openParcels(item) {
+  router.push(`/registers/${item.id}/parcels`)
 }
 
 function exportAllXml(item) {
@@ -251,7 +251,7 @@ const headers = [
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
-  { title: 'Заказы', key: 'ordersTotal', align: 'end' }
+  { title: 'Посылки', key: 'ordersTotal', align: 'end' }
 ]
 </script>
 
@@ -300,9 +300,9 @@ const headers = [
           {{ item.ordersTotal }}
         </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Открыть список заказов">
+          <v-tooltip text="Открыть список посылок">
             <template v-slot:activator="{ props }">
-              <button type="button" @click="openOrders(item)" class="anti-btn" v-bind="props">
+              <button type="button" @click="openParcels(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
               </button>
             </template>
@@ -358,7 +358,7 @@ const headers = [
             </div>
             
             <!-- Default mode with pen-to-square icon -->
-            <v-tooltip v-else text="Изменить статус всех заказов в реестре">
+            <v-tooltip v-else text="Изменить статус всех посылок в реестре">
               <template v-slot:activator="{ props }">
                 <button 
                   type="button" 
@@ -374,7 +374,7 @@ const headers = [
           </div>
         </template>
         <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Выгрузить накладные для всех заказов в реестре">
+          <v-tooltip text="Выгрузить накладные для всех посылок в реестре">
             <template v-slot:activator="{ props }">
               <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />

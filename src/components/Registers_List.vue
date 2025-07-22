@@ -218,7 +218,8 @@ async function deleteRegister(item) {
   if (confirmed) {
     try {
       await registersStore.remove(item.id)
-    } catch (error) {
+    } catch (err) {
+      console.error('Error deleting register:', err)
       alertStore.error('Ошибка при удалении реестра')
     }
   }

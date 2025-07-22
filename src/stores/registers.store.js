@@ -42,13 +42,14 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function upload(file) {
+  async function upload(file, companyId) {
+    console.log('upload: ' + companyId)
     loading.value = true
     error.value = null
     try {
       const formData = new FormData()
       formData.append('file', file)
-      await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
+      await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}`, formData)
     } catch (err) {
       error.value = err
       throw err

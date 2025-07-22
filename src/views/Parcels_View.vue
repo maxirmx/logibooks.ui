@@ -42,9 +42,9 @@ const error = ref(null)
 
 const listComponent = computed(() => {
   if (!register.value) return null
-  const customerId = register.value.customerId
-  if (customerId === OZON_COMPANY_ID) return OzonParcelsList
-  if (customerId === WBR_COMPANY_ID) return WbrParcelsList
+  const companyId = register.value.companyId
+  if (companyId === OZON_COMPANY_ID) return OzonParcelsList
+  if (companyId === WBR_COMPANY_ID) return WbrParcelsList
   return null
 })
 

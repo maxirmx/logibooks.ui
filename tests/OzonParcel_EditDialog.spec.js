@@ -165,7 +165,7 @@ describe('OzonParcel_EditDialog', () => {
   it('renders the order edit dialog', () => {
     const heading = wrapper.find('h1')
     expect(heading.exists()).toBe(true)
-    expect(heading.text()).toContain('Отправление')
+    expect(heading.text()).toContain('Посылка')
   })
 
   it('includes all required order fields', () => {

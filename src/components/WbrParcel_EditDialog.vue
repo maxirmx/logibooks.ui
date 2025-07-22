@@ -144,7 +144,7 @@ async function validateParcel() {
 <template>
   <div class="settings form-3">
     <h1 class="primary-heading">
-      Заказ {{ item?.shk ? item.shk : '[без номера]' }}
+      Посылка {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">

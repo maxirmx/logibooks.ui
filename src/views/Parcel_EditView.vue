@@ -17,9 +17,9 @@ const error = ref(null)
 
 const editComponent = computed(() => {
   if (!register.value) return null
-  const customerId = register.value.customerId
-  if (customerId === OZON_COMPANY_ID) return OzonParcelEditDialog
-  if (customerId === WBR_COMPANY_ID) return WbrParcelEditDialog
+  const companyId = register.value.companyId
+  if (companyId === OZON_COMPANY_ID) return OzonParcelEditDialog
+  if (companyId === WBR_COMPANY_ID) return WbrParcelEditDialog
   return null
 })
 

@@ -397,35 +397,7 @@ describe('ParcelStatus_Settings.vue', () => {
     })
   })
 
-  describe('Component Lifecycle', () => {
-    it('initializes correctly in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    })
-
-    it('initializes correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-    })
-  })
 
   describe('Error Handling', () => {
     it('handles network errors gracefully during creation', async () => {

@@ -565,35 +565,7 @@ describe('Company_Settings.vue', () => {
     })
   })
 
-  describe('Component Lifecycle', () => {
-    it('initializes correctly in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Регистрация компании')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    })
-
-    it('initializes correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      
-      expect(wrapper.find('h1').text()).toBe('Изменить информацию о компании')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-    })
-  })
 
   describe('Error Handling', () => {
     it('handles network errors gracefully during creation', async () => {

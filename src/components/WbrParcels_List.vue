@@ -51,13 +51,15 @@ const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
+
 const countriesStore = useCountriesStore()
+countriesStore.ensureLoaded()
+
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
-const { countries } = storeToRefs(countriesStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -107,9 +109,6 @@ onMounted(async () => {
   parcelCheckStatusStore.ensureStatusesLoaded()
   // Load all stop words once to reduce network traffic
   await stopWordsStore.getAll()
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
   // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
   await feacnCodesStore.ensureOrdersLoaded()
   await fetchRegister()

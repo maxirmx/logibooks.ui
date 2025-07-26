@@ -66,7 +66,7 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const countriesStore = useCountriesStore()
-const { countries } = storeToRefs(countriesStore)
+countriesStore.ensureLoaded()
 
 const transportationTypesStore = useTransportationTypesStore()
 transportationTypesStore.ensureLoaded()
@@ -168,9 +168,6 @@ function getCountryName(code) {
 onMounted(async () => {
   await companiesStore.getAll()
   await parcelStatusesStore.getAll()
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
 })
 
 onUnmounted(() => {

@@ -48,7 +48,7 @@ function request(method) {
         let response;
         try {
            if (enableLog) {
-            console.log(url, requestOptions.body)
+            console.log(url, requestOptions)
            }
            response = await fetch(url, requestOptions);
         } catch (error) {
@@ -95,7 +95,7 @@ function requestFile(method) {
         let response;
         try {
           if (enableLog) {
-            console.log(url, requestOptions.body)
+            console.log(url, requestOptions)
           }
           response = await fetch(url, requestOptions);
         } catch (error) {

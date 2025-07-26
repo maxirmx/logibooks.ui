@@ -75,6 +75,7 @@ const customsProceduresStore = useCustomsProceduresStore()
 customsProceduresStore.ensureLoaded()
 
 const alertStore = useAlertStore()
+const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
 
 const authStore = useAuthStore()
@@ -183,10 +184,13 @@ async function wbrFileSelected(files) {
   if (!file) return
   try {
     await registersStore.upload(file, WBR_COMPANY_ID)
-    alertStore.success('Реестр успешно загружен')
     loadRegisters()
   } catch (err) {
     alertStore.error(err.message || String(err))
+  } finally {
+    if (wbrFileInput.value) {
+      wbrFileInput.value.value = null
+    }
   }
 }
 
@@ -199,6 +203,10 @@ async function ozonFileSelected(files) {
     loadRegisters()
   } catch (err) {
     alertStore.error(err.message || String(err))
+  } finally {
+    if (ozonFileInput.value) {
+      ozonFileInput.value.value = null
+    }
   }
 }
 
@@ -501,6 +509,10 @@ const headers = [
     </div>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
+    </div>
+   <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
     </div>
 
     <v-dialog v-model="validationState.show" width="300">

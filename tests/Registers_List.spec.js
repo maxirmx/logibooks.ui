@@ -233,17 +233,6 @@ describe('Registers_List.vue', () => {
     })
   })
 
-  describe('getCountryName function', () => {
-    it('delegates to countriesStore.getCountryShortName', () => {
-      const wrapper = mount(RegistersList, {
-        global: { stubs: vuetifyStubs }
-      })
-
-      const result = wrapper.vm.getCountryName(643)
-      expect(result).toBe('Country 643')
-    })
-  })
-
   describe('component integration', () => {
     it('displays customer names correctly when items and companies are present', async () => {
       // Set up mock companies

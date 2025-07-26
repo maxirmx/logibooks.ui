@@ -91,7 +91,13 @@ vi.mock('@/stores/countries.store.js', () => ({
     countries: mockCountries,
     loading: false,
     getAll: getAllCountries,
-    ensureLoaded: countriesEnsureLoaded
+    ensureLoaded: countriesEnsureLoaded,
+    getCountryShortName: vi.fn((code) => {
+      const num = Number(code)
+      const country = mockCountries.value.find(c => c.isoNumeric === num)
+      if (!country) return code
+      return country.nameRuShort || country.nameRuOfficial || code
+    })
   })
 }))
 
@@ -267,14 +273,16 @@ describe('Companies_List.vue', () => {
       }
     })
 
+    const countriesStore = wrapper.vm.countriesStore
+
     // Test with existing country
-    expect(wrapper.vm.getCountryName(643)).toBe('Россия')
+    expect(countriesStore.getCountryShortName(643)).toBe('Россия')
 
     // Test with non-existent country (should return code)
-    expect(wrapper.vm.getCountryName(999)).toBe('Код: 999')
+    expect(countriesStore.getCountryShortName(999)).toBe(999)
 
     // Test with null value
-    expect(wrapper.vm.getCountryName(null)).toBe('')
+    expect(countriesStore.getCountryShortName(null)).toBe(null)
   })
 
   it('navigates to create page when add link is clicked', async () => {

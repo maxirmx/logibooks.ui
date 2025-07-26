@@ -42,16 +42,10 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { companies, loading } = storeToRefs(companiesStore)
-const { countries } = storeToRefs(countriesStore)
+countriesStore.ensureLoaded()
 const { alert } = storeToRefs(alertStore)
 
 // Remove local search and itemsPerPage refs - use auth store instead
-
-// Get country name by ISO numeric code
-function getCountryName(isoNumeric) {
-  const country = countries.value.find(c => c.isoNumeric === isoNumeric)
-  return country ? country.nameRuOfficial : isoNumeric ? `Код: ${isoNumeric}` : ''
-}
 
 // Custom filter function for v-data-table
 function filterCompanies(value, query, item) {
@@ -74,7 +68,7 @@ function filterCompanies(value, query, item) {
     return true
   }
 
-  const countryName = getCountryName(i.countryIsoNumeric)
+  const countryName = countriesStore.getCountryShortName(i.countryIsoNumeric)
   if (countryName?.toLocaleUpperCase().indexOf(q) !== -1) {
     return true
   }
@@ -136,7 +130,6 @@ async function deleteCompany(company) {
 onMounted(async () => {
   await companiesStore.getAll()
   // Fetch countries using ensureLoaded pattern
-  countriesStore.ensureLoaded()
 })
 
 // Expose functions for testing
@@ -191,7 +184,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.countryIsoNumeric`]="{ item }">
-          {{ getCountryName(item.countryIsoNumeric) }}
+          {{ countriesStore.getCountryShortName(item.countryIsoNumeric) }}
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">

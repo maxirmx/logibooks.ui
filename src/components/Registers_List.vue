@@ -160,10 +160,6 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
-function getCountryName(code) {
-  return countriesStore.getCountryShortName(code) || 'Неизвестно'
-}
-
 // Load companies and order statuses on component mount
 onMounted(async () => {
   await companiesStore.getAll()
@@ -370,7 +366,7 @@ const headers = [
           {{ getCustomerName(item.companyId) }}
         </template>
         <template #[`item.destCountryCode`]="{ item }">
-          {{ getCountryName(item.destCountryCode) }}
+          {{ countriesStore.getCountryShortName(item.destCountryCode) }}
         </template>
         <template #[`item.invoiceDate`]="{ item }">
           {{ item.invoiceDate }}

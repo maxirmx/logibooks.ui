@@ -106,7 +106,8 @@ const mockFeacnCodesStore = createMockStore({
 })
 const mockCountriesStore = createMockStore({
   countries: ref([]),
-  getAll: vi.fn()
+  getAll: vi.fn(),
+  ensureLoaded: vi.fn()
 })
 
 // Mock stores

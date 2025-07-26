@@ -47,6 +47,7 @@ const mockCountries = ref([
 // Centralized mock functions
 const getAllCompanies = vi.hoisted(() => vi.fn())
 const getAllCountries = vi.hoisted(() => vi.fn())
+const countriesEnsureLoaded = vi.hoisted(() => vi.fn())
 const createCompany = vi.hoisted(() => vi.fn())
 const updateCompany = vi.hoisted(() => vi.fn())
 const deleteCompanyFn = vi.hoisted(() => vi.fn())
@@ -89,7 +90,14 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
     countries: mockCountries,
     loading: false,
-    getAll: getAllCountries
+    getAll: getAllCountries,
+    ensureLoaded: countriesEnsureLoaded,
+    getCountryShortName: vi.fn((code) => {
+      const num = Number(code)
+      const country = mockCountries.value.find(c => c.isoNumeric === num)
+      if (!country) return code
+      return country.nameRuShort || country.nameRuOfficial || code
+    })
   })
 }))
 
@@ -160,7 +168,7 @@ describe('Companies_List.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(getAllCompanies).toHaveBeenCalled()
-    expect(getAllCountries).toHaveBeenCalled()
+    expect(countriesEnsureLoaded).toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
 
     // Reset mock data for other tests
@@ -170,15 +178,9 @@ describe('Companies_List.vue', () => {
     ]
   })
 
-  it('does not fetch countries if already loaded', async () => {
+  it('calls ensureLoaded for countries on mount', async () => {
     // Clear previous calls
-    getAllCountries.mockClear()
-
-    // Start with populated countries
-    mockCountries.value = [
-      { id: 1, isoNumeric: 643, nameRuOfficial: 'Россия' },
-      { id: 2, isoNumeric: 840, nameRuOfficial: 'США' }
-    ]
+    countriesEnsureLoaded.mockClear()
 
     const wrapper = mount(CompaniesList, {
       global: {
@@ -190,7 +192,7 @@ describe('Companies_List.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(getAllCompanies).toHaveBeenCalled()
-    expect(getAllCountries).not.toHaveBeenCalled()
+    expect(countriesEnsureLoaded).toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
   })
 
@@ -271,14 +273,16 @@ describe('Companies_List.vue', () => {
       }
     })
 
+    const countriesStore = wrapper.vm.countriesStore
+
     // Test with existing country
-    expect(wrapper.vm.getCountryName(643)).toBe('Россия')
+    expect(countriesStore.getCountryShortName(643)).toBe('Россия')
 
     // Test with non-existent country (should return code)
-    expect(wrapper.vm.getCountryName(999)).toBe('Код: 999')
+    expect(countriesStore.getCountryShortName(999)).toBe(999)
 
     // Test with null value
-    expect(wrapper.vm.getCountryName(null)).toBe('')
+    expect(countriesStore.getCountryShortName(null)).toBe(null)
   })
 
   it('navigates to create page when add link is clicked', async () => {

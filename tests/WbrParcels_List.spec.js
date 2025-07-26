@@ -126,7 +126,8 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => createMockStore({
     countries: mockCountries,
-    getAll: vi.fn()
+    getAll: vi.fn(),
+    ensureLoaded: vi.fn()
   })
 }))
 

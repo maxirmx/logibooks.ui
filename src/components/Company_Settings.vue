@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
@@ -46,7 +46,7 @@ const props = defineProps({
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
-
+countriesStore.ensureLoaded()
 const { countries } = storeToRefs(countriesStore)
 
 // Check if we're in create mode
@@ -117,13 +117,6 @@ function onSubmit(values, { setErrors }) {
   }
 }
 
-// Initialize data
-onMounted(async () => {
-  // Fetch countries if not already loaded
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
-})
 </script>
 
 <template>

@@ -10,6 +10,8 @@ export const useCountriesStore = defineStore('countries', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  let initialized = false
+
   async function getAll() {
     loading.value = true
     error.value = null
@@ -25,6 +27,7 @@ export const useCountriesStore = defineStore('countries', () => {
   async function update() {
     loading.value = true
     error.value = null
+    initialized = false
     try {
       await fetchWrapper.post(`${baseUrl}/update`)
     } catch (err) {
@@ -40,5 +43,28 @@ export const useCountriesStore = defineStore('countries', () => {
     return country ? country.isoAlpha2 : code
   }
 
-  return { countries, loading, error, getAll, update, getCountryAlpha2 }
+  function getCountryShortName(code) {
+    const num = Number(code)
+    const country = countries.value.find(c => c.isoNumeric === num)
+    if (!country) return code
+    return country.nameRuShort || country.nameRuOfficial || code
+  }
+
+  function ensureLoaded() {
+    if (!initialized && !loading.value) {
+      initialized = true
+      getAll()
+    }
+  }
+
+  return { 
+    countries, 
+    loading, 
+    error, 
+    getAll, 
+    update, 
+    getCountryAlpha2, 
+    getCountryShortName,
+    ensureLoaded,
+  }
 })

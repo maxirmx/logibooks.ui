@@ -52,6 +52,10 @@ const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
 
+countriesStore.ensureLoaded()
+statusStore.ensureStatusesLoaded()
+parcelCheckStatusStore.ensureStatusesLoaded()
+
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
@@ -65,12 +69,7 @@ watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
 
-statusStore.ensureStatusesLoaded()
-parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
-if (countries.value.length === 0) {
-  await countriesStore.getAll()
-}
 await parcelsStore.getById(props.id)
 
 const schema = Yup.object().shape({

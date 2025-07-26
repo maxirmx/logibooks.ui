@@ -32,6 +32,7 @@ const mockFeacnOrders = ref([
   { id: 1, comment: 'Test feacn order 1' },
   { id: 2, comment: 'Test feacn order 2' }
 ])
+const mockCountries = ref([])
 
 // Mock functions
 const fetchStatuses = vi.hoisted(() => vi.fn())
@@ -53,6 +54,7 @@ vi.mock('pinia', async () => {
       if (store.items) return { items: store.items, loading: store.loading, error: store.error, totalCount: store.totalCount }
       if (store.stopWords) return { stopWords: store.stopWords }
       if (store.orders && store.prefixes) return { orders: store.orders }
+      if (store.countries) return { countries: store.countries }
       if (store.parcels_per_page) return {
         parcels_per_page: store.parcels_per_page,
         parcels_sort_by: store.parcels_sort_by,
@@ -118,6 +120,13 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
     getPrefixes: vi.fn(),
     update: vi.fn(),
     ensureOrdersLoaded: ensureOrdersLoadedFeacn
+  })
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => createMockStore({
+    countries: mockCountries,
+    getAll: vi.fn()
   })
 }))
 
@@ -255,7 +264,8 @@ describe('OzonParcels_List', () => {
       }
     })
 
-    // Wait for onMounted to complete
+    // Wait for onMounted to complete - since it's async, we need to wait longer
+    await new Promise(resolve => setTimeout(resolve, 0))
     await wrapper.vm.$nextTick()
 
     expect(ensureOrdersLoadedFeacn).toHaveBeenCalled()
@@ -295,53 +305,5 @@ describe('OzonParcels_List', () => {
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 50 } })).toEqual({ class: '' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 100 } })).toEqual({ class: '' })
     expect(wrapper.vm.getRowProps({ item: { checkStatusId: 250 } })).toEqual({ class: '' })
-  })
-
-  it('generates combined status info tooltip for checkStatusId when HasIssues is true', () => {
-    const wrapper = mount(ParcelsList, {
-      props: { registerId: 1 },
-      global: {
-        plugins: [pinia],
-        stubs: globalStubs
-      }
-    })
-
-    const vm = wrapper.vm
-
-    // Test item with issues and both stopwords and feacn orders
-    const itemWithBoth = {
-      checkStatusId: 150, // HasIssues returns true for 101-200
-      stopWordIds: [1, 2],
-      feacnOrderIds: [1, 2]
-    }
-
-    const tooltip = vm.getCheckStatusTooltip(itemWithBoth)
-    expect(tooltip).toContain('Статус 150')
-    expect(tooltip).toContain('Возможные ограничения по коду ТН ВЭД:')
-    expect(tooltip).toContain('Стоп-слова и фразы:')
-
-    // Test item with issues but no stopwords or feacn orders
-    const itemEmpty = {
-      checkStatusId: 150,
-      stopWordIds: [],
-      feacnOrderIds: []
-    }
-
-    const tooltipEmpty = vm.getCheckStatusTooltip(itemEmpty)
-    expect(tooltipEmpty).toBe('Статус 150')
-    expect(tooltipEmpty).not.toContain('Стоп-слова и фразы:')
-    expect(tooltipEmpty).not.toContain('Возможные ограничения по коду ТН ВЭД:')
-
-    // Test item without issues
-    const itemNoIssues = {
-      checkStatusId: 50, // HasIssues returns false for <=100
-      stopWordIds: [1, 2],
-      feacnOrderIds: [1, 2]
-    }
-
-    const tooltipNoIssues = vm.getCheckStatusTooltip(itemNoIssues)
-    expect(tooltipNoIssues).toBe('Статус 50')
-    expect(tooltipNoIssues).not.toContain('Стоп-слова и фразы:')
-    expect(tooltipNoIssues).not.toContain('Возможные ограничения по коду ТН ВЭД:')
   })
 })

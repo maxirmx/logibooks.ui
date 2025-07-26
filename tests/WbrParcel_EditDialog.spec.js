@@ -25,6 +25,9 @@ vi.mock('pinia', async () => {
       if (store.orders) {
         return { orders: store.orders }
       }
+      if (store.countries) {
+        return { countries: store.countries }
+      }
       return {}
     })
   }
@@ -101,6 +104,10 @@ const mockFeacnCodesStore = createMockStore({
   ],
   getAll: vi.fn().mockResolvedValue([])
 })
+const mockCountriesStore = createMockStore({
+  countries: ref([]),
+  getAll: vi.fn()
+})
 
 // Mock stores
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -121,6 +128,10 @@ vi.mock('@/stores/stop.words.store.js', () => ({
 
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: vi.fn(() => mockCountriesStore)
 }))
 
 describe('WbrParcel_EditDialog', () => {

@@ -54,7 +54,6 @@ const progressPercent = computed(() => {
   return Math.round((validationState.processed / validationState.total) * 100)
 })
 
-
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
@@ -79,7 +78,8 @@ const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
 
 const authStore = useAuthStore()
-const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
+const { registers_per_page, registers_search, registers_sort_by, registers_page } =
+  storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedCustomerId = ref(WBR_COMPANY_ID)
@@ -90,12 +90,12 @@ const bulkStatusState = reactive({})
 // Available customers for register upload
 const uploadCustomers = computed(() => {
   if (!companies.value) return []
-  return companies.value.filter(company => 
-    company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID
-  ).map(company => ({
-    id: company.id,
-    name: getCustomerName(company.id)
-  }))
+  return companies.value
+    .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID)
+    .map((company) => ({
+      id: company.id,
+      name: getCustomerName(company.id)
+    }))
 })
 
 // Step 1: Toggle edit mode
@@ -155,7 +155,8 @@ async function applyStatusToAllOrders(registerId, statusId) {
   } catch (error) {
     // The store already handles setting the error state
     // Just provide user-friendly error message from the store error
-    const errorMessage = error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов посылок'
+    const errorMessage =
+      error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов посылок'
     alertStore.error(errorMessage)
 
     // Exit edit mode on error
@@ -167,7 +168,7 @@ async function applyStatusToAllOrders(registerId, statusId) {
 // Function to get customer name by customerId
 function getCustomerName(customerId) {
   if (!customerId || !companies.value) return 'Неизвестно'
-  const company = companies.value.find(c => c.id === customerId)
+  const company = companies.value.find((c) => c.id === customerId)
   if (!company) return 'Неизвестно'
   return company.shortName || company.name || 'Неизвестно'
 }
@@ -193,7 +194,7 @@ function openFileDialog() {
 async function fileSelected(files) {
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
-  
+
   if (!selectedCustomerId.value) {
     alertStore.error('Не выбран клиент для загрузки реестра')
     return
@@ -214,9 +215,13 @@ async function fileSelected(files) {
 }
 
 // Watch for changes in pagination, sorting, or search
-watch([registers_page, registers_per_page, registers_sort_by, registers_search], () => {
-  loadRegisters()
-}, { immediate: true, deep: true })
+watch(
+  [registers_page, registers_per_page, registers_sort_by, registers_search],
+  () => {
+    loadRegisters()
+  },
+  { immediate: true, deep: true }
+)
 
 function loadRegisters() {
   const sortBy = registers_sort_by.value?.[0]?.key || 'id'
@@ -233,6 +238,10 @@ function loadRegisters() {
 
 function openParcels(item) {
   router.push(`/registers/${item.id}/parcels`)
+}
+
+function editRegister(item) {
+  router.push('/register/edit/' + item.id)
 }
 
 function exportAllXml(item) {
@@ -291,7 +300,7 @@ function stopPolling() {
 
 async function validateRegister(item) {
   try {
-    stopPolling();
+    stopPolling()
     const res = await registersStore.validate(item.id)
     validationState.handleId = res.id
     validationState.total = 0
@@ -318,6 +327,7 @@ const headers = [
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions6', sortable: false, align: 'center', width: '5px' },
   { title: 'Файл', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Страна', key: 'destCountryCode', align: 'start' },
@@ -336,9 +346,13 @@ const headers = [
 
     <div class="link-crt d-flex upload-links">
       <a @click="openFileDialog" class="link" tabindex="0">
-        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
+        <font-awesome-icon
+          size="1x"
+          icon="fa-solid fa-upload"
+          class="link"
+        />&nbsp;&nbsp;&nbsp;Загрузить реестр
       </a>
-      
+
       <v-select
         v-model="selectedCustomerId"
         :items="uploadCustomers"
@@ -350,9 +364,9 @@ const headers = [
         hide-details
         hide-no-data
         class="customer-select"
-        style="max-width: 280px; min-width: 150px; margin-left: 16px;"
+        style="max-width: 280px; min-width: 150px; margin-left: 16px"
       />
-      
+
       <v-file-input
         ref="fileInput"
         style="display: none"
@@ -423,7 +437,7 @@ const headers = [
                 hide-details
                 hide-no-data
                 :disabled="loading"
-                style="min-width: 150px; max-width: 200px;"
+                style="min-width: 150px; max-width: 200px"
               />
 
               <!-- Save button (checkmark) -->
@@ -431,7 +445,9 @@ const headers = [
                 <template v-slot:activator="{ props }">
                   <button
                     type="button"
-                    @click="applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)"
+                    @click="
+                      applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)
+                    "
                     :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
                     class="anti-btn"
                     v-bind="props"
@@ -500,6 +516,15 @@ const headers = [
             </template>
           </v-tooltip>
         </template>
+        <template #[`item.actions6`]="{ item }">
+          <v-tooltip text="Редактировать реестр">
+            <template v-slot:activator="{ props }">
+              <button type="button" @click="editRegister(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
       <div v-if="items?.length || loading || registers_search">
@@ -518,7 +543,7 @@ const headers = [
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
     </div>
-   <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
     </div>

@@ -7,8 +7,9 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
@@ -22,10 +23,12 @@ const statusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
+const countriesStore = useCountriesStore()
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
+const { countries } = storeToRefs(countriesStore)
 
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
@@ -34,6 +37,14 @@ const currentStatusId = ref(null)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
+
+function getCountryAlpha2(code) {
+  const num = Number(code)
+  const country = countries.value.find(c => c.isoNumeric === num)
+  return country ? country.isoAlpha2 : code
+}
+
+const countryAlpha2 = computed(() => getCountryAlpha2(item.value?.country))
 
 // Field name mapping from camelCase to PascalCase for ozonRegisterColumnTitles lookup
 const fieldNameMapping = {
@@ -81,6 +92,9 @@ const getFieldTooltip = (fieldName) => {
 statusStore.ensureStatusesLoaded()
 parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
+if (countries.value.length === 0) {
+  await countriesStore.getAll()
+}
 await parcelsStore.getById(props.id)
 
 const schema = Yup.object().shape({
@@ -181,7 +195,7 @@ async function validateParcel() {
           </div>
           <div class="form-group">
             <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
-            <Field name="country" id="country" type="text" class="form-control input" />
+            <input id="country" type="text" class="form-control input" :value="countryAlpha2" readonly />
           </div>
           <div class="form-group">
             <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>

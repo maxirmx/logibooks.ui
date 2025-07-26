@@ -5,6 +5,7 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -23,11 +24,13 @@ const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
+const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
+const { countries } = storeToRefs(countriesStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -77,6 +80,9 @@ onMounted(async () => {
   parcelCheckStatusStore.ensureStatusesLoaded()
   // Load all stop words once to reduce network traffic
   await stopWordsStore.getAll()
+  if (countries.value.length === 0) {
+    await countriesStore.getAll()
+  }
   // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
   await feacnCodesStore.ensureOrdersLoaded()
   await fetchRegister()
@@ -139,6 +145,12 @@ async function validateParcel(item) {
     console.error('Failed to validate parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
   }
+}
+
+function getCountryAlpha2(code) {
+  const num = Number(code)
+  const country = countries.value.find(c => c.isoNumeric === num)
+  return country ? country.isoAlpha2 : code
 }
 
 // Function to get tooltip for column headers
@@ -274,6 +286,11 @@ function getRowProps(data) {
               {{ item.productLink }}
             </a>
             <span v-else>-</span>
+          </div>
+        </template>
+        <template #[`item.country`]="{ item }">
+          <div class="truncated-cell" :title="getCountryAlpha2(item.country)">
+            {{ getCountryAlpha2(item.country) }}
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">

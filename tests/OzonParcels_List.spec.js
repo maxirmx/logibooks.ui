@@ -32,6 +32,7 @@ const mockFeacnOrders = ref([
   { id: 1, comment: 'Test feacn order 1' },
   { id: 2, comment: 'Test feacn order 2' }
 ])
+const mockCountries = ref([])
 
 // Mock functions
 const fetchStatuses = vi.hoisted(() => vi.fn())
@@ -53,6 +54,7 @@ vi.mock('pinia', async () => {
       if (store.items) return { items: store.items, loading: store.loading, error: store.error, totalCount: store.totalCount }
       if (store.stopWords) return { stopWords: store.stopWords }
       if (store.orders && store.prefixes) return { orders: store.orders }
+      if (store.countries) return { countries: store.countries }
       if (store.parcels_per_page) return {
         parcels_per_page: store.parcels_per_page,
         parcels_sort_by: store.parcels_sort_by,
@@ -118,6 +120,13 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
     getPrefixes: vi.fn(),
     update: vi.fn(),
     ensureOrdersLoaded: ensureOrdersLoadedFeacn
+  })
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => createMockStore({
+    countries: mockCountries,
+    getAll: vi.fn()
   })
 }))
 

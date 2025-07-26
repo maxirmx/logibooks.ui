@@ -1,13 +1,13 @@
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 /**
- * Get tooltip for column headers combining title and tooltip information
- * @param {string} key - The column key
- * @param {Object} columnTitles - Object mapping column keys to titles
- * @param {Object} columnTooltips - Object mapping column keys to tooltips
+ * Get tooltip for form fields combining title and tooltip information
+ * @param {string} key - The field key
+ * @param {Object} columnTitles - Object mapping field keys to titles
+ * @param {Object} columnTooltips - Object mapping field keys to tooltips
  * @returns {string|null} Combined tooltip text or title only, or null if no title exists
  */
-export function getColumnTooltip(key, columnTitles, columnTooltips) {
+export function getFieldTooltip(key, columnTitles, columnTooltips) {
   const tooltip = columnTooltips[key]
   const title = columnTitles[key]
 

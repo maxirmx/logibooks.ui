@@ -13,8 +13,8 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
-import { HasIssues } from '@/helpers/orders.check.helper.js'
-import { getColumnTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -215,7 +215,7 @@ function getGenericTemplateHeaders() {
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
           <div
             class="truncated-cell"
-            :title="getColumnTooltip(header.key, wbrRegisterColumnTitles, wbrRegisterColumnTooltips)"
+            :title="getFieldTooltip(header.key, wbrRegisterColumnTitles, wbrRegisterColumnTooltips)"
           >
             {{ column.title || '' }}
           </div>

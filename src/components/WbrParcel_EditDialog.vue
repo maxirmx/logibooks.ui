@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia'
 import { ref, watch, } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -37,24 +38,6 @@ const currentStatusId = ref(null)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
-
-// Function to get label for a field
-const getFieldLabel = (fieldName) => {
-  const title = wbrRegisterColumnTitles[fieldName]
-  const tooltip = wbrRegisterColumnTooltips[fieldName]
-
-  // If there's tooltip text, combine title with tooltip for a more descriptive label
-  if (tooltip) {
-    return `${title} (${tooltip})`
-  }
-
-  return title
-}
-
-// Function to get tooltip for a field (if available)
-const getFieldTooltip = (fieldName) => {
-  return wbrRegisterColumnTooltips[fieldName] || null
-}
 
 statusStore.ensureStatusesLoaded()
 parcelCheckStatusStore.ensureStatusesLoaded()
@@ -106,14 +89,14 @@ async function validateParcel() {
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="statusId" class="label" :title="getFieldTooltip('statusId')">{{ getFieldLabel('statusId') }}:</label>
+            <label for="statusId" class="label" :title="getFieldTooltip('statusId', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.statusId }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
                    @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId')">{{ getFieldLabel('checkStatusId') }}:</label>
+            <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.checkStatusId }}:</label>
             <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
@@ -135,26 +118,26 @@ async function validateParcel() {
         <h3 class="section-title">Информация о товаре</h3>
         <div class="form-row">
           <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed')">{{ getFieldLabel('tnVed') }}:</label>
+            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.tnVed }}:</label>
             <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
           </div>
           <div class="form-group">
-            <label for="shk" class="label" :title="getFieldTooltip('shk')">{{ getFieldLabel('shk') }}:</label>
+            <label for="shk" class="label" :title="getFieldTooltip('shk', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.shk }}:</label>
             <Field name="shk" id="shk" type="text" class="form-control input" />
           </div>
           <div class="form-group">
-            <label for="productName" class="label" :title="getFieldTooltip('productName')">{{ getFieldLabel('productName') }}:</label>
+            <label for="productName" class="label" :title="getFieldTooltip('productName', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.productName }}:</label>
             <Field name="productName" id="productName" type="text" class="form-control input" />
           </div>
           <div class="form-group">
-            <label class="label">{{ getFieldLabel('productLink') }}:</label>
+            <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
             <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link-inline" :title="item.productLink">
               {{ item.productLink }}
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
           <div class="form-group">
-            <label for="countryCode" class="label" :title="getFieldTooltip('countryCode')">{{ getFieldLabel('countryCode') }}:</label>
+            <label for="countryCode" class="label" :title="getFieldTooltip('countryCode', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.countryCode }}:</label>
             <Field
               name="countryCode"
               id="countryCode"
@@ -172,19 +155,19 @@ async function validateParcel() {
             </Field>
           </div>
           <div class="form-group">
-            <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>
+            <label for="weightKg" class="label" :title="getFieldTooltip('weightKg', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.weightKg }}:</label>
             <Field name="weightKg" id="weightKg" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
           </div>
           <div class="form-group">
-            <label for="quantity" class="label" :title="getFieldTooltip('quantity')">{{ getFieldLabel('quantity') }}:</label>
+            <label for="quantity" class="label" :title="getFieldTooltip('quantity', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.quantity }}:</label>
             <Field name="quantity" id="quantity" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
           </div>
           <div class="form-group">
-            <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice')">{{ getFieldLabel('unitPrice') }}:</label>
+            <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.unitPrice }}:</label>
             <Field name="unitPrice" id="unitPrice" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
           </div>
           <div class="form-group">
-            <label for="currency" class="label" :title="getFieldTooltip('currency')">{{ getFieldLabel('currency') }}:</label>
+            <label for="currency" class="label" :title="getFieldTooltip('currency', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.currency }}:</label>
             <Field name="currency" id="currency" type="text" class="form-control input" />
           </div>
         </div>
@@ -195,11 +178,11 @@ async function validateParcel() {
         <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
           <div class="form-group">
-            <label for="recipientName" class="label" :title="getFieldTooltip('recipientName')">{{ getFieldLabel('recipientName') }}:</label>
+            <label for="recipientName" class="label" :title="getFieldTooltip('recipientName', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.recipientName }}:</label>
             <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
           </div>
           <div class="form-group">
-            <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber')">{{ getFieldLabel('passportNumber') }}:</label>
+            <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.passportNumber }}:</label>
             <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
           </div>
         </div>

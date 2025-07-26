@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getColumnTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import * as ordersCheckHelper from '@/helpers/orders.check.helper.js'
 
 // Mock the orders check helper
@@ -9,7 +9,7 @@ vi.mock('@/helpers/orders.check.helper.js', () => ({
 }))
 
 describe('parcel tooltip helpers', () => {
-  describe('getColumnTooltip', () => {
+  describe('getFieldTooltip', () => {
     const mockColumnTitles = {
       statusId: 'Статус',
       checkStatusId: 'Статус проверки',
@@ -24,22 +24,22 @@ describe('parcel tooltip helpers', () => {
     }
 
     it('returns combined title and tooltip when both exist', () => {
-      const result = getColumnTooltip('statusId', mockColumnTitles, mockColumnTooltips)
+      const result = getFieldTooltip('statusId', mockColumnTitles, mockColumnTooltips)
       expect(result).toBe('Статус (Текущий статус обработки посылки)')
     })
 
     it('returns only title when tooltip does not exist', () => {
-      const result = getColumnTooltip('countryCode', mockColumnTitles, mockColumnTooltips)
+      const result = getFieldTooltip('countryCode', mockColumnTitles, mockColumnTooltips)
       expect(result).toBe('Страна')
     })
 
     it('returns null when title does not exist', () => {
-      const result = getColumnTooltip('nonExistentKey', mockColumnTitles, mockColumnTooltips)
+      const result = getFieldTooltip('nonExistentKey', mockColumnTitles, mockColumnTooltips)
       expect(result).toBeNull()
     })
 
     it('returns null when both title and tooltip are missing', () => {
-      const result = getColumnTooltip('anotherMissingKey', {}, {})
+      const result = getFieldTooltip('anotherMissingKey', {}, {})
       expect(result).toBeNull()
     })
 
@@ -47,7 +47,7 @@ describe('parcel tooltip helpers', () => {
       const titlesWithoutKey = { otherKey: 'Other Title' }
       const tooltipsWithKey = { missingTitleKey: 'Some tooltip' }
       
-      const result = getColumnTooltip('missingTitleKey', titlesWithoutKey, tooltipsWithKey)
+      const result = getFieldTooltip('missingTitleKey', titlesWithoutKey, tooltipsWithKey)
       expect(result).toBeNull()
     })
 
@@ -55,10 +55,10 @@ describe('parcel tooltip helpers', () => {
       const titlesWithEmpty = { emptyTitle: '' }
       const tooltipsWithEmpty = { emptyTooltip: '' }
       
-      const result1 = getColumnTooltip('emptyTitle', titlesWithEmpty, mockColumnTooltips)
+      const result1 = getFieldTooltip('emptyTitle', titlesWithEmpty, mockColumnTooltips)
       expect(result1).toBeNull()
       
-      const result2 = getColumnTooltip('statusId', { statusId: 'Title' }, tooltipsWithEmpty)
+      const result2 = getFieldTooltip('statusId', { statusId: 'Title' }, tooltipsWithEmpty)
       expect(result2).toBe('Title')
     })
   })

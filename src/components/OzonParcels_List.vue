@@ -13,7 +13,8 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { HasIssues } from '@/helpers/orders.check.helper.js'
+import { getColumnTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -142,31 +143,6 @@ async function validateParcel(item) {
   }
 }
 
-// Function to get tooltip for column headers
-function getColumnTooltip(key) {
-  const tooltip = ozonRegisterColumnTooltips[key]
-  const title = ozonRegisterColumnTitles[key]
-
-  if (tooltip && title) {
-    return `${title} (${tooltip})`
-  }
-  return title || null
-}
-
-// Function to get tooltip for checkStatusId with combined status info
-function getCheckStatusTooltip(item) {
-  const baseTitle = parcelCheckStatusStore.getStatusTitle(item.checkStatusId)
-
-  if (HasIssues(item.checkStatusId)) {
-    const checkInfo = getCheckStatusInfo(item, feacnOrders.value, stopWords.value)
-    if (checkInfo) {
-      return `${baseTitle}\n${checkInfo}`
-    }
-  }
-
-  return baseTitle
-}
-
 function getRowProps(data) {
   return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
 }
@@ -234,7 +210,7 @@ function getGenericTemplateHeaders() {
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
           <div
             class="truncated-cell"
-            :title="getColumnTooltip(header.key)"
+            :title="getColumnTooltip(header.key, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)"
           >
             {{ column.title || '' }}
           </div>
@@ -264,7 +240,7 @@ function getGenericTemplateHeaders() {
         <template #[`item.checkStatusId`]="{ item }">
           <div
             class="truncated-cell status-cell"
-            :title="getCheckStatusTooltip(item)"
+            :title="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
           >
             {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>

@@ -9,7 +9,7 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, computed } from 'vue'
+import { ref, watch, } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
@@ -37,14 +37,6 @@ const currentStatusId = ref(null)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
-
-function getCountryAlpha2(code) {
-  const num = Number(code)
-  const country = countries.value.find(c => c.isoNumeric === num)
-  return country ? country.isoAlpha2 : code
-}
-
-const countryAlpha2 = computed(() => getCountryAlpha2(item.value?.country))
 
 // Function to get label for a field
 const getFieldLabel = (fieldName) => {
@@ -75,6 +67,7 @@ await parcelsStore.getById(props.id)
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
   tnVed: Yup.string().required('Необходимо указать ТН ВЭД'),
+  countryCode: Yup.number().required('Необходимо выбрать страну'),
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
   quantity: Yup.number().nullable().min(0, 'Количество не может быть отрицательным'),
@@ -161,8 +154,22 @@ async function validateParcel() {
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
           <div class="form-group">
-            <label for="country" class="label" :title="getFieldTooltip('country')">{{ getFieldLabel('country') }}:</label>
-            <input id="country" type="text" class="form-control input" :value="countryAlpha2" readonly />
+            <label for="countryCode" class="label" :title="getFieldTooltip('countryCode')">{{ getFieldLabel('countryCode') }}:</label>
+            <Field
+              name="countryCode"
+              id="countryCode"
+              as="select"
+              class="form-control input"
+            >
+              <option value="">Выберите страну</option>
+              <option
+                v-for="country in countries"
+                :key="country.id"
+                :value="country.isoNumeric"
+              >
+                {{ country.nameRuOfficial }}
+              </option>
+            </Field>
           </div>
           <div class="form-group">
             <label for="weightKg" class="label" :title="getFieldTooltip('weightKg')">{{ getFieldLabel('weightKg') }}:</label>

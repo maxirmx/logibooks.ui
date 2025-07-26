@@ -39,5 +39,5 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
     return type ? type.title : `Тип ${id}`
   }
 
-  return { types, loading, error, getAll, ensureLoaded, getTitle, typeMap }
+  return { types, loading, error, getAll, ensureLoaded, getTitle }
 })

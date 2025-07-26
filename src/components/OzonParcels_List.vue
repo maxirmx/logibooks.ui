@@ -104,23 +104,23 @@ const headers = computed(() => {
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
 
     // Order Identification & Status - Key identifiers and current state
-    { title: ozonRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.PostingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.PlacesCount, key: 'placesCount', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.Article, key: 'article', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.Country, key: 'country', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.ProductName, key: 'productName', align: 'start', width: '200px' },
-    { title: ozonRegisterColumnTitles.WeightKg, key: 'weightKg', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.UnitPrice, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.Currency, key: 'currency', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.Quantity, key: 'quantity', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.ProductLink, key: 'productLink', align: 'start', width: '150px' },
-    { title: ozonRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.LastName, key: 'lastName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.FirstName, key: 'firstName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.Patronymic, key: 'patronymic', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.PassportNumber, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.article, key: 'article', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.currency, key: 'currency', align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', align: 'start', width: '150px' },
+    { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 
@@ -150,10 +150,8 @@ function getCountryAlpha2(code) {
 
 // Function to get tooltip for column headers
 function getColumnTooltip(key) {
-  // Convert camelCase key to PascalCase to match the mapping keys
-  const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-  const tooltip = ozonRegisterColumnTooltips[pascalKey]
-  const title = ozonRegisterColumnTitles[pascalKey]
+  const tooltip = ozonRegisterColumnTooltips[key]
+  const title = ozonRegisterColumnTitles[key]
 
   if (tooltip && title) {
     return `${title} (${tooltip})`
@@ -177,6 +175,17 @@ function getCheckStatusTooltip(item) {
 
 function getRowProps(data) {
   return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
+}
+
+// Function to filter headers that need generic templates
+function getGenericTemplateHeaders() {
+  return headers.value.filter(h => 
+    !h.key.startsWith('actions') && 
+    h.key !== 'productLink' && 
+    h.key !== 'statusId' && 
+    h.key !== 'checkStatusId' && 
+    h.key !== 'countryCode'
+  )
 }
 </script>
 
@@ -238,7 +247,7 @@ function getRowProps(data) {
         </template>
 
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId' && h.key !== 'checkStatusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div
             class="truncated-cell"
             :title="item[header.key] || ''"
@@ -283,9 +292,9 @@ function getRowProps(data) {
             <span v-else>-</span>
           </div>
         </template>
-        <template #[`item.country`]="{ item }">
-          <div class="truncated-cell" :title="getCountryAlpha2(item.country)">
-            {{ getCountryAlpha2(item.country) }}
+        <template #[`item.countryCode`]="{ item }">
+          <div class="truncated-cell" :title="item.countryCode ">
+            {{ getCountryAlpha2(item.countryCode) }}
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">

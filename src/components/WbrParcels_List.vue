@@ -104,28 +104,28 @@ const headers = computed(() => {
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
 
     // Order Identification & Status - Key identifiers and current state
-    { title: wbrRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    // { title: wbrRegisterColumnTitles.OrderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    // { title: wbrRegisterColumnTitles.orderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
 
     // Product Identification & Details - What the order contains
-    { title: wbrRegisterColumnTitles.Shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.ProductName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.ProductLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    { title: wbrRegisterColumnTitles.shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
+    { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
 
     // Physical Properties - Tangible characteristics
-    { title: wbrRegisterColumnTitles.Country, sortable: false, key: 'country', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.WeightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.Quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
+    { title: wbrRegisterColumnTitles.countryCode, sortable: false, key: 'countryCode', align: 'start', width: '100px' },
+    { title: wbrRegisterColumnTitles.weightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
+    { title: wbrRegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
 
     // Financial Information - Pricing and currency
-    { title: wbrRegisterColumnTitles.UnitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.Currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
+    { title: wbrRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
+    { title: wbrRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
 
     // Recipient Information - Who receives the order
-    { title: wbrRegisterColumnTitles.RecipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.PassportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
+    { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 
@@ -155,10 +155,8 @@ function getCountryAlpha2(code) {
 
 // Function to get tooltip for column headers
 function getColumnTooltip(key) {
-  // Convert camelCase key to PascalCase to match the mapping keys
-  const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-  const tooltip = wbrRegisterColumnTooltips[pascalKey]
-  const title = wbrRegisterColumnTitles[pascalKey]
+  const tooltip = wbrRegisterColumnTooltips[key]
+  const title = wbrRegisterColumnTitles[key]
 
   if (tooltip && title) {
     return `${title} (${tooltip})`
@@ -182,6 +180,17 @@ function getCheckStatusTooltip(item) {
 
 function getRowProps(data) {
   return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
+}
+
+// Function to filter headers that need generic templates
+function getGenericTemplateHeaders() {
+  return headers.value.filter(h => 
+    !h.key.startsWith('actions') && 
+    h.key !== 'productLink' && 
+    h.key !== 'statusId' && 
+    h.key !== 'checkStatusId' && 
+    h.key !== 'countryCode'
+  )
 }
 </script>
 
@@ -243,7 +252,7 @@ function getRowProps(data) {
         </template>
 
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId' && h.key !== 'checkStatusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div
             class="truncated-cell"
             :title="item[header.key] || ''"
@@ -288,9 +297,9 @@ function getRowProps(data) {
             <span v-else>-</span>
           </div>
         </template>
-        <template #[`item.country`]="{ item }">
-          <div class="truncated-cell" :title="getCountryAlpha2(item.country)">
-            {{ getCountryAlpha2(item.country) }}
+        <template #[`item.countryCode`]="{ item }">
+          <div class="truncated-cell" :title="item.countryCode">
+            {{ getCountryAlpha2(item.countryCode) }}
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">

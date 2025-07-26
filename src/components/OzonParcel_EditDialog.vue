@@ -46,34 +46,11 @@ function getCountryAlpha2(code) {
 
 const countryAlpha2 = computed(() => getCountryAlpha2(item.value?.country))
 
-// Field name mapping from camelCase to PascalCase for ozonRegisterColumnTitles lookup
-const fieldNameMapping = {
-  statusId: 'Status',
-  checkStatusId: 'CheckStatusId',
-  postingNumber: 'PostingNumber',
-  placesCount: 'PlacesCount',
-  article: 'Article',
-  country: 'Country',
-  productName: 'ProductName',
-  weightKg: 'WeightKg',
-  unitPrice: 'UnitPrice',
-  currency: 'Currency',
-  quantity: 'Quantity',
-  productLink: 'ProductLink',
-  tnVed: 'TnVed',
-  lastName: 'LastName',
-  firstName: 'FirstName',
-  patronymic: 'Patronymic',
-  passportNumber: 'PassportNumber'
-}
-
 // Function to get label for a field
 const getFieldLabel = (fieldName) => {
-  const mappingKey = fieldNameMapping[fieldName]
-  if (!mappingKey) return fieldName
 
-  const title = ozonRegisterColumnTitles[mappingKey]
-  const tooltip = ozonRegisterColumnTooltips[mappingKey]
+  const title = ozonRegisterColumnTitles[fieldName]
+  const tooltip = ozonRegisterColumnTooltips[fieldName]
 
   // If there's tooltip text, combine title with tooltip for a more descriptive label
   if (tooltip) {
@@ -85,8 +62,7 @@ const getFieldLabel = (fieldName) => {
 
 // Function to get tooltip for a field (if available)
 const getFieldTooltip = (fieldName) => {
-  const mappingKey = fieldNameMapping[fieldName]
-  return mappingKey ? ozonRegisterColumnTooltips[mappingKey] : null
+  return ozonRegisterColumnTooltips[fieldName] || null
 }
 
 statusStore.ensureStatusesLoaded()

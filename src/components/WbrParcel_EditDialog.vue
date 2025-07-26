@@ -46,63 +46,10 @@ function getCountryAlpha2(code) {
 
 const countryAlpha2 = computed(() => getCountryAlpha2(item.value?.country))
 
-// Field name mapping from camelCase to PascalCase for wbrRegisterColumnTitles lookup
-const fieldNameMapping = {
-  statusId: 'Status',
-  checkStatusId: 'CheckStatusId',
-  orderNumber: 'OrderNumber',
-  invoiceDate: 'InvoiceDate',
-  sticker: 'Sticker',
-  shk: 'Shk',
-  stickerCode: 'StickerCode',
-  extId: 'ExtId',
-  tnVed: 'TnVed',
-  siteArticle: 'SiteArticle',
-  heelHeight: 'HeelHeight',
-  size: 'Size',
-  productName: 'ProductName',
-  description: 'Description',
-  gender: 'Gender',
-  brand: 'Brand',
-  fabricType: 'FabricType',
-  composition: 'Composition',
-  lining: 'Lining',
-  insole: 'Insole',
-  sole: 'Sole',
-  country: 'Country',
-  factoryAddress: 'FactoryAddress',
-  unit: 'Unit',
-  weightKg: 'WeightKg',
-  quantity: 'Quantity',
-  unitPrice: 'UnitPrice',
-  currency: 'Currency',
-  barcode: 'Barcode',
-  declaration: 'Declaration',
-  productLink: 'ProductLink',
-  recipientName: 'RecipientName',
-  recipientInn: 'RecipientInn',
-  passportNumber: 'PassportNumber',
-  pinfl: 'Pinfl',
-  recipientAddress: 'RecipientAddress',
-  contactPhone: 'ContactPhone',
-  boxNumber: 'BoxNumber',
-  supplier: 'Supplier',
-  supplierInn: 'SupplierInn',
-  category: 'Category',
-  subcategory: 'Subcategory',
-  personalData: 'PersonalData',
-  customsClearance: 'CustomsClearance',
-  dutyPayment: 'DutyPayment',
-  otherReason: 'OtherReason'
-}
-
 // Function to get label for a field
 const getFieldLabel = (fieldName) => {
-  const mappingKey = fieldNameMapping[fieldName]
-  if (!mappingKey) return fieldName
-
-  const title = wbrRegisterColumnTitles[mappingKey]
-  const tooltip = wbrRegisterColumnTooltips[mappingKey]
+  const title = wbrRegisterColumnTitles[fieldName]
+  const tooltip = wbrRegisterColumnTooltips[fieldName]
 
   // If there's tooltip text, combine title with tooltip for a more descriptive label
   if (tooltip) {
@@ -114,8 +61,7 @@ const getFieldLabel = (fieldName) => {
 
 // Function to get tooltip for a field (if available)
 const getFieldTooltip = (fieldName) => {
-  const mappingKey = fieldNameMapping[fieldName]
-  return mappingKey ? wbrRegisterColumnTooltips[mappingKey] : null
+  return wbrRegisterColumnTooltips[fieldName] || null
 }
 
 statusStore.ensureStatusesLoaded()

@@ -264,7 +264,8 @@ describe('WbrParcels_List', () => {
       }
     })
 
-    // Wait for onMounted to complete
+    // Wait for onMounted to complete - since it's async, we need to wait longer
+    await new Promise(resolve => setTimeout(resolve, 0))
     await wrapper.vm.$nextTick()
 
     expect(ensureOrdersLoadedFeacn).toHaveBeenCalled()

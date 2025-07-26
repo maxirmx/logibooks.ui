@@ -9,11 +9,17 @@ import { vuetifyStubs } from './test-utils.js'
 const mockItems = ref([])
 const mockCompanies = ref([])
 const mockOrderStatuses = ref([])
+const mockCountries = ref([])
+const mockTransportationTypes = ref([])
+const mockCustomsProcedures = ref([])
 const getAll = vi.fn()
 const uploadFn = vi.fn()
 const setOrderStatusesFn = vi.fn()
 const getCompaniesAll = vi.fn()
 const getOrderStatusesAll = vi.fn()
+const getCountriesAll = vi.fn()
+const getTransportationTypesAll = vi.fn()
+const getCustomsProceduresAll = vi.fn()
 const generateAllFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertErrorFn = vi.fn()
@@ -41,6 +47,9 @@ vi.mock('pinia', async () => {
       } else if (store.getAll && store.parcelStatuses) {
         // parcel statuses store
         return { parcelStatuses: mockOrderStatuses }
+      } else if (store.getAll && store.countries) {
+        // countries store
+        return { countries: mockCountries }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -86,6 +95,32 @@ vi.mock('@/stores/companies.store.js', () => ({
   useCompaniesStore: () => ({
     getAll: getCompaniesAll,
     companies: mockCompanies
+  })
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: mockCountries,
+    getAll: getCountriesAll,
+    getCountryShortName: vi.fn(code => `Country ${code}`)
+  })
+}))
+
+vi.mock('@/stores/transportation.types.store.js', () => ({
+  useTransportationTypesStore: () => ({
+    types: mockTransportationTypes,
+    getAll: getTransportationTypesAll,
+    ensureLoaded: vi.fn(),
+    getTitle: vi.fn(id => `Type ${id}`)
+  })
+}))
+
+vi.mock('@/stores/customs.procedures.store.js', () => ({
+  useCustomsProceduresStore: () => ({
+    procedures: mockCustomsProcedures,
+    getAll: getCustomsProceduresAll,
+    ensureLoaded: vi.fn(),
+    getTitle: vi.fn(id => `Proc ${id}`)
   })
 }))
 
@@ -192,6 +227,25 @@ describe('Registers_List.vue', () => {
       mockCompanies.value = []
       const customerName = wrapper.vm.getCustomerName(1)
       expect(customerName).toBe('Неизвестно')
+    })
+  })
+
+  describe('getCountryName function', () => {
+    it('delegates to countriesStore.getCountryShortName', () => {
+      const wrapper = mount(RegistersList, {
+        global: { stubs: vuetifyStubs }
+      })
+
+      const result = wrapper.vm.getCountryName(643)
+      expect(result).toBe('Country 643')
+    })
+  })
+
+  describe('transportation/customs helpers', () => {
+    it('returns titles from stores', () => {
+      const wrapper = mount(RegistersList, { global: { stubs: vuetifyStubs } })
+      expect(wrapper.vm.getTransportationTypeTitle(1)).toBe('Type 1')
+      expect(wrapper.vm.getCustomsProcedureTitle(2)).toBe('Proc 2')
     })
   })
 

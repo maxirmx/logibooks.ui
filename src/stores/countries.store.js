@@ -40,5 +40,12 @@ export const useCountriesStore = defineStore('countries', () => {
     return country ? country.isoAlpha2 : code
   }
 
-  return { countries, loading, error, getAll, update, getCountryAlpha2 }
+  function getCountryShortName(code) {
+    const num = Number(code)
+    const country = countries.value.find(c => c.isoNumeric === num)
+    if (!country) return code
+    return country.nameRuShort || country.nameRuOfficial || code
+  }
+
+  return { countries, loading, error, getAll, update, getCountryAlpha2, getCountryShortName }
 })

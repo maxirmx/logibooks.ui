@@ -30,6 +30,9 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
+import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -61,6 +64,11 @@ const parcelStatusesStore = useParcelStatusesStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
+
+const countriesStore = useCountriesStore()
+const transportationTypesStore = useTransportationTypesStore()
+const customsProceduresStore = useCustomsProceduresStore()
+const { countries } = storeToRefs(countriesStore)
 
 const alertStore = useAlertStore()
 const confirm = useConfirm()
@@ -148,10 +156,27 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
+function getCountryName(code) {
+  return countriesStore.getCountryShortName(code)
+}
+
+function getTransportationTypeTitle(id) {
+  return transportationTypesStore.getTitle(id)
+}
+
+function getCustomsProcedureTitle(id) {
+  return customsProceduresStore.getTitle(id)
+}
+
 // Load companies and order statuses on component mount
 onMounted(async () => {
   await companiesStore.getAll()
   await parcelStatusesStore.getAll()
+  if (countries.value.length === 0) {
+    await countriesStore.getAll()
+  }
+  transportationTypesStore.ensureLoaded()
+  customsProceduresStore.ensureLoaded()
 })
 
 onUnmounted(() => {
@@ -297,6 +322,11 @@ const headers = [
   { title: '', key: 'actions5', sortable: false, align: 'center', width: '10px' },
   { title: 'Файл реестра', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
+  { title: 'Страна назначения', key: 'destCountryCode', align: 'start' },
+  { title: 'Дата инвойса', key: 'invoiceDate', align: 'start' },
+  { title: 'Номер инвойса', key: 'invoiceNumber', align: 'start' },
+  { title: 'Тип транспорта', key: 'transportationTypeId', align: 'start' },
+  { title: 'Таможенная процедура', key: 'customsProcedureId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
@@ -347,6 +377,21 @@ const headers = [
       >
         <template #[`item.companyId`]="{ item }">
           {{ getCustomerName(item.companyId) }}
+        </template>
+        <template #[`item.destCountryCode`]="{ item }">
+          {{ getCountryName(item.destCountryCode) }}
+        </template>
+        <template #[`item.invoiceDate`]="{ item }">
+          {{ item.invoiceDate }}
+        </template>
+        <template #[`item.invoiceNumber`]="{ item }">
+          {{ item.invoiceNumber }}
+        </template>
+        <template #[`item.transportationTypeId`]="{ item }">
+          {{ getTransportationTypeTitle(item.transportationTypeId) }}
+        </template>
+        <template #[`item.customsProcedureId`]="{ item }">
+          {{ getCustomsProcedureTitle(item.customsProcedureId) }}
         </template>
         <template #[`item.ordersTotal`]="{ item }">
           {{ item.ordersTotal }}

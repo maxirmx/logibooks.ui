@@ -80,7 +80,26 @@ describe('countries store', () => {
         { isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }
       ]
 
-      expect(store.getCountryAlpha2('643')).toBe('RU')
+    expect(store.getCountryAlpha2('643')).toBe('RU')
+  })
+  })
+
+  describe('getCountryShortName', () => {
+    it('returns short or official name for valid code', () => {
+      const store = useCountriesStore()
+      store.countries = [
+        { isoNumeric: 643, isoAlpha2: 'RU', nameRuOfficial: 'Россия', nameRuShort: 'Россия' },
+        { isoNumeric: 840, isoAlpha2: 'US', nameRuOfficial: 'США', nameRuShort: 'США' }
+      ]
+
+      expect(store.getCountryShortName(643)).toBe('Россия')
+      expect(store.getCountryShortName('840')).toBe('США')
+    })
+
+    it('returns original code for unknown code', () => {
+      const store = useCountriesStore()
+      store.countries = []
+      expect(store.getCountryShortName(123)).toBe(123)
     })
   })
 })

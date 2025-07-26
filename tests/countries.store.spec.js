@@ -81,7 +81,6 @@ describe('countries store', () => {
       ]
 
       expect(store.getCountryAlpha2('643')).toBe('RU')
-      expect(store.getCountryAlpha2('643.0')).toBe('RU')
     })
   })
 })

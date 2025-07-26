@@ -47,7 +47,10 @@ function request(method) {
         
         let response;
         try {
-            response = await fetch(url, requestOptions);
+           if (enableLog) {
+            console.log(url, requestOptions.body)
+           }
+           response = await fetch(url, requestOptions);
         } catch (error) {
             // Customize your error message here
             if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
@@ -91,7 +94,10 @@ function requestFile(method) {
 
         let response;
         try {
-            response = await fetch(url, requestOptions);
+          if (enableLog) {
+            console.log(url, requestOptions.body)
+          }
+          response = await fetch(url, requestOptions);
         } catch (error) {
             if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                 throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');

@@ -241,14 +241,6 @@ describe('Registers_List.vue', () => {
     })
   })
 
-  describe('transportation/customs helpers', () => {
-    it('returns titles from stores', () => {
-      const wrapper = mount(RegistersList, { global: { stubs: vuetifyStubs } })
-      expect(wrapper.vm.getTransportationTypeTitle(1)).toBe('Type 1')
-      expect(wrapper.vm.getCustomsProcedureTitle(2)).toBe('Proc 2')
-    })
-  })
-
   describe('component integration', () => {
     it('displays customer names correctly when items and companies are present', async () => {
       // Set up mock companies

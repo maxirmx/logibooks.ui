@@ -26,7 +26,6 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
       loading.value = false
     }
   }
-
   function ensureLoaded() {
     if (!initialized && types.value.length === 0 && !loading.value) {
       initialized = true
@@ -34,10 +33,10 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
     }
   }
 
-  function getTitle(id) {
+  function getName(id) {
     const type = typeMap.value.get(id)
-    return type ? type.title : `Тип ${id}`
+    return type ? type.name : `Тип ${id}`
   }
 
-  return { types, loading, error, getAll, ensureLoaded, getTitle }
+  return { types, loading, error, getAll, ensureLoaded, getName }
 })

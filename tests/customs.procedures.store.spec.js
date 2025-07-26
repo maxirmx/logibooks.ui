@@ -57,11 +57,11 @@ describe('customs procedures store', () => {
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
   })
 
-  it('getTitle returns title or fallback', async () => {
+  it('getName returns name or fallback', async () => {
     const store = useCustomsProceduresStore()
-    fetchWrapper.get.mockResolvedValueOnce([{ id: 3, title: 'Импорт' }])
+    fetchWrapper.get.mockResolvedValueOnce([{ id: 3, name: 'Импорт' }])
     await store.getAll()
-    expect(store.getTitle(3)).toBe('Импорт')
-    expect(store.getTitle(7)).toBe('Процедура 7')
+    expect(store.getName(3)).toBe('Импорт')
+    expect(store.getName(7)).toBe('Процедура 7')
   })
 })

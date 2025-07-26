@@ -34,10 +34,10 @@ export const useCustomsProceduresStore = defineStore('customsProcedures', () => 
     }
   }
 
-  function getTitle(id) {
+  function getName(id) {
     const proc = procedureMap.value.get(id)
-    return proc ? proc.title : `Процедура ${id}`
+    return proc ? proc.name : `Процедура ${id}`
   }
 
-  return { procedures, loading, error, getAll, ensureLoaded, getTitle, procedureMap }
+  return { procedures, loading, error, getAll, ensureLoaded, getName }
 })

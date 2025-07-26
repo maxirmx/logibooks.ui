@@ -66,9 +66,13 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const countriesStore = useCountriesStore()
-const transportationTypesStore = useTransportationTypesStore()
-const customsProceduresStore = useCustomsProceduresStore()
 const { countries } = storeToRefs(countriesStore)
+
+const transportationTypesStore = useTransportationTypesStore()
+transportationTypesStore.ensureLoaded()
+
+const customsProceduresStore = useCustomsProceduresStore()
+customsProceduresStore.ensureLoaded()
 
 const alertStore = useAlertStore()
 const confirm = useConfirm()
@@ -157,15 +161,7 @@ function getCustomerName(customerId) {
 }
 
 function getCountryName(code) {
-  return countriesStore.getCountryShortName(code)
-}
-
-function getTransportationTypeTitle(id) {
-  return transportationTypesStore.getTitle(id)
-}
-
-function getCustomsProcedureTitle(id) {
-  return customsProceduresStore.getTitle(id)
+  return countriesStore.getCountryShortName(code) || 'Неизвестно'
 }
 
 // Load companies and order statuses on component mount
@@ -175,8 +171,6 @@ onMounted(async () => {
   if (countries.value.length === 0) {
     await countriesStore.getAll()
   }
-  transportationTypesStore.ensureLoaded()
-  customsProceduresStore.ensureLoaded()
 })
 
 onUnmounted(() => {
@@ -315,24 +309,24 @@ function cancelValidation() {
 }
 
 const headers = [
-  { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
-  { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
-  { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
-  { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
-  { title: '', key: 'actions5', sortable: false, align: 'center', width: '10px' },
-  { title: 'Файл реестра', key: 'fileName', align: 'start' },
+  { title: '', key: 'actions1', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions2', sortable: false, align: 'center', width: '5x' },
+  { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions4', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
+  { title: 'Файл', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
-  { title: 'Страна назначения', key: 'destCountryCode', align: 'start' },
+  { title: 'Страна', key: 'destCountryCode', align: 'start' },
   { title: 'Дата инвойса', key: 'invoiceDate', align: 'start' },
   { title: 'Номер инвойса', key: 'invoiceNumber', align: 'start' },
-  { title: 'Тип транспорта', key: 'transportationTypeId', align: 'start' },
-  { title: 'Таможенная процедура', key: 'customsProcedureId', align: 'start' },
+  { title: 'Транспорт', key: 'transportationTypeId', align: 'start' },
+  { title: 'Процедура', key: 'customsProcedureId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-3">
     <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
@@ -388,10 +382,10 @@ const headers = [
           {{ item.invoiceNumber }}
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
-          {{ getTransportationTypeTitle(item.transportationTypeId) }}
+          {{ transportationTypesStore.getName(item.transportationTypeId) }}
         </template>
         <template #[`item.customsProcedureId`]="{ item }">
-          {{ getCustomsProcedureTitle(item.customsProcedureId) }}
+          {{ customsProceduresStore.getName(item.customsProcedureId) }}
         </template>
         <template #[`item.ordersTotal`]="{ item }">
           {{ item.ordersTotal }}

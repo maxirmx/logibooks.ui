@@ -61,12 +61,12 @@ describe('transportation types store', () => {
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
   })
 
-  it('getTitle returns title or fallback', async () => {
+  it('getName returns name or fallback', async () => {
     const store = useTransportationTypesStore()
-    fetchWrapper.get.mockResolvedValueOnce([{ id: 2, title: 'Авиа' }])
+    fetchWrapper.get.mockResolvedValueOnce([{ id: 2, name: 'Авиа' }])
     await store.getAll()
 
-    expect(store.getTitle(2)).toBe('Авиа')
-    expect(store.getTitle(5)).toBe('Тип 5')
+    expect(store.getName(2)).toBe('Авиа')
+    expect(store.getName(5)).toBe('Тип 5')
   })
 })

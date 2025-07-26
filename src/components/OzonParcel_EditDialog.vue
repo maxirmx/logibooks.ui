@@ -13,6 +13,7 @@ import { ref, watch } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import OzonFormField from './OzonFormField.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -117,26 +118,11 @@ async function validateParcel() {
       <div class="form-section">
         <h3 class="section-title">Информация о товаре</h3>
         <div class="form-row">
-          <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.tnVed }}:</label>
-            <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
-          </div>
-          <div class="form-group">
-            <label for="postingNumber" class="label" :title="getFieldTooltip('postingNumber', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.postingNumber }}:</label>
-            <Field name="postingNumber" id="postingNumber" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="placesCount" class="label" :title="getFieldTooltip('placesCount', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.placesCount }}:</label>
-            <Field name="placesCount" id="placesCount" type="number" step="1" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="article" class="label" :title="getFieldTooltip('article', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.article }}:</label>
-            <Field name="article" id="article" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="productName" class="label" :title="getFieldTooltip('productName', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.productName }}:</label>
-            <Field name="productName" id="productName" type="text" class="form-control input" />
-          </div>
+          <OzonFormField name="tnVed" :errors="errors" />
+          <OzonFormField name="postingNumber" :errors="errors" />
+          <OzonFormField name="placesCount" type="number" step="1" :errors="errors" />
+          <OzonFormField name="article" :errors="errors" />
+          <OzonFormField name="productName" :errors="errors" />
           <div class="form-group">
             <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
             <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link-inline" :title="item.productLink">
@@ -144,40 +130,16 @@ async function validateParcel() {
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-          <div class="form-group">
-            <label for="countryCode" class="label" :title="getFieldTooltip('countryCode', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.countryCode }}:</label>
-            <Field
-              name="countryCode"
-              id="countryCode"
-              as="select"
-              class="form-control input"
-            >
-              <option value="">Выберите страну</option>
-              <option
-                v-for="country in countries"
-                :key="country.id"
-                :value="country.isoNumeric"
-              >
-                {{ country.nameRuOfficial }}
-              </option>
-            </Field>
-          </div>
-          <div class="form-group">
-            <label for="weightKg" class="label" :title="getFieldTooltip('weightKg', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.weightKg }}:</label>
-            <Field name="weightKg" id="weightKg" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
-          </div>
-          <div class="form-group">
-            <label for="quantity" class="label" :title="getFieldTooltip('quantity', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.quantity }}:</label>
-            <Field name="quantity" id="quantity" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
-          </div>
-          <div class="form-group">
-            <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.unitPrice }}:</label>
-            <Field name="unitPrice" id="unitPrice" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
-          </div>
-          <div class="form-group">
-            <label for="currency" class="label" :title="getFieldTooltip('currency', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.currency }}:</label>
-            <Field name="currency" id="currency" type="text" class="form-control input" />
-          </div>
+          <OzonFormField name="countryCode" as="select" :errors="errors">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </OzonFormField>
+          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" />
+          <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" />
+          <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
+          <OzonFormField name="currency" :errors="errors" />
         </div>
       </div>
 
@@ -185,22 +147,10 @@ async function validateParcel() {
       <div class="form-section">
         <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
-          <div class="form-group">
-            <label for="lastName" class="label" :title="getFieldTooltip('lastName', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.lastName }}:</label>
-            <Field name="lastName" id="lastName" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="firstName" class="label" :title="getFieldTooltip('firstName', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.firstName }}:</label>
-            <Field name="firstName" id="firstName" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="patronymic" class="label" :title="getFieldTooltip('patronymic', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.patronymic }}:</label>
-            <Field name="patronymic" id="patronymic" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.passportNumber }}:</label>
-            <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
-          </div>
+          <OzonFormField name="lastName" :errors="errors" />
+          <OzonFormField name="firstName" :errors="errors" />
+          <OzonFormField name="patronymic" :errors="errors" />
+          <OzonFormField name="passportNumber" :errors="errors" />
         </div>
       </div>
 

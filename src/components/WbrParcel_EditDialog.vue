@@ -13,6 +13,7 @@ import { ref, watch, } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import WbrFormField from './WbrFormField.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -117,18 +118,9 @@ async function validateParcel() {
       <div class="form-section">
         <h3 class="section-title">Информация о товаре</h3>
         <div class="form-row">
-          <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.tnVed }}:</label>
-            <Field name="tnVed" id="tnVed" type="text" class="form-control input" :class="{ 'is-invalid': errors.tnVed }" />
-          </div>
-          <div class="form-group">
-            <label for="shk" class="label" :title="getFieldTooltip('shk', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.shk }}:</label>
-            <Field name="shk" id="shk" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="productName" class="label" :title="getFieldTooltip('productName', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.productName }}:</label>
-            <Field name="productName" id="productName" type="text" class="form-control input" />
-          </div>
+          <WbrFormField name="tnVed" :errors="errors" />
+          <WbrFormField name="shk" :errors="errors" />
+          <WbrFormField name="productName" :errors="errors" />
           <div class="form-group">
             <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
             <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link-inline" :title="item.productLink">
@@ -136,40 +128,16 @@ async function validateParcel() {
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-          <div class="form-group">
-            <label for="countryCode" class="label" :title="getFieldTooltip('countryCode', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.countryCode }}:</label>
-            <Field
-              name="countryCode"
-              id="countryCode"
-              as="select"
-              class="form-control input"
-            >
-              <option value="">Выберите страну</option>
-              <option
-                v-for="country in countries"
-                :key="country.id"
-                :value="country.isoNumeric"
-              >
-                {{ country.nameRuOfficial }}
-              </option>
-            </Field>
-          </div>
-          <div class="form-group">
-            <label for="weightKg" class="label" :title="getFieldTooltip('weightKg', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.weightKg }}:</label>
-            <Field name="weightKg" id="weightKg" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.weightKg }" />
-          </div>
-          <div class="form-group">
-            <label for="quantity" class="label" :title="getFieldTooltip('quantity', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.quantity }}:</label>
-            <Field name="quantity" id="quantity" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.quantity }" />
-          </div>
-          <div class="form-group">
-            <label for="unitPrice" class="label" :title="getFieldTooltip('unitPrice', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.unitPrice }}:</label>
-            <Field name="unitPrice" id="unitPrice" type="number" step="1.0" class="form-control input" :class="{ 'is-invalid': errors.unitPrice }" />
-          </div>
-          <div class="form-group">
-            <label for="currency" class="label" :title="getFieldTooltip('currency', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.currency }}:</label>
-            <Field name="currency" id="currency" type="text" class="form-control input" />
-          </div>
+          <WbrFormField name="countryCode" as="select" :errors="errors">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </WbrFormField>
+          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" />
+          <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" />
+          <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
+          <WbrFormField name="currency" :errors="errors" />
         </div>
       </div>
 
@@ -177,14 +145,8 @@ async function validateParcel() {
       <div class="form-section">
         <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
-          <div class="form-group">
-            <label for="recipientName" class="label" :title="getFieldTooltip('recipientName', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.recipientName }}:</label>
-            <Field name="recipientName" id="recipientName" type="text" class="form-control input" />
-          </div>
-          <div class="form-group">
-            <label for="passportNumber" class="label" :title="getFieldTooltip('passportNumber', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.passportNumber }}:</label>
-            <Field name="passportNumber" id="passportNumber" type="text" class="form-control input" />
-          </div>
+          <WbrFormField name="recipientName" :errors="errors" />
+          <WbrFormField name="passportNumber" :errors="errors" />
         </div>
       </div>
 

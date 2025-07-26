@@ -81,11 +81,22 @@ const confirm = useConfirm()
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page } = storeToRefs(authStore)
 
-const wbrFileInput = ref(null)
-const ozonFileInput = ref(null)
+const fileInput = ref(null)
+const selectedCustomerId = ref(WBR_COMPANY_ID)
 
 // State for bulk status change
 const bulkStatusState = reactive({})
+
+// Available customers for register upload
+const uploadCustomers = computed(() => {
+  if (!companies.value) return []
+  return companies.value.filter(company => 
+    company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID
+  ).map(company => ({
+    id: company.id,
+    name: getCustomerName(company.id)
+  }))
+})
 
 // Step 1: Toggle edit mode
 function bulkChangeStatus(registerId) {
@@ -171,41 +182,33 @@ onUnmounted(() => {
   stopPolling()
 })
 
-function openWbrFileDialog() {
-  wbrFileInput.value?.click()
-}
-
-function openOzonFileDialog() {
-  ozonFileInput.value?.click()
-}
-
-async function wbrFileSelected(files) {
-  const file = Array.isArray(files) ? files[0] : files
-  if (!file) return
-  try {
-    await registersStore.upload(file, WBR_COMPANY_ID)
-    loadRegisters()
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  } finally {
-    if (wbrFileInput.value) {
-      wbrFileInput.value.value = null
-    }
+function openFileDialog() {
+  if (!selectedCustomerId.value) {
+    alertStore.error('Пожалуйста, выберите клиента')
+    return
   }
+  fileInput.value?.click()
 }
 
-async function ozonFileSelected(files) {
+async function fileSelected(files) {
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
+  
+  if (!selectedCustomerId.value) {
+    alertStore.error('Не выбран клиент для загрузки реестра')
+    return
+  }
+
   try {
-    await registersStore.upload(file, OZON_COMPANY_ID)
+    await registersStore.upload(file, selectedCustomerId.value)
     alertStore.success('Реестр успешно загружен')
     loadRegisters()
   } catch (err) {
     alertStore.error(err.message || String(err))
   } finally {
-    if (ozonFileInput.value) {
-      ozonFileInput.value.value = null
+    // Clear the file input so the same file can be selected again
+    if (fileInput.value) {
+      fileInput.value.value = null
     }
   }
 }
@@ -332,25 +335,30 @@ const headers = [
     <hr class="hr" />
 
     <div class="link-crt d-flex upload-links">
-      <a @click="openWbrFileDialog" class="link" tabindex="0">
-        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "РВБ"
+      <a @click="openFileDialog" class="link" tabindex="0">
+        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр
       </a>
-      <v-file-input
-        ref="wbrFileInput"
-        style="display: none"
-        accept=".xls,.xlsx,.zip,.rar"
-        loading-text="Идёт загрузка реестра..."
-        @update:model-value="wbrFileSelected"
+      
+      <v-select
+        v-model="selectedCustomerId"
+        :items="uploadCustomers"
+        item-title="name"
+        item-value="id"
+        placeholder="Выберите клиента"
+        variant="outlined"
+        density="compact"
+        hide-details
+        hide-no-data
+        class="customer-select"
+        style="max-width: 280px; min-width: 150px; margin-left: 16px;"
       />
-      <a @click="openOzonFileDialog" class="link" tabindex="0">
-        <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="link" />&nbsp;&nbsp;&nbsp;Загрузить реестр ООО "Интернет решения"
-      </a>
+      
       <v-file-input
-        ref="ozonFileInput"
+        ref="fileInput"
         style="display: none"
         accept=".xls,.xlsx,.zip,.rar"
         loading-text="Идёт загрузка реестра..."
-        @update:model-value="ozonFileSelected"
+        @update:model-value="fileSelected"
       />
     </div>
 
@@ -590,5 +598,69 @@ const headers = [
 .anti-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.upload-links {
+  align-items: center;
+  gap: 16px;
+}
+
+.customer-select {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--primary-color, #1976d2);
+}
+
+.customer-select :deep(.v-field__input) {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--primary-color, #1976d2);
+}
+
+.customer-select :deep(.v-field__field) {
+  border-color: var(--primary-color, #1976d2);
+}
+
+.customer-select :deep(.v-field__outline) {
+  border-color: var(--primary-color, #1976d2);
+}
+
+.customer-select :deep(.v-select__selection) {
+  color: var(--primary-color, #1976d2);
+}
+
+.customer-select :deep(.v-field__append-inner) {
+  color: var(--primary-color, #1976d2);
+}
+
+.customer-select :deep(.v-list-item) {
+  color: var(--primary-color, #1976d2) !important;
+}
+
+.customer-select :deep(.v-list-item-title) {
+  color: var(--primary-color, #1976d2) !important;
+}
+
+.customer-select :deep(.v-list-item__title) {
+  color: var(--primary-color, #1976d2) !important;
+}
+
+.customer-select :deep(.v-list-item__content) {
+  color: var(--primary-color, #1976d2) !important;
+}
+</style>
+
+<style>
+/* Global styles for customer select dropdown */
+.v-overlay .v-list .v-list-item {
+  color: var(--primary-color, #1976d2) !important;
+}
+
+.v-overlay .v-list .v-list-item .v-list-item__title {
+  color: var(--primary-color, #1976d2) !important;
+}
+
+.v-overlay .v-list .v-list-item .v-list-item__content {
+  color: var(--primary-color, #1976d2) !important;
 }
 </style>

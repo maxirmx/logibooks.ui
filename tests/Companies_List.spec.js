@@ -47,6 +47,7 @@ const mockCountries = ref([
 // Centralized mock functions
 const getAllCompanies = vi.hoisted(() => vi.fn())
 const getAllCountries = vi.hoisted(() => vi.fn())
+const countriesEnsureLoaded = vi.hoisted(() => vi.fn())
 const createCompany = vi.hoisted(() => vi.fn())
 const updateCompany = vi.hoisted(() => vi.fn())
 const deleteCompanyFn = vi.hoisted(() => vi.fn())
@@ -89,7 +90,8 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
     countries: mockCountries,
     loading: false,
-    getAll: getAllCountries
+    getAll: getAllCountries,
+    ensureLoaded: countriesEnsureLoaded
   })
 }))
 
@@ -160,7 +162,7 @@ describe('Companies_List.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(getAllCompanies).toHaveBeenCalled()
-    expect(getAllCountries).toHaveBeenCalled()
+    expect(countriesEnsureLoaded).toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
 
     // Reset mock data for other tests
@@ -170,15 +172,9 @@ describe('Companies_List.vue', () => {
     ]
   })
 
-  it('does not fetch countries if already loaded', async () => {
+  it('calls ensureLoaded for countries on mount', async () => {
     // Clear previous calls
-    getAllCountries.mockClear()
-
-    // Start with populated countries
-    mockCountries.value = [
-      { id: 1, isoNumeric: 643, nameRuOfficial: 'Россия' },
-      { id: 2, isoNumeric: 840, nameRuOfficial: 'США' }
-    ]
+    countriesEnsureLoaded.mockClear()
 
     const wrapper = mount(CompaniesList, {
       global: {
@@ -190,7 +186,7 @@ describe('Companies_List.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(getAllCompanies).toHaveBeenCalled()
-    expect(getAllCountries).not.toHaveBeenCalled()
+    expect(countriesEnsureLoaded).toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
   })
 

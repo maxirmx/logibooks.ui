@@ -18,6 +18,7 @@ const setOrderStatusesFn = vi.fn()
 const getCompaniesAll = vi.fn()
 const getOrderStatusesAll = vi.fn()
 const getCountriesAll = vi.fn()
+const countriesEnsureLoadedFn = vi.fn()
 const getTransportationTypesAll = vi.fn()
 const getCustomsProceduresAll = vi.fn()
 const generateAllFn = vi.fn()
@@ -102,6 +103,7 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
     countries: mockCountries,
     getAll: getCountriesAll,
+    ensureLoaded: countriesEnsureLoadedFn,
     getCountryShortName: vi.fn(code => `Country ${code}`)
   })
 }))
@@ -173,6 +175,7 @@ describe('Registers_List.vue', () => {
       expect(getOrderStatusesAll).toHaveBeenCalled()
     })
     expect(getAll).toHaveBeenCalled()
+    expect(countriesEnsureLoadedFn).toHaveBeenCalled()
   })
 
   describe('getCustomerName function', () => {

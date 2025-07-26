@@ -135,10 +135,8 @@ async function deleteCompany(company) {
 // Initialize data
 onMounted(async () => {
   await companiesStore.getAll()
-  // Only fetch countries if not already loaded
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
+  // Fetch countries using ensureLoaded pattern
+  countriesStore.ensureLoaded()
 })
 
 // Expose functions for testing

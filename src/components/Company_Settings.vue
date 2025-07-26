@@ -119,10 +119,8 @@ function onSubmit(values, { setErrors }) {
 
 // Initialize data
 onMounted(async () => {
-  // Fetch countries if not already loaded
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
+  // Fetch countries using ensureLoaded pattern
+  countriesStore.ensureLoaded()
 })
 </script>
 

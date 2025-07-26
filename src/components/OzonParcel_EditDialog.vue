@@ -68,9 +68,7 @@ watch(() => item.value?.statusId, (newStatusId) => {
 statusStore.ensureStatusesLoaded()
 parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
-if (countries.value.length === 0) {
-  await countriesStore.getAll()
-}
+countriesStore.ensureLoaded()
 await parcelsStore.getById(props.id)
 
 const schema = Yup.object().shape({

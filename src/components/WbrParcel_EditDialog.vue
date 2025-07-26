@@ -104,7 +104,7 @@ async function validateParcel() {
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-3 form-compact">
     <h1 class="primary-heading">
       Посылка {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
@@ -141,7 +141,6 @@ async function validateParcel() {
 
       <!-- Product Identification & Details Section -->
       <div class="form-section">
-        <h3 class="section-title">Информация о товаре</h3>
         <div class="form-row">
           <WbrFormField name="tnVed" :errors="errors" />
           <WbrFormField name="shk" :errors="errors" />
@@ -164,11 +163,6 @@ async function validateParcel() {
           <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
           <WbrFormField name="currency" :errors="errors" />
         </div>
-      </div>
-
-      <!-- Recipient Information Section -->
-      <div class="form-section">
-        <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
           <WbrFormField name="recipientName" :errors="errors" />
           <WbrFormField name="passportNumber" :errors="errors" />

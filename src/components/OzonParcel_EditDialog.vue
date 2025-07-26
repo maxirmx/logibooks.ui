@@ -104,7 +104,7 @@ async function validateParcel() {
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-3 form-compact">
     <h1 class="primary-heading">
       Посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
     </h1>
@@ -137,11 +137,6 @@ async function validateParcel() {
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Product Identification & Details Section -->
-      <div class="form-section">
-        <h3 class="section-title">Информация о товаре</h3>
         <div class="form-row">
           <OzonFormField name="tnVed" :errors="errors" />
           <OzonFormField name="postingNumber" :errors="errors" />

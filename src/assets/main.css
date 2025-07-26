@@ -1124,3 +1124,80 @@ a,
     gap: 1rem;
   }
 }
+
+/* Compact form styles for edit dialogs */
+.form-compact .form-row {
+  row-gap: 0.5rem;      /* Reduce vertical gap from 1rem to 0.5rem */
+  margin-bottom: 0rem;
+}
+
+.form-compact .form-group {
+  margin-bottom: 0.25rem; /* Reduce from 0.5rem to 0.25rem */
+  gap: 0.375rem;          /* Reduce from 0.5rem to 0.375rem */
+}
+
+.form-compact .label {
+  font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
+  min-width: 120px;       /* Reduce from 140px to 120px */
+}
+
+.form-compact .input {
+  font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
+  height: 2rem;           /* Reduce from 2.25rem to 2rem */
+  padding: 0.2rem;        /* Reduce from 0.25rem to 0.2rem */
+}
+
+.form-compact .form-control {
+  font-size: 0.875rem;    /* Ensure form controls also use smaller font */
+  height: 2rem;
+  padding: 0.2rem;
+}
+
+.form-compact .section-title {
+  font-size: 1rem;        /* Reduce section title size */
+  margin-bottom: 0.5rem;  /* Reduce margin */
+}
+
+.form-compact .form-section {
+  margin-bottom: 1rem;    /* Reduce section spacing */
+}
+
+.form-compact .readonly-field {
+  font-size: 0.875rem;    /* Make readonly fields smaller too */
+  padding: 0.2rem;
+}
+
+.form-compact .product-link-inline {
+  font-size: 0.875rem;    /* Make product links smaller */
+}
+
+.form-compact .no-link {
+  font-size: 0.875rem;    /* Make no-link text smaller */
+}
+
+/*
+.form-compact .button {
+  font-size: 0.875rem;    
+  padding: 0.4rem 0.8rem; 
+  height: auto;            
+}
+
+.form-compact .validate-btn {
+  font-size: 0.875rem;    
+  padding: 0.2rem 0.4rem;
+}
+*/
+.form-compact .form-actions {
+  margin-top: 0.75rem;    /* Reduce top margin */
+  padding-top: 0.5rem;    /* Reduce padding */
+}
+
+.form-compact .stopwords-text {
+  font-size: 0.875rem;    /* Make stopwords text smaller */
+}
+/*
+.form-compact .primary-heading {
+  font-size: 1.5rem;       
+  margin-bottom: 0.75rem;  
+}
+*/

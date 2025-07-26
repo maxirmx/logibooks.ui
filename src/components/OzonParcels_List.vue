@@ -142,12 +142,6 @@ async function validateParcel(item) {
   }
 }
 
-function getCountryAlpha2(code) {
-  const num = Number(code)
-  const country = countries.value.find(c => c.isoNumeric === num)
-  return country ? country.isoAlpha2 : code
-}
-
 // Function to get tooltip for column headers
 function getColumnTooltip(key) {
   const tooltip = ozonRegisterColumnTooltips[key]
@@ -294,7 +288,7 @@ function getGenericTemplateHeaders() {
         </template>
         <template #[`item.countryCode`]="{ item }">
           <div class="truncated-cell" :title="item.countryCode ">
-            {{ getCountryAlpha2(item.countryCode) }}
+            {{ countriesStore.getCountryAlpha2(item.countryCode) }}
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">

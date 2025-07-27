@@ -94,6 +94,11 @@ export const useParcelsStore = defineStore('parcels', () => {
       return true
   }
 
+  async function approve(id) {
+      await fetchWrapper.post(`${baseUrl}/${id}/approve`)
+      return true
+  }
+
   return {
     items,
     item,
@@ -107,6 +112,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     update,
     generate,
     generateAll,
-    validate
+    validate,
+    approve
   }
 })

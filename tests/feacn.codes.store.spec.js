@@ -50,4 +50,24 @@ describe('feacn.codes store', () => {
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
   })
+
+  it('calls enable endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useFeacnCodesStore()
+    await store.enable(3)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
+  })
+
+  it('calls disable endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useFeacnCodesStore()
+    await store.disable(4)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
+  })
 })

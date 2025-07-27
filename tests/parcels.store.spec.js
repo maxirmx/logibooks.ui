@@ -207,4 +207,26 @@ describe('parcels store', () => {
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
     })
   })
+
+  describe('approve method', () => {
+    it('calls approve endpoint with correct id', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      const result = await store.approve(123)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/123/approve`)
+      expect(result).toBe(true)
+    })
+
+    it('throws error when approve fails', async () => {
+      const error = new Error('Approval failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.approve(123)).rejects.toThrow('Approval failed')
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/123/approve`)
+    })
+  })
 })

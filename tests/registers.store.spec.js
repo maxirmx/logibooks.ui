@@ -5,7 +5,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }
+  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn(), downloadFile: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -550,6 +550,55 @@ describe('registers store', () => {
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/5`, upd)
       expect(store.item.invoiceNumber).toBe('b')
       expect(store.items[0].invoiceNumber).toBe('b')
+    })
+  })
+
+  describe('download method', () => {
+    it('calls downloadFile with correct parameters', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const result = await store.download(10)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download`,
+        'register_10.xlsx'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('propagates error when download fails', async () => {
+      const store = useRegistersStore()
+      const error = new Error('Download failed')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+      console.error = vi.fn()
+      await expect(store.download(10)).rejects.toThrow('Download failed')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download`,
+        'register_10.xlsx'
+      )
+      expect(console.error).toHaveBeenCalled()
+    })
+  })
+
+  describe('nextOrder method', () => {
+    it('requests next order with correct id', async () => {
+      const order = { id: 2 }
+      fetchWrapper.get.mockResolvedValue(order)
+      const store = useRegistersStore()
+      const result = await store.nextOrder(5)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextorder/5`
+      )
+      expect(result).toEqual(order)
+    })
+
+    it('handles errors when nextOrder fails', async () => {
+      const error = new Error('fail')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useRegistersStore()
+      await expect(store.nextOrder(5)).rejects.toThrow('fail')
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextorder/5`
+      )
     })
   })
 })

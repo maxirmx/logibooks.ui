@@ -65,6 +65,6 @@ export const useCountriesStore = defineStore('countries', () => {
     update, 
     getCountryAlpha2, 
     getCountryShortName,
-    ensureLoaded,
+    ensureLoaded
   }
 })

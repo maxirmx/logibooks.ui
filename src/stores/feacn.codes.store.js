@@ -62,6 +62,32 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
     }
   }
 
+  async function enable(orderId) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/enable`)
+      await getOrders()
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function disable(orderId) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/disable`)
+      await getOrders()
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return { 
     orders, 
     prefixes, 
@@ -69,8 +95,10 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
     error, 
     isInitialized, 
     getOrders, 
-    getPrefixes, 
-    update, 
-    ensureOrdersLoaded 
+    getPrefixes,
+    update,
+    enable,
+    disable,
+    ensureOrdersLoaded
   }
 })

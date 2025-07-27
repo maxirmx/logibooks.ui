@@ -36,7 +36,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import OzonFormField from './OzonFormField.vue'
 
@@ -100,6 +100,17 @@ async function validateParcel() {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
   }
 }
+
+async function approveParcel() {
+  try {
+    await parcelsStore.approve(item.value.id)
+    // Reload the order data to reflect any changes
+    await parcelsStore.getById(props.id)
+  } catch (error) {
+    console.error('Failed to approve parcel:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
+  }
+}
 </script>
 
 <template>
@@ -122,12 +133,17 @@ async function validateParcel() {
           </div>
           <div class="form-group">
             <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.checkStatusId }}:</label>
-            <div class="readonly-field status-cell" :class="{ 'has-issues': HasIssues(item?.checkStatusId) }">
+            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatusId)">
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
-            <button class="validate-btn" @click="validateParcel" type="button" title="Проверить посылку">
-              <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
-            </button>
+            <div class="action-buttons">
+              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить">
+                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
+              </button>
+              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать">
+                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" />
+              </button>
+            </div>
           </div>
           <!-- Stopwords information when there are issues -->
           <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords)" class="form-group stopwords-info">

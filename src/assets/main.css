@@ -1046,6 +1046,26 @@ a,
   border: 1px solid rgba(244, 67, 54, 0.3);
 }
 
+/* Status cell styling for different check statuses */
+.status-cell.not-checked {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: #1976d2;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.status-cell.no-issues {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #388e3c;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-cell.is-approved {
+  background-color: rgba(76, 175, 80, 0.25);
+  color: #2e7d32;
+  border: 1px solid rgba(76, 175, 80, 0.5);
+  font-weight: 600;
+}
+
 /* Stopwords information styling */
 .stopwords-info {
   grid-column: 2; /* Only span the second column to align with checkStatusId field */
@@ -1116,6 +1136,56 @@ a,
 .validate-btn:focus {
   outline: none;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Action buttons container for horizontal alignment */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: 0.5rem;
+}
+
+/* Approve button styling - same as validate button */
+.approve-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #495057;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.approve-btn:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  color: #212529;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.approve-btn:active {
+  background-color: #dee2e6;
+  border-color: #adb5bd;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.approve-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Remove individual button margin since we're using flexbox gap */
+.action-buttons .validate-btn {
+  margin-left: 0;
 }
 
 @media (max-width: 768px) {

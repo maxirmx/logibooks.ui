@@ -128,3 +128,40 @@ export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollect
 export function HasIssues(checkStatusId) {
   return checkStatusId > 100 && checkStatusId <= 200
 }
+
+export function IsNotChecked(checkStatusId) {
+  return checkStatusId <= 100 
+}
+
+export function HasNoIssues(checkStatusId) {
+  return checkStatusId > 200 && checkStatusId <= 300
+}
+
+export function IsApproved(checkStatusId) {
+  return checkStatusId > 300
+}
+
+/**
+ * Get CSS class name for check status styling
+ * @param {number} checkStatusId - The check status identifier
+ * @returns {string} CSS class name for styling the status cell
+ */
+export function getCheckStatusClass(checkStatusId) {
+  if (checkStatusId === undefined || checkStatusId === null) {
+    return ''
+  }
+  if (HasIssues(checkStatusId)) {
+    return 'has-issues'
+  }
+  if (IsNotChecked(checkStatusId)) {
+    return 'not-checked'
+  }
+  if (HasNoIssues(checkStatusId)) {
+    return 'no-issues'
+  }
+  if (IsApproved(checkStatusId)) {
+    return 'is-approved'
+  }
+  return ''
+}
+

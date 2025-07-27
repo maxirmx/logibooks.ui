@@ -232,4 +232,32 @@ describe('OzonParcel_EditDialog', () => {
   it('loads stopwords on mount', () => {
     expect(mockStopWordsStore.getAll).toHaveBeenCalled()
   })
+
+  describe('Status Cell Styling', () => {
+    it('applies correct CSS class for different check status IDs', async () => {
+      // Test has-issues (101-200)
+      mockItem.value.checkStatusId = 150
+      await nextTick()
+      let statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('has-issues')
+
+      // Test not-checked (<=100)
+      mockItem.value.checkStatusId = 50
+      await nextTick()
+      statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('not-checked')
+
+      // Test no-issues (201-300)
+      mockItem.value.checkStatusId = 250
+      await nextTick()
+      statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('no-issues')
+
+      // Test is-approved (>300)
+      mockItem.value.checkStatusId = 350
+      await nextTick()
+      statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('is-approved')
+    })
+  })
 })

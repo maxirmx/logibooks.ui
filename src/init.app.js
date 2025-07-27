@@ -47,10 +47,38 @@ import {
   faBuilding,
   faCheck,
   faXmark,
-  faClipboardCheck
+  faClipboardCheck,
+  faToggleOn,
+  faToggleOff,
+  faCheckCircle,
+  faFileImport,
+  faFileExport
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPenToSquare, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog, faBuilding, faCheck, faXmark, faClipboardCheck)
+library.add(
+  faDownload, 
+  faEye, 
+  faEyeSlash, 
+  faHand, 
+  faPen, 
+  faPenToSquare, 
+  faPlay, 
+  faPlus, 
+  faTrashCan, 
+  faUserPlus, 
+  faList, 
+  faUpload, 
+  faCog, 
+  faBuilding, 
+  faCheck, 
+  faXmark, 
+  faClipboardCheck,
+  faToggleOn,
+  faToggleOff,
+  faCheckCircle,
+  faFileImport,
+  faFileExport
+)
 
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'

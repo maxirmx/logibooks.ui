@@ -331,8 +331,8 @@ const headers = [
   { title: 'Файл', key: 'fileName', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Страна', key: 'destCountryCode', align: 'start' },
-  { title: 'Дата инвойса', key: 'invoiceDate', align: 'start' },
-  { title: 'Номер инвойса', key: 'invoiceNumber', align: 'start' },
+  { title: 'Номер накладной', key: 'invoiceNumber', align: 'start' },
+  { title: 'Дата накладной', key: 'invoiceDate', align: 'start' },
   { title: 'Транспорт', key: 'transportationTypeId', align: 'start' },
   { title: 'Процедура', key: 'customsProcedureId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
@@ -348,7 +348,7 @@ const headers = [
       <a @click="openFileDialog" class="link" tabindex="0">
         <font-awesome-icon
           size="1x"
-          icon="fa-solid fa-upload"
+          icon="fa-solid fa-file-import"
           class="link"
         />&nbsp;&nbsp;&nbsp;Загрузить реестр
       </a>
@@ -493,7 +493,7 @@ const headers = [
           <v-tooltip text="Выгрузить накладные для всех посылок в реестре">
             <template v-slot:activator="{ props }">
               <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

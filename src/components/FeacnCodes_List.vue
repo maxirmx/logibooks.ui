@@ -146,7 +146,7 @@ const prefixHeaders = [
 
     <div class="link-crt" v-if="isAdmin">
       <a @click="updateCodes" class="link">
-        <font-awesome-icon size="1x" icon="fa-solid fa-download" class="link" />
+        <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
         &nbsp;&nbsp;&nbsp;Обновить информацию о кодах ТН ВЭД с ограничениями
       </a>
     </div>

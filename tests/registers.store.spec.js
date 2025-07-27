@@ -569,7 +569,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const error = new Error('Download failed')
       fetchWrapper.downloadFile.mockRejectedValue(error)
-      console.error = vi.fn()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       await expect(store.download(10)).rejects.toThrow('Download failed')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/10/download`,

@@ -981,3 +981,76 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
     parcelStatuses: mockOrderStatuses
   })
 }))
+
+describe('formatInvoiceDate function', () => {
+  it('formats a valid date string correctly in dd.MM.yyyy format', () => {
+    const wrapper = mount(RegistersList, {
+      global: { stubs: vuetifyStubs }
+    })
+    
+    // Test with ISO format string
+    const isoDate = '2025-07-27T12:34:56'
+    expect(wrapper.vm.formatInvoiceDate(isoDate)).toBe('27.07.2025')
+    
+    // Test with different date
+    const anotherDate = '2023-01-05'
+    expect(wrapper.vm.formatInvoiceDate(anotherDate)).toBe('05.01.2023')
+  })
+  
+  it('handles single-digit day and month with padding', () => {
+    const wrapper = mount(RegistersList, {
+      global: { stubs: vuetifyStubs }
+    })
+    
+    // Test with single-digit day
+    const singleDigitDay = '2025-07-03'
+    expect(wrapper.vm.formatInvoiceDate(singleDigitDay)).toBe('03.07.2025')
+    
+    // Test with single-digit month
+    const singleDigitMonth = '2025-03-15'
+    expect(wrapper.vm.formatInvoiceDate(singleDigitMonth)).toBe('15.03.2025')
+    
+    // Test with both single-digit day and month
+    const bothSingleDigit = '2025-02-09'
+    expect(wrapper.vm.formatInvoiceDate(bothSingleDigit)).toBe('09.02.2025')
+  })
+  
+  it('returns empty string for null or undefined input', () => {
+    const wrapper = mount(RegistersList, {
+      global: { stubs: vuetifyStubs }
+    })
+    
+    expect(wrapper.vm.formatInvoiceDate(null)).toBe('')
+    expect(wrapper.vm.formatInvoiceDate(undefined)).toBe('')
+    expect(wrapper.vm.formatInvoiceDate('')).toBe('')
+  })
+  
+  it('returns original string for invalid date input', () => {
+    const wrapper = mount(RegistersList, {
+      global: { stubs: vuetifyStubs }
+    })
+    
+    const invalidDate = 'not-a-date'
+    expect(wrapper.vm.formatInvoiceDate(invalidDate)).toBe(invalidDate)
+    
+    const anotherInvalidDate = '2025/13/45'  // invalid month and day
+    expect(wrapper.vm.formatInvoiceDate(anotherInvalidDate)).toBe(anotherInvalidDate)
+  })
+  
+  it('handles different date formats correctly', () => {
+    const wrapper = mount(RegistersList, {
+      global: { stubs: vuetifyStubs }
+    })
+    
+    // Testing with more reliable date format MM/DD/YYYY (US)
+    expect(wrapper.vm.formatInvoiceDate('07/27/2025')).toBe('27.07.2025')
+    
+    // Date object directly
+    const dateObj = new Date(2025, 6, 27)  // Month is 0-indexed
+    expect(wrapper.vm.formatInvoiceDate(dateObj)).toBe('27.07.2025')
+    
+    // Date with time component
+    const dateWithTime = new Date('2025-07-27T15:30:45')
+    expect(wrapper.vm.formatInvoiceDate(dateWithTime)).toBe('27.07.2025')
+  })
+})

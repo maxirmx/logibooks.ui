@@ -333,7 +333,7 @@ function formatInvoiceDate(dateStr) {
 
 const headers = [
   { title: '', key: 'actions1', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions2', sortable: false, align: 'center', width: '5x' },
+  { title: '', key: 'actions2', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions6', sortable: false, align: 'center', width: '5px' },

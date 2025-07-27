@@ -23,13 +23,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<template>
-  <StopWord_Settings :id="route.params.id" />
-</template>
-
 <script setup>
 import { useRoute } from 'vue-router'
 import StopWord_Settings from '@/components/StopWord_Settings.vue'
 
 const route = useRoute()
 </script>
+
+<template>
+  <StopWord_Settings :id="route.params.id" />
+</template>

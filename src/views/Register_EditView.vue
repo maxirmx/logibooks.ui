@@ -24,11 +24,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import UserSettings from '@/components/User_Settings.vue'
+import RegisterEditDialog from '@/components/Register_EditDialog.vue'
+
+const props = defineProps({
+  id: { type: Number, required: true }
+})
 </script>
 
 <template>
   <Suspense>
-    <UserSettings :register="true" />
+    <RegisterEditDialog :id="props.id" />
   </Suspense>
 </template>

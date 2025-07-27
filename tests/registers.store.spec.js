@@ -35,7 +35,10 @@ describe('registers store', () => {
     describe('API format with pagination metadata', () => {
       it('fetches data from API with default parameters', async () => {
         const mockResponse = {
-          items: [{ id: 1, name: 'Register 1' }, { id: 2, name: 'Register 2' }],
+          items: [
+            { id: 1, name: 'Register 1' },
+            { id: 2, name: 'Register 2' }
+          ],
           pagination: {
             totalCount: 2,
             hasNextPage: false,
@@ -43,10 +46,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll()
-        
+
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`
         )
@@ -65,10 +68,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll(2, 5, 'name', 'desc', 'search term')
-        
+
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&search=search+term`
         )
@@ -88,10 +91,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll(1, 10)
-        
+
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(25)
         expect(store.hasNextPage).toBe(true)
@@ -102,7 +105,9 @@ describe('registers store', () => {
 
       it('fetches data with new format - middle page', async () => {
         const mockResponse = {
-          items: Array(10).fill().map((_, i) => ({ id: i + 11, name: `Register ${i + 11}` })),
+          items: Array(10)
+            .fill()
+            .map((_, i) => ({ id: i + 11, name: `Register ${i + 11}` })),
           pagination: {
             totalCount: 50,
             hasNextPage: true,
@@ -110,10 +115,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll(2, 10, 'name', 'asc', 'filter')
-        
+
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=2&pageSize=10&sortBy=name&sortOrder=asc&search=filter`
         )
@@ -137,10 +142,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll(5, 10)
-        
+
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(50)
         expect(store.hasNextPage).toBe(false)
@@ -157,10 +162,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', 'nonexistent')
-        
+
         expect(store.items).toEqual([])
         expect(store.totalCount).toBe(0)
         expect(store.hasNextPage).toBe(false)
@@ -173,10 +178,10 @@ describe('registers store', () => {
           // No pagination property
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll()
-        
+
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(0) // Default value
         expect(store.hasNextPage).toBe(false) // Default value
@@ -192,10 +197,10 @@ describe('registers store', () => {
           }
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll()
-        
+
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(15)
         expect(store.hasNextPage).toBe(false) // Default value
@@ -212,10 +217,10 @@ describe('registers store', () => {
           // No items property
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
-        
+
         const store = useRegistersStore()
         await store.getAll()
-        
+
         expect(store.items).toEqual([]) // Default to empty array
         expect(store.totalCount).toBe(0)
         expect(store.hasNextPage).toBe(false)
@@ -227,10 +232,10 @@ describe('registers store', () => {
       it('sets error when request fails', async () => {
         const errorMessage = 'Network error'
         fetchWrapper.get.mockRejectedValue(new Error(errorMessage))
-        
+
         const store = useRegistersStore()
         await store.getAll()
-        
+
         expect(store.error).toBeTruthy()
         expect(store.error.message).toBe(errorMessage)
         expect(store.loading).toBe(false)
@@ -239,12 +244,12 @@ describe('registers store', () => {
 
       it('clears previous error on successful request', async () => {
         const store = useRegistersStore()
-        
+
         // First request fails
         fetchWrapper.get.mockRejectedValueOnce(new Error('First error'))
         await store.getAll()
         expect(store.error).toBeTruthy()
-        
+
         // Second request succeeds
         fetchWrapper.get.mockResolvedValue({
           items: [{ id: 1 }],
@@ -259,36 +264,40 @@ describe('registers store', () => {
     describe('loading state', () => {
       it('sets loading to true during request and false after completion', async () => {
         let resolvePromise
-        const promise = new Promise(resolve => { resolvePromise = resolve })
+        const promise = new Promise((resolve) => {
+          resolvePromise = resolve
+        })
         fetchWrapper.get.mockReturnValue(promise)
-        
+
         const store = useRegistersStore()
         const getAllPromise = store.getAll()
-        
+
         expect(store.loading).toBe(true)
-        
+
         resolvePromise({
           items: [{ id: 1 }],
           pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
         })
         await getAllPromise
-        
+
         expect(store.loading).toBe(false)
       })
 
       it('sets loading to false even when request fails', async () => {
         let rejectPromise
-        const promise = new Promise((resolve, reject) => { rejectPromise = reject })
+        const promise = new Promise((resolve, reject) => {
+          rejectPromise = reject
+        })
         fetchWrapper.get.mockReturnValue(promise)
-        
+
         const store = useRegistersStore()
         const getAllPromise = store.getAll()
-        
+
         expect(store.loading).toBe(true)
-        
+
         rejectPromise(new Error('Test error'))
         await getAllPromise
-        
+
         expect(store.loading).toBe(false)
       })
     })
@@ -299,10 +308,10 @@ describe('registers store', () => {
           items: [],
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
         })
-        
+
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', '')
-        
+
         const calledUrl = fetchWrapper.get.mock.calls[0][0]
         expect(calledUrl).not.toContain('search=')
       })
@@ -312,10 +321,10 @@ describe('registers store', () => {
           items: [],
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
         })
-        
+
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', 'test search')
-        
+
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&search=test+search`
         )
@@ -326,10 +335,10 @@ describe('registers store', () => {
           items: [],
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
         })
-        
+
         const store = useRegistersStore()
         await store.getAll(1, 10, 'id', 'asc', 'test & search + special chars')
-        
+
         const calledUrl = fetchWrapper.get.mock.calls[0][0]
         expect(calledUrl).toContain('search=test+%26+search+%2B+special+chars')
       })
@@ -339,7 +348,7 @@ describe('registers store', () => {
   describe('initial state', () => {
     it('initializes with correct default values', () => {
       const store = useRegistersStore()
-      
+
       expect(store.items).toEqual([])
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
@@ -359,7 +368,9 @@ describe('registers store', () => {
       await store.upload(file, customerId)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(`${apiUrl}/registers/upload/${customerId}`)
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload/${customerId}`
+      )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
@@ -402,7 +413,7 @@ describe('registers store', () => {
       fetchWrapper.put.mockRejectedValue(error)
 
       const store = useRegistersStore()
-      
+
       await expect(store.setOrderStatuses(123, 456)).rejects.toThrow(errorMessage)
       expect(store.error).toBe(error)
       expect(store.loading).toBe(false)
@@ -410,7 +421,9 @@ describe('registers store', () => {
 
     it('sets loading state during setOrderStatuses request', async () => {
       let resolvePromise
-      const promise = new Promise(resolve => { resolvePromise = resolve })
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve
+      })
       fetchWrapper.put.mockReturnValue(promise)
 
       const store = useRegistersStore()
@@ -426,7 +439,9 @@ describe('registers store', () => {
 
     it('sets loading to false even when setOrderStatuses request fails', async () => {
       let rejectPromise
-      const promise = new Promise((resolve, reject) => { rejectPromise = reject })
+      const promise = new Promise((resolve, reject) => {
+        rejectPromise = reject
+      })
       fetchWrapper.put.mockReturnValue(promise)
 
       const store = useRegistersStore()
@@ -442,12 +457,12 @@ describe('registers store', () => {
 
     it('clears previous error on successful setOrderStatuses request', async () => {
       const store = useRegistersStore()
-      
+
       // First request fails
       fetchWrapper.put.mockRejectedValueOnce(new Error('First error'))
       await expect(store.setOrderStatuses(123, 456)).rejects.toThrow('First error')
       expect(store.error).toBeTruthy()
-      
+
       // Second request succeeds
       fetchWrapper.put.mockResolvedValue({ success: true })
       await store.setOrderStatuses(123, 456)
@@ -491,13 +506,18 @@ describe('registers store', () => {
   describe('remove', () => {
     it('removes register successfully', async () => {
       fetchWrapper.delete.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false } })
+      fetchWrapper.get.mockResolvedValue({
+        items: [],
+        pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+      })
 
       const store = useRegistersStore()
       await store.remove(1)
 
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/1`)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`
+      )
     })
 
     it('handles remove error', async () => {
@@ -507,6 +527,29 @@ describe('registers store', () => {
       const store = useRegistersStore()
 
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
+    })
+  })
+
+  describe('getById and update', () => {
+    it('retrieves single register', async () => {
+      const data = { id: 5, fileName: 'r' }
+      fetchWrapper.get.mockResolvedValueOnce(data)
+      const store = useRegistersStore()
+      await store.getById(5)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/5`)
+      expect(store.item).toEqual(data)
+    })
+
+    it('updates register and store', async () => {
+      fetchWrapper.put.mockResolvedValue({})
+      const store = useRegistersStore()
+      store.items = [{ id: 5, invoiceNumber: 'a' }]
+      store.item = { id: 5, invoiceNumber: 'a' }
+      const upd = { invoiceNumber: 'b' }
+      await store.update(5, upd)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/5`, upd)
+      expect(store.item.invoiceNumber).toBe('b')
+      expect(store.items[0].invoiceNumber).toBe('b')
     })
   })
 })

@@ -1,5 +1,3 @@
-<script setup>
-
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -25,6 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
 import { computed, ref, onMounted } from 'vue'
 import OzonParcelsList from '@/components/OzonParcels_List.vue'
 import WbrParcelsList from '@/components/WbrParcels_List.vue'

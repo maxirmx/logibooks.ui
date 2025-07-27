@@ -7,6 +7,7 @@ const baseUrl = `${apiUrl}/registers`
 
 export const useRegistersStore = defineStore('registers', () => {
   const items = ref([])
+  const item = ref({})
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
@@ -58,12 +59,39 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function getById(id) {
+    item.value = { loading: true }
+    try {
+      item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+    } catch (err) {
+      item.value = { error: err }
+    }
+  }
+
+  async function update(id, data) {
+    const res = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+    if (item.value && item.value.id === id) {
+      item.value = { ...item.value, ...data }
+    }
+    const idx = items.value.findIndex((r) => r.id === id)
+    if (idx !== -1) {
+      items.value[idx] = { ...items.value[idx], ...data }
+    }
+    return res
+  }
+
   async function setOrderStatuses(registerId, statusId) {
     loading.value = true
     error.value = null
     try {
-      console.log('Store: setOrderStatuses called with:', { registerId, statusId, type: typeof statusId })
-      const response = await fetchWrapper.put(`${baseUrl}/${registerId}/setorderstatuses/${statusId}`)
+      console.log('Store: setOrderStatuses called with:', {
+        registerId,
+        statusId,
+        type: typeof statusId
+      })
+      const response = await fetchWrapper.put(
+        `${baseUrl}/${registerId}/setorderstatuses/${statusId}`
+      )
       console.log('Store: Response received:', response)
       return response
     } catch (err) {
@@ -104,7 +132,7 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function remove(id) {
-   try {
+    try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
       // Refresh the list after deletion
       await getAll()
@@ -116,6 +144,7 @@ export const useRegistersStore = defineStore('registers', () => {
 
   return {
     items,
+    item,
     loading,
     error,
     totalCount,
@@ -123,6 +152,8 @@ export const useRegistersStore = defineStore('registers', () => {
     hasPreviousPage,
     getAll,
     upload,
+    getById,
+    update,
     setOrderStatuses,
     validate,
     getValidationProgress,

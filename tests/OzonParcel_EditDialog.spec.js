@@ -25,6 +25,9 @@ vi.mock('pinia', async () => {
       if (store.orders) {
         return { orders: store.orders }
       }
+      if (store.countries) {
+        return { countries: store.countries }
+      }
       return {}
     })
   }
@@ -64,7 +67,10 @@ const mockItem = ref({
 const mockOrdersStore = createMockStore({
   item: mockItem,
   getById: vi.fn().mockResolvedValue(mockItem.value),
-  update: vi.fn().mockResolvedValue({})
+  update: vi.fn().mockResolvedValue({}),
+  generate: vi.fn().mockResolvedValue(true),
+  validate: vi.fn().mockResolvedValue(true),
+  approve: vi.fn().mockResolvedValue(true)
 })
 
 const mockStatusStore = createMockStore({
@@ -103,6 +109,11 @@ const mockFeacnCodesStore = createMockStore({
   ],
   getAll: vi.fn().mockResolvedValue([])
 })
+const mockCountriesStore = createMockStore({
+  countries: ref([]),
+  getAll: vi.fn(),
+  ensureLoaded: vi.fn()
+})
 
 // Mock stores
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -123,6 +134,15 @@ vi.mock('@/stores/stop.words.store.js', () => ({
 
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: vi.fn(() => mockCountriesStore)
+}))
+
+// Mock the next item helper
+vi.mock('@/helpers/next.item.helper.js', () => ({
+  findNextParcelWithIssues: vi.fn().mockResolvedValue(2)
 }))
 
 describe('OzonParcel_EditDialog', () => {
@@ -196,13 +216,38 @@ describe('OzonParcel_EditDialog', () => {
     })
   })
 
-  it('renders save and cancel buttons', () => {
+  it('renders all required buttons', () => {
     const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBeGreaterThanOrEqual(2)
+    expect(buttons.length).toBeGreaterThanOrEqual(4) // Save, cancel, next issue, invoice
 
-    const buttonTexts = buttons.map(btn => btn.text())
-    expect(buttonTexts).toContain('Сохранить')
-    expect(buttonTexts).toContain('Отменить')
+    // Find buttons by partial text match instead of exact match
+    const nextIssueButton = wrapper.findAll('button').find(btn => btn.text().includes('Следующая проблема'))
+    expect(nextIssueButton).toBeTruthy()
+    
+    const saveButton = wrapper.findAll('button').find(btn => btn.text().includes('Сохранить'))
+    expect(saveButton).toBeTruthy()
+    
+    const invoiceButton = wrapper.findAll('button').find(btn => btn.text().includes('Накладная'))
+    expect(invoiceButton).toBeTruthy()
+    
+    const cancelButton = wrapper.findAll('button').find(btn => btn.text().includes('Отменить'))
+    expect(cancelButton).toBeTruthy()
+    
+    // Check button order - validate that the "Next Issue" button comes before the save button
+    const allButtons = wrapper.findAll('button')
+    const nextIssueIndex = [...allButtons].findIndex(btn => btn.text().includes('Следующая проблема'))
+    const saveIndex = [...allButtons].findIndex(btn => btn.text().includes('Сохранить'))
+    
+    expect(nextIssueIndex).toBeLessThan(saveIndex)
+  })
+  
+  it('calls generate when invoice button is clicked', async () => {
+    const invoiceButton = wrapper.findAll('button').find(btn => btn.text().includes('Накладная'))
+    expect(invoiceButton).toBeTruthy()
+    
+    await invoiceButton.trigger('click')
+    
+    expect(mockOrdersStore.generate).toHaveBeenCalledWith(1)
   })
 
   it('calls getById on mount', () => {
@@ -219,5 +264,33 @@ describe('OzonParcel_EditDialog', () => {
 
   it('loads stopwords on mount', () => {
     expect(mockStopWordsStore.getAll).toHaveBeenCalled()
+  })
+
+  describe('Status Cell Styling', () => {
+    it('applies correct CSS class for different check status IDs', async () => {
+      // Test has-issues (101-200)
+      mockItem.value.checkStatusId = 150
+      await nextTick()
+      let statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('has-issues')
+
+      // Test not-checked (<=100)
+      mockItem.value.checkStatusId = 50
+      await nextTick()
+      statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('not-checked')
+
+      // Test no-issues (201-300)
+      mockItem.value.checkStatusId = 250
+      await nextTick()
+      statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('no-issues')
+
+      // Test is-approved (>300)
+      mockItem.value.checkStatusId = 350
+      await nextTick()
+      statusCell = wrapper.find('.status-cell')
+      expect(statusCell.classes()).toContain('is-approved')
+    })
   })
 })

@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { getStopWordsText, getStopWordsInfo, getFeacnOrdersText, getFeacnOrdersInfo, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { 
+  getStopWordsText, 
+  getStopWordsInfo, 
+  getFeacnOrdersText, 
+  getFeacnOrdersInfo, 
+  getCheckStatusInfo,
+  HasIssues,
+  IsNotChecked,
+  HasNoIssues,
+  IsApproved,
+  getCheckStatusClass
+} from '@/helpers/orders.check.helper.js'
 
 describe('orders.check.helper', () => {
   const mockStopWords = [
@@ -202,6 +213,99 @@ describe('orders.check.helper', () => {
       const item = { feacnOrderIds: [999], stopWordIds: [1] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
       expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+  })
+
+  describe('Status Check Functions', () => {
+    describe('HasIssues', () => {
+      it('returns true for status IDs between 100 and 200', () => {
+        expect(HasIssues(101)).toBe(true)
+        expect(HasIssues(150)).toBe(true)
+        expect(HasIssues(200)).toBe(true)
+      })
+
+      it('returns false for status IDs <= 100', () => {
+        expect(HasIssues(50)).toBe(false)
+        expect(HasIssues(100)).toBe(false)
+      })
+
+      it('returns false for status IDs > 200', () => {
+        expect(HasIssues(201)).toBe(false)
+        expect(HasIssues(300)).toBe(false)
+      })
+    })
+
+    describe('IsNotChecked', () => {
+      it('returns true for status IDs <= 100', () => {
+        expect(IsNotChecked(50)).toBe(true)
+        expect(IsNotChecked(100)).toBe(true)
+      })
+
+      it('returns false for status IDs > 100', () => {
+        expect(IsNotChecked(101)).toBe(false)
+        expect(IsNotChecked(200)).toBe(false)
+      })
+    })
+
+    describe('HasNoIssues', () => {
+      it('returns true for status IDs between 200 and 300', () => {
+        expect(HasNoIssues(201)).toBe(true)
+        expect(HasNoIssues(250)).toBe(true)
+        expect(HasNoIssues(300)).toBe(true)
+      })
+
+      it('returns false for status IDs <= 200', () => {
+        expect(HasNoIssues(150)).toBe(false)
+        expect(HasNoIssues(200)).toBe(false)
+      })
+
+      it('returns false for status IDs > 300', () => {
+        expect(HasNoIssues(301)).toBe(false)
+        expect(HasNoIssues(400)).toBe(false)
+      })
+    })
+
+    describe('IsApproved', () => {
+      it('returns true for status IDs > 300', () => {
+        expect(IsApproved(301)).toBe(true)
+        expect(IsApproved(400)).toBe(true)
+        expect(IsApproved(999)).toBe(true)
+      })
+
+      it('returns false for status IDs <= 300', () => {
+        expect(IsApproved(250)).toBe(false)
+        expect(IsApproved(300)).toBe(false)
+      })
+    })
+
+    describe('getCheckStatusClass', () => {
+      it('returns "has-issues" for status IDs indicating issues', () => {
+        expect(getCheckStatusClass(101)).toBe('has-issues')
+        expect(getCheckStatusClass(150)).toBe('has-issues')
+        expect(getCheckStatusClass(200)).toBe('has-issues')
+      })
+
+      it('returns "not-checked" for status IDs indicating not checked', () => {
+        expect(getCheckStatusClass(50)).toBe('not-checked')
+        expect(getCheckStatusClass(100)).toBe('not-checked')
+      })
+
+      it('returns "no-issues" for status IDs indicating no issues', () => {
+        expect(getCheckStatusClass(201)).toBe('no-issues')
+        expect(getCheckStatusClass(250)).toBe('no-issues')
+        expect(getCheckStatusClass(300)).toBe('no-issues')
+      })
+
+      it('returns "is-approved" for status IDs indicating approved', () => {
+        expect(getCheckStatusClass(301)).toBe('is-approved')
+        expect(getCheckStatusClass(400)).toBe('is-approved')
+        expect(getCheckStatusClass(999)).toBe('is-approved')
+      })
+
+      it('returns empty string for undefined or null status IDs', () => {
+        expect(getCheckStatusClass(undefined)).toBe('')
+        expect(getCheckStatusClass(null)).toBe('')
+      })
     })
   })
 })

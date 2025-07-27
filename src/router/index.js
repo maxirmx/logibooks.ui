@@ -73,7 +73,7 @@ const router = createRouter({
     {
       path: '/companies',
       name: 'Компании',
-      component: () => import('@/views/Companies_View.vue'),
+      component: () => import('@/views/Companies_View.vue')
     },
     {
       path: '/parcelstatuses',
@@ -91,7 +91,7 @@ const router = createRouter({
       path: '/parcelstatus/edit/:id',
       name: 'Редактирование статуса посылки',
       component: () => import('@/views/ParcelStatus_EditView.vue'),
-      props: route => ({
+      props: (route) => ({
         id: Number(route.params.id)
       }),
       meta: { requiresAdmin: true }
@@ -112,7 +112,7 @@ const router = createRouter({
       path: '/stopword/edit/:id',
       name: 'Редактирование стоп-слова или фразы',
       component: () => import('@/views/StopWord_EditView.vue'),
-      props: route => ({
+      props: (route) => ({
         id: Number(route.params.id)
       }),
       meta: { requiresAdmin: true }
@@ -120,12 +120,12 @@ const router = createRouter({
     {
       path: '/countries',
       name: 'Страны',
-      component: () => import('@/views/Countries_View.vue'),
+      component: () => import('@/views/Countries_View.vue')
     },
     {
       path: '/feacn',
       name: 'Коды ТН ВЭД',
-      component: () => import('@/views/FeacnCodes_View.vue'),
+      component: () => import('@/views/FeacnCodes_View.vue')
     },
     {
       path: '/registers',
@@ -137,7 +137,7 @@ const router = createRouter({
       path: '/registers/:id/parcels',
       name: 'Посылки',
       component: () => import('@/views/Parcels_View.vue'),
-      props: route => ({
+      props: (route) => ({
         id: Number(route.params.id)
       }),
       meta: { requiresLogist: true, hideSidebar: true }
@@ -146,17 +146,24 @@ const router = createRouter({
       path: '/registers/:registerId/parcels/edit/:id',
       name: 'Редактирование посылки',
       component: () => import('@/views/Parcel_EditView.vue'),
-      props: route => ({
+      props: (route) => ({
         registerId: Number(route.params.registerId),
         id: Number(route.params.id)
       }),
       meta: { requiresLogist: true, hideSidebar: true }
     },
     {
+      path: '/register/edit/:id',
+      name: 'Редактирование реестра',
+      component: () => import('@/views/Register_EditView.vue'),
+      props: (route) => ({ id: Number(route.params.id) }),
+      meta: { requiresLogist: true, hideSidebar: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),
-      props: route => ({
+      props: (route) => ({
         id: Number(route.params.id)
       })
     },
@@ -170,7 +177,7 @@ const router = createRouter({
       path: '/company/edit/:id',
       name: 'Изменить информацию о компании',
       component: () => import('@/views/Company_EditView.vue'),
-      props: route => ({
+      props: (route) => ({
         id: Number(route.params.id)
       }),
       meta: { requiresAdmin: true }

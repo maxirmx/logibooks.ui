@@ -1,4 +1,4 @@
-<script setup>
+
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
 import RegistersList from '@/components/Registers_List.vue'
 </script>
 

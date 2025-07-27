@@ -34,7 +34,8 @@ const mockCompaniesStore = createMockStore({
 
 const mockCountriesStore = createMockStore({
   countries: mockCountries,
-  getAll: vi.fn().mockResolvedValue()
+  getAll: vi.fn().mockResolvedValue(),
+  ensureLoaded: vi.fn()
 })
 
 const mockAlertStore = createMockStore({
@@ -268,10 +269,7 @@ describe('Company_Settings.vue', () => {
   })
 
   describe('Store Integration', () => {
-    it('fetches countries on mount when empty', async () => {
-      // Set countries to empty to trigger fetch
-      mockCountriesStore.countries = []
-      
+    it('calls ensureLoaded on mount', async () => {
       mount(AsyncWrapper, {
         props: { mode: 'create' },
         global: {
@@ -281,22 +279,7 @@ describe('Company_Settings.vue', () => {
 
       await resolveAll()
       
-      expect(mockCountriesStore.getAll).toHaveBeenCalled()
-    })
-
-    it('does not fetch countries when already loaded', async () => {
-      mockCountriesStore.countries = mockCountries
-      
-      mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      
-      expect(mockCountriesStore.getAll).not.toHaveBeenCalled()
+      expect(mockCountriesStore.ensureLoaded).toHaveBeenCalled()
     })
 
     it('handles store loading states', async () => {
@@ -520,7 +503,7 @@ describe('Company_Settings.vue', () => {
 
       const cancelButton = wrapper.find('button.secondary')
       expect(cancelButton.exists()).toBe(true)
-      expect(cancelButton.text()).toBe('Отмена')
+      expect(cancelButton.text()).toBe('Отменить')
 
       await cancelButton.trigger('click')
       expect(mockRouter.push).toHaveBeenCalledWith('/companies')

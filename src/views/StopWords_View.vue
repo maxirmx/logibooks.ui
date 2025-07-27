@@ -23,10 +23,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<template>
-  <StopWords_List />
-</template>
-
 <script setup>
 import StopWords_List from '@/components/StopWords_List.vue'
 </script>
+
+<template>
+  <StopWords_List />
+</template>

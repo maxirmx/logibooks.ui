@@ -1,3 +1,4 @@
+<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -23,7 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
@@ -225,6 +225,7 @@ defineExpose({
       <div class="form-group">
         <button class="button primary" type="submit" :disabled="saving">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
         <button
@@ -232,7 +233,8 @@ defineExpose({
           type="button"
           @click="cancel"
         >
-          Отмена
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
+          Отменить
         </button>
       </div>
 

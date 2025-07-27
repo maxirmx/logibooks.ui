@@ -47,10 +47,40 @@ import {
   faBuilding,
   faCheck,
   faXmark,
-  faClipboardCheck
+  faClipboardCheck,
+  faToggleOn,
+  faToggleOff,
+  faCheckCircle,
+  faFileImport,
+  faFileExport,
+  faCheckDouble
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faDownload, faEye, faEyeSlash, faHand, faPen, faPenToSquare, faPlay, faPlus, faTrashCan, faUserPlus, faList, faUpload, faCog, faBuilding, faCheck, faXmark, faClipboardCheck)
+library.add(
+  faDownload, 
+  faEye, 
+  faEyeSlash, 
+  faHand, 
+  faPen, 
+  faPenToSquare, 
+  faPlay, 
+  faPlus, 
+  faTrashCan, 
+  faUserPlus, 
+  faList, 
+  faUpload, 
+  faCog, 
+  faBuilding, 
+  faCheck, 
+  faXmark, 
+  faClipboardCheck,
+  faToggleOn,
+  faToggleOff,
+  faCheckCircle,
+  faFileImport,
+  faFileExport,
+  faCheckDouble
+)
 
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
@@ -63,6 +93,8 @@ import router from '@/router'
 
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -123,11 +155,15 @@ export function initializeApp() {
 
   // Initialize global data after Pinia is set up
   const feacnCodesStore = useFeacnCodesStore()
-  
+  const transportationTypesStore = useTransportationTypesStore()
+  const customsProceduresStore = useCustomsProceduresStore()
+
   // Load feacnOrders globally at app startup
   feacnCodesStore.ensureOrdersLoaded().catch(error => {
     console.warn('Failed to load feacn orders at startup:', error)
   })
+  transportationTypesStore.ensureLoaded()
+  customsProceduresStore.ensureLoaded()
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

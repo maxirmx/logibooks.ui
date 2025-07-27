@@ -94,6 +94,15 @@ export default [
         module: 'readonly',
         require: 'readonly',
         global: 'readonly',
+        // Browser globals needed for tests
+        Blob: 'readonly',
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
       }
     },
   },

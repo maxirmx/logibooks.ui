@@ -1,10 +1,37 @@
 <script setup>
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks frontend application
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+
 import { watch, ref, computed, onMounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -12,7 +39,8 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
+import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -23,6 +51,8 @@ const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
+const countriesStore = useCountriesStore()
+countriesStore.ensureLoaded()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
@@ -96,25 +126,26 @@ const headers = computed(() => {
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
 
     // Order Identification & Status - Key identifiers and current state
-    { title: ozonRegisterColumnTitles.Status, key: 'statusId', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.CheckStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.PostingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.PlacesCount, key: 'placesCount', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.Article, key: 'article', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.Country, key: 'country', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.ProductName, key: 'productName', align: 'start', width: '200px' },
-    { title: ozonRegisterColumnTitles.WeightKg, key: 'weightKg', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.UnitPrice, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.Currency, key: 'currency', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.Quantity, key: 'quantity', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.ProductLink, key: 'productLink', align: 'start', width: '150px' },
-    { title: ozonRegisterColumnTitles.TnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.LastName, key: 'lastName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.FirstName, key: 'firstName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.Patronymic, key: 'patronymic', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.PassportNumber, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.article, key: 'article', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.currency, key: 'currency', align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', align: 'start', width: '150px' },
+    { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', align: 'start', width: '120px' }
   ]
 })
 
@@ -122,8 +153,13 @@ function editParcel(item) {
   router.push(`/registers/${props.registerId}/parcels/edit/${item.id}`)
 }
 
-function exportParcelXml(item) {
-  parcelsStore.generate(item.id)
+async function exportParcelXml(item) {
+  try {
+    await parcelsStore.generate(item.id)
+  } catch (error) {
+    console.error('Failed to export parcel XML:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
+  }
 }
 
 async function validateParcel(item) {
@@ -136,35 +172,29 @@ async function validateParcel(item) {
   }
 }
 
-// Function to get tooltip for column headers
-function getColumnTooltip(key) {
-  // Convert camelCase key to PascalCase to match the mapping keys
-  const pascalKey = key.charAt(0).toUpperCase() + key.slice(1)
-  const tooltip = ozonRegisterColumnTooltips[pascalKey]
-  const title = ozonRegisterColumnTitles[pascalKey]
-
-  if (tooltip && title) {
-    return `${title} (${tooltip})`
+async function approveParcel(item) {
+  try {
+    await parcelsStore.approve(item.id)
+    loadOrders()
+  } catch (error) {
+    console.error('Failed to approve parcel:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
   }
-  return title || null
-}
-
-// Function to get tooltip for checkStatusId with combined status info
-function getCheckStatusTooltip(item) {
-  const baseTitle = parcelCheckStatusStore.getStatusTitle(item.checkStatusId)
-
-  if (HasIssues(item.checkStatusId)) {
-    const checkInfo = getCheckStatusInfo(item, feacnOrders.value, stopWords.value)
-    if (checkInfo) {
-      return `${baseTitle}\n${checkInfo}`
-    }
-  }
-
-  return baseTitle
 }
 
 function getRowProps(data) {
   return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
+}
+
+// Function to filter headers that need generic templates
+function getGenericTemplateHeaders() {
+  return headers.value.filter(h => 
+    !h.key.startsWith('actions') && 
+    h.key !== 'productLink' && 
+    h.key !== 'statusId' && 
+    h.key !== 'checkStatusId' && 
+    h.key !== 'countryCode'
+  )
 }
 </script>
 
@@ -219,14 +249,14 @@ function getRowProps(data) {
         <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
           <div
             class="truncated-cell"
-            :title="getColumnTooltip(header.key)"
+            :title="getFieldTooltip(header.key, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)"
           >
             {{ column.title || '' }}
           </div>
         </template>
 
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions') && h.key !== 'productLink' && h.key !== 'statusId' && h.key !== 'checkStatusId')" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
           <div
             class="truncated-cell"
             :title="item[header.key] || ''"
@@ -249,7 +279,8 @@ function getRowProps(data) {
         <template #[`item.checkStatusId`]="{ item }">
           <div
             class="truncated-cell status-cell"
-            :title="getCheckStatusTooltip(item)"
+            :class="getCheckStatusClass(item.checkStatusId)"
+            :title="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
           >
             {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
           </div>
@@ -271,8 +302,13 @@ function getRowProps(data) {
             <span v-else>-</span>
           </div>
         </template>
+        <template #[`item.countryCode`]="{ item }">
+          <div class="truncated-cell" :title="item.countryCode ">
+            {{ countriesStore.getCountryAlpha2(item.countryCode) }}
+          </div>
+        </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать посылку">
+          <v-tooltip text="Редактировать информацию о посылке">
             <template v-slot:activator="{ props }">
               <button @click="editParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -284,7 +320,7 @@ function getRowProps(data) {
           <v-tooltip text="Выгрузить накладную для посылки">
             <template v-slot:activator="{ props }">
               <button @click="exportParcelXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
@@ -294,6 +330,15 @@ function getRowProps(data) {
             <template v-slot:activator="{ props }">
               <button @click="validateParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions4`]="{ item }">
+          <v-tooltip text="Согласовать">
+            <template v-slot:activator="{ props }">
+              <button @click="approveParcel(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

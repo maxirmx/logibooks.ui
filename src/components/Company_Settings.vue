@@ -24,7 +24,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
@@ -46,7 +46,7 @@ const props = defineProps({
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
-
+countriesStore.ensureLoaded()
 const { countries } = storeToRefs(countriesStore)
 
 // Check if we're in create mode
@@ -117,13 +117,6 @@ function onSubmit(values, { setErrors }) {
   }
 }
 
-// Initialize data
-onMounted(async () => {
-  // Fetch countries if not already loaded
-  if (countries.value.length === 0) {
-    await countriesStore.getAll()
-  }
-})
 </script>
 
 <template>
@@ -243,6 +236,7 @@ onMounted(async () => {
       <div class="form-group">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
         <button
@@ -250,7 +244,8 @@ onMounted(async () => {
           type="button"
           @click="$router.push('/companies')"
         >
-          Отмена
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
+          Отменить
         </button>
       </div>
       <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>

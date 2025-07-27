@@ -8,7 +8,8 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
     put: vi.fn(),
-    post: vi.fn()
+    post: vi.fn(),
+    downloadFile: vi.fn()
   }
 }))
 
@@ -165,14 +166,28 @@ describe('parcels store', () => {
   })
 
   describe('generate methods', () => {
-    it('generate calls with correct id', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
+    it('generate calls downloadFile with correct parameters', async () => {
       const store = useParcelsStore()
-      await store.generate(123)
-
-      expect(consoleSpy).toHaveBeenCalledWith('stub generate parcel XML', 123)
-      consoleSpy.mockRestore()
+      
+      // Mock fetchWrapper.downloadFile
+      fetchWrapper.downloadFile = vi.fn().mockResolvedValue(true)
+      
+      const result = await store.generate(123)
+      
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/orders/123/generate`, 'parcel_123.xml')
+      expect(result).toBe(true)
+    })
+    
+    it('throws error when generate fails', async () => {
+      const store = useParcelsStore()
+      const error = new Error('Generation failed')
+      
+      fetchWrapper.downloadFile = vi.fn().mockRejectedValue(error)
+      console.error = vi.fn() // Mock console.error to prevent test output noise
+      
+      await expect(store.generate(123)).rejects.toThrow('Generation failed')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/orders/123/generate`, 'parcel_123.xml')
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('generateAll calls with correct registerId', async () => {
@@ -205,6 +220,28 @@ describe('parcels store', () => {
 
       await expect(store.validate(789)).rejects.toThrow('Validation failed')
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
+    })
+  })
+
+  describe('approve method', () => {
+    it('calls approve endpoint with correct id', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      const result = await store.approve(123)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/123/approve`)
+      expect(result).toBe(true)
+    })
+
+    it('throws error when approve fails', async () => {
+      const error = new Error('Approval failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.approve(123)).rejects.toThrow('Approval failed')
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/123/approve`)
     })
   })
 })

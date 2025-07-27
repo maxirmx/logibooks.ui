@@ -80,8 +80,14 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function generate(id) {
-    // Generate XML for a specific parcel - stub implementation
-    console.log('stub generate parcel XML', id)
+    try {
+      // Use the new downloadFile helper with a default filename
+      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, `parcel_${id}.xml`)
+    } catch (err) {
+      console.error('Error downloading file:', err)
+      error.value = err?.message || 'Ошибка при выгрузке накладной для посылки'
+      throw err
+    }
   }
 
   async function generateAll(registerId) {
@@ -91,6 +97,11 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function validate(id) {
       await fetchWrapper.post(`${baseUrl}/${id}/validate`)
+      return true
+  }
+
+  async function approve(id) {
+      await fetchWrapper.post(`${baseUrl}/${id}/approve`)
       return true
   }
 
@@ -107,6 +118,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     update,
     generate,
     generateAll,
-    validate
+    validate,
+    approve
   }
 })

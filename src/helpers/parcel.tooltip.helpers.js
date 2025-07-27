@@ -23,25 +23,42 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { useAuthStore } from '@/stores/auth.store.js'
+import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
 
 /**
- * Determines the route to navigate to after successful login
- * based on user roles and permissions
- * @returns {string} The path to redirect to
+ * Get tooltip for form fields combining title and tooltip information
+ * @param {string} key - The field key
+ * @param {Object} columnTitles - Object mapping field keys to titles
+ * @param {Object} columnTooltips - Object mapping field keys to tooltips
+ * @returns {string|null} Combined tooltip text or title only, or null if no title exists
  */
-export function getHomeRoute() {
-  const authStore = useAuthStore()
-  
-  // No user means we should go to login
-  if (!authStore.user) {
-    return '/login'
+export function getFieldTooltip(key, columnTitles, columnTooltips) {
+  const tooltip = columnTooltips[key]
+  const title = columnTitles[key]
+
+  if (tooltip && title) {
+    return `${title} (${tooltip})`
+  }
+  return title || null
+}
+
+/**
+ * Get tooltip for checkStatusId with combined status info including issues details
+ * @param {Object} item - The parcel item with checkStatusId and other properties
+ * @param {Function} getStatusTitle - Function to get status title by ID
+ * @param {Array} feacnOrders - Array of FEACN orders for issue checking
+ * @param {Array} stopWords - Array of stop words for issue checking
+ * @returns {string} Tooltip text with status and optional issue details
+ */
+export function getCheckStatusTooltip(item, getStatusTitle, feacnOrders, stopWords) {
+  const baseTitle = getStatusTitle(item.checkStatusId)
+
+  if (HasIssues(item.checkStatusId)) {
+    const checkInfo = getCheckStatusInfo(item, feacnOrders, stopWords)
+    if (checkInfo) {
+      return `${baseTitle}\n${checkInfo}`
+    }
   }
 
-  // Priority: logist > administrator > regular user
-  if (authStore.isLogist) return '/registers'
-  if (authStore.isAdmin) return '/users'
-  
-  // Regular user - go to edit profile
-  return '/user/edit/' + authStore.user.id
+  return baseTitle
 }

@@ -160,7 +160,7 @@ function editParcel(item) {
 }
 
 function exportParcelXml(item) {
-  parcelsStore.generate(item.id)
+  parcelsStore.exportXml(item.id)
 }
 
 async function validateParcel(item) {

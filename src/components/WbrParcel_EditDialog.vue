@@ -34,7 +34,9 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, } from 'vue'
+import { ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { findNextIssueParcel } from '@/helpers/parcel.navigation.js'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
@@ -51,6 +53,9 @@ const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
+const authStore = useAuthStore()
+
+const goNext = ref(false)
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -81,11 +86,23 @@ const schema = Yup.object().shape({
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
 
-function onSubmit(values, { setErrors }) {
-  return parcelsStore
-    .update(props.id, values)
-    .then(() => router.push(`/registers/${props.registerId}/parcels`))
-    .catch((error) => setErrors({ apiError: error.message || String(error) }))
+async function onSubmit(values, { setErrors }) {
+  try {
+    await parcelsStore.update(props.id, values)
+    if (goNext.value) {
+      const nextId = await findNextIssueParcel(parcelsStore, props.registerId, props.id)
+      goNext.value = false
+      if (nextId) {
+        router.push(`/registers/${props.registerId}/parcels/edit/${nextId}`)
+      } else {
+        router.push(`/registers/${props.registerId}/parcels`)
+      }
+    } else {
+      router.push(`/registers/${props.registerId}/parcels`)
+    }
+  } catch (error) {
+    setErrors({ apiError: error.message || String(error) })
+  }
 }
 
 
@@ -110,6 +127,10 @@ async function approveParcel() {
     console.error('Failed to approve parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
   }
+}
+
+function saveAndNext() {
+  goNext.value = true
 }
 </script>
 
@@ -187,6 +208,10 @@ async function approveParcel() {
       <!-- Action buttons -->
 
       <div class="form-actions">
+        <button class="button primary" type="submit" :disabled="isSubmitting" @click="saveAndNext">
+          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          Следующая проблема
+        </button>
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           Сохранить

@@ -165,6 +165,16 @@ describe('parcels store', () => {
   })
 
   describe('generate methods', () => {
+    it('exportXml calls with correct id', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      const store = useParcelsStore()
+      await store.exportXml(321)
+
+      expect(consoleSpy).toHaveBeenCalledWith('stub export parcel XML', 321)
+      consoleSpy.mockRestore()
+    })
+
     it('generate calls with correct id', async () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 

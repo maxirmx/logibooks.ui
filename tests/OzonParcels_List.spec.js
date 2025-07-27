@@ -76,7 +76,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
     hasNextPage: false,
     hasPreviousPage: false,
     getAll: vi.fn(),
-    validate: vi.fn()
+    validate: vi.fn(),
+    exportXml: vi.fn()
   })
 }))
 
@@ -286,6 +287,21 @@ describe('OzonParcels_List', () => {
 
     // The validate function should be called with the order id
     expect(wrapper.vm.parcelsStore.validate).toHaveBeenCalledWith(123)
+  })
+
+  it('exportParcelXml calls store exportXml method', async () => {
+    const wrapper = mount(ParcelsList, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [pinia],
+        stubs: globalStubs
+      }
+    })
+
+    const testOrder = { id: 321 }
+    await wrapper.vm.exportParcelXml(testOrder)
+
+    expect(wrapper.vm.parcelsStore.exportXml).toHaveBeenCalledWith(321)
   })
 
   it('marks rows with issues using getRowProps', () => {

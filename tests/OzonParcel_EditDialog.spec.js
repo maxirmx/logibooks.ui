@@ -10,6 +10,12 @@ vi.mock('@/router', () => ({
   default: { push: vi.fn() }
 }))
 
+// Mock helper for finding next issue
+const nextIssueMock = vi.fn().mockResolvedValue(null)
+vi.mock('@/helpers/parcel.navigation.js', () => ({
+  findNextIssueParcel: () => nextIssueMock()
+}))
+
 // Mock Pinia's storeToRefs to return the mock values
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -210,9 +216,10 @@ describe('OzonParcel_EditDialog', () => {
 
   it('renders save and cancel buttons', () => {
     const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBeGreaterThanOrEqual(2)
+    expect(buttons.length).toBeGreaterThanOrEqual(3)
 
     const buttonTexts = buttons.map(btn => btn.text())
+    expect(buttonTexts).toContain('Следующая проблема')
     expect(buttonTexts).toContain('Сохранить')
     expect(buttonTexts).toContain('Отменить')
   })
@@ -231,6 +238,17 @@ describe('OzonParcel_EditDialog', () => {
 
   it('loads stopwords on mount', () => {
     expect(mockStopWordsStore.getAll).toHaveBeenCalled()
+  })
+
+  it('calls helper and navigates when saveAndNext is used', async () => {
+    nextIssueMock.mockResolvedValue(5)
+    const buttons = wrapper.findAll('button')
+    await buttons[0].trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(nextIssueMock).toHaveBeenCalled()
+    const router = (await import('@/router')).default
+    expect(router.push).toHaveBeenCalledWith('/registers/1/parcels/edit/5')
   })
 
   describe('Status Cell Styling', () => {

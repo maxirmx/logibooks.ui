@@ -84,6 +84,11 @@ export const useParcelsStore = defineStore('parcels', () => {
     console.log('stub generate parcel XML', id)
   }
 
+  async function exportXml(id) {
+    // Export invoice XML for a specific parcel - stub implementation
+    console.log('stub export parcel XML', id)
+  }
+
   async function generateAll(registerId) {
     // Generate XML for all parcels in a register - stub implementation
     console.log('stub generate all parcels XML', registerId)
@@ -110,6 +115,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     getAll,
     getById,
     update,
+    exportXml,
     generate,
     generateAll,
     validate,

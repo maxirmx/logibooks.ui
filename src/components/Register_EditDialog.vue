@@ -7,6 +7,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
 
 const props = defineProps({
   id: { type: Number, required: true }
@@ -25,6 +26,10 @@ transportationTypesStore.ensureLoaded()
 const customsProceduresStore = useCustomsProceduresStore()
 customsProceduresStore.ensureLoaded()
 
+const companiesStore = useCompaniesStore()
+await companiesStore.getAll()
+const { companies } = storeToRefs(companiesStore)
+
 await registersStore.getById(props.id)
 
 const schema = Yup.object().shape({
@@ -41,6 +46,14 @@ function onSubmit(values, { setErrors }) {
     .then(() => router.push('/registers'))
     .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
+
+function getCustomerName(customerId) {
+  if (!customerId || !companies.value) return 'Неизвестно'
+  const company = companies.value.find((c) => c.id === customerId)
+  if (!company) return 'Неизвестно'
+  return company.shortName || company.name || 'Неизвестно'
+}
+
 </script>
 
 <template>
@@ -59,7 +72,7 @@ function onSubmit(values, { setErrors }) {
       </div>
       <div class="form-group">
         <label class="label">Клиент:</label>
-        <div class="readonly-field">{{ item.companyId }}</div>
+        <div class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
       </div>
       <div class="form-group">
         <label for="destCountryCode" class="label">Страна назначения:</label>

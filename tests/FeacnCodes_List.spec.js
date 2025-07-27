@@ -2,8 +2,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import FeacnCodesList from '@/components/FeacnCodes_List.vue'
 import { vuetifyStubs, createMockStore } from './test-utils.js'
+
 
 // Mock Pinia's storeToRefs to return the mock values
 vi.mock('pinia', async () => {
@@ -53,7 +55,9 @@ const mockFeacnCodesStore = createMockStore({
   getOrders: vi.fn(),
   getPrefixes: vi.fn(),
   update: vi.fn(),
-  ensureOrdersLoaded: vi.fn()
+  ensureOrdersLoaded: vi.fn(),
+  enable: vi.fn().mockResolvedValue(),
+  disable: vi.fn().mockResolvedValue()
 })
 
 const mockAlertStore = createMockStore({
@@ -94,6 +98,9 @@ vi.mock('@/helpers/items.per.page.js', () => ({
 
 describe('FeacnCodes_List.vue', () => {
   beforeEach(() => {
+    // Create and set a new pinia instance before each test
+    setActivePinia(createPinia())
+    
     vi.clearAllMocks()
     mockFeacnCodesStore.orders.value = [
       { id: 1, title: 'Doc1', url: 'http://a' },

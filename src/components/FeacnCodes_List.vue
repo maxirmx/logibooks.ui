@@ -128,6 +128,7 @@ const prefixItems = computed(() =>
 )
 
 const orderHeaders = [
+  { title: '', key: 'action', sortable: false, align: 'center', width: '50px' },
   { title: 'Нормативный документ', key: 'title', align: 'start' },
   { title: 'Ссылка', key: 'url', align: 'start' }
 ]
@@ -137,6 +138,11 @@ const prefixHeaders = [
   { title: 'Описание', key: 'description', align: 'start' },
   { title: 'Исключения', key: 'exceptions', align: 'start' }
 ]
+
+async function handleToggleOrderEnabled(order) {
+  if (loading.value) return
+  await feacnStore.toggleEnabled(order.id, !order.enabled)
+}
 </script>
 
 <template>
@@ -165,6 +171,26 @@ const prefixHeaders = [
         :row-props="(data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })"
         @click:row="(event, { item }) => { selectedOrderId = item.id }"
       >
+        <template  #[`item.action`]="{ item }">
+          <v-tooltip :text="item.enabled ? 'Не использовать' : 'Использовать'">
+            <template v-slot:activator="{ props }">
+              <button
+                type="button"
+                class="action-btn"
+                v-bind="props"
+                @click.stop="handleToggleOrderEnabled(item)"
+                :disabled="loading"
+                data-testid="toggle-order-enabled"
+              >
+                <font-awesome-icon
+                  size="1x"
+                  :icon="item.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"
+                  class="action-btn"
+                />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
         <template #[`item.url`]="{ item }">
           <a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="product-link">
             {{ item.url }}

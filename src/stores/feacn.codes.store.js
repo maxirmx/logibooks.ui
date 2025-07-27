@@ -87,7 +87,20 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
       loading.value = false
     }
   }
-
+  async function toggleEnabled(id, en) {
+    try {
+      loading.value = true
+      if (en) {
+        await enable(id)
+      } else {
+        await disable(id)
+      }
+    } finally {
+    loading.value = false
+    await getOrders()
+    }
+  }
+ 
   return { 
     orders, 
     prefixes, 
@@ -99,6 +112,7 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
     update,
     enable,
     disable,
-    ensureOrdersLoaded
+    ensureOrdersLoaded,
+    toggleEnabled
   }
 })

@@ -35,7 +35,6 @@ import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
-import { useAuthStore } from '@/stores/auth.store.js'
 import { findNextIssueParcel } from '@/helpers/parcel.navigation.js'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
@@ -53,7 +52,6 @@ const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
-const authStore = useAuthStore()
 
 const goNext = ref(false)
 

@@ -523,13 +523,25 @@ describe('fetchWrapper', () => {
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        text: () => Promise.resolve(JSON.stringify({ msg: 'File not found' }))
+        text: () => Promise.resolve(JSON.stringify({ msg: 'File not found' })),
+        headers: {
+          get: () => null // Mock headers.get method
+        }
       };
       
       global.fetch = vi.fn(() => Promise.resolve(mockResponse));
       
-      await expect(fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt'))
-        .rejects.toThrow('File not found');
+      // Mock console.error to prevent test output clutter
+      const originalConsoleError = console.error;
+      console.error = vi.fn();
+      
+      try {
+        await expect(fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt'))
+          .rejects.toThrow('File not found');
+      } finally {
+        // Restore console.error
+        console.error = originalConsoleError;
+      }
     });
     
     it('should exist as a method', () => {

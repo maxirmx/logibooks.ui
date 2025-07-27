@@ -39,7 +39,7 @@ import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
-import { HasIssues } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 
 const props = defineProps({
@@ -270,6 +270,7 @@ function getGenericTemplateHeaders() {
         <template #[`item.checkStatusId`]="{ item }">
           <div
             class="truncated-cell status-cell"
+            :class="getCheckStatusClass(item.checkStatusId)"
             :title="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
           >
             {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}

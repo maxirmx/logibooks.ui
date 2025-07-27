@@ -16,13 +16,13 @@ const registersStore = useRegistersStore()
 const { item } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
+countriesStore.ensureLoaded()
 const { countries } = storeToRefs(countriesStore)
 
 const transportationTypesStore = useTransportationTypesStore()
-const customsProceduresStore = useCustomsProceduresStore()
-
-countriesStore.ensureLoaded()
 transportationTypesStore.ensureLoaded()
+
+const customsProceduresStore = useCustomsProceduresStore()
 customsProceduresStore.ensureLoaded()
 
 await registersStore.getById(props.id)
@@ -45,7 +45,7 @@ function onSubmit(values, { setErrors }) {
 
 <template>
   <div class="settings form-2">
-    <h1 class="primary-heading">Редактировать реестр</h1>
+    <h1 class="primary-heading">Редактировать информацию о реестре</h1>
     <hr class="hr" />
     <Form
       @submit="onSubmit"

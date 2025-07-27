@@ -48,17 +48,42 @@ const {
   isAdmin
 } = storeToRefs(authStore)
 
+
 const selectedOrderId = ref(null)
+
+// Always keep selectedOrderId in sync with visible orders
+watch(
+  () => orders.value,
+  async (newOrders) => {
+    if (!newOrders?.length) {
+      selectedOrderId.value = null
+    } else {
+      // Find first order with Enabled === true
+      const firstEnabled = newOrders.find(o => o.Enabled === true)
+      const newSelectedId = firstEnabled ? firstEnabled.id : newOrders[0].id
+      if (!selectedOrderId.value || !newOrders.some(o => o.id === selectedOrderId.value)) {
+        selectedOrderId.value = newSelectedId
+        // Update prefixes when default row is set
+        if (newSelectedId) await feacnStore.getPrefixes(newSelectedId)
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// When selectedOrderId changes, load prefixes
 watch(selectedOrderId, async (id) => {
-  await feacnStore.getPrefixes(id)
+  if (id) await feacnStore.getPrefixes(id)
 })
 
 onMounted(async () => {
-  // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
   await feacnStore.ensureOrdersLoaded()
-  // Set selectedOrderId to the first order's ID by default
   if (orders.value?.length > 0) {
-    selectedOrderId.value = orders.value[0].id
+    const firstEnabled = orders.value.find(o => o.Enabled === true)
+    const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id
+    selectedOrderId.value = newSelectedId
+    // Update prefixes when default row is set on mount
+    if (newSelectedId) await feacnStore.getPrefixes(newSelectedId)
   }
 })
 

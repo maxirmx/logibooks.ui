@@ -228,7 +228,7 @@ async function generateXml() {
 
       <div class="form-actions">
         <button class="button primary" type="submit" @click="onSubmit(values)" :disabled="isSubmitting">
-          <font-awesome-icon size="1x" icon="fa-solid fa-arrow-right" class="mr-1" />
+          <font-awesome-icon size="1x" icon="fa-solid fa-play" class="mr-1" />
           Следующая проблема
         </button>
         <button class="button primary" type="button" @click="onSave(values)" :disabled="isSubmitting">

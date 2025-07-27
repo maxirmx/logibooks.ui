@@ -75,7 +75,7 @@ function getCustomerName(customerId) {
         <div class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
       </div>
       <div class="form-group">
-        <label for="destCountryCode" class="label">Страна назначения:</label>
+        <label for="destCountryCode" class="label">Страна:</label>
         <Field as="select" name="destCountryCode" id="destCountryCode" class="form-control input">
           <option value="">Выберите страну</option>
           <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">

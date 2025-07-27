@@ -355,10 +355,183 @@ describe('fetchWrapper', () => {
   })
   
   describe('downloadFile method', () => {
-    // Since browser APIs like document.createElement and URL.createObjectURL
-    // are not fully supported in the test environment, we'll skip these tests
-    // Note: In a real project, you would use a browser-based testing framework like Cypress
-    // for properly testing download functionality
+    // Setup mocks for DOM APIs needed for file download
+    beforeEach(() => {
+      // Mock document.createElement and related DOM methods
+      global.document.createElement = vi.fn().mockImplementation((tag) => {
+        if (tag === 'a') {
+          return {
+            href: '',
+            download: '',
+            click: vi.fn(),
+            remove: vi.fn()
+          };
+        }
+        return {};
+      });
+      
+      global.document.body.appendChild = vi.fn();
+      
+      // Mock URL.createObjectURL and revokeObjectURL
+      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+      global.URL.revokeObjectURL = vi.fn();
+      
+      // Reset fetch mock
+      global.fetch = vi.fn();
+    });
+    
+    it('should download file with filename from Content-Disposition header', async () => {
+      // Mock response with Content-Disposition header
+      const mockHeaders = new Map();
+      mockHeaders.set('Content-Disposition', 'attachment; filename="test-file.xml"');
+      
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: (name) => mockHeaders.get(name)
+        },
+        blob: vi.fn().mockResolvedValue(new Blob(['<xml></xml>'], {type: 'application/xml'}))
+      };
+      
+      global.fetch = vi.fn(() => Promise.resolve(mockResponse));
+      
+      const result = await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.xml');
+      
+      // Verify fetch was called correctly
+      expect(global.fetch).toHaveBeenCalledWith(`${baseUrl}/download/file`, {
+        method: 'GET',
+        headers: { Authorization: 'Bearer abc' }
+      });
+      
+      // Verify blob was requested
+      expect(mockResponse.blob).toHaveBeenCalled();
+      
+      // Verify URL.createObjectURL was called with the blob
+      expect(global.URL.createObjectURL).toHaveBeenCalled();
+      
+      // Verify download element was created correctly
+      expect(global.document.createElement).toHaveBeenCalledWith('a');
+      
+      // Get the created anchor element
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe('test-file.xml');
+      expect(anchor.href).toBe('blob:mock-url');
+      
+      // Verify click and cleanup
+      expect(anchor.click).toHaveBeenCalled();
+      expect(anchor.remove).toHaveBeenCalled();
+      expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      
+      // Verify function returns true on success
+      expect(result).toBe(true);
+    });
+    
+    it('should use default filename when Content-Disposition header is missing', async () => {
+      // Mock response without Content-Disposition header
+      const mockHeaders = new Map();
+      
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: (name) => mockHeaders.get(name)
+        },
+        blob: vi.fn().mockResolvedValue(new Blob(['content'], {type: 'text/plain'}))
+      };
+      
+      global.fetch = vi.fn(() => Promise.resolve(mockResponse));
+      
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'default-name.txt');
+      
+      // Get the created anchor element
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe('default-name.txt');
+    });
+    
+    it('should parse filename correctly when Content-Disposition format varies', async () => {
+      // Test different Content-Disposition header formats
+      const mockHeadersWithQuotes = new Map();
+      mockHeadersWithQuotes.set('Content-Disposition', 'attachment; filename="file with spaces.pdf"');
+      
+      const mockResponseWithQuotes = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: (name) => mockHeadersWithQuotes.get(name)
+        },
+        blob: vi.fn().mockResolvedValue(new Blob(['content'], {type: 'application/pdf'}))
+      };
+      
+      global.fetch = vi.fn(() => Promise.resolve(mockResponseWithQuotes));
+      
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.pdf');
+      
+      // Get the created anchor element
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe('file with spaces.pdf');
+      
+      // Test single quotes
+      const mockHeadersSingleQuotes = new Map();
+      mockHeadersSingleQuotes.set('Content-Disposition', "attachment; filename='single-quote.xlsx'");
+      
+      const mockResponseSingleQuotes = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: (name) => mockHeadersSingleQuotes.get(name)
+        },
+        blob: vi.fn().mockResolvedValue(new Blob(['content'], {type: 'application/excel'}))
+      };
+      
+      global.fetch = vi.fn(() => Promise.resolve(mockResponseSingleQuotes));
+      
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.xlsx');
+      
+      // Get the created anchor element (second call to createElement)
+      const anchor2 = global.document.createElement.mock.results[1].value;
+      expect(anchor2.download).toBe('single-quote.xlsx');
+    });
+    
+    it('should throw and log error if download fails', async () => {
+      // Mock console.error
+      const originalConsoleError = console.error;
+      console.error = vi.fn();
+      
+      // Mock a failing request with a network error
+      const error = new TypeError('Failed to fetch');
+      global.fetch = vi.fn(() => Promise.reject(error));
+      
+      await expect(fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt'))
+        .rejects.toThrow('Не удалось соединиться с сервером');
+      
+      // Verify console.error was called (with any arguments)
+      expect(console.error).toHaveBeenCalled();
+      expect(console.error.mock.calls[0][0]).toBe('Error downloading file:');
+      
+      // Restore console.error
+      console.error = originalConsoleError;
+    });
+    
+    it('should handle HTTP error responses', async () => {
+      // Mock response with HTTP error
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        text: () => Promise.resolve(JSON.stringify({ msg: 'File not found' }))
+      };
+      
+      global.fetch = vi.fn(() => Promise.resolve(mockResponse));
+      
+      await expect(fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt'))
+        .rejects.toThrow('File not found');
+    });
+    
     it('should exist as a method', () => {
       expect(typeof fetchWrapper.downloadFile).toBe('function');
     });

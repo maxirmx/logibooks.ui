@@ -256,4 +256,106 @@ describe('parcel.statuses.store.js', () => {
       expect(mockDelete).toHaveBeenCalledWith(`${baseUrl}/1`)
     })
   })
+  
+  describe('Status Helper Functions', () => {
+    beforeEach(async () => {
+      mockGet.mockResolvedValue(mockParcelStatuses)
+      await store.getAll()
+      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
+      // The getAll function should have populated the statusMap
+    })
+
+    describe('getStatusById', () => {
+      it('returns the correct status when found', () => {
+        const status = store.getStatusById(1)
+        expect(status).toEqual(mockParcelStatuses[0])
+      })
+
+      it('returns null when status is not found', () => {
+        const status = store.getStatusById(999)
+        expect(status).toBeNull()
+      })
+    })
+
+    describe('getStatusTitle', () => {
+      it('returns the correct title when status is found', () => {
+        const title = store.getStatusTitle(2)
+        expect(title).toBe('Подтвержден')
+      })
+
+      it('returns fallback string when status is not found', () => {
+        const title = store.getStatusTitle(999)
+        expect(title).toBe('Статус 999')
+      })
+    })
+  })
+  
+  describe('ensureStatusesLoaded', () => {
+    beforeEach(() => {
+      // Reset store to initial state for these tests
+      pinia = createPinia()
+      setActivePinia(pinia)
+      store = useParcelStatusesStore()
+      vi.clearAllMocks()
+      mockGet.mockResolvedValue(mockParcelStatuses)
+    })
+    
+    it('calls getAll when statuses are not loaded yet', async () => {
+      expect(store.parcelStatuses).toEqual([])
+      
+      store.ensureStatusesLoaded()
+      
+      // Since ensureStatusesLoaded directly calls getAll synchronously,
+      // we can verify it was called without needing timers
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
+      
+      // Wait for any pending promises to resolve
+      await Promise.resolve()
+    })
+    
+    it('does not call getAll when already initialized', async () => {
+      // First call to initialize
+      store.ensureStatusesLoaded()
+      
+      // Wait for any pending promises to resolve
+      await Promise.resolve()
+      
+      expect(mockGet).toHaveBeenCalledTimes(1)
+      
+      // Reset mock to check if it's called again
+      mockGet.mockClear()
+      
+      // Second call should not trigger getAll again (initialized flag is true)
+      store.ensureStatusesLoaded()
+      
+      // Wait for any pending promises to resolve
+      await Promise.resolve()
+      
+      expect(mockGet).not.toHaveBeenCalled()
+    })
+    
+    it('does not call getAll when statuses are not empty', async () => {
+      // Manually set statuses
+      store.parcelStatuses = mockParcelStatuses
+      
+      store.ensureStatusesLoaded()
+      
+      // Wait for any pending promises to resolve
+      await Promise.resolve()
+      
+      expect(mockGet).not.toHaveBeenCalled()
+    })
+    
+    it('does not call getAll when already loading', async () => {
+      // Set loading state
+      store.loading = true
+      
+      store.ensureStatusesLoaded()
+      
+      // Wait for any pending promises to resolve
+      await Promise.resolve()
+      
+      expect(mockGet).not.toHaveBeenCalled()
+    })
+  })
 })

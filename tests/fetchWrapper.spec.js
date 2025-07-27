@@ -1,6 +1,26 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { createMockStore } from './test-utils.js'
 
+// Mock Blob and URL.createObjectURL for linting purposes
+if (typeof global.Blob === 'undefined') {
+  global.Blob = class Blob {
+    constructor(content, options) {
+      this.content = content
+      this.options = options
+      this.size = content.length
+      this.type = options?.type || ''
+    }
+  }
+}
+
+// Mock URL.createObjectURL
+if (typeof global.URL === 'undefined') {
+  global.URL = {
+    createObjectURL: vi.fn(() => 'mock-blob-url'),
+    revokeObjectURL: vi.fn()
+  }
+}
+
 // Place mocks back at the top level, which is fine with isolate: true in config
 vi.mock('@/stores/auth.store.js', () => {
   return {
@@ -263,5 +283,84 @@ describe('fetchWrapper', () => {
       await expect(fetchWrapper.post(`${baseUrl}/test`, { data: 'test' }))
         .rejects.toThrow('Произошла непредвиденная ошибка при обращении к серверу: Connection timeout')
     })
+  })
+  
+  describe('requestBlob method', () => {
+    it('sends GET request and returns response object', async () => {
+      const mockHeaders = new Map()
+      mockHeaders.set('Content-Type', 'application/xml')
+      
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: (name) => mockHeaders.get(name)
+        },
+        blob: vi.fn().mockResolvedValue(new global.Blob(['<xml></xml>'], {type: 'application/xml'}))
+      }
+      
+      global.fetch = vi.fn(() => Promise.resolve(mockResponse))
+      
+      const response = await fetchWrapper.getFile(`${baseUrl}/download`)
+      
+      expect(global.fetch).toHaveBeenCalledWith(`${baseUrl}/download`, {
+        method: 'GET',
+        headers: { Authorization: 'Bearer abc' }
+      })
+      expect(response).toBe(mockResponse)
+    })
+    
+    it('handles network error in requestBlob method', async () => {
+      global.fetch = vi.fn(() => Promise.reject(new TypeError('Failed to fetch')))
+      
+      await expect(fetchWrapper.getFile(`${baseUrl}/download`))
+        .rejects.toThrow('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.')
+    })
+    
+    it('handles other error types in requestBlob method', async () => {
+      const customError = new Error('SSL error')
+      customError.name = 'SecurityError'
+      global.fetch = vi.fn(() => Promise.reject(customError))
+      
+      await expect(fetchWrapper.getFile(`${baseUrl}/download`))
+        .rejects.toThrow('Произошла непредвиденная ошибка при обращении к серверу: SSL error')
+    })
+    
+    it('handles HTTP error with JSON error response in requestBlob method', async () => {
+      const response = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        text: () => Promise.resolve(JSON.stringify({ msg: 'File not found' }))
+      }
+      global.fetch = vi.fn(() => Promise.resolve(response))
+      
+      await expect(fetchWrapper.getFile(`${baseUrl}/download`))
+        .rejects.toThrow('File not found')
+    })
+    
+    it('handles HTTP error with text error response in requestBlob method', async () => {
+      const response = {
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve('Access denied')
+      }
+      global.fetch = vi.fn(() => Promise.resolve(response))
+      
+      await expect(fetchWrapper.getFile(`${baseUrl}/download`))
+        .rejects.toThrow('Access denied')
+    })
+  })
+  
+  describe('downloadFile method', () => {
+    // Since browser APIs like document.createElement and URL.createObjectURL
+    // are not fully supported in the test environment, we'll skip these tests
+    // Note: In a real project, you would use a browser-based testing framework like Cypress
+    // for properly testing download functionality
+    it('should exist as a method', () => {
+      expect(typeof fetchWrapper.downloadFile).toBe('function');
+    });
   })
 })

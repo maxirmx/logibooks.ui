@@ -76,7 +76,9 @@ vi.mock('@/stores/parcels.store.js', () => ({
     hasNextPage: false,
     hasPreviousPage: false,
     getAll: vi.fn(),
-    validate: vi.fn()
+    validate: vi.fn(),
+    generate: vi.fn(),
+    approve: vi.fn()
   })
 }))
 
@@ -286,6 +288,82 @@ describe('OzonParcels_List', () => {
 
     // The validate function should be called with the order id
     expect(wrapper.vm.parcelsStore.validate).toHaveBeenCalledWith(123)
+  })
+
+  it('exportParcelXml function calls store generate method and handles errors', async () => {
+    // Mock the generate function to resolve successfully
+    const mockGenerate = vi.fn().mockResolvedValue(true)
+    const wrapper = mount(ParcelsList, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [pinia],
+        stubs: globalStubs
+      }
+    })
+    
+    // Replace the generate function with our mock
+    wrapper.vm.parcelsStore.generate = mockGenerate
+
+    // Create test order object
+    const testOrder = { id: 456 }
+    await wrapper.vm.exportParcelXml(testOrder)
+
+    // The generate function should be called with the order id
+    expect(wrapper.vm.parcelsStore.generate).toHaveBeenCalledWith(456)
+    
+    // Test error handling
+    const error = new Error('Test error')
+    error.response = { data: { message: 'API error' } }
+    mockGenerate.mockRejectedValueOnce(error)
+    
+    // Mock console.error to prevent test output noise
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    
+    await wrapper.vm.exportParcelXml(testOrder)
+    
+    // Check that error was handled properly
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    expect(wrapper.vm.parcelsStore.error).toBe('API error')
+    
+    consoleErrorSpy.mockRestore()
+  })
+  
+  it('approveParcel function calls store approve method and handles errors', async () => {
+    // Mock the approve function to resolve successfully
+    const mockApprove = vi.fn().mockResolvedValue(true)
+    const wrapper = mount(ParcelsList, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [pinia],
+        stubs: globalStubs
+      }
+    })
+    
+    // Replace the approve function with our mock
+    wrapper.vm.parcelsStore.approve = mockApprove
+
+    // Create test order object
+    const testOrder = { id: 789 }
+    await wrapper.vm.approveParcel(testOrder)
+
+    // The approve function should be called with the order id
+    expect(wrapper.vm.parcelsStore.approve).toHaveBeenCalledWith(789)
+    
+    // Test error handling
+    const error = new Error('Test error')
+    error.response = { data: { message: 'Approval API error' } }
+    mockApprove.mockRejectedValueOnce(error)
+    
+    // Mock console.error to prevent test output noise
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    
+    await wrapper.vm.approveParcel(testOrder)
+    
+    // Check that error was handled properly
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    expect(wrapper.vm.parcelsStore.error).toBe('Approval API error')
+    
+    consoleErrorSpy.mockRestore()
   })
 
   it('marks rows with issues using getRowProps', () => {

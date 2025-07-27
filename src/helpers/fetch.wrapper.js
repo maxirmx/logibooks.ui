@@ -31,7 +31,9 @@ export const fetchWrapper = {
   post: request('POST'),
   put: request('PUT'),
   delete: request('DELETE'),
-  postFile: requestFile('POST')
+  postFile: requestFile('POST'),
+  getFile: requestBlob('GET'),
+  downloadFile: downloadFile
 }
 
 function request(method) {
@@ -132,6 +134,88 @@ function authHeader(url) {
     return { Authorization: `Bearer ${user.token}` }
   } else {
     return {}
+  }
+}
+
+function requestBlob(method) {
+    return async (url) => {
+        const requestOptions = {
+            method,
+            headers: authHeader(url)
+        };
+        
+        let response;
+        try {
+           if (enableLog) {
+            console.log(url, requestOptions)
+           }
+           response = await fetch(url, requestOptions);
+        } catch (error) {
+            // Customize your error message here
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
+            } else {
+                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
+            }           
+        }
+            
+        // Check if the response is ok (status in the range 200-299)
+        if (!response.ok) {
+            // If server returned an error response, try to parse it
+            const errorText = await response.text();
+            let errorMessage;
+            try {
+                // Try to parse as JSON
+                const errorObj = JSON.parse(errorText);
+                errorMessage = errorObj.msg || `Ошибка ${response.status}`;
+            } catch {
+                // If not valid JSON, use text as is
+                errorMessage = errorText || `Ошибка ${response.status}`;
+            }
+            
+            // Re-throw the error for further handling if needed
+            throw new Error(errorMessage);
+        }
+        
+        return response;
+    };
+}
+
+/**
+ * Downloads a file from the server and initiates browser download
+ * @param {string} fileUrl - The URL to download from
+ * @param {string} defaultFilename - Fallback filename if none provided in headers
+ * @returns {Promise<boolean>} - True if download initiated successfully
+ */
+async function downloadFile(fileUrl, defaultFilename) {
+  try {
+    // Get the file as a response
+    const response = await requestBlob('GET')(fileUrl)
+    
+    // Get filename from Content-Disposition header
+    let filename = defaultFilename
+    const disposition = response.headers.get('Content-Disposition')
+    if (disposition && disposition.includes('filename=')) {
+      filename = disposition
+        .split('filename=')[1]
+        .replace(/["']/g, '')
+        .trim()
+    }
+    
+    // Process the blob and trigger download
+    const blob = await response.blob()
+    const objectUrl = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(objectUrl)
+    return true
+  } catch (error) {
+    console.error('Error downloading file:', error)
+    throw error
   }
 }
 

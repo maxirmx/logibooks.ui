@@ -126,6 +126,7 @@ const headers = computed(() => {
     { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
     { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
     { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
 
     // Order Identification & Status - Key identifiers and current state
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
@@ -152,8 +153,13 @@ function editParcel(item) {
   router.push(`/registers/${props.registerId}/parcels/edit/${item.id}`)
 }
 
-function exportParcelXml(item) {
-  parcelsStore.generate(item.id)
+async function exportParcelXml(item) {
+  try {
+    await parcelsStore.generate(item.id)
+  } catch (error) {
+    console.error('Failed to export parcel XML:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
+  }
 }
 
 async function validateParcel(item) {
@@ -163,6 +169,16 @@ async function validateParcel(item) {
   } catch (error) {
     console.error('Failed to validate parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
+  }
+}
+
+async function approveParcel(item) {
+  try {
+    await parcelsStore.approve(item.id)
+    loadOrders()
+  } catch (error) {
+    console.error('Failed to approve parcel:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
   }
 }
 
@@ -292,7 +308,7 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать посылку">
+          <v-tooltip text="Редактировать информацию о посылке">
             <template v-slot:activator="{ props }">
               <button @click="editParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
@@ -304,7 +320,7 @@ function getGenericTemplateHeaders() {
           <v-tooltip text="Выгрузить накладную для посылки">
             <template v-slot:activator="{ props }">
               <button @click="exportParcelXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-download" class="anti-btn" />
+                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>
@@ -314,6 +330,15 @@ function getGenericTemplateHeaders() {
             <template v-slot:activator="{ props }">
               <button @click="validateParcel(item)" class="anti-btn" v-bind="props">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.actions4`]="{ item }">
+          <v-tooltip text="Согласовать">
+            <template v-slot:activator="{ props }">
+              <button @click="approveParcel(item)" class="anti-btn" v-bind="props">
+                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" class="anti-btn" />
               </button>
             </template>
           </v-tooltip>

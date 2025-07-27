@@ -503,7 +503,7 @@ describe('Company_Settings.vue', () => {
 
       const cancelButton = wrapper.find('button.secondary')
       expect(cancelButton.exists()).toBe(true)
-      expect(cancelButton.text()).toBe('Отмена')
+      expect(cancelButton.text()).toBe('Отменить')
 
       await cancelButton.trigger('click')
       expect(mockRouter.push).toHaveBeenCalledWith('/companies')

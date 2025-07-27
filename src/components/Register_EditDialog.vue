@@ -71,12 +71,12 @@ function onSubmit(values, { setErrors }) {
         </Field>
       </div>
       <div class="form-group">
-        <label for="invoiceDate" class="label">Дата инвойса:</label>
-        <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" />
+        <label for="invoiceNumber" class="label">Номер накладной:</label>
+        <Field name="invoiceNumber" id="invoiceNumber" type="text" class="form-control input" />
       </div>
       <div class="form-group">
-        <label for="invoiceNumber" class="label">Номер инвойса:</label>
-        <Field name="invoiceNumber" id="invoiceNumber" type="text" class="form-control input" />
+        <label for="invoiceDate" class="label">Дата накладной:</label>
+        <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" />
       </div>
       <div class="form-group">
         <label for="transportationTypeId" class="label">Тип транспорта:</label>
@@ -109,10 +109,12 @@ function onSubmit(values, { setErrors }) {
       <div class="form-group">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
         <button class="button secondary" type="button" @click="router.push('/registers')">
-          Отмена
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
+          Отменить
         </button>
       </div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>

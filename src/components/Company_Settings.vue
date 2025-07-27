@@ -236,6 +236,7 @@ function onSubmit(values, { setErrors }) {
       <div class="form-group">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
         <button
@@ -243,7 +244,8 @@ function onSubmit(values, { setErrors }) {
           type="button"
           @click="$router.push('/companies')"
         >
-          Отмена
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
+          Отменить
         </button>
       </div>
       <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>

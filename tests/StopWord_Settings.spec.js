@@ -313,7 +313,7 @@ describe('StopWord_Settings.vue', () => {
       await resolveAll()
 
       const cancelButton = wrapper.find('button.secondary')
-      expect(cancelButton.text()).toContain('Отмена')
+      expect(cancelButton.text()).toContain('Отменить')
       expect(cancelButton.exists()).toBe(true)
     })
   })

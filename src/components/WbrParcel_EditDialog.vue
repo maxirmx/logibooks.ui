@@ -38,6 +38,7 @@ import { ref, watch, } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { findNextParcelWithIssues } from '@/helpers/next.item.helper.js'
 import WbrFormField from './WbrFormField.vue'
 
 const props = defineProps({
@@ -81,13 +82,6 @@ const schema = Yup.object().shape({
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
 
-function onSubmit(values, { setErrors }) {
-  return parcelsStore
-    .update(props.id, values)
-    .then(() => router.push(`/registers/${props.registerId}/parcels`))
-    .catch((error) => setErrors({ apiError: error.message || String(error) }))
-}
-
 
 async function validateParcel() {
   try {
@@ -111,6 +105,47 @@ async function approveParcel() {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
   }
 }
+
+// Handle saving and moving to the next parcel with issues
+async function onSubmit(values) {
+  try {
+    // First save the current parcel
+    await parcelsStore.update(props.id, values)
+    
+    // Find the next parcel with issues
+    const nextParcelId = await findNextParcelWithIssues(props.registerId, props.id)
+    
+    if (nextParcelId) {
+      // Navigate to the next parcel with issues
+      router.push(`/registers/${props.registerId}/parcels/edit/${nextParcelId}`)
+    } else {
+      // If no more issues found, go back to parcels list
+      router.push(`/registers/${props.registerId}/parcels`)
+    }
+  } catch (error) {
+    console.error('Error saving and finding next parcel:', error)
+    parcelsStore.error = error?.message || String(error)
+  }
+}
+function onSave(values) {
+  return parcelsStore
+    .update(props.id, values)
+    .then(() => router.push(`/registers/${props.registerId}/parcels`))
+    .catch((error) => {
+      console.error('Error saving parcel:', error)
+      parcelsStore.error = error?.message || String(error)
+    })
+}
+
+// Generate XML for this parcel
+async function generateXml() {
+  try {
+    await parcelsStore.generate(props.id)
+  } catch (error) {
+    console.error('Failed to generate XML:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
+  }
+}
 </script>
 
 <template>
@@ -119,7 +154,7 @@ async function approveParcel() {
       Посылка {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
     <hr class="hr" />
-    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
+    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting }">
 
       <!-- Order Identification & Status Section -->
       <div class="form-section">
@@ -187,23 +222,32 @@ async function approveParcel() {
       <!-- Action buttons -->
 
       <div class="form-actions">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
+        <button class="button primary" type="submit" @click="onSubmit(values)" :disabled="isSubmitting">
+          <font-awesome-icon size="1x" icon="fa-solid fa-arrow-right" class="mr-1" />
+          Следующая проблема
+        </button>
+         <button class="button primary" type="button" @click="onSave(values)" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
+        <button class="button primary" type="button" @click="generateXml()" :disabled="isSubmitting">
+          <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
+          Накладная
+        </button>
         <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)">
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
       </div>
 
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
 
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <div v-if="item?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации о посылке: {{ item.error }}</div>
+      <div class="text-danger">Ошибка: {{ item.error }}</div>
     </div>
   </div>
 </template>

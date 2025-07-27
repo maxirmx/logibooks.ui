@@ -225,6 +225,7 @@ defineExpose({
       <div class="form-group">
         <button class="button primary" type="submit" :disabled="saving">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
         <button
@@ -232,7 +233,8 @@ defineExpose({
           type="button"
           @click="cancel"
         >
-          Отмена
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
+          Отменить
         </button>
       </div>
 

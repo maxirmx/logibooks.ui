@@ -52,7 +52,8 @@ import {
   faToggleOff,
   faCheckCircle,
   faFileImport,
-  faFileExport
+  faFileExport,
+  faCheckDouble
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -77,7 +78,8 @@ library.add(
   faToggleOff,
   faCheckCircle,
   faFileImport,
-  faFileExport
+  faFileExport,
+  faCheckDouble
 )
 
 import 'vuetify/styles'

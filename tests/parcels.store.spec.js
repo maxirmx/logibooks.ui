@@ -8,7 +8,8 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
     put: vi.fn(),
-    post: vi.fn()
+    post: vi.fn(),
+    downloadFile: vi.fn()
   }
 }))
 

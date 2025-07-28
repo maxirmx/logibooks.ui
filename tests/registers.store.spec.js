@@ -579,28 +579,69 @@ describe('registers store', () => {
     })
   })
 
-  describe('nextOrder method', () => {
-    it('requests next order with correct id', async () => {
-      const order = { id: 2 }
-      fetchWrapper.get.mockResolvedValue(order)
+  describe('nextParcel method', () => {
+    it('requests next parcel with correct id', async () => {
+      const parcel = { id: 2 }
+      fetchWrapper.get.mockResolvedValue(parcel)
       const store = useRegistersStore()
-      const result = await store.nextOrder(5)
+      const result = await store.nextParcel(5)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
         `${apiUrl}/registers/nextorder/5`
       )
-      expect(result).toEqual(order)
+      expect(result).toEqual(parcel)
     })
 
-    it('returns null when nextOrder fails', async () => {
+    it('returns null when nextParcel fails', async () => {
       const error = new Error('fail')
       fetchWrapper.get.mockRejectedValue(error)
       const store = useRegistersStore()
-      const result = await store.nextOrder(5)
+      const result = await store.nextParcel(5)
       expect(result).toBeNull()
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
         `${apiUrl}/registers/nextorder/5`
       )
+    })
+    
+    it('returns a parcel with complete information', async () => {
+      const parcel = { 
+        id: 2, 
+        registerId: 1, 
+        tnVed: '12345678', 
+        statusId: 1,
+        checkStatusId: 100
+      }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(1)
+      expect(result).toEqual(parcel)
+    })
+    
+    it('handles the case when there is no next parcel', async () => {
+      // API returns null when there's no next parcel
+      fetchWrapper.get.mockResolvedValue(null)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(99)
+      expect(result).toBeNull()
+    })
+    
+    it('properly sets loading state during execution', async () => {
+      const parcel = { id: 2 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      
+      // Before call
+      expect(store.loading).toBe(false)
+      
+      // Start the call but don't await it yet
+      const promise = store.nextParcel(5)
+      
+      // During the call
+      expect(store.loading).toBe(true)
+      
+      // After the call completes
+      await promise
+      expect(store.loading).toBe(false)
     })
   })
 })

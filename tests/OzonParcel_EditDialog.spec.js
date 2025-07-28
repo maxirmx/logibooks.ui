@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
+import { createPinia } from 'pinia'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import ParcelEditDialog from '@/components/OzonParcel_EditDialog.vue'
 
@@ -53,6 +54,7 @@ const mockItem = ref({
   statusId: 1,
   rowNumber: 1,
   orderNumber: 'TEST001',
+  postingNumber: 'POSTING123',
   tnVed: '1234567890',
   invoiceDate: '2024-01-01',
   weightKg: 1.5,
@@ -147,10 +149,12 @@ vi.mock('@/helpers/next.item.helper.js', () => ({
 
 describe('OzonParcel_EditDialog', () => {
   let wrapper
+  let pinia
 
   beforeEach(async () => {
     // Reset mocks
     vi.clearAllMocks()
+    pinia = createPinia()
 
     // Create a Suspense wrapper for the async component
     const SuspenseWrapper = {
@@ -169,6 +173,7 @@ describe('OzonParcel_EditDialog', () => {
 
     wrapper = mount(SuspenseWrapper, {
       global: {
+        plugins: [pinia],
         stubs: {
           ...defaultGlobalStubs,
           Form: FormStub,
@@ -247,7 +252,7 @@ describe('OzonParcel_EditDialog', () => {
     
     await invoiceButton.trigger('click')
     
-    expect(mockOrdersStore.generate).toHaveBeenCalledWith(1)
+    expect(mockOrdersStore.generate).toHaveBeenCalledWith(1, 'POSTING123')
   })
 
   it('calls getById on mount', () => {

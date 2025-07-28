@@ -53,6 +53,7 @@ const mockItem = ref({
   statusId: 1,
   rowNumber: 1,
   orderNumber: 'TEST001',
+  shk: 'TEST123',
   tnVed: '1234567890',
   invoiceDate: '2024-01-01',
   weightKg: 1.5,
@@ -113,6 +114,13 @@ const mockCountriesStore = createMockStore({
   ensureLoaded: vi.fn()
 })
 
+// Mock registers store
+const mockRegistersStore = createMockStore({
+  nextParcel: vi.fn().mockResolvedValue({ id: 2, registerId: 1 }),
+  error: null,
+  loading: false
+})
+
 // Mock stores
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: vi.fn(() => mockOrdersStore)
@@ -138,9 +146,8 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: vi.fn(() => mockCountriesStore)
 }))
 
-// Mock the next item helper
-vi.mock('@/helpers/next.item.helper.js', () => ({
-  findNextParcelWithIssues: vi.fn().mockResolvedValue(2)
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: vi.fn(() => mockRegistersStore)
 }))
 
 describe('WbrParcel_EditDialog', () => {
@@ -245,7 +252,7 @@ describe('WbrParcel_EditDialog', () => {
     
     await invoiceButton.trigger('click')
     
-    expect(mockOrdersStore.generate).toHaveBeenCalledWith(1)
+    expect(mockOrdersStore.generate).toHaveBeenCalledWith(1, '0000000000000TEST123')
   })
 
   it('calls getById on mount', () => {

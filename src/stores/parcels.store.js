@@ -84,7 +84,10 @@ export const useParcelsStore = defineStore('parcels', () => {
     error.value = null
     try {
       if (filename == null || filename == undefined) {
-        filename = `parcel_${id}.xml`
+        filename = `IndPost_${id}.xml`
+      }
+      else {
+        filename = `IndPost_${filename}.xml`
       }
       return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, filename)
     } catch (err) {

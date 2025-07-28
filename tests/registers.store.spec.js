@@ -5,7 +5,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }
+  fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn(), downloadFile: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -550,6 +550,98 @@ describe('registers store', () => {
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/5`, upd)
       expect(store.item.invoiceNumber).toBe('b')
       expect(store.items[0].invoiceNumber).toBe('b')
+    })
+  })
+
+  describe('download method', () => {
+    it('calls downloadFile with correct parameters', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const result = await store.download(10)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download`,
+        'register_10.xlsx'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('returns null when download fails', async () => {
+      const store = useRegistersStore()
+      const error = new Error('Download failed')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+      const result = await store.download(10)
+      expect(result).toBeNull()
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download`,
+        'register_10.xlsx'
+      )
+    })
+  })
+
+  describe('nextParcel method', () => {
+    it('requests next parcel with correct id', async () => {
+      const parcel = { id: 2 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(5)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextorder/5`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('returns null when nextParcel fails', async () => {
+      const error = new Error('fail')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(5)
+      expect(result).toBeNull()
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextorder/5`
+      )
+    })
+    
+    it('returns a parcel with complete information', async () => {
+      const parcel = { 
+        id: 2, 
+        registerId: 1, 
+        tnVed: '12345678', 
+        statusId: 1,
+        checkStatusId: 100
+      }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(1)
+      expect(result).toEqual(parcel)
+    })
+    
+    it('handles the case when there is no next parcel', async () => {
+      // API returns null when there's no next parcel
+      fetchWrapper.get.mockResolvedValue(null)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(99)
+      expect(result).toBeNull()
+    })
+    
+    it('properly sets loading state during execution', async () => {
+      const parcel = { id: 2 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      
+      // Before call
+      expect(store.loading).toBe(false)
+      
+      // Start the call but don't await it yet
+      const promise = store.nextParcel(5)
+      
+      // During the call
+      expect(store.loading).toBe(true)
+      
+      // After the call completes
+      await promise
+      expect(store.loading).toBe(false)
     })
   })
 })

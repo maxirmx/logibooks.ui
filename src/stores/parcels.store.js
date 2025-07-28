@@ -75,18 +75,24 @@ export const useParcelsStore = defineStore('parcels', () => {
     if (itemIndex !== -1) {
       items.value[itemIndex] = { ...items.value[itemIndex], ...data }
     }
-
+    
     return response
   }
 
-  async function generate(id) {
+  async function generate(id, filename) {
+    loading.value = true
+    error.value = null
     try {
-      // Use the new downloadFile helper with a default filename
-      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, `parcel_${id}.xml`)
+      if (filename == null || filename == undefined) {
+        filename = `parcel_${id}.xml`
+      }
+      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, filename)
     } catch (err) {
       console.error('Error downloading file:', err)
       error.value = err?.message || 'Ошибка при выгрузке накладной для посылки'
       throw err
+    } finally {
+      loading.value = false
     }
   }
 

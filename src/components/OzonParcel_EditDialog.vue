@@ -38,7 +38,7 @@ import { ref, watch } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
-import { findNextParcelWithIssues } from '@/helpers/next.item.helper.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from './OzonFormField.vue'
 
 const props = defineProps({
@@ -47,6 +47,7 @@ const props = defineProps({
 })
 
 const parcelsStore = useParcelsStore()
+const registersStore = useRegistersStore()
 const statusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
@@ -105,24 +106,20 @@ async function approveParcel() {
   }
 }
 
-// Handle saving and moving to the next parcel with issues
+// Handle saving and moving to the next parcel
 async function onSubmit(values) {
   try {
-    // First save the current parcel
     await parcelsStore.update(props.id, values)
+    const nextParcel = await registersStore.nextParcel(props.id)
     
-    // Find the next parcel with issues
-    const nextParcelId = await findNextParcelWithIssues(props.registerId, props.id)
-    
-    if (nextParcelId) {
-      // Navigate to the next parcel with issues
-      router.push(`/registers/${props.registerId}/parcels/edit/${nextParcelId}`)
+    if (nextParcel) {
+      const nextUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
+      router.push(nextUrl)
     } else {
-      // If no more issues found, go back to parcels list
-      router.push(`/registers/${props.registerId}/parcels`)
+      const fallbackUrl = `/registers/${props.registerId}/parcels`
+      router.push(fallbackUrl)
     }
   } catch (error) {
-    console.error('Error saving and finding next parcel:', error)
     parcelsStore.error = error?.message || String(error)
   }
 }
@@ -130,9 +127,10 @@ async function onSubmit(values) {
 function onSave(values) {
   return parcelsStore
     .update(props.id, values)
-    .then(() => router.push(`/registers/${props.registerId}/parcels`))
+    .then(() => {
+      router.push(`/registers/${props.registerId}/parcels`)
+    })
     .catch((error) => {
-      console.error('Error saving parcel:', error)
       parcelsStore.error = error?.message || String(error)
     })
 }
@@ -140,7 +138,7 @@ function onSave(values) {
 // Generate XML for this parcel
 async function generateXml() {
   try {
-    await parcelsStore.generate(props.id)
+    await parcelsStore.generate(props.id, item.value?.postingNumber)
   } catch (error) {
     console.error('Failed to generate XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
@@ -154,7 +152,7 @@ async function generateXml() {
       Посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
     </h1>
     <hr class="hr" />
-    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting }">
+    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit }">
 
       <!-- Order Identification & Status Section -->
       <div class="form-section">
@@ -227,7 +225,7 @@ async function generateXml() {
       <!-- Action buttons -->
 
       <div class="form-actions">
-        <button class="button primary" type="submit" @click="onSubmit(values)" :disabled="isSubmitting">
+        <button class="button primary" type="button" @click="handleSubmit(onSubmit)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-play" class="mr-1" />
           Следующая проблема
         </button>

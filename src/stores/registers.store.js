@@ -131,6 +131,41 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function download(id, filename) {
+    if (!filename) {
+      filename = `register_${id}.xlsx`
+    }
+    loading.value = true
+    error.value = null
+    try {
+      // Use downloadFile helper to trigger browser download
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+    }
+    finally {
+      loading.value = false
+    }
+    return null
+  }
+
+  async function nextParcel(orderId) {
+    loading.value = true
+    error.value = null
+    try {
+      return await fetchWrapper.get(`${baseUrl}/nextorder/${orderId}`)
+    } catch (err) {
+      error.value = err
+    }
+    finally {
+      loading.value = false
+    }
+    return null
+  }
+
   async function remove(id) {
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
@@ -158,6 +193,8 @@ export const useRegistersStore = defineStore('registers', () => {
     validate,
     getValidationProgress,
     cancelValidation,
+    download,
+    nextParcel,
     remove
   }
 })

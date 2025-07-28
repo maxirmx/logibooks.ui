@@ -189,12 +189,11 @@ function requestBlob(method) {
  */
 async function downloadFile(fileUrl, defaultFilename) {
   try {
-    // Get the file as a response
     const response = await requestBlob('GET')(fileUrl)
     
-    // Get filename from Content-Disposition header
     let filename = defaultFilename
     const disposition = response.headers.get('Content-Disposition')
+    console.log('Content-Disposition:', disposition)
     if (disposition && disposition.includes('filename=')) {
       filename = disposition
         .split('filename=')[1]

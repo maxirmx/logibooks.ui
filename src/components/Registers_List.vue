@@ -249,13 +249,7 @@ function exportAllXml(item) {
 }
 
 async function downloadRegister(item) {
-  try {
-    await registersStore.download(item.id)
-    alertStore.success('Экспорт реестра начат')
-  } catch (err) {
-    console.error('Error downloading register:', err)
-    alertStore.error('Ошибка при экспорте реестра')
-  }
+    await registersStore.download(item.id, item.fileName)
 }
 
 async function deleteRegister(item) {
@@ -344,9 +338,9 @@ function formatInvoiceDate(dateStr) {
 const headers = [
   { title: '', key: 'actions1', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions2', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions4', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions6', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions7', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
   // { title: '№', key: 'id', align: 'start' },

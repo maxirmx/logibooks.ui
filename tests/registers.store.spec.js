@@ -565,11 +565,13 @@ describe('registers store', () => {
       expect(result).toBe(true)
     })
 
-    it('propagates error when download fails', async () => {
+    it('returns null when download fails', async () => {
       const store = useRegistersStore()
       const error = new Error('Download failed')
       fetchWrapper.downloadFile.mockRejectedValue(error)
-      await expect(store.download(10)).rejects.toThrow('Download failed')
+      const result = await store.download(10)
+      expect(result).toBeNull()
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/10/download`,
         'register_10.xlsx'
@@ -589,11 +591,13 @@ describe('registers store', () => {
       expect(result).toEqual(order)
     })
 
-    it('handles errors when nextOrder fails', async () => {
+    it('returns null when nextOrder fails', async () => {
       const error = new Error('fail')
       fetchWrapper.get.mockRejectedValue(error)
       const store = useRegistersStore()
-      await expect(store.nextOrder(5)).rejects.toThrow('fail')
+      const result = await store.nextOrder(5)
+      expect(result).toBeNull()
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
         `${apiUrl}/registers/nextorder/5`
       )

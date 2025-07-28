@@ -131,27 +131,41 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function download(id) {
+  async function download(id, filename) {
+    if (!filename) {
+      filename = `register_${id}.xlsx`
+    }
+    loading.value = true
+    error.value = null
     try {
       // Use downloadFile helper to trigger browser download
-      return await fetchWrapper.downloadFile(
+      const result = await fetchWrapper.downloadFile(
         `${baseUrl}/${id}/download`,
-        `register_${id}.xlsx`
+        filename
       )
+      return result
     } catch (err) {
       console.error('Error downloading register:', err)
       error.value = err
-      throw err
+      return null
+    }
+    finally {
+      loading.value = false
     }
   }
 
   async function nextOrder(orderId) {
+    loading.value = true
+    error.value = null
     try {
       return await fetchWrapper.get(`${baseUrl}/nextorder/${orderId}`)
     } catch (err) {
       error.value = err
-      throw err
     }
+    finally {
+      loading.value = false
+    }
+    return null
   }
 
   async function remove(id) {

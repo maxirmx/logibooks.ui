@@ -304,12 +304,12 @@ describe('WbrParcels_List', () => {
     // Replace the generate function with our mock
     wrapper.vm.parcelsStore.generate = mockGenerate
 
-    // Create test order object
-    const testOrder = { id: 456 }
+    // Create test order object with shk property
+    const testOrder = { id: 456, shk: 'test123' }
     await wrapper.vm.exportParcelXml(testOrder)
 
-    // The generate function should be called with the order id
-    expect(wrapper.vm.parcelsStore.generate).toHaveBeenCalledWith(456)
+    // The generate function should be called with the order id and padded shk
+    expect(wrapper.vm.parcelsStore.generate).toHaveBeenCalledWith(456, '0000000000000test123')
     
     // Test error handling
     const error = new Error('Test error')

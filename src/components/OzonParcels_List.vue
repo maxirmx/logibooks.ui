@@ -155,7 +155,7 @@ function editParcel(item) {
 
 async function exportParcelXml(item) {
   try {
-    await parcelsStore.generate(item.id)
+    await parcelsStore.generate(item.id, item.postingNumber)
   } catch (error) {
     console.error('Failed to export parcel XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'

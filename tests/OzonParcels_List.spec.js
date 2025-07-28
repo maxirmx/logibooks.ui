@@ -304,12 +304,12 @@ describe('OzonParcels_List', () => {
     // Replace the generate function with our mock
     wrapper.vm.parcelsStore.generate = mockGenerate
 
-    // Create test order object
-    const testOrder = { id: 456 }
+    // Create test order object with postingNumber property
+    const testOrder = { id: 456, postingNumber: 'POSTING123' }
     await wrapper.vm.exportParcelXml(testOrder)
 
-    // The generate function should be called with the order id
-    expect(wrapper.vm.parcelsStore.generate).toHaveBeenCalledWith(456)
+    // The generate function should be called with the order id and posting number
+    expect(wrapper.vm.parcelsStore.generate).toHaveBeenCalledWith(456, 'POSTING123')
     
     // Test error handling
     const error = new Error('Test error')

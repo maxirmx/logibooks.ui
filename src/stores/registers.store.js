@@ -139,22 +139,20 @@ export const useRegistersStore = defineStore('registers', () => {
     error.value = null
     try {
       // Use downloadFile helper to trigger browser download
-      const result = await fetchWrapper.downloadFile(
+      return await fetchWrapper.downloadFile(
         `${baseUrl}/${id}/download`,
         filename
       )
-      return result
     } catch (err) {
-      console.error('Error downloading register:', err)
       error.value = err
-      return null
     }
     finally {
       loading.value = false
     }
+    return null
   }
 
-  async function nextOrder(orderId) {
+  async function nextParcel(orderId) {
     loading.value = true
     error.value = null
     try {
@@ -196,7 +194,7 @@ export const useRegistersStore = defineStore('registers', () => {
     getValidationProgress,
     cancelValidation,
     download,
-    nextOrder,
+    nextParcel,
     remove
   }
 })

@@ -33,7 +33,12 @@ vi.mock('@/stores/stop.words.store.js', () => ({
 
 vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
   useStopWordMatchTypesStore: () => ({
-    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
+    matchTypes: ref([
+      { id: 1, name: 'Exact' },
+      { id: 15, name: 'Type15' },
+      { id: 25, name: 'Type25' },
+      { id: 41, name: 'Morphology' }
+    ]),
     ensureLoaded: vi.fn()
   })
 }))
@@ -156,6 +161,34 @@ describe('StopWord_Settings.vue', () => {
       await wrapper.vm.$nextTick()
 
       expect(wrapper.vm.matchTypeId).toBe(41)
+    })
+
+    it('disables options 21-30 for single word', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const wordInput = wrapper.find('input[name="word"]')
+      await wordInput.setValue('одиночное')
+      await wordInput.trigger('input')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.isOptionDisabled(25)).toBe(true)
+      expect(wrapper.vm.isOptionDisabled(15)).toBe(false)
+      expect(wrapper.vm.isOptionDisabled(41)).toBe(false)
+    })
+
+    it('disables options 11-20 and >30 for multi-word', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const wordInput = wrapper.find('input[name="word"]')
+      await wordInput.setValue('два слова')
+      await wordInput.trigger('input')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.isOptionDisabled(15)).toBe(true)
+      expect(wrapper.vm.isOptionDisabled(25)).toBe(false)
+      expect(wrapper.vm.isOptionDisabled(41)).toBe(true)
     })
   })
 

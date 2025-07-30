@@ -123,6 +123,7 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     }
   }
 
+
   return {
     stopWords,
     stopWord,

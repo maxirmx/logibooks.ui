@@ -47,10 +47,18 @@ const props = defineProps({
 })
 
 const parcelsStore = useParcelsStore()
+
 const parcelStatusStore = useParcelStatusesStore()
+parcelStatusStore.ensureStatusesLoaded()
+
 const parcelCheckStatusStore = useParcelCheckStatusStore()
+parcelCheckStatusStore.ensureStatusesLoaded()
+
 const stopWordsStore = useStopWordsStore()
+await stopWordsStore.getAll()
+
 const feacnCodesStore = useFeacnCodesStore()
+await feacnCodesStore.ensureOrdersLoaded()
 
 const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()
@@ -104,13 +112,6 @@ watch(
 )
 
 onMounted(async () => {
-  // Ensure order statuses are loaded
-  parcelStatusStore.ensureStatusesLoaded()
-  parcelCheckStatusStore.ensureStatusesLoaded()
-  // Load all stop words once to reduce network traffic
-  await stopWordsStore.getAll()
-  // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
-  await feacnCodesStore.ensureOrdersLoaded()
   await fetchRegister()
 })
 

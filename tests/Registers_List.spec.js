@@ -987,11 +987,11 @@ describe('formatInvoiceDate function', () => {
     
     // Test with ISO format string
     const isoDate = '2025-07-27T12:34:56'
-    expect(wrapper.vm.formatInvoiceDate(isoDate)).toBe('27.07.2025')
+    expect(wrapper.vm.formatDate(isoDate)).toBe('27.07.2025')
     
     // Test with different date
     const anotherDate = '2023-01-05'
-    expect(wrapper.vm.formatInvoiceDate(anotherDate)).toBe('05.01.2023')
+    expect(wrapper.vm.formatDate(anotherDate)).toBe('05.01.2023')
   })
   
   it('handles single-digit day and month with padding', () => {
@@ -1001,15 +1001,15 @@ describe('formatInvoiceDate function', () => {
     
     // Test with single-digit day
     const singleDigitDay = '2025-07-03'
-    expect(wrapper.vm.formatInvoiceDate(singleDigitDay)).toBe('03.07.2025')
+    expect(wrapper.vm.formatDate(singleDigitDay)).toBe('03.07.2025')
     
     // Test with single-digit month
     const singleDigitMonth = '2025-03-15'
-    expect(wrapper.vm.formatInvoiceDate(singleDigitMonth)).toBe('15.03.2025')
+    expect(wrapper.vm.formatDate(singleDigitMonth)).toBe('15.03.2025')
     
     // Test with both single-digit day and month
     const bothSingleDigit = '2025-02-09'
-    expect(wrapper.vm.formatInvoiceDate(bothSingleDigit)).toBe('09.02.2025')
+    expect(wrapper.vm.formatDate(bothSingleDigit)).toBe('09.02.2025')
   })
   
   it('returns empty string for null or undefined input', () => {
@@ -1017,9 +1017,9 @@ describe('formatInvoiceDate function', () => {
       global: { stubs: vuetifyStubs }
     })
     
-    expect(wrapper.vm.formatInvoiceDate(null)).toBe('')
-    expect(wrapper.vm.formatInvoiceDate(undefined)).toBe('')
-    expect(wrapper.vm.formatInvoiceDate('')).toBe('')
+    expect(wrapper.vm.formatDate(null)).toBe('')
+    expect(wrapper.vm.formatDate(undefined)).toBe('')
+    expect(wrapper.vm.formatDate('')).toBe('')
   })
   
   it('returns original string for invalid date input', () => {
@@ -1028,10 +1028,10 @@ describe('formatInvoiceDate function', () => {
     })
     
     const invalidDate = 'not-a-date'
-    expect(wrapper.vm.formatInvoiceDate(invalidDate)).toBe(invalidDate)
+    expect(wrapper.vm.formatDate(invalidDate)).toBe(invalidDate)
     
     const anotherInvalidDate = '2025/13/45'  // invalid month and day
-    expect(wrapper.vm.formatInvoiceDate(anotherInvalidDate)).toBe(anotherInvalidDate)
+    expect(wrapper.vm.formatDate(anotherInvalidDate)).toBe(anotherInvalidDate)
   })
   
   it('handles different date formats correctly', () => {
@@ -1040,14 +1040,14 @@ describe('formatInvoiceDate function', () => {
     })
     
     // Testing with more reliable date format MM/DD/YYYY (US)
-    expect(wrapper.vm.formatInvoiceDate('07/27/2025')).toBe('27.07.2025')
+    expect(wrapper.vm.formatDate('07/27/2025')).toBe('27.07.2025')
     
     // Date object directly
     const dateObj = new Date(2025, 6, 27)  // Month is 0-indexed
-    expect(wrapper.vm.formatInvoiceDate(dateObj)).toBe('27.07.2025')
+    expect(wrapper.vm.formatDate(dateObj)).toBe('27.07.2025')
     
     // Date with time component
     const dateWithTime = new Date('2025-07-27T15:30:45')
-    expect(wrapper.vm.formatInvoiceDate(dateWithTime)).toBe('27.07.2025')
+    expect(wrapper.vm.formatDate(dateWithTime)).toBe('27.07.2025')
   })
 })

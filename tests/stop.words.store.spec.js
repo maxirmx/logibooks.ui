@@ -42,7 +42,6 @@ describe('stop.words.store.js', () => {
       expect(store.stopWords).toEqual([])
       expect(store.stopWord).toEqual({ loading: true })
       expect(store.loading).toBe(false)
-      expect(store.matchTypes).toEqual([])
     })
 
     it('has all required methods', () => {
@@ -51,7 +50,6 @@ describe('stop.words.store.js', () => {
       expect(typeof store.create).toBe('function')
       expect(typeof store.update).toBe('function')
       expect(typeof store.remove).toBe('function')
-      expect(typeof store.matchtypes).toBe('function')
     })
   })
 
@@ -301,29 +299,6 @@ describe('stop.words.store.js', () => {
     })
   })
 
-  describe('matchtypes', () => {
-    it('fetches match types successfully', async () => {
-      const types = [ { id: 1, name: 'Exact' } ]
-      fetchWrapper.get.mockResolvedValue(types)
-
-      const result = await store.matchtypes()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/matchtypes')
-      expect(store.matchTypes).toEqual(types)
-      expect(result).toEqual(types)
-    })
-
-    it('handles fetch error', async () => {
-      const error = new Error('fail')
-      fetchWrapper.get.mockRejectedValue(error)
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      await expect(store.matchtypes()).rejects.toThrow('fail')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch stop word match types:', error)
-
-      consoleSpy.mockRestore()
-    })
-  })
 
   describe('Store State Management', () => {
     it('maintains reactive state', async () => {

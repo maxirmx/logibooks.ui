@@ -586,7 +586,7 @@ describe('registers store', () => {
       const result = await store.generate(5)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
-        'IndPost_5.xml'
+        'IndPost_5.zip'
       )
       expect(result).toBe(true)
     })
@@ -597,7 +597,7 @@ describe('registers store', () => {
       await store.generate(5, 'INV')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
-        'IndPost_INV.xml'
+        'IndPost_INV.zip'
       )
     })
 

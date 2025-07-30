@@ -69,12 +69,15 @@ vi.mock('@/stores/stop.words.store.js', () => ({
     getById: getStopWordById,
     create: createStopWord,
     update: updateStopWord,
-    remove: removeStopWord,
-    matchTypeMap: new Map(),
-    ensureMatchTypesLoaded: vi.fn(),
-    getMatchTypeName(id) {
-      return this.matchTypeMap.get(id)?.name || `Тип ${id}`
-    }
+    remove: removeStopWord
+  })
+}))
+
+vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
+  useStopWordMatchTypesStore: () => ({
+    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
+    ensureLoaded: vi.fn(),
+    getName: vi.fn(id => (id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Тип ${id}`))
   })
 }))
 
@@ -355,14 +358,13 @@ describe('StopWords_List.vue', () => {
 
   describe('Match Type Display', () => {
     it('returns correct text for known id', () => {
-      wrapper.vm.stopWordsStore.matchTypeMap.set(1, { id: 1, name: 'Exact' })
       const result = wrapper.vm.getMatchTypeText(1)
       expect(result).toBe('Exact')
     })
 
     it('returns fallback text for unknown id', () => {
       const result = wrapper.vm.getMatchTypeText(99)
-      expect(result).toBe('Тип 99')
+      expect(result).toBe(`Тип 99`)
     })
   })
 

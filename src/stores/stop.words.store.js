@@ -30,6 +30,20 @@ import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/stopwords`
 
+function fromApi(sw) {
+  return {
+    ...sw,
+    exactMatch: sw.matchTypeId === 1
+  }
+}
+
+function toApi(data) {
+  if (data && data.exactMatch !== undefined && data.matchTypeId === undefined) {
+    return { ...data, matchTypeId: data.exactMatch ? 1 : 51 }
+  }
+  return data
+}
+
 export const useStopWordsStore = defineStore('stopWords', () => {
   const stopWords = ref([])
   const stopWord = ref({ loading: true })
@@ -39,7 +53,7 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
-      stopWords.value = response || []
+      stopWords.value = (response || []).map(fromApi)
     } catch (error) {
       console.error('Failed to fetch stop words:', error)
       throw error
@@ -55,8 +69,8 @@ export const useStopWordsStore = defineStore('stopWords', () => {
 
     try {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      stopWord.value = response
-      return response
+      stopWord.value = fromApi(response)
+      return stopWord.value
     } catch (error) {
       console.error('Failed to fetch stop word:', error)
       throw error
@@ -65,7 +79,7 @@ export const useStopWordsStore = defineStore('stopWords', () => {
 
   async function create(data) {
     try {
-      await fetchWrapper.post(baseUrl, data)
+      await fetchWrapper.post(baseUrl, toApi(data))
       // Refresh the list after creation
       await getAll()
     } catch (error) {
@@ -76,7 +90,7 @@ export const useStopWordsStore = defineStore('stopWords', () => {
 
   async function update(id, data) {
     try {
-      await fetchWrapper.put(`${baseUrl}/${id}`, data)
+      await fetchWrapper.put(`${baseUrl}/${id}`, toApi(data))
       // Refresh the list after update
       await getAll()
     } catch (error) {

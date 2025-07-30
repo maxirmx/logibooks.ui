@@ -55,8 +55,8 @@ const schema = toTypedSchema(Yup.object().shape({
     .string()
     .required('Необходимо ввести стоп-слово или фразу')
     .min(1, 'Стоп-слово должно содержать хотя бы один символ'),
-  exactMatch: Yup
-    .boolean()
+  matchTypeId: Yup
+    .number()
     .required('Необходимо выбрать тип соответствия')
 }))
 
@@ -64,19 +64,14 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     word: '',
-    exactMatch: false  // Ensure default value is set
+    matchTypeId: 1
   }
 })
 
 const { value: word } = useField('word')
-const { value: exactMatch } = useField('exactMatch')
+const { value: matchTypeId } = useField('matchTypeId')
 
-// Watch exactMatch and force a default value if undefined
-watch(exactMatch, (newValue) => {
-  if (newValue === undefined || newValue === null) {
-    setFieldValue('exactMatch', false)
-  }
-}, { immediate: true })
+stopWordsStore.ensureMatchTypesLoaded()
 
 // Ensure initial value is properly set for create mode
 onMounted(async () => {
@@ -88,10 +83,9 @@ onMounted(async () => {
         resetForm({
           values: {
             word: loadedStopWord.word,
-            exactMatch: loadedStopWord.exactMatch
+            matchTypeId: loadedStopWord.matchTypeId
           }
         })
-        // Ensure UI updates after form reset
         await nextTick()
       }
     } catch {
@@ -101,22 +95,8 @@ onMounted(async () => {
       loading.value = false
     }
   } else {
-    // For create mode, ensure exactMatch has a default value
-    setFieldValue('exactMatch', false)
+    setFieldValue('matchTypeId', 1)
     await nextTick()
-  }
-})
-
-// Check if word contains multiple words (spaces)  
-const forceExactMatch = computed(() => {
-  const trimmedWord = word.value?.trim() || ''
-  return trimmedWord.includes(' ')
-})
-
-// Watch for multi-word input and force exact match
-watch(forceExactMatch, (newValue) => {
-  if (newValue) {
-    setFieldValue('exactMatch', true)
   }
 })
 
@@ -131,7 +111,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
   
   const stopWordData = {
     word: values.word.trim(),
-    exactMatch: values.exactMatch  
+    matchTypeId: values.matchTypeId
   }
 
   // Include id for updates
@@ -191,35 +171,19 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label class="label">Тип соответствия:</label>
-        <div class="radio-group">
-          <label class="radio-styled">
-            <input
-              type="radio"
-              name="exactMatch"
-              :value="true"
-              :checked="exactMatch === true"
-              @change="setFieldValue('exactMatch', true)"
-              :disabled="forceExactMatch"
-            />
-            <span class="radio-mark"></span>
-            Точное соответствие
-          </label>
-          
-          <label class="radio-styled">
-            <input
-              type="radio"
-              name="exactMatch"
-              :value="false"
-              :checked="exactMatch === false"
-              @change="setFieldValue('exactMatch', false)"
-              :disabled="forceExactMatch"
-            />
-            <span class="radio-mark"></span>
-            Морфологическое соответствие
-          </label>
-        </div>
-        <div v-if="errors.exactMatch" class="invalid-feedback">{{ errors.exactMatch }}</div>
+        <label for="matchTypeId" class="label">Тип соответствия:</label>
+        <select
+          id="matchTypeId"
+          name="matchTypeId"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.matchTypeId }"
+          v-model="matchTypeId"
+        >
+          <option v-for="mt in stopWordsStore.matchTypes" :key="mt.id" :value="mt.id">
+            {{ mt.name }}
+          </option>
+        </select>
+        <div v-if="errors.matchTypeId" class="invalid-feedback">{{ errors.matchTypeId }}</div>
       </div>
 
       <div class="form-group">

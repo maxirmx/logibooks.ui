@@ -54,9 +54,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockStopWords = ref([
-  { id: 1, word: 'и', exactMatch: false },
-  { id: 2, word: 'или', exactMatch: true },
-  { id: 3, word: 'но', exactMatch: false }
+  { id: 1, word: 'и', matchTypeId: 41 },
+  { id: 2, word: 'или', matchTypeId: 1 },
+  { id: 3, word: 'но', matchTypeId: 41 }
 ])
 
 // Mock stores
@@ -69,7 +69,12 @@ vi.mock('@/stores/stop.words.store.js', () => ({
     getById: getStopWordById,
     create: createStopWord,
     update: updateStopWord,
-    remove: removeStopWord
+    remove: removeStopWord,
+    matchTypeMap: new Map(),
+    ensureMatchTypesLoaded: vi.fn(),
+    getMatchTypeName(id) {
+      return this.matchTypeMap.get(id)?.name || `Тип ${id}`
+    }
   })
 }))
 
@@ -140,9 +145,9 @@ describe('StopWords_List.vue', () => {
 
     // Reset reactive data
     mockStopWords.value = [
-      { id: 1, word: 'и', exactMatch: false },
-      { id: 2, word: 'или', exactMatch: true },
-      { id: 3, word: 'но', exactMatch: false }
+      { id: 1, word: 'и', matchTypeId: 41 },
+      { id: 2, word: 'или', matchTypeId: 1 },
+      { id: 3, word: 'но', matchTypeId: 41 }
     ]
 
     wrapper = mount(StopWordsList, {
@@ -349,14 +354,15 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Match Type Display', () => {
-    it('returns correct text for exact match', () => {
-      const result = wrapper.vm.getMatchTypeText(true)
-      expect(result).toBe('Точное соответствие')
+    it('returns correct text for known id', () => {
+      wrapper.vm.stopWordsStore.matchTypeMap.set(1, { id: 1, name: 'Exact' })
+      const result = wrapper.vm.getMatchTypeText(1)
+      expect(result).toBe('Exact')
     })
 
-    it('returns correct text for morphological match', () => {
-      const result = wrapper.vm.getMatchTypeText(false)
-      expect(result).toBe('Морфологическое соответствие')
+    it('returns fallback text for unknown id', () => {
+      const result = wrapper.vm.getMatchTypeText(99)
+      expect(result).toBe('Тип 99')
     })
   })
 
@@ -377,7 +383,7 @@ describe('StopWords_List.vue', () => {
         { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
         { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
         { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
-        { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
+        { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
       ])
     })
   })
@@ -467,7 +473,7 @@ describe('StopWords_List.vue', () => {
   describe('Reactive State', () => {
     it('updates when stop words change', async () => {
       const newStopWords = [
-        { id: 4, word: 'новое', exactMatch: true }
+        { id: 4, word: 'новое', matchTypeId: 1 }
       ]
       
       mockStopWords.value = newStopWords
@@ -496,7 +502,7 @@ describe('StopWords_List.vue', () => {
       const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
         id: i + 1,
         word: `слово${i}`,
-        exactMatch: i % 2 === 0
+        matchTypeId: i % 2 === 0 ? 1 : 41
       }))
       
       mockStopWords.value = largeDataset

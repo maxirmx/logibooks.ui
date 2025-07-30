@@ -184,23 +184,25 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label for="matchTypeId" class="label">Тип соответствия:</label>
-        <select
-          id="matchTypeId"
-          name="matchTypeId"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.matchTypeId }"
-          v-model="matchTypeId"
-        >
-          <option
+        <label class="label">Тип соответствия:</label>
+        <div class="radio-group" :class="{ 'is-invalid': errors.matchTypeId }">
+          <label
             v-for="mt in matchTypesStore.matchTypes"
             :key="mt.id"
-            :value="mt.id"
-            :disabled="isOptionDisabled(mt.id)"
+            class="radio-styled"
           >
+            <input
+              type="radio"
+              :id="`matchType-${mt.id}`"
+              name="matchTypeId"
+              :value="mt.id"
+              v-model="matchTypeId"
+              :disabled="isOptionDisabled(mt.id)"
+            />
+            <span class="radio-mark"></span>
             {{ mt.name }}
-          </option>
-        </select>
+          </label>
+        </div>
         <div v-if="errors.matchTypeId" class="invalid-feedback">{{ errors.matchTypeId }}</div>
       </div>
 

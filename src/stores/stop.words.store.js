@@ -29,17 +29,11 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/stopwords`
-const matchTypesUrl = `${baseUrl}/matchtypes`
-
 export const useStopWordsStore = defineStore('stopWords', () => {
   const stopWords = ref([])
   const stopWord = ref({ loading: true })
   const loading = ref(false)
   const error = ref(null)
-
-  const matchTypes = ref([])
-  const matchTypeMap = ref(new Map())
-  let matchTypesLoaded = false
 
   async function getAll() {
     loading.value = true
@@ -54,31 +48,6 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     }
   }
 
-  async function getMatchTypes() {
-    loading.value = true
-    try {
-      const res = await fetchWrapper.get(matchTypesUrl)
-      matchTypes.value = res || []
-      matchTypeMap.value = new Map(matchTypes.value.map(mt => [mt.id, mt]))
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  function ensureMatchTypesLoaded() {
-    if (!matchTypesLoaded && matchTypes.value.length === 0) {
-      matchTypesLoaded = true
-      getMatchTypes()
-    }
-  }
-
-  function getMatchTypeName(id) {
-    const mt = matchTypeMap.value.get(id)
-    return mt ? mt.name : `Тип ${id}`
-  }
 
   async function getById(id, refresh = false) {
     if (refresh) {
@@ -144,15 +113,10 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     stopWord,
     loading,
     error,
-    matchTypes,
-    matchTypeMap,
     getAll,
     getById,
     create,
     update,
-    remove,
-    getMatchTypes,
-    ensureMatchTypesLoaded,
-    getMatchTypeName
+    remove
   }
 })

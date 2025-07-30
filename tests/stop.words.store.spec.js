@@ -35,6 +35,9 @@ describe('stop.words.store.js', () => {
 
     // Reset all mocks
     vi.clearAllMocks()
+    
+    // Reset error state to null
+    store.error = null
   })
 
   describe('Store Initialization', () => {
@@ -93,13 +96,9 @@ describe('stop.words.store.js', () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.getAll()).rejects.toThrow('Network error')
       expect(store.loading).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch stop words:', error)
-
-      consoleSpy.mockRestore()
+      expect(store.error).toEqual(error)
     })
   })
 
@@ -135,12 +134,8 @@ describe('stop.words.store.js', () => {
       const error = new Error('Not found')
       fetchWrapper.get.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.getById(1)).rejects.toThrow('Not found')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch stop word:', error)
-
-      consoleSpy.mockRestore()
+      expect(store.error).toEqual(error)
     })
   })
 
@@ -176,26 +171,18 @@ describe('stop.words.store.js', () => {
       const error = new Error('Validation error')
       fetchWrapper.post.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.create({})).rejects.toThrow('Validation error')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create stop word:', error)
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
     })
 
     it('handles duplicate word error', async () => {
       const error = new Error('409: Stop word already exists')
       fetchWrapper.post.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.create({ word: 'и', matchTypeId: 41 })).rejects.toThrow('409: Stop word already exists')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create stop word:', error)
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
     })
   })
 
@@ -234,13 +221,9 @@ describe('stop.words.store.js', () => {
       const error = new Error('Update failed')
       fetchWrapper.put.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.update(1, {})).rejects.toThrow('Update failed')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to update stop word:', error)
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
     })
   })
 
@@ -277,13 +260,9 @@ describe('stop.words.store.js', () => {
       const error = new Error('Delete failed')
       fetchWrapper.delete.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete stop word:', error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
 
-      consoleSpy.mockRestore()
     })
 
     it('does not refresh list when remove fails', async () => {

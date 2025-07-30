@@ -579,6 +579,37 @@ describe('registers store', () => {
     })
   })
 
+  describe('generate method', () => {
+    it('calls downloadFile with default filename by id when invoiceNumber missing', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const result = await store.generate(5)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/5/generate`,
+        'IndPost_5.xml'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('calls downloadFile with invoiceNumber when provided', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.generate(5, 'INV')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/5/generate`,
+        'IndPost_INV.xml'
+      )
+    })
+
+    it('propagates error when download fails', async () => {
+      const store = useRegistersStore()
+      const error = new Error('fail')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+      await expect(store.generate(5)).rejects.toThrow('fail')
+      expect(store.error).toBe(error)
+    })
+  })
+
   describe('nextParcel method', () => {
     it('requests next parcel with correct id', async () => {
       const parcel = { id: 2 }

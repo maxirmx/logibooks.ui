@@ -131,6 +131,29 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function generate(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      let filename
+      if (invoiceNumber !== null && invoiceNumber !== undefined) {
+        filename = `IndPost_${invoiceNumber}.xml`
+      } else {
+        filename = `IndPost_${id}.xml`
+      }
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/generate`,
+        filename
+      )
+    } catch (err) {
+      console.error('Error downloading file:', err)
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function download(id, filename) {
     if (!filename) {
       filename = `register_${id}.xlsx`
@@ -193,6 +216,7 @@ export const useRegistersStore = defineStore('registers', () => {
     validate,
     getValidationProgress,
     cancelValidation,
+    generate,
     download,
     nextParcel,
     remove

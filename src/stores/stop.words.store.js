@@ -34,7 +34,6 @@ export const useStopWordsStore = defineStore('stopWords', () => {
   const stopWords = ref([])
   const stopWord = ref({ loading: true })
   const loading = ref(false)
-  const matchTypes = ref([])
 
   async function getAll() {
     loading.value = true
@@ -97,16 +96,6 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     }
   }
 
-  async function matchtypes() {
-    try {
-      const response = await fetchWrapper.get(`${baseUrl}/matchtypes`)
-      matchTypes.value = response || []
-      return matchTypes.value
-    } catch (error) {
-      console.error('Failed to fetch stop word match types:', error)
-      throw error
-    }
-  }
 
   return {
     stopWords,
@@ -116,8 +105,6 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     getById,
     create,
     update,
-    remove,
-    matchtypes,
-    matchTypes
+    remove
   }
 })

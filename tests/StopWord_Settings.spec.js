@@ -93,7 +93,7 @@ describe('StopWord_Settings.vue', () => {
 
       expect(wrapper.find('h1').text()).toBe('Регистрация стоп-слова или фразы')
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
-      expect(wrapper.find('select[name="matchTypeId"]').exists()).toBe(true)
+      expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -123,12 +123,12 @@ describe('StopWord_Settings.vue', () => {
       expect(wordInput.attributes('placeholder')).toBe('Стоп-слово или фраза')
     })
 
-    it('renders matchTypeId select', async () => {
+    it('renders matchTypeId radios', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const select = wrapper.find('select[name="matchTypeId"]')
-      expect(select.exists()).toBe(true)
+      const radios = wrapper.findAll('input[type="radio"][name="matchTypeId"]')
+      expect(radios.length).toBeGreaterThan(0)
     })
 
     it('renders form labels correctly', async () => {

@@ -73,6 +73,16 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
+const words = computed(() => (word.value.match(/[\p{L}\d-]+/gu) || []))
+const isSingleWordInput = computed(() => words.value.length <= 1)
+
+function isOptionDisabled(value) {
+  if (isSingleWordInput.value) {
+    return value >= 21 && value <= 30
+  }
+  return (value >= 11 && value <= 20) || value > 30
+}
+
 matchTypesStore.ensureLoaded()
 
 // Ensure initial value is properly set for create mode
@@ -143,7 +153,8 @@ function cancel() {
 defineExpose({
   onSubmit,
   cancel,
-  onWordInput
+  onWordInput,
+  isOptionDisabled
 })
 </script>
 
@@ -181,7 +192,12 @@ defineExpose({
           :class="{ 'is-invalid': errors.matchTypeId }"
           v-model="matchTypeId"
         >
-          <option v-for="mt in matchTypesStore.matchTypes" :key="mt.id" :value="mt.id">
+          <option
+            v-for="mt in matchTypesStore.matchTypes"
+            :key="mt.id"
+            :value="mt.id"
+            :disabled="isOptionDisabled(mt.id)"
+          >
             {{ mt.name }}
           </option>
         </select>

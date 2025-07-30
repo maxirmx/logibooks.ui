@@ -72,7 +72,6 @@ describe('companies store', () => {
     })
 
     it('handles fetch error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)
       const store = useCompaniesStore()
@@ -82,8 +81,6 @@ describe('companies store', () => {
       expect(store.companies).toEqual([])
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch companies:', error)
-      consoleSpy.mockRestore()
     })
   })
 
@@ -102,7 +99,6 @@ describe('companies store', () => {
     })
 
     it('handles fetch error and returns null', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('Not found')
       fetchWrapper.get.mockRejectedValue(error)
       const store = useCompaniesStore()
@@ -112,8 +108,6 @@ describe('companies store', () => {
       expect(result).toBeNull()
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch company:', error)
-      consoleSpy.mockRestore()
     })
   })
 
@@ -135,7 +129,6 @@ describe('companies store', () => {
     })
 
     it('handles create error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('Conflict')
       fetchWrapper.post.mockRejectedValue(error)
       const store = useCompaniesStore()
@@ -144,8 +137,6 @@ describe('companies store', () => {
 
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create company:', error)
-      consoleSpy.mockRestore()
     })
   })
 
@@ -166,7 +157,6 @@ describe('companies store', () => {
     })
 
     it('handles update error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('Not found')
       fetchWrapper.put.mockRejectedValue(error)
       const store = useCompaniesStore()
@@ -175,8 +165,6 @@ describe('companies store', () => {
 
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to update company:', error)
-      consoleSpy.mockRestore()
     })
   })
 
@@ -197,7 +185,6 @@ describe('companies store', () => {
     })
 
     it('handles remove error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const error = new Error('Conflict')
       fetchWrapper.delete.mockRejectedValue(error)
       const store = useCompaniesStore()
@@ -206,8 +193,6 @@ describe('companies store', () => {
 
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete company:', error)
-      consoleSpy.mockRestore()
     })
   })
 

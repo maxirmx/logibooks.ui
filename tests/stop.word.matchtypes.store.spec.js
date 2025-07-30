@@ -68,17 +68,11 @@ describe('stop word matchtypes store', () => {
     const err = new Error('fail')
     fetchWrapper.get.mockRejectedValue(err)
 
-    // Mock console.error to prevent test output noise
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const store = useStopWordMatchTypesStore()
     await store.fetchMatchTypes()
 
     expect(store.error).toBe(err)
     expect(store.loading).toBe(false)
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to fetch stop word match types:', err)
-    
-    consoleErrorSpy.mockRestore()
   })
 
   it('ensureLoaded loads only once', async () => {

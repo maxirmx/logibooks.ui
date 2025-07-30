@@ -46,7 +46,6 @@ export const useStopWordMatchTypesStore = defineStore('stopWordMatchTypes', () =
       matchTypeMap.value = new Map(matchTypes.value.map(t => [t.id, t]))
     } catch (err) {
       error.value = err
-      console.error('Failed to fetch stop word match types:', err)
     } finally {
       loading.value = false
     }

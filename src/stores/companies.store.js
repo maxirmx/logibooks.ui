@@ -43,7 +43,6 @@ export const useCompaniesStore = defineStore('companies', () => {
       companies.value = await fetchWrapper.get(baseUrl)
     } catch (err) {
       error.value = err
-      console.error('Failed to fetch companies:', err)
     } finally {
       loading.value = false
     }
@@ -58,7 +57,6 @@ export const useCompaniesStore = defineStore('companies', () => {
       return company.value
     } catch (err) {
       error.value = err
-      console.error('Failed to fetch company:', err)
       company.value = { error: err }
       return null
     } finally {
@@ -75,7 +73,6 @@ export const useCompaniesStore = defineStore('companies', () => {
       return result
     } catch (err) {
       error.value = err
-      console.error('Failed to create company:', err)
       throw err
     } finally {
       loading.value = false
@@ -95,7 +92,6 @@ export const useCompaniesStore = defineStore('companies', () => {
       return true
     } catch (err) {
       error.value = err
-      console.error('Failed to update company:', err)
       throw err
     } finally {
       loading.value = false
@@ -111,7 +107,6 @@ export const useCompaniesStore = defineStore('companies', () => {
       return true
     } catch (err) {
       error.value = err
-      console.error('Failed to delete company:', err)
       throw err
     } finally {
       loading.value = false

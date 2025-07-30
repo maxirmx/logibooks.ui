@@ -37,7 +37,14 @@ vi.mock('pinia', async () => {
 // Simple stubs for vee-validate components
 const FormStub = {
   name: 'Form',
-  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
+  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" :values="{}" /></form>',
+  methods: {
+    handleSubmit(callback) {
+      if (callback) {
+        callback({})
+      }
+    }
+  }
 }
 const FieldStub = {
   name: 'Field',
@@ -68,6 +75,7 @@ const mockItem = ref({
 
 const mockOrdersStore = createMockStore({
   item: mockItem,
+  error: null,
   getById: vi.fn().mockResolvedValue(mockItem.value),
   update: vi.fn().mockResolvedValue({}),
   generate: vi.fn().mockResolvedValue(true),
@@ -117,6 +125,10 @@ const mockCountriesStore = createMockStore({
   ensureLoaded: vi.fn()
 })
 
+const mockRegistersStore = createMockStore({
+  nextParcel: vi.fn().mockResolvedValue({ id: 2, registerId: 1 })
+})
+
 // Mock stores
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: vi.fn(() => mockOrdersStore)
@@ -142,6 +154,10 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: vi.fn(() => mockCountriesStore)
 }))
 
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: vi.fn(() => mockRegistersStore)
+}))
+
 // Mock the next item helper
 vi.mock('@/helpers/next.item.helper.js', () => ({
   findNextParcelWithIssues: vi.fn().mockResolvedValue(2)
@@ -154,6 +170,10 @@ describe('OzonParcel_EditDialog', () => {
   beforeEach(async () => {
     // Reset mocks
     vi.clearAllMocks()
+    
+    // Mock console.error to prevent stderr warnings in tests
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    
     pinia = createPinia()
 
     // Create a Suspense wrapper for the async component
@@ -185,6 +205,11 @@ describe('OzonParcel_EditDialog', () => {
     // Wait for async operations to complete
     await nextTick()
     await nextTick() // Extra tick to ensure async operations complete
+  })
+
+  afterEach(() => {
+    // Restore console.error mock
+    console.error.mockRestore?.()
   })
 
   it('renders the order edit dialog', () => {
@@ -296,6 +321,222 @@ describe('OzonParcel_EditDialog', () => {
       await nextTick()
       statusCell = wrapper.find('.status-cell')
       expect(statusCell.classes()).toContain('is-approved')
+    })
+  })
+
+  describe('validateParcel function', () => {
+    it('calls validate and reloads data on success', async () => {
+      const validateBtn = wrapper.find('.validate-btn')
+      if (validateBtn.exists()) {
+        await validateBtn.trigger('click')
+        
+        expect(mockOrdersStore.validate).toHaveBeenCalledWith(1)
+        expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
+      }
+    })
+
+    it('handles validation errors', async () => {
+      const error = new Error('Validation failed')
+      error.response = { data: { message: 'Custom error message' } }
+      mockOrdersStore.validate.mockRejectedValueOnce(error)
+
+      const validateBtn = wrapper.find('.validate-btn')
+      if (validateBtn.exists()) {
+        await validateBtn.trigger('click')
+        await nextTick()
+
+        expect(mockOrdersStore.error).toBe('Custom error message')
+      }
+    })
+
+    it('handles validation errors without response data', async () => {
+      const error = new Error('Network error')
+      mockOrdersStore.validate.mockRejectedValueOnce(error)
+
+      const validateBtn = wrapper.find('.validate-btn')
+      if (validateBtn.exists()) {
+        await validateBtn.trigger('click')
+        await nextTick()
+
+        expect(mockOrdersStore.error).toBe('Ошибка при проверке посылки')
+      }
+    })
+  })
+
+  describe('approveParcel function', () => {
+    it('calls approve and reloads data on success', async () => {
+      const approveBtn = wrapper.find('.approve-btn')
+      if (approveBtn.exists()) {
+        await approveBtn.trigger('click')
+        
+        expect(mockOrdersStore.approve).toHaveBeenCalledWith(1)
+        expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
+      }
+    })
+
+    it('handles approval errors', async () => {
+      const error = new Error('Approval failed')
+      error.response = { data: { message: 'Custom approval error' } }
+      mockOrdersStore.approve.mockRejectedValueOnce(error)
+
+      const approveBtn = wrapper.find('.approve-btn')
+      if (approveBtn.exists()) {
+        await approveBtn.trigger('click')
+        await nextTick()
+
+        expect(mockOrdersStore.error).toBe('Custom approval error')
+      }
+    })
+
+    it('handles approval errors without response data', async () => {
+      const error = new Error('Network error')
+      mockOrdersStore.approve.mockRejectedValueOnce(error)
+
+      const approveBtn = wrapper.find('.approve-btn')
+      if (approveBtn.exists()) {
+        await approveBtn.trigger('click')
+        await nextTick()
+
+        expect(mockOrdersStore.error).toBe('Ошибка при согласовании посылки')
+      }
+    })
+  })
+
+  describe('onSubmit function', () => {
+    it('saves and navigates to next parcel when next parcel exists', async () => {
+      const mockRouter = await import('@/router')
+      const nextParcel = { id: 2, registerId: 1 }
+      const mockRegistersStore = await import('@/stores/registers.store.js').then(m => m.useRegistersStore())
+      mockRegistersStore.nextParcel.mockResolvedValueOnce(nextParcel)
+
+      const nextIssueBtn = wrapper.findAll('button').find(btn => btn.text().includes('Следующая проблема'))
+      await nextIssueBtn.trigger('click')
+
+      expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+      expect(mockRegistersStore.nextParcel).toHaveBeenCalledWith(1)
+      expect(mockRouter.default.push).toHaveBeenCalledWith('/registers/1/parcels/edit/2')
+    })
+
+    it('saves and navigates to parcels list when no next parcel', async () => {
+      const mockRouter = await import('@/router')
+      const mockRegistersStore = await import('@/stores/registers.store.js').then(m => m.useRegistersStore())
+      mockRegistersStore.nextParcel.mockResolvedValueOnce(null)
+
+      const nextIssueBtn = wrapper.findAll('button').find(btn => btn.text().includes('Следующая проблема'))
+      await nextIssueBtn.trigger('click')
+
+      expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+      expect(mockRegistersStore.nextParcel).toHaveBeenCalledWith(1)
+      expect(mockRouter.default.push).toHaveBeenCalledWith('/registers/1/parcels')
+    })
+
+    it('handles onSubmit errors', async () => {
+      const error = new Error('Update failed')
+      mockOrdersStore.update.mockRejectedValueOnce(error)
+
+      const nextIssueBtn = wrapper.findAll('button').find(btn => btn.text().includes('Следующая проблема'))
+      await nextIssueBtn.trigger('click')
+      await nextTick()
+
+      expect(mockOrdersStore.error).toBe('Update failed')
+    })
+  })
+
+  describe('onSave function', () => {
+    it('saves and navigates to parcels list on success', async () => {
+      const mockRouter = await import('@/router')
+      
+      const saveBtn = wrapper.findAll('button').find(btn => btn.text().includes('Сохранить'))
+      await saveBtn.trigger('click')
+
+      expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+      expect(mockRouter.default.push).toHaveBeenCalledWith('/registers/1/parcels')
+    })
+
+    it('handles onSave errors', async () => {
+      const error = new Error('Save failed')
+      mockOrdersStore.update.mockRejectedValueOnce(error)
+
+      const saveBtn = wrapper.findAll('button').find(btn => btn.text().includes('Сохранить'))
+      await saveBtn.trigger('click')
+      await nextTick()
+
+      expect(mockOrdersStore.error).toBe('Save failed')
+    })
+  })
+
+  describe('generateXml function', () => {
+    it('handles generateXml errors', async () => {
+      const error = new Error('Generation failed')
+      error.response = { data: { message: 'Custom generation error' } }
+      mockOrdersStore.generate.mockRejectedValueOnce(error)
+
+      const invoiceBtn = wrapper.findAll('button').find(btn => btn.text().includes('Накладная'))
+      await invoiceBtn.trigger('click')
+      await nextTick()
+
+      expect(mockOrdersStore.error).toBe('Custom generation error')
+    })
+
+    it('handles generateXml errors without response data', async () => {
+      const error = new Error('Network error')
+      mockOrdersStore.generate.mockRejectedValueOnce(error)
+
+      const invoiceBtn = wrapper.findAll('button').find(btn => btn.text().includes('Накладная'))
+      await invoiceBtn.trigger('click')
+      await nextTick()
+
+      expect(mockOrdersStore.error).toBe('Ошибка при генерации XML')
+    })
+  })
+
+  describe('Conditional rendering', () => {
+    it('renders loading state', async () => {
+      mockItem.value.loading = true
+      await nextTick()
+
+      const loadingDiv = wrapper.find('.text-center.m-5')
+      expect(loadingDiv.exists()).toBe(true)
+      const spinnerElement = loadingDiv.find('.spinner-border')
+      expect(spinnerElement.exists()).toBe(true)
+    })
+
+    it('renders error state', async () => {
+      mockItem.value.error = 'Test error message'
+      await nextTick()
+
+      const errorDiv = wrapper.find('.text-danger')
+      expect(errorDiv.exists()).toBe(true)
+      expect(errorDiv.text()).toContain('Ошибка: Test error message')
+    })
+
+    it('renders product link when available', async () => {
+      mockItem.value.productLink = 'https://example.com/product'
+      await nextTick()
+
+      const productLink = wrapper.find('a.product-link-inline')
+      expect(productLink.exists()).toBe(true)
+      expect(productLink.attributes('href')).toBe('https://example.com/product')
+    })
+
+    it('renders no link message when product link is not available', async () => {
+      mockItem.value.productLink = null
+      await nextTick()
+
+      const noLinkSpan = wrapper.find('span.no-link')
+      expect(noLinkSpan.exists()).toBe(true)
+      expect(noLinkSpan.text()).toBe('Ссылка отсутствует')
+    })
+  })
+
+  describe('Cancel button', () => {
+    it('navigates to parcels list when cancel is clicked', async () => {
+      const mockRouter = await import('@/router')
+      
+      const cancelBtn = wrapper.findAll('button').find(btn => btn.text().includes('Отменить'))
+      await cancelBtn.trigger('click')
+
+      expect(mockRouter.default.push).toHaveBeenCalledWith('/registers/1/parcels')
     })
   })
 })

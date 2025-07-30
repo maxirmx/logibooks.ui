@@ -28,6 +28,7 @@ import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -35,6 +36,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
 const stopWordsStore = useStopWordsStore()
+const matchTypesStore = useStopWordMatchTypesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
@@ -63,11 +65,11 @@ const headers = [
   { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
   { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
-  { title: 'Тип соответствия', key: 'exactMatch', sortable: true }
+  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
 ]
 
-function getMatchTypeText(exactMatch) {
-  return exactMatch ? 'Точное соответствие' : 'Морфологическое соответствие'
+function getMatchTypeText(id) {
+  return matchTypesStore.getName(id)
 }
 
 function openEditDialog(item) {
@@ -109,6 +111,7 @@ async function deleteStopWord(stopWord) {
 
 // Initialize data
 onMounted(async () => {
+  matchTypesStore.ensureLoaded()
   await stopWordsStore.getAll()
 })
 
@@ -173,8 +176,8 @@ defineExpose({
           </v-tooltip>
         </template>
 
-        <template v-slot:[`item.exactMatch`]="{ item }">
-          {{ getMatchTypeText(item.exactMatch) }}
+        <template v-slot:[`item.matchTypeId`]="{ item }">
+          {{ getMatchTypeText(item.matchTypeId) }}
         </template>
       </v-data-table>
 

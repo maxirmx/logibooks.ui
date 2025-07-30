@@ -91,7 +91,6 @@ export const useParcelsStore = defineStore('parcels', () => {
       }
       return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, filename)
     } catch (err) {
-      console.error('Error downloading file:', err)
       error.value = err?.message || 'Ошибка при выгрузке накладной для посылки'
       throw err
     } finally {
@@ -99,10 +98,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function generateAll(registerId) {
-    // Generate XML for all parcels in a register - stub implementation
-    console.log('stub generate all parcels XML', registerId)
-  }
 
   async function validate(id) {
       await fetchWrapper.post(`${baseUrl}/${id}/validate`)
@@ -126,7 +121,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     getById,
     update,
     generate,
-    generateAll,
     validate,
     approve
   }

@@ -25,7 +25,6 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
     }
   }
 
-  // Global initialization function - loads orders once and marks as initialized
   async function ensureOrdersLoaded() {
     if (!isInitialized.value && !loading.value) {
       await getOrders()

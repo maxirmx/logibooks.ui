@@ -29,70 +29,82 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/stopwords`
-
 export const useStopWordsStore = defineStore('stopWords', () => {
   const stopWords = ref([])
   const stopWord = ref({ loading: true })
   const loading = ref(false)
+  const error = ref(null)
 
   async function getAll() {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
       stopWords.value = response || []
-    } catch (error) {
-      console.error('Failed to fetch stop words:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+      throw err
     } finally {
       loading.value = false
     }
   }
 
+
   async function getById(id, refresh = false) {
     if (refresh) {
       stopWord.value = { loading: true }
     }
-
+    loading.value = true
     try {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
       stopWord.value = response
       return response
-    } catch (error) {
-      console.error('Failed to fetch stop word:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
   async function create(data) {
+    loading.value = true
     try {
       await fetchWrapper.post(baseUrl, data)
       // Refresh the list after creation
       await getAll()
-    } catch (error) {
-      console.error('Failed to create stop word:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
   async function update(id, data) {
+    loading.value = true
     try {
       await fetchWrapper.put(`${baseUrl}/${id}`, data)
       // Refresh the list after update
       await getAll()
-    } catch (error) {
-      console.error('Failed to update stop word:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
   async function remove(id) {
+    loading.value = true
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
       // Refresh the list after deletion
       await getAll()
-    } catch (error) {
-      console.error('Failed to delete stop word:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
@@ -101,6 +113,7 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     stopWords,
     stopWord,
     loading,
+    error,
     getAll,
     getById,
     create,

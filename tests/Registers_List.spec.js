@@ -21,7 +21,7 @@ const getCountriesAll = vi.fn()
 const countriesEnsureLoadedFn = vi.fn().mockResolvedValue(mockCountries.value)
 const getTransportationTypesAll = vi.fn()
 const getCustomsProceduresAll = vi.fn()
-const generateAllFn = vi.fn()
+const generateFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertErrorFn = vi.fn()
 const validateFn = vi.fn()
@@ -74,15 +74,12 @@ vi.mock('@/stores/registers.store.js', () => ({
     getValidationProgress: getValidationProgressFn,
     cancelValidation: cancelValidationFn,
     remove: removeFn,
+    generate: generateFn,
     items: mockItems,
     loading: ref(false),
     error: ref(null),
     totalCount: ref(0)
   })
-}))
-
-vi.mock('@/stores/parcels.store.js', () => ({
-  useParcelsStore: () => ({ generateAll: generateAllFn })
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -426,10 +423,10 @@ describe('Registers_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
     })
 
-    it('calls generateAll when exportAllXml is called', () => {
-      const item = { id: 456 }
+    it('calls generate when exportAllXml is called', () => {
+      const item = { id: 456, invoiceNumber: 'INV' }
       wrapper.vm.exportAllXml(item)
-      expect(generateAllFn).toHaveBeenCalledWith(456)
+      expect(generateFn).toHaveBeenCalledWith(456, 'INV')
     })
   })
 

@@ -183,22 +183,11 @@ describe('parcels store', () => {
       const error = new Error('Generation failed')
       
       fetchWrapper.downloadFile = vi.fn().mockRejectedValue(error)
-      console.error = vi.fn() // Mock console.error to prevent test output noise
       
       await expect(store.generate(123)).rejects.toThrow('Generation failed')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/orders/123/generate`, 'IndPost_123.xml')
-      expect(console.error).toHaveBeenCalled()
     })
 
-    it('generateAll calls with correct registerId', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
-      const store = useParcelsStore()
-      await store.generateAll(456)
-
-      expect(consoleSpy).toHaveBeenCalledWith('stub generate all parcels XML', 456)
-      consoleSpy.mockRestore()
-    })
   })
 
   describe('validate method', () => {

@@ -193,7 +193,6 @@ async function downloadFile(fileUrl, defaultFilename) {
     
     let filename = defaultFilename
     const disposition = response.headers.get('Content-Disposition')
-    console.log('Content-Disposition:', disposition)
     if (disposition && disposition.includes('filename=')) {
       filename = disposition
         .split('filename=')[1]

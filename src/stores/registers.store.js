@@ -84,18 +84,11 @@ export const useRegistersStore = defineStore('registers', () => {
     loading.value = true
     error.value = null
     try {
-      console.log('Store: setOrderStatuses called with:', {
-        registerId,
-        statusId,
-        type: typeof statusId
-      })
       const response = await fetchWrapper.put(
         `${baseUrl}/${registerId}/setorderstatuses/${statusId}`
       )
-      console.log('Store: Response received:', response)
       return response
     } catch (err) {
-      console.error('Store: Error in setOrderStatuses:', err)
       error.value = err
       throw err
     } finally {
@@ -128,6 +121,29 @@ export const useRegistersStore = defineStore('registers', () => {
     } catch (err) {
       error.value = err
       throw err
+    }
+  }
+
+  async function generate(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      let filename
+      if (invoiceNumber !== null && invoiceNumber !== undefined) {
+        filename = `IndPost_${invoiceNumber}.zip`
+      } else {
+        filename = `IndPost_${id}.zip`
+      }
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/generate`,
+        filename
+      )
+    } catch (err) {
+      console.error('Error downloading file:', err)
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
@@ -193,6 +209,7 @@ export const useRegistersStore = defineStore('registers', () => {
     validate,
     getValidationProgress,
     cancelValidation,
+    generate,
     download,
     nextParcel,
     remove

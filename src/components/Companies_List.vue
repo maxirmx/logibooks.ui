@@ -155,12 +155,6 @@ defineExpose({
       </router-link>
     </div>
 
-    <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
     <v-card>
       <v-data-table
         v-if="companies?.length"
@@ -224,5 +218,11 @@ defineExpose({
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
+
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+
   </div>
 </template>

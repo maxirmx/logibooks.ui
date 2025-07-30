@@ -28,6 +28,7 @@ import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -35,6 +36,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
 const stopWordsStore = useStopWordsStore()
+const matchTypesStore = useStopWordMatchTypesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
@@ -67,7 +69,7 @@ const headers = [
 ]
 
 function getMatchTypeText(id) {
-  return stopWordsStore.getMatchTypeName(id)
+  return matchTypesStore.getName(id)
 }
 
 function openEditDialog(item) {
@@ -109,7 +111,7 @@ async function deleteStopWord(stopWord) {
 
 // Initialize data
 onMounted(async () => {
-  stopWordsStore.ensureMatchTypesLoaded()
+  matchTypesStore.ensureLoaded()
   await stopWordsStore.getAll()
 })
 

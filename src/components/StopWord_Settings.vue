@@ -31,6 +31,7 @@ import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
@@ -41,6 +42,7 @@ const props = defineProps({
 })
 
 const stopWordsStore = useStopWordsStore()
+const matchTypesStore = useStopWordMatchTypesStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
@@ -71,7 +73,7 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
-stopWordsStore.ensureMatchTypesLoaded()
+matchTypesStore.ensureLoaded()
 
 // Ensure initial value is properly set for create mode
 onMounted(async () => {
@@ -179,7 +181,7 @@ defineExpose({
           :class="{ 'is-invalid': errors.matchTypeId }"
           v-model="matchTypeId"
         >
-          <option v-for="mt in stopWordsStore.matchTypes" :key="mt.id" :value="mt.id">
+          <option v-for="mt in matchTypesStore.matchTypes" :key="mt.id" :value="mt.id">
             {{ mt.name }}
           </option>
         </select>

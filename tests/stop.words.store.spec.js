@@ -53,9 +53,6 @@ describe('stop.words.store.js', () => {
       expect(typeof store.create).toBe('function')
       expect(typeof store.update).toBe('function')
       expect(typeof store.remove).toBe('function')
-      expect(typeof store.getMatchTypes).toBe('function')
-      expect(typeof store.ensureMatchTypesLoaded).toBe('function')
-      expect(typeof store.getMatchTypeName).toBe('function')
     })
   })
 
@@ -281,24 +278,6 @@ describe('stop.words.store.js', () => {
     })
   })
 
-  describe('match types', () => {
-    it('ensureMatchTypesLoaded loads only once', async () => {
-      fetchWrapper.get.mockResolvedValue([])
-      store.ensureMatchTypesLoaded()
-      store.ensureMatchTypesLoaded()
-      await Promise.resolve()
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/matchtypes')
-    })
-
-    it('getMatchTypeName returns name or fallback', async () => {
-      const types = [{ id: 1, name: 'Exact' }]
-      fetchWrapper.get.mockResolvedValueOnce(types)
-      await store.getMatchTypes()
-      expect(store.getMatchTypeName(1)).toBe('Exact')
-      expect(store.getMatchTypeName(99)).toBe('Тип 99')
-    })
-  })
 
   describe('Store State Management', () => {
     it('maintains reactive state', async () => {

@@ -27,10 +27,14 @@ vi.mock('@/stores/stop.words.store.js', () => ({
   useStopWordsStore: () => ({
     getById,
     create,
-    update,
-    ensureMatchTypesLoaded: vi.fn(),
-    getMatchTypeName: vi.fn(() => 'Exact'),
-    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }])
+    update
+  })
+}))
+
+vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
+  useStopWordMatchTypesStore: () => ({
+    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
+    ensureLoaded: vi.fn()
   })
 }))
 

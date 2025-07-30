@@ -91,7 +91,6 @@ export const useParcelsStore = defineStore('parcels', () => {
       }
       return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, filename)
     } catch (err) {
-      console.error('Error downloading file:', err)
       error.value = err?.message || 'Ошибка при выгрузке накладной для посылки'
       throw err
     } finally {

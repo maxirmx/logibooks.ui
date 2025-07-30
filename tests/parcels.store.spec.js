@@ -183,11 +183,9 @@ describe('parcels store', () => {
       const error = new Error('Generation failed')
       
       fetchWrapper.downloadFile = vi.fn().mockRejectedValue(error)
-      console.error = vi.fn() // Mock console.error to prevent test output noise
       
       await expect(store.generate(123)).rejects.toThrow('Generation failed')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/orders/123/generate`, 'IndPost_123.xml')
-      expect(console.error).toHaveBeenCalled()
     })
 
   })

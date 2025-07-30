@@ -27,7 +27,6 @@
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
@@ -56,8 +55,6 @@ const progressPercent = computed(() => {
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
-
-const parcelsStore = useParcelsStore()
 
 const parcelStatusesStore = useParcelStatusesStore()
 
@@ -245,7 +242,7 @@ function editRegister(item) {
 }
 
 function exportAllXml(item) {
-  parcelsStore.generateAll(item.id)
+  registersStore.generate(item.id, item.invoiceNumber)
 }
 
 async function downloadRegister(item) {

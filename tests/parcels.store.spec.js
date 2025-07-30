@@ -190,15 +190,6 @@ describe('parcels store', () => {
       expect(console.error).toHaveBeenCalled()
     })
 
-    it('generateAll calls with correct registerId', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
-      const store = useParcelsStore()
-      await store.generateAll(456)
-
-      expect(consoleSpy).toHaveBeenCalledWith('stub generate all parcels XML', 456)
-      consoleSpy.mockRestore()
-    })
   })
 
   describe('validate method', () => {

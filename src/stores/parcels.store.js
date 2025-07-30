@@ -99,10 +99,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function generateAll(registerId) {
-    // Generate XML for all parcels in a register - stub implementation
-    console.log('stub generate all parcels XML', registerId)
-  }
 
   async function validate(id) {
       await fetchWrapper.post(`${baseUrl}/${id}/validate`)
@@ -126,7 +122,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     getById,
     update,
     generate,
-    generateAll,
     validate,
     approve
   }

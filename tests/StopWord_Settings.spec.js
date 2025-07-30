@@ -9,7 +9,7 @@ import { resolveAll } from './helpers/test-utils'
 const mockStopWord = {
   id: 1,
   word: 'тест',
-  exactMatch: false  // Use camelCase to match API
+  matchTypeId: 1
 }
 
 // Create hoisted mock functions
@@ -27,7 +27,10 @@ vi.mock('@/stores/stop.words.store.js', () => ({
   useStopWordsStore: () => ({
     getById,
     create,
-    update
+    update,
+    ensureMatchTypesLoaded: vi.fn(),
+    getMatchTypeName: vi.fn(() => 'Exact'),
+    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }])
   })
 }))
 
@@ -81,8 +84,7 @@ describe('StopWord_Settings.vue', () => {
 
       expect(wrapper.find('h1').text()).toBe('Регистрация стоп-слова или фразы')
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
-      expect(wrapper.find('input[type="radio"][value="true"]').exists()).toBe(true)
-      expect(wrapper.find('input[type="radio"][value="false"]').exists()).toBe(true)
+      expect(wrapper.find('select[name="matchTypeId"]').exists()).toBe(true)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -112,15 +114,12 @@ describe('StopWord_Settings.vue', () => {
       expect(wordInput.attributes('placeholder')).toBe('Стоп-слово или фраза')
     })
 
-    it('renders exactMatch radio buttons', async () => {
+    it('renders matchTypeId select', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const trueRadio = wrapper.find('input[type="radio"][value="true"]')
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      
-      expect(trueRadio.exists()).toBe(true)
-      expect(falseRadio.exists()).toBe(true)
+      const select = wrapper.find('select[name="matchTypeId"]')
+      expect(select.exists()).toBe(true)
     })
 
     it('renders form labels correctly', async () => {
@@ -129,61 +128,42 @@ describe('StopWord_Settings.vue', () => {
 
       expect(wrapper.find('label[for="word"]').text()).toBe('Стоп-слово или фраза:')
       expect(wrapper.text()).toContain('Тип соответствия:')
-      expect(wrapper.text()).toContain('Точное соответствие')
-      expect(wrapper.text()).toContain('Морфологическое соответствие')
     })
   })
 
   describe('Multi-word Input Handling', () => {
-    it('forces exact match for multi-word input', async () => {
+    it('keeps matchTypeId when multi-word entered', async () => {
       const wrapper = mountComponent()
       await resolveAll()
-      
+
       const wordInput = wrapper.find('input[name="word"]')
       await wordInput.setValue('два слова')
       await wordInput.trigger('input')
       await wrapper.vm.$nextTick()
 
-      // Check if the falseRadio becomes disabled
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      expect(falseRadio.element.disabled).toBe(true)
+      expect(wrapper.vm.matchTypeId).toBe(1)
     })
 
-    it('allows both options for single word', async () => {
+    it('allows changing matchTypeId for single word', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('слово')
-      await wordInput.trigger('input')
+      wrapper.vm.matchTypeId = 41
       await wrapper.vm.$nextTick()
 
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      expect(falseRadio.element.disabled).toBe(false)
+      expect(wrapper.vm.matchTypeId).toBe(41)
     })
   })
 
-  describe('Radio Button Interaction', () => {
-    it('selects exact match radio button correctly', async () => {
+  describe('Select Interaction', () => {
+    it('changes matchTypeId correctly', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const trueRadio = wrapper.find('input[type="radio"][value="true"]')
-      await trueRadio.trigger('change')
+      wrapper.vm.matchTypeId = 41
       await wrapper.vm.$nextTick()
 
-      expect(trueRadio.element.checked).toBe(true)
-    })
-
-    it('selects morphological match radio button correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      await falseRadio.trigger('change')
-      await wrapper.vm.$nextTick()
-
-      expect(falseRadio.element.checked).toBe(true)
+      expect(wrapper.vm.matchTypeId).toBe(41)
     })
   })
 
@@ -195,7 +175,7 @@ describe('StopWord_Settings.vue', () => {
       // Set form values directly on the component (use single word to avoid force exact match)
       const component = wrapper.vm
       component.word = 'новое'
-      component.exactMatch = false
+      component.matchTypeId = 1
       
       await wrapper.vm.$nextTick()
       
@@ -204,7 +184,7 @@ describe('StopWord_Settings.vue', () => {
       
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
-        exactMatch: false
+        matchTypeId: 1
       })
     })
 
@@ -214,7 +194,7 @@ describe('StopWord_Settings.vue', () => {
 
       const component = wrapper.vm
       component.word = 'новое'
-      component.exactMatch = false
+      component.matchTypeId = 1
       
       await component.onSubmit()
       await resolveAll()
@@ -229,7 +209,7 @@ describe('StopWord_Settings.vue', () => {
 
       const component = wrapper.vm
       component.word = 'существующее'
-      component.exactMatch = false
+      component.matchTypeId = 1
       
       try {
         await component.onSubmit()
@@ -255,14 +235,14 @@ describe('StopWord_Settings.vue', () => {
 
       const component = wrapper.vm
       component.word = 'обновленное'
-      component.exactMatch = false
+      component.matchTypeId = 41
       
       await component.onSubmit()
 
       expect(update).toHaveBeenCalledWith(1, {
         id: 1,
         word: 'обновленное',
-        exactMatch: false
+        matchTypeId: 41
       })
     })
 

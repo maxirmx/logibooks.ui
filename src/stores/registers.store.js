@@ -130,9 +130,9 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       let filename
       if (invoiceNumber !== null && invoiceNumber !== undefined) {
-        filename = `IndPost_${invoiceNumber}.xml`
+        filename = `IndPost_${invoiceNumber}.zip`
       } else {
-        filename = `IndPost_${id}.xml`
+        filename = `IndPost_${id}.zip`
       }
       return await fetchWrapper.downloadFile(
         `${baseUrl}/${id}/generate`,

@@ -32,10 +32,10 @@ export const useStopWordMatchTypesStore = defineStore('stopWordMatchTypes', () =
     return type ? type.name : `Тип ${id}`
   }
 
-  let initialized = false
+  const initialized = ref(false)
   function ensureLoaded() {
-    if (!initialized && matchTypes.value.length === 0 && !loading.value) {
-      initialized = true
+    if (!initialized.value && matchTypes.value.length === 0 && !loading.value) {
+      initialized.value = true
       fetchMatchTypes()
     }
   }

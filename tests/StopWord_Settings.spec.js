@@ -278,9 +278,10 @@ describe('StopWord_Settings.vue', () => {
 
       try {
         await component.onSubmit()
-      } catch {}
+      } finally {
+        await wrapper.vm.$nextTick()
+      }
 
-      await wrapper.vm.$nextTick()
 
       const errorElements = wrapper.findAll('.alert-danger')
       const hasErrorMessage = errorElements.some(el =>

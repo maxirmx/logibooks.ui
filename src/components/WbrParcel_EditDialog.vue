@@ -35,11 +35,12 @@ import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import WbrFormField from './WbrFormField.vue'
+import { ensureHttps } from '@/helpers/url.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -66,6 +67,8 @@ const currentStatusId = ref(null)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
+
+const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
 statusStore.ensureStatusesLoaded()
 parcelCheckStatusStore.ensureStatusesLoaded()
@@ -197,8 +200,15 @@ async function generateXml() {
           <WbrFormField name="productName" :errors="errors" />
           <div class="form-group">
             <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
-            <a v-if="item?.productLink" :href="item.productLink" target="_blank" rel="noopener noreferrer" class="product-link-inline" :title="item.productLink">
-              {{ item.productLink }}
+            <a
+              v-if="item?.productLink"
+              :href="productLinkWithProtocol"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="product-link-inline"
+              :title="productLinkWithProtocol"
+            >
+              {{ productLinkWithProtocol }}
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>

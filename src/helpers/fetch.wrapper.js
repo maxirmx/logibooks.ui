@@ -67,17 +67,21 @@ function request(method) {
             // If server returned an error response, try to parse it
             const errorText = await response.text();
             let errorMessage;
+            let errorObj;
             try {
                 // Try to parse as JSON
-                const errorObj = JSON.parse(errorText);
+                errorObj = JSON.parse(errorText);
                 errorMessage = errorObj.msg || `Ошибка ${response.status}`;
             } catch {
                 // If not valid JSON, use text as is
                 errorMessage = errorText || `Ошибка ${response.status}`;
             }
-            
+
+            const error = new Error(errorMessage);
+            error.status = response.status;
+            if (errorObj) error.data = errorObj;
             // Re-throw the error for further handling if needed
-            throw new Error(errorMessage);
+            throw error;
         }
         
         return handleResponse(response);
@@ -111,13 +115,17 @@ function requestFile(method) {
         if (!response.ok) {
             const errorText = await response.text();
             let errorMessage;
+            let errorObj;
             try {
-                const errorObj = JSON.parse(errorText);
+                errorObj = JSON.parse(errorText);
                 errorMessage = errorObj.msg || `Ошибка ${response.status}`;
             } catch {
                 errorMessage = errorText || `Ошибка ${response.status}`;
             }
-            throw new Error(errorMessage);
+            const error = new Error(errorMessage);
+            error.status = response.status;
+            if (errorObj) error.data = errorObj;
+            throw error;
         }
 
         return handleResponse(response);
@@ -164,17 +172,21 @@ function requestBlob(method) {
             // If server returned an error response, try to parse it
             const errorText = await response.text();
             let errorMessage;
+            let errorObj;
             try {
                 // Try to parse as JSON
-                const errorObj = JSON.parse(errorText);
+                errorObj = JSON.parse(errorText);
                 errorMessage = errorObj.msg || `Ошибка ${response.status}`;
             } catch {
                 // If not valid JSON, use text as is
                 errorMessage = errorText || `Ошибка ${response.status}`;
             }
-            
+
+            const error = new Error(errorMessage);
+            error.status = response.status;
+            if (errorObj) error.data = errorObj;
             // Re-throw the error for further handling if needed
-            throw new Error(errorMessage);
+            throw error;
         }
         
         return response;

@@ -258,8 +258,33 @@ describe('StopWord_Settings.vue', () => {
 
       // Check if error is displayed (the API error should be set in the errors object)
       const errorElements = wrapper.findAll('.alert-danger')
-      const hasErrorMessage = errorElements.some(el => 
+      const hasErrorMessage = errorElements.some(el =>
         el.text().includes('409')
+      )
+      expect(hasErrorMessage).toBe(true)
+    })
+
+    it('handles morphology error on create', async () => {
+      const err = new Error('Morphology unsupported')
+      err.status = 418
+      err.data = { word: 'abc', level: 1 }
+      create.mockRejectedValueOnce(err)
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const component = wrapper.vm
+      component.word = 'abc'
+      component.matchTypeId = 41
+
+      try {
+        await component.onSubmit()
+      } catch {}
+
+      await wrapper.vm.$nextTick()
+
+      const errorElements = wrapper.findAll('.alert-danger')
+      const hasErrorMessage = errorElements.some(el =>
+        el.text().includes('Morphology unsupported')
       )
       expect(hasErrorMessage).toBe(true)
     })

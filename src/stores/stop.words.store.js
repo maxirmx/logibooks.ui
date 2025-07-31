@@ -69,9 +69,10 @@ export const useStopWordsStore = defineStore('stopWords', () => {
   async function create(data) {
     loading.value = true
     try {
-      await fetchWrapper.post(baseUrl, data)
+      const response = await fetchWrapper.post(baseUrl, data)
       // Refresh the list after creation
       await getAll()
+      return response
     } catch (err) {
       error.value = err
       throw err
@@ -83,9 +84,10 @@ export const useStopWordsStore = defineStore('stopWords', () => {
   async function update(id, data) {
     loading.value = true
     try {
-      await fetchWrapper.put(`${baseUrl}/${id}`, data)
+      const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
       // Refresh the list after update
       await getAll()
+      return response
     } catch (err) {
       error.value = err
       throw err

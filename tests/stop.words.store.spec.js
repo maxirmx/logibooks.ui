@@ -139,15 +139,17 @@ describe('stop.words.store.js', () => {
   describe('create', () => {
     it('creates stop word successfully', async () => {
       const newStopWord = { word: 'новое', matchTypeId: 1 }
+      const created = { id: 4, ...newStopWord }
 
-      fetchWrapper.post.mockResolvedValue()
+      fetchWrapper.post.mockResolvedValue(created)
       fetchWrapper.get.mockResolvedValue(mockStopWords)
 
-      await store.create(newStopWord)
+      const result = await store.create(newStopWord)
 
       expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', newStopWord)
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(mockStopWords)
+      expect(result).toEqual(created)
     })
 
     it('refreshes stop words list after creation', async () => {
@@ -181,6 +183,17 @@ describe('stop.words.store.js', () => {
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
+
+    it('handles morphology check error', async () => {
+      const error = new Error('Morphology unsupported')
+      error.status = 418
+      error.data = { word: 'abc', level: 1 }
+      fetchWrapper.post.mockRejectedValue(error)
+
+      await expect(store.create({ word: 'abc', matchTypeId: 41 })).rejects.toThrow('Morphology unsupported')
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
   })
 
   describe('update', () => {
@@ -190,14 +203,16 @@ describe('stop.words.store.js', () => {
         sw.id === 1 ? { ...sw, ...updateData } : sw
       )
 
-      fetchWrapper.put.mockResolvedValue()
+      const updatedDto = { id: 1, ...updateData }
+      fetchWrapper.put.mockResolvedValue(updatedDto)
       fetchWrapper.get.mockResolvedValue(updatedStopWords)
 
-      await store.update(1, updateData)
+      const result = await store.update(1, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/1', updateData)
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(updatedStopWords)
+      expect(result).toEqual(updatedDto)
     })
 
     it('refreshes stop words list after update', async () => {
@@ -219,6 +234,17 @@ describe('stop.words.store.js', () => {
       fetchWrapper.put.mockRejectedValue(error)
 
       await expect(store.update(1, {})).rejects.toThrow('Update failed')
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
+
+    it('handles morphology check error on update', async () => {
+      const error = new Error('Morphology unsupported')
+      error.status = 418
+      error.data = { word: 'abc', level: 2 }
+      fetchWrapper.put.mockRejectedValue(error)
+
+      await expect(store.update(1, { word: 'abc', matchTypeId: 41 })).rejects.toThrow('Morphology unsupported')
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })

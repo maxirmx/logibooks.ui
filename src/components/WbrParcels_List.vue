@@ -41,6 +41,7 @@ import { apiUrl } from '@/helpers/config.js'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { ensureHttps } from '@/helpers/url.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -300,13 +301,13 @@ function getGenericTemplateHeaders() {
           <div class="truncated-cell">
             <a
               v-if="item.productLink"
-              :href="item.productLink"
+              :href="ensureHttps(item.productLink)"
               target="_blank"
               rel="noopener noreferrer"
               class="product-link"
-              :title="item.productLink"
+              :title="ensureHttps(item.productLink)"
             >
-              {{ item.productLink }}
+              {{ ensureHttps(item.productLink) }}
             </a>
             <span v-else>-</span>
           </div>

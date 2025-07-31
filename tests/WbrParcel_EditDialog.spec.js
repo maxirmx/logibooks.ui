@@ -508,6 +508,15 @@ describe('WbrParcel_EditDialog', () => {
       expect(productLink.attributes('href')).toBe('https://example.com/product')
     })
 
+    it('adds https prefix when missing in product link', async () => {
+      mockItem.value.productLink = 'example.com/product'
+      await nextTick()
+
+      const productLink = wrapper.find('a.product-link-inline')
+      expect(productLink.exists()).toBe(true)
+      expect(productLink.attributes('href')).toBe('https://example.com/product')
+    })
+
     it('renders no link message when product link is not available', async () => {
       mockItem.value.productLink = null
       await nextTick()

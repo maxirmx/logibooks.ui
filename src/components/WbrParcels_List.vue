@@ -41,16 +41,25 @@ import { apiUrl } from '@/helpers/config.js'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { ensureHttps } from '@/helpers/url.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
 })
 
 const parcelsStore = useParcelsStore()
+
 const parcelStatusStore = useParcelStatusesStore()
+parcelStatusStore.ensureStatusesLoaded()
+
 const parcelCheckStatusStore = useParcelCheckStatusStore()
+parcelCheckStatusStore.ensureStatusesLoaded()
+
 const stopWordsStore = useStopWordsStore()
+await stopWordsStore.getAll()
+
 const feacnCodesStore = useFeacnCodesStore()
+await feacnCodesStore.ensureOrdersLoaded()
 
 const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()
@@ -104,13 +113,6 @@ watch(
 )
 
 onMounted(async () => {
-  // Ensure order statuses are loaded
-  parcelStatusStore.ensureStatusesLoaded()
-  parcelCheckStatusStore.ensureStatusesLoaded()
-  // Load all stop words once to reduce network traffic
-  await stopWordsStore.getAll()
-  // Ensure feacn orders are loaded (loaded globally at startup, but ensure here as fallback)
-  await feacnCodesStore.ensureOrdersLoaded()
   await fetchRegister()
 })
 
@@ -299,13 +301,13 @@ function getGenericTemplateHeaders() {
           <div class="truncated-cell">
             <a
               v-if="item.productLink"
-              :href="item.productLink"
+              :href="ensureHttps(item.productLink)"
               target="_blank"
               rel="noopener noreferrer"
               class="product-link"
-              :title="item.productLink"
+              :title="ensureHttps(item.productLink)"
             >
-              {{ item.productLink }}
+              {{ ensureHttps(item.productLink) }}
             </a>
             <span v-else>-</span>
           </div>

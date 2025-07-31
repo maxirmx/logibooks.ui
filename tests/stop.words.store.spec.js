@@ -21,12 +21,12 @@ describe('stop.words.store.js', () => {
   let pinia
 
   const mockStopWords = [
-    { id: 1, word: 'и', exactMatch: false },
-    { id: 2, word: 'или', exactMatch: true },
-    { id: 3, word: 'но', exactMatch: false }
+    { id: 1, word: 'и', matchTypeId: 1 },
+    { id: 2, word: 'или', matchTypeId: 41 },
+    { id: 3, word: 'но', matchTypeId: 1 }
   ]
 
-  const mockStopWord = { id: 1, word: 'и', exactMatch: false }
+  const mockStopWord = { id: 1, word: 'и', matchTypeId: 1 }
 
   beforeEach(() => {
     pinia = createPinia()
@@ -35,6 +35,9 @@ describe('stop.words.store.js', () => {
 
     // Reset all mocks
     vi.clearAllMocks()
+    
+    // Reset error state to null
+    store.error = null
   })
 
   describe('Store Initialization', () => {
@@ -90,13 +93,9 @@ describe('stop.words.store.js', () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.getAll()).rejects.toThrow('Network error')
       expect(store.loading).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch stop words:', error)
-
-      consoleSpy.mockRestore()
+      expect(store.error).toEqual(error)
     })
   })
 
@@ -120,7 +119,7 @@ describe('stop.words.store.js', () => {
     })
 
     it('does not set loading state when refresh is false', async () => {
-      store.stopWord = { id: 999, word: 'existing', exactMatch: true }
+      store.stopWord = { id: 999, word: 'existing', matchTypeId: 1 }
       fetchWrapper.get.mockResolvedValue(mockStopWord)
 
       await store.getById(1, false)
@@ -132,31 +131,29 @@ describe('stop.words.store.js', () => {
       const error = new Error('Not found')
       fetchWrapper.get.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.getById(1)).rejects.toThrow('Not found')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch stop word:', error)
-
-      consoleSpy.mockRestore()
+      expect(store.error).toEqual(error)
     })
   })
 
   describe('create', () => {
     it('creates stop word successfully', async () => {
-      const newStopWord = { word: 'новое', exactMatch: true }
+      const newStopWord = { word: 'новое', matchTypeId: 1 }
+      const created = { id: 4, ...newStopWord }
 
-      fetchWrapper.post.mockResolvedValue()
+      fetchWrapper.post.mockResolvedValue(created)
       fetchWrapper.get.mockResolvedValue(mockStopWords)
 
-      await store.create(newStopWord)
+      const result = await store.create(newStopWord)
 
       expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', newStopWord)
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(mockStopWords)
+      expect(result).toEqual(created)
     })
 
     it('refreshes stop words list after creation', async () => {
-      const newStopWord = { word: 'тест', exactMatch: false }
+      const newStopWord = { word: 'тест', matchTypeId: 41 }
       const updatedStopWords = [...mockStopWords, { id: 4, ...newStopWord }]
 
       fetchWrapper.post.mockResolvedValue()
@@ -173,48 +170,53 @@ describe('stop.words.store.js', () => {
       const error = new Error('Validation error')
       fetchWrapper.post.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.create({})).rejects.toThrow('Validation error')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create stop word:', error)
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
     })
 
     it('handles duplicate word error', async () => {
       const error = new Error('409: Stop word already exists')
       fetchWrapper.post.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      await expect(store.create({ word: 'и', exactMatch: false })).rejects.toThrow('409: Stop word already exists')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create stop word:', error)
+      await expect(store.create({ word: 'и', matchTypeId: 41 })).rejects.toThrow('409: Stop word already exists')
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
 
-      consoleSpy.mockRestore()
+    it('handles morphology check error', async () => {
+      const error = new Error('Morphology unsupported')
+      error.status = 418
+      error.data = { word: 'abc', level: 1 }
+      fetchWrapper.post.mockRejectedValue(error)
+
+      await expect(store.create({ word: 'abc', matchTypeId: 41 })).rejects.toThrow('Morphology unsupported')
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
   })
 
   describe('update', () => {
     it('updates stop word successfully', async () => {
-      const updateData = { word: 'обновленное', exactMatch: true }
+      const updateData = { word: 'обновленное', matchTypeId: 1 }
       const updatedStopWords = mockStopWords.map(sw => 
         sw.id === 1 ? { ...sw, ...updateData } : sw
       )
 
-      fetchWrapper.put.mockResolvedValue()
+      const updatedDto = { id: 1, ...updateData }
+      fetchWrapper.put.mockResolvedValue(updatedDto)
       fetchWrapper.get.mockResolvedValue(updatedStopWords)
 
-      await store.update(1, updateData)
+      const result = await store.update(1, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/1', updateData)
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(updatedStopWords)
+      expect(result).toEqual(updatedDto)
     })
 
     it('refreshes stop words list after update', async () => {
-      const updateData = { exactMatch: true }
+      const updateData = { matchTypeId: 1 }
       const updatedStopWords = [...mockStopWords]
 
       fetchWrapper.put.mockResolvedValue()
@@ -231,13 +233,20 @@ describe('stop.words.store.js', () => {
       const error = new Error('Update failed')
       fetchWrapper.put.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.update(1, {})).rejects.toThrow('Update failed')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to update stop word:', error)
+      expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
 
-      consoleSpy.mockRestore()
+    it('handles morphology check error on update', async () => {
+      const error = new Error('Morphology unsupported')
+      error.status = 418
+      error.data = { word: 'abc', level: 2 }
+      fetchWrapper.put.mockRejectedValue(error)
+
+      await expect(store.update(1, { word: 'abc', matchTypeId: 41 })).rejects.toThrow('Morphology unsupported')
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
   })
 
@@ -274,13 +283,9 @@ describe('stop.words.store.js', () => {
       const error = new Error('Delete failed')
       fetchWrapper.delete.mockRejectedValue(error)
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete stop word:', error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
 
-      consoleSpy.mockRestore()
     })
 
     it('does not refresh list when remove fails', async () => {
@@ -298,6 +303,7 @@ describe('stop.words.store.js', () => {
       consoleSpy.mockRestore()
     })
   })
+
 
   describe('Store State Management', () => {
     it('maintains reactive state', async () => {
@@ -331,8 +337,8 @@ describe('stop.words.store.js', () => {
       store.stopWords.forEach(stopWord => {
         expect(stopWord).toHaveProperty('id')
         expect(stopWord).toHaveProperty('word')
-        expect(stopWord).toHaveProperty('exactMatch')
-        expect(typeof stopWord.exactMatch).toBe('boolean')
+        expect(stopWord).toHaveProperty('matchTypeId')
+        expect(typeof stopWord.matchTypeId).toBe('number')
       })
     })
   })
@@ -377,7 +383,7 @@ describe('stop.words.store.js', () => {
 
   describe('Edge Cases', () => {
     it('handles empty word string', async () => {
-      const emptyWordStopWord = { word: '', exactMatch: false }
+      const emptyWordStopWord = { word: '', matchTypeId: 41 }
       fetchWrapper.post.mockResolvedValue()
       fetchWrapper.get.mockResolvedValue([...mockStopWords, { id: 10, ...emptyWordStopWord }])
 
@@ -387,7 +393,7 @@ describe('stop.words.store.js', () => {
     })
 
     it('handles special characters in words', async () => {
-      const specialCharStopWord = { word: 'тест-слово!', exactMatch: true }
+      const specialCharStopWord = { word: 'тест-слово!', matchTypeId: 1 }
       fetchWrapper.post.mockResolvedValue()
       fetchWrapper.get.mockResolvedValue([...mockStopWords, { id: 11, ...specialCharStopWord }])
 
@@ -396,10 +402,10 @@ describe('stop.words.store.js', () => {
       expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', specialCharStopWord)
     })
 
-    it('handles boolean exactMatch values correctly', async () => {
+    it('handles matchTypeId values correctly', async () => {
       const testCases = [
-        { word: 'тест1', exactMatch: true },
-        { word: 'тест2', exactMatch: false }
+        { word: 'тест1', matchTypeId: 1 },
+        { word: 'тест2', matchTypeId: 41 }
       ]
 
       for (const testCase of testCases) {
@@ -414,15 +420,15 @@ describe('stop.words.store.js', () => {
       const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
         id: i + 1,
         word: `слово${i}`,
-        exactMatch: i % 2 === 0
+        matchTypeId: i % 2 === 0 ? 1 : 41
       }))
 
       fetchWrapper.get.mockResolvedValue(largeDataset)
       await store.getAll()
 
       expect(store.stopWords).toHaveLength(1000)
-      expect(store.stopWords[0]).toEqual({ id: 1, word: 'слово0', exactMatch: true })
-      expect(store.stopWords[999]).toEqual({ id: 1000, word: 'слово999', exactMatch: false })
+      expect(store.stopWords[0]).toEqual({ id: 1, word: 'слово0', matchTypeId: 1 })
+      expect(store.stopWords[999]).toEqual({ id: 1000, word: 'слово999', matchTypeId: 41 })
     })
   })
 

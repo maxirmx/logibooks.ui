@@ -84,18 +84,11 @@ export const useRegistersStore = defineStore('registers', () => {
     loading.value = true
     error.value = null
     try {
-      console.log('Store: setOrderStatuses called with:', {
-        registerId,
-        statusId,
-        type: typeof statusId
-      })
       const response = await fetchWrapper.put(
         `${baseUrl}/${registerId}/setorderstatuses/${statusId}`
       )
-      console.log('Store: Response received:', response)
       return response
     } catch (err) {
-      console.error('Store: Error in setOrderStatuses:', err)
       error.value = err
       throw err
     } finally {
@@ -137,9 +130,9 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       let filename
       if (invoiceNumber !== null && invoiceNumber !== undefined) {
-        filename = `IndPost_${invoiceNumber}.xml`
+        filename = `IndPost_${invoiceNumber}.zip`
       } else {
-        filename = `IndPost_${id}.xml`
+        filename = `IndPost_${id}.zip`
       }
       return await fetchWrapper.downloadFile(
         `${baseUrl}/${id}/generate`,

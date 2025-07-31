@@ -322,7 +322,7 @@ function cancelValidation() {
   stopPolling()
 }
 
-function formatInvoiceDate(dateStr) {
+function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   if (isNaN(d)) return dateStr
@@ -340,8 +340,9 @@ const headers = [
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions7', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
-  // { title: '№', key: 'id', align: 'start' },
+ // { title: '№', key: 'id', align: 'start' },
   { title: 'Файл', key: 'fileName', align: 'start' },
+  { title: 'Дата загрузки', key: 'date', align: 'start' },
   { title: 'Клиент', key: 'companyId', align: 'start' },
   { title: 'Страна', key: 'destCountryCode', align: 'start' },
   { title: 'Номер накладной', key: 'invoiceNumber', align: 'start' },
@@ -411,8 +412,11 @@ const headers = [
         <template #[`item.destCountryCode`]="{ item }">
           {{ countriesStore.getCountryShortName(item.destCountryCode) }}
         </template>
+        <template #[`item.date`]="{ item }">
+          {{ formatDate(item.date) }}
+        </template>
         <template #[`item.invoiceDate`]="{ item }">
-          {{ formatInvoiceDate(item.invoiceDate) }}
+          {{ formatDate(item.invoiceDate) }}
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
           {{ item.invoiceNumber }}

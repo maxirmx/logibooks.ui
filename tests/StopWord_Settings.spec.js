@@ -9,7 +9,7 @@ import { resolveAll } from './helpers/test-utils'
 const mockStopWord = {
   id: 1,
   word: 'тест',
-  exactMatch: false  // Use camelCase to match API
+  matchTypeId: 1
 }
 
 // Create hoisted mock functions
@@ -28,6 +28,18 @@ vi.mock('@/stores/stop.words.store.js', () => ({
     getById,
     create,
     update
+  })
+}))
+
+vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
+  useStopWordMatchTypesStore: () => ({
+    matchTypes: ref([
+      { id: 1, name: 'Exact' },
+      { id: 15, name: 'Type15' },
+      { id: 25, name: 'Type25' },
+      { id: 41, name: 'Morphology' }
+    ]),
+    ensureLoaded: vi.fn()
   })
 }))
 
@@ -81,8 +93,7 @@ describe('StopWord_Settings.vue', () => {
 
       expect(wrapper.find('h1').text()).toBe('Регистрация стоп-слова или фразы')
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
-      expect(wrapper.find('input[type="radio"][value="true"]').exists()).toBe(true)
-      expect(wrapper.find('input[type="radio"][value="false"]').exists()).toBe(true)
+      expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -112,15 +123,12 @@ describe('StopWord_Settings.vue', () => {
       expect(wordInput.attributes('placeholder')).toBe('Стоп-слово или фраза')
     })
 
-    it('renders exactMatch radio buttons', async () => {
+    it('renders matchTypeId radios', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const trueRadio = wrapper.find('input[type="radio"][value="true"]')
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      
-      expect(trueRadio.exists()).toBe(true)
-      expect(falseRadio.exists()).toBe(true)
+      const radios = wrapper.findAll('input[type="radio"][name="matchTypeId"]')
+      expect(radios.length).toBeGreaterThan(0)
     })
 
     it('renders form labels correctly', async () => {
@@ -129,61 +137,70 @@ describe('StopWord_Settings.vue', () => {
 
       expect(wrapper.find('label[for="word"]').text()).toBe('Стоп-слово или фраза:')
       expect(wrapper.text()).toContain('Тип соответствия:')
-      expect(wrapper.text()).toContain('Точное соответствие')
-      expect(wrapper.text()).toContain('Морфологическое соответствие')
     })
   })
 
   describe('Multi-word Input Handling', () => {
-    it('forces exact match for multi-word input', async () => {
+    it('keeps matchTypeId when multi-word entered', async () => {
       const wrapper = mountComponent()
       await resolveAll()
-      
+
       const wordInput = wrapper.find('input[name="word"]')
       await wordInput.setValue('два слова')
       await wordInput.trigger('input')
       await wrapper.vm.$nextTick()
 
-      // Check if the falseRadio becomes disabled
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      expect(falseRadio.element.disabled).toBe(true)
+      expect(wrapper.vm.matchTypeId).toBe(1)
     })
 
-    it('allows both options for single word', async () => {
+    it('allows changing matchTypeId for single word', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      wrapper.vm.matchTypeId = 41
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.matchTypeId).toBe(41)
+    })
+
+    it('disables options 21-30 for single word', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
       const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('слово')
+      await wordInput.setValue('одиночное')
       await wordInput.trigger('input')
       await wrapper.vm.$nextTick()
 
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      expect(falseRadio.element.disabled).toBe(false)
+      expect(wrapper.vm.isOptionDisabled(25)).toBe(true)
+      expect(wrapper.vm.isOptionDisabled(15)).toBe(false)
+      expect(wrapper.vm.isOptionDisabled(41)).toBe(false)
+    })
+
+    it('disables options 11-20 and >30 for multi-word', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const wordInput = wrapper.find('input[name="word"]')
+      await wordInput.setValue('два слова')
+      await wordInput.trigger('input')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.isOptionDisabled(15)).toBe(true)
+      expect(wrapper.vm.isOptionDisabled(25)).toBe(false)
+      expect(wrapper.vm.isOptionDisabled(41)).toBe(true)
     })
   })
 
-  describe('Radio Button Interaction', () => {
-    it('selects exact match radio button correctly', async () => {
+  describe('Select Interaction', () => {
+    it('changes matchTypeId correctly', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const trueRadio = wrapper.find('input[type="radio"][value="true"]')
-      await trueRadio.trigger('change')
+      wrapper.vm.matchTypeId = 41
       await wrapper.vm.$nextTick()
 
-      expect(trueRadio.element.checked).toBe(true)
-    })
-
-    it('selects morphological match radio button correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const falseRadio = wrapper.find('input[type="radio"][value="false"]')
-      await falseRadio.trigger('change')
-      await wrapper.vm.$nextTick()
-
-      expect(falseRadio.element.checked).toBe(true)
+      expect(wrapper.vm.matchTypeId).toBe(41)
     })
   })
 
@@ -195,7 +212,7 @@ describe('StopWord_Settings.vue', () => {
       // Set form values directly on the component (use single word to avoid force exact match)
       const component = wrapper.vm
       component.word = 'новое'
-      component.exactMatch = false
+      component.matchTypeId = 1
       
       await wrapper.vm.$nextTick()
       
@@ -204,7 +221,7 @@ describe('StopWord_Settings.vue', () => {
       
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
-        exactMatch: false
+        matchTypeId: 1
       })
     })
 
@@ -214,7 +231,7 @@ describe('StopWord_Settings.vue', () => {
 
       const component = wrapper.vm
       component.word = 'новое'
-      component.exactMatch = false
+      component.matchTypeId = 1
       
       await component.onSubmit()
       await resolveAll()
@@ -229,7 +246,7 @@ describe('StopWord_Settings.vue', () => {
 
       const component = wrapper.vm
       component.word = 'существующее'
-      component.exactMatch = false
+      component.matchTypeId = 1
       
       try {
         await component.onSubmit()
@@ -241,8 +258,34 @@ describe('StopWord_Settings.vue', () => {
 
       // Check if error is displayed (the API error should be set in the errors object)
       const errorElements = wrapper.findAll('.alert-danger')
-      const hasErrorMessage = errorElements.some(el => 
+      const hasErrorMessage = errorElements.some(el =>
         el.text().includes('409')
+      )
+      expect(hasErrorMessage).toBe(true)
+    })
+
+    it('handles morphology error on create', async () => {
+      const err = new Error('Morphology unsupported')
+      err.status = 418
+      err.data = { word: 'abc', level: 1 }
+      create.mockRejectedValueOnce(err)
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const component = wrapper.vm
+      component.word = 'abc'
+      component.matchTypeId = 41
+
+      try {
+        await component.onSubmit()
+      } finally {
+        await wrapper.vm.$nextTick()
+      }
+
+
+      const errorElements = wrapper.findAll('.alert-danger')
+      const hasErrorMessage = errorElements.some(el =>
+        el.text().includes('Morphology unsupported')
       )
       expect(hasErrorMessage).toBe(true)
     })
@@ -255,14 +298,14 @@ describe('StopWord_Settings.vue', () => {
 
       const component = wrapper.vm
       component.word = 'обновленное'
-      component.exactMatch = false
+      component.matchTypeId = 41
       
       await component.onSubmit()
 
       expect(update).toHaveBeenCalledWith(1, {
         id: 1,
         word: 'обновленное',
-        exactMatch: false
+        matchTypeId: 41
       })
     })
 

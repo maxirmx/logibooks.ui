@@ -29,97 +29,48 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/stopwords`
-export const useStopWordsStore = defineStore('stopWords', () => {
-  const stopWords = ref([])
-  const stopWord = ref({ loading: true })
+
+export const useStopWordMatchTypesStore = defineStore('stopWordMatchTypes', () => {
+  const matchTypes = ref([])
   const loading = ref(false)
   const error = ref(null)
 
-  async function getAll() {
+  const matchTypeMap = ref(new Map())
+
+  async function fetchMatchTypes() {
     loading.value = true
+    error.value = null
     try {
-      const response = await fetchWrapper.get(baseUrl)
-      stopWords.value = response || []
+      const response = await fetchWrapper.get(`${baseUrl}/matchtypes`)
+      matchTypes.value = response || []
+      matchTypeMap.value = new Map(matchTypes.value.map(t => [t.id, t]))
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
   }
 
-
-  async function getById(id, refresh = false) {
-    if (refresh) {
-      stopWord.value = { loading: true }
-    }
-    loading.value = true
-    try {
-      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      stopWord.value = response
-      return response
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
+  function getName(id) {
+    const type = matchTypeMap.value.get(id)
+    return type ? type.name : `Тип ${id}`
   }
 
-  async function create(data) {
-    loading.value = true
-    try {
-      const response = await fetchWrapper.post(baseUrl, data)
-      // Refresh the list after creation
-      await getAll()
-      return response
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
+  const initialized = ref(false)
+  function ensureLoaded() {
+    if (!initialized.value && matchTypes.value.length === 0 && !loading.value) {
+      initialized.value = true
+      fetchMatchTypes()
     }
   }
-
-  async function update(id, data) {
-    loading.value = true
-    try {
-      const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
-      // Refresh the list after update
-      await getAll()
-      return response
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function remove(id) {
-    loading.value = true
-    try {
-      await fetchWrapper.delete(`${baseUrl}/${id}`)
-      // Refresh the list after deletion
-      await getAll()
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
 
   return {
-    stopWords,
-    stopWord,
+    matchTypes,
     loading,
     error,
-    getAll,
-    getById,
-    create,
-    update,
-    remove
+    matchTypeMap,
+    fetchMatchTypes,
+    getName,
+    ensureLoaded
   }
 })

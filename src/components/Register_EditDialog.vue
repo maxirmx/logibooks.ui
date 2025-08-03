@@ -68,16 +68,6 @@ function updateDirection() {
 }
 
 watch(
-  () => item.value.customsProcedureId,
-  (newId) => {
-    const proc = customsProceduresStore.procedures?.find((p) => p.id === newId)
-    isExport.value = proc && proc.code === 10
-    updateDirection()
-  },
-  { immediate: true }
-)
-
-watch(
   () => item.value.theOtherCountryCode,
   () => updateDirection()
 )

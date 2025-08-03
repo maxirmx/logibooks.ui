@@ -219,16 +219,7 @@ watch(
 )
 
 function loadRegisters() {
-  const sortBy = registers_sort_by.value?.[0]?.key || 'id'
-  const sortOrder = registers_sort_by.value?.[0]?.order || 'asc'
-
-  registersStore.getAll(
-    registers_page.value,
-    registers_per_page.value,
-    sortBy,
-    sortOrder,
-    registers_search.value
-  )
+  registersStore.getAll()
 }
 
 function openParcels(item) {

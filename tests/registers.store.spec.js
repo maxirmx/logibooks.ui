@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -25,14 +26,29 @@ vi.mock('@/stores/customs.procedures.store.js', () => {
   }
 })
 
+// Mock auth store
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: vi.fn()
+}))
+
 // Mock console methods to reduce test output clutter
 const originalConsoleLog = console.log
 const originalConsoleError = console.error
 
 describe('registers store', () => {
+  // Default mock auth store values
+  const defaultAuthStore = {
+    registers_page: 1,
+    registers_per_page: 10,
+    registers_sort_by: [{ key: 'id', order: 'asc' }],
+    registers_search: ''
+  }
+
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    // Set default mock for auth store
+    useAuthStore.mockReturnValue(defaultAuthStore)
     // Suppress console output during tests
     console.log = vi.fn()
     console.error = vi.fn()
@@ -46,7 +62,7 @@ describe('registers store', () => {
 
   describe('getAll method', () => {
     describe('API format with pagination metadata', () => {
-      it('fetches data from API with default parameters', async () => {
+      it('fetches data from API using auth store settings', async () => {
         const mockResponse = {
           items: [
             { id: 1, name: 'Register 1' },
@@ -71,7 +87,15 @@ describe('registers store', () => {
         expect(store.error).toBeNull()
       })
 
-      it('fetches data with custom parameters', async () => {
+      it('fetches data with custom auth store settings', async () => {
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 2,
+          registers_per_page: 5,
+          registers_sort_by: [{ key: 'name', order: 'desc' }],
+          registers_search: 'search term'
+        })
+        
         const mockResponse = {
           items: [{ id: 3, name: 'Register 3' }],
           pagination: {
@@ -83,7 +107,7 @@ describe('registers store', () => {
         fetchWrapper.get.mockResolvedValue(mockResponse)
 
         const store = useRegistersStore()
-        await store.getAll(2, 5, 'name', 'desc', 'search term')
+        await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&search=search+term`
@@ -105,8 +129,16 @@ describe('registers store', () => {
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 1,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'id', order: 'asc' }],
+          registers_search: ''
+        })
+
         const store = useRegistersStore()
-        await store.getAll(1, 10)
+        await store.getAll()
 
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(25)
@@ -129,8 +161,16 @@ describe('registers store', () => {
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 2,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'name', order: 'asc' }],
+          registers_search: 'filter'
+        })
+
         const store = useRegistersStore()
-        await store.getAll(2, 10, 'name', 'asc', 'filter')
+        await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=2&pageSize=10&sortBy=name&sortOrder=asc&search=filter`
@@ -156,8 +196,16 @@ describe('registers store', () => {
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 5,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'id', order: 'asc' }],
+          registers_search: ''
+        })
+
         const store = useRegistersStore()
-        await store.getAll(5, 10)
+        await store.getAll()
 
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(50)
@@ -176,8 +224,16 @@ describe('registers store', () => {
         }
         fetchWrapper.get.mockResolvedValue(mockResponse)
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 1,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'id', order: 'asc' }],
+          registers_search: 'nonexistent'
+        })
+
         const store = useRegistersStore()
-        await store.getAll(1, 10, 'id', 'asc', 'nonexistent')
+        await store.getAll()
 
         expect(store.items).toEqual([])
         expect(store.totalCount).toBe(0)
@@ -322,8 +378,16 @@ describe('registers store', () => {
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
         })
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 1,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'id', order: 'asc' }],
+          registers_search: ''
+        })
+
         const store = useRegistersStore()
-        await store.getAll(1, 10, 'id', 'asc', '')
+        await store.getAll()
 
         const calledUrl = fetchWrapper.get.mock.calls[0][0]
         expect(calledUrl).not.toContain('search=')
@@ -335,8 +399,16 @@ describe('registers store', () => {
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
         })
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 1,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'id', order: 'asc' }],
+          registers_search: 'test search'
+        })
+
         const store = useRegistersStore()
-        await store.getAll(1, 10, 'id', 'asc', 'test search')
+        await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&search=test+search`
@@ -349,8 +421,16 @@ describe('registers store', () => {
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
         })
 
+        // Set custom auth store values for this test
+        useAuthStore.mockReturnValueOnce({
+          registers_page: 1,
+          registers_per_page: 10,
+          registers_sort_by: [{ key: 'id', order: 'asc' }],
+          registers_search: 'test & search + special chars'
+        })
+
         const store = useRegistersStore()
-        await store.getAll(1, 10, 'id', 'asc', 'test & search + special chars')
+        await store.getAll()
 
         const calledUrl = fetchWrapper.get.mock.calls[0][0]
         expect(calledUrl).toContain('search=test+%26+search+%2B+special+chars')

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -15,7 +16,7 @@ export const useRegistersStore = defineStore('registers', () => {
   const totalCount = ref(0)
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
-
+  
   const customsProceduresStore = useCustomsProceduresStore()
 
   function setDestinationField(register) {
@@ -23,7 +24,6 @@ export const useRegistersStore = defineStore('registers', () => {
       register.destination = 'in'
       return
     }
-    // Try to get the procedure from the store's map or array
     let proc = null
     if (customsProceduresStore.procedureMap && customsProceduresStore.procedureMap.value) {
       proc = customsProceduresStore.procedureMap.value.get(register.customsProcedureId)
@@ -46,20 +46,60 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function getAll(page = 1, pageSize = 10, sortBy = 'id', sortOrder = 'asc', search = '') {
+  async function getAll(page, pageSize, sortBy, sortOrder, search) {
+    // Use auth store settings if parameters aren't explicitly provided
+    const authStore = useAuthStore()
+    
+    // Use provided values or fall back to auth store settings
+    const effectivePage = page !== undefined ? page : authStore.registers_page
+    const effectivePageSize = pageSize !== undefined ? pageSize : authStore.registers_per_page
+    
+    // Handle the different format of sort settings between auth store and this method
+    let effectiveSortBy = sortBy
+    let effectiveSortOrder = sortOrder
+    
+    if (sortBy === undefined && sortOrder === undefined && authStore.registers_sort_by.length > 0) {
+      // Extract sort info from auth store's format
+      const sortInfo = authStore.registers_sort_by[0]
+      if (typeof sortInfo === 'object' && sortInfo.key) {
+        effectiveSortBy = sortInfo.key
+        effectiveSortOrder = sortInfo.order || 'asc'
+      } else if (typeof sortInfo === 'string') {
+        effectiveSortBy = sortInfo
+        effectiveSortOrder = 'asc'
+      }
+    }
+    
+    // Default values if nothing is provided
+    effectiveSortBy = effectiveSortBy || 'id'
+    effectiveSortOrder = effectiveSortOrder || 'asc'
+    
+    const effectiveSearch = search !== undefined ? search : authStore.registers_search
+    
+    // Update auth store with current values for persistence
+    authStore.registers_page = effectivePage
+    authStore.registers_per_page = effectivePageSize
+    if (authStore.registers_sort_by.length === 0 || 
+        (typeof authStore.registers_sort_by[0] === 'object' && 
+         (authStore.registers_sort_by[0].key !== effectiveSortBy || 
+          authStore.registers_sort_by[0].order !== effectiveSortOrder))) {
+      authStore.registers_sort_by = [{ key: effectiveSortBy, order: effectiveSortOrder }]
+    }
+    authStore.registers_search = effectiveSearch
+    
     customsProceduresStore.ensureLoaded()
     loading.value = true
     error.value = null
     try {
       const queryParams = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-        sortBy,
-        sortOrder
+        page: effectivePage.toString(),
+        pageSize: effectivePageSize.toString(),
+        sortBy: effectiveSortBy,
+        sortOrder: effectiveSortOrder
       })
 
-      if (search) {
-        queryParams.append('search', search)
+      if (effectiveSearch) {
+        queryParams.append('search', effectiveSearch)
       }
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
@@ -81,13 +121,12 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function upload(file, companyId) {
-    console.log('upload: ' + companyId)
     loading.value = true
     error.value = null
     try {
       const formData = new FormData()
       formData.append('file', file)
-      await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}`, formData)
+      return await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}`, formData)
     } catch (err) {
       error.value = err
       throw err
@@ -222,13 +261,16 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function remove(id) {
+    loading.value = true
+    error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      // Refresh the list after deletion
       await getAll()
-    } catch (error) {
-      console.error('Failed to delete register:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+    }
+    finally {
+      loading.value = false
     }
   }
 

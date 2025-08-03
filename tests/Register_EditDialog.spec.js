@@ -165,4 +165,69 @@ describe('Register_EditDialog', () => {
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
+  
+  it('handles create mode with upload that returns Reference object', async () => {
+    upload.mockResolvedValueOnce({ id: 42 }) // Mock Reference object with id
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
+    const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit(formValues, { setErrors: vi.fn() })
+    await resolveAll()
+    
+    // Verify upload was called
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
+    
+    // Verify update was called with the Id from the Reference object and the form values
+    expect(update).toHaveBeenCalledWith(42, formValues)
+    
+    // Verify navigation occurred
+    expect(router.push).toHaveBeenCalledWith('/registers')
+  })
+  
+  it('handles errors in create mode with Reference object', async () => {
+    // Mock upload success but update failure
+    upload.mockResolvedValueOnce({ id: 42 })
+    update.mockRejectedValueOnce(new Error('Update failed'))
+    
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
+    const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
+    const setErrors = vi.fn()
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit(formValues, { setErrors })
+    await resolveAll()
+    
+    // Verify upload was called
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
+    
+    // Verify update was called with the Id from the Reference object
+    expect(update).toHaveBeenCalledWith(42, formValues)
+    
+    // Verify error was handled
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Update failed' })
+    
+    // Verify navigation did not occur
+    expect(router.push).not.toHaveBeenCalled()
+  })
 })

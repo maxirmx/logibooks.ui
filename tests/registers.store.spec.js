@@ -538,8 +538,11 @@ describe('registers store', () => {
       fetchWrapper.delete.mockRejectedValue(error)
 
       const store = useRegistersStore()
-
-      await expect(store.remove(1)).rejects.toThrow('Delete failed')
+      await store.remove(1)
+      
+      // Verify error was set in the store but not thrown
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
     })
   })
 

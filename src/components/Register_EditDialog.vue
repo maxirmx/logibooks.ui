@@ -3,7 +3,7 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
-import { ref, watch, computed } from 'vue'
+import { watch, ref, computed } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
@@ -34,6 +34,14 @@ const { companies } = storeToRefs(companiesStore)
 
 if (!props.create) {
   await registersStore.getById(props.id)
+} else {
+  // Set default values for new records
+  if (!item.value.customsProcedureId) {
+    item.value.customsProcedureId = 1
+  }
+  if (!item.value.transportationTypeId) {
+    item.value.transportationTypeId = 1
+  }
 }
 
 const schema = Yup.object().shape({
@@ -46,7 +54,35 @@ const schema = Yup.object().shape({
   theOtherCountryCode: Yup.number().nullable()
 })
 
+// Set default to true if customsProcedureId=1 represents code 10 (export)
 const isExport = ref(false)
+const procedureCodeLoaded = ref(false)
+
+// This computed property only checks if procedures are loaded and if we have a valid procedure
+const shouldUpdateExportStatus = computed(() => {
+  return Array.isArray(customsProceduresStore.procedures) && 
+         customsProceduresStore.procedures.length > 0 && 
+         !procedureCodeLoaded.value
+})
+
+// Function to update export status based on the procedure code
+function updateExportStatusFromProc() {
+  if (Array.isArray(customsProceduresStore.procedures) && customsProceduresStore.procedures.length > 0) {
+    const proc = customsProceduresStore.procedures.find(p => p.id === (item.value?.customsProcedureId || 1))
+    if (proc) {
+      isExport.value = proc.code === 10
+      updateDirection()
+      procedureCodeLoaded.value = true
+    }
+  }
+}
+
+// Watch for changes that should trigger an update to export status
+watch(shouldUpdateExportStatus, (shouldUpdate) => {
+  if (shouldUpdate) {
+    updateExportStatusFromProc()
+  }
+})
 
 const proceduresLoaded = computed(
   () => Array.isArray(customsProceduresStore.procedures) && customsProceduresStore.procedures.length > 0
@@ -81,11 +117,15 @@ watch(
 )
 
 watch(proceduresLoaded, (loaded) => {
-  if (loaded && !item.value.customsProcedureId) item.value.customsProcedureId = 1
+  if (loaded && !item.value.customsProcedureId) {
+    item.value.customsProcedureId = 1
+  }
 })
 
 watch(typesLoaded, (loaded) => {
-  if (loaded && !item.value.transportationTypeId) item.value.transportationTypeId = 1
+  if (loaded && !item.value.transportationTypeId) {
+    item.value.transportationTypeId = 1
+  }
 })
 
 function handleProcedureChange(e) {
@@ -105,17 +145,21 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
-function onSubmit(values, { setErrors }) {
-  if (props.create) {
-    return registersStore
-      .upload(uploadFile.value, item.value.companyId)
-      .then(() => router.push('/registers'))
-      .catch((error) => setErrors({ apiError: error.message || String(error) }))
-  } else {
-    return registersStore
-      .update(props.id, values)
-      .then(() => router.push('/registers'))
-      .catch((error) => setErrors({ apiError: error.message || String(error) }))
+async function onSubmit(values, { setErrors }) {
+  try {
+    if (props.create) {
+      const result = await registersStore.upload(uploadFile.value, item.value.companyId)
+      // If upload returns Reference object with id, call update
+      if (result && typeof result.id === 'number') {
+        await registersStore.update(result.id, values)
+      }
+      await router.push('/registers')
+    } else {
+      await registersStore.update(props.id, values)
+      await router.push('/registers')
+    }
+  } catch (error) {
+    setErrors({ apiError: error.message || String(error) })
   }
 }
 
@@ -279,7 +323,7 @@ function getCustomerName(customerId) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButton() }}
         </button>
-        <button class="button secondary" type="button" @click="router.push('/registers')">
+        <button class="button secondary" type="button" @click="router.push('/registers')" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

@@ -152,7 +152,7 @@ async function generateXml() {
 </script>
 
 <template>
-  <div class="settings form-3 form-compact">
+  <div class="settings form-4 form-compact">
     <h1 class="primary-heading">
       Посылка {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>

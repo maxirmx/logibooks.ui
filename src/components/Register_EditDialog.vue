@@ -119,7 +119,7 @@ function getCustomerName(customerId) {
 </script>
 
 <template>
-  <div class="settings form-4 form-compact">
+  <div class="settings form-3 form-compact">
     <h1 class="primary-heading">Редактировать информацию о реестре</h1>
     <hr class="hr" />
     <Form

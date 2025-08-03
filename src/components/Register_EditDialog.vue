@@ -57,7 +57,7 @@ function getCustomerName(customerId) {
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <h1 class="primary-heading">Редактировать информацию о реестре</h1>
     <hr class="hr" />
     <Form

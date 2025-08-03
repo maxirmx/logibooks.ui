@@ -82,8 +82,8 @@ function getButtonText() {
 const schema = Yup.object({
   inn: Yup.string().required('ИНН обязателен'),
   kpp: Yup.string(),
-  name: Yup.string().required('Название обязательно'),
-  shortName: Yup.string(),
+  name: Yup.string(),
+  shortName: Yup.string().required('Краткое название обязательно'),
   countryIsoNumeric: Yup.number().required('Страна обязательна'),
   postalCode: Yup.string(),
   city: Yup.string(),

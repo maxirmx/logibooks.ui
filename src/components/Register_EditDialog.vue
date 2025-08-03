@@ -125,7 +125,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting, values }"
+      v-slot="{ errors, isSubmitting }"
     >
       <div class="form-section">
         <div class="form-row">

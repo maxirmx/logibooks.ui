@@ -197,17 +197,15 @@ async function fileSelected(files) {
     return
   }
 
-  try {
-    await registersStore.upload(file, selectedCustomerId.value)
-    alertStore.success('Реестр успешно загружен')
-    loadRegisters()
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  } finally {
-    // Clear the file input so the same file can be selected again
-    if (fileInput.value) {
-      fileInput.value.value = null
-    }
+  registersStore.item = {
+    fileName: file.name,
+    companyId: selectedCustomerId.value
+  }
+  registersStore.uploadFile = file
+  router.push('/register/load')
+
+  if (fileInput.value) {
+    fileInput.value.value = null
   }
 }
 

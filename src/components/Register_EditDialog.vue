@@ -11,11 +11,12 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 
 const props = defineProps({
-  id: { type: Number, required: true }
+  id: { type: Number, required: false },
+  create: { type: Boolean, default: false }
 })
 
 const registersStore = useRegistersStore()
-const { item } = storeToRefs(registersStore)
+const { item, uploadFile } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()
@@ -31,7 +32,9 @@ const companiesStore = useCompaniesStore()
 await companiesStore.getAll()
 const { companies } = storeToRefs(companiesStore)
 
-await registersStore.getById(props.id)
+if (!props.create) {
+  await registersStore.getById(props.id)
+}
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
@@ -92,11 +95,28 @@ function handleProcedureChange(e) {
   updateDirection()
 }
 
+function getTitle() {
+  return props.create
+    ? 'Загрузка реестра'
+    : 'Редактирование информации о реестре'
+}
+
+function getButton() {
+  return props.create ? 'Загрузить' : 'Сохранить'
+}
+
 function onSubmit(values, { setErrors }) {
-  return registersStore
-    .update(props.id, values)
-    .then(() => router.push('/registers'))
-    .catch((error) => setErrors({ apiError: error.message || String(error) }))
+  if (props.create) {
+    return registersStore
+      .upload(uploadFile.value, item.value.companyId)
+      .then(() => router.push('/registers'))
+      .catch((error) => setErrors({ apiError: error.message || String(error) }))
+  } else {
+    return registersStore
+      .update(props.id, values)
+      .then(() => router.push('/registers'))
+      .catch((error) => setErrors({ apiError: error.message || String(error) }))
+  }
 }
 
 function getCustomerName(customerId) {
@@ -110,7 +130,7 @@ function getCustomerName(customerId) {
 
 <template>
   <div class="settings form-3 form-compact">
-    <h1 class="primary-heading">Редактировать информацию о реестре</h1>
+    <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
     <Form
       @submit="onSubmit"
@@ -257,7 +277,7 @@ function getCustomerName(customerId) {
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          Сохранить
+          {{ getButton() }}
         </button>
         <button class="button secondary" type="button" @click="router.push('/registers')">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />

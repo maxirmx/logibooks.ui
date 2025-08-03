@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs } from './test-utils.js'
+import router from '@/router'
 
 const mockItems = ref([])
 const mockCompanies = ref([])
@@ -65,21 +66,27 @@ vi.mock('pinia', async () => {
   }
 })
 
+const mockItem = ref({})
+const uploadFile = ref(null)
+const registersStore = {
+  getAll,
+  upload: uploadFn,
+  setOrderStatuses: setOrderStatusesFn,
+  validate: validateFn,
+  getValidationProgress: getValidationProgressFn,
+  cancelValidation: cancelValidationFn,
+  remove: removeFn,
+  generate: generateFn,
+  items: mockItems,
+  item: mockItem,
+  uploadFile,
+  loading: ref(false),
+  error: ref(null),
+  totalCount: ref(0)
+}
+
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({
-    getAll,
-    upload: uploadFn,
-    setOrderStatuses: setOrderStatusesFn,
-    validate: validateFn,
-    getValidationProgress: getValidationProgressFn,
-    cancelValidation: cancelValidationFn,
-    remove: removeFn,
-    generate: generateFn,
-    items: mockItems,
-    loading: ref(false),
-    error: ref(null),
-    totalCount: ref(0)
-  })
+  useRegistersStore: () => registersStore
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -469,59 +476,36 @@ describe('Registers_List.vue', () => {
 
       it('handles file selection with array input for OZON', async () => {
         const file = new File(['data'], 'test.xlsx')
-        uploadFn.mockResolvedValueOnce({ success: true })
         wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
 
         await wrapper.vm.fileSelected([file])
 
-        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
-        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
-        expect(getAll).toHaveBeenCalled()
+        expect(registersStore.item.fileName).toBe('test.xlsx')
+        expect(registersStore.item.companyId).toBe(OZON_COMPANY_ID)
+        expect(registersStore.uploadFile).toBe(file)
+        expect(router.push).toHaveBeenCalledWith('/register/load')
       })
 
       it('handles file selection with single file input for WBR', async () => {
         const file = new File(['data'], 'test.xlsx')
-        uploadFn.mockResolvedValueOnce({ success: true })
         wrapper.vm.selectedCustomerId = WBR_COMPANY_ID
 
         await wrapper.vm.fileSelected(file)
 
-        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
-        expect(alertSuccessFn).toHaveBeenCalledWith('Реестр успешно загружен')
-      })
-
-      it('handles file upload error', async () => {
-        const file = new File(['data'], 'test.xlsx')
-        const errorMessage = 'Upload failed'
-        uploadFn.mockRejectedValueOnce(new Error(errorMessage))
-        wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
-
-        await wrapper.vm.fileSelected(file)
-
-        expect(uploadFn).toHaveBeenCalledWith(file, OZON_COMPANY_ID)
-        expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
-      })
-
-      it('handles file upload error without message', async () => {
-        const file = new File(['data'], 'test.xlsx')
-        const errorObj = { code: 500 }
-        uploadFn.mockRejectedValueOnce(errorObj)
-        wrapper.vm.selectedCustomerId = WBR_COMPANY_ID
-
-        await wrapper.vm.fileSelected(file)
-
-        expect(uploadFn).toHaveBeenCalledWith(file, WBR_COMPANY_ID)
-        expect(alertErrorFn).toHaveBeenCalledWith('[object Object]')
+        expect(registersStore.item.fileName).toBe('test.xlsx')
+        expect(registersStore.item.companyId).toBe(WBR_COMPANY_ID)
+        expect(registersStore.uploadFile).toBe(file)
+        expect(router.push).toHaveBeenCalledWith('/register/load')
       })
 
       it('handles empty file selection', async () => {
         wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
-        
+
         await wrapper.vm.fileSelected(null)
-        expect(uploadFn).not.toHaveBeenCalled()
+        expect(router.push).not.toHaveBeenCalled()
 
         await wrapper.vm.fileSelected([])
-        expect(uploadFn).not.toHaveBeenCalled()
+        expect(router.push).not.toHaveBeenCalled()
       })
 
       it('shows error when trying to upload without selected customer', async () => {
@@ -529,29 +513,16 @@ describe('Registers_List.vue', () => {
         wrapper.vm.selectedCustomerId = null
 
         await wrapper.vm.fileSelected(file)
-        
+
         expect(alertErrorFn).toHaveBeenCalledWith('Не выбран клиент для загрузки реестра')
-        expect(uploadFn).not.toHaveBeenCalled()
+        expect(router.push).not.toHaveBeenCalled()
       })
 
-      it('clears file input after upload', async () => {
+      it('clears file input after selection', async () => {
         const file = new File(['data'], 'test.xlsx')
         const mockFileInput = { value: null }
         wrapper.vm.fileInput = mockFileInput
         wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
-        uploadFn.mockResolvedValueOnce({ success: true })
-
-        await wrapper.vm.fileSelected(file)
-
-        expect(mockFileInput.value).toBeNull()
-      })
-
-      it('clears file input even when upload fails', async () => {
-        const file = new File(['data'], 'test.xlsx')
-        const mockFileInput = { value: null }
-        wrapper.vm.fileInput = mockFileInput
-        wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
-        uploadFn.mockRejectedValueOnce(new Error('Upload failed'))
 
         await wrapper.vm.fileSelected(file)
 

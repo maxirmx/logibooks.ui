@@ -45,6 +45,7 @@ export const useCountriesStore = defineStore('countries', () => {
 
   function getCountryShortName(code) {
     const num = Number(code)
+    if (num == 643) return 'Россия' // Special case for Russia
     const country = countries.value.find(c => c.isoNumeric === num)
     if (!country) return code
     return country.nameRuShort || country.nameRuOfficial || code

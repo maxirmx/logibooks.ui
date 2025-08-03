@@ -78,6 +78,14 @@ const {
 
 const statuses = ref([])
 const registerFileName = ref('')
+const registerDealNumber = ref('')
+const registerName = computed(() => {
+  if (registerDealNumber.value && String(registerDealNumber.value).trim() !== '') {
+    return `Реестр для сделки ${registerDealNumber.value}`
+  } else {
+    return 'Реестр для сделки без номера (файл: ' + registerFileName.value + ')'
+  }
+})
 
 async function fetchRegister() {
   try {
@@ -88,6 +96,7 @@ async function fetchRegister() {
       count: byStatus[id]
     }))
     registerFileName.value = res.fileName || ''
+    registerDealNumber.value = res.dealNumber || ''
   } catch {
     // ignore errors
   }
@@ -204,7 +213,7 @@ function getGenericTemplateHeaders() {
 <template>
   <div class="settings table-3">
     <h1 class="primary-heading">
-      {{ registerFileName || 'Загрузка...' }}
+      {{ registerName }}
     </h1>
     <hr class="hr" />
 

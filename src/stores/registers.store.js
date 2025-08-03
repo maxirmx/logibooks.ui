@@ -2,37 +2,76 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/registers`
 
 export const useRegistersStore = defineStore('registers', () => {
   const items = ref([])
   const item = ref({})
+  const uploadFile = ref(null)
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
+  
+  const customsProceduresStore = useCustomsProceduresStore()
 
-  async function getAll(page = 1, pageSize = 10, sortBy = 'id', sortOrder = 'asc', search = '') {
+  function setDestinationField(register) {
+    if (!register || !register.customsProcedureId) {
+      register.destination = 'in'
+      return
+    }
+    let proc = null
+    if (customsProceduresStore.procedureMap && customsProceduresStore.procedureMap.value) {
+      proc = customsProceduresStore.procedureMap.value.get(register.customsProcedureId)
+    }
+    if (!proc && Array.isArray(customsProceduresStore.procedures)) {
+      proc = customsProceduresStore.procedures.find(p => p.id === register.customsProcedureId)
+    }
+    if (proc && proc.code == 10) {
+      register.destination = 'out'
+      register.destCountryCode = register.theOtherCountryCode
+      register.origCountryCode = 643 // Russia
+      register.recipientId = register.theOtherCompanyId
+      register.senderId = register.companyId
+    } else {
+      register.destination = 'in'
+      register.destCountryCode = 643 // Russia
+      register.origCountryCode = register.theOtherCountryCode
+      register.recipientId = register.companyId
+      register.senderId = register.theOtherCompanyId
+    }
+  }
+
+  async function getAll() {
+    const authStore = useAuthStore()
+    
+    customsProceduresStore.ensureLoaded()
     loading.value = true
     error.value = null
     try {
       const queryParams = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-        sortBy,
-        sortOrder
+        page: authStore.registers_page.toString(),
+        pageSize: authStore.registers_per_page.toString(),
+        sortBy: authStore.registers_sort_by?.[0]?.key || 'id',
+        sortOrder: authStore.registers_sort_by?.[0]?.order || 'asc'
       })
 
-      if (search) {
-        queryParams.append('search', search)
+      if (authStore.registers_search) {
+        queryParams.append('search', authStore.registers_search)
       }
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
 
       // API format with pagination metadata
       items.value = response.items || []
+      // Set destination for each register
+      if (Array.isArray(items.value)) {
+        items.value.forEach(setDestinationField)
+      }
       totalCount.value = response.pagination?.totalCount || 0
       hasNextPage.value = response.pagination?.hasNextPage || false
       hasPreviousPage.value = response.pagination?.hasPreviousPage || false
@@ -44,13 +83,12 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function upload(file, companyId) {
-    console.log('upload: ' + companyId)
     loading.value = true
     error.value = null
     try {
       const formData = new FormData()
       formData.append('file', file)
-      await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}`, formData)
+      return await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}`, formData)
     } catch (err) {
       error.value = err
       throw err
@@ -60,9 +98,11 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function getById(id) {
+    customsProceduresStore.ensureLoaded()
     item.value = { loading: true }
     try {
       item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      setDestinationField(item.value)
     } catch (err) {
       item.value = { error: err }
     }
@@ -183,13 +223,16 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function remove(id) {
+    loading.value = true
+    error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      // Refresh the list after deletion
       await getAll()
-    } catch (error) {
-      console.error('Failed to delete register:', error)
-      throw error
+    } catch (err) {
+      error.value = err
+    }
+    finally {
+      loading.value = false
     }
   }
 
@@ -212,6 +255,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generate,
     download,
     nextParcel,
-    remove
+    remove,
+    uploadFile
   }
 })

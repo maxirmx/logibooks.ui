@@ -31,7 +31,7 @@ describe('parcels store', () => {
     const store = useParcelsStore()
     await store.getAll(1)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/orders?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
     )
   })
 
@@ -40,7 +40,7 @@ describe('parcels store', () => {
     const store = useParcelsStore()
     await store.getAll(2, 3, 'AA', 4, 50, 'tnVed', 'desc')
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/orders?registerId=2&page=4&pageSize=50&sortBy=tnVed&sortOrder=desc&statusId=3&tnVed=AA`
+      `${apiUrl}/parcels?registerId=2&page=4&pageSize=50&sortBy=tnVed&sortOrder=desc&statusId=3&tnVed=AA`
     )
   })
 
@@ -58,7 +58,7 @@ describe('parcels store', () => {
     fetchWrapper.get.mockResolvedValue({ id: 5 })
     const store = useParcelsStore()
     await store.getById(5)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/5`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/5`)
     expect(store.item).toEqual({ id: 5 })
   })
 
@@ -89,7 +89,7 @@ describe('parcels store', () => {
       const result = await store.update(5, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith(
-        `${apiUrl}/orders/5`,
+        `${apiUrl}/parcels/5`,
         updateData
       )
       expect(result).toEqual({ success: true })
@@ -159,7 +159,7 @@ describe('parcels store', () => {
 
       await expect(store.update(5, updateData)).rejects.toThrow(errorMessage)
       expect(fetchWrapper.put).toHaveBeenCalledWith(
-        `${apiUrl}/orders/5`,
+        `${apiUrl}/parcels/5`,
         updateData
       )
     })
@@ -174,7 +174,7 @@ describe('parcels store', () => {
       
       const result = await store.generate(123)
       
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/orders/123/generate`, 'IndPost_123.xml')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/parcels/123/generate`, 'IndPost_123.xml')
       expect(result).toBe(true)
     })
     
@@ -185,7 +185,7 @@ describe('parcels store', () => {
       fetchWrapper.downloadFile = vi.fn().mockRejectedValue(error)
       
       await expect(store.generate(123)).rejects.toThrow('Generation failed')
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/orders/123/generate`, 'IndPost_123.xml')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/parcels/123/generate`, 'IndPost_123.xml')
     })
 
   })
@@ -197,7 +197,7 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.validate(789)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate`)
       expect(result).toBe(true)
     })
 
@@ -208,7 +208,7 @@ describe('parcels store', () => {
       const store = useParcelsStore()
 
       await expect(store.validate(789)).rejects.toThrow('Validation failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/789/validate`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate`)
     })
   })
 
@@ -219,7 +219,7 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.approve(123)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/123/approve`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
       expect(result).toBe(true)
     })
 
@@ -230,7 +230,7 @@ describe('parcels store', () => {
       const store = useParcelsStore()
 
       await expect(store.approve(123)).rejects.toThrow('Approval failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/orders/123/approve`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
     })
   })
 })

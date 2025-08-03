@@ -45,7 +45,7 @@
   margin: 0 auto;
 }
 
-/* Forms: user/company settings/register  */
+/* Forms: user/company settings  */
 .form-2,
 .table-1,
 .list-1 {
@@ -55,15 +55,18 @@
 }
 
 /* Tables: users */
-.table-2 {
+/* Forms: register  */
+.table-2,
+.form-3 {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 /* Tables: --   extra wide */
+/* Forms: parcel  */
 .table-3,
-.form-3 {
+.form-4 {
   width: 100%;
   max-width: 4096px;
   margin: 0 auto;

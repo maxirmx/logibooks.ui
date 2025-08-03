@@ -39,7 +39,7 @@ describe('parcel check status store', () => {
 
     await store.fetchStatuses()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/orders/checkstatuses`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/checkstatuses`)
     expect(store.statuses).toEqual(mockStatuses)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()

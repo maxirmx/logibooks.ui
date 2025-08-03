@@ -69,7 +69,7 @@ describe('parcel.statuses.store.js', () => {
 
       await store.getAll()
 
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       expect(store.parcelStatuses).toEqual(mockParcelStatuses)
       expect(store.loading).toBe(false)
     })
@@ -111,7 +111,7 @@ describe('parcel.statuses.store.js', () => {
 
       const result = await store.getById(1)
 
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses/1')
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses/1')
       expect(store.parcelStatus).toEqual(mockParcelStatus)
       expect(result).toEqual(mockParcelStatus)
     })
@@ -150,8 +150,8 @@ describe('parcel.statuses.store.js', () => {
 
       const result = await store.create(newOrderStatus)
 
-      expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses', newOrderStatus)
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
+      expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses', newOrderStatus)
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       expect(result).toEqual(createdOrderStatus)
     })
 
@@ -173,8 +173,8 @@ describe('parcel.statuses.store.js', () => {
 
       const result = await store.update(1, updateData)
 
-      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses/1', updateData)
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
+      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses/1', updateData)
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       expect(result).toEqual(updatedOrderStatus)
     })
 
@@ -193,8 +193,8 @@ describe('parcel.statuses.store.js', () => {
 
       await store.remove(1)
 
-      expect(mockDelete).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses/1')
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
+      expect(mockDelete).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses/1')
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
     })
 
     it('handles remove error', async () => {
@@ -233,7 +233,7 @@ describe('parcel.statuses.store.js', () => {
 
   describe('API Integration', () => {
     it('uses correct base URL for all operations', async () => {
-      const baseUrl = 'http://localhost:3000/api/orderstatuses'
+      const baseUrl = 'http://localhost:3000/api/parcelstatuses'
 
       mockGet.mockResolvedValue([])
       mockPost.mockResolvedValue({})
@@ -307,7 +307,7 @@ describe('parcel.statuses.store.js', () => {
       
       // Since ensureStatusesLoaded directly calls getAll synchronously,
       // we can verify it was called without needing timers
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/orderstatuses')
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       
       // Wait for any pending promises to resolve
       await Promise.resolve()

@@ -28,7 +28,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/orderstatuses`
+const baseUrl = `${apiUrl}/parcelstatuses`
 
 export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
   const parcelStatuses = ref([])

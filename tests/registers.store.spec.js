@@ -8,9 +8,22 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn(), downloadFile: vi.fn() }
 }))
 
+
 vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
+
+// Mock customs procedures store for destination logic
+vi.mock('@/stores/customs.procedures.store.js', () => {
+  // By default, no procedures, so destination will be 'in'
+  return {
+    useCustomsProceduresStore: () => ({
+      procedureMap: { value: new Map() },
+      procedures: [],
+      ensureLoaded: () => {}
+    })
+  }
+})
 
 // Mock console methods to reduce test output clutter
 const originalConsoleLog = console.log
@@ -257,7 +270,7 @@ describe('registers store', () => {
         })
         await store.getAll()
         expect(store.error).toBeNull()
-        expect(store.items).toEqual([{ id: 1 }])
+        expect(store.items).toEqual([{ id: 1, destination: 'in' }])
       })
     })
 

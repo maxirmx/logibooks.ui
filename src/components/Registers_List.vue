@@ -340,17 +340,20 @@ const headers = [
   { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions7', sortable: false, align: 'center', width: '5px' },
   { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
- // { title: '№', key: 'id', align: 'start' },
-  { title: 'Файл', key: 'fileName', align: 'start' },
+  { title: 'Номер сделки', key: 'dealNumber', align: 'start' },
+  // { title: 'Файл', key: 'fileName', align: 'start' },
   { title: 'Дата загрузки', key: 'date', align: 'start' },
-  { title: 'Клиент', key: 'companyId', align: 'start' },
-  { title: 'Страна', key: 'destCountryCode', align: 'start' },
+  { title: 'Отправитель', key: 'senderId', align: 'start' },
+  { title: 'Страна отправления', key: 'origCountryCode', align: 'start' },
+  { title: 'Получатель', key: 'recipientId', align: 'start' },
+  { title: 'Страна назначения', key: 'destCountryCode', align: 'start' },
   { title: 'Номер накладной', key: 'invoiceNumber', align: 'start' },
   { title: 'Дата накладной', key: 'invoiceDate', align: 'start' },
   { title: 'Транспорт', key: 'transportationTypeId', align: 'start' },
   { title: 'Процедура', key: 'customsProcedureId', align: 'start' },
   { title: 'Заказы', key: 'ordersTotal', align: 'end' }
 ]
+
 </script>
 
 <template>
@@ -406,11 +409,17 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template #[`item.companyId`]="{ item }">
-          {{ getCustomerName(item.companyId) }}
+        <template #[`item.senderId`]="{ item }">
+          {{ getCustomerName(item.senderId) }}
+        </template>
+        <template #[`item.recipientId`]="{ item }">
+          {{ getCustomerName(item.recipientId) }}
         </template>
         <template #[`item.destCountryCode`]="{ item }">
           {{ countriesStore.getCountryShortName(item.destCountryCode) }}
+        </template>
+        <template #[`item.origCountryCode`]="{ item }">
+          {{ countriesStore.getCountryShortName(item.origCountryCode) }}
         </template>
         <template #[`item.date`]="{ item }">
           {{ formatDate(item.date) }}

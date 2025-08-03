@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -14,7 +15,38 @@ export const useRegistersStore = defineStore('registers', () => {
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
 
+  const customsProceduresStore = useCustomsProceduresStore()
+
+  function setDestinationField(register) {
+    if (!register || !register.customsProcedureId) {
+      register.destination = 'in'
+      return
+    }
+    // Try to get the procedure from the store's map or array
+    let proc = null
+    if (customsProceduresStore.procedureMap && customsProceduresStore.procedureMap.value) {
+      proc = customsProceduresStore.procedureMap.value.get(register.customsProcedureId)
+    }
+    if (!proc && Array.isArray(customsProceduresStore.procedures)) {
+      proc = customsProceduresStore.procedures.find(p => p.id === register.customsProcedureId)
+    }
+    if (proc && proc.code == 10) {
+      register.destination = 'out'
+      register.destCountryCode = register.theOtherCountryCode
+      register.origCountryCode = 643 // Russia
+      register.recipientId = register.theOtherCompanyId
+      register.senderId = register.companyId
+    } else {
+      register.destination = 'in'
+      register.destCountryCode = 643 // Russia
+      register.origCountryCode = register.theOtherCountryCode
+      register.recipientId = register.companyId
+      register.senderId = register.theOtherCompanyId
+    }
+  }
+
   async function getAll(page = 1, pageSize = 10, sortBy = 'id', sortOrder = 'asc', search = '') {
+    customsProceduresStore.ensureLoaded()
     loading.value = true
     error.value = null
     try {
@@ -33,6 +65,10 @@ export const useRegistersStore = defineStore('registers', () => {
 
       // API format with pagination metadata
       items.value = response.items || []
+      // Set destination for each register
+      if (Array.isArray(items.value)) {
+        items.value.forEach(setDestinationField)
+      }
       totalCount.value = response.pagination?.totalCount || 0
       hasNextPage.value = response.pagination?.hasNextPage || false
       hasPreviousPage.value = response.pagination?.hasPreviousPage || false
@@ -60,9 +96,11 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function getById(id) {
+    customsProceduresStore.ensureLoaded()
     item.value = { loading: true }
     try {
       item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      setDestinationField(item.value)
     } catch (err) {
       item.value = { error: err }
     }

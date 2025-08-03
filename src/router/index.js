@@ -160,6 +160,12 @@ const router = createRouter({
       meta: { requiresLogist: true, hideSidebar: true }
     },
     {
+      path: '/register/load',
+      name: 'Загрузка реестра',
+      component: () => import('@/views/Register_LoadView.vue'),
+      meta: { requiresLogist: true, hideSidebar: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),

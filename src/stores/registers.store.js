@@ -9,6 +9,7 @@ const baseUrl = `${apiUrl}/registers`
 export const useRegistersStore = defineStore('registers', () => {
   const items = ref([])
   const item = ref({})
+  const uploadFile = ref(null)
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
@@ -250,6 +251,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generate,
     download,
     nextParcel,
-    remove
+    remove,
+    uploadFile
   }
 })

@@ -5,6 +5,7 @@ import { ref, nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import RegisterEditDialog from '@/components/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
+import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
 
 const mockItem = ref({
@@ -19,8 +20,9 @@ const mockItem = ref({
 })
 const getById = vi.fn(() => Promise.resolve())
 const update = vi.fn(() => Promise.resolve())
+const upload = vi.fn(() => Promise.resolve())
 
-const registersStore = createMockStore({ item: mockItem, getById, update })
+const registersStore = createMockStore({ item: mockItem, getById, update, upload, uploadFile: ref(null) })
 const countriesStore = createMockStore({
   countries: ref([
     { id: 1, isoNumeric: 840, nameRuOfficial: 'США' },
@@ -52,7 +54,7 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: (store) => {
-      if (store === registersStore) return { item: mockItem }
+      if (store === registersStore) return { item: mockItem, uploadFile: registersStore.uploadFile }
       if (store === countriesStore) return { countries: countriesStore.countries }
       if (store === companiesStore) return { companies: companiesStore.companies }
       return {}
@@ -99,7 +101,7 @@ describe('Register_EditDialog', () => {
 
   it('loads data and renders fields', async () => {
     const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" /></Suspense>',
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
@@ -118,7 +120,7 @@ describe('Register_EditDialog', () => {
 
   it('switches recipient field on customs procedure change', async () => {
     const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" /></Suspense>',
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
@@ -138,5 +140,29 @@ describe('Register_EditDialog', () => {
 
     recipientGroup = getGroupByLabel(wrapper, 'Получатель')
     expect(recipientGroup.find('select#theOtherCompanyId').exists()).toBe(true)
+  })
+
+  it('handles create mode with upload', async () => {
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } }
+    })
+    await resolveAll()
+
+    expect(getById).not.toHaveBeenCalled()
+    expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
+    expect(wrapper.find('button[type="submit"]').text()).toContain('Загрузить')
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: () => {} })
+    await resolveAll()
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
+    expect(router.push).toHaveBeenCalledWith('/registers')
   })
 })

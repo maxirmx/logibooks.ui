@@ -142,6 +142,16 @@ const headers = [
       </router-link>
     </div>
 
+    <div v-if="users?.length">
+      <v-text-field
+        v-model="authStore.users_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по любой информации о пользователе"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="users?.length"
@@ -187,15 +197,6 @@ const headers = [
         </template>
       </v-data-table>
       <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>
-      <div v-if="users?.length">
-        <v-text-field
-          v-model="authStore.users_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о пользователе"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
     <div v-if="users?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>

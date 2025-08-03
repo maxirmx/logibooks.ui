@@ -136,6 +136,16 @@ defineExpose({
       {{ alert.message }}
     </div>
 
+    <div v-if="parcelStatuses?.length">
+      <v-text-field
+        v-model="authStore.parcelstatuses_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по названию статуса"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="parcelStatuses?.length"
@@ -176,16 +186,6 @@ defineExpose({
       </v-data-table>
 
       <div v-if="!parcelStatuses?.length" class="text-center m-5">Список статусов посылок пуст</div>
-
-      <div v-if="parcelStatuses?.length">
-        <v-text-field
-          v-model="authStore.parcelstatuses_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по названию статуса"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

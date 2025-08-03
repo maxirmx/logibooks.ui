@@ -157,6 +157,16 @@ async function handleToggleOrderEnabled(order) {
       </a>
     </div>
 
+    <div v-if="orders?.length || feacnorders_search">
+      <v-text-field
+        v-model="authStore.feacnorders_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по документам"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="orders?.length"
@@ -199,19 +209,22 @@ async function handleToggleOrderEnabled(order) {
         </template>
       </v-data-table>
       <div v-if="!orders?.length && !loading" class="text-center m-5">Список документов пуст</div>
-
-      <div v-if="orders?.length || feacnorders_search">
-        <v-text-field
-          v-model="authStore.feacnorders_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по документам"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
-    <v-card class="mt-8">
+    <div class="mt-8"></div>
+
+
+    <div v-if="prefixItems?.length || feacnprefixes_search">
+      <v-text-field
+        v-model="authStore.feacnprefixes_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по кодам"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
+    <v-card>
       <v-data-table
         v-if="prefixItems?.length"
         v-model:items-per-page="feacnprefixes_per_page"
@@ -232,16 +245,6 @@ async function handleToggleOrderEnabled(order) {
         </template>
       </v-data-table>
       <div v-if="!prefixItems?.length && !loading" class="text-center m-5">Список кодов пуст</div>
-
-      <div v-if="prefixItems?.length || feacnprefixes_search">
-        <v-text-field
-          v-model="authStore.feacnprefixes_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по кодам"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

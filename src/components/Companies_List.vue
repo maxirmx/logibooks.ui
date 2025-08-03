@@ -155,6 +155,16 @@ defineExpose({
       </router-link>
     </div>
 
+    <div v-if="companies?.length">
+      <v-text-field
+        v-model="authStore.companies_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по любой информации о компании"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="companies?.length"
@@ -203,16 +213,6 @@ defineExpose({
       </v-data-table>
 
       <div v-if="!companies?.length" class="text-center m-5">Список компаний пуст</div>
-
-      <div v-if="companies?.length">
-        <v-text-field
-          v-model="authStore.companies_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о компании"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

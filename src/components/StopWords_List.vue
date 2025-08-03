@@ -139,6 +139,16 @@ defineExpose({
       </a>
     </div>
 
+    <div v-if="stopWords?.length">
+      <v-text-field
+        v-model="authStore.stopwords_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по стоп-словам и фразам"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="stopWords?.length"
@@ -182,16 +192,6 @@ defineExpose({
       </v-data-table>
 
       <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов и фраз пуст</div>
-
-      <div v-if="stopWords?.length">
-        <v-text-field
-          v-model="authStore.stopwords_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по стоп-словам и фразам"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

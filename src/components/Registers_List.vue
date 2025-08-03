@@ -382,6 +382,16 @@ const headers = [
       />
     </div>
 
+    <div v-if="items?.length || loading || registers_search">
+      <v-text-field
+        v-model="registers_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по любой информации о реестре"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table-server
         v-if="items?.length || loading"
@@ -551,15 +561,6 @@ const headers = [
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
-      <div v-if="items?.length || loading || registers_search">
-        <v-text-field
-          v-model="registers_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о реестре"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>

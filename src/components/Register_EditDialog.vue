@@ -34,6 +34,7 @@ const { companies } = storeToRefs(companiesStore)
 await registersStore.getById(props.id)
 
 const schema = Yup.object().shape({
+  dealNumber: Yup.string().nullable(),
   invoiceDate: Yup.date().nullable(),
   invoiceNumber: Yup.string().nullable(),
   transportationTypeId: Yup.number().nullable(),
@@ -130,8 +131,8 @@ function getCustomerName(customerId) {
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Номер сделки:</label>
-            <div class="readonly-field">{{ item.dealNumber }}</div>
+            <label for="dealNumber" class="label">Номер сделки:</label>
+            <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
           </div>
         </div>
 

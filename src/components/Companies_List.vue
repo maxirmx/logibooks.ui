@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,10 +23,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import { onMounted } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -192,23 +194,23 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать информацию о компании">
-            <template v-slot:activator="{ props }">
-              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            v-if="authStore.isAdmin"
+            :item="item"
+            icon="fa-solid fa-pen"
+            tooltip-text="Редактировать информацию о компании"
+            @click="openEditDialog"
+          />
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить информацию о компании">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteCompany(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            v-if="authStore.isAdmin"
+            :item="item"
+            icon="fa-solid fa-trash-can"
+            tooltip-text="Удалить информацию о компании"
+            @click="deleteCompany"
+          />
         </template>
       </v-data-table>
 

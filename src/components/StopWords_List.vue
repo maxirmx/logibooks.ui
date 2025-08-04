@@ -28,6 +28,7 @@ import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -167,23 +168,23 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать стоп-слово или фразу">
-            <template v-slot:activator="{ props }">
-              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            v-if="authStore.isAdmin"
+            :item="item"
+            icon="fa-solid fa-pen"
+            tooltip-text="Редактировать стоп-слово или фразу"
+            @click="openEditDialog"
+          />
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить стоп-слово или фразу">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteStopWord(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            v-if="authStore.isAdmin"
+            :item="item"
+            icon="fa-solid fa-trash-can"
+            tooltip-text="Удалить стоп-слово или фразу"
+            @click="deleteStopWord"
+          />
         </template>
 
         <template v-slot:[`item.matchTypeId`]="{ item }">

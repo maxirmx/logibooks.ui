@@ -28,6 +28,7 @@ import router from '@/router'
 
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
@@ -178,22 +179,20 @@ const headers = [
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать пользователя">
-            <template v-slot:activator="{ props }">
-              <button @click="userSettings(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-pen"
+            tooltip-text="Редактировать информацию о пользователе"
+            @click="userSettings"
+          />
         </template>
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip text="Удалить пользователя">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteUser(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-trash-can"
+            tooltip-text="Удалить информацию о пользователе"
+            @click="deleteUser"
+          />
         </template>
       </v-data-table>
       <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>

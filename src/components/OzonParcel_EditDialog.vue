@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -41,6 +42,7 @@ import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -173,12 +175,20 @@ async function generateXml() {
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
             <div class="action-buttons">
-              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить" :disabled="isSubmitting">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
-              </button>
-              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать" :disabled="isSubmitting">
-                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" />
-              </button>
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-clipboard-check"
+                tooltip-text="Проверить"
+                :disabled="isSubmitting"
+                @click="validateParcel"
+              />
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-check-circle"
+                tooltip-text="Согласовать"
+                :disabled="isSubmitting"
+                @click="approveParcel"
+              />
             </div>
           </div>
           <!-- Stopwords information when there are issues -->

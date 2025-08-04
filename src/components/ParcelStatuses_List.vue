@@ -28,6 +28,7 @@ import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -165,23 +166,23 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать статус посылки">
-            <template v-slot:activator="{ props }">
-              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            v-if="authStore.isAdmin"
+            :item="item"
+            icon="fa-solid fa-pen"
+            tooltip-text="Редактировать статус посылки"
+            @click="openEditDialog"
+          />
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить статус посылки">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteParcelStatus(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            v-if="authStore.isAdmin"
+            :item="item"
+            icon="fa-solid fa-trash-can"
+            tooltip-text="Удалить статус посылки"
+            @click="deleteParcelStatus"
+          />
         </template>
       </v-data-table>
 

@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -41,6 +42,7 @@ import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -87,8 +89,11 @@ const schema = Yup.object().shape({
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
 
-async function validateParcel() {
+async function validateParcel(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(item.value.id, values)
+    // Then validate the parcel
     await parcelsStore.validate(item.value.id)
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
@@ -98,8 +103,11 @@ async function validateParcel() {
   }
 }
 
-async function approveParcel() {
+async function approveParcel(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then approve the parcel
     await parcelsStore.approve(item.value.id)
     // Reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
@@ -139,8 +147,11 @@ function onSave(values) {
 }
 
 // Generate XML for this parcel
-async function generateXml() {
+async function generateXml(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(item.value.id, values)
+    // Then generate XML
     await parcelsStore.generate(props.id, item.value?.postingNumber)
   } catch (error) {
     console.error('Failed to generate XML:', error)
@@ -173,12 +184,20 @@ async function generateXml() {
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
             <div class="action-buttons">
-              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
-              </button>
-              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать">
-                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" />
-              </button>
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-clipboard-check"
+                tooltip-text="Сохранить и проверить"
+                :disabled="isSubmitting"
+                @click="() => validateParcel(values)"
+              />
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-check-circle"
+                tooltip-text="Сохранить и согласовать"
+                :disabled="isSubmitting"
+                @click="() => approveParcel(values)"
+              />
             </div>
           </div>
           <!-- Stopwords information when there are issues -->
@@ -188,12 +207,20 @@ async function generateXml() {
             </div>
           </div>
         </div>
-        <div class="form-row">
-          <OzonFormField name="tnVed" :errors="errors" />
-          <OzonFormField name="postingNumber" :errors="errors" />
-          <OzonFormField name="placesCount" type="number" step="1" :errors="errors" />
-          <OzonFormField name="article" :errors="errors" />
+      </div>
+      <!-- Product Name Section -->
+      <div class="form-section">
+        <div class="form-row-1">
           <OzonFormField name="productName" :errors="errors" />
+        </div>
+      </div>
+            <!-- Product Identification & Details Section -->
+      <div class="form-section">
+        <div class="form-row">
+          <OzonFormField name="tnVed" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="postingNumber" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="article" :errors="errors" :fullWidth="false" />
           <div class="form-group">
             <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
             <a
@@ -208,16 +235,16 @@ async function generateXml() {
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-          <OzonFormField name="countryCode" as="select" :errors="errors">
+          <OzonFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
               {{ country.nameRuOfficial }}
             </option>
           </OzonFormField>
-          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" />
-          <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" />
-          <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
-          <OzonFormField name="currency" :errors="errors" />
+          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
       </div>
 
@@ -225,10 +252,10 @@ async function generateXml() {
       <div class="form-section">
         <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
-          <OzonFormField name="lastName" :errors="errors" />
-          <OzonFormField name="firstName" :errors="errors" />
-          <OzonFormField name="patronymic" :errors="errors" />
-          <OzonFormField name="passportNumber" :errors="errors" />
+          <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
 
@@ -244,11 +271,11 @@ async function generateXml() {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
-        <button class="button primary" type="button" @click="generateXml()" :disabled="isSubmitting">
+        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>
-        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)">
+        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

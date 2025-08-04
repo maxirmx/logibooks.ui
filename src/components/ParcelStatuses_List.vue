@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,10 +23,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -60,8 +62,7 @@ function filterParcelStatuses(value, query, item) {
 
 // Table headers
 const headers = [
-  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
   { title: 'Название статуса', key: 'title', sortable: true }
 ]
 
@@ -136,6 +137,16 @@ defineExpose({
       {{ alert.message }}
     </div>
 
+    <div v-if="parcelStatuses?.length">
+      <v-text-field
+        v-model="authStore.parcelstatuses_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по названию статуса"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="parcelStatuses?.length"
@@ -154,38 +165,25 @@ defineExpose({
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать статус посылки">
-            <template v-slot:activator="{ props }">
-              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-
-        <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить статус посылки">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteParcelStatus(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+        <template v-slot:[`item.actions`]="{ item }">
+          <div v-if="authStore.isAdmin" class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать статус посылки"
+              @click="openEditDialog"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить статус посылки"
+              @click="deleteParcelStatus"
+            />
+          </div>
         </template>
       </v-data-table>
 
       <div v-if="!parcelStatuses?.length" class="text-center m-5">Список статусов посылок пуст</div>
-
-      <div v-if="parcelStatuses?.length">
-        <v-text-field
-          v-model="authStore.parcelstatuses_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по названию статуса"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

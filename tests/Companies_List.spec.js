@@ -303,7 +303,7 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="item.actions1" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template: '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }
@@ -322,7 +322,7 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="item.actions2" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template: '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }
@@ -352,7 +352,7 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="item.actions2" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template: '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }

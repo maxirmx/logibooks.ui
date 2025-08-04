@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import { Field } from 'vee-validate'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
@@ -33,12 +34,17 @@ defineProps({
   type: { type: String, default: 'text' },
   step: { type: String, default: null },
   as: { type: String, default: null },
-  errors: { type: Object, default: () => ({}) }
+  errors: { type: Object, default: () => ({}) },
+  fullWidth: { type: Boolean, default: true }
 })
 </script>
 <template>
-  <div class="form-group">
-    <label :for="name" class="label" :title="getFieldTooltip(name, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">
+  <div :class="fullWidth ? 'form-group-1' : 'form-group'">
+    <label 
+      :for="name" 
+      :class="fullWidth ? 'label-1' : 'label'" 
+      :title="getFieldTooltip(name, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)"
+    >
       {{ ozonRegisterColumnTitles[name] }}:
     </label>
     <Field 
@@ -46,8 +52,7 @@ defineProps({
       :name="name" 
       :id="name" 
       as="select"
-      class="form-control input" 
-      :class="{ 'is-invalid': errors && errors[name] }"
+      :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     >
       <slot />
     </Field>
@@ -57,8 +62,7 @@ defineProps({
       :id="name" 
       :type="type || 'text'"
       :step="step"
-      class="form-control input" 
-      :class="{ 'is-invalid': errors && errors[name] }"
+      :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     />
   </div>
 </template>

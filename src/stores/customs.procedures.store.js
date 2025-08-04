@@ -27,10 +27,10 @@ export const useCustomsProceduresStore = defineStore('customsProcedures', () => 
     }
   }
 
-  function ensureLoaded() {
+  async function ensureLoaded() {
     if (!initialized && procedures.value.length === 0 && !loading.value) {
       initialized = true
-      getAll()
+      await getAll()
     }
   }
 

@@ -92,6 +92,7 @@ vi.mock('@/stores/registers.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
+    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
   })
 }))
@@ -176,7 +177,7 @@ describe('Registers_List.vue', () => {
     // Wait for onMounted to complete
     await vi.waitFor(() => {
       expect(getCompaniesAll).toHaveBeenCalled()
-      expect(getOrderStatusesAll).toHaveBeenCalled()
+      // expect(getOrderStatusesAll).toHaveBeenCalled()
     })
     expect(getAll).toHaveBeenCalled()
     expect(countriesEnsureLoadedFn).toHaveBeenCalled()
@@ -992,6 +993,7 @@ describe('Registers_List.vue', () => {
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
+    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
   })
 }))

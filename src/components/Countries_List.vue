@@ -92,6 +92,16 @@ const headers = [
       </a>
     </div>
 
+    <div v-if="countries?.length || countries_search">
+      <v-text-field
+        v-model="authStore.countries_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по любой информации о стране"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="countries?.length"
@@ -110,16 +120,6 @@ const headers = [
       />
       <div v-if="!countries?.length && !loading" class="text-center m-5">
         Список стран пуст
-      </div>
-
-      <div v-if="countries?.length || countries_search">
-        <v-text-field
-          v-model="authStore.countries_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о стране"
-          variant="solo"
-          hide-details
-        />
       </div>
     </v-card>
     <div v-if="loading" class="text-center m-5">

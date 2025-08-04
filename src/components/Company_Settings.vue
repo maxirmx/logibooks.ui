@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -23,6 +22,8 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+<script setup>
 
 import { ref, computed } from 'vue'
 import router from '@/router'
@@ -233,7 +234,7 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
-      <div class="form-group">
+      <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />

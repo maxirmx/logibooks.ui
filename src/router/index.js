@@ -196,65 +196,78 @@ router.beforeEach(async (to) => {
   const alert = useAlertStore()
   alert.clear()
 
+  // Handle password recovery or registration completion
   if (auth.re_jwt) {
-    return auth
-      .re()
-      .then(() => {
-        return auth.re_tgt == 'register' ? '/users/' : '/user/edit/' + auth.user.id
-      })
-      .catch((error) => {
-        router.push('/login').then(() => {
-          alert.error(
-            auth.re_tgt === 'register'
-              ? 'Не удалось завершить регистрацию. '
-              : 'Не удалось восстановить пароль. ' + error
-          )
-        })
-      })
+    try {
+      await auth.re()
+      return auth.re_tgt == 'register' ? '/users/' : '/user/edit/' + auth.user.id
+    } catch (error) {
+      auth.logout()
+      auth.returnUrl = null
+      alert.error(
+        auth.re_tgt === 'register'
+          ? 'Не удалось завершить регистрацию. '
+          : 'Не удалось восстановить пароль. ' + error
+      )
+      return '/login'
+    }
   }
 
-  // (1) Route to public pages
+  // Public pages are always accessible
   if (publicPages.includes(to.path)) {
     return true
   }
 
-  // (2) No user and (implied) auth required
-  if (!auth.user) {
-    return routeToLogin(to, auth)
-  }
-
-  // (3) Check role-specific access using metadata
-  if (to.meta.requiresAdmin && !auth.isAdmin) {
-    return routeToLogin(to, auth)
-  }
-
-  if (to.meta.requiresLogist && !auth.isLogist) {
-    return routeToLogin(to, auth)
-  }
-
-  // (4) Handle login page access with role-priority redirect
+  // For login pages, check server availability and redirect if already logged in
   if (loginPages.includes(to.path)) {
     try {
       await auth.check()
+      // User is logged in and server is available
+      if (auth.user) {
+        // Handle permission redirects
+        if (auth.permissionRedirect) {
+          auth.permissionRedirect = false
+          return true
+        }
+        // Otherwise redirect to role-appropriate home
+        return getHomeRoute()
+      }
     } catch {
-      return true
+      // Server unavailable but it's OK for login page
     }
-    if (!auth.user) {
-      return true
-    }
-
-    // If this is a permission redirect, don't auto-redirect based on role
-    if (auth.permissionRedirect) {
-      auth.permissionRedirect = false
-      return true
-    }
-
-    // No need to login, redirect based on role priority
-    return getHomeRoute()
+    // Allow access to login page if not logged in or server check failed
+    return true
   }
 
-  // (5) Allow access to other routes
-  return true
+  // For all other routes, verify authentication and permissions
+  try {
+    // Verify server availability and session validity
+    await auth.check()
+    
+    // If no user after check, route to login
+    if (!auth.user) {
+      return routeToLogin(to, auth)
+    }
+
+    // Check role-specific permissions
+    if (to.meta.requiresAdmin && !auth.isAdmin) {
+      return routeToLogin(to, auth)
+    }
+
+    if (to.meta.requiresLogist && !auth.isLogist) {
+      return routeToLogin(to, auth)
+    }
+
+    // User is authenticated and has proper permissions
+    return true
+  } catch (error) {
+    // Server unavailable or other error
+    console.error('Authentication check failed:', error)
+    auth.logout()
+    auth.returnUrl = to.fullPath
+    alert.error('Сервер недоступен. Пожалуйста, попробуйте позже.')
+    return '/login'
+  }
 })
 
 export default router

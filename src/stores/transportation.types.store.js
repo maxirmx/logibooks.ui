@@ -26,10 +26,10 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
       loading.value = false
     }
   }
-  function ensureLoaded() {
+  async function ensureLoaded() {
     if (!initialized && types.value.length === 0 && !loading.value) {
       initialized = true
-      getAll()
+      await getAll()
     }
   }
 

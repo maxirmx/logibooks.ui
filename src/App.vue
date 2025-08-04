@@ -158,7 +158,7 @@ function getUserName() {
 .logo {
   margin: 1rem;
   display: block;
-  width: 90%;
+  width: 75%;
 }
 
 .version-info {
@@ -170,7 +170,7 @@ function getUserName() {
 
 nav {
   width: 100%;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   text-align: left;
   margin-left: 1rem;
   font-size: 1rem;

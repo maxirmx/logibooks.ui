@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,10 +23,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import router from '@/router'
 
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
@@ -119,8 +121,7 @@ async function deleteUser(item) {
 }
 
 const headers = [
-  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
   { title: 'Пользователь', align: 'start', key: 'id' },
   { title: 'E-mail', align: 'start', key: 'email' },
   { title: 'Права', align: 'start', key: 'credentials', sortable: false }
@@ -140,6 +141,16 @@ const headers = [
           class="link"
         />&nbsp;&nbsp;&nbsp;Зарегистрировать пользователя
       </router-link>
+    </div>
+
+    <div v-if="users?.length">
+      <v-text-field
+        v-model="authStore.users_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по любой информации о пользователе"
+        variant="solo"
+        hide-details
+      />
     </div>
 
     <v-card>
@@ -167,35 +178,14 @@ const headers = [
           <span v-html="getCredentials(item)"></span>
         </template>
 
-        <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать пользователя">
-            <template v-slot:activator="{ props }">
-              <button @click="userSettings(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip text="Удалить пользователя">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteUser(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+        <template v-slot:[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" />
+          </div>
         </template>
       </v-data-table>
       <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>
-      <div v-if="users?.length">
-        <v-text-field
-          v-model="authStore.users_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о пользователе"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
     <div v-if="users?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>

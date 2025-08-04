@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -41,6 +42,7 @@ import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/or
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import WbrFormField from './WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -70,6 +72,8 @@ watch(() => item.value?.statusId, (newStatusId) => {
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
+const isDescriptionVisible = ref(false)
+
 statusStore.ensureStatusesLoaded()
 parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
@@ -87,8 +91,11 @@ const schema = Yup.object().shape({
 })
 
 
-async function validateParcel() {
+async function validateParcel(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(item.value.id, values)
+    // Then validate the parcel
     await parcelsStore.validate(item.value.id)
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
@@ -99,8 +106,11 @@ async function validateParcel() {
 }
 
 // Approve/согласовать the parcel
-async function approveParcel() {
+async function approveParcel(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then approve the parcel
     await parcelsStore.approve(item.value.id)
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
@@ -140,10 +150,13 @@ function onSave(values) {
 }
 
 // Generate XML for this parcel
-async function generateXml() {
+async function generateXml(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(item.value.id, values)
+    // Then generate XML
     const filename = String(item.value?.shk || '').padStart(20, '0')
-    await parcelsStore.generate(props.id, filename)
+    await parcelsStore.generate(item.value.id, filename)
   } catch (error) {
     console.error('Failed to generate XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
@@ -175,12 +188,20 @@ async function generateXml() {
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
             <div class="action-buttons">
-              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
-              </button>
-              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать">
-                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" />
-              </button>
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-clipboard-check"
+                tooltip-text="Сохранить и проверить"
+                :disabled="isSubmitting"
+                @click="() => validateParcel(values)"
+              />
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-check-circle"
+                tooltip-text="Сохранить и согласовать"
+                :disabled="isSubmitting"
+                @click="() => approveParcel(values)"
+              />
             </div>
           </div>
           <!-- Stopwords information when there are issues -->
@@ -192,12 +213,37 @@ async function generateXml() {
         </div>
       </div>
 
+      <!-- Product Name and description Section -->
+      <div class="form-section">
+        <div class="form-row-1 product-name-row">
+          <ActionButton
+            :item="item"
+            :icon="isDescriptionVisible ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
+            @click="isDescriptionVisible = !isDescriptionVisible"
+          />
+          <WbrFormField name="productName" :errors="errors" />
+        </div>
+        <div class="form-row-0" v-show="isDescriptionVisible">
+          <div class="form-group-0">
+            <label for="description" class="label-0">Описание:</label>
+            <Field
+              as="textarea"
+              name="description"
+              id="description"
+              rows="5"
+              class="form-control input-0"
+              :class="{ 'is-invalid': errors && errors.description }"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
-          <WbrFormField name="tnVed" :errors="errors" />
-          <WbrFormField name="shk" :errors="errors" />
-          <WbrFormField name="productName" :errors="errors" />
+          <WbrFormField name="tnVed" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="shk" :errors="errors" :fullWidth="false" />
           <div class="form-group">
             <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
             <a
@@ -212,20 +258,20 @@ async function generateXml() {
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-          <WbrFormField name="countryCode" as="select" :errors="errors">
+          <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
               {{ country.nameRuOfficial }}
             </option>
           </WbrFormField>
-          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" />
-          <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" />
-          <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
-          <WbrFormField name="currency" :errors="errors" />
+          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <WbrFormField name="recipientName" :errors="errors" />
-          <WbrFormField name="passportNumber" :errors="errors" />
+          <WbrFormField name="recipientName" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
 
@@ -241,11 +287,11 @@ async function generateXml() {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
-        <button class="button primary" type="button" @click="generateXml()" :disabled="isSubmitting">
+        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>
-        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)">
+        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

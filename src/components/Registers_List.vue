@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -39,6 +40,8 @@ import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
+import EditableCell from '@/components/EditableCell.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const validationState = reactive({
   show: false,
@@ -57,6 +60,7 @@ const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
+parcelStatusesStore.ensureStatusesLoaded()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -173,7 +177,6 @@ function getCustomerName(customerId) {
 // Load companies and order statuses on component mount
 onMounted(async () => {
   await companiesStore.getAll()
-  await parcelStatusesStore.getAll()
 })
 
 onUnmounted(() => {
@@ -322,15 +325,8 @@ function formatDate(dateStr) {
 }
 
 const headers = [
-  { title: '', key: 'actions1', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions2', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions4', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions6', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions7', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions', sortable: false, align: 'center', width: '280px' },
   { title: 'Номер сделки', key: 'dealNumber', align: 'start' },
-  // { title: 'Файл', key: 'fileName', align: 'start' },
   { title: 'Дата загрузки', key: 'date', align: 'start' },
   { title: 'Отправитель', key: 'senderId', align: 'start' },
   { title: 'Страна отправления', key: 'origCountryCode', align: 'start' },
@@ -382,6 +378,16 @@ const headers = [
       />
     </div>
 
+    <div v-if="items?.length || loading || registers_search">
+      <v-text-field
+        v-model="registers_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по любой информации о реестре"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table-server
         v-if="items?.length || loading"
@@ -399,335 +405,61 @@ const headers = [
         class="elevation-1 interlaced-table"
       >
         <template #[`item.dealNumber`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="open-parcels-link clickable-cell"
-                v-bind="props"
-                @click="openParcels(item)"
-              >
-                {{ item.dealNumber }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-list" class="mr-1" />Открыть список посылок
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="item.dealNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
         </template>
         <template #[`item.senderId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ getCustomerName(item.senderId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="getCustomerName(item.senderId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.recipientId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ getCustomerName(item.recipientId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="getCustomerName(item.recipientId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.destCountryCode`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ countriesStore.getCountryShortName(item.destCountryCode) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="countriesStore.getCountryShortName(item.destCountryCode)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.origCountryCode`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ countriesStore.getCountryShortName(item.origCountryCode) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="countriesStore.getCountryShortName(item.origCountryCode)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.date`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ formatDate(item.date) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="formatDate(item.date)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="open-parcels-link clickable-cell"
-                v-bind="props"
-                @click="openParcels(item)"
-              >
-                {{ item.invoiceNumber }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-list" class="mr-1" />Открыть список посылок
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="item.invoiceNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
         </template>
         <template #[`item.invoiceDate`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ formatDate(item.invoiceDate) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="formatDate(item.invoiceDate)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ transportationTypesStore.getName(item.transportationTypeId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="transportationTypesStore.getName(item.transportationTypeId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.customsProcedureId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ customsProceduresStore.getName(item.customsProcedureId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="customsProceduresStore.getName(item.customsProcedureId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.ordersTotal`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ item.ordersTotal }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell :item="item" :display-value="item.ordersTotal" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
-        <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Открыть список посылок">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="openParcels(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions2`]="{ item }">
-          <div class="bulk-status-container">
-            <!-- Edit mode with dropdown and save/cancel buttons -->
-            <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
-              <v-select
-                v-model="bulkStatusState[item.id].selectedStatusId"
-                :items="parcelStatusesStore.parcelStatuses"
-                item-title="title"
-                item-value="id"
-                label="Выберите статус"
-                variant="outlined"
-                density="compact"
-                hide-details
-                hide-no-data
-                :disabled="loading"
-                style="min-width: 150px; max-width: 200px"
-              />
 
-              <!-- Save button (checkmark) -->
-              <v-tooltip text="Применить статус">
-                <template v-slot:activator="{ props }">
-                  <button
-                    type="button"
-                    @click="
-                      applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)
-                    "
-                    :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
-                    class="anti-btn"
-                    v-bind="props"
-                  >
-                    <font-awesome-icon size="1x" icon="fa-solid fa-check" class="anti-btn" />
-                  </button>
-                </template>
-              </v-tooltip>
-
-              <!-- Cancel button (X) -->
-              <v-tooltip text="Отменить">
-                <template v-slot:activator="{ props }">
-                  <button
-                    type="button"
-                    @click="cancelStatusChange(item.id)"
-                    :disabled="loading"
-                    class="anti-btn"
-                    v-bind="props"
-                  >
-                    <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="anti-btn" />
-                  </button>
-                </template>
-              </v-tooltip>
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" />
+            
+            <div class="bulk-status-inline">
+              <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector-inline">
+                <v-select v-model="bulkStatusState[item.id].selectedStatusId" :items="parcelStatusesStore.parcelStatuses" item-title="title" item-value="id" placeholder="Статус" variant="outlined" density="compact" hide-details hide-no-data :disabled="loading" />
+                <ActionButton :item="item" icon="fa-solid fa-check" tooltip-text="Применить статус" :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId" @click="() => applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)" />
+                <ActionButton :item="item" icon="fa-solid fa-xmark" tooltip-text="Отменить" :disabled="loading" @click="() => cancelStatusChange(item.id)" />
+              </div>
+              <ActionButton v-else :item="item" icon="fa-solid fa-pen-to-square" tooltip-text="Изменить статус всех посылок в реестре" :disabled="loading" @click="() => bulkChangeStatus(item.id)" />
             </div>
 
-            <!-- Default mode with pen-to-square icon -->
-            <v-tooltip v-else text="Изменить статус всех посылок в реестре">
-              <template v-slot:activator="{ props }">
-                <button
-                  type="button"
-                  @click="bulkChangeStatus(item.id)"
-                  class="anti-btn"
-                  :disabled="loading"
-                  v-bind="props"
-                >
-                  <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />
-                </button>
-              </template>
-            </v-tooltip>
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладные для всех посылок в реестре" @click="exportAllXml" />
+            <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" />
           </div>
-        </template>
-        <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Выгрузить накладные для всех посылок в реестре">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions4`]="{ item }">
-          <v-tooltip text="Проверить реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="validateRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions5`]="{ item }">
-          <v-tooltip text="Удалить реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="deleteRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions6`]="{ item }">
-          <v-tooltip text="Редактировать реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="editRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions7`]="{ item }">
-          <v-tooltip text="Экспортировать реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="downloadRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
-      <div v-if="items?.length || loading || registers_search">
-        <v-text-field
-          v-model="registers_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по любой информации о реестре"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>

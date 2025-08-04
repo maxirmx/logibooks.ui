@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
 
 import { watch, ref, computed, onMounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -38,10 +38,12 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
+import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
-import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import EditableCell from '@/components/EditableCell.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -59,7 +61,7 @@ const stopWordsStore = useStopWordsStore()
 await stopWordsStore.getAll()
 
 const feacnCodesStore = useFeacnCodesStore()
-await feacnCodesStore.ensureOrdersLoaded()
+feacnCodesStore.ensureOrdersLoaded()
 
 const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()
@@ -75,6 +77,9 @@ const {
   parcels_status,
   parcels_tnved
 } = storeToRefs(authStore)
+
+parcels_status.value = null
+parcels_tnved.value = ''
 
 const statuses = ref([])
 const registerFileName = ref('')
@@ -103,15 +108,7 @@ async function fetchRegister() {
 }
 
 function loadOrders() {
-  parcelsStore.getAll(
-    props.registerId,
-    parcels_status.value ? Number(parcels_status.value) : null,
-    parcels_tnved.value || null,
-    parcels_page.value,
-    parcels_per_page.value,
-    parcels_sort_by.value?.[0]?.key || 'id',
-    parcels_sort_by.value?.[0]?.order || 'asc'
-  )
+  parcelsStore.getAll(props.registerId)
 }
 
 watch(
@@ -135,29 +132,26 @@ const statusOptions = computed(() => [
 const headers = computed(() => {
   return [
     // Actions - Always first for easy access
-    { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
-    { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
-    { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
-    { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
 
     // Order Identification & Status - Key identifiers and current state
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.article, key: 'article', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', width: '200px' },
-    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.currency, key: 'currency', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', align: 'start', width: '150px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
+    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' }
   ]
 })
 
@@ -254,59 +248,33 @@ function getGenericTemplateHeaders() {
           density="compact"
           fixed-header
           hide-default-footer
-          class="elevation-1 single-line-table interlaced-table"
+          class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
           style="min-width: fit-content;"
         >
-        <!-- Add tooltip templates for header cells -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
-          <div
-            class="truncated-cell"
-            :title="getFieldTooltip(header.key, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)"
-          >
-            {{ column.title || '' }}
-          </div>
-        </template>
-
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <div
-            class="truncated-cell"
-            :title="item[header.key] || ''"
-          >
-            {{ item[header.key] || '' }}
-          </div>
+          <EditableCell :item="item" :display-value="item[header.key] || ''" cell-class="truncated-cell" data-test="editable-cell" @click="editParcel" />
         </template>
 
         <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
-          <div
-            class="truncated-cell status-cell"
-            :title="parcelStatusStore.getStatusTitle(item.statusId)"
-          >
-            {{ parcelStatusStore.getStatusTitle(item.statusId) }}
-          </div>
+          <EditableCell :item="item" :display-value="parcelStatusStore.getStatusTitle(item.statusId)" cell-class="truncated-cell status-cell" data-test="editable-cell" @click="editParcel" />
         </template>
 
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
-          <div
-            class="truncated-cell status-cell"
-            :class="getCheckStatusClass(item.checkStatusId)"
-            :title="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
-          >
-            {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
-          </div>
+          <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->
         <template #[`item.productLink`]="{ item }">
-          <div class="truncated-cell">
+          <div class="product-link-in-list">
             <a
               v-if="item.productLink"
               :href="ensureHttps(item.productLink)"
               target="_blank"
               rel="noopener noreferrer"
-              class="product-link"
+              class="product-link-in-list"
               :title="ensureHttps(item.productLink)"
             >
               {{ ensureHttps(item.productLink) }}
@@ -315,45 +283,16 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <div class="truncated-cell" :title="item.countryCode ">
-            {{ countriesStore.getCountryAlpha2(item.countryCode) }}
+          <EditableCell :item="item" :display-value="countriesStore.getCountryAlpha2(item.countryCode)" cell-class="truncated-cell" data-test="editable-cell" :tooltip-text="countriesStore.getCountryShortName(item.countryCode)" @click="editParcel" />
+        </template>
+
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
           </div>
-        </template>
-        <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать информацию о посылке">
-            <template v-slot:activator="{ props }">
-              <button @click="editParcel(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions2`]="{ item }">
-          <v-tooltip text="Выгрузить накладную для посылки">
-            <template v-slot:activator="{ props }">
-              <button @click="exportParcelXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Проверить посылку">
-            <template v-slot:activator="{ props }">
-              <button @click="validateParcel(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-        <template #[`item.actions4`]="{ item }">
-          <v-tooltip text="Согласовать">
-            <template v-slot:activator="{ props }">
-              <button @click="approveParcel(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
         </template>
       </v-data-table-server>
     </div>

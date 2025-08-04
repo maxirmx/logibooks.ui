@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,10 +23,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+<script setup>
+
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -62,8 +64,7 @@ function filterStopWords(value, query, item) {
 
 // Table headers
 const headers = [
-  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
 ]
@@ -139,6 +140,16 @@ defineExpose({
       </a>
     </div>
 
+    <div v-if="stopWords?.length">
+      <v-text-field
+        v-model="authStore.stopwords_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по стоп-словам и фразам"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="stopWords?.length"
@@ -156,24 +167,21 @@ defineExpose({
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template v-slot:[`item.actions1`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Редактировать стоп-слово или фразу">
-            <template v-slot:activator="{ props }">
-              <button @click="openEditDialog(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
-        </template>
-
-        <template v-slot:[`item.actions2`]="{ item }">
-          <v-tooltip v-if="authStore.isAdmin" text="Удалить стоп-слово или фразу">
-            <template v-slot:activator="{ props }">
-              <button @click="deleteStopWord(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+        <template v-slot:[`item.actions`]="{ item }">
+          <div v-if="authStore.isAdmin" class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать стоп-слово или фразу"
+              @click="openEditDialog"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить стоп-слово или фразу"
+              @click="deleteStopWord"
+            />
+          </div>
         </template>
 
         <template v-slot:[`item.matchTypeId`]="{ item }">
@@ -182,16 +190,6 @@ defineExpose({
       </v-data-table>
 
       <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов и фраз пуст</div>
-
-      <div v-if="stopWords?.length">
-        <v-text-field
-          v-model="authStore.stopwords_search"
-          :append-inner-icon="mdiMagnify"
-          label="Поиск по стоп-словам и фразам"
-          variant="solo"
-          hide-details
-        />
-      </div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

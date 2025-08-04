@@ -325,11 +325,12 @@ describe('OzonParcel_EditDialog', () => {
   })
 
   describe('validateParcel function', () => {
-    it('calls validate and reloads data on success', async () => {
+    it('calls update then validate and reloads data on success', async () => {
       const validateBtn = wrapper.find('.validate-btn')
       if (validateBtn.exists()) {
         await validateBtn.trigger('click')
         
+        expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
         expect(mockOrdersStore.validate).toHaveBeenCalledWith(1)
         expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
       }
@@ -364,11 +365,12 @@ describe('OzonParcel_EditDialog', () => {
   })
 
   describe('approveParcel function', () => {
-    it('calls approve and reloads data on success', async () => {
+    it('calls update then approve and reloads data on success', async () => {
       const approveBtn = wrapper.find('.approve-btn')
       if (approveBtn.exists()) {
         await approveBtn.trigger('click')
         
+        expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
         expect(mockOrdersStore.approve).toHaveBeenCalledWith(1)
         expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
       }
@@ -466,6 +468,14 @@ describe('OzonParcel_EditDialog', () => {
   })
 
   describe('generateXml function', () => {
+    it('calls update then generate and handles success', async () => {
+      const invoiceBtn = wrapper.findAll('button').find(btn => btn.text().includes('Накладная'))
+      await invoiceBtn.trigger('click')
+      
+      expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+      expect(mockOrdersStore.generate).toHaveBeenCalledWith(1, 'POSTING123')
+    })
+
     it('handles generateXml errors', async () => {
       const error = new Error('Generation failed')
       error.response = { data: { message: 'Custom generation error' } }

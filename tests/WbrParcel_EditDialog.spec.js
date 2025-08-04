@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -237,6 +238,27 @@ describe('WbrParcel_EditDialog', () => {
     })
   })
 
+  it('toggles description visibility with action button', async () => {
+    const parcelComponent = wrapper.findComponent(ParcelEditDialog)
+    expect(parcelComponent.vm.isDescriptionVisible).toBe(false)
+
+    let toggleBtn = wrapper
+      .findAllComponents(ActionButton)
+      .find(btn => btn.props('tooltipText')?.includes('описание'))
+    expect(toggleBtn).toBeTruthy()
+    expect(toggleBtn.props('icon')).toBe('fa-solid fa-arrow-down')
+
+    await toggleBtn.vm.$emit('click')
+    await nextTick()
+
+    expect(parcelComponent.vm.isDescriptionVisible).toBe(true)
+
+    toggleBtn = wrapper
+      .findAllComponents(ActionButton)
+      .find(btn => btn.props('tooltipText')?.includes('описание'))
+    expect(toggleBtn.props('icon')).toBe('fa-solid fa-arrow-up')
+  })
+
   it('renders all required buttons', () => {
     const buttons = wrapper.findAll('button')
     expect(buttons.length).toBeGreaterThanOrEqual(4) // Save, cancel, next issue, invoice
@@ -316,11 +338,12 @@ describe('WbrParcel_EditDialog', () => {
   })
 
   describe('validateParcel function', () => {
-    it('calls validate and reloads data on success', async () => {
+    it('calls update then validate and reloads data on success', async () => {
       const validateBtn = wrapper.find('.validate-btn')
       if (validateBtn.exists()) {
         await validateBtn.trigger('click')
         
+        expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
         expect(mockOrdersStore.validate).toHaveBeenCalledWith(1)
         expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
       }
@@ -355,11 +378,12 @@ describe('WbrParcel_EditDialog', () => {
   })
 
   describe('approveParcel function', () => {
-    it('calls approve and reloads data on success', async () => {
+    it('calls update then approve and reloads data on success', async () => {
       const approveBtn = wrapper.find('.approve-btn')
       if (approveBtn.exists()) {
         await approveBtn.trigger('click')
         
+        expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
         expect(mockOrdersStore.approve).toHaveBeenCalledWith(1)
         expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
       }
@@ -455,6 +479,14 @@ describe('WbrParcel_EditDialog', () => {
   })
 
   describe('generateXml function', () => {
+    it('calls update then generate and handles success', async () => {
+      const invoiceBtn = wrapper.findAll('button').find(btn => btn.text().includes('Накладная'))
+      await invoiceBtn.trigger('click')
+      
+      expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+      expect(mockOrdersStore.generate).toHaveBeenCalledWith(1, '0000000000000TEST123')
+    })
+
     it('handles generateXml errors', async () => {
       const error = new Error('Generation failed')
       error.response = { data: { message: 'Custom generation error' } }

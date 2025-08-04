@@ -94,7 +94,7 @@ const schema = Yup.object().shape({
 async function validateParcel(values) {
   try {
     // First update the parcel with current form values
-    await parcelsStore.update(props.id, values)
+    await parcelsStore.update(item.value.id, values)
     // Then validate the parcel
     await parcelsStore.validate(item.value.id)
     // Optionally reload the order data to reflect any changes

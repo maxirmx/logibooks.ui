@@ -188,7 +188,7 @@ describe('router guards', () => {
     
     // Mock re() to resolve successfully and clear re_jwt as the real implementation does
     reMock.mockImplementationOnce(async () => {
-      authStore.re_jwt = null  // This is what the real re() method does on line 99
+      authStore.re_jwt = null  // This is what the real re() method does in the implementation
       return Promise.resolve()
     })
     

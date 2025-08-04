@@ -260,4 +260,147 @@ describe('OzonFormField', () => {
 
     expect(wrapper.find('select').attributes('step')).toBeUndefined()
   })
+
+  describe('fullWidth prop', () => {
+    it('uses full-width classes when fullWidth is true (default)', () => {
+      const wrapper = mount(OzonFormField, {
+        props: {
+          name: 'productName',
+          errors: {}
+        },
+        global: {
+          plugins: [createPinia()],
+          stubs: {
+            Field: {
+              template: '<input :name="name" :class="classes" />',
+              props: ['name', 'class'],
+              computed: {
+                classes() {
+                  return this.class
+                }
+              }
+            }
+          }
+        }
+      })
+
+      expect(wrapper.find('.form-group-1').exists()).toBe(true)
+      expect(wrapper.find('.label-1').exists()).toBe(true)
+      expect(wrapper.find('input').classes()).toContain('input-1')
+    })
+
+    it('uses full-width classes when fullWidth is explicitly true', () => {
+      const wrapper = mount(OzonFormField, {
+        props: {
+          name: 'productName',
+          fullWidth: true,
+          errors: {}
+        },
+        global: {
+          plugins: [createPinia()],
+          stubs: {
+            Field: {
+              template: '<input :name="name" :class="classes" />',
+              props: ['name', 'class'],
+              computed: {
+                classes() {
+                  return this.class
+                }
+              }
+            }
+          }
+        }
+      })
+
+      expect(wrapper.find('.form-group-1').exists()).toBe(true)
+      expect(wrapper.find('.label-1').exists()).toBe(true)
+      expect(wrapper.find('input').classes()).toContain('input-1')
+    })
+
+    it('uses standard classes when fullWidth is false', () => {
+      const wrapper = mount(OzonFormField, {
+        props: {
+          name: 'tnVed',
+          fullWidth: false,
+          errors: {}
+        },
+        global: {
+          plugins: [createPinia()],
+          stubs: {
+            Field: {
+              template: '<input :name="name" :class="classes" />',
+              props: ['name', 'class'],
+              computed: {
+                classes() {
+                  return this.class
+                }
+              }
+            }
+          }
+        }
+      })
+
+      expect(wrapper.find('.form-group').exists()).toBe(true)
+      expect(wrapper.find('.label').exists()).toBe(true)
+      expect(wrapper.find('input').classes()).toContain('input')
+      expect(wrapper.find('input').classes()).not.toContain('input-1')
+    })
+
+    it('applies fullWidth classes to select fields correctly', () => {
+      const wrapper = mount(OzonFormField, {
+        props: {
+          name: 'countryCode',
+          as: 'select',
+          fullWidth: false,
+          errors: {}
+        },
+        global: {
+          plugins: [createPinia()],
+          stubs: {
+            Field: {
+              template: '<select :name="name" :class="classes"><slot /></select>',
+              props: ['name', 'as', 'class'],
+              computed: {
+                classes() {
+                  return this.class
+                }
+              }
+            }
+          }
+        }
+      })
+
+      expect(wrapper.find('.form-group').exists()).toBe(true)
+      expect(wrapper.find('.label').exists()).toBe(true)
+      expect(wrapper.find('select').classes()).toContain('input')
+      expect(wrapper.find('select').classes()).not.toContain('input-1')
+    })
+
+    it('maintains validation error styling with different fullWidth values', () => {
+      const wrapper = mount(OzonFormField, {
+        props: {
+          name: 'tnVed',
+          fullWidth: false,
+          errors: { tnVed: 'Required field' }
+        },
+        global: {
+          plugins: [createPinia()],
+          stubs: {
+            Field: {
+              template: '<input :name="name" :class="classes" />',
+              props: ['name', 'class'],
+              computed: {
+                classes() {
+                  return this.class
+                }
+              }
+            }
+          }
+        }
+      })
+
+      expect(wrapper.find('input').classes()).toContain('is-invalid')
+      expect(wrapper.find('input').classes()).toContain('input')
+    })
+  })
 })

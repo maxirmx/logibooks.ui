@@ -33,12 +33,17 @@ defineProps({
   type: { type: String, default: 'text' },
   step: { type: String, default: null },
   as: { type: String, default: null },
-  errors: { type: Object, default: () => ({}) }
+  errors: { type: Object, default: () => ({}) },
+  fullWidth: { type: Boolean, default: true }
 })
 </script>
 <template>
-  <div class="form-group">
-    <label :for="name" class="label" :title="getFieldTooltip(name, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">
+  <div :class="fullWidth ? 'form-group-1' : 'form-group'">
+    <label 
+      :for="name" 
+      :class="fullWidth ? 'label-1' : 'label'" 
+      :title="getFieldTooltip(name, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)"
+    >
       {{ ozonRegisterColumnTitles[name] }}:
     </label>
     <Field 
@@ -46,8 +51,7 @@ defineProps({
       :name="name" 
       :id="name" 
       as="select"
-      class="form-control input" 
-      :class="{ 'is-invalid': errors && errors[name] }"
+      :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     >
       <slot />
     </Field>
@@ -57,8 +61,7 @@ defineProps({
       :id="name" 
       :type="type || 'text'"
       :step="step"
-      class="form-control input" 
-      :class="{ 'is-invalid': errors && errors[name] }"
+      :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     />
   </div>
 </template>

@@ -43,6 +43,7 @@ import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js
 import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -329,40 +330,36 @@ function getGenericTemplateHeaders() {
           />
         </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Редактировать информацию о посылке">
-            <template v-slot:activator="{ props }">
-              <button @click="editParcel(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-pen"
+            tooltip-text="Редактировать информацию о посылке"
+            @click="editParcel"
+          />
         </template>
         <template #[`item.actions2`]="{ item }">
-          <v-tooltip text="Выгрузить накладную для посылки">
-            <template v-slot:activator="{ props }">
-              <button @click="exportParcelXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-upload"
+            tooltip-text="Выгрузить накладную для посылки"
+            @click="exportParcelXml"
+          />
         </template>
         <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Проверить посылку">
-            <template v-slot:activator="{ props }">
-              <button @click="validateParcel(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-clipboard-check"
+            tooltip-text="Проверить посылку"
+            @click="validateParcel"
+          />
         </template>
         <template #[`item.actions4`]="{ item }">
-          <v-tooltip text="Согласовать">
-            <template v-slot:activator="{ props }">
-              <button @click="approveParcel(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-check-circle"
+            tooltip-text="Согласовать"
+            @click="approveParcel"
+          />
         </template>
       </v-data-table-server>
     </div>

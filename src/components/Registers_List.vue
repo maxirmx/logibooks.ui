@@ -40,6 +40,7 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
 import EditableCell from '@/components/EditableCell.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const validationState = reactive({
   show: false,
@@ -499,13 +500,12 @@ const headers = [
           />
         </template>
         <template #[`item.actions1`]="{ item }">
-          <v-tooltip text="Открыть список посылок">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="openParcels(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-list" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-list"
+            tooltip-text="Открыть список посылок"
+            @click="openParcels"
+          />
         </template>
         <template #[`item.actions2`]="{ item }">
           <div class="bulk-status-container">
@@ -526,98 +526,74 @@ const headers = [
               />
 
               <!-- Save button (checkmark) -->
-              <v-tooltip text="Применить статус">
-                <template v-slot:activator="{ props }">
-                  <button
-                    type="button"
-                    @click="
-                      applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)
-                    "
-                    :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
-                    class="anti-btn"
-                    v-bind="props"
-                  >
-                    <font-awesome-icon size="1x" icon="fa-solid fa-check" class="anti-btn" />
-                  </button>
-                </template>
-              </v-tooltip>
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-check"
+                tooltip-text="Применить статус"
+                :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
+                @click="() => applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)"
+              />
 
               <!-- Cancel button (X) -->
-              <v-tooltip text="Отменить">
-                <template v-slot:activator="{ props }">
-                  <button
-                    type="button"
-                    @click="cancelStatusChange(item.id)"
-                    :disabled="loading"
-                    class="anti-btn"
-                    v-bind="props"
-                  >
-                    <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="anti-btn" />
-                  </button>
-                </template>
-              </v-tooltip>
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-xmark"
+                tooltip-text="Отменить"
+                :disabled="loading"
+                @click="() => cancelStatusChange(item.id)"
+              />
             </div>
 
             <!-- Default mode with pen-to-square icon -->
-            <v-tooltip v-else text="Изменить статус всех посылок в реестре">
-              <template v-slot:activator="{ props }">
-                <button
-                  type="button"
-                  @click="bulkChangeStatus(item.id)"
-                  class="anti-btn"
-                  :disabled="loading"
-                  v-bind="props"
-                >
-                  <font-awesome-icon size="1x" icon="fa-solid fa-pen-to-square" class="anti-btn" />
-                </button>
-              </template>
-            </v-tooltip>
+            <ActionButton
+              v-else
+              :item="item"
+              icon="fa-solid fa-pen-to-square"
+              tooltip-text="Изменить статус всех посылок в реестре"
+              :disabled="loading"
+              @click="() => bulkChangeStatus(item.id)"
+            />
           </div>
         </template>
         <template #[`item.actions3`]="{ item }">
-          <v-tooltip text="Выгрузить накладные для всех посылок в реестре">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="exportAllXml(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-upload"
+            tooltip-text="Выгрузить накладные для всех посылок в реестре"
+            @click="exportAllXml"
+          />
         </template>
         <template #[`item.actions4`]="{ item }">
-          <v-tooltip text="Проверить реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="validateRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-clipboard-check"
+            tooltip-text="Проверить реестр"
+            @click="validateRegister"
+          />
         </template>
         <template #[`item.actions5`]="{ item }">
-          <v-tooltip text="Удалить реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="deleteRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-trash-can"
+            tooltip-text="Удалить реестр"
+            @click="deleteRegister"
+          />
         </template>
         <template #[`item.actions6`]="{ item }">
-          <v-tooltip text="Редактировать реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="editRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-pen"
+            tooltip-text="Редактировать реестр"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.actions7`]="{ item }">
-          <v-tooltip text="Экспортировать реестр">
-            <template v-slot:activator="{ props }">
-              <button type="button" @click="downloadRegister(item)" class="anti-btn" v-bind="props">
-                <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="anti-btn" />
-              </button>
-            </template>
-          </v-tooltip>
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-file-export"
+            tooltip-text="Экспортировать реестр"
+            @click="downloadRegister"
+          />
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>

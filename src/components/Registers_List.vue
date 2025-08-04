@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -23,6 +22,8 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+<script setup>
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
@@ -59,6 +60,7 @@ const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
+parcelStatusesStore.ensureStatusesLoaded()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -323,15 +325,8 @@ function formatDate(dateStr) {
 }
 
 const headers = [
-  { title: '', key: 'actions1', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions2', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions4', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions6', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions3', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions7', sortable: false, align: 'center', width: '5px' },
-  { title: '', key: 'actions5', sortable: false, align: 'center', width: '5px' },
+  { title: '', key: 'actions', sortable: false, align: 'center', width: '280px' },
   { title: 'Номер сделки', key: 'dealNumber', align: 'start' },
-  // { title: 'Файл', key: 'fileName', align: 'start' },
   { title: 'Дата загрузки', key: 'date', align: 'start' },
   { title: 'Отправитель', key: 'senderId', align: 'start' },
   { title: 'Страна отправления', key: 'origCountryCode', align: 'start' },
@@ -410,190 +405,58 @@ const headers = [
         class="elevation-1 interlaced-table"
       >
         <template #[`item.dealNumber`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="item.dealNumber"
-            cell-class="truncated-cell open-parcels-link"
-            tooltip-icon="fa-solid fa-list"
-            @click="openParcels"
-          />
+          <EditableCell :item="item" :display-value="item.dealNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
         </template>
         <template #[`item.senderId`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="getCustomerName(item.senderId)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="getCustomerName(item.senderId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.recipientId`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="getCustomerName(item.recipientId)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="getCustomerName(item.recipientId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.destCountryCode`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="countriesStore.getCountryShortName(item.destCountryCode)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="countriesStore.getCountryShortName(item.destCountryCode)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.origCountryCode`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="countriesStore.getCountryShortName(item.origCountryCode)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="countriesStore.getCountryShortName(item.origCountryCode)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.date`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="formatDate(item.date)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="formatDate(item.date)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="item.invoiceNumber"
-            cell-class="truncated-cell open-parcels-link"
-            tooltip-icon="fa-solid fa-list"
-            @click="openParcels"
-          />
+          <EditableCell :item="item" :display-value="item.invoiceNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
         </template>
         <template #[`item.invoiceDate`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="formatDate(item.invoiceDate)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="formatDate(item.invoiceDate)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="transportationTypesStore.getName(item.transportationTypeId)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="transportationTypesStore.getName(item.transportationTypeId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.customsProcedureId`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="customsProceduresStore.getName(item.customsProcedureId)"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="customsProceduresStore.getName(item.customsProcedureId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.ordersTotal`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="item.ordersTotal"
-            cell-class="truncated-cell edit-register-link"
-            @click="editRegister"
-          />
+          <EditableCell :item="item" :display-value="item.ordersTotal" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
-        <template #[`item.actions1`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-list"
-            tooltip-text="Открыть список посылок"
-            @click="openParcels"
-          />
-        </template>
-        <template #[`item.actions2`]="{ item }">
-          <div class="bulk-status-container">
-            <!-- Edit mode with dropdown and save/cancel buttons -->
-            <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector">
-              <v-select
-                v-model="bulkStatusState[item.id].selectedStatusId"
-                :items="parcelStatusesStore.parcelStatuses"
-                item-title="title"
-                item-value="id"
-                label="Выберите статус"
-                variant="outlined"
-                density="compact"
-                hide-details
-                hide-no-data
-                :disabled="loading"
-                style="min-width: 150px; max-width: 200px"
-              />
 
-              <!-- Save button (checkmark) -->
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-check"
-                tooltip-text="Применить статус"
-                :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId"
-                @click="() => applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)"
-              />
-
-              <!-- Cancel button (X) -->
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-xmark"
-                tooltip-text="Отменить"
-                :disabled="loading"
-                @click="() => cancelStatusChange(item.id)"
-              />
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" />
+            
+            <div class="bulk-status-inline">
+              <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector-inline">
+                <v-select v-model="bulkStatusState[item.id].selectedStatusId" :items="parcelStatusesStore.parcelStatuses" item-title="title" item-value="id" placeholder="Статус" variant="outlined" density="compact" hide-details hide-no-data :disabled="loading" />
+                <ActionButton :item="item" icon="fa-solid fa-check" tooltip-text="Применить статус" :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId" @click="() => applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)" />
+                <ActionButton :item="item" icon="fa-solid fa-xmark" tooltip-text="Отменить" :disabled="loading" @click="() => cancelStatusChange(item.id)" />
+              </div>
+              <ActionButton v-else :item="item" icon="fa-solid fa-pen-to-square" tooltip-text="Изменить статус всех посылок в реестре" :disabled="loading" @click="() => bulkChangeStatus(item.id)" />
             </div>
 
-            <!-- Default mode with pen-to-square icon -->
-            <ActionButton
-              v-else
-              :item="item"
-              icon="fa-solid fa-pen-to-square"
-              tooltip-text="Изменить статус всех посылок в реестре"
-              :disabled="loading"
-              @click="() => bulkChangeStatus(item.id)"
-            />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладные для всех посылок в реестре" @click="exportAllXml" />
+            <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" />
           </div>
-        </template>
-        <template #[`item.actions3`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-upload"
-            tooltip-text="Выгрузить накладные для всех посылок в реестре"
-            @click="exportAllXml"
-          />
-        </template>
-        <template #[`item.actions4`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-clipboard-check"
-            tooltip-text="Проверить реестр"
-            @click="validateRegister"
-          />
-        </template>
-        <template #[`item.actions5`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-trash-can"
-            tooltip-text="Удалить реестр"
-            @click="deleteRegister"
-          />
-        </template>
-        <template #[`item.actions6`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-pen"
-            tooltip-text="Редактировать реестр"
-            @click="editRegister"
-          />
-        </template>
-        <template #[`item.actions7`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-file-export"
-            tooltip-text="Экспортировать реестр"
-            @click="downloadRegister"
-          />
         </template>
       </v-data-table-server>
       <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>

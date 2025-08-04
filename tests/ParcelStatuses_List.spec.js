@@ -269,8 +269,7 @@ describe('ParcelStatuses_List.vue', () => {
     it('has correct table headers', () => {
       const headers = wrapper.vm.headers
       expect(headers).toEqual([
-        { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-        { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+        { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
         { title: 'Название статуса', key: 'title', sortable: true }
       ])
     })

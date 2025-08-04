@@ -1,5 +1,3 @@
-<script setup>
-
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -24,6 +22,8 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+<script setup>
 
 import { watch, ref, computed, onMounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -138,10 +138,7 @@ const statusOptions = computed(() => [
 const headers = computed(() => {
   return [
     // Actions - Always first for easy access
-    { title: '', key: 'actions1', sortable: false, align: 'center', width: '10px' },
-    { title: '', key: 'actions2', sortable: false, align: 'center', width: '10px' },
-    { title: '', key: 'actions3', sortable: false, align: 'center', width: '10px' },
-    { title: '', key: 'actions4', sortable: false, align: 'center', width: '10px' },
+    { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
 
     // Order Identification & Status - Key identifiers and current state
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
@@ -278,36 +275,17 @@ function getGenericTemplateHeaders() {
 
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="item[header.key] || ''"
-            cell-class="truncated-cell"
-            data-test="editable-cell"
-            @click="editParcel"
-          />
+          <EditableCell :item="item" :display-value="item[header.key] || ''" cell-class="truncated-cell" data-test="editable-cell" @click="editParcel" />
         </template>
 
         <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
-            cell-class="truncated-cell status-cell"
-            data-test="editable-cell"
-            @click="editParcel"
-          />
+          <EditableCell :item="item" :display-value="parcelStatusStore.getStatusTitle(item.statusId)" cell-class="truncated-cell status-cell" data-test="editable-cell" @click="editParcel" />
         </template>
 
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)"
-            :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`"
-            data-test="editable-cell"
-            :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
-            @click="editParcel"
-          />
+          <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->
@@ -327,46 +305,16 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <EditableCell
-            :item="item"
-            :display-value="countriesStore.getCountryAlpha2(item.countryCode)"
-            cell-class="truncated-cell"
-            data-test="editable-cell"
-            :tooltip-text="countriesStore.getCountryShortName(item.countryCode)"
-            @click="editParcel"
-          />
+          <EditableCell :item="item" :display-value="countriesStore.getCountryAlpha2(item.countryCode)" cell-class="truncated-cell" data-test="editable-cell" :tooltip-text="countriesStore.getCountryShortName(item.countryCode)" @click="editParcel" />
         </template>
-        <template #[`item.actions1`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-pen"
-            tooltip-text="Редактировать посылку"
-            @click="editParcel"
-          />
-        </template>
-        <template #[`item.actions2`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-upload"
-            tooltip-text="Выгрузить накладную для посылки"
-            @click="exportParcelXml"
-          />
-        </template>
-        <template #[`item.actions3`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-clipboard-check"
-            tooltip-text="Проверить посылку"
-            @click="validateParcel"
-          />
-        </template>
-        <template #[`item.actions4`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-check-circle"
-            tooltip-text="Согласовать"
-            @click="approveParcel"
-          />
+
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать посылку" @click="editParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
+          </div>
         </template>
       </v-data-table-server>
     </div>

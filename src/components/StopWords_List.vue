@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -23,6 +22,8 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+<script setup>
 
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -63,8 +64,7 @@ function filterStopWords(value, query, item) {
 
 // Table headers
 const headers = [
-  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
 ]
@@ -167,24 +167,21 @@ defineExpose({
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template v-slot:[`item.actions1`]="{ item }">
-          <ActionButton
-            v-if="authStore.isAdmin"
-            :item="item"
-            icon="fa-solid fa-pen"
-            tooltip-text="Редактировать стоп-слово или фразу"
-            @click="openEditDialog"
-          />
-        </template>
-
-        <template v-slot:[`item.actions2`]="{ item }">
-          <ActionButton
-            v-if="authStore.isAdmin"
-            :item="item"
-            icon="fa-solid fa-trash-can"
-            tooltip-text="Удалить стоп-слово или фразу"
-            @click="deleteStopWord"
-          />
+        <template v-slot:[`item.actions`]="{ item }">
+          <div v-if="authStore.isAdmin" class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать стоп-слово или фразу"
+              @click="openEditDialog"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить стоп-слово или фразу"
+              @click="deleteStopWord"
+            />
+          </div>
         </template>
 
         <template v-slot:[`item.matchTypeId`]="{ item }">

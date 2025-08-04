@@ -1381,3 +1381,50 @@ a,
 .product-link-in-list:hover {
   text-decoration: underline;
 }
+
+/* Shared styles for consolidated action buttons in tables */
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+  min-width: fit-content;
+  white-space: nowrap;
+}
+
+.actions-container .anti-btn {
+  flex-shrink: 0;
+  margin: 3px;
+}
+
+/* Bulk status inline container */
+.bulk-status-inline {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin: 3px;
+}
+
+.status-selector-inline {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-wrap: nowrap;
+}
+
+.status-selector-inline .v-select {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  min-width: 120px;
+  max-width: 140px;
+  margin: 3px;
+}
+
+.status-selector-inline .v-select :deep(.v-field__input) {
+  font-size: 0.75rem;
+  min-height: 28px;
+}
+
+.status-selector-inline .v-select :deep(.v-field__field) {
+  font-size: 0.75rem;
+}

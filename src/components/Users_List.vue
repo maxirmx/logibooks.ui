@@ -121,8 +121,7 @@ async function deleteUser(item) {
 }
 
 const headers = [
-  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
   { title: 'Пользователь', align: 'start', key: 'id' },
   { title: 'E-mail', align: 'start', key: 'email' },
   { title: 'Права', align: 'start', key: 'credentials', sortable: false }
@@ -179,11 +178,11 @@ const headers = [
           <span v-html="getCredentials(item)"></span>
         </template>
 
-        <template v-slot:[`item.actions1`]="{ item }">
-          <ActionButton :item="item" icon="fa-solid fa-pen"  tooltip-text="Редактировать информацию о пользователе" @click="userSettings" />
-        </template>
-        <template v-slot:[`item.actions2`]="{ item }">
-          <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" />
+        <template v-slot:[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" />
+          </div>
         </template>
       </v-data-table>
       <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>

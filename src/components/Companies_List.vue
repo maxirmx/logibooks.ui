@@ -79,8 +79,7 @@ function filterCompanies(value, query, item) {
 
 // Table headers
 const headers = [
-  { title: '', align: 'center', key: 'actions1', sortable: false, width: '5%' },
-  { title: '', align: 'center', key: 'actions2', sortable: false, width: '5%' },
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
   { title: 'Название', key: 'displayName', sortable: false },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
   { title: 'Город', key: 'city', sortable: true }
@@ -193,14 +192,11 @@ defineExpose({
           {{ countriesStore.getCountryShortName(item.countryIsoNumeric) }}
         </template>
 
-        <template v-slot:[`item.actions1`]="{ item }">
-          <ActionButton v-if="authStore.isAdmin"
-            :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog"/>
-        </template>
-
-        <template v-slot:[`item.actions2`]="{ item }">
-          <ActionButton  v-if="authStore.isAdmin" 
-            :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" />
+        <template v-slot:[`item.actions`]="{ item }">
+          <div v-if="authStore.isAdmin" class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" />
+          </div>
         </template>
       </v-data-table>
 

@@ -79,6 +79,9 @@ const {
   parcels_tnved
 } = storeToRefs(authStore)
 
+parcels_status.value = null
+parcels_tnved.value = ''
+
 const statuses = ref([])
 const registerFileName = ref('')
 const registerDealNumber = ref('')
@@ -106,15 +109,7 @@ async function fetchRegister() {
 }
 
 function loadOrders() {
-  parcelsStore.getAll(
-    props.registerId,
-    parcels_status.value ? Number(parcels_status.value) : null,
-    parcels_tnved.value || null,
-    parcels_page.value,
-    parcels_per_page.value,
-    parcels_sort_by.value?.[0]?.key || 'id',
-    parcels_sort_by.value?.[0]?.order || 'asc'
-  )
+  parcelsStore.getAll(props.registerId)
 }
 
 watch(

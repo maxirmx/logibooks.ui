@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/parcels`
 
@@ -14,30 +15,26 @@ export const useParcelsStore = defineStore('parcels', () => {
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
 
-  async function getAll(
-    registerId,
-    statusId = null,
-    tnVed = null,
-    page = 1,
-    pageSize = 100,
-    sortBy = 'id',
-    sortOrder = 'asc'
-  ) {
+  async function getAll(registerId) {
+    const authStore = useAuthStore()
+    
     loading.value = true
     error.value = null
     try {
       const params = new URLSearchParams({
         registerId: registerId.toString(),
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-        sortBy,
-        sortOrder
+        page: authStore.parcels_page.toString(),
+        pageSize: authStore.parcels_per_page.toString(),
+        sortBy: authStore.parcels_sort_by?.[0]?.key || 'id',
+        sortOrder: authStore.parcels_sort_by?.[0]?.order || 'asc'
       })
-      if (statusId !== null && statusId !== undefined) {
-        params.append('statusId', statusId.toString())
+      
+      if (authStore.parcels_status !== null && authStore.parcels_status !== undefined) {
+        params.append('statusId', authStore.parcels_status.toString())
       }
-      if (tnVed) {
-        params.append('tnVed', tnVed)
+      
+      if (authStore.parcels_tnved) {
+        params.append('tnVed', authStore.parcels_tnved)
       }
 
       const response = await fetchWrapper.get(`${baseUrl}?${params.toString()}`)

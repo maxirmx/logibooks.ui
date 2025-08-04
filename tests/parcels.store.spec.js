@@ -17,13 +17,32 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
+// Mock auth store
+const mockAuthStore = {
+  parcels_page: 1,
+  parcels_per_page: 100,
+  parcels_sort_by: [{ key: 'id', order: 'asc' }],
+  parcels_status: null,
+  parcels_tnved: ''
+}
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => mockAuthStore
+}))
+
 describe('parcels store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    // Reset mock auth store to defaults
+    mockAuthStore.parcels_page = 1
+    mockAuthStore.parcels_per_page = 100
+    mockAuthStore.parcels_sort_by = [{ key: 'id', order: 'asc' }]
+    mockAuthStore.parcels_status = null
+    mockAuthStore.parcels_tnved = ''
   })
 
-  it('fetches data with default parameters', async () => {
+  it('fetches data with default parameters from auth store', async () => {
     fetchWrapper.get.mockResolvedValue({
       items: [],
       pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
@@ -35,12 +54,18 @@ describe('parcels store', () => {
     )
   })
 
-  it('fetches data with custom parameters', async () => {
+  it('fetches data with custom parameters from auth store', async () => {
+    mockAuthStore.parcels_page = 2
+    mockAuthStore.parcels_per_page = 50
+    mockAuthStore.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
+    mockAuthStore.parcels_status = 3
+    mockAuthStore.parcels_tnved = 'AA'
+    
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
-    await store.getAll(2, 3, 'AA', 4, 50, 'tnVed', 'desc')
+    await store.getAll(2)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=2&page=4&pageSize=50&sortBy=tnVed&sortOrder=desc&statusId=3&tnVed=AA`
+      `${apiUrl}/parcels?registerId=2&page=2&pageSize=50&sortBy=tnVed&sortOrder=desc&statusId=3&tnVed=AA`
     )
   })
 

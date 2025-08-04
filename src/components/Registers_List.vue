@@ -398,35 +398,203 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
       >
+        <template #[`item.dealNumber`]="{ item }">
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="open-parcels-link clickable-cell"
+                v-bind="props"
+                @click="openParcels(item)"
+              >
+                {{ item.dealNumber }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-list" class="mr-1" />Открыть список посылок
+              </span>
+            </template>
+          </v-tooltip>
+        </template>
         <template #[`item.senderId`]="{ item }">
-          {{ getCustomerName(item.senderId) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ getCustomerName(item.senderId) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.recipientId`]="{ item }">
-          {{ getCustomerName(item.recipientId) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ getCustomerName(item.recipientId) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.destCountryCode`]="{ item }">
-          {{ countriesStore.getCountryShortName(item.destCountryCode) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ countriesStore.getCountryShortName(item.destCountryCode) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.origCountryCode`]="{ item }">
-          {{ countriesStore.getCountryShortName(item.origCountryCode) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ countriesStore.getCountryShortName(item.origCountryCode) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.date`]="{ item }">
-          {{ formatDate(item.date) }}
-        </template>
-        <template #[`item.invoiceDate`]="{ item }">
-          {{ formatDate(item.invoiceDate) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ formatDate(item.date) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
-          {{ item.invoiceNumber }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="open-parcels-link clickable-cell"
+                v-bind="props"
+                @click="openParcels(item)"
+              >
+                {{ item.invoiceNumber }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-list" class="mr-1" />Открыть список посылок
+              </span>
+            </template>
+          </v-tooltip>
+        </template>
+        <template #[`item.invoiceDate`]="{ item }">
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ formatDate(item.invoiceDate) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
-          {{ transportationTypesStore.getName(item.transportationTypeId) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ transportationTypesStore.getName(item.transportationTypeId) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.customsProcedureId`]="{ item }">
-          {{ customsProceduresStore.getName(item.customsProcedureId) }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ customsProceduresStore.getName(item.customsProcedureId) }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.ordersTotal`]="{ item }">
-          {{ item.ordersTotal }}
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span
+                class="edit-register-link clickable-cell"
+                v-bind="props"
+                @click="editRegister(item)"
+              >
+                {{ item.ordersTotal }}
+              </span>
+            </template>
+            <template #default>
+              <span>
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+              </span>
+            </template>
+          </v-tooltip>
         </template>
         <template #[`item.actions1`]="{ item }">
           <v-tooltip text="Открыть список посылок">
@@ -647,6 +815,10 @@ const headers = [
 .anti-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.clickable-cell {
+  cursor: pointer;
 }
 
 .upload-links {

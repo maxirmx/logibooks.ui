@@ -53,7 +53,9 @@ import {
   faCheckCircle,
   faFileImport,
   faFileExport,
-  faCheckDouble
+  faCheckDouble,
+  faArrowUp,
+  faArrowDown
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -79,7 +81,9 @@ library.add(
   faCheckCircle,
   faFileImport,
   faFileExport,
-  faCheckDouble
+  faCheckDouble,
+  faArrowUp,
+  faArrowDown
 )
 
 import 'vuetify/styles'

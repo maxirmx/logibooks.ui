@@ -117,7 +117,7 @@ vi.mock('@/stores/transportation.types.store.js', () => ({
     types: mockTransportationTypes,
     getAll: getTransportationTypesAll,
     ensureLoaded: vi.fn(),
-    getTitle: vi.fn(id => `Type ${id}`)
+    getName: vi.fn(id => `Type ${id}`)
   })
 }))
 
@@ -126,7 +126,7 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
     procedures: mockCustomsProcedures,
     getAll: getCustomsProceduresAll,
     ensureLoaded: vi.fn(),
-    getTitle: vi.fn(id => `Proc ${id}`)
+    getName: vi.fn(id => `Proc ${id}`)
   })
 }))
 
@@ -434,6 +434,52 @@ describe('Registers_List.vue', () => {
       const item = { id: 456, invoiceNumber: 'INV' }
       wrapper.vm.exportAllXml(item)
       expect(generateFn).toHaveBeenCalledWith(456, 'INV')
+    })
+  })
+
+  describe('table cell interactions', () => {
+    it('opens parcels when dealNumber cell is clicked', async () => {
+      mockItems.value = [
+        {
+          id: 1,
+          dealNumber: 'D-1',
+          invoiceNumber: 'INV-1'
+        }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const router = (await import('@/router')).default
+      await wrapper.vm.$nextTick()
+      const cell = wrapper.find('.open-parcels-link')
+      await cell.trigger('click')
+      expect(router.push).toHaveBeenCalledWith('/registers/1/parcels')
+    })
+
+    it('edits register when sender cell is clicked', async () => {
+      mockItems.value = [
+        {
+          id: 2,
+          senderId: 10
+        }
+      ]
+      mockCompanies.value = [{ id: 10, name: 'Sender' }]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const router = (await import('@/router')).default
+      await wrapper.vm.$nextTick()
+      const cell = wrapper.find('.edit-register-link')
+      await cell.trigger('click')
+      expect(router.push).toHaveBeenCalledWith('/register/edit/2')
     })
   })
 

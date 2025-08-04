@@ -24,12 +24,34 @@ export const vuetifyStubs = {
     emits: ['input', 'update:modelValue']
   },
   'v-data-table': {
-    template: '<div class="v-data-table-stub" data-testid="v-data-table"><slot></slot></div>',
+    template: `
+      <div class="v-data-table-stub" data-testid="v-data-table">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+            <slot :name="'item.' + header.key" :item="item">
+              {{ item[header.key] }}
+            </slot>
+          </div>
+        </div>
+        <slot></slot>
+      </div>
+    `,
     props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density', 'style'],
     inheritAttrs: false
   },
   'v-data-table-server': {
-    template: '<div class="v-data-table-stub" data-testid="v-data-table"><slot></slot></div>',
+    template: `
+      <div class="v-data-table-stub" data-testid="v-data-table">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+            <slot :name="'item.' + header.key" :item="item">
+              {{ item[header.key] }}
+            </slot>
+          </div>
+        </div>
+        <slot></slot>
+      </div>
+    `,
     props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'style'],
     inheritAttrs: false
   },
@@ -56,7 +78,7 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-tooltip': {
-    template: '<div class="v-tooltip-stub" data-testid="v-tooltip"><slot></slot></div>',
+    template: '<div class="v-tooltip-stub" data-testid="v-tooltip"><slot name="activator"></slot><slot></slot></div>',
     props: ['text', 'location', 'activator', 'style'],
     inheritAttrs: false
   },

@@ -153,10 +153,10 @@ function onSave(values) {
 async function generateXml(values) {
   try {
     // First update the parcel with current form values
-    await parcelsStore.update(props.id, values)
+    await parcelsStore.update(item.value.id, values)
     // Then generate XML
     const filename = String(item.value?.shk || '').padStart(20, '0')
-    await parcelsStore.generate(props.id, filename)
+    await parcelsStore.generate(item.value.id, filename)
   } catch (error) {
     console.error('Failed to generate XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'

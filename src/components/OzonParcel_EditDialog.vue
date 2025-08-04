@@ -173,10 +173,10 @@ async function generateXml() {
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
             <div class="action-buttons">
-              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить">
+              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить" :disabled="isSubmitting">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
               </button>
-              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать">
+              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать" :disabled="isSubmitting">
                 <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" />
               </button>
             </div>
@@ -188,12 +188,20 @@ async function generateXml() {
             </div>
           </div>
         </div>
-        <div class="form-row">
-          <OzonFormField name="tnVed" :errors="errors" />
-          <OzonFormField name="postingNumber" :errors="errors" />
-          <OzonFormField name="placesCount" type="number" step="1" :errors="errors" />
-          <OzonFormField name="article" :errors="errors" />
+      </div>
+      <!-- Product Name Section -->
+      <div class="form-section">
+        <div class="form-row-1">
           <OzonFormField name="productName" :errors="errors" />
+        </div>
+      </div>
+            <!-- Product Identification & Details Section -->
+      <div class="form-section">
+        <div class="form-row">
+          <OzonFormField name="tnVed" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="postingNumber" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="article" :errors="errors" :fullWidth="false" />
           <div class="form-group">
             <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
             <a
@@ -208,16 +216,16 @@ async function generateXml() {
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-          <OzonFormField name="countryCode" as="select" :errors="errors">
+          <OzonFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
               {{ country.nameRuOfficial }}
             </option>
           </OzonFormField>
-          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" />
-          <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" />
-          <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
-          <OzonFormField name="currency" :errors="errors" />
+          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
       </div>
 
@@ -225,10 +233,10 @@ async function generateXml() {
       <div class="form-section">
         <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
-          <OzonFormField name="lastName" :errors="errors" />
-          <OzonFormField name="firstName" :errors="errors" />
-          <OzonFormField name="patronymic" :errors="errors" />
-          <OzonFormField name="passportNumber" :errors="errors" />
+          <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
 
@@ -248,7 +256,7 @@ async function generateXml() {
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>
-        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)">
+        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

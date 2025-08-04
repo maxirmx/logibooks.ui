@@ -175,10 +175,10 @@ async function generateXml() {
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
             <div class="action-buttons">
-              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить">
+              <button class="validate-btn" @click="validateParcel" type="button" title="Проверить" :disabled="isSubmitting">
                 <font-awesome-icon size="1x" icon="fa-solid fa-clipboard-check" />
               </button>
-              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать">
+              <button class="approve-btn" @click="approveParcel" type="button" title="Согласовать" :disabled="isSubmitting">
                 <font-awesome-icon size="1x" icon="fa-solid fa-check-circle" />
               </button>
             </div>
@@ -192,12 +192,17 @@ async function generateXml() {
         </div>
       </div>
 
-      <!-- Product Identification & Details Section -->
+      <!-- Product Name Section -->
+      <div class="form-section">
+        <div class="form-row-1">
+          <WbrFormField name="productName" :errors="errors" />
+        </div>
+      </div>
+            <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
-          <WbrFormField name="tnVed" :errors="errors" />
-          <WbrFormField name="shk" :errors="errors" />
-          <WbrFormField name="productName" :errors="errors" />
+          <WbrFormField name="tnVed" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="shk" :errors="errors" :fullWidth="false" />
           <div class="form-group">
             <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
             <a
@@ -212,20 +217,20 @@ async function generateXml() {
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
           </div>
-          <WbrFormField name="countryCode" as="select" :errors="errors">
+          <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
               {{ country.nameRuOfficial }}
             </option>
           </WbrFormField>
-          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" />
-          <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" />
-          <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" />
-          <WbrFormField name="currency" :errors="errors" />
+          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <WbrFormField name="recipientName" :errors="errors" />
-          <WbrFormField name="passportNumber" :errors="errors" />
+          <WbrFormField name="recipientName" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
 
@@ -245,7 +250,7 @@ async function generateXml() {
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>
-        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)">
+        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

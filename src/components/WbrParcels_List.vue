@@ -147,7 +147,7 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
 
     // Product Identification & Details - What the order contains
-    { title: wbrRegisterColumnTitles.shk, sortable: false, key: 'shk', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
 
@@ -271,7 +271,7 @@ function getGenericTemplateHeaders() {
           >
             {{ column.title || '' }}
           </div>
-        </template>
+        </template>  
 
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">

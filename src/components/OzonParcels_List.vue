@@ -142,21 +142,21 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.article, key: 'article', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', width: '200px' },
-    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.currency, key: 'currency', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', align: 'start', width: '150px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
+    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' }
   ]
 })
 

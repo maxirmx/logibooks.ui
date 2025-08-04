@@ -26,7 +26,7 @@
 <script setup>
 defineProps({
   item: { type: Object, required: true },
-  displayValue: { type: [String, Number], required: true, default: '' },
+  displayValue: { type: [String, Number, null, undefined], default: '' },
   cellClass: { type: String, default: 'clickable-cell' },
   tooltipText: { type: String, default: '' },
   tooltipIcon: { type: String, default: 'fa-solid fa-pen' }

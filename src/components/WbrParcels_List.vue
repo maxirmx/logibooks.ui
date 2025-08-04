@@ -38,9 +38,9 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
+import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
-import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -260,19 +260,9 @@ function getGenericTemplateHeaders() {
           density="compact"
           fixed-header
           hide-default-footer
-          class="elevation-1 single-line-table interlaced-table"
+          class="elevation-1 single-line-table interlaced-table wbr-parcels-table"
           style="min-width: fit-content;"
         >
-        <!-- Add tooltip templates for header cells -->
-        <template v-for="header in headers.filter(h => !h.key.startsWith('actions'))" :key="`header-${header.key}`" #[`header.${header.key}`]="{ column }">
-          <div
-            class="truncated-cell"
-            :title="getFieldTooltip(header.key, wbrRegisterColumnTitles, wbrRegisterColumnTooltips)"
-          >
-            {{ column.title || '' }}
-          </div>
-        </template>  
-
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
           <EditableCell :item="item" :display-value="item[header.key] || ''" cell-class="truncated-cell" data-test="editable-cell" @click="editParcel" />

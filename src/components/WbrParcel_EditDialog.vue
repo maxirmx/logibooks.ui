@@ -192,13 +192,27 @@ async function generateXml() {
         </div>
       </div>
 
-      <!-- Product Name Section -->
+      <!-- Product Name and description Section -->
       <div class="form-section">
         <div class="form-row-1">
           <WbrFormField name="productName" :errors="errors" />
         </div>
+        <div class="form-row-0">
+          <div class="form-group-0">
+            <label for="description" class="label-0">Описание:</label>
+            <Field 
+              as="textarea"
+              name="description" 
+              id="description" 
+              rows="5"
+              class="form-control input-0" 
+              :class="{ 'is-invalid': errors && errors.description }"
+            />
+          </div>
+        </div>
       </div>
-            <!-- Product Identification & Details Section -->
+
+      <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
           <WbrFormField name="tnVed" :errors="errors" :fullWidth="false" />

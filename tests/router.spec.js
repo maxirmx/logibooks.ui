@@ -31,7 +31,13 @@ async function resetRouter(to = "/recover") {
 }
 
 describe('router guards', () => {
+  let originalConsoleError
+
   beforeEach(async () => {
+    // Mock console.error to suppress router guard error messages in tests
+    originalConsoleError = console.error
+    console.error = vi.fn()
+
     authStore = { 
       user: null, 
       returnUrl: null, 
@@ -52,6 +58,11 @@ describe('router guards', () => {
     alertClear.mockClear()
     alertError.mockClear()
     await resetRouter("/recover")
+  })
+
+  afterEach(() => {
+    // Restore console.error
+    console.error = originalConsoleError
   })
 
   it('redirects unauthenticated users to login', async () => {
@@ -141,16 +152,7 @@ describe('router guards', () => {
   })
   
   it('handles successful password recovery flow', async () => {
-    // First set up auth store without recovery token
-    authStore.re_jwt = null
-    authStore.re_tgt = null
-    authStore.user = null
-    
-    // Go to login page first (to have a stable starting point)
-    await router.push('/login')
-    await router.isReady()
-    
-    // Now set up the recovery token and reset router for a new navigation
+    // Set up the recovery token and user
     authStore.re_jwt = 'recovery_token'
     authStore.re_tgt = 'recover'
     authStore.user = { id: 6 }
@@ -158,49 +160,46 @@ describe('router guards', () => {
     // Clear mocks to verify just this navigation
     reMock.mockClear()
     
-    // Now navigate to a different page to trigger the guard
-    try {
-      await resetRouter('/recover')
-      
-      // Check that re was called
-      expect(reMock).toHaveBeenCalled()
-      // Since we can't easily test the actual redirection in a test,
-      // we're primarily verifying that re() was called
-    } catch  {
-      // This is ok - we expect infinite redirect in the test environment
-      // But reMock should still have been called
-      expect(reMock).toHaveBeenCalled()
-    }
+    // Mock re() to resolve successfully and clear re_jwt as the real implementation does
+    reMock.mockImplementationOnce(async () => {
+      authStore.re_jwt = null  // This is what the real re() method does on line 99
+      return Promise.resolve()
+    })
+    
+    // Navigate to trigger the guard
+    await router.push('/users')
+    await router.isReady()
+    
+    // Check that re was called
+    expect(reMock).toHaveBeenCalled()
+    // After successful recovery, user should be redirected to their edit page
+    expect(router.currentRoute.value.fullPath).toBe('/user/edit/6')
   })
   
   it('handles successful registration completion flow', async () => {
-    // Reset auth store state
-    authStore.re_jwt = null
-    authStore.re_tgt = null
-    authStore.user = null
-    
-    // Go to a stable route first
-    await router.push('/login')
-    await router.isReady()
-    
-    // Now set up registration token
+    // Set up registration token and admin user
     authStore.re_jwt = 'registration_token'
     authStore.re_tgt = 'register'
+    authStore.user = { id: 7 }
+    authStore.isAdmin = true  // Make sure the user has admin privileges for /users/ access
     
     // Clear mocks to verify just this navigation
     reMock.mockClear()
     
-    // Trigger guard with new navigation
-    try {
-      await resetRouter('/recover')
-      
-      // Check that re was called
-      expect(reMock).toHaveBeenCalled()
-    } catch {
-      // This is ok - we expect infinite redirect in the test environment
-      // But reMock should still have been called
-      expect(reMock).toHaveBeenCalled()
-    }
+    // Mock re() to resolve successfully and clear re_jwt as the real implementation does
+    reMock.mockImplementationOnce(async () => {
+      authStore.re_jwt = null  // This is what the real re() method does on line 99
+      return Promise.resolve()
+    })
+    
+    // Navigate to trigger the guard
+    await router.push('/registers')
+    await router.isReady()
+    
+    // Check that re was called
+    expect(reMock).toHaveBeenCalled()
+    // After successful registration, user should be redirected to users page
+    expect(router.currentRoute.value.fullPath).toBe('/users/')
   })
   
   it('handles failed password recovery flow', async () => {

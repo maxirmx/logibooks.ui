@@ -1,4 +1,3 @@
-<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
@@ -23,6 +22,8 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+<script setup>
 
 import router from '@/router'
 
@@ -179,20 +180,10 @@ const headers = [
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-pen"
-            tooltip-text="Редактировать информацию о пользователе"
-            @click="userSettings"
-          />
+          <ActionButton :item="item" icon="fa-solid fa-pen"  tooltip-text="Редактировать информацию о пользователе" @click="userSettings" />
         </template>
         <template v-slot:[`item.actions2`]="{ item }">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-trash-can"
-            tooltip-text="Удалить информацию о пользователе"
-            @click="deleteUser"
-          />
+          <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" />
         </template>
       </v-data-table>
       <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>

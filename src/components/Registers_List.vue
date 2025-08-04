@@ -413,7 +413,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="item.dealNumber"
-            cell-class="open-parcels-link clickable-cell"
+            cell-class="truncated-cell open-parcels-link"
             tooltip-icon="fa-solid fa-list"
             @click="openParcels"
           />
@@ -422,7 +422,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="getCustomerName(item.senderId)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -430,7 +430,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="getCustomerName(item.recipientId)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -438,7 +438,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="countriesStore.getCountryShortName(item.destCountryCode)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -446,7 +446,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="countriesStore.getCountryShortName(item.origCountryCode)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -454,7 +454,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="formatDate(item.date)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -462,7 +462,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="item.invoiceNumber"
-            cell-class="open-parcels-link clickable-cell"
+            cell-class="truncated-cell open-parcels-link"
             tooltip-icon="fa-solid fa-list"
             @click="openParcels"
           />
@@ -471,7 +471,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="formatDate(item.invoiceDate)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -479,7 +479,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="transportationTypesStore.getName(item.transportationTypeId)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -487,7 +487,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="customsProceduresStore.getName(item.customsProcedureId)"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>
@@ -495,7 +495,7 @@ const headers = [
           <EditableCell
             :item="item"
             :display-value="item.ordersTotal"
-            cell-class="edit-register-link clickable-cell"
+            cell-class="truncated-cell edit-register-link"
             @click="editRegister"
           />
         </template>

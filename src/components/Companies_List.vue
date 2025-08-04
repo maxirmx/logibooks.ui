@@ -194,23 +194,13 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions1`]="{ item }">
-          <ActionButton
-            v-if="authStore.isAdmin"
-            :item="item"
-            icon="fa-solid fa-pen"
-            tooltip-text="Редактировать информацию о компании"
-            @click="openEditDialog"
-          />
+          <ActionButton v-if="authStore.isAdmin"
+            :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog"/>
         </template>
 
         <template v-slot:[`item.actions2`]="{ item }">
-          <ActionButton
-            v-if="authStore.isAdmin"
-            :item="item"
-            icon="fa-solid fa-trash-can"
-            tooltip-text="Удалить информацию о компании"
-            @click="deleteCompany"
-          />
+          <ActionButton  v-if="authStore.isAdmin" 
+            :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" />
         </template>
       </v-data-table>
 

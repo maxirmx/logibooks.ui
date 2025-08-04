@@ -420,7 +420,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-list" class="mr-1" />Открыть список посылок
+                <font-awesome-icon icon="fa-solid fa-list" class="mr-3" />
+                {{ item.dealNumber }}
               </span>
             </template>
           </v-tooltip>
@@ -438,7 +439,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ getCustomerName(item.senderId) }}
               </span>
             </template>
           </v-tooltip>
@@ -456,7 +458,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ getCustomerName(item.recipientId) }}
               </span>
             </template>
           </v-tooltip>
@@ -474,7 +477,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ countriesStore.getCountryShortName(item.destCountryCode) }}
               </span>
             </template>
           </v-tooltip>
@@ -492,7 +496,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ countriesStore.getCountryShortName(item.origCountryCode) }}
               </span>
             </template>
           </v-tooltip>
@@ -510,7 +515,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ formatDate(item.date) }}
               </span>
             </template>
           </v-tooltip>
@@ -528,7 +534,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-list" class="mr-1" />Открыть список посылок
+                <font-awesome-icon icon="fa-solid fa-list" class="mr-3" />
+                {{ item.invoiceNumber }}
               </span>
             </template>
           </v-tooltip>
@@ -546,7 +553,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ formatDate(item.invoiceDate) }}
               </span>
             </template>
           </v-tooltip>
@@ -564,7 +572,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ transportationTypesStore.getName(item.transportationTypeId) }}
               </span>
             </template>
           </v-tooltip>
@@ -582,7 +591,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ customsProceduresStore.getName(item.customsProcedureId) }}
               </span>
             </template>
           </v-tooltip>
@@ -600,7 +610,8 @@ const headers = [
             </template>
             <template #default>
               <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-1" />Редактировать реестр
+                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
+                {{ item.ordersTotal }}
               </span>
             </template>
           </v-tooltip>

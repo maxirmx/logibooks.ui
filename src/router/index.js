@@ -234,7 +234,6 @@ router.beforeEach(async (to) => {
       }
     } catch (error) {
       // Server unavailable but it's OK for login page
-      console.error('Server check failed:', error)
     }
     // Allow access to login page if not logged in or server check failed
     return true

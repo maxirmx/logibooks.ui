@@ -957,6 +957,13 @@ a,
   margin-bottom: 0rem;
 }
 
+.form-row-0 {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 1rem;
+  margin-bottom: 0rem;
+}
+
 .form-group {
   display: flex;
   flex-direction: row;
@@ -975,6 +982,15 @@ a,
   min-width: 0;
   overflow: hidden;
   gap: 0.5rem;
+}
+
+.form-group-0 {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  gap: 0.25rem;
 }
 
 .label {
@@ -1003,6 +1019,14 @@ a,
   flex-shrink: 0;
 }
 
+.label-0 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  width: 100%;
+  display: block;
+}
+
 .input {
   padding: 0.25rem;
   border-radius: 4px;
@@ -1021,6 +1045,28 @@ a,
   margin-bottom: 0;
   width: 81.5%;
   flex-grow: 1;
+}
+
+/* Allow textareas to use their natural height based on rows attribute */
+.input-1.form-control[rows] {
+  height: auto;
+  min-height: 2.25rem;
+}
+
+.input-0 {
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  height: 2.25rem;
+  margin-bottom: 0;
+  width: 100%;
+  flex-grow: 1;
+}
+
+/* Allow textareas to use their natural height based on rows attribute */
+.input-0.form-control[rows] {
+  height: auto;
+  min-height: 2.25rem;
 }
 
 .input:focus {
@@ -1264,6 +1310,12 @@ a,
   font-size: 0.875rem;    /* Ensure form controls also use smaller font */
   height: 2rem;
   padding: 0.2rem;
+}
+
+/* Allow textareas in compact forms to use their natural height */
+.form-compact .form-control[rows] {
+  height: auto;
+  min-height: 2rem;
 }
 
 .form-compact .section-title {

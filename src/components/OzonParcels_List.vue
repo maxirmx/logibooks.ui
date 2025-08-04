@@ -269,33 +269,53 @@ function getGenericTemplateHeaders() {
 
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <div
-            class="truncated-cell"
-            :title="item[header.key] || ''"
-          >
-            {{ item[header.key] || '' }}
-          </div>
+          <v-tooltip>
+            <template #activator="{ props }">
+              <div class="truncated-cell" data-test="editable-cell" v-bind="props" @click="editParcel(item)">
+                {{ item[header.key] || '' }}
+              </div>
+            </template>
+            <div class="d-flex align-center">
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <span>{{ item[header.key] || '' }}</span>
+            </div>
+          </v-tooltip>
         </template>
 
         <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
-          <div
-            class="truncated-cell status-cell"
-            :title="parcelStatusStore.getStatusTitle(item.statusId)"
-          >
-            {{ parcelStatusStore.getStatusTitle(item.statusId) }}
-          </div>
+          <v-tooltip>
+            <template #activator="{ props }">
+              <div class="truncated-cell status-cell" data-test="editable-cell" v-bind="props" @click="editParcel(item)">
+                {{ parcelStatusStore.getStatusTitle(item.statusId) }}
+              </div>
+            </template>
+            <div class="d-flex align-center">
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <span>{{ parcelStatusStore.getStatusTitle(item.statusId) }}</span>
+            </div>
+          </v-tooltip>
         </template>
 
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
-          <div
-            class="truncated-cell status-cell"
-            :class="getCheckStatusClass(item.checkStatusId)"
-            :title="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
-          >
-            {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
-          </div>
+          <v-tooltip>
+            <template #activator="{ props }">
+              <div
+                class="truncated-cell status-cell"
+                data-test="editable-cell"
+                :class="getCheckStatusClass(item.checkStatusId)"
+                v-bind="props"
+                @click="editParcel(item)"
+              >
+                {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
+              </div>
+            </template>
+            <div class="d-flex align-center">
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <span>{{ getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords) }}</span>
+            </div>
+          </v-tooltip>
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->
@@ -315,9 +335,17 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <div class="truncated-cell" :title="item.countryCode ">
-            {{ countriesStore.getCountryAlpha2(item.countryCode) }}
-          </div>
+          <v-tooltip>
+            <template #activator="{ props }">
+              <div class="truncated-cell" data-test="editable-cell" v-bind="props" @click="editParcel(item)">
+                {{ countriesStore.getCountryAlpha2(item.countryCode) }}
+              </div>
+            </template>
+            <div class="d-flex align-center">
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <span>{{ item.countryCode }}</span>
+            </div>
+          </v-tooltip>
         </template>
         <template #[`item.actions1`]="{ item }">
           <v-tooltip text="Редактировать информацию о посылке">

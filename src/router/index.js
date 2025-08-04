@@ -232,7 +232,7 @@ router.beforeEach(async (to) => {
         // Otherwise redirect to role-appropriate home
         return getHomeRoute()
       }
-    } catch (error) {
+    } catch {
       // Server unavailable but it's OK for login page
     }
     // Allow access to login page if not logged in or server check failed

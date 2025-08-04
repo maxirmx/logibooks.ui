@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -235,6 +236,27 @@ describe('WbrParcel_EditDialog', () => {
       expect(field.exists()).toBe(true)
       expect(field.attributes('type')).toBe('number')
     })
+  })
+
+  it('toggles description visibility with action button', async () => {
+    const parcelComponent = wrapper.findComponent(ParcelEditDialog)
+    expect(parcelComponent.vm.isDescriptionVisible).toBe(false)
+
+    let toggleBtn = wrapper
+      .findAllComponents(ActionButton)
+      .find(btn => btn.props('tooltipText')?.includes('описание'))
+    expect(toggleBtn).toBeTruthy()
+    expect(toggleBtn.props('icon')).toBe('fa-solid fa-arrow-down')
+
+    await toggleBtn.vm.$emit('click')
+    await nextTick()
+
+    expect(parcelComponent.vm.isDescriptionVisible).toBe(true)
+
+    toggleBtn = wrapper
+      .findAllComponents(ActionButton)
+      .find(btn => btn.props('tooltipText')?.includes('описание'))
+    expect(toggleBtn.props('icon')).toBe('fa-solid fa-arrow-up')
   })
 
   it('renders all required buttons', () => {

@@ -72,6 +72,8 @@ watch(() => item.value?.statusId, (newStatusId) => {
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
+const isDescriptionVisible = ref(false)
+
 statusStore.ensureStatusesLoaded()
 parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
@@ -213,18 +215,24 @@ async function generateXml(values) {
 
       <!-- Product Name and description Section -->
       <div class="form-section">
-        <div class="form-row-1">
+        <div class="form-row-1 product-name-row">
+          <ActionButton
+            :item="item"
+            :icon="isDescriptionVisible ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
+            @click="isDescriptionVisible = !isDescriptionVisible"
+          />
           <WbrFormField name="productName" :errors="errors" />
         </div>
-        <div class="form-row-0">
+        <div class="form-row-0" v-show="isDescriptionVisible">
           <div class="form-group-0">
             <label for="description" class="label-0">Описание:</label>
-            <Field 
+            <Field
               as="textarea"
-              name="description" 
-              id="description" 
+              name="description"
+              id="description"
               rows="5"
-              class="form-control input-0" 
+              class="form-control input-0"
               :class="{ 'is-invalid': errors && errors.description }"
             />
           </div>

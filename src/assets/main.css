@@ -964,6 +964,16 @@ a,
   margin-bottom: 0rem;
 }
 
+.product-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.product-name-row .form-group-1 {
+  flex: 1;
+}
+
 .form-group {
   display: flex;
   flex-direction: row;

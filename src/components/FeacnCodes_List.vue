@@ -213,7 +213,6 @@ async function handleToggleOrderEnabled(order) {
 
     <div class="mt-8"></div>
 
-
     <div v-if="prefixItems?.length || feacnprefixes_search">
       <v-text-field
         v-model="authStore.feacnprefixes_search"

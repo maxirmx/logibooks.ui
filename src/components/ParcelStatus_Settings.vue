@@ -122,7 +122,7 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
-      <div class="form-group">
+      <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />

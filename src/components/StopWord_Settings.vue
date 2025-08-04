@@ -206,7 +206,7 @@ defineExpose({
         <div v-if="errors.matchTypeId" class="invalid-feedback">{{ errors.matchTypeId }}</div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="saving">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />

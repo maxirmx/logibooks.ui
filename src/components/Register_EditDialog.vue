@@ -32,6 +32,10 @@ const companiesStore = useCompaniesStore()
 await companiesStore.getAll()
 const { companies } = storeToRefs(companiesStore)
 
+// Id = 1 --> Code = 10 (Экспорт) 
+const isExport = ref(true)
+const procedureCodeLoaded = ref(false)
+
 if (!props.create) {
   await registersStore.getById(props.id)
 } else {
@@ -43,6 +47,7 @@ if (!props.create) {
     item.value.transportationTypeId = 1
   }
 }
+updateExportStatusFromProc()
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
@@ -53,10 +58,6 @@ const schema = Yup.object().shape({
   theOtherCompanyId: Yup.number().nullable(),
   theOtherCountryCode: Yup.number().nullable()
 })
-
-// Set default to true if customsProcedureId=1 represents code 10 (export)
-const isExport = ref(false)
-const procedureCodeLoaded = ref(false)
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
 const shouldUpdateExportStatus = computed(() => {

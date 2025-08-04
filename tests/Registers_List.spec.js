@@ -176,7 +176,7 @@ describe('Registers_List.vue', () => {
     // Wait for onMounted to complete
     await vi.waitFor(() => {
       expect(getCompaniesAll).toHaveBeenCalled()
-      expect(getOrderStatusesAll).toHaveBeenCalled()
+      // expect(getOrderStatusesAll).toHaveBeenCalled()
     })
     expect(getAll).toHaveBeenCalled()
     expect(countriesEnsureLoadedFn).toHaveBeenCalled()

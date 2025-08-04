@@ -57,10 +57,10 @@ export const useStopWordMatchTypesStore = defineStore('stopWordMatchTypes', () =
   }
 
   const initialized = ref(false)
-  function ensureLoaded() {
+  async function ensureLoaded() {
     if (!initialized.value && matchTypes.value.length === 0 && !loading.value) {
       initialized.value = true
-      fetchMatchTypes()
+      await fetchMatchTypes()
     }
   }
 

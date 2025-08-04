@@ -89,8 +89,11 @@ const schema = Yup.object().shape({
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
 
-async function validateParcel() {
+async function validateParcel(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then validate the parcel
     await parcelsStore.validate(item.value.id)
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
@@ -100,8 +103,11 @@ async function validateParcel() {
   }
 }
 
-async function approveParcel() {
+async function approveParcel(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then approve the parcel
     await parcelsStore.approve(item.value.id)
     // Reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
@@ -141,8 +147,11 @@ function onSave(values) {
 }
 
 // Generate XML for this parcel
-async function generateXml() {
+async function generateXml(values) {
   try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then generate XML
     await parcelsStore.generate(props.id, item.value?.postingNumber)
   } catch (error) {
     console.error('Failed to generate XML:', error)
@@ -178,16 +187,16 @@ async function generateXml() {
               <ActionButton
                 :item="item"
                 icon="fa-solid fa-clipboard-check"
-                tooltip-text="Проверить"
+                tooltip-text="Сохранить и проверить"
                 :disabled="isSubmitting"
-                @click="validateParcel"
+                @click="() => validateParcel(values)"
               />
               <ActionButton
                 :item="item"
                 icon="fa-solid fa-check-circle"
-                tooltip-text="Согласовать"
+                tooltip-text="Сохранить и согласовать"
                 :disabled="isSubmitting"
-                @click="approveParcel"
+                @click="() => approveParcel(values)"
               />
             </div>
           </div>
@@ -262,7 +271,7 @@ async function generateXml() {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
-        <button class="button primary" type="button" @click="generateXml()" :disabled="isSubmitting">
+        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>

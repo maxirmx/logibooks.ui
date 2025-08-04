@@ -150,7 +150,7 @@ function onSave(values) {
 async function generateXml(values) {
   try {
     // First update the parcel with current form values
-    await parcelsStore.update(props.id, values)
+    await parcelsStore.update(item.value.id, values)
     // Then generate XML
     await parcelsStore.generate(props.id, item.value?.postingNumber)
   } catch (error) {

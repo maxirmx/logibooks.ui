@@ -276,7 +276,7 @@ function getGenericTemplateHeaders() {
               </div>
             </template>
             <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
               <span>{{ item[header.key] || '' }}</span>
             </div>
           </v-tooltip>
@@ -291,7 +291,7 @@ function getGenericTemplateHeaders() {
               </div>
             </template>
             <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
               <span>{{ parcelStatusStore.getStatusTitle(item.statusId) }}</span>
             </div>
           </v-tooltip>
@@ -312,7 +312,7 @@ function getGenericTemplateHeaders() {
               </div>
             </template>
             <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
               <span>{{ getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords) }}</span>
             </div>
           </v-tooltip>
@@ -320,13 +320,13 @@ function getGenericTemplateHeaders() {
 
         <!-- Special template for productLink to display as clickable URL -->
         <template #[`item.productLink`]="{ item }">
-          <div class="truncated-cell">
+          <div class="product-link-in-list">
             <a
               v-if="item.productLink"
               :href="ensureHttps(item.productLink)"
               target="_blank"
               rel="noopener noreferrer"
-              class="product-link"
+              class="product-link-in-list"
               :title="ensureHttps(item.productLink)"
             >
               {{ ensureHttps(item.productLink) }}
@@ -342,8 +342,8 @@ function getGenericTemplateHeaders() {
               </div>
             </template>
             <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-1" />
-              <span>{{ item.countryCode }}</span>
+              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
+              <span>{{ countriesStore.getCountryShortName(item.countryCode) }}</span> 
             </div>
           </v-tooltip>
         </template>

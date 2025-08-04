@@ -1366,3 +1366,18 @@ a,
   margin-bottom: 0.75rem;  
 }
 */
+
+.product-link-in-list {
+  cursor: pointer;
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  cursor: default;
+}
+
+.product-link-in-list:hover {
+  text-decoration: underline;
+}

@@ -173,7 +173,6 @@ function getCustomerName(customerId) {
 // Load companies and order statuses on component mount
 onMounted(async () => {
   await companiesStore.getAll()
-  await parcelStatusesStore.getAll()
 })
 
 onUnmounted(() => {

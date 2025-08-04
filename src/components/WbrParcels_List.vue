@@ -59,7 +59,7 @@ const stopWordsStore = useStopWordsStore()
 await stopWordsStore.getAll()
 
 const feacnCodesStore = useFeacnCodesStore()
-await feacnCodesStore.ensureOrdersLoaded()
+feacnCodesStore.ensureOrdersLoaded()
 
 const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()

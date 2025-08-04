@@ -95,6 +95,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -157,13 +158,13 @@ export function initializeApp() {
   const feacnCodesStore = useFeacnCodesStore()
   const transportationTypesStore = useTransportationTypesStore()
   const customsProceduresStore = useCustomsProceduresStore()
+  const countriesStore = useCountriesStore()
 
   // Load feacnOrders globally at app startup
-  feacnCodesStore.ensureOrdersLoaded().catch(error => {
-    console.warn('Failed to load feacn orders at startup:', error)
-  })
+  feacnCodesStore.ensureOrdersLoaded()
   transportationTypesStore.ensureLoaded()
   customsProceduresStore.ensureLoaded()
+  countriesStore.ensureLoaded()
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

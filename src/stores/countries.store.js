@@ -51,10 +51,10 @@ export const useCountriesStore = defineStore('countries', () => {
     return country.nameRuShort || country.nameRuOfficial || code
   }
 
-  function ensureLoaded() {
+  async function ensureLoaded() {
     if (!initialized && !loading.value) {
       initialized = true
-      getAll()
+      await getAll()
     }
   }
 

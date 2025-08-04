@@ -66,10 +66,10 @@ export const useParcelCheckStatusStore = defineStore('parcelCheckStatus', () => 
 
   // Auto-fetch statuses when store is initialized (only once)
   let initialized = false
-  function ensureStatusesLoaded() {
+  async function ensureStatusesLoaded() {
     if (!initialized && statuses.value.length === 0 && !loading.value) {
       initialized = true
-      fetchStatuses()
+      await fetchStatuses()
     }
   }
 

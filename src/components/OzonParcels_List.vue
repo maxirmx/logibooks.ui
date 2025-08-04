@@ -42,6 +42,7 @@ import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import EditableCell from '@/components/EditableCell.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -269,53 +270,36 @@ function getGenericTemplateHeaders() {
 
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <div class="truncated-cell" data-test="editable-cell" v-bind="props" @click="editParcel(item)">
-                {{ item[header.key] || '' }}
-              </div>
-            </template>
-            <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
-              <span>{{ item[header.key] || '' }}</span>
-            </div>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="item[header.key] || ''"
+            cell-class="truncated-cell"
+            data-test="editable-cell"
+            @click="editParcel"
+          />
         </template>
 
         <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <div class="truncated-cell status-cell" data-test="editable-cell" v-bind="props" @click="editParcel(item)">
-                {{ parcelStatusStore.getStatusTitle(item.statusId) }}
-              </div>
-            </template>
-            <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
-              <span>{{ parcelStatusStore.getStatusTitle(item.statusId) }}</span>
-            </div>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
+            cell-class="truncated-cell status-cell"
+            data-test="editable-cell"
+            @click="editParcel"
+          />
         </template>
 
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <div
-                class="truncated-cell status-cell"
-                data-test="editable-cell"
-                :class="getCheckStatusClass(item.checkStatusId)"
-                v-bind="props"
-                @click="editParcel(item)"
-              >
-                {{ parcelCheckStatusStore.getStatusTitle(item.checkStatusId) }}
-              </div>
-            </template>
-            <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
-              <span>{{ getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords) }}</span>
-            </div>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)"
+            :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`"
+            data-test="editable-cell"
+            :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)"
+            @click="editParcel"
+          />
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->
@@ -335,17 +319,14 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <div class="truncated-cell" data-test="editable-cell" v-bind="props" @click="editParcel(item)">
-                {{ countriesStore.getCountryAlpha2(item.countryCode) }}
-              </div>
-            </template>
-            <div class="d-flex align-center">
-              <font-awesome-icon size="1x" icon="fa-solid fa-pen" class="mr-3" />
-              <span>{{ countriesStore.getCountryShortName(item.countryCode) }}</span> 
-            </div>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="countriesStore.getCountryAlpha2(item.countryCode)"
+            cell-class="truncated-cell"
+            data-test="editable-cell"
+            :tooltip-text="countriesStore.getCountryShortName(item.countryCode)"
+            @click="editParcel"
+          />
         </template>
         <template #[`item.actions1`]="{ item }">
           <v-tooltip text="Редактировать информацию о посылке">

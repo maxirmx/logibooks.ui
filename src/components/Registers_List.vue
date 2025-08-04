@@ -39,6 +39,7 @@ import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
+import EditableCell from '@/components/EditableCell.vue'
 
 const validationState = reactive({
   show: false,
@@ -408,213 +409,94 @@ const headers = [
         class="elevation-1 interlaced-table"
       >
         <template #[`item.dealNumber`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="open-parcels-link clickable-cell"
-                v-bind="props"
-                @click="openParcels(item)"
-              >
-                {{ item.dealNumber }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-list" class="mr-3" />
-                {{ item.dealNumber }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="item.dealNumber"
+            cell-class="open-parcels-link clickable-cell"
+            tooltip-icon="fa-solid fa-list"
+            @click="openParcels"
+          />
         </template>
         <template #[`item.senderId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ getCustomerName(item.senderId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ getCustomerName(item.senderId) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="getCustomerName(item.senderId)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.recipientId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ getCustomerName(item.recipientId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ getCustomerName(item.recipientId) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="getCustomerName(item.recipientId)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.destCountryCode`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ countriesStore.getCountryShortName(item.destCountryCode) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ countriesStore.getCountryShortName(item.destCountryCode) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="countriesStore.getCountryShortName(item.destCountryCode)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.origCountryCode`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ countriesStore.getCountryShortName(item.origCountryCode) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ countriesStore.getCountryShortName(item.origCountryCode) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="countriesStore.getCountryShortName(item.origCountryCode)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.date`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ formatDate(item.date) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ formatDate(item.date) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="formatDate(item.date)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="open-parcels-link clickable-cell"
-                v-bind="props"
-                @click="openParcels(item)"
-              >
-                {{ item.invoiceNumber }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-list" class="mr-3" />
-                {{ item.invoiceNumber }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="item.invoiceNumber"
+            cell-class="open-parcels-link clickable-cell"
+            tooltip-icon="fa-solid fa-list"
+            @click="openParcels"
+          />
         </template>
         <template #[`item.invoiceDate`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ formatDate(item.invoiceDate) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ formatDate(item.invoiceDate) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="formatDate(item.invoiceDate)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ transportationTypesStore.getName(item.transportationTypeId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ transportationTypesStore.getName(item.transportationTypeId) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="transportationTypesStore.getName(item.transportationTypeId)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.customsProcedureId`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ customsProceduresStore.getName(item.customsProcedureId) }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ customsProceduresStore.getName(item.customsProcedureId) }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="customsProceduresStore.getName(item.customsProcedureId)"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.ordersTotal`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <span
-                class="edit-register-link clickable-cell"
-                v-bind="props"
-                @click="editRegister(item)"
-              >
-                {{ item.ordersTotal }}
-              </span>
-            </template>
-            <template #default>
-              <span>
-                <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-                {{ item.ordersTotal }}
-              </span>
-            </template>
-          </v-tooltip>
+          <EditableCell
+            :item="item"
+            :display-value="item.ordersTotal"
+            cell-class="edit-register-link clickable-cell"
+            @click="editRegister"
+          />
         </template>
         <template #[`item.actions1`]="{ item }">
           <v-tooltip text="Открыть список посылок">

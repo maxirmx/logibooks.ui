@@ -274,7 +274,7 @@ async function deleteRegister(item) {
     try {
       await registersStore.remove(item.id)
     } catch (err) {
-      alertStore.error('Ошибка при удалении реестра')
+      alertStore.error('Ошибка при удалении реестра' + (err.message ? `: ${err.message}` : ''))
     }
   }
 }

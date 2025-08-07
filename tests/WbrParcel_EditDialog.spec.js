@@ -5,6 +5,7 @@ import { nextTick, ref } from 'vue'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import router from '@/router'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -124,7 +125,8 @@ const mockCountriesStore = createMockStore({
 })
 
 const mockParcelViewsStore = createMockStore({
-  add: vi.fn().mockResolvedValue({})
+  add: vi.fn().mockResolvedValue({}),
+  back: vi.fn().mockResolvedValue({ id: 5 })
 })
 
 // Mock registers store
@@ -308,6 +310,17 @@ describe('WbrParcel_EditDialog', () => {
 
   it('calls getById on mount', () => {
     expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
+  })
+
+  it('saves parcel and loads previous one when back button is clicked', async () => {
+    const backButton = wrapper.findAll('button').find(btn => btn.text().includes('Назад'))
+    expect(backButton).toBeTruthy()
+
+    await backButton.trigger('click')
+
+    expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+    expect(mockParcelViewsStore.back).toHaveBeenCalled()
+    expect(router.push).toHaveBeenCalledWith('/registers/1/parcels/edit/5')
   })
 
   it('calls ensureStatusesLoaded on mount', () => {

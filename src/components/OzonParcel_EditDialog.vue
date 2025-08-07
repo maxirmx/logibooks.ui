@@ -149,6 +149,24 @@ function onSave(values) {
     })
 }
 
+// Save current parcel and navigate to the previous one if available
+async function onBack(values) {
+  try {
+    await parcelsStore.update(props.id, values)
+    const prevParcel = await parcelViewsStore.back()
+
+    if (prevParcel) {
+      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
+      router.push(prevUrl)
+    } else {
+      const fallbackUrl = `/registers/${props.registerId}/parcels`
+      router.push(fallbackUrl)
+    }
+  } catch (error) {
+    parcelsStore.error = error?.message || String(error)
+  }
+}
+
 // Generate XML for this parcel
 async function generateXml(values) {
   try {
@@ -278,7 +296,7 @@ async function generateXml(values) {
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>
-        <button class="button secondary" type="button" @click="console.log('Назад')" :disabled="isSubmitting">
+        <button class="button secondary" type="button" @click="onBack(values)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-arrow-left" class="mr-1" />
           Назад
         </button>

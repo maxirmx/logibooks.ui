@@ -181,7 +181,7 @@ function getCustomerName(customerId) {
 function getOrdersByCheckStatusTooltip(item) {
   if (!item?.ordersByCheckStatus) return ''
   return Object.entries(item.ordersByCheckStatus)
-    .map(([statusId, count]) => `${parcelCheckStatusStore.getStatusTitle(Number(statusId))}: ${count}`)
+    .map(([statusId, count]) => `${parcelCheckStatusStore.getStatusTitle(Number(statusId)) ?? 'Неизвестно'}: ${count}`)
     .join('\n')
 }
 

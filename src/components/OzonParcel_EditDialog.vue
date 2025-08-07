@@ -275,6 +275,10 @@ async function generateXml(values) {
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>
+        <button class="button secondary" type="button" @click="console.log('Назад')" :disabled="isSubmitting">
+          <font-awesome-icon size="1x" icon="fa-solid fa-arrow-left" class="mr-1" />
+          Назад
+        </button>
         <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить

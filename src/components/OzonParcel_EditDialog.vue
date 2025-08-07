@@ -34,6 +34,7 @@ import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.j
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
+import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
@@ -56,6 +57,7 @@ const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
+const parcelViewsStore = useParcelViewsStore()
 
 countriesStore.ensureLoaded()
 statusStore.ensureStatusesLoaded()
@@ -78,6 +80,7 @@ const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLi
 
 await stopWordsStore.getAll()
 await parcelsStore.getById(props.id)
+await parcelViewsStore.add(props.id)
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
@@ -146,6 +149,26 @@ function onSave(values) {
     })
 }
 
+// Save current parcel and navigate to the previous one if available
+async function onBack(values) {
+  try {
+    await parcelsStore.update(props.id, values)
+    const prevParcel = await parcelViewsStore.back()
+
+    if (prevParcel) {
+      // Ensure registerId is defined, fallback to current registerId if needed
+      const registerId = prevParcel.registerId || props.registerId
+      const prevUrl = `/registers/${registerId}/parcels/edit/${prevParcel.id}`
+      router.push(prevUrl)
+    } else {
+      const fallbackUrl = `/registers/${props.registerId}/parcels`
+      router.push(fallbackUrl)
+    }
+  } catch (error) {
+    parcelsStore.error = error?.message || String(error)
+  }
+}
+
 // Generate XML for this parcel
 async function generateXml(values) {
   try {
@@ -200,6 +223,13 @@ async function generateXml(values) {
               />
             </div>
           </div>
+          <!-- Last view -->
+          <div class="form-group" v-if="item?.dTime">
+            <label for="lastView" class="label" title="Последний просмотр">Последний просмотр текущим пользователем:</label>
+            <div class="readonly-field">
+              {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '[неизвестно]' }}
+            </div>
+          </div>          
           <!-- Stopwords information when there are issues -->
           <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords)" class="form-group stopwords-info">
             <div class="stopwords-text">
@@ -271,9 +301,13 @@ async function generateXml(values) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
-        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting">
+        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting || HasIssues(item?.checkStatusId)">
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
+        </button>
+        <button class="button secondary" type="button" @click="onBack(values)" :disabled="isSubmitting">
+          <font-awesome-icon size="1x" icon="fa-solid fa-arrow-left" class="mr-1" />
+          Назад
         </button>
         <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />

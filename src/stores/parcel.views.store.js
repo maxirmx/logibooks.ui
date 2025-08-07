@@ -23,30 +23,51 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<script setup>
-defineProps({
-  item: { type: Object, required: true },
-  icon: { type: String, required: true },
-  tooltipText: { type: String, required: true },
-  iconSize: { type: String, default: '1x' },
-  disabled: { type: Boolean, default: false }
-})
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { apiUrl } from '@/helpers/config.js'
 
-defineEmits(['click'])
-</script>
-<template>
-  <v-tooltip :text="tooltipText" :disabled="disabled">
-    <template v-slot:activator="{ props }">
-      <button 
-        type="button" 
-        @click="$emit('click', item)" 
-        class="anti-btn" 
-        :class="{ 'disabled-btn': disabled }"
-        v-bind="props"
-        :disabled="disabled"
-      >
-        <font-awesome-icon :size="iconSize" :icon="icon" class="anti-btn" :class="{ 'disabled-icon': disabled }" />
-      </button>
-    </template>
-  </v-tooltip>
-</template>
+const baseUrl = `${apiUrl}/parcelviews`
+
+export const useParcelViewsStore = defineStore('parcelViews', () => {
+  const prevParcel = ref(null)
+  const loading = ref(false)
+  const error = ref(null)
+
+  async function add(parcelId) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(baseUrl, { id: parcelId })
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function back() {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetchWrapper.put(baseUrl)
+     
+      prevParcel.value = response || null
+      return prevParcel.value
+    } catch (err) {
+      error.value = err
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    prevParcel,
+    loading,
+    error,
+    add,
+    back
+  }
+})

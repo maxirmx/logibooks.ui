@@ -56,6 +56,7 @@ const isCreate = computed(() => props.mode === 'create')
 let company = ref({
   inn: '',
   kpp: '',
+  ogrn: '',
   name: '',
   shortName: '',
   countryIsoNumeric: null,
@@ -83,6 +84,7 @@ function getButtonText() {
 const schema = Yup.object({
   inn: Yup.string().required('ИНН обязателен'),
   kpp: Yup.string(),
+  ogrn: Yup.string(),
   name: Yup.string(),
   shortName: Yup.string().required('Краткое название обязательно'),
   countryIsoNumeric: Yup.number().required('Страна обязательна'),
@@ -151,6 +153,17 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.kpp }"
           placeholder="КПП"
+        />
+      </div>
+      <div class="form-group">
+        <label for="ogrn" class="label">ОГРН:</label>
+        <Field
+          name="ogrn"
+          id="ogrn"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.ogrn }"
+          placeholder="ОГРН"
         />
       </div>
 
@@ -251,6 +264,7 @@ function onSubmit(values, { setErrors }) {
       </div>
       <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
       <div v-if="errors.kpp" class="alert alert-danger mt-3 mb-0">{{ errors.kpp }}</div>
+      <div v-if="errors.ogrn" class="alert alert-danger mt-3 mb-0">{{ errors.ogrn }}</div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
       <div v-if="errors.shortName" class="alert alert-danger mt-3 mb-0">{{ errors.shortName }}</div>
       <div v-if="errors.countryIsoNumeric" class="alert alert-danger mt-3 mb-0">{{ errors.countryIsoNumeric }}</div>

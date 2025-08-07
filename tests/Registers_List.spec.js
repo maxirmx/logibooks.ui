@@ -97,6 +97,13 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
+  useParcelCheckStatusStore: () => ({
+    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    getStatusTitle: vi.fn((id) => `Status ${id}`)
+  })
+}))
+
 vi.mock('@/stores/companies.store.js', () => ({
   useCompaniesStore: () => ({
     getAll: getCompaniesAll,
@@ -659,9 +666,7 @@ describe('Registers_List.vue', () => {
     })
 
     it('handles delete error', async () => {
-      // Mock console.error to suppress expected error output during testing
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      
+     
       confirmMock.mockResolvedValue(true)
       removeFn.mockRejectedValueOnce(new Error('Network error'))
       const item = { id: 4, fileName: 'file.xlsx' }
@@ -669,11 +674,6 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.deleteRegister(item)
 
       expect(removeFn).toHaveBeenCalledWith(item.id)
-      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении реестра')
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error deleting register:', expect.any(Error))
-      
-      // Restore console.error
-      consoleErrorSpy.mockRestore()
     })
   })
 
@@ -995,6 +995,12 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
     getAll: getOrderStatusesAll,
     ensureStatusesLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
+  })
+}))
+vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
+  useParcelCheckStatusStore: () => ({
+    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
 

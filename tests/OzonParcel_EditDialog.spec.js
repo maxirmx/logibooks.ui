@@ -5,6 +5,7 @@ import { nextTick, ref } from 'vue'
 import { createPinia } from 'pinia'
 import { defaultGlobalStubs, createMockStore } from './test-utils.js'
 import ParcelEditDialog from '@/components/OzonParcel_EditDialog.vue'
+import router from '@/router'
 
 // Mock router - create the mock function directly in the factory
 vi.mock('@/router', () => ({
@@ -125,6 +126,11 @@ const mockCountriesStore = createMockStore({
   ensureLoaded: vi.fn()
 })
 
+const mockParcelViewsStore = createMockStore({
+  add: vi.fn().mockResolvedValue({}),
+  back: vi.fn().mockResolvedValue({ id: 5, registerId: 1 })
+})
+
 const mockRegistersStore = createMockStore({
   nextParcel: vi.fn().mockResolvedValue({ id: 2, registerId: 1 })
 })
@@ -156,6 +162,10 @@ vi.mock('@/stores/countries.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: vi.fn(() => mockRegistersStore)
+}))
+
+vi.mock('@/stores/parcel.views.store.js', () => ({
+  useParcelViewsStore: vi.fn(() => mockParcelViewsStore)
 }))
 
 // Mock the next item helper
@@ -205,6 +215,7 @@ describe('OzonParcel_EditDialog', () => {
     // Wait for async operations to complete
     await nextTick()
     await nextTick() // Extra tick to ensure async operations complete
+    await nextTick()
   })
 
   afterEach(() => {
@@ -216,6 +227,10 @@ describe('OzonParcel_EditDialog', () => {
     const heading = wrapper.find('h1')
     expect(heading.exists()).toBe(true)
     expect(heading.text()).toContain('Посылка')
+  })
+
+  it('records parcel view when opened', () => {
+    expect(mockParcelViewsStore.add).toHaveBeenCalledWith(1)
   })
 
   it('includes all required order fields', () => {
@@ -282,6 +297,17 @@ describe('OzonParcel_EditDialog', () => {
 
   it('calls getById on mount', () => {
     expect(mockOrdersStore.getById).toHaveBeenCalledWith(1)
+  })
+
+  it('saves parcel and loads previous one when back button is clicked', async () => {
+    const backButton = wrapper.findAll('button').find(btn => btn.text().includes('Назад'))
+    expect(backButton).toBeTruthy()
+
+    await backButton.trigger('click')
+
+    expect(mockOrdersStore.update).toHaveBeenCalledWith(1, {})
+    expect(mockParcelViewsStore.back).toHaveBeenCalled()
+    expect(router.push).toHaveBeenCalledWith('/registers/1/parcels/edit/5')
   })
 
   it('calls ensureStatusesLoaded on mount', () => {

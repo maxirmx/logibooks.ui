@@ -271,7 +271,7 @@ async function generateXml(values) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
-        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting">
+        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting || HasIssues(item?.checkStatusId)">
           <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
           Накладная
         </button>

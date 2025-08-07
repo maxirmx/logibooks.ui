@@ -336,7 +336,7 @@ const headers = [
   { title: 'Дата накладной', key: 'invoiceDate', align: 'start' },
   { title: 'Транспорт', key: 'transportationTypeId', align: 'start' },
   { title: 'Процедура', key: 'customsProcedureId', align: 'start' },
-  { title: 'Заказы', key: 'ordersTotal', align: 'end' }
+  { title: 'Посылки', key: 'ordersTotal', align: 'end' }
 ]
 
 </script>

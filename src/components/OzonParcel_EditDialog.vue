@@ -156,7 +156,7 @@ async function onBack(values) {
     const prevParcel = await parcelViewsStore.back()
 
     if (prevParcel) {
-      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
+      const prevUrl = `/registers/${prevParcel.registerId}/parcels/edit/${prevParcel.id}`
       router.push(prevUrl)
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`

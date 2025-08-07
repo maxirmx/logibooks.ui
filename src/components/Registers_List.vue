@@ -29,6 +29,7 @@ import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
@@ -61,6 +62,9 @@ const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
 parcelStatusesStore.ensureStatusesLoaded()
+
+const parcelCheckStatusStore = useParcelCheckStatusStore()
+parcelCheckStatusStore.ensureStatusesLoaded()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -172,6 +176,13 @@ function getCustomerName(customerId) {
   const company = companies.value.find((c) => c.id === customerId)
   if (!company) return 'Неизвестно'
   return company.shortName || company.name || 'Неизвестно'
+}
+
+function getOrdersByCheckStatusTooltip(item) {
+  if (!item?.ordersByCheckStatus) return ''
+  return Object.entries(item.ordersByCheckStatus)
+    .map(([statusId, count]) => `${parcelCheckStatusStore.getStatusTitle(Number(statusId)) ?? 'Неизвестно'}: ${count}`)
+    .join('\n')
 }
 
 // Load companies and order statuses on component mount
@@ -435,7 +446,14 @@ const headers = [
           <EditableCell :item="item" :display-value="customsProceduresStore.getName(item.customsProcedureId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.ordersTotal`]="{ item }">
-          <EditableCell :item="item" :display-value="item.ordersTotal" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <v-tooltip>
+            <template #activator="{ props }">
+              <span class="truncated-cell" v-bind="props">{{ item.ordersTotal }}</span>
+            </template>
+            <template #default>
+              <div style="white-space: pre-line">{{ getOrdersByCheckStatusTooltip(item) }}</div>
+            </template>
+          </v-tooltip>
         </template>
 
         <template #[`item.actions`]="{ item }">

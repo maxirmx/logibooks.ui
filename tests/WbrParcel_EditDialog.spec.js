@@ -123,6 +123,10 @@ const mockCountriesStore = createMockStore({
   ensureLoaded: vi.fn()
 })
 
+const mockParcelViewsStore = createMockStore({
+  add: vi.fn().mockResolvedValue({})
+})
+
 // Mock registers store
 const mockRegistersStore = createMockStore({
   nextParcel: vi.fn().mockResolvedValue({ id: 2, registerId: 1 }),
@@ -157,6 +161,10 @@ vi.mock('@/stores/countries.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: vi.fn(() => mockRegistersStore)
+}))
+
+vi.mock('@/stores/parcel.views.store.js', () => ({
+  useParcelViewsStore: vi.fn(() => mockParcelViewsStore)
 }))
 
 describe('WbrParcel_EditDialog', () => {
@@ -197,6 +205,7 @@ describe('WbrParcel_EditDialog', () => {
     // Wait for async operations to complete
     await nextTick()
     await nextTick() // Extra tick to ensure async operations complete
+    await nextTick()
   })
 
   afterEach(() => {
@@ -208,6 +217,10 @@ describe('WbrParcel_EditDialog', () => {
     const heading = wrapper.find('h1')
     expect(heading.exists()).toBe(true)
     expect(heading.text()).toContain('Посылка')
+  })
+
+  it('records parcel view when opened', () => {
+    expect(mockParcelViewsStore.add).toHaveBeenCalledWith(1)
   })
 
   it('includes all required order fields', () => {

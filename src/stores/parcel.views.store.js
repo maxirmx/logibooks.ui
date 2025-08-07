@@ -52,6 +52,13 @@ export const useParcelViewsStore = defineStore('parcelViews', () => {
     error.value = null
     try {
       const response = await fetchWrapper.put(baseUrl)
+      
+      // Ensure the response includes all needed properties
+      if (response && !response.registerId && prevParcel.value && prevParcel.value.registerId) {
+        // If the new response doesn't have registerId but we have it from before, keep it
+        response.registerId = prevParcel.value.registerId
+      }
+      
       prevParcel.value = response || null
       return prevParcel.value
     } catch (err) {

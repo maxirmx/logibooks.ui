@@ -126,7 +126,7 @@ const mockCountriesStore = createMockStore({
 
 const mockParcelViewsStore = createMockStore({
   add: vi.fn().mockResolvedValue({}),
-  back: vi.fn().mockResolvedValue({ id: 5 })
+  back: vi.fn().mockResolvedValue({ id: 5, registerId: 1 })
 })
 
 // Mock registers store

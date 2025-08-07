@@ -159,7 +159,9 @@ async function onBack(values) {
     const prevParcel = await parcelViewsStore.back()
 
     if (prevParcel) {
-      const prevUrl = `/registers/${prevParcel.registerId}/parcels/edit/${prevParcel.id}`
+      // Ensure registerId is defined, fallback to current registerId if needed
+      const registerId = prevParcel.registerId || props.registerId
+      const prevUrl = `/registers/${registerId}/parcels/edit/${prevParcel.id}`
       router.push(prevUrl)
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`
@@ -225,13 +227,15 @@ async function generateXml(values) {
               />
             </div>
           </div>
-          <!-- Stopwords information when there are issues -->
+          <!-- Last view 
           <div class="form-group">
             <label for="lastView" class="label" title="Последний просмотр">Последний просмотр:</label>
             <div class="readonly-field">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '[неизвестно]' }}
             </div>
           </div>
+          -->
+          <!-- Stopwords information when there are issues -->
           <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords)" class="form-group stopwords-info">
             <div class="stopwords-text">
               {{ getCheckStatusInfo(item, feacnOrders, stopWords) }}

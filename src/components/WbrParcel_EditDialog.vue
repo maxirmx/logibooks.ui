@@ -227,14 +227,13 @@ async function generateXml(values) {
               />
             </div>
           </div>
-          <!-- Last view 
-          <div class="form-group">
-            <label for="lastView" class="label" title="Последний просмотр">Последний просмотр:</label>
+          <!-- Last view -->
+          <div class="form-group" v-if="item?.dTime">
+            <label for="lastView" class="label" title="Последний просмотр">Последний просмотр текущим пользователем:</label>
             <div class="readonly-field">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '[неизвестно]' }}
             </div>
-          </div>
-          -->
+          </div>          
           <!-- Stopwords information when there are issues -->
           <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords)" class="form-group stopwords-info">
             <div class="stopwords-text">

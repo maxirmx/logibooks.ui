@@ -34,6 +34,7 @@ import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.j
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
+import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
@@ -56,6 +57,7 @@ const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
+const parcelViewsStore = useParcelViewsStore()
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -79,6 +81,7 @@ parcelCheckStatusStore.ensureStatusesLoaded()
 await stopWordsStore.getAll()
 countriesStore.ensureLoaded()
 await parcelsStore.getById(props.id)
+await parcelViewsStore.add(props.id)
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),

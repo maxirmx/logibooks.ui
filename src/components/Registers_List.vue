@@ -156,7 +156,6 @@ async function applyStatusToAllOrders(registerId, statusId) {
     bulkStatusState[registerId].editMode = false
     bulkStatusState[registerId].selectedStatusId = null
     // Reload data to reflect changes
-    loadRegisters()
   } catch (error) {
     // The store already handles setting the error state
     // Just provide user-friendly error message from the store error
@@ -167,6 +166,9 @@ async function applyStatusToAllOrders(registerId, statusId) {
     // Exit edit mode on error
     bulkStatusState[registerId].editMode = false
     bulkStatusState[registerId].selectedStatusId = null
+  }
+  finally {
+    await registersStore.getAll()
   }
 }
 
@@ -272,7 +274,6 @@ async function deleteRegister(item) {
     try {
       await registersStore.remove(item.id)
     } catch (err) {
-      console.error('Error deleting register:', err)
       alertStore.error('Ошибка при удалении реестра')
     }
   }
@@ -293,6 +294,10 @@ async function pollValidation() {
     validationState.show = false
     stopPolling()
   }
+    finally {
+    await registersStore.getAll()
+  }
+
 }
 
 function stopPolling() {

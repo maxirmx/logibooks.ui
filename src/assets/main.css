@@ -92,6 +92,20 @@
   color: #d80327 !important;
 }
 
+/* Disabled button styles */
+.disabled-btn {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.disabled-btn:hover {
+  transform: none !important;
+}
+
+.disabled-icon {
+  opacity: 0.5;
+}
+
 /* The link to download config */
 .link-crt {
   margin-bottom: 2rem;

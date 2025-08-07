@@ -35,16 +35,17 @@ defineProps({
 defineEmits(['click'])
 </script>
 <template>
-  <v-tooltip :text="tooltipText">
+  <v-tooltip :text="tooltipText" :disabled="disabled">
     <template v-slot:activator="{ props }">
       <button 
         type="button" 
         @click="$emit('click', item)" 
         class="anti-btn" 
+        :class="{ 'disabled-btn': disabled }"
         v-bind="props"
         :disabled="disabled"
       >
-        <font-awesome-icon :size="iconSize" :icon="icon" class="anti-btn" />
+        <font-awesome-icon :size="iconSize" :icon="icon" class="anti-btn" :class="{ 'disabled-icon': disabled }" />
       </button>
     </template>
   </v-tooltip>

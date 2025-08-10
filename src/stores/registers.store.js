@@ -57,7 +57,7 @@ export const useRegistersStore = defineStore('registers', () => {
         page: authStore.registers_page.toString(),
         pageSize: authStore.registers_per_page.toString(),
         sortBy: authStore.registers_sort_by?.[0]?.key || 'id',
-        sortOrder: authStore.registers_sort_by?.[0]?.order || 'asc'
+        sortOrder: authStore.registers_sort_by?.[0]?.order || 'desc'
       })
 
       if (authStore.registers_search) {

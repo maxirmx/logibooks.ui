@@ -288,16 +288,16 @@ async function pollValidation() {
     if (progress.finished || progress.total === -1 || progress.processed === -1) {
       validationState.show = false
       stopPolling()
+      // Only refresh data when validation is complete
+      await registersStore.getAll()
     }
   } catch (err) {
     alertStore.error(err.message || String(err))
     validationState.show = false
     stopPolling()
-  }
-    finally {
+    // Refresh data if validation failed
     await registersStore.getAll()
   }
-
 }
 
 function stopPolling() {

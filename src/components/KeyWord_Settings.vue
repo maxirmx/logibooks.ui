@@ -54,6 +54,10 @@ const loading = ref(false)
 
 // Validation schema
 const schema = toTypedSchema(Yup.object().shape({
+  code: Yup
+    .string()
+    .required('Необходимо ввести код ТН ВЭД')
+    .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
   word: Yup
     .string()
     .required('Необходимо ввести ключевое слово или фразу')
@@ -66,11 +70,13 @@ const schema = toTypedSchema(Yup.object().shape({
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
+    code: '',
     word: '',
     matchTypeId: 1
   }
 })
 
+const { value: code } = useField('code')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
@@ -95,6 +101,7 @@ onMounted(async () => {
       if (loadedKeyWord) {
         resetForm({
           values: {
+            code: loadedKeyWord.code || '',
             word: loadedKeyWord.word,
             matchTypeId: loadedKeyWord.matchTypeId
           }
@@ -119,10 +126,21 @@ function onWordInput(event) {
   word.value = event.target.value
 }
 
+function onCodeInput(event) {
+  // Only allow digits, enforce max length of 10
+  const inputValue = event.target.value.replace(/\D/g, '').slice(0, 10)
+  // Update the input if we've modified the value
+  if (inputValue !== event.target.value) {
+    event.target.value = inputValue
+  }
+  code.value = inputValue
+}
+
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   
   const keyWordData = {
+    code: values.code,
     word: values.word.trim(),
     matchTypeId: values.matchTypeId
   }
@@ -155,6 +173,7 @@ defineExpose({
   onSubmit,
   cancel,
   onWordInput,
+  onCodeInput,
   isOptionDisabled
 })
 </script>
@@ -169,6 +188,24 @@ defineExpose({
     </div>
     
     <form v-else @submit.prevent="onSubmit">
+      <div class="form-group">
+        <label for="code" class="label">Код ТН ВЭД (10 цифр):</label>
+        <input
+          name="code"
+          id="code"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.code }"
+          placeholder="Введите код ТН ВЭД"
+          v-model="code"
+          @input="onCodeInput"
+          maxlength="10"
+          inputmode="numeric"
+          pattern="[0-9]*"
+        />
+        <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+      </div>
+      
       <div class="form-group">
         <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
         <input

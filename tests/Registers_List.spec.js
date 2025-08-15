@@ -40,7 +40,7 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: (store) => {
-      if (store.getAll && store.upload && store.setOrderStatuses) {
+      if (store.getAll && store.upload && store.setParcelStatuses) {
         // registers store
         return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) }
       } else if (store.getAll && !store.upload && store.companies) {
@@ -71,7 +71,7 @@ const uploadFile = ref(null)
 const registersStore = {
   getAll,
   upload: uploadFn,
-  setOrderStatuses: setOrderStatusesFn,
+  setParcelStatuses: setOrderStatusesFn,
   validate: validateFn,
   getValidationProgress: getValidationProgressFn,
   cancelValidation: cancelValidationFn,
@@ -964,7 +964,7 @@ describe('Registers_List.vue', () => {
 
       // Mock store with error property
       const mockStoreWithError = {
-        setOrderStatuses: setOrderStatusesFn,
+        setParcelStatuses: setOrderStatusesFn,
         error: { message: storeErrorMessage }
       }
 

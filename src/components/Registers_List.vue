@@ -149,7 +149,7 @@ async function applyStatusToAllOrders(registerId, statusId) {
   }
 
   try {
-    await registersStore.setOrderStatuses(registerId, numericStatusId)
+    await registersStore.setParcelStatuses(registerId, numericStatusId)
 
     // Success: show message and reset state
     alertStore.success('Статус успешно применен ко всем посылкам в реестре')

@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { createMockStore } from './test-utils.js'
+import { createMockStore } from './helpers/test-utils.js'
 
 // Mock Blob and URL.createObjectURL for linting purposes
 if (typeof global.Blob === 'undefined') {
@@ -549,3 +549,4 @@ describe('fetchWrapper', () => {
     });
   })
 })
+

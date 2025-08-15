@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import createLocalStorageMock from './__mocks__/localStorage.js'
+import { createLocalStorageMock } from './helpers/test-utils.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {

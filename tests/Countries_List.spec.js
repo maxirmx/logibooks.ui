@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import CountriesList from '@/components/Countries_List.vue'
-import { vuetifyStubs } from './test-utils.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 const mockItems = ref([
   { IsoNumeric: 840, IsoAlpha2: 'US', NameEnOfficial: 'United States', NameRuOfficial: 'США' },
@@ -123,3 +123,4 @@ describe('Countries_List.vue', () => {
     expect(wrapper.html()).toContain('Ошибка при загрузке информации')
   })
 })
+

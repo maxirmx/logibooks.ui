@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
-import { defaultGlobalStubs, createMockStore } from './test-utils.js'
+import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import ParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import router from '@/router'
@@ -596,3 +596,4 @@ describe('WbrParcel_EditDialog', () => {
     })
   })
 })
+

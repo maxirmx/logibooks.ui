@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import RegisterEditDialog from '@/components/Register_EditDialog.vue'
-import { defaultGlobalStubs, createMockStore } from './test-utils.js'
+import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
 
@@ -231,3 +231,4 @@ describe('Register_EditDialog', () => {
     expect(router.push).not.toHaveBeenCalled()
   })
 })
+

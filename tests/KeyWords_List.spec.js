@@ -29,7 +29,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import KeyWordsList from '@/components/KeyWords_List.vue'
-import { vuetifyStubs } from './test-utils.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues
 const getAllKeyWords = vi.hoisted(() => vi.fn())

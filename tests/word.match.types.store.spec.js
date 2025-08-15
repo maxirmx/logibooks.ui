@@ -57,7 +57,7 @@ describe('word match types store', () => {
     const store = useWordMatchTypesStore()
     await store.fetchMatchTypes()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/stopwords/matchtypes`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/wordmatchtypes`)
     expect(store.matchTypes).toEqual(data)
     expect(store.matchTypeMap.size).toBe(1)
     expect(store.loading).toBe(false)

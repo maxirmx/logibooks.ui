@@ -120,7 +120,7 @@ export const useRegistersStore = defineStore('registers', () => {
     return res
   }
 
-  async function setOrderStatuses(registerId, statusId) {
+  async function setParcelStatuses(registerId, statusId) {
     loading.value = true
     error.value = null
     try {
@@ -248,7 +248,7 @@ export const useRegistersStore = defineStore('registers', () => {
     upload,
     getById,
     update,
-    setOrderStatuses,
+    setParcelStatuses,
     validate,
     getValidationProgress,
     cancelValidation,

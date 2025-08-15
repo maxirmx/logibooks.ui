@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import CompaniesList from '@/components/Companies_List.vue'
-import { defaultGlobalStubs } from './test-utils'
+import { defaultGlobalStubs } from './helpers/test-utils'
 
 // Additional stubs for components not in defaultGlobalStubs
 const additionalStubs = {

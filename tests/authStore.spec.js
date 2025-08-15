@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useStatusStore } from '@/stores/status.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
-import createLocalStorageMock from './__mocks__/localStorage.js'
+import { createLocalStorageMock } from './helpers/test-utils.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {

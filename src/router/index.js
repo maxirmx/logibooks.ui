@@ -97,6 +97,27 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/keywords',
+      name: 'Ключевые слова и фразы',
+      component: () => import('@/views/KeyWords_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/keyword/create',
+      name: 'Регистрация ключевого слова или фразы',
+      component: () => import('@/views/KeyWord_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/keyword/edit/:id',
+      name: 'Редактирование ключевого слова или фразы',
+      component: () => import('@/views/KeyWord_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/stopwords',
       name: 'Стоп-слова и фразы',
       component: () => import('@/views/StopWords_View.vue'),

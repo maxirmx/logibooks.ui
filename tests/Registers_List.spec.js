@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
-import { vuetifyStubs } from './test-utils.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'
 
 const mockItems = ref([])
@@ -1076,3 +1076,4 @@ describe('formatInvoiceDate function', () => {
     expect(wrapper.vm.formatDate(dateWithTime)).toBe('27.07.2025')
   })
 })
+

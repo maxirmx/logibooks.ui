@@ -73,8 +73,8 @@ vi.mock('@/stores/stop.words.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
-  useStopWordMatchTypesStore: () => ({
+vi.mock('@/stores/word.match.types.store.js', () => ({
+  useWordMatchTypesStore: () => ({
     matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
     ensureLoaded: vi.fn(),
     getName: vi.fn(id => (id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Тип ${id}`))

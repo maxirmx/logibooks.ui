@@ -208,11 +208,11 @@ export const useRegistersStore = defineStore('registers', () => {
     return null
   }
 
-  async function nextParcel(orderId) {
+  async function nextParcel(parcelId) {
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/nextorder/${orderId}`)
+      return await fetchWrapper.get(`${baseUrl}/nextparcel/${parcelId}`)
     } catch (err) {
       error.value = err
     }

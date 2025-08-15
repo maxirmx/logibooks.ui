@@ -713,7 +713,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const result = await store.nextParcel(5)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextorder/5`
+        `${apiUrl}/registers/nextparcel/5`
       )
       expect(result).toEqual(parcel)
     })
@@ -726,7 +726,7 @@ describe('registers store', () => {
       expect(result).toBeNull()
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextorder/5`
+        `${apiUrl}/registers/nextparcel/5`
       )
     })
     

@@ -32,7 +32,7 @@ import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
-import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
+import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
@@ -43,7 +43,7 @@ const props = defineProps({
 })
 
 const stopWordsStore = useStopWordsStore()
-const matchTypesStore = useStopWordMatchTypesStore()
+const matchTypesStore = useWordMatchTypesStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)

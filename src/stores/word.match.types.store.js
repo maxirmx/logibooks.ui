@@ -30,7 +30,7 @@ import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/stopwords`
 
-export const useStopWordMatchTypesStore = defineStore('stopWordMatchTypes', () => {
+export const useWordMatchTypesStore = defineStore('wordMatchTypes', () => {
   const matchTypes = ref([])
   const loading = ref(false)
   const error = ref(null)

@@ -31,8 +31,8 @@ vi.mock('@/stores/stop.words.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
-  useStopWordMatchTypesStore: () => ({
+vi.mock('@/stores/word.match.types.store.js', () => ({
+  useWordMatchTypesStore: () => ({
     matchTypes: ref([
       { id: 1, name: 'Exact' },
       { id: 15, name: 'Type15' },

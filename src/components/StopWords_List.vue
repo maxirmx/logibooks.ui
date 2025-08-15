@@ -30,7 +30,7 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import ActionButton from '@/components/ActionButton.vue'
-import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
+import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
@@ -38,7 +38,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
 const stopWordsStore = useStopWordsStore()
-const matchTypesStore = useStopWordMatchTypesStore()
+const matchTypesStore = useWordMatchTypesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()

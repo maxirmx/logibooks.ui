@@ -78,6 +78,9 @@ const router = createRouter({
     { path: '/stopwords', component: { template: '<div>Stop Words</div>' } },
     { path: '/stopword/create', component: { template: '<div>Create Stop Word</div>' } },
     { path: '/stopword/edit/:id', component: { template: '<div>Edit Stop Word</div>' } },
+    { path: '/keywords', component: { template: '<div>Keywords</div>' } },
+    { path: '/keyword/create', component: { template: '<div>Create Keyword</div>' } },
+    { path: '/keyword/edit/:id', component: { template: '<div>Edit Keyword</div>' } },
     { path: '/feacn', component: { template: '<div>Feacn</div>' } }
   ]
 })

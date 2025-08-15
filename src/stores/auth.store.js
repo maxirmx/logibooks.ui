@@ -70,6 +70,10 @@ export const useAuthStore = defineStore('auth', () => {
   const stopwords_search = ref('')
   const stopwords_sort_by = ref(['id'])
   const stopwords_page = ref(1)
+  const keywords_per_page = ref(10)
+  const keywords_search = ref('')
+  const keywords_sort_by = ref(['id'])
+  const keywords_page = ref(1)
   const feacnorders_per_page = ref(10)
   const feacnorders_search = ref('')
   const feacnorders_sort_by = ref([])
@@ -188,6 +192,10 @@ export const useAuthStore = defineStore('auth', () => {
     stopwords_search,
     stopwords_sort_by,
     stopwords_page,
+    keywords_per_page,
+    keywords_search,
+    keywords_sort_by,
+    keywords_page,
     feacnorders_per_page,
     feacnorders_search,
     feacnorders_sort_by,

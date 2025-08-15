@@ -106,11 +106,14 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/feacn" class="link">Коды ТН ВЭД</RouterLink>
           </v-list-item>
-           <v-list-item>
+          <v-list-item>
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>
           <v-list-item v-if="authStore.isAdmin">
             <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
+          </v-list-item>
+          <v-list-item v-if="authStore.isAdmin">
+            <RouterLink to="/keywords" class="link">Ключевые слова</RouterLink>
           </v-list-item>
           <v-list-item v-if="authStore.isAdmin">
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>

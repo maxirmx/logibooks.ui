@@ -260,7 +260,7 @@ describe('KeyWord_Settings.vue', () => {
     it('shows error and redirects when loading fails', async () => {
       getById.mockRejectedValue(new Error('Failed to load keyword'))
       
-      const wrapper = mountComponent({ id: 1 })
+      mountComponent({ id: 1 })
       await resolveAll()
 
       expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных ключевого слова')

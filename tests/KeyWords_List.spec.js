@@ -249,8 +249,6 @@ describe('KeyWords_List.vue', () => {
   describe('Edit Functionality', () => {
     it('calls openEditDialog when edit button is clicked', async () => {
       // Find the action button for editing in the first row
-      const rows = wrapper.findAll('.data-row')
-      const firstRow = rows[0]
       const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
       
       // Find the edit button (first ActionButton in each row)

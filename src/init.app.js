@@ -56,7 +56,8 @@ import {
   faCheckDouble,
   faArrowUp,
   faArrowDown,
-  faArrowLeft
+  faArrowLeft,
+  faMagnifyingGlass
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -85,7 +86,8 @@ library.add(
   faCheckDouble,
   faArrowUp,
   faArrowDown,
-  faArrowLeft
+  faArrowLeft,
+  faMagnifyingGlass
 )
 
 import 'vuetify/styles'

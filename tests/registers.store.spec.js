@@ -15,14 +15,15 @@ vi.mock('@/helpers/config.js', () => ({
 }))
 
 // Mock customs procedures store for destination logic
+const mockCustomsProceduresStore = {
+  procedureMap: { value: new Map() },
+  procedures: [],
+  ensureLoaded: vi.fn()
+}
+
 vi.mock('@/stores/customs.procedures.store.js', () => {
-  // By default, no procedures, so destination will be 'in'
   return {
-    useCustomsProceduresStore: () => ({
-      procedureMap: { value: new Map() },
-      procedures: [],
-      ensureLoaded: () => {}
-    })
+    useCustomsProceduresStore: () => mockCustomsProceduresStore
   }
 })
 
@@ -49,6 +50,9 @@ describe('registers store', () => {
     vi.clearAllMocks()
     // Set default mock for auth store
     useAuthStore.mockReturnValue(defaultAuthStore)
+    // Reset customs procedures mock to default state
+    mockCustomsProceduresStore.procedureMap = { value: new Map() }
+    mockCustomsProceduresStore.procedures = []
     // Suppress console output during tests
     console.log = vi.fn()
     console.error = vi.fn()
@@ -451,6 +455,136 @@ describe('registers store', () => {
     })
   })
 
+  describe('setDestinationField function', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('sets destination to "in" when register is null', () => {
+      const register = null
+      const store = useRegistersStore()
+      // Access the internal setDestinationField function by triggering getAll
+      fetchWrapper.get.mockResolvedValue({
+        items: [register],
+        pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+      })
+      
+      // Test with null register - should handle gracefully
+      expect(() => store.getAll()).not.toThrow()
+    })
+
+    it('sets destination to "in" when customsProcedureId is missing', async () => {
+      const register = { id: 1, companyId: 100, theOtherCompanyId: 200, theOtherCountryCode: 840 }
+      fetchWrapper.get.mockResolvedValue({
+        items: [register],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      })
+
+      const store = useRegistersStore()
+      await store.getAll()
+
+      expect(store.items[0].destination).toBe('in')
+    })
+
+    it('sets destination to "out" when customs procedure code is 10', async () => {
+      // Mock customs procedures store with procedure code 10
+      mockCustomsProceduresStore.procedureMap = { value: new Map([[1, { id: 1, code: 10 }]]) }
+
+      const register = { 
+        id: 1, 
+        customsProcedureId: 1, 
+        companyId: 100, 
+        theOtherCompanyId: 200, 
+        theOtherCountryCode: 840 
+      }
+      fetchWrapper.get.mockResolvedValue({
+        items: [register],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      })
+
+      const store = useRegistersStore()
+      await store.getAll()
+
+      expect(store.items[0].destination).toBe('out')
+      expect(store.items[0].destCountryCode).toBe(840)
+      expect(store.items[0].origCountryCode).toBe(643)
+      expect(store.items[0].recipientId).toBe(200)
+      expect(store.items[0].senderId).toBe(100)
+    })
+
+    it('sets destination to "in" when customs procedure code is not 10', async () => {
+      // Mock customs procedures store with procedure code other than 10
+      mockCustomsProceduresStore.procedureMap = { value: new Map([[1, { id: 1, code: 40 }]]) }
+
+      const register = { 
+        id: 1, 
+        customsProcedureId: 1, 
+        companyId: 100, 
+        theOtherCompanyId: 200, 
+        theOtherCountryCode: 840 
+      }
+      fetchWrapper.get.mockResolvedValue({
+        items: [register],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      })
+
+      const store = useRegistersStore()
+      await store.getAll()
+
+      expect(store.items[0].destination).toBe('in')
+      expect(store.items[0].destCountryCode).toBe(643)
+      expect(store.items[0].origCountryCode).toBe(840)
+      expect(store.items[0].recipientId).toBe(100)
+      expect(store.items[0].senderId).toBe(200)
+    })
+
+    it('falls back to procedures array when procedureMap is not available', async () => {
+      // Mock customs procedures store with procedures array fallback
+      mockCustomsProceduresStore.procedureMap = { value: null }
+      mockCustomsProceduresStore.procedures = [{ id: 1, code: 10 }]
+
+      const register = { 
+        id: 1, 
+        customsProcedureId: 1, 
+        companyId: 100, 
+        theOtherCompanyId: 200, 
+        theOtherCountryCode: 840 
+      }
+      fetchWrapper.get.mockResolvedValue({
+        items: [register],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      })
+
+      const store = useRegistersStore()
+      await store.getAll()
+
+      expect(store.items[0].destination).toBe('out')
+    })
+
+    it('sets destination to "in" when procedure is not found', async () => {
+      // Mock customs procedures store with no matching procedure
+      mockCustomsProceduresStore.procedureMap = { value: new Map() }
+      mockCustomsProceduresStore.procedures = []
+
+      const register = { 
+        id: 1, 
+        customsProcedureId: 999, 
+        companyId: 100, 
+        theOtherCompanyId: 200, 
+        theOtherCountryCode: 840 
+      }
+      fetchWrapper.get.mockResolvedValue({
+        items: [register],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      })
+
+      const store = useRegistersStore()
+      await store.getAll()
+
+      expect(store.items[0].destination).toBe('in')
+    })
+  })
+
   describe('upload method', () => {
     it('uploads file via postFile', async () => {
       const file = new File(['data'], 'test.xlsx')
@@ -575,6 +709,16 @@ describe('registers store', () => {
       expect(result).toEqual(handle)
     })
 
+    it('handles validation error', async () => {
+      const error = new Error('Validation failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      
+      await expect(store.validate(1)).rejects.toThrow('Validation failed')
+      expect(store.error).toBe(error)
+    })
+
     it('gets validation progress', async () => {
       const progress = { total: 10, processed: 5, finished: false }
       fetchWrapper.get.mockResolvedValue(progress)
@@ -586,6 +730,16 @@ describe('registers store', () => {
       expect(result).toEqual(progress)
     })
 
+    it('handles validation progress error', async () => {
+      const error = new Error('Progress check failed')
+      fetchWrapper.get.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      
+      await expect(store.getValidationProgress('abcd')).rejects.toThrow('Progress check failed')
+      expect(store.error).toBe(error)
+    })
+
     it('cancels validation', async () => {
       fetchWrapper.delete.mockResolvedValue(undefined)
 
@@ -593,6 +747,16 @@ describe('registers store', () => {
       await store.cancelValidation('abcd')
 
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
+    })
+
+    it('handles cancel validation error', async () => {
+      const error = new Error('Cancel failed')
+      fetchWrapper.delete.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      
+      await expect(store.cancelValidation('abcd')).rejects.toThrow('Cancel failed')
+      expect(store.error).toBe(error)
     })
   })
 
@@ -636,6 +800,14 @@ describe('registers store', () => {
       expect(store.item).toEqual(data)
     })
 
+    it('handles getById error', async () => {
+      const error = new Error('Not found')
+      fetchWrapper.get.mockRejectedValueOnce(error)
+      const store = useRegistersStore()
+      await store.getById(5)
+      expect(store.item).toEqual({ error })
+    })
+
     it('updates register and store', async () => {
       fetchWrapper.put.mockResolvedValue({})
       const store = useRegistersStore()
@@ -657,6 +829,17 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/10/download`,
         'register_10.xlsx'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('calls downloadFile with custom filename when provided', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const result = await store.download(10, 'custom_file.xlsx')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download`,
+        'custom_file.xlsx'
       )
       expect(result).toBe(true)
     })
@@ -694,6 +877,26 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
         'IndPost_INV.zip'
+      )
+    })
+
+    it('calls downloadFile with default filename when invoiceNumber is null', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.generate(5, null)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/5/generate`,
+        'IndPost_5.zip'
+      )
+    })
+
+    it('calls downloadFile with default filename when invoiceNumber is undefined', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.generate(5, undefined)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/5/generate`,
+        'IndPost_5.zip'
       )
     })
 

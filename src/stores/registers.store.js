@@ -125,7 +125,7 @@ export const useRegistersStore = defineStore('registers', () => {
     error.value = null
     try {
       const response = await fetchWrapper.put(
-        `${baseUrl}/${registerId}/setorderstatuses/${statusId}`
+        `${baseUrl}/${registerId}/setparcelstatuses/${statusId}`
       )
       return response
     } catch (err) {

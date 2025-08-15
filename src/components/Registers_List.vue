@@ -342,17 +342,17 @@ function formatDate(dateStr) {
 
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center', width: '280px' },
-  { title: 'Номер сделки', key: 'dealNumber', align: 'start' },
-  { title: 'Дата загрузки', key: 'date', align: 'start' },
-  { title: 'Отправитель', key: 'senderId', align: 'start' },
-  { title: 'Страна отправления', key: 'origCountryCode', align: 'start' },
-  { title: 'Получатель', key: 'recipientId', align: 'start' },
-  { title: 'Страна назначения', key: 'destCountryCode', align: 'start' },
-  { title: 'Номер накладной', key: 'invoiceNumber', align: 'start' },
-  { title: 'Дата накладной', key: 'invoiceDate', align: 'start' },
-  { title: 'Транспорт', key: 'transportationTypeId', align: 'start' },
-  { title: 'Процедура', key: 'customsProcedureId', align: 'start' },
-  { title: 'Посылки', key: 'ordersTotal', align: 'end' }
+  { title: 'Номер сделки', key: 'dealNumber', align: 'center' },
+  { title: 'Дата загрузки', key: 'date', align: 'center' },
+  { title: 'Отправитель', key: 'senderId', align: 'center' },
+  { title: 'Страна отправления', key: 'origCountryCode', align: 'center' },
+  { title: 'Получатель', key: 'recipientId', align: 'center' },
+  { title: 'Страна назначения', key: 'destCountryCode', align: 'center' },
+  { title: 'Номер накладной', key: 'invoiceNumber', align: 'center' },
+  { title: 'Дата накладной', key: 'invoiceDate', align: 'center' },
+  { title: 'Транспорт', key: 'transportationTypeId', align: 'center' },
+  { title: 'Процедура', key: 'customsProcedureId', align: 'center' },
+  { title: 'Посылки', key: 'ordersTotal', align: 'center' }
 ]
 
 </script>

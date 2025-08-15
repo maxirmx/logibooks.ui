@@ -28,7 +28,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/stopwords`
+const baseUrl = `${apiUrl}/wordmatchtypes`
 
 export const useWordMatchTypesStore = defineStore('wordMatchTypes', () => {
   const matchTypes = ref([])
@@ -41,7 +41,7 @@ export const useWordMatchTypesStore = defineStore('wordMatchTypes', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetchWrapper.get(`${baseUrl}/matchtypes`)
+      const response = await fetchWrapper.get(`${baseUrl}`)
       matchTypes.value = response || []
       matchTypeMap.value = new Map(matchTypes.value.map(t => [t.id, t]))
     } catch (err) {

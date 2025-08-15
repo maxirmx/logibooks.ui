@@ -61,13 +61,26 @@ const schema = toTypedSchema(Yup.object().shape({
   matchTypeId: Yup
     .number()
     .required('Необходимо выбрать тип соответствия')
+    .test(
+      'is-enabled',
+      'Выбранный тип соответствия недоступен для текущего слова/фразы',
+      function(value) {
+        const word = this.parent.word || ''
+        const words = word.match(/[\p{L}\d-]+/gu) || []
+        const isSingleWordInput = words.length <= 1
+        if (isSingleWordInput) {
+          return !(value >= 21 && value <= 30)
+        }
+        return !((value >= 11 && value <= 20) || value > 30)
+      }
+    )    
 }))
 
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     word: '',
-    matchTypeId: 1
+    matchTypeId: 41
   }
 })
 
@@ -108,7 +121,7 @@ onMounted(async () => {
       loading.value = false
     }
   } else {
-    setFieldValue('matchTypeId', 1)
+    setFieldValue('matchTypeId', 41)
     await nextTick()
   }
 })
@@ -204,9 +217,9 @@ defineExpose({
             {{ mt.name }}
           </label>
         </div>
-        <div v-if="errors.matchTypeId" class="invalid-feedback">{{ errors.matchTypeId }}</div>
       </div>
 
+      <div v-if="errors.matchTypeId" class="alert alert-danger mt-3 mb-0">{{ errors.matchTypeId }}</div>
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="saving">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>

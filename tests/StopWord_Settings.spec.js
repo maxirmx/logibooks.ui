@@ -150,7 +150,7 @@ describe('StopWord_Settings.vue', () => {
       await wordInput.trigger('input')
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.vm.matchTypeId).toBe(1)
+      expect(wrapper.vm.matchTypeId).toBe(41)
     })
 
     it('allows changing matchTypeId for single word', async () => {

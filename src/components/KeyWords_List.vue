@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -46,6 +46,9 @@ const confirm = useConfirm()
 const { keyWords, loading } = storeToRefs(keyWordsStore)
 const { alert } = storeToRefs(alertStore)
 
+// File upload reference
+const fileInput = ref(null)
+
 // Custom filter function for v-data-table
 function filterKeyWords(value, query, item) {
   if (query === null || item === null) {
@@ -58,15 +61,17 @@ function filterKeyWords(value, query, item) {
   const q = query.toLocaleUpperCase()
 
   return (
-    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.feacnCode?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
   )
 }
 
 // Table headers
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
+  { title: 'Код ТН ВЭД', key: 'feacnCode', sortable: true },
   { title: 'Ключевое слово или фраза', key: 'word', sortable: true },
-  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
+  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }  
 ]
 
 function getMatchTypeText(id) {
@@ -79,6 +84,33 @@ function openEditDialog(item) {
 
 function openCreateDialog() {
   router.push('/keyword/create')
+}
+
+function openFileDialog() {
+  fileInput.value?.click()
+}
+
+async function fileSelected(files) {
+  const file = Array.isArray(files) ? files[0] : files
+  if (!file) return
+
+  try {
+    await keyWordsStore.upload(file)
+    alertStore.success('Файл с ключевыми словами успешно загружен')
+    await keyWordsStore.getAll() 
+  } catch (error) {
+    if (error.message?.includes('400')) {
+      alertStore.error('Некорректный формат файла. Пожалуйста, проверьте содержимое файла.')
+    } else if (error.message?.includes('413')) {
+      alertStore.error('Файл слишком большой. Максимальный размер файла - 10MB.')
+    } else {
+      alertStore.error('Ошибка при загрузке файла с ключевыми словами')
+    }
+  } finally {
+    if (fileInput.value) {
+      fileInput.value.value = null
+    }
+  }
 }
 
 async function deleteKeyWord(keyWord) {
@@ -121,7 +153,9 @@ defineExpose({
   openCreateDialog,
   openEditDialog,
   deleteKeyWord,
-  getMatchTypeText
+  getMatchTypeText,
+  openFileDialog,
+  fileSelected
 })
 </script>
 
@@ -130,7 +164,25 @@ defineExpose({
     <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
     <hr class="hr" />
 
-    <div class="link-crt">
+    <div class="link-crt d-flex upload-links">
+      <a v-if="authStore.isAdmin" @click="openFileDialog" class="link">
+        <font-awesome-icon
+          size="1x"
+          icon="fa-solid fa-file-import"
+          class="link"
+        />&nbsp;&nbsp;&nbsp;Загрузить файл с ключевыми словами для подбора ТН ВЭД
+      </a>
+
+      <v-file-input
+        ref="fileInput"
+        style="display: none"
+        accept=".xls,.xlsx,.csv,.txt"
+        loading-text="Идёт загрузка файла..."
+        @update:model-value="fileSelected"
+      />
+    </div>
+
+    <div class="link-crt d-flex upload-links">
       <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
@@ -139,6 +191,7 @@ defineExpose({
         />&nbsp;&nbsp;&nbsp;Зарегистрировать ключевое слово или фразу
       </a>
     </div>
+      
 
     <div v-if="keyWords?.length">
       <v-text-field

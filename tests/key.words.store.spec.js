@@ -84,14 +84,56 @@ describe('key.words.store.js', () => {
     })
   })
 
-  describe('download', () => {
-    it('uploads file to download endpoint', async () => {
+  describe('upload', () => {
+    it('uploads file successfully', async () => {
       const file = new File(['content'], 'keywords.xlsx')
       fetchWrapper.postFile.mockResolvedValue()
-      await store.download(file)
-      expect(fetchWrapper.postFile).toHaveBeenCalled()
-      const [url] = fetchWrapper.postFile.mock.calls[0]
-      expect(url).toBe('http://localhost:3000/api/keywords/download')
+      
+      await store.upload(file)
+      
+      expect(fetchWrapper.postFile).toHaveBeenCalledTimes(1)
+      const [url, formData] = fetchWrapper.postFile.mock.calls[0]
+      expect(url).toBe('http://localhost:3000/api/keywords/upload')
+      expect(formData).toBeInstanceOf(FormData)
+      expect(formData.get('file')).toBe(file)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(null)
+    })
+
+    it('sets loading state during upload', async () => {
+      const file = new File(['content'], 'keywords.xlsx')
+      let resolveUpload
+      const uploadPromise = new Promise((resolve) => {
+        resolveUpload = resolve
+      })
+      fetchWrapper.postFile.mockReturnValue(uploadPromise)
+
+      const uploadCall = store.upload(file)
+      expect(store.loading).toBe(true)
+
+      resolveUpload()
+      await uploadCall
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles upload error', async () => {
+      const file = new File(['content'], 'keywords.xlsx')
+      const error = new Error('Upload failed')
+      fetchWrapper.postFile.mockRejectedValue(error)
+
+      await expect(store.upload(file)).rejects.toThrow('Upload failed')
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+
+    it('clears error before upload', async () => {
+      const file = new File(['content'], 'keywords.xlsx')
+      store.error = new Error('Previous error')
+      fetchWrapper.postFile.mockResolvedValue()
+
+      await store.upload(file)
+
+      expect(store.error).toBe(null)
     })
   })
 

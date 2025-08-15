@@ -54,7 +54,7 @@ const loading = ref(false)
 
 // Validation schema
 const schema = toTypedSchema(Yup.object().shape({
-  code: Yup
+  feacnCode: Yup
     .string()
     .required('Необходимо ввести код ТН ВЭД')
     .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
@@ -65,18 +65,31 @@ const schema = toTypedSchema(Yup.object().shape({
   matchTypeId: Yup
     .number()
     .required('Необходимо выбрать тип соответствия')
+    .test(
+      'is-enabled',
+      'Выбранный тип соответствия недоступен для текущего слова/фразы',
+      function(value) {
+        const word = this.parent.word || ''
+        const words = word.match(/[\p{L}\d-]+/gu) || []
+        const isSingleWordInput = words.length <= 1
+        if (isSingleWordInput) {
+          return !(value >= 21 && value <= 30)
+        }
+        return !((value >= 11 && value <= 20) || value > 30)
+      }
+    )    
 }))
 
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
-    code: '',
+    feacnCode: '',
     word: '',
-    matchTypeId: 1
+    matchTypeId: 41 
   }
 })
 
-const { value: code } = useField('code')
+const { value: feacnCode } = useField('feacnCode')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
@@ -101,7 +114,7 @@ onMounted(async () => {
       if (loadedKeyWord) {
         resetForm({
           values: {
-            code: loadedKeyWord.code || '',
+            feacnCode: loadedKeyWord.feacnCode || '',
             word: loadedKeyWord.word,
             matchTypeId: loadedKeyWord.matchTypeId
           }
@@ -115,7 +128,7 @@ onMounted(async () => {
       loading.value = false
     }
   } else {
-    setFieldValue('matchTypeId', 1)
+    setFieldValue('matchTypeId', 41)
     await nextTick()
   }
 })
@@ -133,14 +146,14 @@ function onCodeInput(event) {
   if (inputValue !== event.target.value) {
     event.target.value = inputValue
   }
-  code.value = inputValue
+  feacnCode.value = inputValue
 }
 
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   
   const keyWordData = {
-    code: values.code,
+    feacnCode: values.feacnCode,
     word: values.word.trim(),
     matchTypeId: values.matchTypeId
   }
@@ -189,21 +202,21 @@ defineExpose({
     
     <form v-else @submit.prevent="onSubmit">
       <div class="form-group">
-        <label for="code" class="label">Код ТН ВЭД (10 цифр):</label>
+        <label for="feacnCode" class="label">Код ТН ВЭД (10 цифр):</label>
         <input
-          name="code"
-          id="code"
+          name="feacnCode"
+          id="feacnCode"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.code }"
+          :class="{ 'is-invalid': errors.feacnCode }"
           placeholder="Введите код ТН ВЭД"
-          v-model="code"
+          v-model="feacnCode"
           @input="onCodeInput"
           maxlength="10"
           inputmode="numeric"
           pattern="[0-9]*"
         />
-        <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+        <div v-if="errors.feacnCode" class="invalid-feedback">{{ errors.feacnCode }}</div>
       </div>
       
       <div class="form-group">
@@ -241,9 +254,9 @@ defineExpose({
             {{ mt.name }}
           </label>
         </div>
-        <div v-if="errors.matchTypeId" class="invalid-feedback">{{ errors.matchTypeId }}</div>
       </div>
 
+      <div v-if="errors.matchTypeId" class="alert alert-danger mt-3 mb-0">{{ errors.matchTypeId }}</div>
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="saving">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>

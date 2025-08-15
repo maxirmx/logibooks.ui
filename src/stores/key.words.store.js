@@ -107,13 +107,13 @@ export const useKeyWordsStore = defineStore('keyWords', () => {
     }
   }
 
-  async function download(file) {
+  async function upload(file) {
     loading.value = true
     error.value = null
     try {
       const formData = new FormData()
       formData.append('file', file)
-      await fetchWrapper.postFile(`${baseUrl}/download`, formData)
+      await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
     } catch (err) {
       error.value = err
       throw err
@@ -132,7 +132,7 @@ export const useKeyWordsStore = defineStore('keyWords', () => {
     create,
     update,
     remove,
-    download
+    upload
   }
 })
 

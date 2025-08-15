@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/components/Users_List.vue'
-import { vuetifyStubs } from './test-utils'
+import { vuetifyStubs } from './helpers/test-utils'
 
 // Centralized mock data
 const mockUsers = ref([

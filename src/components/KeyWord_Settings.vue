@@ -161,7 +161,7 @@ defineExpose({
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">{{ isEdit ? 'Редактировать ключевое слово или фразу' : 'Регистрация ключевого слова или фразы' }}</h1>
+    <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     
     <div v-if="loading" class="text-center m-5">
@@ -170,7 +170,7 @@ defineExpose({
     
     <form v-else @submit.prevent="onSubmit">
       <div class="form-group">
-        <label for="word" class="label">Ключевое слово или фраза:</label>
+        <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
         <input
           name="word"
           id="word"

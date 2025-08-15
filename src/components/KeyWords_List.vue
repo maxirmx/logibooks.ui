@@ -127,7 +127,7 @@ defineExpose({
 
 <template>
   <div class="settings table-2" data-testid="key-words-list">
-    <h1 class="primary-heading">Ключевые слова и фразы</h1>
+    <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
     <hr class="hr" />
 
     <div class="link-crt">

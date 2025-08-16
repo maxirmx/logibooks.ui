@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { createMockStore } from './test-utils.js'
+import { createMockStore } from './helpers/test-utils.js'
 
 // Mock Blob and URL.createObjectURL for linting purposes
 if (typeof global.Blob === 'undefined') {
@@ -497,10 +497,7 @@ describe('fetchWrapper', () => {
       expect(anchor2.download).toBe('single-quote.xlsx');
     });
     
-    it('should throw and log error if download fails', async () => {
-      // Mock console.error
-      const originalConsoleError = console.error;
-      console.error = vi.fn();
+    it('should throw error if download fails', async () => {
       
       // Mock a failing request with a network error
       const error = new TypeError('Failed to fetch');
@@ -509,12 +506,6 @@ describe('fetchWrapper', () => {
       await expect(fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt'))
         .rejects.toThrow('Не удалось соединиться с сервером');
       
-      // Verify console.error was called (with any arguments)
-      expect(console.error).toHaveBeenCalled();
-      expect(console.error.mock.calls[0][0]).toBe('Error downloading file:');
-      
-      // Restore console.error
-      console.error = originalConsoleError;
     });
     
     it('should handle HTTP error responses', async () => {
@@ -549,3 +540,4 @@ describe('fetchWrapper', () => {
     });
   })
 })
+

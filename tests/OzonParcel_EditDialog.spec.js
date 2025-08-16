@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { createPinia } from 'pinia'
-import { defaultGlobalStubs, createMockStore } from './test-utils.js'
+import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import ParcelEditDialog from '@/components/OzonParcel_EditDialog.vue'
 import router from '@/router'
 
@@ -585,3 +585,4 @@ describe('OzonParcel_EditDialog', () => {
     })
   })
 })
+

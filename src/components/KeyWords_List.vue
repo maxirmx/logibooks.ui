@@ -25,10 +25,10 @@
 
 <script setup>
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -37,17 +37,20 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
-const stopWordsStore = useStopWordsStore()
+const keyWordsStore = useKeyWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
 
-const { stopWords, loading } = storeToRefs(stopWordsStore)
+const { keyWords, loading } = storeToRefs(keyWordsStore)
 const { alert } = storeToRefs(alertStore)
 
+// File upload reference
+const fileInput = ref(null)
+
 // Custom filter function for v-data-table
-function filterStopWords(value, query, item) {
+function filterKeyWords(value, query, item) {
   if (query === null || item === null) {
     return false
   }
@@ -58,15 +61,17 @@ function filterStopWords(value, query, item) {
   const q = query.toLocaleUpperCase()
 
   return (
-    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.feacnCode?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
   )
 }
 
 // Table headers
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-  { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
-  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
+  { title: 'Код ТН ВЭД', key: 'feacnCode', sortable: true },
+  { title: 'Ключевое слово или фраза', key: 'word', sortable: true },
+  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }  
 ]
 
 function getMatchTypeText(id) {
@@ -74,15 +79,36 @@ function getMatchTypeText(id) {
 }
 
 function openEditDialog(item) {
-  router.push(`/stopword/edit/${item.id}`)
+  router.push(`/keyword/edit/${item.id}`)
 }
 
 function openCreateDialog() {
-  router.push('/stopword/create')
+  router.push('/keyword/create')
 }
 
-async function deleteStopWord(stopWord) {
-  const content = 'Удалить стоп-слово "' + stopWord.word + '" ?'
+function openFileDialog() {
+  fileInput.value?.click()
+}
+
+async function fileSelected(files) {
+  alertStore.clear()
+  const file = Array.isArray(files) ? files[0] : files
+  if (!file) return
+
+  try {
+    await keyWordsStore.upload(file)
+    await keyWordsStore.getAll() 
+  } catch (error) {
+      alertStore.error('Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : ""))
+  } finally {
+    if (fileInput.value) {
+      fileInput.value.value = null
+    }
+  }
+}
+
+async function deleteKeyWord(keyWord) {
+  const content = 'Удалить ключевое слово "' + keyWord.word + '" ?'
   const confirmed = await confirm({
     title: 'Подтверждение',
     confirmationText: 'Удалить',
@@ -99,12 +125,12 @@ async function deleteStopWord(stopWord) {
 
   if (confirmed) {
     try {
-      await stopWordsStore.remove(stopWord.id)
+      await keyWordsStore.remove(keyWord.id)
     } catch (error) {
       if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить стоп-слово, у которого есть связанные записи')
+        alertStore.error('Нельзя удалить ключевое слово, у которого есть связанные записи')
       } else {
-        alertStore.error('Ошибка при удалении стоп-слова')
+        alertStore.error('Ошибка при удалении ключевого слова')
       }
     }
   }
@@ -113,38 +139,59 @@ async function deleteStopWord(stopWord) {
 // Initialize data
 onMounted(async () => {
   matchTypesStore.ensureLoaded()
-  await stopWordsStore.getAll()
+  await keyWordsStore.getAll()
 })
 
 // Expose functions for testing
 defineExpose({
   openCreateDialog,
   openEditDialog,
-  deleteStopWord,
-  getMatchTypeText
+  deleteKeyWord,
+  getMatchTypeText,
+  openFileDialog,
+  fileSelected
 })
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="stop-words-list">
-    <h1 class="primary-heading">Стоп-слова и фразы</h1>
+  <div class="settings table-2" data-testid="key-words-list">
+    <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
     <hr class="hr" />
 
-    <div class="link-crt">
+    <div class="link-crt d-flex upload-links">
+      <a v-if="authStore.isAdmin" @click="openFileDialog" class="link">
+        <font-awesome-icon
+          size="1x"
+          icon="fa-solid fa-file-import"
+          class="link"
+        />&nbsp;&nbsp;&nbsp;Загрузить файл с ключевыми словами для подбора ТН ВЭД
+      </a>
+
+      <v-file-input
+        ref="fileInput"
+        style="display: none"
+        accept=".xls,.xlsx,.csv,.txt"
+        loading-text="Идёт загрузка файла..."
+        @update:model-value="fileSelected"
+      />
+    </div>
+
+    <div class="link-crt d-flex upload-links">
       <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-plus"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать стоп-слово или фразу
+        />&nbsp;&nbsp;&nbsp;Зарегистрировать ключевое слово или фразу
       </a>
     </div>
+      
 
-    <div v-if="stopWords?.length">
+    <div v-if="keyWords?.length">
       <v-text-field
-        v-model="authStore.stopwords_search"
+        v-model="authStore.keywords_search"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по стоп-словам и фразам"
+        label="Поиск по ключевым словам и фразам"
         variant="solo"
         hide-details
       />
@@ -152,17 +199,17 @@ defineExpose({
 
     <v-card>
       <v-data-table
-        v-if="stopWords?.length"
-        v-model:items-per-page="authStore.stopwords_per_page"
-        items-per-page-text="Стоп-слов на странице"
+        v-if="keyWords?.length"
+        v-model:items-per-page="authStore.keywords_per_page"
+        items-per-page-text="Ключевых слов на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="authStore.stopwords_page"
+        v-model:page="authStore.keywords_page"
         :headers="headers"
-        :items="stopWords"
-        :search="authStore.stopwords_search"
-        v-model:sort-by="authStore.stopwords_sort_by"
-        :custom-filter="filterStopWords"
+        :items="keyWords"
+        :search="authStore.keywords_search"
+        v-model:sort-by="authStore.keywords_sort_by"
+        :custom-filter="filterKeyWords"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -172,14 +219,14 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать стоп-слово или фразу"
+              tooltip-text="Редактировать ключевое слово или фразу"
               @click="openEditDialog"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить стоп-слово или фразу"
-              @click="deleteStopWord"
+              tooltip-text="Удалить ключевое слово или фразу"
+              @click="deleteKeyWord"
             />
           </div>
         </template>
@@ -189,7 +236,7 @@ defineExpose({
         </template>
       </v-data-table>
 
-      <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов и фраз пуст</div>
+      <div v-if="!keyWords?.length" class="text-center m-5">Список ключевых слов и фраз пуст</div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UserSettings from '@/components/User_Settings.vue'
-import { defaultGlobalStubs, createMockStore } from './test-utils.js'
+import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
 
 // simple stubs for vee-validate components
@@ -251,3 +251,4 @@ describe('User_Settings.vue real component', () => {
     expect(successAlert).not.toHaveBeenCalled()
   })
 })
+

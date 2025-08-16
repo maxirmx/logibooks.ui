@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import FeacnCodesList from '@/components/FeacnCodes_List.vue'
-import { vuetifyStubs, createMockStore } from './test-utils.js'
+import { vuetifyStubs, createMockStore } from './helpers/test-utils.js'
 
 
 // Mock Pinia's storeToRefs to return the mock values
@@ -280,3 +280,4 @@ describe('FeacnCodes_List.vue', () => {
     })
   })
 })
+

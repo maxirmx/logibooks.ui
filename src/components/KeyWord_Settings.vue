@@ -1,13 +1,4 @@
-// Copyright (C) 2025 Maximimport { ref, computed, onMounted, nextTick } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useForm, useField } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/yup'
-import * as Yup from 'yup'
-import router from '@/router'
-import { useStopWordsStore } from '@/stores/stop.words.store.js'
-import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
-import { parseWords, isSingleWordInput, isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'] Samsonov (www.sw.consulting)
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 //
@@ -40,7 +31,7 @@ import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import router from '@/router'
-import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
@@ -52,7 +43,7 @@ const props = defineProps({
   }
 })
 
-const stopWordsStore = useStopWordsStore()
+const keyWordsStore = useKeyWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
 const alertStore = useAlertStore()
 
@@ -64,10 +55,14 @@ const loading = ref(false)
 
 // Validation schema
 const schema = toTypedSchema(Yup.object().shape({
+  feacnCode: Yup
+    .string()
+    .required('Необходимо ввести код ТН ВЭД')
+    .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
   word: Yup
     .string()
-    .required('Необходимо ввести стоп-слово или фразу')
-    .min(1, 'Стоп-слово должно содержать хотя бы один символ'),
+    .required('Необходимо ввести ключевое слово или фразу')
+    .min(1, 'Ключевое слово должно содержать хотя бы один символ'),
   matchTypeId: Yup
     .number()
     .required('Необходимо выбрать тип соответствия')
@@ -81,11 +76,13 @@ const schema = toTypedSchema(Yup.object().shape({
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
+    feacnCode: '',
     word: '',
-    matchTypeId: 41
+    matchTypeId: 41 
   }
 })
 
+const { value: feacnCode } = useField('feacnCode')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
@@ -100,19 +97,20 @@ onMounted(async () => {
   if (isEdit.value) {
     loading.value = true
     try {
-      const loadedStopWord = await stopWordsStore.getById(props.id)
-      if (loadedStopWord) {
+      const loadedKeyWord = await keyWordsStore.getById(props.id)
+      if (loadedKeyWord) {
         resetForm({
           values: {
-            word: loadedStopWord.word,
-            matchTypeId: loadedStopWord.matchTypeId
+            feacnCode: loadedKeyWord.feacnCode || '',
+            word: loadedKeyWord.word,
+            matchTypeId: loadedKeyWord.matchTypeId
           }
         })
         await nextTick()
       }
     } catch {
-      alertStore.error('Ошибка при загрузке данных стоп-слова')
-      router.push('/stopwords')
+      alertStore.error('Ошибка при загрузке данных ключевого слова')
+      router.push('/keywords')
     } finally {
       loading.value = false
     }
@@ -128,26 +126,37 @@ function onWordInput(event) {
   word.value = event.target.value
 }
 
+function onCodeInput(event) {
+  // Only allow digits, enforce max length of 10
+  const inputValue = event.target.value.replace(/\D/g, '').slice(0, 10)
+  // Update the input if we've modified the value
+  if (inputValue !== event.target.value) {
+    event.target.value = inputValue
+  }
+  feacnCode.value = inputValue
+}
+
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   
-  const stopWordData = {
+  const keyWordData = {
+    feacnCode: values.feacnCode,
     word: values.word.trim(),
     matchTypeId: values.matchTypeId
   }
 
   // Include id for updates
   if (isEdit.value) {
-    stopWordData.id = props.id
+    keyWordData.id = props.id
   }
 
   try {
     if (isEdit.value) {
-      await stopWordsStore.update(props.id, stopWordData)
+      await keyWordsStore.update(props.id, keyWordData)
     } else {
-      await stopWordsStore.create(stopWordData)
+      await keyWordsStore.create(keyWordData)
     }
-    router.push('/stopwords')
+    router.push('/keywords')
   } catch (error) {
     setErrors({ apiError: error.message })
   } finally {
@@ -156,7 +165,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
 })
 
 function cancel() {
-  router.push('/stopwords')
+  router.push('/keywords')
 }
 
 // Expose functions for testing
@@ -164,13 +173,14 @@ defineExpose({
   onSubmit,
   cancel,
   onWordInput,
+  onCodeInput,
   isOptionDisabled
 })
 </script>
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</h1>
+    <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     
     <div v-if="loading" class="text-center m-5">
@@ -179,14 +189,32 @@ defineExpose({
     
     <form v-else @submit.prevent="onSubmit">
       <div class="form-group">
-        <label for="word" class="label">Стоп-слово или фраза:</label>
+        <label for="feacnCode" class="label">Код ТН ВЭД (10 цифр):</label>
+        <input
+          name="feacnCode"
+          id="feacnCode"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.feacnCode }"
+          placeholder="Введите код ТН ВЭД"
+          v-model="feacnCode"
+          @input="onCodeInput"
+          maxlength="10"
+          inputmode="numeric"
+          pattern="[0-9]*"
+        />
+        <div v-if="errors.feacnCode" class="invalid-feedback">{{ errors.feacnCode }}</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
         <input
           name="word"
           id="word"
           type="text"
           class="form-control input"
           :class="{ 'is-invalid': errors.word }"
-          placeholder="Стоп-слово или фраза"
+          placeholder="Ключевое слово или фраза"
           v-model="word"
           @input="onWordInput"
         />

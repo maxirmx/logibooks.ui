@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/components/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
-import { vuetifyStubs } from './test-utils.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'
 
 const mockItems = ref([])
@@ -40,7 +40,7 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: (store) => {
-      if (store.getAll && store.upload && store.setOrderStatuses) {
+      if (store.getAll && store.upload && store.setParcelStatuses) {
         // registers store
         return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) }
       } else if (store.getAll && !store.upload && store.companies) {
@@ -71,7 +71,7 @@ const uploadFile = ref(null)
 const registersStore = {
   getAll,
   upload: uploadFn,
-  setOrderStatuses: setOrderStatusesFn,
+  setParcelStatuses: setOrderStatusesFn,
   validate: validateFn,
   getValidationProgress: getValidationProgressFn,
   cancelValidation: cancelValidationFn,
@@ -964,7 +964,7 @@ describe('Registers_List.vue', () => {
 
       // Mock store with error property
       const mockStoreWithError = {
-        setOrderStatuses: setOrderStatusesFn,
+        setParcelStatuses: setOrderStatusesFn,
         error: { message: storeErrorMessage }
       }
 
@@ -1076,3 +1076,4 @@ describe('formatInvoiceDate function', () => {
     expect(wrapper.vm.formatDate(dateWithTime)).toBe('27.07.2025')
   })
 })
+

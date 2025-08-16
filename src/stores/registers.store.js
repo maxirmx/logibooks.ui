@@ -120,12 +120,12 @@ export const useRegistersStore = defineStore('registers', () => {
     return res
   }
 
-  async function setOrderStatuses(registerId, statusId) {
+  async function setParcelStatuses(registerId, statusId) {
     loading.value = true
     error.value = null
     try {
       const response = await fetchWrapper.put(
-        `${baseUrl}/${registerId}/setorderstatuses/${statusId}`
+        `${baseUrl}/${registerId}/setparcelstatuses/${statusId}`
       )
       return response
     } catch (err) {
@@ -208,11 +208,11 @@ export const useRegistersStore = defineStore('registers', () => {
     return null
   }
 
-  async function nextParcel(orderId) {
+  async function nextParcel(parcelId) {
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/nextorder/${orderId}`)
+      return await fetchWrapper.get(`${baseUrl}/nextparcel/${parcelId}`)
     } catch (err) {
       error.value = err
     }
@@ -248,7 +248,7 @@ export const useRegistersStore = defineStore('registers', () => {
     upload,
     getById,
     update,
-    setOrderStatuses,
+    setParcelStatuses,
     validate,
     getValidationProgress,
     cancelValidation,

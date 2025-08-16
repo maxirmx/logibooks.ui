@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ParcelStatusesView from '@/views/ParcelStatuses_View.vue'
-import { defaultGlobalStubs } from './test-utils.js'
+import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 // Mock the ParcelStatuses_List component
 vi.mock('@/components/ParcelStatuses_List.vue', () => ({
@@ -64,3 +64,4 @@ describe('ParcelStatuses_View.vue', () => {
     })
   })
 })
+

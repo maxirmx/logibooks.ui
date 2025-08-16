@@ -23,54 +23,43 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { createVuetify } from 'vuetify'
+import KeyWords_View from '@/views/KeyWords_View.vue'
+import KeyWords_List from '@/components/KeyWords_List.vue'
 
-const baseUrl = `${apiUrl}/stopwords`
+const vuetify = createVuetify()
 
-export const useStopWordMatchTypesStore = defineStore('stopWordMatchTypes', () => {
-  const matchTypes = ref([])
-  const loading = ref(false)
-  const error = ref(null)
-
-  const matchTypeMap = ref(new Map())
-
-  async function fetchMatchTypes() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await fetchWrapper.get(`${baseUrl}/matchtypes`)
-      matchTypes.value = response || []
-      matchTypeMap.value = new Map(matchTypes.value.map(t => [t.id, t]))
-    } catch (err) {
-      error.value = err
-    } finally {
-      loading.value = false
-    }
+// Mock the KeyWords_List component
+vi.mock('@/components/KeyWords_List.vue', () => ({
+  default: {
+    name: 'KeyWords_List',
+    template: '<div data-test="keywords-list">KeyWords_List Component</div>'
   }
+}))
 
-  function getName(id) {
-    const type = matchTypeMap.value.get(id)
-    return type ? type.name : `Тип ${id}`
-  }
+describe('KeyWords_View', () => {
+  let wrapper
 
-  const initialized = ref(false)
-  async function ensureLoaded() {
-    if (!initialized.value && matchTypes.value.length === 0 && !loading.value) {
-      initialized.value = true
-      await fetchMatchTypes()
-    }
-  }
+  beforeEach(() => {
+    wrapper = mount(KeyWords_View, {
+      global: {
+        plugins: [vuetify]
+      }
+    })
+  })
 
-  return {
-    matchTypes,
-    loading,
-    error,
-    matchTypeMap,
-    fetchMatchTypes,
-    getName,
-    ensureLoaded
-  }
+  it('should render KeyWords_List component', () => {
+    const stopWordsList = wrapper.findComponent(KeyWords_List)
+    expect(stopWordsList.exists()).toBe(true)
+  })
+
+  it('should have correct component structure', () => {
+    expect(wrapper.find('[data-test="keywords-list"]').exists()).toBe(true)
+  })
+
+  it('should be a simple wrapper component', () => {
+    expect(wrapper.html()).toContain('KeyWords_List Component')
+  })
 })

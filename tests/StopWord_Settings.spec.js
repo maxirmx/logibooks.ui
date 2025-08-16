@@ -31,8 +31,8 @@ vi.mock('@/stores/stop.words.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
-  useStopWordMatchTypesStore: () => ({
+vi.mock('@/stores/word.match.types.store.js', () => ({
+  useWordMatchTypesStore: () => ({
     matchTypes: ref([
       { id: 1, name: 'Exact' },
       { id: 15, name: 'Type15' },
@@ -150,7 +150,7 @@ describe('StopWord_Settings.vue', () => {
       await wordInput.trigger('input')
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.vm.matchTypeId).toBe(1)
+      expect(wrapper.vm.matchTypeId).toBe(41)
     })
 
     it('allows changing matchTypeId for single word', async () => {

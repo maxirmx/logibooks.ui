@@ -25,7 +25,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useStopWordMatchTypesStore } from '@/stores/stop.word.matchtypes.store.js'
+import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -37,14 +37,14 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
-describe('stop word matchtypes store', () => {
+describe('word match types store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
   it('initializes with defaults', () => {
-    const store = useStopWordMatchTypesStore()
+    const store = useWordMatchTypesStore()
     expect(store.matchTypes).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -54,10 +54,10 @@ describe('stop word matchtypes store', () => {
     const data = [{ id: 1, name: 'Exact' }]
     fetchWrapper.get.mockResolvedValue(data)
 
-    const store = useStopWordMatchTypesStore()
+    const store = useWordMatchTypesStore()
     await store.fetchMatchTypes()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/stopwords/matchtypes`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/wordmatchtypes`)
     expect(store.matchTypes).toEqual(data)
     expect(store.matchTypeMap.size).toBe(1)
     expect(store.loading).toBe(false)
@@ -68,7 +68,7 @@ describe('stop word matchtypes store', () => {
     const err = new Error('fail')
     fetchWrapper.get.mockRejectedValue(err)
 
-    const store = useStopWordMatchTypesStore()
+    const store = useWordMatchTypesStore()
     await store.fetchMatchTypes()
 
     expect(store.error).toBe(err)
@@ -78,7 +78,7 @@ describe('stop word matchtypes store', () => {
   it('ensureLoaded loads only once', async () => {
     const data = [{ id: 1, name: 'Exact' }]
     fetchWrapper.get.mockResolvedValue(data)
-    const store = useStopWordMatchTypesStore()
+    const store = useWordMatchTypesStore()
 
     store.ensureLoaded()
     store.ensureLoaded()
@@ -88,7 +88,7 @@ describe('stop word matchtypes store', () => {
   })
 
   it('getName returns name or fallback', async () => {
-    const store = useStopWordMatchTypesStore()
+    const store = useWordMatchTypesStore()
     fetchWrapper.get.mockResolvedValueOnce([{ id: 2, name: 'Partial' }])
     await store.fetchMatchTypes()
 

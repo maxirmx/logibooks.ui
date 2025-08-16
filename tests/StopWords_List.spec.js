@@ -29,7 +29,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import StopWordsList from '@/components/StopWords_List.vue'
-import { defaultGlobalStubs } from './test-utils.js'
+import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues
 const getAllStopWords = vi.hoisted(() => vi.fn())
@@ -73,8 +73,8 @@ vi.mock('@/stores/stop.words.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/stop.word.matchtypes.store.js', () => ({
-  useStopWordMatchTypesStore: () => ({
+vi.mock('@/stores/word.match.types.store.js', () => ({
+  useWordMatchTypesStore: () => ({
     matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
     ensureLoaded: vi.fn(),
     getName: vi.fn(id => (id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Тип ${id}`))
@@ -515,3 +515,4 @@ describe('StopWords_List.vue', () => {
     })
   })
 })
+

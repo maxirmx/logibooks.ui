@@ -200,33 +200,28 @@ function requestBlob(method) {
  * @returns {Promise<boolean>} - True if download initiated successfully
  */
 async function downloadFile(fileUrl, defaultFilename) {
-  try {
-    const response = await requestBlob('GET')(fileUrl)
-    
-    let filename = defaultFilename
-    const disposition = response.headers.get('Content-Disposition')
-    if (disposition && disposition.includes('filename=')) {
-      filename = disposition
-        .split('filename=')[1]
-        .replace(/["']/g, '')
-        .trim()
-    }
-    
-    // Process the blob and trigger download
-    const blob = await response.blob()
-    const objectUrl = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = objectUrl
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    window.URL.revokeObjectURL(objectUrl)
-    return true
-  } catch (error) {
-    console.error('Error downloading file:', error)
-    throw error
+  const response = await requestBlob('GET')(fileUrl)
+  
+  let filename = defaultFilename
+  const disposition = response.headers.get('Content-Disposition')
+  if (disposition && disposition.includes('filename=')) {
+    filename = disposition
+      .split('filename=')[1]
+      .replace(/["']/g, '')
+      .trim()
   }
+  
+  // Process the blob and trigger download
+  const blob = await response.blob()
+  const objectUrl = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(objectUrl)
+  return true
 }
 
 function handleResponse(response) {

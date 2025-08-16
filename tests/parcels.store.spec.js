@@ -9,6 +9,7 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
     get: vi.fn(),
     put: vi.fn(),
     post: vi.fn(),
+    delete: vi.fn(),
     downloadFile: vi.fn()
   }
 }))
@@ -256,6 +257,69 @@ describe('parcels store', () => {
 
       await expect(store.approve(123)).rejects.toThrow('Approval failed')
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
+    })
+  })
+
+  describe('lookupFeacnCodes API', () => {
+    it('starts lookup and returns handle', async () => {
+      const handle = { id: '1234' }
+      fetchWrapper.post.mockResolvedValue(handle)
+
+      const store = useParcelsStore()
+      const result = await store.lookupFeacnCodes(1)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/lookup-feacn-codes`)
+      expect(result).toEqual(handle)
+    })
+
+    it('handles lookup error', async () => {
+      const error = new Error('Lookup failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.lookupFeacnCodes(1)).rejects.toThrow('Lookup failed')
+      expect(store.error).toBe(error)
+    })
+
+    it('gets lookup progress', async () => {
+      const progress = { total: 10, processed: 5, finished: false }
+      fetchWrapper.get.mockResolvedValue(progress)
+
+      const store = useParcelsStore()
+      const result = await store.getLookupFeacnCodesProgress('abcd')
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/lookup-feacn-codes/abcd`)
+      expect(result).toEqual(progress)
+    })
+
+    it('handles lookup progress error', async () => {
+      const error = new Error('Progress check failed')
+      fetchWrapper.get.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.getLookupFeacnCodesProgress('abcd')).rejects.toThrow('Progress check failed')
+      expect(store.error).toBe(error)
+    })
+
+    it('cancels lookup', async () => {
+      fetchWrapper.delete.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      await store.cancelLookupFeacnCodes('abcd')
+
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/lookup-feacn-codes/abcd`)
+    })
+
+    it('handles cancel lookup error', async () => {
+      const error = new Error('Cancel failed')
+      fetchWrapper.delete.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.cancelLookupFeacnCodes('abcd')).rejects.toThrow('Cancel failed')
+      expect(store.error).toBe(error)
     })
   })
 })

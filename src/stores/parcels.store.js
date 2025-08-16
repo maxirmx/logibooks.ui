@@ -110,6 +110,34 @@ export const useParcelsStore = defineStore('parcels', () => {
       return true
   }
 
+  async function lookupFeacnCodes(registerId) {
+      try {
+          const result = await fetchWrapper.post(`${apiUrl}/registers/${registerId}/lookup-feacn-codes`)
+          return result
+      } catch (err) {
+          error.value = err
+          throw err
+      }
+  }
+
+  async function getLookupFeacnCodesProgress(handleId) {
+      try {
+          return await fetchWrapper.get(`${apiUrl}/registers/lookup-feacn-codes/${handleId}`)
+      } catch (err) {
+          error.value = err
+          throw err
+      }
+  }
+
+  async function cancelLookupFeacnCodes(handleId) {
+      try {
+          await fetchWrapper.delete(`${apiUrl}/registers/lookup-feacn-codes/${handleId}`)
+      } catch (err) {
+          error.value = err
+          throw err
+      }
+  }
+
   return {
     items,
     item,
@@ -124,6 +152,9 @@ export const useParcelsStore = defineStore('parcels', () => {
     generate,
     validate,
     approve,
-    lookupFeacnCode
+    lookupFeacnCode,
+    lookupFeacnCodes,
+    getLookupFeacnCodesProgress,
+    cancelLookupFeacnCodes
   }
 })

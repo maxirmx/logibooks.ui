@@ -194,17 +194,22 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
 }
 
 /**
- * Looks up FEACN codes for a parcel (stub implementation)
+ * Looks up FEACN codes for a parcel
  * @param {Object} item - The parcel item
+ * @param {Object} parcelsStore - The parcels store instance
  * @param {Object} alertStore - The alert store instance
+ * @param {Function} loadOrdersFn - Function to reload orders
  * @returns {Promise<void>}
  */
-export async function lookupFeacn(item, alertStore) {
+export async function lookupFeacn(item, parcelsStore, alertStore, loadOrdersFn) {
   try {
-    // TODO: Implement FEACN lookup functionality
-    alertStore.info('Подбор кодов ТН ВЭД пока не реализован')
+    await parcelsStore.lookupFeacnCode(item.id)
+    if (loadOrdersFn) {
+      loadOrdersFn()
+    }
   } catch (error) {
     console.error('Failed to lookup FEACN codes:', error)
-    alertStore.error('Ошибка при подборе кодов ТН ВЭД')
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+    alertStore?.error?.(parcelsStore.error)
   }
 }

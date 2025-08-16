@@ -269,31 +269,41 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('lookupFeacn', () => {
-    it('should show info message for stub implementation', async () => {
+    it('should lookup FEACN codes and reload orders', async () => {
+      const mockStore = {
+        lookupFeacnCode: vi.fn().mockResolvedValue(),
+        error: ''
+      }
       const mockAlertStore = {
-        info: vi.fn(),
         error: vi.fn()
       }
+      const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await lookupFeacn(item, mockAlertStore)
+      await lookupFeacn(item, mockStore, mockAlertStore, mockLoadOrders)
 
-      expect(mockAlertStore.info).toHaveBeenCalledWith('Подбор кодов ТН ВЭД пока не реализован')
+      expect(mockStore.lookupFeacnCode).toHaveBeenCalledWith(123)
+      expect(mockLoadOrders).toHaveBeenCalled()
       expect(mockAlertStore.error).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
-      const mockAlertStore = {
-        info: vi.fn().mockImplementation(() => {
-          throw new Error('Alert error')
+    it('should handle lookup errors', async () => {
+      const mockStore = {
+        lookupFeacnCode: vi.fn().mockRejectedValue({
+          response: { data: { message: 'Lookup failed' } }
         }),
+        error: ''
+      }
+      const mockAlertStore = {
         error: vi.fn()
       }
+      const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await lookupFeacn(item, mockAlertStore)
+      await lookupFeacn(item, mockStore, mockAlertStore, mockLoadOrders)
 
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при подборе кодов ТН ВЭД')
+      expect(mockStore.error).toBe('Lookup failed')
+      expect(mockLoadOrders).not.toHaveBeenCalled()
     })
   })
 

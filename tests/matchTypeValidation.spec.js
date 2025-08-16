@@ -1,0 +1,312 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks frontend application
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { describe, it, expect } from 'vitest'
+import {
+  parseWords,
+  isSingleWordInput,
+  isMatchTypeDisabled,
+  validateMatchType,
+  createMatchTypeValidationTest
+} from '@/helpers/matchTypeValidation.js'
+
+describe('matchTypeValidation', () => {
+  describe('parseWords', () => {
+    it('parses single word correctly', () => {
+      expect(parseWords('test')).toEqual(['test'])
+      expect(parseWords('word')).toEqual(['word'])
+      expect(parseWords('слово')).toEqual(['слово'])
+    })
+
+    it('parses multiple words correctly', () => {
+      expect(parseWords('test word')).toEqual(['test', 'word'])
+      expect(parseWords('multiple test words')).toEqual(['multiple', 'test', 'words'])
+      expect(parseWords('тестовые русские слова')).toEqual(['тестовые', 'русские', 'слова'])
+    })
+
+    it('handles words with hyphens', () => {
+      expect(parseWords('test-word')).toEqual(['test-word'])
+      expect(parseWords('multi-word phrase')).toEqual(['multi-word', 'phrase'])
+      expect(parseWords('авто-мото запчасти')).toEqual(['авто-мото', 'запчасти'])
+    })
+
+    it('handles words with numbers', () => {
+      expect(parseWords('test123')).toEqual(['test123'])
+      expect(parseWords('word1 word2')).toEqual(['word1', 'word2'])
+      expect(parseWords('продукт123 категория456')).toEqual(['продукт123', 'категория456'])
+    })
+
+    it('handles empty and null inputs', () => {
+      expect(parseWords('')).toEqual([])
+      expect(parseWords(null)).toEqual([])
+      expect(parseWords(undefined)).toEqual([])
+      expect(parseWords('   ')).toEqual([])
+    })
+
+    it('handles special characters and punctuation', () => {
+      expect(parseWords('test, word!')).toEqual(['test', 'word'])
+      expect(parseWords('hello@world.com')).toEqual(['hello', 'world', 'com'])
+      expect(parseWords('символ№1 символ№2')).toEqual(['символ', '1', 'символ', '2'])
+    })
+
+    it('handles mixed language input', () => {
+      expect(parseWords('test тест')).toEqual(['test', 'тест'])
+      expect(parseWords('english русский français')).toEqual(['english', 'русский', 'français'])
+    })
+  })
+
+  describe('isSingleWordInput', () => {
+    it('identifies single word inputs correctly', () => {
+      expect(isSingleWordInput('test')).toBe(true)
+      expect(isSingleWordInput('слово')).toBe(true)
+      expect(isSingleWordInput('test-word')).toBe(true)
+      expect(isSingleWordInput('test123')).toBe(true)
+    })
+
+    it('identifies multi-word inputs correctly', () => {
+      expect(isSingleWordInput('test word')).toBe(false)
+      expect(isSingleWordInput('multiple test words')).toBe(false)
+      expect(isSingleWordInput('тестовые русские слова')).toBe(false)
+      expect(isSingleWordInput('test тест')).toBe(false)
+    })
+
+    it('handles empty inputs as single word', () => {
+      expect(isSingleWordInput('')).toBe(true)
+      expect(isSingleWordInput('   ')).toBe(true)
+      expect(isSingleWordInput(null)).toBe(true)
+      expect(isSingleWordInput(undefined)).toBe(true)
+    })
+
+    it('handles punctuation-only inputs', () => {
+      expect(isSingleWordInput('!!!')).toBe(true)
+      expect(isSingleWordInput('... ,, ;;')).toBe(true)
+    })
+  })
+
+  describe('isMatchTypeDisabled', () => {
+    describe('single word input', () => {
+      const singleWords = ['test', 'слово', 'test-word', 'test123', '', '   ']
+
+      singleWords.forEach(word => {
+        it(`disables match types 21-30 for single word: "${word}"`, () => {
+          // Should be disabled for single words (21-30 range)
+          expect(isMatchTypeDisabled(21, word)).toBe(true)
+          expect(isMatchTypeDisabled(25, word)).toBe(true)
+          expect(isMatchTypeDisabled(30, word)).toBe(true)
+        })
+
+        it(`allows other match types for single word: "${word}"`, () => {
+          // Should be enabled for single words
+          expect(isMatchTypeDisabled(1, word)).toBe(false)
+          expect(isMatchTypeDisabled(10, word)).toBe(false)
+          expect(isMatchTypeDisabled(11, word)).toBe(false)
+          expect(isMatchTypeDisabled(20, word)).toBe(false)
+          expect(isMatchTypeDisabled(31, word)).toBe(false)
+          expect(isMatchTypeDisabled(41, word)).toBe(false)
+          expect(isMatchTypeDisabled(50, word)).toBe(false)
+        })
+      })
+    })
+
+    describe('multi-word input', () => {
+      const multiWords = ['test word', 'multiple test words', 'тестовые русские слова', 'test тест']
+
+      multiWords.forEach(word => {
+        it(`disables match types 11-20 for multi-word: "${word}"`, () => {
+          // Should be disabled for multi-words (11-20 range)
+          expect(isMatchTypeDisabled(11, word)).toBe(true)
+          expect(isMatchTypeDisabled(15, word)).toBe(true)
+          expect(isMatchTypeDisabled(20, word)).toBe(true)
+        })
+
+        it(`disables match types >30 for multi-word: "${word}"`, () => {
+          // Should be disabled for multi-words (>30)
+          expect(isMatchTypeDisabled(31, word)).toBe(true)
+          expect(isMatchTypeDisabled(35, word)).toBe(true)
+          expect(isMatchTypeDisabled(41, word)).toBe(true)
+          expect(isMatchTypeDisabled(50, word)).toBe(true)
+        })
+
+        it(`allows other match types for multi-word: "${word}"`, () => {
+          // Should be enabled for multi-words
+          expect(isMatchTypeDisabled(1, word)).toBe(false)
+          expect(isMatchTypeDisabled(10, word)).toBe(false)
+          expect(isMatchTypeDisabled(21, word)).toBe(false)
+          expect(isMatchTypeDisabled(25, word)).toBe(false)
+          expect(isMatchTypeDisabled(30, word)).toBe(false)
+        })
+      })
+    })
+
+    describe('edge cases', () => {
+      it('handles boundary values correctly', () => {
+        // Test exact boundaries
+        expect(isMatchTypeDisabled(20, 'test')).toBe(false) // Just below disabled range for single
+        expect(isMatchTypeDisabled(21, 'test')).toBe(true)  // Start of disabled range for single
+        expect(isMatchTypeDisabled(30, 'test')).toBe(true)  // End of disabled range for single
+        expect(isMatchTypeDisabled(31, 'test')).toBe(false) // Just above disabled range for single
+
+        expect(isMatchTypeDisabled(10, 'test word')).toBe(false) // Just below disabled range for multi
+        expect(isMatchTypeDisabled(11, 'test word')).toBe(true)  // Start of disabled range for multi
+        expect(isMatchTypeDisabled(20, 'test word')).toBe(true)  // End of disabled range for multi
+        expect(isMatchTypeDisabled(21, 'test word')).toBe(false) // Between ranges for multi
+        expect(isMatchTypeDisabled(30, 'test word')).toBe(false) // Just below second disabled range for multi
+        expect(isMatchTypeDisabled(31, 'test word')).toBe(true)  // Start of second disabled range for multi
+      })
+
+      it('handles zero and negative values', () => {
+        expect(isMatchTypeDisabled(0, 'test')).toBe(false)
+        expect(isMatchTypeDisabled(-1, 'test')).toBe(false)
+        expect(isMatchTypeDisabled(0, 'test word')).toBe(false)
+        expect(isMatchTypeDisabled(-1, 'test word')).toBe(false)
+      })
+    })
+  })
+
+  describe('validateMatchType', () => {
+    it('returns opposite of isMatchTypeDisabled', () => {
+      const testCases = [
+        { matchTypeId: 21, word: 'test', expected: false },
+        { matchTypeId: 25, word: 'test', expected: false },
+        { matchTypeId: 30, word: 'test', expected: false },
+        { matchTypeId: 41, word: 'test', expected: true },
+        { matchTypeId: 11, word: 'test word', expected: false },
+        { matchTypeId: 31, word: 'test word', expected: false },
+        { matchTypeId: 25, word: 'test word', expected: true },
+      ]
+
+      testCases.forEach(({ matchTypeId, word, expected }) => {
+        expect(validateMatchType(matchTypeId, word)).toBe(expected)
+        expect(validateMatchType(matchTypeId, word)).toBe(!isMatchTypeDisabled(matchTypeId, word))
+      })
+    })
+  })
+
+  describe('createMatchTypeValidationTest', () => {
+    it('creates a validation function that works with Yup context', () => {
+      const validationTest = createMatchTypeValidationTest()
+      
+      // Mock Yup context
+      const mockContext = {
+        parent: { word: 'test' }
+      }
+
+      // Test with valid match type for single word
+      expect(validationTest.call(mockContext, 41)).toBe(true)
+      
+      // Test with invalid match type for single word
+      expect(validationTest.call(mockContext, 25)).toBe(false)
+    })
+
+    it('creates a validation function for multi-word input', () => {
+      const validationTest = createMatchTypeValidationTest()
+      
+      // Mock Yup context with multi-word
+      const mockContext = {
+        parent: { word: 'test word' }
+      }
+
+      // Test with valid match type for multi-word
+      expect(validationTest.call(mockContext, 25)).toBe(true)
+      
+      // Test with invalid match type for multi-word
+      expect(validationTest.call(mockContext, 15)).toBe(false)
+      expect(validationTest.call(mockContext, 35)).toBe(false)
+    })
+
+    it('handles empty word in context', () => {
+      const validationTest = createMatchTypeValidationTest()
+      
+      // Mock Yup context with empty word
+      const mockContext = {
+        parent: { word: '' }
+      }
+
+      // Empty word is treated as single word
+      expect(validationTest.call(mockContext, 41)).toBe(true)
+      expect(validationTest.call(mockContext, 25)).toBe(false)
+    })
+
+    it('handles missing word in context', () => {
+      const validationTest = createMatchTypeValidationTest()
+      
+      // Mock Yup context without word
+      const mockContext = {
+        parent: {}
+      }
+
+      // Missing word is treated as single word
+      expect(validationTest.call(mockContext, 41)).toBe(true)
+      expect(validationTest.call(mockContext, 25)).toBe(false)
+    })
+
+    it('accepts custom error message', () => {
+      const customMessage = 'Custom validation error'
+      const validationTest = createMatchTypeValidationTest(customMessage)
+      
+      // Function should be created successfully (message is used by Yup, not returned by function)
+      expect(typeof validationTest).toBe('function')
+    })
+  })
+
+  describe('comprehensive integration tests', () => {
+    it('validates real-world scenarios correctly', () => {
+      const scenarios = [
+        // Single word scenarios
+        { word: 'автомобиль', matchTypeId: 1, expected: true },
+        { word: 'автомобиль', matchTypeId: 10, expected: true },
+        { word: 'автомобиль', matchTypeId: 11, expected: true },
+        { word: 'автомобиль', matchTypeId: 20, expected: true },
+        { word: 'автомобиль', matchTypeId: 21, expected: false }, // Disabled for single
+        { word: 'автомобиль', matchTypeId: 25, expected: false }, // Disabled for single
+        { word: 'автомобиль', matchTypeId: 30, expected: false }, // Disabled for single
+        { word: 'автомобиль', matchTypeId: 31, expected: true },
+        { word: 'автомобиль', matchTypeId: 41, expected: true },
+        
+        // Multi-word scenarios
+        { word: 'автомобильные запчасти', matchTypeId: 1, expected: true },
+        { word: 'автомобильные запчасти', matchTypeId: 10, expected: true },
+        { word: 'автомобильные запчасти', matchTypeId: 11, expected: false }, // Disabled for multi
+        { word: 'автомобильные запчасти', matchTypeId: 15, expected: false }, // Disabled for multi
+        { word: 'автомобильные запчасти', matchTypeId: 20, expected: false }, // Disabled for multi
+        { word: 'автомобильные запчасти', matchTypeId: 21, expected: true },
+        { word: 'автомобильные запчасти', matchTypeId: 25, expected: true },
+        { word: 'автомобильные запчасти', matchTypeId: 30, expected: true },
+        { word: 'автомобильные запчасти', matchTypeId: 31, expected: false }, // Disabled for multi
+        { word: 'автомобильные запчасти', matchTypeId: 41, expected: false }, // Disabled for multi
+        
+        // Edge cases
+        { word: 'test-word', matchTypeId: 25, expected: false }, // Hyphenated = single word
+        { word: 'test123', matchTypeId: 25, expected: false }, // With numbers = single word
+        { word: '', matchTypeId: 25, expected: false }, // Empty = single word
+      ]
+
+      scenarios.forEach(({ word, matchTypeId, expected }) => {
+        expect(validateMatchType(matchTypeId, word)).toBe(expected)
+        expect(isMatchTypeDisabled(matchTypeId, word)).toBe(!expected)
+      })
+    })
+  })
+})

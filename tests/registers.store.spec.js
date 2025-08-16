@@ -754,8 +754,71 @@ describe('registers store', () => {
       fetchWrapper.delete.mockRejectedValue(error)
 
       const store = useRegistersStore()
-      
+
       await expect(store.cancelValidation('abcd')).rejects.toThrow('Cancel failed')
+      expect(store.error).toBe(error)
+    })
+  })
+
+  describe('FEACN lookup API', () => {
+    it('starts FEACN lookup and returns handle', async () => {
+      const handle = { id: '1234' }
+      fetchWrapper.post.mockResolvedValue(handle)
+
+      const store = useRegistersStore()
+      const result = await store.lookupFeacnCodes(1)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/lookup-feacn-codes`)
+      expect(result).toEqual(handle)
+    })
+
+    it('handles FEACN lookup error', async () => {
+      const error = new Error('Lookup failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.lookupFeacnCodes(1)).rejects.toThrow('Lookup failed')
+      expect(store.error).toBe(error)
+    })
+
+    it('gets FEACN lookup progress', async () => {
+      const progress = { total: 10, processed: 5, finished: false }
+      fetchWrapper.get.mockResolvedValue(progress)
+
+      const store = useRegistersStore()
+      const result = await store.getLookupFeacnCodesProgress('abcd')
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/lookup-feacn-codes/abcd`)
+      expect(result).toEqual(progress)
+    })
+
+    it('handles FEACN lookup progress error', async () => {
+      const error = new Error('Progress check failed')
+      fetchWrapper.get.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.getLookupFeacnCodesProgress('abcd')).rejects.toThrow('Progress check failed')
+      expect(store.error).toBe(error)
+    })
+
+    it('cancels FEACN lookup', async () => {
+      fetchWrapper.delete.mockResolvedValue(undefined)
+
+      const store = useRegistersStore()
+      await store.cancelLookupFeacnCodes('abcd')
+
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/lookup-feacn-codes/abcd`)
+    })
+
+    it('handles cancel FEACN lookup error', async () => {
+      const error = new Error('Cancel failed')
+      fetchWrapper.delete.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.cancelLookupFeacnCodes('abcd')).rejects.toThrow('Cancel failed')
       expect(store.error).toBe(error)
     })
   })

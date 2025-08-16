@@ -95,7 +95,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-
   async function validate(id) {
       await fetchWrapper.post(`${baseUrl}/${id}/validate`)
       return true
@@ -103,6 +102,11 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function approve(id) {
       await fetchWrapper.post(`${baseUrl}/${id}/approve`)
+      return true
+  }
+
+  async function lookupFeacnCode(id) {
+      await fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`)
       return true
   }
 
@@ -119,6 +123,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     update,
     generate,
     validate,
-    approve
+    approve,
+    lookupFeacnCode
   }
 })

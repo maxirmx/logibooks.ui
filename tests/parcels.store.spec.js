@@ -9,6 +9,7 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
     get: vi.fn(),
     put: vi.fn(),
     post: vi.fn(),
+    delete: vi.fn(),
     downloadFile: vi.fn()
   }
 }))
@@ -258,4 +259,5 @@ describe('parcels store', () => {
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
     })
   })
+
 })

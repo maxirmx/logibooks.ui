@@ -27,6 +27,20 @@
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import {
+  toggleBulkStatusEditMode,
+  cancelBulkStatusChange,
+  applyBulkStatusToAllOrders,
+  isBulkStatusEditMode,
+  getBulkStatusSelectedId,
+  setBulkStatusSelectedId,
+  createValidationState,
+  calculateValidationProgress,
+  pollValidation,
+  validateRegister,
+  cancelValidation,
+  createPollingTimer
+} from '@/helpers/registers.list.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
@@ -44,18 +58,11 @@ import { useConfirm } from 'vuetify-use-dialog'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 
-const validationState = reactive({
-  show: false,
-  handleId: null,
-  total: 0,
-  processed: 0
-})
-let progressTimer = null
-const POLLING_INTERVAL_MS = 1000
-const progressPercent = computed(() => {
-  if (!validationState.total || validationState.total <= 0) return 0
-  return Math.round((validationState.processed / validationState.total) * 100)
-})
+const validationState = reactive(createValidationState())
+const pollingTimer = createPollingTimer(() => 
+  pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
+)
+const progressPercent = computed(() => calculateValidationProgress(validationState))
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -70,13 +77,10 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
 
 const transportationTypesStore = useTransportationTypesStore()
-transportationTypesStore.ensureLoaded()
 
 const customsProceduresStore = useCustomsProceduresStore()
-customsProceduresStore.ensureLoaded()
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -103,73 +107,30 @@ const uploadCustomers = computed(() => {
     }))
 })
 
-// Step 1: Toggle edit mode
+// Bulk status change functions - using helpers
 function bulkChangeStatus(registerId) {
-  if (!bulkStatusState[registerId]) {
-    bulkStatusState[registerId] = {
-      editMode: false,
-      selectedStatusId: null
-    }
-  }
-
-  // Don't allow interaction while loading
-  if (loading.value) {
-    return
-  }
-
-  // Toggle edit mode
-  bulkStatusState[registerId].editMode = !bulkStatusState[registerId].editMode
-
-  // Clear selection when entering edit mode
-  if (bulkStatusState[registerId].editMode) {
-    bulkStatusState[registerId].selectedStatusId = null
-  }
+  toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
 }
 
-// Cancel status change
 function cancelStatusChange(registerId) {
-  if (bulkStatusState[registerId]) {
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
-  }
+  cancelBulkStatusChange(registerId, bulkStatusState)
 }
 
-// Step 2: Apply selected status to all orders in register
 async function applyStatusToAllOrders(registerId, statusId) {
-  if (!registerId || !statusId) {
-    alertStore.error('Не указан реестр или статус для изменения')
-    return
-  }
+  await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, registersStore, alertStore)
+}
 
-  // Ensure statusId is a number
-  const numericStatusId = Number(statusId)
-  if (isNaN(numericStatusId) || numericStatusId <= 0) {
-    alertStore.error('Некорректный идентификатор статуса')
-    return
-  }
+// Helper wrapper functions for template
+function isInEditMode(registerId) {
+  return isBulkStatusEditMode(registerId, bulkStatusState)
+}
 
-  try {
-    await registersStore.setParcelStatuses(registerId, numericStatusId)
+function getSelectedStatusId(registerId) {
+  return getBulkStatusSelectedId(registerId, bulkStatusState)
+}
 
-    // Success: show message and reset state
-    alertStore.success('Статус успешно применен ко всем посылкам в реестре')
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
-    // Reload data to reflect changes
-  } catch (error) {
-    // The store already handles setting the error state
-    // Just provide user-friendly error message from the store error
-    const errorMessage =
-      error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов посылок'
-    alertStore.error(errorMessage)
-
-    // Exit edit mode on error
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
-  }
-  finally {
-    await registersStore.getAll()
-  }
+function setSelectedStatusId(registerId, statusId) {
+  setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
 }
 
 // Function to get customer name by customerId
@@ -189,11 +150,14 @@ function getOrdersByCheckStatusTooltip(item) {
 
 // Load companies and order statuses on component mount
 onMounted(async () => {
+  await countriesStore.ensureLoaded()
+  await transportationTypesStore.ensureLoaded()
+  await customsProceduresStore.ensureLoaded()
   await companiesStore.getAll()
 })
 
 onUnmounted(() => {
-  stopPolling()
+  pollingTimer.stop()
 })
 
 function openFileDialog() {
@@ -279,55 +243,23 @@ async function deleteRegister(item) {
   }
 }
 
-async function pollValidation() {
-  if (!validationState.handleId) return
-  try {
-    const progress = await registersStore.getValidationProgress(validationState.handleId)
-    validationState.total = progress.total
-    validationState.processed = progress.processed
-    if (progress.finished || progress.total === -1 || progress.processed === -1) {
-      validationState.show = false
-      stopPolling()
-      // Only refresh data when validation is complete
-      await registersStore.getAll()
-    }
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-    validationState.show = false
-    stopPolling()
-    // Refresh data if validation failed
-    await registersStore.getAll()
-  }
+async function validateRegisterWrapper(item) {
+  await validateRegister(
+    item, 
+    validationState, 
+    registersStore, 
+    alertStore, 
+    () => pollingTimer.stop(),
+    () => pollingTimer.start()
+  )
 }
 
-function stopPolling() {
-  if (progressTimer) {
-    clearInterval(progressTimer)
-    progressTimer = null
-  }
+async function lookupFeacnCodes(item) {
+  console.log('Looking up FEACN codes for register', item.id)
 }
 
-async function validateRegister(item) {
-  try {
-    stopPolling()
-    const res = await registersStore.validate(item.id)
-    validationState.handleId = res.id
-    validationState.total = 0
-    validationState.processed = 0
-    validationState.show = true
-    pollValidation()
-    progressTimer = setInterval(pollValidation, POLLING_INTERVAL_MS)
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  }
-}
-
-function cancelValidation() {
-  if (validationState.handleId) {
-    registersStore.cancelValidation(validationState.handleId).catch(() => {})
-  }
-  validationState.show = false
-  stopPolling()
+function cancelValidationWrapper() {
+  cancelValidation(validationState, registersStore, () => pollingTimer.stop())
 }
 
 function formatDate(dateStr) {
@@ -467,15 +399,47 @@ const headers = [
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" />
             
             <div class="bulk-status-inline">
-              <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector-inline">
-                <v-select v-model="bulkStatusState[item.id].selectedStatusId" :items="parcelStatusesStore.parcelStatuses" item-title="title" item-value="id" placeholder="Статус" variant="outlined" density="compact" hide-details hide-no-data :disabled="loading" />
-                <ActionButton :item="item" icon="fa-solid fa-check" tooltip-text="Применить статус" :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId" @click="() => applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)" />
-                <ActionButton :item="item" icon="fa-solid fa-xmark" tooltip-text="Отменить" :disabled="loading" @click="() => cancelStatusChange(item.id)" />
+              <div v-if="isInEditMode(item.id)" class="status-selector-inline">
+                <v-select 
+                  :model-value="getSelectedStatusId(item.id)" 
+                  @update:model-value="(value) => setSelectedStatusId(item.id, value)"
+                  :items="parcelStatusesStore.parcelStatuses" 
+                  item-title="title" 
+                  item-value="id" 
+                  placeholder="Статус" 
+                  variant="outlined" 
+                  density="compact" 
+                  hide-details 
+                  hide-no-data 
+                  :disabled="loading" 
+                />
+                <ActionButton 
+                  :item="item" 
+                  icon="fa-solid fa-check" 
+                  tooltip-text="Применить статус" 
+                  :disabled="loading || !getSelectedStatusId(item.id)" 
+                  @click="() => applyStatusToAllOrders(item.id, getSelectedStatusId(item.id))" 
+                />
+                <ActionButton 
+                  :item="item" 
+                  icon="fa-solid fa-xmark" 
+                  tooltip-text="Отменить" 
+                  :disabled="loading" 
+                  @click="() => cancelStatusChange(item.id)" 
+                />
               </div>
-              <ActionButton v-else :item="item" icon="fa-solid fa-pen-to-square" tooltip-text="Изменить статус всех посылок в реестре" :disabled="loading" @click="() => bulkChangeStatus(item.id)" />
+              <ActionButton 
+                v-else 
+                :item="item" 
+                icon="fa-solid fa-pen-to-square" 
+                tooltip-text="Изменить статус всех посылок в реестре" 
+                :disabled="loading" 
+                @click="() => bulkChangeStatus(item.id)" 
+              />
             </div>
 
-            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegisterWrapper" />
+            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладные для всех посылок в реестре" @click="exportAllXml" />
             <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
             <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" />
@@ -504,7 +468,7 @@ const headers = [
           </v-progress-circular>
         </v-card-text>
         <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="cancelValidation">Отменить</v-btn>
+          <v-btn variant="text" @click="cancelValidationWrapper">Отменить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

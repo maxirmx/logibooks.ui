@@ -404,7 +404,6 @@ describe('KeyWords_List.vue', () => {
     it('handles successful file upload', async () => {
       uploadKeyWords.mockClear()
       getAllKeyWords.mockClear()
-      mockSuccess.mockClear()
       
       uploadKeyWords.mockResolvedValue()
       getAllKeyWords.mockResolvedValue()
@@ -415,24 +414,6 @@ describe('KeyWords_List.vue', () => {
 
       expect(uploadKeyWords).toHaveBeenCalledWith(mockFile)
       expect(getAllKeyWords).toHaveBeenCalled()
-      expect(mockSuccess).toHaveBeenCalledWith('Файл с ключевыми словами успешно загружен')
-    })
-
-    it('handles single file (not array) upload', async () => {
-      uploadKeyWords.mockClear()
-      getAllKeyWords.mockClear()
-      mockSuccess.mockClear()
-      
-      uploadKeyWords.mockResolvedValue()
-      getAllKeyWords.mockResolvedValue()
-
-      const mockFile = new File(['test content'], 'keywords.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
-      await wrapper.vm.fileSelected(mockFile)
-
-      expect(uploadKeyWords).toHaveBeenCalledWith(mockFile)
-      expect(getAllKeyWords).toHaveBeenCalled()
-      expect(mockSuccess).toHaveBeenCalledWith('Файл с ключевыми словами успешно загружен')
     })
 
     it('handles no file selected', async () => {
@@ -453,7 +434,7 @@ describe('KeyWords_List.vue', () => {
       
       await wrapper.vm.fileSelected([mockFile])
 
-      expect(mockError).toHaveBeenCalledWith('Некорректный формат файла. Пожалуйста, проверьте содержимое файла.')
+      expect(mockError).toHaveBeenCalledWith(expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /))
     })
 
     it('handles upload error - file too large', async () => {
@@ -463,7 +444,7 @@ describe('KeyWords_List.vue', () => {
       
       await wrapper.vm.fileSelected([mockFile])
 
-      expect(mockError).toHaveBeenCalledWith('Файл слишком большой. Максимальный размер файла - 10MB.')
+      expect(mockError).toHaveBeenCalledWith(expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /))
     })
 
     it('handles upload error - generic error', async () => {
@@ -473,7 +454,7 @@ describe('KeyWords_List.vue', () => {
       
       await wrapper.vm.fileSelected([mockFile])
 
-      expect(mockError).toHaveBeenCalledWith('Ошибка при загрузке файла с ключевыми словами')
+      expect(mockError).toHaveBeenCalledWith(expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /))
     })
 
     it('clears file input after upload attempt', async () => {

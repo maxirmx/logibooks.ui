@@ -91,21 +91,15 @@ function openFileDialog() {
 }
 
 async function fileSelected(files) {
+  alertStore.clear
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
 
   try {
     await keyWordsStore.upload(file)
-    alertStore.success('Файл с ключевыми словами успешно загружен')
     await keyWordsStore.getAll() 
   } catch (error) {
-    if (error.message?.includes('400')) {
-      alertStore.error('Некорректный формат файла. Пожалуйста, проверьте содержимое файла.')
-    } else if (error.message?.includes('413')) {
-      alertStore.error('Файл слишком большой. Максимальный размер файла - 10MB.')
-    } else {
-      alertStore.error('Ошибка при загрузке файла с ключевыми словами')
-    }
+      alertStore.error('Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : ""))
   } finally {
     if (fileInput.value) {
       fileInput.value.value = null

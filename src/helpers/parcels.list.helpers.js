@@ -85,18 +85,11 @@ export function navigateToEditParcel(router, item, routeName, queryParams = {}) 
  * Validates a parcel - handles platform-specific validation
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
- * @param {Object} alertStore - The alert store instance
- * @param {string} platform - Platform type ('wbr' or 'ozon')
  * @param {Function} loadOrdersFn - Function to reload orders
  * @returns {Promise<void>}
  */
-export async function validateParcelData(item, parcelsStore, alertStore, platform, loadOrdersFn) {
+export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
   try {
-    if (platform === 'ozon') {
-      alertStore.error('Валидация посылки для Ozon платформы пока не реализована')
-      return
-    }
-    
     await parcelsStore.validate(item.id)
     loadOrdersFn()
   } catch (error) {
@@ -197,11 +190,10 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
  * Looks up FEACN codes for a parcel
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
- * @param {Object} alertStore - The alert store instance
  * @param {Function} loadOrdersFn - Function to reload orders
  * @returns {Promise<void>}
  */
-export async function lookupFeacn(item, parcelsStore, alertStore, loadOrdersFn) {
+export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
   try {
     await parcelsStore.lookupFeacnCode(item.id)
     if (loadOrdersFn) {
@@ -210,6 +202,6 @@ export async function lookupFeacn(item, parcelsStore, alertStore, loadOrdersFn) 
   } catch (error) {
     console.error('Failed to lookup FEACN codes:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-    alertStore?.error?.(parcelsStore.error)
+
   }
 }

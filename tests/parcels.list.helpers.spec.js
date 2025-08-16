@@ -143,34 +143,13 @@ describe('Parcels List Helpers', () => {
       const mockStore = {
         validate: vi.fn().mockResolvedValue()
       }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await validateParcelData(item, mockStore, mockAlertStore, 'wbr', mockLoadOrders)
+      await validateParcelData(item, mockStore, mockLoadOrders)
 
       expect(mockStore.validate).toHaveBeenCalledWith(123)
       expect(mockLoadOrders).toHaveBeenCalled()
-      expect(mockAlertStore.error).not.toHaveBeenCalled()
-    })
-
-    it('should show error for Ozon platform', async () => {
-      const mockStore = {
-        validate: vi.fn()
-      }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await validateParcelData(item, mockStore, mockAlertStore, 'ozon', mockLoadOrders)
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Валидация посылки для Ozon платформы пока не реализована')
-      expect(mockStore.validate).not.toHaveBeenCalled()
-      expect(mockLoadOrders).not.toHaveBeenCalled()
     })
 
     it('should handle validation errors', async () => {
@@ -180,13 +159,10 @@ describe('Parcels List Helpers', () => {
         }),
         error: ''
       }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await validateParcelData(item, mockStore, mockAlertStore, 'wbr', mockLoadOrders)
+      await validateParcelData(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Validation failed')
       expect(mockLoadOrders).not.toHaveBeenCalled()
@@ -274,17 +250,13 @@ describe('Parcels List Helpers', () => {
         lookupFeacnCode: vi.fn().mockResolvedValue(),
         error: ''
       }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await lookupFeacn(item, mockStore, mockAlertStore, mockLoadOrders)
+      await lookupFeacn(item, mockStore, mockLoadOrders)
 
       expect(mockStore.lookupFeacnCode).toHaveBeenCalledWith(123)
       expect(mockLoadOrders).toHaveBeenCalled()
-      expect(mockAlertStore.error).not.toHaveBeenCalled()
     })
 
     it('should handle lookup errors', async () => {
@@ -294,13 +266,10 @@ describe('Parcels List Helpers', () => {
         }),
         error: ''
       }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await lookupFeacn(item, mockStore, mockAlertStore, mockLoadOrders)
+      await lookupFeacn(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Lookup failed')
       expect(mockLoadOrders).not.toHaveBeenCalled()

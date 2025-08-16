@@ -33,7 +33,6 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
@@ -79,7 +78,6 @@ const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()
 
 const authStore = useAuthStore()
-const alertStore = useAlertStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -169,15 +167,15 @@ async function exportParcelXml(item) {
 }
 
 async function validateParcel(item) {
-  await validateParcelData(item, parcelsStore, alertStore, 'wbr', loadOrders)
+  await validateParcelData(item, parcelsStore, loadOrders)
 }
 
 async function lookupFeacnCodes(item) {
-  await lookupFeacn(item, parcelsStore, alertStore, loadOrders)
+  await lookupFeacn(item, parcelsStore, loadOrders)
 }
 
 async function approveParcel(item) {
-  await approveParcelData(item, parcelsStore, alertStore, 'wbr', loadOrders)
+  await approveParcelData(item, parcelsStore, loadOrders)
 }
 
 function getRowProps(data) {

@@ -105,6 +105,11 @@ export const useParcelsStore = defineStore('parcels', () => {
       return true
   }
 
+  async function lookupFeacnCode(id) {
+      await fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`)
+      return true
+  }
+
   return {
     items,
     item,
@@ -118,6 +123,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     update,
     generate,
     validate,
-    approve
+    approve,
+    lookupFeacnCode
   }
 })

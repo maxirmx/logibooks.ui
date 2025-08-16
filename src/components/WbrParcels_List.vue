@@ -169,15 +169,15 @@ async function exportParcelXml(item) {
 }
 
 async function validateParcel(item) {
-  await validateParcelData(item, parcelsStore, loadOrders)
+  await validateParcelData(item, parcelsStore, alertStore, 'wbr', loadOrders)
 }
 
 async function lookupFeacnCodes(item) {
-  await lookupFeacn(item, alertStore)
+  await lookupFeacn(item, parcelsStore, alertStore, loadOrders)
 }
 
 async function approveParcel(item) {
-  await approveParcelData(item, parcelsStore, loadOrders)
+  await approveParcelData(item, parcelsStore, alertStore, 'wbr', loadOrders)
 }
 
 function getRowProps(data) {

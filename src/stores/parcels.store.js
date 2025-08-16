@@ -95,7 +95,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-
   async function validate(id) {
       await fetchWrapper.post(`${baseUrl}/${id}/validate`)
       return true

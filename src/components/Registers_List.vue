@@ -27,7 +27,14 @@
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
-import { lookupFeacn } from '@/helpers/registers.list.helpers.js'
+import {
+  toggleBulkStatusEditMode,
+  cancelBulkStatusChange,
+  applyBulkStatusToAllOrders,
+  isBulkStatusEditMode,
+  getBulkStatusSelectedId,
+  setBulkStatusSelectedId
+} from '@/helpers/registers.list.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
@@ -71,13 +78,10 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
 
 const transportationTypesStore = useTransportationTypesStore()
-transportationTypesStore.ensureLoaded()
 
 const customsProceduresStore = useCustomsProceduresStore()
-customsProceduresStore.ensureLoaded()
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -104,73 +108,30 @@ const uploadCustomers = computed(() => {
     }))
 })
 
-// Step 1: Toggle edit mode
+// Bulk status change functions - using helpers
 function bulkChangeStatus(registerId) {
-  if (!bulkStatusState[registerId]) {
-    bulkStatusState[registerId] = {
-      editMode: false,
-      selectedStatusId: null
-    }
-  }
-
-  // Don't allow interaction while loading
-  if (loading.value) {
-    return
-  }
-
-  // Toggle edit mode
-  bulkStatusState[registerId].editMode = !bulkStatusState[registerId].editMode
-
-  // Clear selection when entering edit mode
-  if (bulkStatusState[registerId].editMode) {
-    bulkStatusState[registerId].selectedStatusId = null
-  }
+  toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
 }
 
-// Cancel status change
 function cancelStatusChange(registerId) {
-  if (bulkStatusState[registerId]) {
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
-  }
+  cancelBulkStatusChange(registerId, bulkStatusState)
 }
 
-// Step 2: Apply selected status to all orders in register
 async function applyStatusToAllOrders(registerId, statusId) {
-  if (!registerId || !statusId) {
-    alertStore.error('Не указан реестр или статус для изменения')
-    return
-  }
+  await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, registersStore, alertStore)
+}
 
-  // Ensure statusId is a number
-  const numericStatusId = Number(statusId)
-  if (isNaN(numericStatusId) || numericStatusId <= 0) {
-    alertStore.error('Некорректный идентификатор статуса')
-    return
-  }
+// Helper wrapper functions for template
+function isInEditMode(registerId) {
+  return isBulkStatusEditMode(registerId, bulkStatusState)
+}
 
-  try {
-    await registersStore.setParcelStatuses(registerId, numericStatusId)
+function getSelectedStatusId(registerId) {
+  return getBulkStatusSelectedId(registerId, bulkStatusState)
+}
 
-    // Success: show message and reset state
-    alertStore.success('Статус успешно применен ко всем посылкам в реестре')
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
-    // Reload data to reflect changes
-  } catch (error) {
-    // The store already handles setting the error state
-    // Just provide user-friendly error message from the store error
-    const errorMessage =
-      error?.message || registersStore.error?.message || 'Ошибка при обновлении статусов посылок'
-    alertStore.error(errorMessage)
-
-    // Exit edit mode on error
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
-  }
-  finally {
-    await registersStore.getAll()
-  }
+function setSelectedStatusId(registerId, statusId) {
+  setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
 }
 
 // Function to get customer name by customerId
@@ -190,6 +151,9 @@ function getOrdersByCheckStatusTooltip(item) {
 
 // Load companies and order statuses on component mount
 onMounted(async () => {
+  await countriesStore.ensureLoaded()
+  await transportationTypesStore.ensureLoaded()
+  await customsProceduresStore.ensureLoaded()
   await companiesStore.getAll()
 })
 
@@ -324,7 +288,7 @@ async function validateRegister(item) {
 }
 
 async function lookupFeacnCodes(item) {
-  await lookupFeacn(item.id, registersStore, alertStore)
+  console.log('Looking up FEACN codes for register', item.id)
 }
 
 function cancelValidation() {
@@ -472,12 +436,43 @@ const headers = [
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" />
             
             <div class="bulk-status-inline">
-              <div v-if="bulkStatusState[item.id]?.editMode" class="status-selector-inline">
-                <v-select v-model="bulkStatusState[item.id].selectedStatusId" :items="parcelStatusesStore.parcelStatuses" item-title="title" item-value="id" placeholder="Статус" variant="outlined" density="compact" hide-details hide-no-data :disabled="loading" />
-                <ActionButton :item="item" icon="fa-solid fa-check" tooltip-text="Применить статус" :disabled="loading || !bulkStatusState[item.id]?.selectedStatusId" @click="() => applyStatusToAllOrders(item.id, bulkStatusState[item.id].selectedStatusId)" />
-                <ActionButton :item="item" icon="fa-solid fa-xmark" tooltip-text="Отменить" :disabled="loading" @click="() => cancelStatusChange(item.id)" />
+              <div v-if="isInEditMode(item.id)" class="status-selector-inline">
+                <v-select 
+                  :model-value="getSelectedStatusId(item.id)" 
+                  @update:model-value="(value) => setSelectedStatusId(item.id, value)"
+                  :items="parcelStatusesStore.parcelStatuses" 
+                  item-title="title" 
+                  item-value="id" 
+                  placeholder="Статус" 
+                  variant="outlined" 
+                  density="compact" 
+                  hide-details 
+                  hide-no-data 
+                  :disabled="loading" 
+                />
+                <ActionButton 
+                  :item="item" 
+                  icon="fa-solid fa-check" 
+                  tooltip-text="Применить статус" 
+                  :disabled="loading || !getSelectedStatusId(item.id)" 
+                  @click="() => applyStatusToAllOrders(item.id, getSelectedStatusId(item.id))" 
+                />
+                <ActionButton 
+                  :item="item" 
+                  icon="fa-solid fa-xmark" 
+                  tooltip-text="Отменить" 
+                  :disabled="loading" 
+                  @click="() => cancelStatusChange(item.id)" 
+                />
               </div>
-              <ActionButton v-else :item="item" icon="fa-solid fa-pen-to-square" tooltip-text="Изменить статус всех посылок в реестре" :disabled="loading" @click="() => bulkChangeStatus(item.id)" />
+              <ActionButton 
+                v-else 
+                :item="item" 
+                icon="fa-solid fa-pen-to-square" 
+                tooltip-text="Изменить статус всех посылок в реестре" 
+                :disabled="loading" 
+                @click="() => bulkChangeStatus(item.id)" 
+              />
             </div>
 
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegister" />

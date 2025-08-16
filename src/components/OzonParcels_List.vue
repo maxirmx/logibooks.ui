@@ -33,15 +33,26 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
-import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import {
+  fetchRegisterData,
+  loadParcelsData,
+  navigateToEditParcel,
+  validateParcelData,
+  approveParcelData,
+  getRowPropsForParcel,
+  filterGenericTemplateHeadersForParcel,
+  generateRegisterName,
+  exportParcelXmlData,
+  lookupFeacn
+} from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 
@@ -66,6 +77,7 @@ feacnCodesStore.ensureOrdersLoaded()
 const countriesStore = useCountriesStore()
 countriesStore.ensureLoaded()
 const authStore = useAuthStore()
+const alertStore = useAlertStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -84,31 +96,20 @@ parcels_tnved.value = ''
 const statuses = ref([])
 const registerFileName = ref('')
 const registerDealNumber = ref('')
-const registerName = computed(() => {
-  if (registerDealNumber.value && String(registerDealNumber.value).trim() !== '') {
-    return `Реестр для сделки ${registerDealNumber.value}`
-  } else {
-    return 'Реестр для сделки без номера (файл: ' + registerFileName.value + ')'
-  }
-})
+const registerName = computed(() => 
+  generateRegisterName(registerDealNumber.value, registerFileName.value)
+)
 
 async function fetchRegister() {
-  try {
-    const res = await fetchWrapper.get(`${apiUrl}/registers/${props.registerId}`)
-    const byStatus = res.ordersByStatus || {}
-    statuses.value = Object.keys(byStatus).map((id) => ({
-      id: Number(id),
-      count: byStatus[id]
-    }))
-    registerFileName.value = res.fileName || ''
-    registerDealNumber.value = res.dealNumber || ''
-  } catch {
-    // ignore errors
-  }
+  await fetchRegisterData(props.registerId, { 
+    statuses, 
+    registerFileName, 
+    registerDealNumber 
+  })
 }
 
 function loadOrders() {
-  parcelsStore.getAll(props.registerId)
+  loadParcelsData(props.registerId, parcelsStore)
 }
 
 watch(
@@ -156,51 +157,33 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
-  router.push(`/registers/${props.registerId}/parcels/edit/${item.id}`)
+  navigateToEditParcel(router, item, 'ozon-parcel-edit', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {
-  try {
-    await parcelsStore.generate(item.id, item.postingNumber)
-  } catch (error) {
-    console.error('Failed to export parcel XML:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
-  }
+  const filename = item.postingNumber
+  await exportParcelXmlData(item, parcelsStore, filename)
 }
 
 async function validateParcel(item) {
-  try {
-    await parcelsStore.validate(item.id)
-    loadOrders()
-  } catch (error) {
-    console.error('Failed to validate parcel:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
-  }
+  await validateParcelData(item, parcelsStore, alertStore, 'ozon', loadOrders)
+}
+
+async function lookupFeacnCodes(item) {
+  await lookupFeacn(item, alertStore)
 }
 
 async function approveParcel(item) {
-  try {
-    await parcelsStore.approve(item.id)
-    loadOrders()
-  } catch (error) {
-    console.error('Failed to approve parcel:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
-  }
+  await approveParcelData(item, parcelsStore, alertStore, 'ozon', loadOrders)
 }
 
 function getRowProps(data) {
-  return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
+  return getRowPropsForParcel(data)
 }
 
 // Function to filter headers that need generic templates
 function getGenericTemplateHeaders() {
-  return headers.value.filter(h => 
-    !h.key.startsWith('actions') && 
-    h.key !== 'productLink' && 
-    h.key !== 'statusId' && 
-    h.key !== 'checkStatusId' && 
-    h.key !== 'countryCode'
-  )
+  return filterGenericTemplateHeadersForParcel(headers.value)
 }
 </script>
 
@@ -289,8 +272,9 @@ function getGenericTemplateHeaders() {
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
           </div>
         </template>

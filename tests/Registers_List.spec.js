@@ -443,6 +443,12 @@ describe('Registers_List.vue', () => {
       wrapper.vm.exportAllXml(item)
       expect(generateFn).toHaveBeenCalledWith(456, 'INV')
     })
+
+    it('calls lookupFeacn helper when lookupFeacnCodes is called', async () => {
+      const item = { id: 789 }
+      await wrapper.vm.lookupFeacnCodes(item)
+      expect(alertSuccessFn).toHaveBeenCalledWith('Подбор кодов ТН ВЭД для реестра 789 - функция в разработке')
+    })
   })
 
   describe('table cell interactions', () => {

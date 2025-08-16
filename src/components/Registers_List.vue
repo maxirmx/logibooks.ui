@@ -27,6 +27,7 @@
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { lookupFeacn } from '@/helpers/registers.list.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
@@ -322,6 +323,10 @@ async function validateRegister(item) {
   }
 }
 
+async function lookupFeacnCodes(item) {
+  await lookupFeacn(item.id, registersStore, alertStore)
+}
+
 function cancelValidation() {
   if (validationState.handleId) {
     registersStore.cancelValidation(validationState.handleId).catch(() => {})
@@ -476,6 +481,7 @@ const headers = [
             </div>
 
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладные для всех посылок в реестре" @click="exportAllXml" />
             <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
             <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" />

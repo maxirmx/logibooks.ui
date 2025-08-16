@@ -33,7 +33,13 @@ import {
   applyBulkStatusToAllOrders,
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
-  setBulkStatusSelectedId
+  setBulkStatusSelectedId,
+  createValidationState,
+  calculateValidationProgress,
+  pollValidation,
+  validateRegister,
+  cancelValidation,
+  createPollingTimer
 } from '@/helpers/registers.list.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -52,18 +58,11 @@ import { useConfirm } from 'vuetify-use-dialog'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 
-const validationState = reactive({
-  show: false,
-  handleId: null,
-  total: 0,
-  processed: 0
-})
-let progressTimer = null
-const POLLING_INTERVAL_MS = 1000
-const progressPercent = computed(() => {
-  if (!validationState.total || validationState.total <= 0) return 0
-  return Math.round((validationState.processed / validationState.total) * 100)
-})
+const validationState = reactive(createValidationState())
+const pollingTimer = createPollingTimer(() => 
+  pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
+)
+const progressPercent = computed(() => calculateValidationProgress(validationState))
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -158,7 +157,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  stopPolling()
+  pollingTimer.stop()
 })
 
 function openFileDialog() {
@@ -244,59 +243,23 @@ async function deleteRegister(item) {
   }
 }
 
-async function pollValidation() {
-  if (!validationState.handleId) return
-  try {
-    const progress = await registersStore.getValidationProgress(validationState.handleId)
-    validationState.total = progress.total
-    validationState.processed = progress.processed
-    if (progress.finished || progress.total === -1 || progress.processed === -1) {
-      validationState.show = false
-      stopPolling()
-      // Only refresh data when validation is complete
-      await registersStore.getAll()
-    }
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-    validationState.show = false
-    stopPolling()
-    // Refresh data if validation failed
-    await registersStore.getAll()
-  }
-}
-
-function stopPolling() {
-  if (progressTimer) {
-    clearInterval(progressTimer)
-    progressTimer = null
-  }
-}
-
-async function validateRegister(item) {
-  try {
-    stopPolling()
-    const res = await registersStore.validate(item.id)
-    validationState.handleId = res.id
-    validationState.total = 0
-    validationState.processed = 0
-    validationState.show = true
-    pollValidation()
-    progressTimer = setInterval(pollValidation, POLLING_INTERVAL_MS)
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  }
+async function validateRegisterWrapper(item) {
+  await validateRegister(
+    item, 
+    validationState, 
+    registersStore, 
+    alertStore, 
+    () => pollingTimer.stop(),
+    () => pollingTimer.start()
+  )
 }
 
 async function lookupFeacnCodes(item) {
   console.log('Looking up FEACN codes for register', item.id)
 }
 
-function cancelValidation() {
-  if (validationState.handleId) {
-    registersStore.cancelValidation(validationState.handleId).catch(() => {})
-  }
-  validationState.show = false
-  stopPolling()
+function cancelValidationWrapper() {
+  cancelValidation(validationState, registersStore, () => pollingTimer.stop())
 }
 
 function formatDate(dateStr) {
@@ -475,7 +438,7 @@ const headers = [
               />
             </div>
 
-            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegisterWrapper" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладные для всех посылок в реестре" @click="exportAllXml" />
             <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
@@ -505,7 +468,7 @@ const headers = [
           </v-progress-circular>
         </v-card-text>
         <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="cancelValidation">Отменить</v-btn>
+          <v-btn variant="text" @click="cancelValidationWrapper">Отменить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

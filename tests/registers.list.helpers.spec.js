@@ -10,7 +10,14 @@ import {
   applyBulkStatusToAllOrders,
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
-  setBulkStatusSelectedId
+  setBulkStatusSelectedId,
+  createValidationState,
+  calculateValidationProgress,
+  pollValidation,
+  validateRegister,
+  cancelValidation,
+  createPollingTimer,
+  POLLING_INTERVAL_MS
 } from '@/helpers/registers.list.helpers'
 
 describe('registers.list.helpers', () => {
@@ -385,6 +392,329 @@ describe('registers.list.helpers', () => {
       
       expect(bulkStatusState[registerId].selectedStatusId).toBe(statusId)
       expect(bulkStatusState[registerId].editMode).toBe(true) // preserved
+    })
+  })
+
+  describe('Validation Support Functions', () => {
+    let mockRegistersStore
+    let mockAlertStore
+    let validationState
+
+    beforeEach(() => {
+      mockRegistersStore = {
+        validate: vi.fn(),
+        getValidationProgress: vi.fn(),
+        cancelValidation: vi.fn(),
+        getAll: vi.fn()
+      }
+      mockAlertStore = {
+        error: vi.fn()
+      }
+      validationState = createValidationState()
+      vi.clearAllMocks()
+    })
+
+    describe('createValidationState', () => {
+      it('creates initial validation state object', () => {
+        const state = createValidationState()
+        
+        expect(state).toEqual({
+          show: false,
+          handleId: null,
+          total: 0,
+          processed: 0
+        })
+      })
+    })
+
+    describe('calculateValidationProgress', () => {
+      it('returns 0 when total is 0', () => {
+        validationState.total = 0
+        validationState.processed = 10
+        
+        const progress = calculateValidationProgress(validationState)
+        
+        expect(progress).toBe(0)
+      })
+
+      it('returns 0 when total is negative', () => {
+        validationState.total = -1
+        validationState.processed = 10
+        
+        const progress = calculateValidationProgress(validationState)
+        
+        expect(progress).toBe(0)
+      })
+
+      it('calculates correct percentage', () => {
+        validationState.total = 100
+        validationState.processed = 25
+        
+        const progress = calculateValidationProgress(validationState)
+        
+        expect(progress).toBe(25)
+      })
+
+      it('rounds percentage correctly', () => {
+        validationState.total = 3
+        validationState.processed = 1
+        
+        const progress = calculateValidationProgress(validationState)
+        
+        expect(progress).toBe(33) // Math.round(33.333...)
+      })
+    })
+
+    describe('pollValidation', () => {
+      let stopPollingFn
+
+      beforeEach(() => {
+        stopPollingFn = vi.fn()
+        validationState.handleId = 'test-handle-123'
+      })
+
+      it('does nothing when no handleId', async () => {
+        validationState.handleId = null
+        
+        await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
+        
+        expect(mockRegistersStore.getValidationProgress).not.toHaveBeenCalled()
+      })
+
+      it('updates progress correctly', async () => {
+        const progressData = {
+          total: 100,
+          processed: 50,
+          finished: false
+        }
+        mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
+        
+        await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
+        
+        expect(mockRegistersStore.getValidationProgress).toHaveBeenCalledWith('test-handle-123')
+        expect(validationState.total).toBe(100)
+        expect(validationState.processed).toBe(50)
+        expect(validationState.show).toBe(false) // Initial state was false
+        expect(stopPollingFn).not.toHaveBeenCalled()
+      })
+
+      it('stops polling when finished', async () => {
+        validationState.show = true
+        const progressData = {
+          total: 100,
+          processed: 100,
+          finished: true
+        }
+        mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
+        
+        await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
+        
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+        expect(mockRegistersStore.getAll).toHaveBeenCalled()
+      })
+
+      it('stops polling when total is -1', async () => {
+        validationState.show = true
+        const progressData = {
+          total: -1,
+          processed: 0,
+          finished: false
+        }
+        mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
+        
+        await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
+        
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+        expect(mockRegistersStore.getAll).toHaveBeenCalled()
+      })
+
+      it('stops polling when processed is -1', async () => {
+        validationState.show = true
+        const progressData = {
+          total: 100,
+          processed: -1,
+          finished: false
+        }
+        mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
+        
+        await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
+        
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+        expect(mockRegistersStore.getAll).toHaveBeenCalled()
+      })
+
+      it('handles polling errors', async () => {
+        validationState.show = true
+        const errorMessage = 'Polling failed'
+        mockRegistersStore.getValidationProgress.mockRejectedValueOnce(new Error(errorMessage))
+        
+        await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
+        
+        expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+        expect(mockRegistersStore.getAll).toHaveBeenCalled()
+      })
+    })
+
+    describe('validateRegister', () => {
+      let stopPollingFn
+      let startPollingFn
+      let item
+
+      beforeEach(() => {
+        stopPollingFn = vi.fn()
+        startPollingFn = vi.fn()
+        item = { id: 123 }
+      })
+
+      it('starts validation successfully', async () => {
+        const validationResult = { id: 'validation-handle-123' }
+        mockRegistersStore.validate.mockResolvedValueOnce(validationResult)
+        mockRegistersStore.getValidationProgress.mockResolvedValueOnce({
+          total: 100,
+          processed: 0,
+          finished: false
+        })
+        
+        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn)
+        
+        expect(stopPollingFn).toHaveBeenCalled()
+        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123)
+        expect(validationState.handleId).toBe('validation-handle-123')
+        expect(validationState.total).toBe(100)
+        expect(validationState.processed).toBe(0)
+        expect(validationState.show).toBe(true)
+        expect(startPollingFn).toHaveBeenCalled()
+      })
+
+      it('handles validation start errors', async () => {
+        const errorMessage = 'Validation failed to start'
+        mockRegistersStore.validate.mockRejectedValueOnce(new Error(errorMessage))
+        
+        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn)
+        
+        expect(stopPollingFn).toHaveBeenCalled()
+        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123)
+        expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
+        expect(validationState.show).toBe(false)
+        expect(startPollingFn).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('cancelValidation', () => {
+      let stopPollingFn
+
+      beforeEach(() => {
+        stopPollingFn = vi.fn()
+      })
+
+      it('cancels validation with handleId', () => {
+        validationState.handleId = 'test-handle-123'
+        validationState.show = true
+        mockRegistersStore.cancelValidation.mockResolvedValueOnce({})
+        
+        cancelValidation(validationState, mockRegistersStore, stopPollingFn)
+        
+        expect(mockRegistersStore.cancelValidation).toHaveBeenCalledWith('test-handle-123')
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+      })
+
+      it('cancels validation without handleId', () => {
+        validationState.handleId = null
+        validationState.show = true
+        
+        cancelValidation(validationState, mockRegistersStore, stopPollingFn)
+        
+        expect(mockRegistersStore.cancelValidation).not.toHaveBeenCalled()
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+      })
+
+      it('handles cancellation errors silently', () => {
+        validationState.handleId = 'test-handle-123'
+        validationState.show = true
+        mockRegistersStore.cancelValidation.mockRejectedValueOnce(new Error('Cancellation failed'))
+        
+        expect(() => {
+          cancelValidation(validationState, mockRegistersStore, stopPollingFn)
+        }).not.toThrow()
+        
+        expect(validationState.show).toBe(false)
+        expect(stopPollingFn).toHaveBeenCalled()
+      })
+    })
+
+    describe('createPollingTimer', () => {
+      let pollFunction
+
+      beforeEach(() => {
+        pollFunction = vi.fn()
+        vi.useFakeTimers()
+      })
+
+      afterEach(() => {
+        vi.useRealTimers()
+      })
+
+      it('creates timer with default interval', () => {
+        const timer = createPollingTimer(pollFunction)
+        
+        expect(timer.isRunning()).toBe(false)
+        
+        timer.start()
+        expect(timer.isRunning()).toBe(true)
+        
+        vi.advanceTimersByTime(POLLING_INTERVAL_MS)
+        expect(pollFunction).toHaveBeenCalledTimes(1)
+        
+        timer.stop()
+        expect(timer.isRunning()).toBe(false)
+      })
+
+      it('creates timer with custom interval', () => {
+        const customInterval = 500
+        const timer = createPollingTimer(pollFunction, customInterval)
+        
+        timer.start()
+        
+        vi.advanceTimersByTime(customInterval)
+        expect(pollFunction).toHaveBeenCalledTimes(1)
+        
+        vi.advanceTimersByTime(customInterval)
+        expect(pollFunction).toHaveBeenCalledTimes(2)
+        
+        timer.stop()
+      })
+
+      it('prevents multiple starts', () => {
+        const timer = createPollingTimer(pollFunction)
+        
+        timer.start()
+        timer.start() // Should not create another timer
+        
+        vi.advanceTimersByTime(POLLING_INTERVAL_MS)
+        expect(pollFunction).toHaveBeenCalledTimes(1)
+        
+        timer.stop()
+      })
+
+      it('handles stop when not running', () => {
+        const timer = createPollingTimer(pollFunction)
+        
+        expect(() => timer.stop()).not.toThrow()
+        expect(timer.isRunning()).toBe(false)
+      })
+    })
+
+    describe('POLLING_INTERVAL_MS', () => {
+      it('has correct default value', () => {
+        expect(POLLING_INTERVAL_MS).toBe(1000)
+      })
     })
   })
 })

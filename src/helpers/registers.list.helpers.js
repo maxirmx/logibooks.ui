@@ -186,3 +186,128 @@ export function setBulkStatusSelectedId(registerId, statusId, bulkStatusState) {
   initializeBulkStatusState(registerId, bulkStatusState)
   bulkStatusState[registerId].selectedStatusId = statusId
 }
+
+/**
+ * Validation state constants
+ */
+export const POLLING_INTERVAL_MS = 1000
+
+/**
+ * Creates initial validation state object
+ * @returns {Object} Initial validation state
+ */
+export function createValidationState() {
+  return {
+    show: false,
+    handleId: null,
+    total: 0,
+    processed: 0
+  }
+}
+
+/**
+ * Calculates validation progress percentage
+ * @param {Object} validationState - The validation state object
+ * @returns {number} Progress percentage (0-100)
+ */
+export function calculateValidationProgress(validationState) {
+  if (!validationState.total || validationState.total <= 0) return 0
+  return Math.round((validationState.processed / validationState.total) * 100)
+}
+
+/**
+ * Polls validation progress and updates state
+ * @param {Object} validationState - The validation state object
+ * @param {Object} registersStore - The registers store instance
+ * @param {Object} alertStore - The alert store instance
+ * @param {Function} stopPollingFn - Function to stop polling
+ * @returns {Promise<void>}
+ */
+export async function pollValidation(validationState, registersStore, alertStore, stopPollingFn) {
+  if (!validationState.handleId) return
+  
+  try {
+    const progress = await registersStore.getValidationProgress(validationState.handleId)
+    validationState.total = progress.total
+    validationState.processed = progress.processed
+    
+    if (progress.finished || progress.total === -1 || progress.processed === -1) {
+      validationState.show = false
+      stopPollingFn()
+      // Only refresh data when validation is complete
+      await registersStore.getAll()
+    }
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+    validationState.show = false
+    stopPollingFn()
+    // Refresh data if validation failed
+    await registersStore.getAll()
+  }
+}
+
+/**
+ * Starts validation for a register
+ * @param {Object} item - The register item to validate
+ * @param {Object} validationState - The validation state object
+ * @param {Object} registersStore - The registers store instance
+ * @param {Object} alertStore - The alert store instance
+ * @param {Function} stopPollingFn - Function to stop polling
+ * @param {Function} startPollingFn - Function to start polling
+ * @returns {Promise<void>}
+ */
+export async function validateRegister(item, validationState, registersStore, alertStore, stopPollingFn, startPollingFn) {
+  try {
+    stopPollingFn()
+    const res = await registersStore.validate(item.id)
+    validationState.handleId = res.id
+    validationState.total = 0
+    validationState.processed = 0
+    validationState.show = true
+    await pollValidation(validationState, registersStore, alertStore, stopPollingFn)
+    startPollingFn()
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+  }
+}
+
+/**
+ * Cancels ongoing validation
+ * @param {Object} validationState - The validation state object
+ * @param {Object} registersStore - The registers store instance
+ * @param {Function} stopPollingFn - Function to stop polling
+ */
+export function cancelValidation(validationState, registersStore, stopPollingFn) {
+  if (validationState.handleId) {
+    registersStore.cancelValidation(validationState.handleId).catch(() => {})
+  }
+  validationState.show = false
+  stopPollingFn()
+}
+
+/**
+ * Creates a timer management object for validation polling
+ * @param {Function} pollFunction - The function to call on each poll
+ * @param {number} interval - Polling interval in milliseconds
+ * @returns {Object} Timer management object with start and stop methods
+ */
+export function createPollingTimer(pollFunction, interval = POLLING_INTERVAL_MS) {
+  let timer = null
+  
+  return {
+    start() {
+      if (!timer) {
+        timer = setInterval(pollFunction, interval)
+      }
+    },
+    stop() {
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+    },
+    isRunning() {
+      return timer !== null
+    }
+  }
+}

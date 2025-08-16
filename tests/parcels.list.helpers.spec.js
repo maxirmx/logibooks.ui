@@ -22,8 +22,6 @@ vi.mock('../src/helpers/orders.check.helper.js', () => ({
 }))
 
 import {
-  fetchRegisterData,
-  loadParcelsData,
   navigateToEditParcel,
   validateParcelData,
   exportParcelXmlData,
@@ -31,7 +29,6 @@ import {
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
   generateRegisterName,
-  createStatusOptions,
   lookupFeacn
 } from '../src/helpers/parcels.list.helpers.js'
 
@@ -45,65 +42,6 @@ describe('Parcels List Helpers', () => {
   afterEach(() => {
     // Restore console.error after each test
     vi.restoreAllMocks()
-  })
-
-  describe('fetchRegisterData', () => {
-    it('should fetch register data and update refs', async () => {
-      const mockResponse = {
-        ordersByStatus: { '1': 5, '2': 3 },
-        fileName: 'test-file.xlsx',
-        dealNumber: 'DEAL-123'
-      }
-      
-      const { fetchWrapper } = await vi.importMock('../src/helpers/fetch.wrapper.js')
-      fetchWrapper.get.mockResolvedValue(mockResponse)
-
-      const refs = {
-        statuses: { value: [] },
-        registerFileName: { value: '' },
-        registerDealNumber: { value: '' }
-      }
-
-      await fetchRegisterData(123, refs)
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://test-api/registers/123')
-      expect(refs.statuses.value).toEqual([
-        { id: 1, count: 5 },
-        { id: 2, count: 3 }
-      ])
-      expect(refs.registerFileName.value).toBe('test-file.xlsx')
-      expect(refs.registerDealNumber.value).toBe('DEAL-123')
-    })
-
-    it('should handle errors gracefully', async () => {
-      const { fetchWrapper } = await vi.importMock('../src/helpers/fetch.wrapper.js')
-      fetchWrapper.get.mockRejectedValue(new Error('Network error'))
-
-      const refs = {
-        statuses: { value: [] },
-        registerFileName: { value: '' },
-        registerDealNumber: { value: '' }
-      }
-
-      await fetchRegisterData(123, refs)
-
-      // Should not throw and refs should remain unchanged
-      expect(refs.statuses.value).toEqual([])
-      expect(refs.registerFileName.value).toBe('')
-      expect(refs.registerDealNumber.value).toBe('')
-    })
-  })
-
-  describe('loadParcelsData', () => {
-    it('should call store getAll method', () => {
-      const mockStore = {
-        getAll: vi.fn()
-      }
-
-      loadParcelsData(123, mockStore)
-
-      expect(mockStore.getAll).toHaveBeenCalledWith(123)
-    })
   })
 
   describe('navigateToEditParcel', () => {
@@ -347,41 +285,4 @@ describe('Parcels List Helpers', () => {
     })
   })
 
-  describe('createStatusOptions', () => {
-    it('should create status options with counts', () => {
-      const statuses = [
-        { id: 1, count: 5 },
-        { id: 2, count: 3 }
-      ]
-      const mockStatusStore = {
-        getStatusTitle: vi.fn()
-          .mockReturnValueOnce('Active')
-          .mockReturnValueOnce('Pending')
-      }
-
-      const result = createStatusOptions(statuses, mockStatusStore)
-
-      expect(result).toEqual([
-        { value: null, title: 'Все' },
-        { value: 1, title: 'Active (5)' },
-        { value: 2, title: 'Pending (3)' }
-      ])
-      expect(mockStatusStore.getStatusTitle).toHaveBeenCalledWith(1)
-      expect(mockStatusStore.getStatusTitle).toHaveBeenCalledWith(2)
-    })
-
-    it('should handle empty statuses array', () => {
-      const statuses = []
-      const mockStatusStore = {
-        getStatusTitle: vi.fn()
-      }
-
-      const result = createStatusOptions(statuses, mockStatusStore)
-
-      expect(result).toEqual([
-        { value: null, title: 'Все' }
-      ])
-      expect(mockStatusStore.getStatusTitle).not.toHaveBeenCalled()
-    })
-  })
 })

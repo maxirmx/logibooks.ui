@@ -27,6 +27,7 @@
 
 import { watch, ref, computed, onMounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -41,8 +42,6 @@ import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js
 import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
-  fetchRegisterData,
-  loadParcelsData,
   navigateToEditParcel,
   validateParcelData,
   approveParcelData,
@@ -60,21 +59,12 @@ const props = defineProps({
 })
 
 const parcelsStore = useParcelsStore()
-
+const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
-parcelStatusStore.ensureStatusesLoaded()
-
 const parcelCheckStatusStore = useParcelCheckStatusStore()
-parcelCheckStatusStore.ensureStatusesLoaded()
-
 const stopWordsStore = useStopWordsStore()
-await stopWordsStore.getAll()
-
 const feacnCodesStore = useFeacnCodesStore()
-feacnCodesStore.ensureOrdersLoaded()
-
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
@@ -91,23 +81,30 @@ const {
 parcels_status.value = null
 parcels_tnved.value = ''
 
-const statuses = ref([])
 const registerFileName = ref('')
 const registerDealNumber = ref('')
-const registerName = computed(() => 
-  generateRegisterName(registerDealNumber.value, registerFileName.value)
-)
+const registerLoading = ref(true)
+const registerName = computed(() => {
+  if (registerLoading.value) {
+    return 'Загрузка реестра...'
+  }
+  return generateRegisterName(registerDealNumber.value, registerFileName.value)
+})
 
 async function fetchRegister() {
-  await fetchRegisterData(props.registerId, { 
-    statuses, 
-    registerFileName, 
-    registerDealNumber 
-  })
+  try {
+    await registersStore.getById(props.registerId)
+    if (registersStore.item && !registersStore.item.error && !registersStore.item.loading) {
+      registerFileName.value = registersStore.item.fileName || ''
+      registerDealNumber.value = registersStore.item.dealNumber || ''
+    }
+  } finally {
+    registerLoading.value = false
+  }
 }
 
 function loadOrders() {
-  loadParcelsData(props.registerId, parcelsStore)
+  parcelsStore.getAll(props.registerId)
 }
 
 watch(
@@ -117,14 +114,19 @@ watch(
 )
 
 onMounted(async () => {
+  await parcelStatusStore.ensureStatusesLoaded()
+  await parcelCheckStatusStore.ensureStatusesLoaded()
+  await feacnCodesStore.ensureOrdersLoaded()
+  await countriesStore.ensureLoaded()
+  await stopWordsStore.getAll()
   await fetchRegister()
 })
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
-  ...statuses.value.map((s) => ({
-    value: s.id,
-    title: `${parcelStatusStore.getStatusTitle(s.id)} (${s.count})`
+  ...parcelStatusStore.parcelStatuses.map(status => ({
+    value: status.id,
+    title: status.title
   }))
 ])
 

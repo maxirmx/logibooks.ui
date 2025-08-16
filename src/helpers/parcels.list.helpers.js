@@ -27,39 +27,7 @@
  * Helper functions for parcels list functionality shared between WBR and Ozon components
  */
 
-import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
 import { HasIssues } from '@/helpers/orders.check.helper.js'
-
-/**
- * Fetches register data including status counts
- * @param {number} registerId - The register ID
- * @param {Object} refs - Object containing reactive refs for statuses, fileName, dealNumber
- * @returns {Promise<void>}
- */
-export async function fetchRegisterData(registerId, refs) {
-  try {
-    const res = await fetchWrapper.get(`${apiUrl}/registers/${registerId}`)
-    const byStatus = res.ordersByStatus || {}
-    refs.statuses.value = Object.keys(byStatus).map((id) => ({
-      id: Number(id),
-      count: byStatus[id]
-    }))
-    refs.registerFileName.value = res.fileName || ''
-    refs.registerDealNumber.value = res.dealNumber || ''
-  } catch {
-    // ignore errors
-  }
-}
-
-/**
- * Loads parcels for a register
- * @param {number} registerId - The register ID
- * @param {Object} parcelsStore - The parcels store instance
- */
-export function loadParcelsData(registerId, parcelsStore) {
-  parcelsStore.getAll(registerId)
-}
 
 /**
  * Navigates to edit parcel page
@@ -93,7 +61,6 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
     await parcelsStore.validate(item.id)
     loadOrdersFn()
   } catch (error) {
-    console.error('Failed to validate parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
   }
 }
@@ -110,7 +77,6 @@ export async function approveParcelData(item, parcelsStore, loadOrdersFn) {
     await parcelsStore.approve(item.id)
     loadOrdersFn()
   } catch (error) {
-    console.error('Failed to approve parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
   }
 }
@@ -139,7 +105,6 @@ export function filterGenericTemplateHeadersForParcel(headers) {
   )
 }
 
-
 /**
  * Generates register display name based on deal number or filename
  * @param {string} dealNumber - Register deal number
@@ -155,22 +120,6 @@ export function generateRegisterName(dealNumber, fileName) {
 }
 
 /**
- * Creates status filter options for dropdown
- * @param {Array} statuses - Array of status objects with id and count
- * @param {Object} parcelStatusStore - Parcel status store for getting titles
- * @returns {Array} Array of status options for dropdown
- */
-export function createStatusOptions(statuses, parcelStatusStore) {
-  return [
-    { value: null, title: 'Все' },
-    ...statuses.map((s) => ({
-      value: s.id,
-      title: `${parcelStatusStore.getStatusTitle(s.id)} (${s.count})`
-    }))
-  ]
-}
-
-/**
  * Exports parcel XML with provided filename
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
@@ -181,7 +130,6 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
   try {
     await parcelsStore.generate(item.id, filename)
   } catch (error) {
-    console.error('Failed to export parcel XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
   }
 }
@@ -200,7 +148,6 @@ export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
       loadOrdersFn()
     }
   } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
 
   }

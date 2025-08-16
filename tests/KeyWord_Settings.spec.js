@@ -143,32 +143,6 @@ describe('KeyWord_Settings.vue', () => {
   })
 
   describe('Word Analysis and Option Disabling', () => {
-    it('identifies single word input correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('test')
-      await nextTick()
-
-      // Access the component instance
-      const vm = wrapper.vm
-      expect(vm.words).toEqual(['test'])
-      expect(vm.isSingleWordInput).toBe(true)
-    })
-
-    it('identifies multi-word input correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('test word phrase')
-      await nextTick()
-
-      const vm = wrapper.vm
-      expect(vm.words).toEqual(['test', 'word', 'phrase'])
-      expect(vm.isSingleWordInput).toBe(false)
-    })
 
     it('disables correct options for single word input', async () => {
       const wrapper = mountComponent()

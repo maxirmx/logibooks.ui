@@ -34,6 +34,7 @@ import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
 
 const props = defineProps({
   id: {
@@ -68,15 +69,7 @@ const schema = toTypedSchema(Yup.object().shape({
     .test(
       'is-enabled',
       'Выбранный тип соответствия недоступен для текущего слова/фразы',
-      function(value) {
-        const word = this.parent.word || ''
-        const words = word.match(/[\p{L}\d-]+/gu) || []
-        const isSingleWordInput = words.length <= 1
-        if (isSingleWordInput) {
-          return !(value >= 21 && value <= 30)
-        }
-        return !((value >= 11 && value <= 20) || value > 30)
-      }
+      createMatchTypeValidationTest()
     )    
 }))
 
@@ -93,14 +86,8 @@ const { value: feacnCode } = useField('feacnCode')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
-const words = computed(() => (word.value.match(/[\p{L}\d-]+/gu) || []))
-const isSingleWordInput = computed(() => words.value.length <= 1)
-
 function isOptionDisabled(value) {
-  if (isSingleWordInput.value) {
-    return value >= 21 && value <= 30
-  }
-  return (value >= 11 && value <= 20) || value > 30
+  return isMatchTypeDisabled(value, word.value)
 }
 
 matchTypesStore.ensureLoaded()

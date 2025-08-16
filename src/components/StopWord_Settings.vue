@@ -1,4 +1,13 @@
-// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// Copyright (C) 2025 Maximimport { ref, computed, onMounted, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useForm, useField } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/yup'
+import * as Yup from 'yup'
+import router from '@/router'
+import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { parseWords, isSingleWordInput, isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 //
@@ -34,6 +43,7 @@ import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
 
 const props = defineProps({
   id: {
@@ -64,15 +74,7 @@ const schema = toTypedSchema(Yup.object().shape({
     .test(
       'is-enabled',
       'Выбранный тип соответствия недоступен для текущего слова/фразы',
-      function(value) {
-        const word = this.parent.word || ''
-        const words = word.match(/[\p{L}\d-]+/gu) || []
-        const isSingleWordInput = words.length <= 1
-        if (isSingleWordInput) {
-          return !(value >= 21 && value <= 30)
-        }
-        return !((value >= 11 && value <= 20) || value > 30)
-      }
+      createMatchTypeValidationTest()
     )    
 }))
 
@@ -87,14 +89,8 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
-const words = computed(() => (word.value.match(/[\p{L}\d-]+/gu) || []))
-const isSingleWordInput = computed(() => words.value.length <= 1)
-
 function isOptionDisabled(value) {
-  if (isSingleWordInput.value) {
-    return value >= 21 && value <= 30
-  }
-  return (value >= 11 && value <= 20) || value > 30
+  return isMatchTypeDisabled(value, word.value)
 }
 
 matchTypesStore.ensureLoaded()

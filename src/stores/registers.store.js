@@ -164,6 +164,34 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function lookupFeacnCodes(registerId) {
+    try {
+      const result = await fetchWrapper.post(`${baseUrl}/${registerId}/lookup-feacn-codes`)
+      return result
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function getLookupFeacnCodesProgress(handleId) {
+    try {
+      return await fetchWrapper.get(`${baseUrl}/lookup-feacn-codes/${handleId}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function cancelLookupFeacnCodes(handleId) {
+    try {
+      await fetchWrapper.delete(`${baseUrl}/lookup-feacn-codes/${handleId}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   async function generate(id, invoiceNumber) {
     loading.value = true
     error.value = null
@@ -252,6 +280,9 @@ export const useRegistersStore = defineStore('registers', () => {
     validate,
     getValidationProgress,
     cancelValidation,
+    lookupFeacnCodes,
+    getLookupFeacnCodesProgress,
+    cancelLookupFeacnCodes,
     generate,
     download,
     nextParcel,

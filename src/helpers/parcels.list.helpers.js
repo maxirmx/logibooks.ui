@@ -101,7 +101,9 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     h.key !== 'productLink' && 
     h.key !== 'statusId' && 
     h.key !== 'checkStatusId' && 
-    h.key !== 'countryCode'
+    h.key !== 'countryCode' &&
+    h.key !== 'feacnLookup' &&
+    h.key !== 'tnVed'
   )
 }
 
@@ -150,5 +152,80 @@ export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
 
+  }
+}
+
+/**
+ * Helper function to get FEACN codes for keyword IDs
+ * @param {Array<number>} keywordIds - Array of keyword IDs
+ * @param {Object} keyWordsStore - The keywords store instance
+ * @returns {Array<string>} Array of FEACN codes sorted as 10-digit integers
+ */
+export function getFeacnCodesForKeywords(keywordIds, keyWordsStore) {
+  if (!keywordIds || !Array.isArray(keywordIds) || keywordIds.length === 0) {
+    return []
+  }
+  
+  return keywordIds
+    .map(id => {
+      const keyword = keyWordsStore.keyWords.find(kw => kw.id === id)
+      return keyword ? keyword.feacnCode : null
+    })
+    .filter(code => code !== null && code !== '')
+    .sort((a, b) => {
+      const numA = parseInt(a, 10)
+      const numB = parseInt(b, 10)
+      return numA - numB
+    })
+}
+
+/**
+ * Helper function to get CSS class for FEACN code item based on match status
+ * @param {string} feacnCode - The FEACN code to check
+ * @param {string} tnVed - The current TN VED code
+ * @param {Array<string>} allFeacnCodes - All FEACN codes for this item
+ * @returns {string} CSS class name
+ */
+export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
+  if (!allFeacnCodes || allFeacnCodes.length === 0) {
+    return 'feacn-code-item'
+  }
+  
+  const isMatched = tnVed && allFeacnCodes.includes(tnVed) && feacnCode === tnVed
+  return `feacn-code-item clickable ${isMatched ? 'matched' : 'unmatched'}`
+}
+
+/**
+ * Helper function to get CSS class for TN VED cell based on FEACN codes
+ * @param {string} tnVed - The current TN VED code
+ * @param {Array<string>} feacnCodes - Array of FEACN codes
+ * @returns {string} CSS class name
+ */
+export function getTnVedCellClass(tnVed, feacnCodes) {
+  if (!feacnCodes || feacnCodes.length === 0) {
+    return ''
+  }
+  
+  const isMatched = tnVed && feacnCodes.includes(tnVed)
+  return isMatched ? 'tnved-cell matched' : 'tnved-cell unmatched'
+}
+
+/**
+ * Updates a parcel's TN VED code
+ * @param {Object} item - The parcel item
+ * @param {string} feacnCode - The FEACN code to set as TN VED
+ * @param {Object} parcelsStore - The parcels store instance
+ * @param {Function} loadOrdersFn - Function to reload orders
+ * @returns {Promise<void>}
+ */
+export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrdersFn) {
+  try {
+    const updatedItem = { ...item, tnVed: feacnCode }
+    await parcelsStore.update(item.id, updatedItem)
+    if (loadOrdersFn) {
+      loadOrdersFn()
+    }
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }

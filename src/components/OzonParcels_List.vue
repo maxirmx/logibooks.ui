@@ -30,6 +30,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
+import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
@@ -49,7 +50,11 @@ import {
   filterGenericTemplateHeadersForParcel,
   generateRegisterName,
   exportParcelXmlData,
-  lookupFeacn
+  lookupFeacn,
+  getFeacnCodesForKeywords,
+  getFeacnCodeItemClass,
+  getTnVedCellClass,
+  updateParcelTnVed
 } from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -62,6 +67,7 @@ const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
+const keyWordsStore = useKeyWordsStore()
 const stopWordsStore = useStopWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
@@ -119,6 +125,7 @@ onMounted(async () => {
   await feacnCodesStore.ensureOrdersLoaded()
   await countriesStore.ensureLoaded()
   await stopWordsStore.getAll()
+  await keyWordsStore.getAll()
   await fetchRegister()
 })
 
@@ -139,6 +146,7 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
     { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
@@ -175,6 +183,10 @@ async function lookupFeacnCodes(item) {
 
 async function approveParcel(item) {
   await approveParcelData(item, parcelsStore, loadOrders)
+}
+
+async function selectFeacnCode(item, feacnCode) {
+  await updateParcelTnVed(item, feacnCode, parcelsStore, loadOrders)
 }
 
 function getRowProps(data) {
@@ -247,6 +259,46 @@ function getGenericTemplateHeaders() {
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
           <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
+        </template>
+
+        <!-- Special template for tnVed to display with color coding based on FEACN match -->
+        <template #[`item.tnVed`]="{ item }">
+          <EditableCell 
+            :item="item" 
+            :display-value="item.tnVed || ''" 
+            :cell-class="`truncated-cell ${getTnVedCellClass(item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))}`" 
+            data-test="editable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <!-- Special template for feacnLookup to display FEACN codes vertically -->
+        <template #[`item.feacnLookup`]="{ item }">
+          <div v-if="getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore).length > 0" class="feacn-lookup-column">
+            <v-tooltip 
+              v-for="code in getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)" 
+              :key="code" 
+              location="top"
+            >
+              <template #activator="{ props }">
+                <div 
+                  v-bind="props"
+                  :class="getFeacnCodeItemClass(code, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))"
+                  @click="code !== item.tnVed ? selectFeacnCode(item, code) : null"
+                >
+                  <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
+                  {{ code }}
+                </div>
+              </template>
+              <span v-if="code === item.tnVed">
+                <font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано
+              </span>
+              <span v-else>
+                <font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Выбрать
+              </span>
+            </v-tooltip>
+          </div>
+          <span v-else>-</span>
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->

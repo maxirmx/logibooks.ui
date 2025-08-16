@@ -1461,3 +1461,75 @@ a,
   max-width: 200px;
   white-space: nowrap;
 }
+
+/* FEACN lookup column styles */
+.feacn-lookup-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feacn-code-item {
+  font-size: 0.85em;
+  padding: 1px 4px;
+  background-color: #f5f5f5;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  text-align: center;
+  min-width: fit-content;
+}
+
+/* FEACN lookup color states */
+.feacn-code-item.matched {
+  background-color: #d4edda;
+  border-color: #28a745;
+}
+
+.feacn-code-item.unmatched {
+  background-color: #fff3cd;
+  border-color: #fd7e14;
+}
+
+.tnved-cell.matched {
+  font-size: 1 em;
+  padding: 1px 4px;
+  background-color: #d4edda;
+  border-radius: 3px;
+  border: 1px solid #28a745;
+  text-align: center;
+  min-width: fit-content;
+  display: inline-block;
+}
+
+.tnved-cell.unmatched {
+  font-size: 0.85em;
+  padding: 1px 4px;
+  background-color: #fff3cd;
+  border-radius: 3px;
+  border: 1px solid #fd7e14;
+  text-align: center;
+  min-width: fit-content;
+  display: inline-block;
+}
+
+/* Clickable FEACN code items */
+.feacn-code-item.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.feacn-code-item.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feacn-code-item.clickable.matched:hover {
+  background-color: #c3e6cb;
+  border-color: #1e7e34;
+}
+
+.feacn-code-item.clickable.unmatched:hover {
+  background-color: #ffeaa7;
+  border-color: #e17055;
+}

@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Mock fetchWrapper
 vi.mock('../src/helpers/fetch.wrapper.js', () => ({
@@ -38,6 +38,13 @@ import {
 describe('Parcels List Helpers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Mock console.error to suppress expected error logs during testing
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  
+  afterEach(() => {
+    // Restore console.error after each test
+    vi.restoreAllMocks()
   })
 
   describe('fetchRegisterData', () => {
@@ -110,8 +117,8 @@ describe('Parcels List Helpers', () => {
 
       expect(mockRouter.push).toHaveBeenCalledWith({
         name: 'wbr-parcel-edit',
-        params: { id: 456 },
-        query: { registerId: 123 }
+        params: { id: 456, registerId: 123 },
+        query: {}
       })
     })
 
@@ -125,8 +132,8 @@ describe('Parcels List Helpers', () => {
 
       expect(mockRouter.push).toHaveBeenCalledWith({
         name: 'ozon-parcel-edit',
-        params: { id: 789 },
-        query: { registerId: 456 }
+        params: { id: 789, registerId: 456 },
+        query: {}
       })
     })
   })
@@ -235,13 +242,10 @@ describe('Parcels List Helpers', () => {
         approve: vi.fn().mockResolvedValue(),
         error: ''
       }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await approveParcelData(item, mockStore, mockAlertStore, 'wbr', mockLoadOrders)
+      await approveParcelData(item, mockStore, mockLoadOrders)
 
       expect(mockStore.approve).toHaveBeenCalledWith(123)
       expect(mockLoadOrders).toHaveBeenCalled()
@@ -254,13 +258,10 @@ describe('Parcels List Helpers', () => {
         }),
         error: ''
       }
-      const mockAlertStore = {
-        error: vi.fn()
-      }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await approveParcelData(item, mockStore, mockAlertStore, 'wbr', mockLoadOrders)
+      await approveParcelData(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Approval failed')
       expect(mockLoadOrders).not.toHaveBeenCalled()

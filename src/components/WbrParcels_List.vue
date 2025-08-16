@@ -160,7 +160,7 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
-  navigateToEditParcel(props.registerId, item, router)
+  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {

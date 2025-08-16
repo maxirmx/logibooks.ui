@@ -69,10 +69,15 @@ export function loadParcelsData(registerId, parcelsStore) {
  * @param {Object} queryParams - Query parameters to pass
  */
 export function navigateToEditParcel(router, item, routeName, queryParams = {}) {
+  const { registerId, ...otherQueryParams } = queryParams
+  
   router.push({
     name: routeName,
-    params: { id: item.id },
-    query: queryParams
+    params: { 
+      id: item.id,
+      registerId: registerId
+    },
+    query: otherQueryParams
   })
 }
 
@@ -104,12 +109,10 @@ export async function validateParcelData(item, parcelsStore, alertStore, platfor
  * Approves a parcel and reloads data
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
- * @param {Object} alertStore - The alert store instance
- * @param {string} platform - Platform type ('wbr' or 'ozon')
  * @param {Function} loadOrdersFn - Function to reload orders
  * @returns {Promise<void>}
  */
-export async function approveParcelData(item, parcelsStore, alertStore, platform, loadOrdersFn) {
+export async function approveParcelData(item, parcelsStore, loadOrdersFn) {
   try {
     await parcelsStore.approve(item.id)
     loadOrdersFn()

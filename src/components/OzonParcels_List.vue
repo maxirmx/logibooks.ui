@@ -157,7 +157,7 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
-  navigateToEditParcel(router, item, 'ozon-parcel-edit', { registerId: props.registerId })
+  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {
@@ -174,7 +174,7 @@ async function lookupFeacnCodes(item) {
 }
 
 async function approveParcel(item) {
-  await approveParcelData(item, parcelsStore, alertStore, 'ozon', loadOrders)
+  await approveParcelData(item, parcelsStore, loadOrders)
 }
 
 function getRowProps(data) {

@@ -170,7 +170,7 @@ async function validateParcel(item) {
 }
 
 async function lookupFeacnCodes(item) {
-  await lookupFeacn(item, alertStore)
+  await lookupFeacn(item, parcelsStore, alertStore, loadOrders)
 }
 
 async function approveParcel(item) {

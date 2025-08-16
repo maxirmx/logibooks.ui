@@ -46,7 +46,6 @@ import {
   getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
   getTnVedCellClass,
-  updateParcelTnVed
 } from '@/helpers/parcels.list.helpers.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
@@ -313,30 +312,28 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
           <div class="form-group">
             <label class="label">Подбор:</label>
             <div v-if="keywordsWithFeacn.length > 0" class="form-control feacn-lookup-column">
-              <v-tooltip 
+              <div 
                 v-for="keyword in keywordsWithFeacn" 
                 :key="keyword.id"
+                style="display: flex; align-items: center; gap: 8px;"
               >
-                <template v-slot:activator="{ props }">
-                  <div 
-                    v-bind="props"
-                    :class="[
-                      getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
-                      'feacn-edit-dialog-item'
-                    ]"
-                    @click="keyword.feacnCode !== item.tnVed ? selectFeacnCode(keyword.feacnCode, values, setFieldValue) : null"
-                  >
-                    <font-awesome-icon v-if="keyword.feacnCode === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
-                    {{ keyword.feacnCode }} - {{ keyword.word }}
-                  </div>
-                </template>
-                <span v-if="keyword.feacnCode === item.tnVed">
-                  <font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано
-                </span>
-                <span v-else>
-                  <font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Выбрать
-                </span>
-              </v-tooltip>
+                <div 
+                  :class="[
+                    getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
+                    'feacn-edit-dialog-item'
+                  ]"
+                  style="flex: 1;"
+                >
+                  {{ keyword.feacnCode }} - {{ keyword.word }}
+                </div>
+                <ActionButton
+                  :item="keyword"
+                  :icon="keyword.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
+                  :tooltip-text="keyword.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
+                  :disabled="keyword.feacnCode === item.tnVed"
+                  @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
+                />
+              </div>
             </div>
             <div v-else class="form-control">-</div>
           </div>

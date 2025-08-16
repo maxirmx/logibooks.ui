@@ -91,7 +91,7 @@ function openFileDialog() {
 }
 
 async function fileSelected(files) {
-  alertStore.clear
+  alertStore.clear()
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
 

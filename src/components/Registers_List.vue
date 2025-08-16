@@ -41,6 +41,7 @@ import {
   cancelValidation,
   createPollingTimer
 } from '@/helpers/registers.list.helpers.js'
+
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'

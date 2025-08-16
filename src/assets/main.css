@@ -1342,6 +1342,13 @@ a,
   min-height: 2rem;
 }
 
+/* Allow FEACN lookup column to grow vertically */
+.form-compact .form-control.feacn-lookup-column {
+  height: auto;
+  min-height: 2rem;
+  max-height: none;
+}
+
 .form-compact .section-title {
   font-size: 1rem;        /* Reduce section title size */
   margin-bottom: 0.5rem;  /* Reduce margin */
@@ -1467,6 +1474,9 @@ a,
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: fit-content;
+  overflow-y: auto;
+  max-height: 200px; /* Reasonable maximum height to prevent excessive growth */
 }
 
 .feacn-code-item {
@@ -1532,4 +1542,12 @@ a,
 .feacn-code-item.clickable.unmatched:hover {
   background-color: #ffeaa7;
   border-color: #e17055;
+}
+
+/* FEACN edit dialog item styles */
+.feacn-edit-dialog-item {
+  cursor: pointer;
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
 }

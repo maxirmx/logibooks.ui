@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { watch, ref, computed, onMounted, provide } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, provide } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -89,6 +89,8 @@ parcels_tnved.value = ''
 const registerFileName = ref('')
 const registerDealNumber = ref('')
 const registerLoading = ref(true)
+const isInitializing = ref(true)
+const isComponentMounted = ref(true)
 const registerName = computed(() => {
   if (registerLoading.value) {
     return 'Загрузка реестра...'
@@ -97,38 +99,76 @@ const registerName = computed(() => {
 })
 
 async function fetchRegister() {
+  if (!isComponentMounted.value) return
   try {
     await registersStore.getById(props.registerId)
+    if (!isComponentMounted.value) return
     if (registersStore.item && !registersStore.item.error && !registersStore.item.loading) {
       registerFileName.value = registersStore.item.fileName || ''
       registerDealNumber.value = registersStore.item.dealNumber || ''
     }
   } finally {
-    registerLoading.value = false
+    if (isComponentMounted.value) {
+      registerLoading.value = false
+    }
   }
 }
 
 function loadOrders() {
-  parcelsStore.getAll(props.registerId)
+  if (isComponentMounted.value) {
+    parcelsStore.getAll(props.registerId)
+  }
 }
 
 // Provide the loadOrders function for child components
 provide('loadOrders', loadOrders)
 
-watch(
+const watcherStop = watch(
   [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
   loadOrders,
   { immediate: true }
 )
 
 onMounted(async () => {
-  await parcelStatusStore.ensureLoaded()
-  await parcelCheckStatusStore.ensureLoaded()
-  await feacnCodesStore.ensureLoaded()
-  await countriesStore.ensureLoaded()
-  await stopWordsStore.ensureLoaded()
-  await keyWordsStore.ensureLoaded()
-  await fetchRegister()
+  try {
+    if (!isComponentMounted.value) return
+    
+    await parcelStatusStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await parcelCheckStatusStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await feacnCodesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await countriesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await stopWordsStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await keyWordsStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await fetchRegister()
+  } catch (error) {
+    if (isComponentMounted.value) {
+      console.error('Failed to initialize component:', error)
+      parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      isInitializing.value = false
+    }
+  }
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  if (watcherStop) {
+    watcherStop()
+  }
 })
 
 const statusOptions = computed(() => [
@@ -364,11 +404,11 @@ function getGenericTemplateHeaders() {
       </div>
     </div>
 
-    <div v-if="!items?.length && !loading" class="text-center m-5">Реестр пуст</div>
-    </v-card>
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
+    <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Реестр пуст</div>
+    <div v-if="loading || isInitializing" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg"></span>
     </div>
+    </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
     </div>

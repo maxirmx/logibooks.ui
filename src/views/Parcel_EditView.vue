@@ -24,7 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import OzonParcelEditDialog from '@/components/OzonParcel_EditDialog.vue'
 import WbrParcelEditDialog from '@/components/WbrParcel_EditDialog.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
@@ -39,9 +39,10 @@ const props = defineProps({
 const register = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const isComponentMounted = ref(true)
 
 const editComponent = computed(() => {
-  if (!register.value) return null
+  if (!isComponentMounted.value || !register.value) return null
   const companyId = register.value.companyId
   if (companyId === OZON_COMPANY_ID) return OzonParcelEditDialog
   if (companyId === WBR_COMPANY_ID) return WbrParcelEditDialog
@@ -50,13 +51,22 @@ const editComponent = computed(() => {
 
 onMounted(async () => {
   try {
+    if (!isComponentMounted.value) return
     loading.value = true
     register.value = await fetchWrapper.get(`${apiUrl}/registers/${props.registerId}`)
   } catch (err) {
-    error.value = err
+    if (isComponentMounted.value) {
+      error.value = err
+    }
   } finally {
-    loading.value = false
+    if (isComponentMounted.value) {
+      loading.value = false
+    }
   }
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
 })
 </script>
 

@@ -37,7 +37,7 @@ import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
@@ -66,6 +66,15 @@ const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
 
+await statusStore.ensureLoaded()
+await parcelCheckStatusStore.ensureLoaded()
+await stopWordsStore.ensureLoaded()
+await keyWordsStore.ensureLoaded()
+await feacnCodesStore.ensureLoaded()
+await countriesStore.ensureLoaded()
+await parcelsStore.getById(props.id)
+await parcelViewsStore.add(props.id)
+
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
@@ -73,24 +82,6 @@ const { countries } = storeToRefs(countriesStore)
 
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
-const isInitializing = ref(true)
-
-onMounted(async () => {
-  try {
-    await countriesStore.ensureLoaded()
-    await statusStore.ensureLoaded()
-    await parcelCheckStatusStore.ensureLoaded()
-    await stopWordsStore.ensureLoaded()
-    await keyWordsStore.ensureLoaded()
-    await parcelsStore.getById(props.id)
-    await parcelViewsStore.add(props.id)
-  } catch (error) {
-    console.error('Failed to initialize component:', error)
-    parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
-  } finally {
-    isInitializing.value = false
-  }
-})
 
 // Watch for changes in item.statusId to initialize currentStatusId
 watch(() => item.value?.statusId, (newStatusId) => {
@@ -247,11 +238,7 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
 </script>
 
 <template>
-  <div v-if="isInitializing || item?.loading" class="text-center m-5">
-    <span class="spinner-border spinner-border-lg"></span>
-    <div>Загрузка данных...</div>
-  </div>
-  <div v-else class="settings form-4 form-compact">
+  <div class="settings form-4 form-compact">
     <h1 class="primary-heading">
       Посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
     </h1>
@@ -437,6 +424,10 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
 
     </Form>
 
+    <div v-if="item?.loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg"></span>
+      <div>Загрузка данных...</div>
+    </div>
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка: {{ item.error }}</div>
     </div>

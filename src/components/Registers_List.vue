@@ -74,10 +74,10 @@ const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
-parcelStatusesStore.ensureLoaded()
-
 const parcelCheckStatusStore = useParcelCheckStatusStore()
-parcelCheckStatusStore.ensureLoaded()
+
+const isInitializing = ref(true)
+const isComponentMounted = ref(true)
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -156,14 +156,43 @@ function getOrdersByCheckStatusTooltip(item) {
 
 // Load companies and order statuses on component mount
 onMounted(async () => {
-  await countriesStore.ensureLoaded()
-  await transportationTypesStore.ensureLoaded()
-  await customsProceduresStore.ensureLoaded()
-  await companiesStore.getAll()
+  try {
+    if (!isComponentMounted.value) return
+    
+    await parcelStatusesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await parcelCheckStatusStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await countriesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await transportationTypesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await customsProceduresStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await companiesStore.getAll()
+  } catch (error) {
+    if (isComponentMounted.value) {
+      console.error('Failed to initialize component:', error)
+      registersStore.error = error?.message || 'Ошибка при загрузке данных'
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      isInitializing.value = false
+    }
+  }
 })
 
 onUnmounted(() => {
+  isComponentMounted.value = false
   pollingTimer.stop()
+  if (watcherStop) {
+    watcherStop()
+  }
 })
 
 function openFileDialog() {
@@ -196,7 +225,7 @@ async function fileSelected(files) {
 }
 
 // Watch for changes in pagination, sorting, or search
-watch(
+const watcherStop = watch(
   [registers_page, registers_per_page, registers_sort_by, registers_search],
   () => {
     loadRegisters()
@@ -205,7 +234,9 @@ watch(
 )
 
 function loadRegisters() {
-  registersStore.getAll()
+  if (isComponentMounted.value) {
+    registersStore.getAll()
+  }
 }
 
 function openParcels(item) {
@@ -498,11 +529,11 @@ const headers = [
           </div>
         </template>
       </v-data-table-server>
-      <div v-if="!items?.length && !loading" class="text-center m-5">Список реестров пуст</div>
+      <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Список реестров пуст</div>
+      <div v-if="loading || isInitializing" class="text-center m-5">
+        <span class="spinner-border spinner-border-lg"></span>
+      </div>
     </v-card>
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
     </div>

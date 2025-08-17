@@ -50,7 +50,7 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
     }
   }
 
-  async function ensureOrdersLoaded() {
+  async function ensureLoaded() {
     if (!isInitialized.value && !loading.value) {
       await getOrders()
     }
@@ -136,7 +136,7 @@ export const useFeacnCodesStore = defineStore('feacn.codes', () => {
     update,
     enable,
     disable,
-    ensureOrdersLoaded,
+    ensureLoaded,
     toggleEnabled
   }
 })

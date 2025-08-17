@@ -29,7 +29,7 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
-import { watch, ref, computed } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
@@ -45,35 +45,66 @@ const registersStore = useRegistersStore()
 const { item, uploadFile } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
 const { countries } = storeToRefs(countriesStore)
 
 const transportationTypesStore = useTransportationTypesStore()
-transportationTypesStore.ensureLoaded()
 
 const customsProceduresStore = useCustomsProceduresStore()
-customsProceduresStore.ensureLoaded()
 
 const companiesStore = useCompaniesStore()
-await companiesStore.getAll()
 const { companies } = storeToRefs(companiesStore)
 
 // Id = 1 --> Code = 10 (Экспорт) 
 const isExport = ref(true)
 const procedureCodeLoaded = ref(false)
+const isComponentMounted = ref(true)
+const isInitializing = ref(true)
 
-if (!props.create) {
-  await registersStore.getById(props.id)
-} else {
-  // Set default values for new records
-  if (!item.value.customsProcedureId) {
-    item.value.customsProcedureId = 1
+onMounted(async () => {
+  try {
+    if (!isComponentMounted.value) return
+    
+    await countriesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await transportationTypesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await customsProceduresStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await companiesStore.getAll()
+    if (!isComponentMounted.value) return
+
+    if (!props.create) {
+      await registersStore.getById(props.id)
+    } else {
+      // Set default values for new records
+      if (!item.value.customsProcedureId) {
+        item.value.customsProcedureId = 1
+      }
+      if (!item.value.transportationTypeId) {
+        item.value.transportationTypeId = 1
+      }
+    }
+    if (isComponentMounted.value) {
+      updateExportStatusFromProc()
+    }
+  } catch (error) {
+    if (isComponentMounted.value) {
+      console.error('Failed to initialize component:', error)
+      registersStore.error = error?.message || 'Ошибка при загрузке данных'
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      isInitializing.value = false
+    }
   }
-  if (!item.value.transportationTypeId) {
-    item.value.transportationTypeId = 1
-  }
-}
-updateExportStatusFromProc()
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+})
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
@@ -173,20 +204,26 @@ function getButton() {
 }
 
 async function onSubmit(values, { setErrors }) {
+  if (!isComponentMounted.value) return
   try {
     if (props.create) {
       const result = await registersStore.upload(uploadFile.value, item.value.companyId)
+      if (!isComponentMounted.value) return
       // If upload returns Reference object with id, call update
       if (result && typeof result.id === 'number') {
         await registersStore.update(result.id, values)
+        if (!isComponentMounted.value) return
       }
       await router.push('/registers')
     } else {
       await registersStore.update(props.id, values)
+      if (!isComponentMounted.value) return
       await router.push('/registers')
     }
   } catch (error) {
-    setErrors({ apiError: error.message || String(error) })
+    if (isComponentMounted.value) {
+      setErrors({ apiError: error.message || String(error) })
+    }
   }
 }
 

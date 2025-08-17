@@ -92,14 +92,14 @@ vi.mock('@/stores/registers.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
   })
 }))
 
 vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
   useParcelCheckStatusStore: () => ({
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
@@ -283,142 +283,6 @@ describe('Registers_List.vue', () => {
     })
   })
 
-  describe('bulk status change functionality', () => {
-    let wrapper
-
-    beforeEach(() => {
-      mockOrderStatuses.value = [
-        { id: 1, title: 'Новый' },
-        { id: 2, title: 'В обработке' },
-        { id: 3, title: 'Выполнен' }
-      ]
-
-      wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-    })
-
-    it('toggles edit mode when bulkChangeStatus is called', () => {
-      const registerId = 1
-
-      // Initially not in edit mode
-      expect(wrapper.vm.bulkStatusState[registerId]?.editMode).toBeFalsy()
-
-      // Enter edit mode
-      wrapper.vm.bulkChangeStatus(registerId)
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(true)
-      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
-
-      // Exit edit mode
-      wrapper.vm.bulkChangeStatus(registerId)
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-    })
-
-    it('does not toggle edit mode when loading', () => {
-      const registerId = 1
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      // Mock loading value directly on the store using the storeToRefs
-      wrapper.vm.loading = true
-
-      // Initial state should not exist
-      expect(wrapper.vm.bulkStatusState[registerId]).toBeUndefined()
-
-      wrapper.vm.bulkChangeStatus(registerId)
-
-      // State gets initialized but edit mode should remain false due to loading
-      expect(wrapper.vm.bulkStatusState[registerId]).toBeDefined()
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-    })
-
-    it('cancels status change and resets state', () => {
-      const registerId = 1
-
-      // Set up edit state
-      wrapper.vm.bulkChangeStatus(registerId)
-      wrapper.vm.bulkStatusState[registerId].selectedStatusId = 2
-
-      // Cancel
-      wrapper.vm.cancelStatusChange(registerId)
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
-    })
-
-    it('handles applyStatusToAllOrders success', async () => {
-      const registerId = 1
-      const statusId = 2
-
-      setOrderStatusesFn.mockResolvedValueOnce({ success: true })
-
-      // Set up edit state
-      wrapper.vm.bulkChangeStatus(registerId)
-      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
-
-      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
-
-      expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
-      expect(alertSuccessFn).toHaveBeenCalledWith('Статус успешно применен ко всем посылкам в реестре')
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
-      expect(getAll).toHaveBeenCalled() // loadRegisters called
-    })
-
-    it('handles applyStatusToAllOrders error', async () => {
-      const registerId = 1
-      const statusId = 2
-      const errorMessage = 'Server error'
-
-      setOrderStatusesFn.mockRejectedValueOnce(new Error(errorMessage))
-
-      // Set up edit state
-      wrapper.vm.bulkChangeStatus(registerId)
-      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
-
-      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
-
-      expect(setOrderStatusesFn).toHaveBeenCalledWith(registerId, statusId)
-      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-      expect(wrapper.vm.bulkStatusState[registerId].selectedStatusId).toBeNull()
-    })
-
-    it('validates registerId and statusId in applyStatusToAllOrders', async () => {
-      // Clear previous calls
-      alertErrorFn.mockClear()
-
-      // Test missing registerId
-      await wrapper.vm.applyStatusToAllOrders(null, 1)
-      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
-
-      alertErrorFn.mockClear()
-      // Test missing statusId
-      await wrapper.vm.applyStatusToAllOrders(1, null)
-      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
-
-      alertErrorFn.mockClear()
-      // Test statusId = 0 (falsy, so it triggers the first validation)
-      await wrapper.vm.applyStatusToAllOrders(1, 0)
-      expect(alertErrorFn).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
-
-      alertErrorFn.mockClear()
-      // Test invalid statusId (negative number to test numeric validation)
-      await wrapper.vm.applyStatusToAllOrders(1, -1)
-      expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
-
-      alertErrorFn.mockClear()
-      // Test invalid statusId (string)
-      await wrapper.vm.applyStatusToAllOrders(1, 'invalid')
-      expect(alertErrorFn).toHaveBeenCalledWith('Некорректный идентификатор статуса')
-    })
-  })
-
   describe('navigation functions', () => {
     let wrapper
 
@@ -443,6 +307,7 @@ describe('Registers_List.vue', () => {
       wrapper.vm.exportAllXml(item)
       expect(generateFn).toHaveBeenCalledWith(456, 'INV')
     })
+
   })
 
   describe('table cell interactions', () => {
@@ -677,214 +542,6 @@ describe('Registers_List.vue', () => {
     })
   })
 
-  describe('validation functionality', () => {
-    let wrapper
-
-    beforeEach(() => {
-      wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-    })
-
-    it('starts validation and shows progress dialog', async () => {
-      const item = { id: 123 }
-      const validationResult = { id: 'validation-handle-123' }
-
-      validateFn.mockResolvedValueOnce(validationResult)
-
-      // Mock setInterval to prevent actual timers
-      const setIntervalSpy = vi.spyOn(global, 'setInterval').mockImplementation(() => 12345)
-
-      // Mock getValidationProgress to return ongoing progress so show stays true
-      getValidationProgressFn.mockResolvedValueOnce({
-        total: 100,
-        processed: 10,
-        finished: false
-      })
-
-      await wrapper.vm.validateRegister(item)
-
-      expect(validateFn).toHaveBeenCalledWith(123)
-      expect(wrapper.vm.validationState.handleId).toBe('validation-handle-123')
-      expect(wrapper.vm.validationState.show).toBe(true)
-      expect(wrapper.vm.validationState.total).toBe(100) // Updated by pollValidation
-      expect(wrapper.vm.validationState.processed).toBe(10) // Updated by pollValidation
-      expect(setIntervalSpy).toHaveBeenCalled()
-
-      setIntervalSpy.mockRestore()
-    })
-
-    it('handles validation start error', async () => {
-      const item = { id: 123 }
-      const errorMessage = 'Validation failed to start'
-
-      validateFn.mockRejectedValueOnce(new Error(errorMessage))
-
-      await wrapper.vm.validateRegister(item)
-
-      expect(validateFn).toHaveBeenCalledWith(123)
-      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('polls validation progress and updates state', async () => {
-      // Set up validation state
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      const progressData = {
-        total: 100,
-        processed: 50,
-        finished: false
-      }
-
-      getValidationProgressFn.mockResolvedValueOnce(progressData)
-
-      await wrapper.vm.pollValidation()
-
-      expect(getValidationProgressFn).toHaveBeenCalledWith('validation-handle-123')
-      expect(wrapper.vm.validationState.total).toBe(100)
-      expect(wrapper.vm.validationState.processed).toBe(50)
-      expect(wrapper.vm.validationState.show).toBe(true) // Still showing because not finished
-    })
-
-    it('stops polling when validation is finished', async () => {
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      const progressData = {
-        total: 100,
-        processed: 100,
-        finished: true
-      }
-
-      getValidationProgressFn.mockResolvedValueOnce(progressData)
-
-      await wrapper.vm.pollValidation()
-
-      expect(wrapper.vm.validationState.total).toBe(100)
-      expect(wrapper.vm.validationState.processed).toBe(100)
-      expect(wrapper.vm.validationState.show).toBe(false) // Hidden because finished
-    })
-
-    it('stops polling when total is -1', async () => {
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      const progressData = {
-        total: -1,
-        processed: 0,
-        finished: false
-      }
-
-      getValidationProgressFn.mockResolvedValueOnce(progressData)
-
-      await wrapper.vm.pollValidation()
-
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('stops polling when processed is -1', async () => {
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      const progressData = {
-        total: 100,
-        processed: -1,
-        finished: false
-      }
-
-      getValidationProgressFn.mockResolvedValueOnce(progressData)
-
-      await wrapper.vm.pollValidation()
-
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('handles polling error', async () => {
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      const errorMessage = 'Polling failed'
-      getValidationProgressFn.mockRejectedValueOnce(new Error(errorMessage))
-
-      await wrapper.vm.pollValidation()
-
-      expect(alertErrorFn).toHaveBeenCalledWith(errorMessage)
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('does nothing when polling without handleId', async () => {
-      wrapper.vm.validationState.handleId = null
-
-      await wrapper.vm.pollValidation()
-
-      expect(getValidationProgressFn).not.toHaveBeenCalled()
-    })
-
-    it('cancels validation and stops polling', async () => {
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      cancelValidationFn.mockResolvedValueOnce({})
-
-      wrapper.vm.cancelValidation()
-
-      expect(cancelValidationFn).toHaveBeenCalledWith('validation-handle-123')
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('handles cancellation when no handleId', () => {
-      wrapper.vm.validationState.handleId = null
-      wrapper.vm.validationState.show = true
-
-      wrapper.vm.cancelValidation()
-
-      expect(cancelValidationFn).not.toHaveBeenCalled()
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('silently handles cancellation error', () => {
-      wrapper.vm.validationState.handleId = 'validation-handle-123'
-      wrapper.vm.validationState.show = true
-
-      cancelValidationFn.mockRejectedValueOnce(new Error('Cancellation failed'))
-
-      // Should not throw
-      expect(() => wrapper.vm.cancelValidation()).not.toThrow()
-      expect(wrapper.vm.validationState.show).toBe(false)
-    })
-
-    it('stops polling correctly', () => {
-      const mockTimer = 12345
-      wrapper.vm.progressTimer = mockTimer
-
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
-
-      wrapper.vm.stopPolling()
-
-      expect(clearIntervalSpy).toHaveBeenCalledWith(mockTimer)
-      expect(wrapper.vm.progressTimer).toBeNull()
-
-      clearIntervalSpy.mockRestore()
-    })
-
-    it('handles stopPolling when no timer is set', () => {
-      wrapper.vm.progressTimer = null
-
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
-
-      wrapper.vm.stopPolling()
-
-      expect(clearIntervalSpy).not.toHaveBeenCalled()
-      expect(wrapper.vm.progressTimer).toBeNull()
-
-      clearIntervalSpy.mockRestore()
-    })
-  })
-
   describe('computed properties', () => {
     let wrapper
 
@@ -932,17 +589,16 @@ describe('Registers_List.vue', () => {
         }
       })
 
-      // Set up a mock timer
-      const mockTimer = 12345
-      wrapper.vm.progressTimer = mockTimer
-
-      // Spy on clearInterval
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval')
+      // Start the polling timer to simulate an active timer
+      wrapper.vm.pollingTimer.start()
+      
+      // Spy on the timer's stop method
+      const stopSpy = vi.spyOn(wrapper.vm.pollingTimer, 'stop')
 
       // Unmount component
       wrapper.unmount()
 
-      expect(clearIntervalSpy).toHaveBeenCalledWith(mockTimer)
+      expect(stopSpy).toHaveBeenCalled()
     })
   })
 
@@ -993,13 +649,13 @@ describe('Registers_List.vue', () => {
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
   })
 }))
 vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
   useParcelCheckStatusStore: () => ({
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))

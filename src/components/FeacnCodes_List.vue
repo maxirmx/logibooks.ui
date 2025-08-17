@@ -78,7 +78,7 @@ watch(selectedOrderId, async (id) => {
 })
 
 onMounted(async () => {
-  await feacnStore.ensureOrdersLoaded()
+  await feacnStore.ensureLoaded()
   if (orders.value?.length > 0) {
     const firstEnabled = orders.value.find(o => o.Enabled === true)
     const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id

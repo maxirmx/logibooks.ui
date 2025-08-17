@@ -25,10 +25,12 @@
 
 <script setup>
 
-import { watch, ref, computed, onMounted } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, provide } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
+import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
@@ -36,36 +38,38 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
-import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import {
+  navigateToEditParcel,
+  validateParcelData,
+  approveParcelData,
+  getRowPropsForParcel,
+  filterGenericTemplateHeadersForParcel,
+  generateRegisterName,
+  exportParcelXmlData,
+  lookupFeacn,
+  getFeacnCodesForKeywords,
+  getTnVedCellClass,
+} from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
 })
 
 const parcelsStore = useParcelsStore()
-
+const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
-parcelStatusStore.ensureStatusesLoaded()
-
 const parcelCheckStatusStore = useParcelCheckStatusStore()
-parcelCheckStatusStore.ensureStatusesLoaded()
-
 const stopWordsStore = useStopWordsStore()
-await stopWordsStore.getAll()
-
+const keyWordsStore = useKeyWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
-feacnCodesStore.ensureOrdersLoaded()
-
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
-
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
@@ -82,51 +86,96 @@ const {
 parcels_status.value = null
 parcels_tnved.value = ''
 
-const statuses = ref([])
 const registerFileName = ref('')
 const registerDealNumber = ref('')
+const registerLoading = ref(true)
+const isInitializing = ref(true)
+const isComponentMounted = ref(true)
 const registerName = computed(() => {
-  if (registerDealNumber.value && String(registerDealNumber.value).trim() !== '') {
-    return `Реестр для сделки ${registerDealNumber.value}`
-  } else {
-    return 'Реестр для сделки без номера (файл: ' + registerFileName.value + ')'
+  if (registerLoading.value) {
+    return 'Загрузка реестра...'
   }
+  return generateRegisterName(registerDealNumber.value, registerFileName.value)
 })
 
 async function fetchRegister() {
+  if (!isComponentMounted.value) return
   try {
-    const res = await fetchWrapper.get(`${apiUrl}/registers/${props.registerId}`)
-    const byStatus = res.ordersByStatus || {}
-    statuses.value = Object.keys(byStatus).map((id) => ({
-      id: Number(id),
-      count: byStatus[id]
-    }))
-    registerFileName.value = res.fileName || ''
-    registerDealNumber.value = res.dealNumber || ''
-  } catch {
-    // ignore errors
+    await registersStore.getById(props.registerId)
+    if (!isComponentMounted.value) return
+    if (registersStore.item && !registersStore.item.error && !registersStore.item.loading) {
+      registerFileName.value = registersStore.item.fileName || ''
+      registerDealNumber.value = registersStore.item.dealNumber || ''
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      registerLoading.value = false
+    }
   }
 }
 
 function loadOrders() {
-  parcelsStore.getAll(props.registerId)
+  if (isComponentMounted.value) {
+    parcelsStore.getAll(props.registerId)
+  }
 }
 
-watch(
+// Provide the loadOrders function for child components
+provide('loadOrders', loadOrders)
+
+const watcherStop = watch(
   [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
   loadOrders,
   { immediate: true }
 )
 
 onMounted(async () => {
-  await fetchRegister()
+  try {
+    if (!isComponentMounted.value) return
+    
+    await parcelStatusStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await parcelCheckStatusStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await feacnCodesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await countriesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await stopWordsStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await keyWordsStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+    
+    await fetchRegister()
+  } catch (error) {
+    if (isComponentMounted.value) {
+      console.error('Failed to initialize component:', error)
+      parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      isInitializing.value = false
+    }
+  }
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  if (watcherStop) {
+    watcherStop()
+  }
 })
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
-  ...statuses.value.map((s) => ({
-    value: s.id,
-    title: `${parcelStatusStore.getStatusTitle(s.id)} (${s.count})`
+  ...parcelStatusStore.parcelStatuses.map(status => ({
+    value: status.id,
+    title: status.title
   }))
 ])
 
@@ -138,8 +187,8 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    // { title: wbrRegisterColumnTitles.orderNumber, sortable: false, key: 'orderNumber', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: 'Подбор', key: 'feacnLookup', sortable: false, align: 'center', width: '120px' },
 
     // Product Identification & Details - What the order contains
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
@@ -162,52 +211,33 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
-  router.push(`/registers/${props.registerId}/parcels/edit/${item.id}`)
+  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {
-  try {
-    const filename = String(item.shk || '').padStart(20, '0')
-    await parcelsStore.generate(item.id, filename)
-  } catch (error) {
-    console.error('Failed to export parcel XML:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
-  }
+  const filename = String(item.shk || '').padStart(20, '0')
+  await exportParcelXmlData(item, parcelsStore, filename)
 }
 
 async function validateParcel(item) {
-  try {
-    await parcelsStore.validate(item.id)
-    loadOrders()
-  } catch (error) {
-    console.error('Failed to validate parcel:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
-  }
+  await validateParcelData(item, parcelsStore, loadOrders)
+}
+
+async function lookupFeacnCodes(item) {
+  await lookupFeacn(item, parcelsStore, loadOrders)
 }
 
 async function approveParcel(item) {
-  try {
-    await parcelsStore.approve(item.id)
-    loadOrders()
-  } catch (error) {
-    console.error('Failed to approve parcel:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
-  }
+  await approveParcelData(item, parcelsStore, loadOrders)
 }
 
 function getRowProps(data) {
-  return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
+  return getRowPropsForParcel(data)
 }
 
 // Function to filter headers that need generic templates
 function getGenericTemplateHeaders() {
-  return headers.value.filter(h => 
-    !h.key.startsWith('actions') && 
-    h.key !== 'productLink' && 
-    h.key !== 'statusId' && 
-    h.key !== 'checkStatusId' && 
-    h.key !== 'countryCode'
-  )
+  return filterGenericTemplateHeadersForParcel(headers.value)
 }
 </script>
 
@@ -273,6 +303,22 @@ function getGenericTemplateHeaders() {
           <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
         </template>
 
+        <!-- Special template for tnVed to display with color coding based on FEACN match -->
+        <template #[`item.tnVed`]="{ item }">
+          <EditableCell 
+            :item="item" 
+            :display-value="item.tnVed || ''" 
+            :cell-class="`truncated-cell ${getTnVedCellClass(item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))}`" 
+            data-test="editable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <!-- Special template for feacnLookup to display FEACN codes vertically -->
+        <template #[`item.feacnLookup`]="{ item }">
+          <FeacnCodeSelector :item="item" />
+        </template>
+
         <!-- Special template for productLink to display as clickable URL -->
         <template #[`item.productLink`]="{ item }">
           <div class="product-link-in-list">
@@ -296,8 +342,9 @@ function getGenericTemplateHeaders() {
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать посылку" @click="editParcel" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
           </div>
         </template>
@@ -357,11 +404,11 @@ function getGenericTemplateHeaders() {
       </div>
     </div>
 
-    <div v-if="!items?.length && !loading" class="text-center m-5">Реестр пуст</div>
-    </v-card>
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
+    <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Реестр пуст</div>
+    <div v-if="loading || isInitializing" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg"></span>
     </div>
+    </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
     </div>

@@ -1257,6 +1257,7 @@ a,
   gap: 0.5rem;
   align-items: center;
   margin-left: 0.5rem;
+  margin-right: 0.5rem;
 }
 
 /* Approve button styling - same as validate button */
@@ -1340,6 +1341,13 @@ a,
 .form-compact .form-control[rows] {
   height: auto;
   min-height: 2rem;
+}
+
+/* Allow FEACN lookup column to grow vertically */
+.form-compact .form-control.feacn-lookup-column {
+  height: auto;
+  min-height: 2rem;
+  max-height: none;
 }
 
 .form-compact .section-title {
@@ -1460,4 +1468,96 @@ a,
   text-overflow: ellipsis;
   max-width: 200px;
   white-space: nowrap;
+}
+
+/* FEACN lookup column styles */
+.feacn-lookup-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: fit-content;
+  overflow-y: auto;
+  max-height: 200px; /* Reasonable maximum height to prevent excessive growth */
+}
+
+.feacn-code-item {
+  font-size: 0.85em;
+  padding: 1px 4px;
+  background-color: #f5f5f5;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  text-align: center;
+  min-width: fit-content;
+  margin-bottom: 0px;
+  margin-top: 1px;
+
+}
+
+/* Apply margin-bottom only if it's the only child (single code) */
+.feacn-code-item:only-child {
+  margin-bottom: 6px;
+}
+
+/* FEACN lookup color states */
+.feacn-code-item.matched {
+  background-color: #d4edda;
+  border-color: #28a745;
+}
+
+.feacn-code-item.unmatched {
+  background-color: #fff3cd;
+  border-color: #fd7e14;
+}
+
+.tnved-cell.matched {
+  font-size: 1em;
+  padding: 1px 4px;
+  background-color: #d4edda;
+  border-radius: 3px;
+  border: 1px solid #28a745;
+  text-align: center;
+  min-width: fit-content;
+  display: inline-block;
+  margin-top: 1px;
+}
+
+.tnved-cell.unmatched {
+  font-size: 1em;
+  padding: 1px 4px;
+  background-color: #fff3cd;
+  border-radius: 3px;
+  border: 1px solid #fd7e14;
+  min-width: fit-content;
+  display: inline-block;
+  margin-top: 1px;
+}
+
+/* Clickable FEACN code items */
+.feacn-code-item.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.feacn-code-item.clickable:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  transform: translateY(-1px);
+}
+
+.feacn-code-item.clickable.matched:hover {
+  background-color: #c3e6cb;
+  border-color: #1e7e34;
+}
+
+.feacn-code-item.clickable.unmatched:hover {
+  background-color: #ffeaa7;
+  border-color: #e17055;
+}
+
+/* FEACN edit dialog item styles */
+.feacn-edit-dialog-item {
+  cursor: pointer;
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
 }

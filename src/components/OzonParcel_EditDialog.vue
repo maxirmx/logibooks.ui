@@ -32,6 +32,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
@@ -41,6 +42,11 @@ import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import {
+  getFeacnCodesForKeywords,
+  getFeacnCodeItemClass,
+  getTnVedCellClass,
+} from '@/helpers/parcels.list.helpers.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -55,13 +61,19 @@ const registersStore = useRegistersStore()
 const statusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
+const keyWordsStore = useKeyWordsStore()
 const feacnCodesStore = useFeacnCodesStore()
 const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
 
-countriesStore.ensureLoaded()
-statusStore.ensureStatusesLoaded()
-parcelCheckStatusStore.ensureStatusesLoaded()
+await statusStore.ensureLoaded()
+await parcelCheckStatusStore.ensureLoaded()
+await stopWordsStore.ensureLoaded()
+await keyWordsStore.ensureLoaded()
+await feacnCodesStore.ensureLoaded()
+await countriesStore.ensureLoaded()
+await parcelsStore.getById(props.id)
+await parcelViewsStore.add(props.id)
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -78,9 +90,16 @@ watch(() => item.value?.statusId, (newStatusId) => {
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
-await stopWordsStore.getAll()
-await parcelsStore.getById(props.id)
-await parcelViewsStore.add(props.id)
+// Computed property for keywords with FEACN codes
+const keywordsWithFeacn = computed(() => {
+  if (!item.value?.keyWordIds || !Array.isArray(item.value.keyWordIds)) {
+    return []
+  }
+  
+  return item.value.keyWordIds
+    .map(keywordId => keyWordsStore.keyWords.find(kw => kw.id === keywordId))
+    .filter(keyword => keyword && keyword.feacnCode)
+})
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
@@ -181,6 +200,41 @@ async function generateXml(values) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
   }
 }
+
+// Lookup FEACN codes for this parcel
+async function lookupFeacnCodes(values) {
+  try {
+    // First update the parcel with current form values
+    await parcelsStore.update(item.value.id, values)
+    // Then lookup FEACN codes
+    await parcelsStore.lookupFeacnCode(item.value.id)
+    // Reload the order data to reflect any changes
+    await parcelsStore.getById(props.id)
+  } catch (error) {
+    console.error('Failed to lookup FEACN codes:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+  }
+}
+
+// Select a FEACN code and update TN VED
+async function selectFeacnCode(feacnCode, values, setFieldValue) {
+  try {
+    // Update the form field immediately
+    setFieldValue('tnVed', feacnCode)
+    
+    // Update the item's tnVed to trigger reactivity in computed properties
+    if (item.value) {
+      item.value.tnVed = feacnCode
+    }
+
+    // const updatedValues = { ...values, tnVed: feacnCode }
+    // await parcelsStore.update(item.value.id, updatedValues)
+    // await parcelsStore.getById(props.id)
+  } catch (error) {
+    console.error('Failed to update TN VED:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
+  }
+}
 </script>
 
 <template>
@@ -189,7 +243,7 @@ async function generateXml(values) {
       Посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
     </h1>
     <hr class="hr" />
-    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit }">
+    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit, setFieldValue }">
 
       <!-- Order Identification & Status Section -->
       <div class="form-section">
@@ -238,6 +292,60 @@ async function generateXml(values) {
           </div>
         </div>
       </div>
+
+      <!-- Feacn Code Section -->
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.tnVed }}:</label>
+            <Field name="tnVed" id="tnVed" class="form-control input" 
+                   :class="{ 
+                     'is-invalid': errors && errors.tnVed,
+                     [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
+                   }" />
+            <div class="action-buttons">
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-magnifying-glass"
+                tooltip-text="Сохранить и подобрать код ТН ВЭД"
+                :disabled="isSubmitting"
+                @click="() => lookupFeacnCodes(values)"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label">Подбор:</label>
+            <div v-if="keywordsWithFeacn.length > 0" class="form-control feacn-lookup-column">
+              <div 
+                v-for="keyword in keywordsWithFeacn" 
+                :key="keyword.id"
+                style="display: flex; align-items: center; gap: 8px;"
+              >
+                <div 
+                  :class="[
+                    getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
+                    'feacn-edit-dialog-item'
+                  ]"
+                  style="flex: 1;"
+                >
+                  {{ keyword.feacnCode }} - {{ keyword.word }}
+                </div>
+                <div class="action-buttons">
+                  <ActionButton
+                    :item="keyword"
+                    :icon="keyword.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
+                    :tooltip-text="keyword.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
+                    :disabled="keyword.feacnCode === item.tnVed"
+                    @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
+                  />
+                </div>
+              </div>
+            </div>
+            <div v-else class="form-control">-</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Product Name Section -->
       <div class="form-section">
         <div class="form-row-1">
@@ -247,7 +355,6 @@ async function generateXml(values) {
             <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
-          <OzonFormField name="tnVed" :errors="errors" :fullWidth="false" />
           <OzonFormField name="postingNumber" :errors="errors" :fullWidth="false" />
           <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
           <OzonFormField name="article" :errors="errors" :fullWidth="false" />
@@ -318,7 +425,8 @@ async function generateXml(values) {
     </Form>
 
     <div v-if="item?.loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
+      <span class="spinner-border spinner-border-lg"></span>
+      <div>Загрузка данных...</div>
     </div>
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка: {{ item.error }}</div>

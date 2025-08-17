@@ -60,7 +60,7 @@ const schema = toTypedSchema(Yup.object().shape({
     Yup.string().test(
       'len',
       'Код ТН ВЭД должен содержать ровно 10 цифр',
-      value => !value || /^\d{10}$/.test(value)
+      value => value && /^\d{10}$/.test(value)
     )
   ),
   word: Yup

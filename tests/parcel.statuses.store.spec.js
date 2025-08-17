@@ -306,7 +306,8 @@ describe('parcel.statuses.store.js', () => {
       store.ensureLoaded()
       
       // Since ensureLoaded directly calls getAll synchronously,
-      // we can verify it was called without needing timers
+      // Since ensureLoaded is asynchronous and calls getAll asynchronously,
+      // we can verify it was called by awaiting pending promises
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       
       // Wait for any pending promises to resolve

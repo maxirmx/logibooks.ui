@@ -164,7 +164,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-file-import"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Загрузить файл с ключевыми словами для подбора ТН ВЭД
+        />&nbsp;&nbsp;&nbsp;Загрузить файл и добавить ключевые слова
       </a>
 
       <v-file-input

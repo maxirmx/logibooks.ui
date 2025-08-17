@@ -384,7 +384,7 @@ describe('KeyWords_List.vue', () => {
     it('displays upload link for admin users', () => {
       const uploadLinks = wrapper.findAll('a[class*="link"]')
       const uploadLink = uploadLinks.find(link => 
-        link.text().includes('Загрузить файл с ключевыми словами')
+        link.text().includes('Загрузить файл и добавить ключевые слова')
       )
       expect(uploadLink.exists()).toBe(true)
     })

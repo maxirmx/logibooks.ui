@@ -216,7 +216,7 @@ defineExpose({
         name="feacnCodes"
         label="Код ТН ВЭД (10 цифр):"
         field-type="input"
-        :field-props="{ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: onCodeInput }"
+        :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
         placeholder="Введите код ТН ВЭД"
         add-tooltip="Добавить код"
         remove-tooltip="Удалить код"

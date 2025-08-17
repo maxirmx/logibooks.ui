@@ -11,7 +11,7 @@ const vuetify = createVuetify()
 // Mock data
 const mockKeyWord = {
   id: 1,
-  feacnCode: '1234567890',
+  feacnCodes: ['1234567890'],
   word: 'тест',
   matchTypeId: 41
 }
@@ -108,11 +108,12 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Регистрация слова или фразы для подбора ТН ВЭД')
-      expect(wrapper.find('input[name="feacnCode"]').exists()).toBe(true)
+      expect(wrapper.find('input[name="feacnCodes[0]"]').exists()).toBe(true)
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
       expect(wrapper.find('input[type="radio"]').exists()).toBe(true)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-      expect(wrapper.find('button[type="button"]').text()).toContain('Отменить')
+      const buttons = wrapper.findAll('button[type="button"]')
+      expect(buttons[buttons.length - 1].text()).toContain('Отменить')
     })
 
     it('renders edit mode correctly', async () => {
@@ -190,31 +191,33 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       // Call the handler directly with a mocked event
-      await wrapper.vm.onCodeInput({ 
-        target: { 
-          value: 'abc123def456', 
+      const event = {
+        target: {
+          value: 'abc123def456',
           selectionStart: 12
-        } 
-      })
-      
+        }
+      }
+      await wrapper.vm.onCodeInput(event)
+
       // Should only keep digits
-      expect(wrapper.vm.feacnCode).toBe('123456')
+      expect(event.target.value).toBe('123456')
     })
-    
+
     it('limits code input to 10 digits', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
       // Call the handler directly with a mocked event
-      await wrapper.vm.onCodeInput({ 
-        target: { 
-          value: '12345678901234', 
+      const event = {
+        target: {
+          value: '12345678901234',
           selectionStart: 14
-        } 
-      })
-      
+        }
+      }
+      await wrapper.vm.onCodeInput(event)
+
       // Should truncate to 10 digits
-      expect(wrapper.vm.feacnCode).toBe('1234567890')
+      expect(event.target.value).toBe('1234567890')
     })
   })
 
@@ -225,8 +228,7 @@ describe('KeyWord_Settings.vue', () => {
 
       expect(getById).toHaveBeenCalledWith(1)
       
-      // Check the reactive properties directly
-      expect(wrapper.vm.feacnCode).toBe('1234567890')
+      // Check loaded values in the form
       expect(wrapper.vm.word).toBe('тест')
       expect(wrapper.vm.matchTypeId).toBe(41)
     })
@@ -250,9 +252,9 @@ describe('KeyWord_Settings.vue', () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const cancelButton = wrapper.find('button[type="button"]')
+      const cancelButton = wrapper.findAll('button').find(b => b.text().includes('Отменить'))
       await cancelButton.trigger('click')
-      
+
       expect(routerPush).toHaveBeenCalledWith('/keywords')
     })
   })

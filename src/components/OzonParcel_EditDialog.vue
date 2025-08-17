@@ -223,9 +223,9 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
     // Update the form field immediately
     setFieldValue('tnVed', feacnCode)
     
-    const updatedValues = { ...values, tnVed: feacnCode }
-    await parcelsStore.update(item.value.id, updatedValues)
-    await parcelsStore.getById(props.id)
+    // const updatedValues = { ...values, tnVed: feacnCode }
+    // await parcelsStore.update(item.value.id, updatedValues)
+    // await parcelsStore.getById(props.id)
   } catch (error) {
     console.error('Failed to update TN VED:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'

@@ -1487,6 +1487,14 @@ a,
   border: 1px solid #ddd;
   text-align: center;
   min-width: fit-content;
+  margin-bottom: 0px;
+  margin-top: 1px;
+
+}
+
+/* Apply margin-bottom only if it's the only child (single code) */
+.feacn-code-item:only-child {
+  margin-bottom: 6px;
 }
 
 /* FEACN lookup color states */
@@ -1501,7 +1509,7 @@ a,
 }
 
 .tnved-cell.matched {
-  font-size: 1 em;
+  font-size: 1em;
   padding: 1px 4px;
   background-color: #d4edda;
   border-radius: 3px;
@@ -1512,12 +1520,11 @@ a,
 }
 
 .tnved-cell.unmatched {
-  font-size: 0.85em;
+  font-size: 1 em;
   padding: 1px 4px;
   background-color: #fff3cd;
   border-radius: 3px;
   border: 1px solid #fd7e14;
-  text-align: center;
   min-width: fit-content;
   display: inline-block;
 }
@@ -1530,8 +1537,8 @@ a,
 }
 
 .feacn-code-item.clickable:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .feacn-code-item.clickable.matched:hover {

@@ -51,7 +51,7 @@ defineEmits(['click'])
     <template #default>
       <div class="d-flex align-center">
         <font-awesome-icon :icon="tooltipIcon" class="mr-3" />
-        <span>{{ tooltipText || displayValue }}</span>
+        {{ tooltipText || displayValue }}
       </div>
     </template>
   </v-tooltip>

@@ -146,7 +146,7 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', align: 'start', width: '120px' },
+    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
     { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
@@ -286,8 +286,10 @@ function getGenericTemplateHeaders() {
                   :class="getFeacnCodeItemClass(code, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))"
                   @click="code !== item.tnVed ? selectFeacnCode(item, code) : null"
                 >
-                  <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
-                  {{ code }}
+                  <span class="d-inline-flex align-center">
+                    <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
+                    {{ code }}
+                  </span>
                 </div>
               </template>
               <span v-if="code === item.tnVed">

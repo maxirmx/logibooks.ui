@@ -146,7 +146,7 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: 'Подбор', key: 'feacnLookup', align: 'center', width: '120px' },
+    { title: 'Подбор', key: 'feacnLookup', sortable: false, align: 'center', width: '120px' },
 
     // Product Identification & Details - What the order contains
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
@@ -290,8 +290,10 @@ function getGenericTemplateHeaders() {
                   :class="getFeacnCodeItemClass(code, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))"
                   @click="code !== item.tnVed ? selectFeacnCode(item, code) : null"
                 >
-                  <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
-                  {{ code }}
+                  <span class="d-inline-flex align-center">
+                    <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
+                    {{ code }}
+                  </span>
                 </div>
               </template>
               <span v-if="code === item.tnVed">
@@ -302,7 +304,6 @@ function getGenericTemplateHeaders() {
               </span>
             </v-tooltip>
           </div>
-          <span v-else>-</span>
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->

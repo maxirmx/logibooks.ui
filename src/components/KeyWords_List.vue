@@ -62,7 +62,7 @@ function filterKeyWords(value, query, item) {
 
   return (
     (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
-    (i.feacnCode?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+    (i.feacnCodes?.some(code => code.toLocaleUpperCase().includes(q)) ?? false)
   )
 }
 
@@ -70,8 +70,8 @@ function filterKeyWords(value, query, item) {
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
   { title: 'Ключевое слово или фраза', key: 'word', sortable: true },
-  { title: 'Коды ТН ВЭД', key: 'feacnCode', sortable: true },
-  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }  
+  { title: 'Коды ТН ВЭД', key: 'feacnCodes', sortable: true },
+  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
 ]
 
 function getMatchTypeText(id) {
@@ -229,6 +229,10 @@ defineExpose({
               @click="deleteKeyWord"
             />
           </div>
+        </template>
+
+        <template v-slot:[`item.feacnCodes`]="{ item }">
+          <div v-for="code in item.feacnCodes" :key="code">{{ code }}</div>
         </template>
 
         <template v-slot:[`item.matchTypeId`]="{ item }">

@@ -322,6 +322,7 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
                     'feacn-edit-dialog-item'
                   ]"
                   style="flex: 1;"
+                  @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
                 >
                   {{ keyword.feacnCode }} - {{ keyword.word }}
                 </div>

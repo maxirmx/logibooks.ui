@@ -266,7 +266,6 @@
   color: rgb(75, 75, 75);
   padding-left: 0.5rem;
   padding-right: 0.5rem;
-
 }
 
 .button {
@@ -491,6 +490,25 @@ a,
 .button:focus {
   outline: none;
   box-shadow: 0px 2px 10px rgba(EE, EE, EE, 0.3);
+}
+
+.field-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.field-container-plus {
+  position: absolute;
+  left: -50px;
+  z-index: 1;
+  min-width: 32px;
+  margin-left: 0;
+}
+
+.field-container-select {
+  width: calc(100% - 30px);
 }
 
 @media (min-width: 768px) {
@@ -1561,3 +1579,4 @@ a,
   padding: 2px 4px;
   border-radius: 3px;
 }
+

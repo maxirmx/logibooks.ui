@@ -46,6 +46,7 @@ import {
   getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
   getTnVedCellClass,
+  getKeywordFeacnPairs,
 } from '@/helpers/parcels.list.helpers.js'
 import WbrFormField from './WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
@@ -90,16 +91,10 @@ watch(() => item.value?.statusId, (newStatusId) => {
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
-// Computed property for keywords with FEACN codes
-const keywordsWithFeacn = computed(() => {
-  if (!item.value?.keyWordIds || !Array.isArray(item.value.keyWordIds)) {
-    return []
-  }
-  
-  return item.value.keyWordIds
-    .map(keywordId => keyWordsStore.keyWords.find(kw => kw.id === keywordId))
-    .filter(keyword => keyword && keyword.feacnCode)
-})
+// Computed property for keyword/FEACN pairs
+const keywordsWithFeacn = computed(() =>
+  getKeywordFeacnPairs(item.value?.keyWordIds, keyWordsStore)
+)
 
 const isDescriptionVisible = ref(false)
 
@@ -333,6 +328,7 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
                     'feacn-edit-dialog-item'
                   ]"
                   style="flex: 1;"
+                  @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
                 >
                   {{ keyword.feacnCode }} - "{{ keyword.word }}"
                 </div>

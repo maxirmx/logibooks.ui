@@ -29,7 +29,9 @@ import {
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
   generateRegisterName,
-  lookupFeacn
+  lookupFeacn,
+  getFeacnCodesForKeywords,
+  getKeywordFeacnPairs
 } from '../src/helpers/parcels.list.helpers.js'
 
 describe('Parcels List Helpers', () => {
@@ -282,6 +284,48 @@ describe('Parcels List Helpers', () => {
       const result = generateRegisterName('   ', 'file.xlsx')
 
       expect(result).toBe('Реестр для сделки без номера (файл: file.xlsx)')
+    })
+  })
+
+  describe('getFeacnCodesForKeywords', () => {
+    it('should extract and sort FEACN codes from keywords', () => {
+      const store = {
+        keyWords: [
+          { id: 1, feacnCodes: ['1234567890', '0987654321'] },
+          { id: 2, feacnCodes: ['2345678901'] }
+        ]
+      }
+      const result = getFeacnCodesForKeywords([1, 2], store)
+      expect(result).toEqual(['0987654321', '1234567890', '2345678901'])
+    })
+
+    it('should return empty array for invalid input', () => {
+      const store = { keyWords: [] }
+      expect(getFeacnCodesForKeywords(null, store)).toEqual([])
+      expect(getFeacnCodesForKeywords([], store)).toEqual([])
+    })
+  })
+
+  describe('getKeywordFeacnPairs', () => {
+    it('should create keyword/FEACN code pairs', () => {
+      const store = {
+        keyWords: [
+          { id: 1, word: 'alpha', feacnCodes: ['123', '456'] },
+          { id: 2, word: 'beta', feacnCodes: ['789'] }
+        ]
+      }
+      const result = getKeywordFeacnPairs([1, 2], store)
+      expect(result).toEqual([
+        { id: '1-123', word: 'alpha', feacnCode: '123' },
+        { id: '1-456', word: 'alpha', feacnCode: '456' },
+        { id: '2-789', word: 'beta', feacnCode: '789' }
+      ])
+    })
+
+    it('should return empty array for invalid input', () => {
+      const store = { keyWords: [] }
+      expect(getKeywordFeacnPairs(null, store)).toEqual([])
+      expect(getKeywordFeacnPairs([], store)).toEqual([])
     })
   })
 

@@ -35,6 +35,7 @@ import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
+import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 
 const props = defineProps({
   id: {
@@ -55,10 +56,13 @@ const loading = ref(false)
 
 // Validation schema
 const schema = toTypedSchema(Yup.object().shape({
-  feacnCode: Yup
-    .string()
-    .required('Необходимо ввести код ТН ВЭД')
-    .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
+  feacnCodes: Yup.array().of(
+    Yup.string().test(
+      'len',
+      'Код ТН ВЭД должен содержать ровно 10 цифр',
+      value => value && /^\d{10}$/.test(value)
+    )
+  ),
   word: Yup
     .string()
     .required('Необходимо ввести ключевое слово или фразу')
@@ -70,21 +74,26 @@ const schema = toTypedSchema(Yup.object().shape({
       'is-enabled',
       'Выбранный тип соответствия недоступен для текущего слова/фразы',
       createMatchTypeValidationTest()
-    )    
+    )
 }))
 
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
-    feacnCode: '',
+    feacnCodes: [''],
     word: '',
-    matchTypeId: 41 
+    matchTypeId: 41
   }
 })
 
-const { value: feacnCode } = useField('feacnCode')
+const { value: feacnCodes } = useField('feacnCodes')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
+
+const feacnCodesError = computed(() => {
+  const key = Object.keys(errors.value).find(k => k.startsWith('feacnCodes'))
+  return key ? errors.value[key] : null
+})
 
 function isOptionDisabled(value) {
   return isMatchTypeDisabled(value, word.value)
@@ -101,7 +110,7 @@ onMounted(async () => {
       if (loadedKeyWord) {
         resetForm({
           values: {
-            feacnCode: loadedKeyWord.feacnCode || '',
+            feacnCodes: loadedKeyWord.feacnCodes?.length ? loadedKeyWord.feacnCodes : [''],
             word: loadedKeyWord.word,
             matchTypeId: loadedKeyWord.matchTypeId
           }
@@ -126,21 +135,22 @@ function onWordInput(event) {
   word.value = event.target.value
 }
 
-function onCodeInput(event) {
+function onCodeInput(event, index) {
   // Only allow digits, enforce max length of 10
   const inputValue = event.target.value.replace(/\D/g, '').slice(0, 10)
   // Update the input if we've modified the value
   if (inputValue !== event.target.value) {
     event.target.value = inputValue
   }
-  feacnCode.value = inputValue
+  // Update the form field value at the correct index
+  setFieldValue(`feacnCodes[${index}]`, inputValue)
 }
 
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   
   const keyWordData = {
-    feacnCode: values.feacnCode,
+    feacnCodes: values.feacnCodes.filter(code => code && code.trim().length > 0),
     word: values.word.trim(),
     matchTypeId: values.matchTypeId
   }
@@ -174,12 +184,13 @@ defineExpose({
   cancel,
   onWordInput,
   onCodeInput,
-  isOptionDisabled
+  isOptionDisabled,
+  feacnCodes
 })
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-2">
     <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     
@@ -189,25 +200,7 @@ defineExpose({
     
     <form v-else @submit.prevent="onSubmit">
       <div class="form-group">
-        <label for="feacnCode" class="label">Код ТН ВЭД (10 цифр):</label>
-        <input
-          name="feacnCode"
-          id="feacnCode"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.feacnCode }"
-          placeholder="Введите код ТН ВЭД"
-          v-model="feacnCode"
-          @input="onCodeInput"
-          maxlength="10"
-          inputmode="numeric"
-          pattern="[0-9]*"
-        />
-        <div v-if="errors.feacnCode" class="invalid-feedback">{{ errors.feacnCode }}</div>
-      </div>
-      
-      <div class="form-group">
-        <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
+        <label for="word" class="label">Ключевое слово или фраза:</label>
         <input
           name="word"
           id="word"
@@ -221,6 +214,18 @@ defineExpose({
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
       </div>
 
+      <FieldArrayWithButtons
+        name="feacnCodes"
+        label="Код ТН ВЭД (10 цифр)"
+        field-type="input"
+        :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
+        placeholder="Введите код ТН ВЭД"
+        add-tooltip="Добавить код"
+        remove-tooltip="Удалить код"
+        :has-error="!!feacnCodesError"
+      />
+      <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
+      
       <div class="form-group">
         <label class="label">Тип соответствия:</label>
         <div class="radio-group" :class="{ 'is-invalid': errors.matchTypeId }">

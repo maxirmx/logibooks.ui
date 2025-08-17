@@ -56,9 +56,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockKeyWords = ref([
-  { id: 1, word: 'стол', matchTypeId: 41 },
-  { id: 2, word: 'деревянный', matchTypeId: 1 },
-  { id: 3, word: 'стул', matchTypeId: 41 }
+  { id: 1, word: 'стол', matchTypeId: 41, feacnCodes: ['1234567890'] },
+  { id: 2, word: 'деревянный', matchTypeId: 1, feacnCodes: [] },
+  { id: 3, word: 'стул', matchTypeId: 41, feacnCodes: ['1111111111', '2222222222'] }
 ])
 
 // Mock stores
@@ -174,9 +174,9 @@ describe('KeyWords_List.vue', () => {
 
     // Reset reactive data
     mockKeyWords.value = [
-      { id: 1, word: 'стол', matchTypeId: 41 },
-      { id: 2, word: 'деревянный', matchTypeId: 1 },
-      { id: 3, word: 'стул', matchTypeId: 41 }
+      { id: 1, word: 'стол', matchTypeId: 41, feacnCodes: ['1234567890'] },
+      { id: 2, word: 'деревянный', matchTypeId: 1, feacnCodes: [] },
+      { id: 3, word: 'стул', matchTypeId: 41, feacnCodes: ['1111111111', '2222222222'] }
     ]
 
     wrapper = mount(KeyWordsList, {
@@ -335,18 +335,21 @@ describe('KeyWords_List.vue', () => {
 
       // Test with matching word
       expect(filterFn('сто', 'сто', { raw: { word: 'стол' } })).toBe(true)
-      
+
       // Test with non-matching word
       expect(filterFn('xyz', 'xyz', { raw: { word: 'стол' } })).toBe(false)
-      
+
       // Test with uppercase query
       expect(filterFn('СТОЛ', 'СТОЛ', { raw: { word: 'стол' } })).toBe(true)
-      
+
+      // Test with matching code
+      expect(filterFn('123', '123', { raw: { feacnCodes: ['1234567890'] } })).toBe(true)
+
       // Test with null values
       expect(filterFn(null, null, { raw: { word: 'стол' } })).toBe(false)
       expect(filterFn('test', 'test', null)).toBe(false)
       expect(filterFn('test', 'test', { raw: null })).toBe(false)
-      
+
       // Test with undefined word (to cover line 61)
       expect(filterFn('test', 'test', { raw: { } })).toBe(false)
     })
@@ -381,7 +384,7 @@ describe('KeyWords_List.vue', () => {
     it('displays upload link for admin users', () => {
       const uploadLinks = wrapper.findAll('a[class*="link"]')
       const uploadLink = uploadLinks.find(link => 
-        link.text().includes('Загрузить файл с ключевыми словами')
+        link.text().includes('Загрузить файл и добавить ключевые слова')
       )
       expect(uploadLink.exists()).toBe(true)
     })

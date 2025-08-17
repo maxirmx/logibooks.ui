@@ -165,16 +165,47 @@ export function getFeacnCodesForKeywords(keywordIds, keyWordsStore) {
   if (!keywordIds || !Array.isArray(keywordIds) || keywordIds.length === 0) {
     return []
   }
-  
+
   return keywordIds
-    .map(id => {
+    .reduce((acc, id) => {
       const keyword = keyWordsStore.keyWords.find(kw => kw.id === id)
-      return keyword ? keyword.feacnCode : null
-    })
+      if (keyword && Array.isArray(keyword.feacnCodes)) {
+        acc.push(...keyword.feacnCodes)
+      }
+      return acc
+    }, [])
     .filter(code => code !== null && code !== '')
     .sort((a, b) => {
       const numA = parseInt(a, 10)
       const numB = parseInt(b, 10)
+      return numA - numB
+    })
+}
+
+/**
+ * Helper function to get keyword/FEACN code pairs
+ * @param {Array<number>} keywordIds - Array of keyword IDs
+ * @param {Object} keyWordsStore - The keywords store instance
+ * @returns {Array<Object>} Array of objects { id, word, feacnCode }
+ */
+export function getKeywordFeacnPairs(keywordIds, keyWordsStore) {
+  if (!keywordIds || !Array.isArray(keywordIds) || keywordIds.length === 0) {
+    return []
+  }
+
+  return keywordIds
+    .flatMap((id) => {
+      const keyword = keyWordsStore.keyWords.find((kw) => kw.id === id)
+      if (keyword && Array.isArray(keyword.feacnCodes)) {
+        return keyword.feacnCodes
+          .filter((code) => code !== null && code !== '')
+          .map((code) => ({ id: `${id}-${code}`, word: keyword.word, feacnCode: code }))
+      }
+      return []
+    })
+    .sort((a, b) => {
+      const numA = parseInt(a.feacnCode, 10)
+      const numB = parseInt(b.feacnCode, 10)
       return numA - numB
     })
 }

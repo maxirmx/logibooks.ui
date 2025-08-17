@@ -135,13 +135,15 @@ function onWordInput(event) {
   word.value = event.target.value
 }
 
-function onCodeInput(event) {
+function onCodeInput(event, index) {
   // Only allow digits, enforce max length of 10
   const inputValue = event.target.value.replace(/\D/g, '').slice(0, 10)
   // Update the input if we've modified the value
   if (inputValue !== event.target.value) {
     event.target.value = inputValue
   }
+  // Update the form field value at the correct index
+  setFieldValue(`feacnCodes[${index}]`, inputValue)
 }
 
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
@@ -188,7 +190,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-2">
     <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     
@@ -198,7 +200,7 @@ defineExpose({
     
     <form v-else @submit.prevent="onSubmit">
       <div class="form-group">
-        <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
+        <label for="word" class="label">Ключевое слово или фраза:</label>
         <input
           name="word"
           id="word"
@@ -214,7 +216,7 @@ defineExpose({
 
       <FieldArrayWithButtons
         name="feacnCodes"
-        label="Код ТН ВЭД (10 цифр):"
+        label="Код ТН ВЭД (10 цифр)"
         field-type="input"
         :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
         placeholder="Введите код ТН ВЭД"

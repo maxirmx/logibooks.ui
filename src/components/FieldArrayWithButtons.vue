@@ -24,7 +24,7 @@
 import { Field, FieldArray } from 'vee-validate'
 import ActionButton from '@/components/ActionButton.vue'
 
-defineProps({
+const props = defineProps({
   name: {
     type: String,
     required: true
@@ -59,7 +59,7 @@ defineProps({
     default: ''
   },
   fieldProps: {
-    type: Object,
+    type: [Object, Function],
     default: () => ({})
   },
   hasError: {
@@ -67,6 +67,11 @@ defineProps({
     default: false
   }
 })
+
+// Helper function to get field props for a specific index
+function getFieldProps(index) {
+  return typeof props.fieldProps === 'function' ? props.fieldProps({ index }) : props.fieldProps
+}
 </script>
 
 <template>
@@ -88,7 +93,7 @@ defineProps({
         
         <Field :name="`${name}[${idx}]`" :as="fieldType" :id="`${name}_${idx}`"
           class="form-control input field-container-select" :class="{ 'is-invalid': hasError }"
-          v-bind="fieldProps"
+          v-bind="getFieldProps(idx)"
         >
           <option v-if="fieldType === 'select'" value="">{{ placeholder }}</option>
           <template v-if="fieldType === 'select'">
@@ -113,7 +118,7 @@ defineProps({
 </template>
 
 <style scoped>
-/* Moved styles from main.css - keeping exactly as they were */
+
 .field-container {
   display: flex;
   align-items: center;

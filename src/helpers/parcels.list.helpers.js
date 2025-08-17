@@ -165,12 +165,15 @@ export function getFeacnCodesForKeywords(keywordIds, keyWordsStore) {
   if (!keywordIds || !Array.isArray(keywordIds) || keywordIds.length === 0) {
     return []
   }
-  
+
   return keywordIds
-    .map(id => {
+    .reduce((acc, id) => {
       const keyword = keyWordsStore.keyWords.find(kw => kw.id === id)
-      return keyword ? keyword.feacnCode : null
-    })
+      if (keyword && Array.isArray(keyword.feacnCodes)) {
+        acc.push(...keyword.feacnCodes)
+      }
+      return acc
+    }, [])
     .filter(code => code !== null && code !== '')
     .sort((a, b) => {
       const numA = parseInt(a, 10)

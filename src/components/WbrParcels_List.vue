@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { watch, ref, computed, onMounted } from 'vue'
+import { watch, ref, computed, onMounted, provide } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -58,6 +58,7 @@ import {
 } from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -112,6 +113,9 @@ async function fetchRegister() {
 function loadOrders() {
   parcelsStore.getAll(props.registerId)
 }
+
+// Provide the loadOrders function for child components
+provide('loadOrders', loadOrders)
 
 watch(
   [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
@@ -278,32 +282,7 @@ function getGenericTemplateHeaders() {
 
         <!-- Special template for feacnLookup to display FEACN codes vertically -->
         <template #[`item.feacnLookup`]="{ item }">
-          <div v-if="getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore).length > 0" class="feacn-lookup-column">
-            <v-tooltip 
-              v-for="code in getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)" 
-              :key="code" 
-              location="top"
-            >
-              <template #activator="{ props }">
-                <div 
-                  v-bind="props"
-                  :class="getFeacnCodeItemClass(code, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))"
-                  @click="code !== item.tnVed ? selectFeacnCode(item, code) : null"
-                >
-                  <span class="d-inline-flex align-center">
-                    <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
-                    {{ code }}
-                  </span>
-                </div>
-              </template>
-              <span v-if="code === item.tnVed">
-                <font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано
-              </span>
-              <span v-else>
-                <font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Выбрать
-              </span>
-            </v-tooltip>
-          </div>
+          <FeacnCodeSelector :item="item" />
         </template>
 
         <!-- Special template for productLink to display as clickable URL -->

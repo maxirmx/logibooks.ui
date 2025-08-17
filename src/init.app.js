@@ -169,7 +169,7 @@ export function initializeApp() {
   const countriesStore = useCountriesStore()
 
   // Load feacnOrders globally at app startup
-  feacnCodesStore.ensureOrdersLoaded()
+  feacnCodesStore.ensureLoaded()
   transportationTypesStore.ensureLoaded()
   customsProceduresStore.ensureLoaded()
   countriesStore.ensureLoaded()

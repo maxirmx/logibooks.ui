@@ -290,7 +290,7 @@ describe('parcel.statuses.store.js', () => {
     })
   })
   
-  describe('ensureStatusesLoaded', () => {
+  describe('ensureLoaded', () => {
     beforeEach(() => {
       // Reset store to initial state for these tests
       pinia = createPinia()
@@ -303,9 +303,9 @@ describe('parcel.statuses.store.js', () => {
     it('calls getAll when statuses are not loaded yet', async () => {
       expect(store.parcelStatuses).toEqual([])
       
-      store.ensureStatusesLoaded()
+      store.ensureLoaded()
       
-      // Since ensureStatusesLoaded directly calls getAll synchronously,
+      // Since ensureLoaded directly calls getAll synchronously,
       // we can verify it was called without needing timers
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       
@@ -315,7 +315,7 @@ describe('parcel.statuses.store.js', () => {
     
     it('does not call getAll when already initialized', async () => {
       // First call to initialize
-      store.ensureStatusesLoaded()
+      store.ensureLoaded()
       
       // Wait for any pending promises to resolve
       await Promise.resolve()
@@ -326,7 +326,7 @@ describe('parcel.statuses.store.js', () => {
       mockGet.mockClear()
       
       // Second call should not trigger getAll again (initialized flag is true)
-      store.ensureStatusesLoaded()
+      store.ensureLoaded()
       
       // Wait for any pending promises to resolve
       await Promise.resolve()
@@ -338,7 +338,7 @@ describe('parcel.statuses.store.js', () => {
       // Manually set statuses
       store.parcelStatuses = mockParcelStatuses
       
-      store.ensureStatusesLoaded()
+      store.ensureLoaded()
       
       // Wait for any pending promises to resolve
       await Promise.resolve()
@@ -350,7 +350,7 @@ describe('parcel.statuses.store.js', () => {
       // Set loading state
       store.loading = true
       
-      store.ensureStatusesLoaded()
+      store.ensureLoaded()
       
       // Wait for any pending promises to resolve
       await Promise.resolve()

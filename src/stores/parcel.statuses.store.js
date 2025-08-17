@@ -93,7 +93,7 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
 
   // Auto-fetch statuses when store is initialized (only once)
   let initialized = false
-  async function ensureStatusesLoaded() {
+  async function ensureLoaded() {
     if (!initialized && parcelStatuses.value.length === 0 && !loading.value) {
       initialized = true
       await getAll()
@@ -101,7 +101,7 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
   }
 
   return {
-    ensureStatusesLoaded,
+    ensureLoaded,
     getStatusById,
     getStatusTitle,
     parcelStatuses,

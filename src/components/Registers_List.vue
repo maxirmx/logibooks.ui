@@ -74,10 +74,10 @@ const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
-parcelStatusesStore.ensureStatusesLoaded()
+parcelStatusesStore.ensureLoaded()
 
 const parcelCheckStatusStore = useParcelCheckStatusStore()
-parcelCheckStatusStore.ensureStatusesLoaded()
+parcelCheckStatusStore.ensureLoaded()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)

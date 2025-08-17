@@ -164,7 +164,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.get.mockResolvedValue(mockOrders)
 
     const store = useFeacnCodesStore()
-    await store.ensureOrdersLoaded()
+    await store.ensureLoaded()
     
     // First call should call getOrders
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
@@ -174,7 +174,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.get.mockClear()
     
     // Second call should not call getOrders since isInitialized is true
-    await store.ensureOrdersLoaded()
+    await store.ensureLoaded()
     expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
   

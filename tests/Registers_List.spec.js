@@ -92,14 +92,14 @@ vi.mock('@/stores/registers.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
   })
 }))
 
 vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
   useParcelCheckStatusStore: () => ({
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
@@ -649,13 +649,13 @@ describe('Registers_List.vue', () => {
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
   })
 }))
 vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
   useParcelCheckStatusStore: () => ({
-    ensureStatusesLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: vi.fn().mockResolvedValue(),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))

@@ -55,7 +55,7 @@ const mockFeacnCodesStore = createMockStore({
   getOrders: vi.fn(),
   getPrefixes: vi.fn(),
   update: vi.fn(),
-  ensureOrdersLoaded: vi.fn(),
+  ensureLoaded: vi.fn(),
   enable: vi.fn().mockResolvedValue(),
   disable: vi.fn().mockResolvedValue()
 })
@@ -113,9 +113,9 @@ describe('FeacnCodes_List.vue', () => {
     mockAuthStore.isAdmin.value = false
   })
 
-  it('calls ensureOrdersLoaded on mount', () => {
+  it('calls ensureLoaded on mount', () => {
     mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
-    expect(mockFeacnCodesStore.ensureOrdersLoaded).toHaveBeenCalled()
+    expect(mockFeacnCodesStore.ensureLoaded).toHaveBeenCalled()
   })
 
   it('updateCodes calls store update', async () => {

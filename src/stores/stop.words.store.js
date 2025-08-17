@@ -34,17 +34,25 @@ export const useStopWordsStore = defineStore('stopWords', () => {
   const stopWord = ref({ loading: true })
   const loading = ref(false)
   const error = ref(null)
+  const isInitialized = ref(false)
 
   async function getAll() {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
       stopWords.value = response || []
+      isInitialized.value = true
     } catch (err) {
       error.value = err
       throw err
     } finally {
       loading.value = false
+    }
+  }
+
+  async function ensureLoaded() {
+    if (!isInitialized.value && !loading.value) {
+      await getAll()
     }
   }
 
@@ -116,10 +124,12 @@ export const useStopWordsStore = defineStore('stopWords', () => {
     stopWord,
     loading,
     error,
+    isInitialized,
     getAll,
     getById,
     create,
     update,
-    remove
+    remove,
+    ensureLoaded
   }
 })

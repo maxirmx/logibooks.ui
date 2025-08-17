@@ -35,17 +35,25 @@ export const useKeyWordsStore = defineStore('keyWords', () => {
   const keyWord = ref({ loading: true })
   const loading = ref(false)
   const error = ref(null)
+  const isInitialized = ref(false)
 
   async function getAll() {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
       keyWords.value = response || []
+      isInitialized.value = true
     } catch (err) {
       error.value = err
       throw err
     } finally {
       loading.value = false
+    }
+  }
+
+  async function ensureLoaded() {
+    if (!isInitialized.value && !loading.value) {
+      await getAll()
     }
   }
 
@@ -127,12 +135,14 @@ export const useKeyWordsStore = defineStore('keyWords', () => {
     keyWord,
     loading,
     error,
+    isInitialized,
     getAll,
     getById,
     create,
     update,
     remove,
-    upload
+    upload,
+    ensureLoaded
   }
 })
 

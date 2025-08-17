@@ -52,9 +52,7 @@ import {
   exportParcelXmlData,
   lookupFeacn,
   getFeacnCodesForKeywords,
-  getFeacnCodeItemClass,
   getTnVedCellClass,
-  updateParcelTnVed
 } from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -124,12 +122,12 @@ watch(
 )
 
 onMounted(async () => {
-  await parcelStatusStore.ensureStatusesLoaded()
-  await parcelCheckStatusStore.ensureStatusesLoaded()
-  await feacnCodesStore.ensureOrdersLoaded()
+  await parcelStatusStore.ensureLoaded()
+  await parcelCheckStatusStore.ensureLoaded()
+  await feacnCodesStore.ensureLoaded()
   await countriesStore.ensureLoaded()
-  await stopWordsStore.getAll()
-  await keyWordsStore.getAll()
+  await stopWordsStore.ensureLoaded()
+  await keyWordsStore.ensureLoaded()
   await fetchRegister()
 })
 
@@ -187,10 +185,6 @@ async function lookupFeacnCodes(item) {
 
 async function approveParcel(item) {
   await approveParcelData(item, parcelsStore, loadOrders)
-}
-
-async function selectFeacnCode(item, feacnCode) {
-  await updateParcelTnVed(item, feacnCode, parcelsStore, loadOrders)
 }
 
 function getRowProps(data) {

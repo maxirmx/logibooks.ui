@@ -93,10 +93,10 @@ describe('parcel check status store', () => {
     fetchWrapper.get.mockResolvedValue(mockStatuses)
     const store = useParcelCheckStatusStore()
 
-    // Call ensureStatusesLoaded multiple times
-    store.ensureStatusesLoaded()
-    store.ensureStatusesLoaded()
-    store.ensureStatusesLoaded()
+    // Call ensureLoaded multiple times
+    store.ensureLoaded()
+    store.ensureLoaded()
+    store.ensureLoaded()
 
     // Wait for async operations
     await nextTick()

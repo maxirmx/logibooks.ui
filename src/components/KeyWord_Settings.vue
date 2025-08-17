@@ -189,6 +189,21 @@ defineExpose({
     
     <form v-else @submit.prevent="onSubmit">
       <div class="form-group">
+        <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
+        <input
+          name="word"
+          id="word"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.word }"
+          placeholder="Ключевое слово или фраза"
+          v-model="word"
+          @input="onWordInput"
+        />
+        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
+      </div>
+
+      <div class="form-group">
         <label for="feacnCode" class="label">Код ТН ВЭД (10 цифр):</label>
         <input
           name="feacnCode"
@@ -206,21 +221,6 @@ defineExpose({
         <div v-if="errors.feacnCode" class="invalid-feedback">{{ errors.feacnCode }}</div>
       </div>
       
-      <div class="form-group">
-        <label for="word" class="label">Ключевое слово или фраза для подбора ТН ВЭД:</label>
-        <input
-          name="word"
-          id="word"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.word }"
-          placeholder="Ключевое слово или фраза"
-          v-model="word"
-          @input="onWordInput"
-        />
-        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
-      </div>
-
       <div class="form-group">
         <label class="label">Тип соответствия:</label>
         <div class="radio-group" :class="{ 'is-invalid': errors.matchTypeId }">

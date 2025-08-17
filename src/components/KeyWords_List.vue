@@ -69,8 +69,8 @@ function filterKeyWords(value, query, item) {
 // Table headers
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-  { title: 'Код ТН ВЭД', key: 'feacnCode', sortable: true },
   { title: 'Ключевое слово или фраза', key: 'word', sortable: true },
+  { title: 'Коды ТН ВЭД', key: 'feacnCode', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }  
 ]
 

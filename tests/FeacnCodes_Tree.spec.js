@@ -38,7 +38,9 @@ describe('FeacnCodes_Tree.vue', () => {
   it('loads root nodes on mount', async () => {
     const wrapper = createWrapper()
     await flushPromises()
-    await flushPromises()
+    // Wait for root node to appear
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
 
     expect(mockGetChildren).toHaveBeenCalledWith(null)
     expect(wrapper.text()).toContain('01 : Root')

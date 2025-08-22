@@ -107,9 +107,10 @@ onMounted(() => {
   }
 })
 
-// Expose loadChildren method to parent component
+// Expose methods and state to parent component
 defineExpose({
-  loadChildren
+  loadChildren,
+  rootNodes
 })
 </script>
 

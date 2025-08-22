@@ -39,7 +39,7 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {

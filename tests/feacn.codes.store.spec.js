@@ -22,7 +22,6 @@ describe('feacn.codes.store.js', () => {
 
   const mockCode = { id: 1, code: '1234567890', description: 'test' }
   const mockCodes = [mockCode]
-  const mockProgress = { completed: true }
 
   beforeEach(() => {
     pinia = createPinia()
@@ -72,29 +71,15 @@ describe('feacn.codes.store.js', () => {
   describe('upload operations', () => {
     it('uploads file successfully', async () => {
       const file = new File(['content'], 'codes.xlsx')
-      fetchWrapper.postFile.mockResolvedValue({ id: 'handle' })
+      fetchWrapper.postFile.mockResolvedValue() // No return value for synchronous upload
 
-      const res = await store.upload(file)
+      await store.upload(file)
 
       expect(fetchWrapper.postFile).toHaveBeenCalledTimes(1)
       const [url, formData] = fetchWrapper.postFile.mock.calls[0]
       expect(url).toBe('http://localhost:3000/api/feacncodes/upload')
       expect(formData).toBeInstanceOf(FormData)
       expect(formData.get('file')).toBe(file)
-      expect(res).toEqual({ id: 'handle' })
-    })
-
-    it('gets upload progress', async () => {
-      fetchWrapper.get.mockResolvedValue(mockProgress)
-      const res = await store.getUploadProgress('abcd')
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/upload/abcd')
-      expect(res).toEqual(mockProgress)
-    })
-
-    it('cancels upload', async () => {
-      fetchWrapper.delete.mockResolvedValue()
-      await store.cancelUpload('abcd')
-      expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/upload/abcd')
     })
   })
 
@@ -136,22 +121,6 @@ describe('feacn.codes.store.js', () => {
       const err = new Error('children fail')
       fetchWrapper.get.mockRejectedValue(err)
       await expect(store.getChildren(1)).rejects.toThrow('children fail')
-      expect(store.error).toBe(err)
-      expect(store.loading).toBe(false)
-    })
-
-    it('handles upload progress error', async () => {
-      const err = new Error('progress fail')
-      fetchWrapper.get.mockRejectedValue(err)
-      await expect(store.getUploadProgress('abcd')).rejects.toThrow('progress fail')
-      expect(store.error).toBe(err)
-      expect(store.loading).toBe(false)
-    })
-
-    it('handles cancel upload error', async () => {
-      const err = new Error('cancel fail')
-      fetchWrapper.delete.mockRejectedValue(err)
-      await expect(store.cancelUpload('abcd')).rejects.toThrow('cancel fail')
       expect(store.error).toBe(err)
       expect(store.loading).toBe(false)
     })

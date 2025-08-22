@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -12,7 +12,7 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
-describe('feacn.codes store', () => {
+describe('feacn.orders store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -22,7 +22,7 @@ describe('feacn.codes store', () => {
     const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
     fetchWrapper.get.mockResolvedValue(mockOrders)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.getOrders()
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
@@ -36,7 +36,7 @@ describe('feacn.codes store', () => {
     const testError = new Error('API error')
     fetchWrapper.get.mockRejectedValue(testError)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.getOrders()
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
@@ -50,7 +50,7 @@ describe('feacn.codes store', () => {
     const mockPrefixes = [{ id: 1, code: '1', exceptions: [] }]
     fetchWrapper.get.mockResolvedValue(mockPrefixes)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.getPrefixes(1)
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/1/prefixes`)
@@ -63,7 +63,7 @@ describe('feacn.codes store', () => {
     const testError = new Error('API error')
     fetchWrapper.get.mockRejectedValue(testError)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.getPrefixes(1)
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/1/prefixes`)
@@ -72,7 +72,7 @@ describe('feacn.codes store', () => {
   })
   
   it('clears prefixes when no orderId is provided', async () => {
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     store.prefixes.value = [{ id: 1 }] // Set some initial value
     
     await store.getPrefixes(null)
@@ -85,7 +85,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.update()
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
@@ -98,7 +98,7 @@ describe('feacn.codes store', () => {
     const testError = new Error('API error')
     fetchWrapper.post.mockRejectedValue(testError)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.update()
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
@@ -111,7 +111,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.enable(3)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
@@ -124,7 +124,7 @@ describe('feacn.codes store', () => {
     const testError = new Error('API error')
     fetchWrapper.post.mockRejectedValue(testError)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.enable(3)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
@@ -137,7 +137,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.disable(4)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
@@ -150,7 +150,7 @@ describe('feacn.codes store', () => {
     const testError = new Error('API error')
     fetchWrapper.post.mockRejectedValue(testError)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.disable(4)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
@@ -163,7 +163,7 @@ describe('feacn.codes store', () => {
     const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
     fetchWrapper.get.mockResolvedValue(mockOrders)
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.ensureLoaded()
     
     // First call should call getOrders
@@ -182,7 +182,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.toggleEnabled(5, true)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/5/enable`)
@@ -193,7 +193,7 @@ describe('feacn.codes store', () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
-    const store = useFeacnCodesStore()
+    const store = useFeacnOrdersStore()
     await store.toggleEnabled(6, false)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/6/disable`)

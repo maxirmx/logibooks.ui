@@ -27,13 +27,13 @@
 
 import { ref, onMounted, watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
-const feacnStore = useFeacnCodesStore()
+const feacnStore = useFeacnOrdersStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 

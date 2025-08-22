@@ -122,6 +122,7 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     } finally {
     loading.value = false
     await getOrders()
+    loading.value = false
     }
   }
  

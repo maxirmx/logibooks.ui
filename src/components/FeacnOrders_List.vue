@@ -148,13 +148,13 @@ async function handleToggleOrderEnabled(order) {
 
 <template>
   <div class="settings table-3" data-testid="feacn-orders-list">
-    <h1 class="primary-heading">Коды ТН ВЭД с ограничениями</h1>
+    <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
     <hr class="hr" />
 
     <div class="link-crt" v-if="isAdmin">
       <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
-        &nbsp;&nbsp;&nbsp;Обновить информацию о кодах ТН ВЭД с ограничениями
+        &nbsp;&nbsp;&nbsp;Обновить информацию об ограничениях по кодам ТН ВЭД
       </a>
     </div>
 

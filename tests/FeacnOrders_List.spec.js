@@ -134,7 +134,7 @@ describe('FeacnOrders_List.vue', () => {
   it('renders admin update button when user is admin', () => {
     mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Обновить информацию о кодах')
+    expect(wrapper.text()).toContain('Обновить информацию об ограничениях')
   })
 
   it('shows spinner and error message', () => {

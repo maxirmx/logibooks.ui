@@ -147,7 +147,7 @@ async function handleToggleOrderEnabled(order) {
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="feacn-codes-list">
+  <div class="settings table-3" data-testid="feacn-orders-list">
     <h1 class="primary-heading">Коды ТН ВЭД с ограничениями</h1>
     <hr class="hr" />
 

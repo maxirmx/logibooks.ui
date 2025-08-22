@@ -31,13 +31,20 @@ import FeacnCodesTreeNode from '@/components/FeacnCodesTreeNode.vue'
 
 defineOptions({ name: 'FeacnCodesTree' })
 
+const { disabled = false } = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const store = useFeacnCodesStore()
 const rootNodes = ref([])
 const isLoading = ref(false)
 
 async function loadChildren(target = null) {
-  // Prevent concurrent loading for the same target
-  if (target && target.loading) {
+  // Don't load if disabled or already loading
+  if (disabled || (target && target.loading)) {
     return
   }
   
@@ -73,8 +80,8 @@ async function loadChildren(target = null) {
 }
 
 async function toggleNode(node) {
-  // Prevent toggling while loading
-  if (node.loading) {
+  // Prevent toggling while disabled or loading
+  if (disabled || node.loading) {
     return
   }
   
@@ -85,7 +92,9 @@ async function toggleNode(node) {
 }
 
 onMounted(() => {
-  loadChildren()
+  if (!disabled) {
+    loadChildren()
+  }
 })
 
 // Expose loadChildren method to parent component
@@ -95,7 +104,7 @@ defineExpose({
 </script>
 
 <template>
-  <div v-if="isLoading" class="loading-indicator">
+  <div v-if="isLoading && !disabled" class="loading-indicator">
     <font-awesome-icon icon="fa-solid fa-spinner" spin />
     Загрузка дерева...
   </div>
@@ -105,6 +114,7 @@ defineExpose({
         v-for="node in rootNodes" 
         :key="node.id" 
         :node="node"
+        :disabled="disabled"
         @toggle="toggleNode"
       />
     </ul>

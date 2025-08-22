@@ -27,14 +27,18 @@
 defineOptions({ name: 'FeacnCodesTreeNode' })
 
 const props = defineProps({
-  node: { type: Object, required: true }
+  node: { type: Object, required: true },
+  disabled: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const emit = defineEmits(['toggle'])
 
 function handleToggle() {
-  // Don't allow toggling when loading
-  if (props.node.loading) {
+  // Don't allow toggling when disabled or loading
+  if (props.disabled || props.node.loading) {
     return
   }
   emit('toggle', props.node)
@@ -51,8 +55,15 @@ function isLeafNode(node) {
 <template>
   <li class="tree-node">
     <div class="node-layout">
-      <!-- Code display - always at left border -->
-      <div class="node-code">
+      <!-- Code display - clickable only if not a leaf node and not disabled -->
+      <div 
+        class="node-code" 
+        :class="{ 
+          'clickable': !isLeafNode(node) && !disabled,
+          'disabled': disabled
+        }"
+        @click="!isLeafNode(node) && !disabled ? handleToggle() : null"
+      >
         {{ node.codeEx }}
       </div>
       
@@ -81,7 +92,8 @@ function isLeafNode(node) {
         <span 
           v-else
           class="toggle-icon"
-          @click="handleToggle"
+          :class="{ 'disabled': disabled }"
+          @click="!disabled ? handleToggle() : null"
         >
           <font-awesome-icon 
             :icon="node.expanded ? 'fa-solid fa-minus' : 'fa-solid fa-plus'" 
@@ -90,8 +102,12 @@ function isLeafNode(node) {
         
         <span 
           class="node-label" 
-          :class="{ 'loading': node.loading }"
-          @click="handleToggle"
+          :class="{ 
+            'loading': node.loading,
+            'clickable': !isLeafNode(node) && !disabled,
+            'disabled': disabled
+          }"
+          @click="!isLeafNode(node) && !disabled ? handleToggle() : null"
         >
           {{ node.name }}
         </span>
@@ -103,6 +119,7 @@ function isLeafNode(node) {
         v-for="child in node.children" 
         :key="child.id" 
         :node="child"
+        :disabled="disabled"
         @toggle="$emit('toggle', $event)"
       />
     </ul>
@@ -135,7 +152,17 @@ function isLeafNode(node) {
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
-  cursor: pointer;
+  cursor: default; /* Default cursor for leaf nodes */
+}
+
+.node-code.clickable {
+  cursor: pointer; /* Pointer cursor only for non-leaf nodes */
+}
+
+.node-code.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .node-content {
@@ -161,6 +188,12 @@ function isLeafNode(node) {
   color: #333;
 }
 
+.toggle-icon.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .toggle-placeholder, .toggle-loading {
   display: inline-flex;
   justify-content: center;
@@ -180,20 +213,30 @@ function isLeafNode(node) {
 }
 
 .node-label {
-  cursor: pointer;
+  cursor: default; /* Default cursor for leaf nodes */
   margin-left: 0.5rem;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   transition: background-color 0.2s ease;
 }
 
-.node-label:hover {
+.node-label.clickable {
+  cursor: pointer; /* Pointer cursor only for non-leaf nodes */
+}
+
+.node-label.clickable:hover {
   background-color: #f5f5f5;
 }
 
 .node-label.loading {
   opacity: 0.6;
   cursor: wait;
+}
+
+.node-label.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .child-nodes {

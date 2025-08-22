@@ -72,8 +72,7 @@ async function fileSelected(file) {
       <a @click="openFileDialog" class="link" tabindex="0" :class="{ disabled: uploading }">
         <font-awesome-icon
           size="1x"
-          :icon="uploading ? 'fa-solid fa-spinner' : 'fa-solid fa-file-import'"
-          :spin="uploading"
+          icon="fa-solid fa-file-import"
           class="link"
         />&nbsp;&nbsp;&nbsp;{{ uploading ? 'Загрузка...' : 'Загрузить коды ТН ВЭД' }}
       </a>
@@ -87,7 +86,15 @@ async function fileSelected(file) {
       />
     </div>
 
-    <FeacnCodesTree ref="treeRef" class="tree-wrapper" />
+    <div class="tree-container" :class="{ 'disabled': uploading }">
+      <FeacnCodesTree ref="treeRef" class="tree-wrapper" :disabled="uploading" />
+      <div v-if="uploading" class="loading-overlay">
+        <div class="loading-content">
+          <font-awesome-icon icon="fa-solid fa-spinner" spin size="2x" />
+          <div class="loading-text">Загрузка файла...</div>
+        </div>
+      </div>
+    </div>
     
     <!-- Alert -->
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
@@ -104,13 +111,47 @@ async function fileSelected(file) {
   flex-direction: column;
 }
 
-.tree-wrapper {
+.tree-container {
   flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.tree-container.disabled {
+  pointer-events: none;
+}
+
+.tree-wrapper {
+  height: 100%;
   overflow-y: auto;
 }
 
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-content {
+  text-align: center;
+  color: #666;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
 .upload-links {
-  margin-bottom: 8px;
+  margin-bottom: 24px;
 }
 
 .link.disabled {

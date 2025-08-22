@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { HasIssues } from '@/helpers/orders.check.helper.js'
+import { HasIssues } from '@/helpers/parcels.check.helpers.js'
 
-describe('orders.check.helper.js HasIssues', () => {
+describe('parcels.check.helpers.js HasIssues', () => {
 
   describe('HasIssues', () => {
     it('returns true when checkStatusId is between 101 and 200', () => {

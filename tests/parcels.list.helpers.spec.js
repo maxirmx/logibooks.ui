@@ -17,7 +17,7 @@ vi.mock('../src/helpers/config.js', () => ({
 }))
 
 // Mock helper functions
-vi.mock('../src/helpers/orders.check.helper.js', () => ({
+vi.mock('../src/helpers/parcels.check.helpers.js', () => ({
   HasIssues: vi.fn(() => false)
 }))
 
@@ -218,7 +218,7 @@ describe('Parcels List Helpers', () => {
 
   describe('getRowPropsForParcel', () => {
     it('should return class for parcel with issues', async () => {
-      const { HasIssues } = await vi.importMock('../src/helpers/orders.check.helper.js')
+      const { HasIssues } = await vi.importMock('../src/helpers/parcels.check.helpers.js')
       HasIssues.mockReturnValue(true)
 
       const data = {
@@ -232,7 +232,7 @@ describe('Parcels List Helpers', () => {
     })
 
     it('should return empty class for parcel without issues', async () => {
-      const { HasIssues } = await vi.importMock('../src/helpers/orders.check.helper.js')
+      const { HasIssues } = await vi.importMock('../src/helpers/parcels.check.helpers.js')
       HasIssues.mockReturnValue(false)
 
       const data = {

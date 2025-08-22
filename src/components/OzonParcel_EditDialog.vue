@@ -39,7 +39,7 @@ import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import {

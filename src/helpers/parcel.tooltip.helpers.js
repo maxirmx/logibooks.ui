@@ -23,7 +23,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { HasIssues, getCheckStatusInfo } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusInfo } from '@/helpers/parcels.check.helpers.js'
 
 /**
  * Get tooltip for form fields combining title and tooltip information

@@ -25,7 +25,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.getOrders()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.orders).toEqual(mockOrders)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -39,7 +39,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.getOrders()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.orders).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
@@ -53,7 +53,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.getPrefixes(1)
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/1/prefixes`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/1/prefixes`)
     expect(store.prefixes).toEqual(mockPrefixes)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -66,7 +66,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.getPrefixes(1)
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/1/prefixes`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/1/prefixes`)
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
   })
@@ -88,8 +88,8 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.update()
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/update`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -101,7 +101,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.update()
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/update`)
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
@@ -114,8 +114,8 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.enable(3)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/3/enable`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -127,7 +127,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.enable(3)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/3/enable`)
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
@@ -140,8 +140,8 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.disable(4)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/4/disable`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -153,7 +153,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.disable(4)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/4/disable`)
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
@@ -167,7 +167,7 @@ describe('feacn.orders store', () => {
     await store.ensureLoaded()
     
     // First call should call getOrders
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.isInitialized).toBe(true)
     
     // Reset the mock to verify it's not called again
@@ -185,8 +185,8 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.toggleEnabled(5, true)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/5/enable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/5/enable`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
   })
   
   it('toggleEnabled calls disable when en is false', async () => {
@@ -196,7 +196,7 @@ describe('feacn.orders store', () => {
     const store = useFeacnOrdersStore()
     await store.toggleEnabled(6, false)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/6/disable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/6/disable`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
   })
 })

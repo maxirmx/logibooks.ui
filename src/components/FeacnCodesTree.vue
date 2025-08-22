@@ -87,6 +87,11 @@ async function toggleNode(node) {
 onMounted(() => {
   loadChildren()
 })
+
+// Expose loadChildren method to parent component
+defineExpose({
+  loadChildren
+})
 </script>
 
 <template>

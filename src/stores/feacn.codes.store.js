@@ -92,35 +92,8 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const response = await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
-      return response
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function getUploadProgress(handleId) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await fetchWrapper.get(`${baseUrl}/upload/${handleId}`)
-      return response
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function cancelUpload(handleId) {
-    loading.value = true
-    error.value = null
-    try {
-      await fetchWrapper.delete(`${baseUrl}/upload/${handleId}`)
+      await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
+      // Upload is now synchronous - success means it's complete
     } catch (err) {
       error.value = err
       throw err
@@ -136,9 +109,7 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     getByCode,
     lookup,
     getChildren,
-    upload,
-    getUploadProgress,
-    cancelUpload
+    upload
   }
 })
 

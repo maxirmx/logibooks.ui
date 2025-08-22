@@ -24,21 +24,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { reactive, ref, computed, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
-import {
-  createValidationState,
-  calculateValidationProgress,
-  createPollingTimer
-} from '@/helpers/registers.list.helpers.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 defineOptions({ name: 'FeacnCodes_Tree' })
 
 const store = useFeacnCodesStore()
-const uploadState = reactive(createValidationState())
-const progressPercent = computed(() => calculateValidationProgress(uploadState))
+const alertStore = useAlertStore()
 const fileInput = ref(null)
+const treeRef = ref(null)
+const uploading = ref(false)
 
 function openFileDialog() {
   fileInput.value?.click()
@@ -46,84 +43,49 @@ function openFileDialog() {
 
 async function fileSelected(file) {
   if (!file) return
+  
+  uploading.value = true
+  
   try {
-    const res = await store.upload(file)
-    uploadState.handleId = res.id
-    uploadState.total = 0
-    uploadState.processed = 0
-    uploadState.show = true
-    await pollUpload()
-    pollingTimer.start()
-  } catch (err) {
-    // ignore, store.error already set
+    await store.upload(file)
+    alertStore.success('Коды ТН ВЭД успешно загружены')
+    // Refresh the tree to show updated data
+    if (treeRef.value && treeRef.value.loadChildren) {
+      await treeRef.value.loadChildren()
+    }
+  } catch (error) {
+    alertStore.error('Ошибка при загрузке файла: ' + (error.message || 'Неизвестная ошибка'))
   } finally {
+    uploading.value = false
     if (fileInput.value) fileInput.value.value = ''
   }
 }
-
-async function pollUpload() {
-  if (!uploadState.handleId) return
-  try {
-    const progress = await store.getUploadProgress(uploadState.handleId)
-    uploadState.total = progress.total
-    uploadState.processed = progress.processed
-    if (progress.finished || progress.total === -1 || progress.processed === -1) {
-      uploadState.show = false
-      pollingTimer.stop()
-    }
-  } catch (err) {
-    uploadState.show = false
-    pollingTimer.stop()
-  }
-}
-
-function cancelUploadWrapper() {
-  if (uploadState.handleId) {
-    store.cancelUpload(uploadState.handleId).catch(() => {})
-  }
-  uploadState.show = false
-  pollingTimer.stop()
-}
-
-const pollingTimer = createPollingTimer(pollUpload)
-
-onUnmounted(() => {
-  pollingTimer.stop()
-})
 </script>
 
 <template>
-  <div class="feacn-codes-tree-container">
+  <div class="settings table-2 feacn-codes-tree-container">
+    <h1 class="primary-heading">Коды ТН ВЭД</h1>
+    <hr class="hr" />
     <div class="link-crt d-flex upload-links">
-      <a @click="openFileDialog" class="link" tabindex="0">
+      <a @click="openFileDialog" class="link" tabindex="0" :class="{ disabled: uploading }">
         <font-awesome-icon
           size="1x"
-          icon="fa-solid fa-file-import"
+          :icon="uploading ? 'fa-solid fa-spinner' : 'fa-solid fa-file-import'"
+          :spin="uploading"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Загрузить коды ТН ВЭД
+        />&nbsp;&nbsp;&nbsp;{{ uploading ? 'Загрузка...' : 'Загрузить коды ТН ВЭД' }}
       </a>
       <input
         ref="fileInput"
         type="file"
         style="display: none"
         accept=".xls,.xlsx,.csv"
+        :disabled="uploading"
         @change="(e) => fileSelected(e.target.files[0])"
       />
     </div>
-    <FeacnCodesTree class="tree-wrapper" />
-    <v-dialog v-model="uploadState.show" width="300">
-      <v-card>
-        <v-card-title class="primary-heading">Загрузка кодов ТН ВЭД</v-card-title>
-        <v-card-text class="text-center">
-          <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">
-            {{ progressPercent }}%
-          </v-progress-circular>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="cancelUploadWrapper">Отменить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+
+    <FeacnCodesTree ref="treeRef" class="tree-wrapper" />
   </div>
 </template>
 
@@ -141,6 +103,12 @@ onUnmounted(() => {
 
 .upload-links {
   margin-bottom: 8px;
+}
+
+.link.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: wait;
 }
 </style>
 

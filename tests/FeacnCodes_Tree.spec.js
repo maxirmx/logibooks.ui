@@ -1,35 +1,41 @@
 /* @vitest-environment jsdom */
 import { mount, flushPromises } from '@vue/test-utils'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import FeacnCodes_Tree from '@/components/FeacnCodes_Tree.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const uploadMock = vi.fn()
-const getUploadProgressMock = vi.fn()
-const cancelUploadMock = vi.fn()
+const alertSuccessMock = vi.fn()
+const alertErrorMock = vi.fn()
 
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: () => ({
-    upload: uploadMock,
-    getUploadProgress: getUploadProgressMock,
-    cancelUpload: cancelUploadMock
+    upload: uploadMock
+  })
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    success: alertSuccessMock,
+    error: alertErrorMock
   })
 }))
 
 const globalStubs = {
   ...vuetifyStubs,
-  FeacnCodesTree: { template: '<div class="tree-stub"></div>' }
+  FeacnCodesTree: { 
+    template: '<div class="tree-stub"></div>',
+    setup() {
+      return {
+        loadChildren: vi.fn()
+      }
+    }
+  }
 }
 
 describe('FeacnCodes_Tree.vue', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
     vi.clearAllMocks()
-    cancelUploadMock.mockResolvedValue()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   function createWrapper() {
@@ -38,40 +44,107 @@ describe('FeacnCodes_Tree.vue', () => {
     })
   }
 
-  it('uploads file and tracks progress', async () => {
-    uploadMock.mockResolvedValue({ id: 'handle' })
-    getUploadProgressMock
-      .mockResolvedValueOnce({ total: 10, processed: 0, finished: false })
-      .mockResolvedValueOnce({ total: 10, processed: 10, finished: true })
-
+  it('renders tree component and upload link', () => {
     const wrapper = createWrapper()
-    const file = new File(['content'], 'codes.xlsx')
-    await wrapper.vm.fileSelected(file)
-
-    expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(wrapper.vm.uploadState.show).toBe(true)
-
-    await vi.runOnlyPendingTimersAsync()
-    await flushPromises()
-
-    expect(getUploadProgressMock).toHaveBeenCalledWith('handle')
-    expect(wrapper.vm.uploadState.show).toBe(false)
+    
+    expect(wrapper.find('.tree-stub').exists()).toBe(true)
+    expect(wrapper.find('a.link').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Загрузить коды ТН ВЭД')
   })
 
-  it('cancels upload', async () => {
-    uploadMock.mockResolvedValue({ id: 'handle' })
-    getUploadProgressMock.mockResolvedValue({ total: 10, processed: 0, finished: false })
-
+  it('uploads file successfully', async () => {
+    uploadMock.mockResolvedValue()
+    
     const wrapper = createWrapper()
     const file = new File(['content'], 'codes.xlsx')
+    
     await wrapper.vm.fileSelected(file)
     await flushPromises()
 
-    expect(wrapper.vm.uploadState.show).toBe(true)
+    expect(uploadMock).toHaveBeenCalledWith(file)
+    expect(alertSuccessMock).toHaveBeenCalledWith('Коды ТН ВЭД успешно загружены')
+    expect(wrapper.vm.uploading).toBe(false)
+  })
 
-    await wrapper.vm.cancelUploadWrapper()
-    expect(cancelUploadMock).toHaveBeenCalledWith('handle')
-    expect(wrapper.vm.uploadState.show).toBe(false)
+  it('handles upload error', async () => {
+    const error = new Error('Upload failed')
+    uploadMock.mockRejectedValue(error)
+    
+    const wrapper = createWrapper()
+    const file = new File(['content'], 'codes.xlsx')
+    
+    await wrapper.vm.fileSelected(file)
+    await flushPromises()
+
+    expect(uploadMock).toHaveBeenCalledWith(file)
+    expect(alertErrorMock).toHaveBeenCalledWith('Ошибка при загрузке файла: Upload failed')
+    expect(wrapper.vm.uploading).toBe(false)
+  })
+
+  it('shows loading state during upload', async () => {
+    let resolveUpload
+    uploadMock.mockImplementation(() => new Promise(resolve => { resolveUpload = resolve }))
+    
+    const wrapper = createWrapper()
+    const file = new File(['content'], 'codes.xlsx')
+    
+    // Start upload
+    const uploadPromise = wrapper.vm.fileSelected(file)
+    await wrapper.vm.$nextTick()
+
+    // Should be in loading state
+    expect(wrapper.vm.uploading).toBe(true)
+    expect(wrapper.find('a.link').classes()).toContain('disabled')
+    expect(wrapper.text()).toContain('Загрузка...')
+
+    // Complete upload
+    resolveUpload()
+    await uploadPromise
+    await flushPromises()
+
+    // Should be back to normal state
+    expect(wrapper.vm.uploading).toBe(false)
+    expect(wrapper.find('a.link').classes()).not.toContain('disabled')
+    expect(wrapper.text()).toContain('Загрузить коды ТН ВЭД')
+  })
+
+  it('opens file dialog when link is clicked', async () => {
+    const wrapper = createWrapper()
+    const fileInput = wrapper.find('input[type="file"]')
+    
+    // Mock the click method
+    const clickSpy = vi.spyOn(fileInput.element, 'click')
+    
+    await wrapper.find('a.link').trigger('click')
+    
+    expect(clickSpy).toHaveBeenCalled()
+  })
+
+  it('does not handle file selection when no file provided', async () => {
+    const wrapper = createWrapper()
+    
+    await wrapper.vm.fileSelected(null)
+    
+    expect(uploadMock).not.toHaveBeenCalled()
+    expect(alertSuccessMock).not.toHaveBeenCalled()
+    expect(alertErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('handles upload successfully when tree ref is null', async () => {
+    uploadMock.mockResolvedValue()
+    
+    const wrapper = createWrapper()
+    const file = new File(['content'], 'codes.xlsx')
+    
+    // Set tree ref to null to test the null check
+    wrapper.vm.treeRef = null
+    
+    await wrapper.vm.fileSelected(file)
+    await flushPromises()
+
+    expect(uploadMock).toHaveBeenCalledWith(file)
+    expect(alertSuccessMock).toHaveBeenCalledWith('Коды ТН ВЭД успешно загружены')
+    expect(wrapper.vm.uploading).toBe(false)
   })
 })
 

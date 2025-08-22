@@ -148,7 +148,7 @@ async function handleToggleOrderEnabled(order) {
 
 <template>
   <div class="settings table-3" data-testid="feacn-orders-list">
-    <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
+    <h1 class="primary-heading">Запреты по ТН ВЭД</h1>
     <hr class="hr" />
 
     <div class="link-crt" v-if="isAdmin">

@@ -35,12 +35,15 @@ describe('FeacnCodes_Tree.vue', () => {
     })
   }
 
+  // Helper to wait for all async operations and DOM updates
+  async function waitForMount(wrapper) {
+    await flushPromises() // Wait for store operations
+    await wrapper.vm.$nextTick() // Wait for DOM updates
+  }
+
   it('loads root nodes on mount', async () => {
     const wrapper = createWrapper()
-    await flushPromises()
-    // Wait for root node to appear
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
+    await waitForMount(wrapper)
 
     expect(mockGetChildren).toHaveBeenCalledWith(null)
     expect(wrapper.text()).toContain('01 : Root')
@@ -51,11 +54,10 @@ describe('FeacnCodes_Tree.vue', () => {
 
   it('loads children when node expanded', async () => {
     const wrapper = createWrapper()
-    await flushPromises()
-    await flushPromises()
+    await waitForMount(wrapper)
 
     await wrapper.find('.toggle-icon').trigger('click')
-    await flushPromises()
+    await flushPromises() // Wait for child loading
 
     expect(mockGetChildren).toHaveBeenCalledWith(1)
     expect(wrapper.text()).toContain('0101 : Child')
@@ -63,11 +65,10 @@ describe('FeacnCodes_Tree.vue', () => {
 
   it('shows minus icon when node expanded', async () => {
     const wrapper = createWrapper()
-    await flushPromises()
-    await flushPromises()
+    await waitForMount(wrapper)
 
     await wrapper.find('.toggle-icon').trigger('click')
-    await flushPromises()
+    await flushPromises() // Wait for child loading
 
     const icon = wrapper.find('font-awesome-icon-stub')
     expect(icon.attributes('icon')).toBe('fa-solid fa-minus')

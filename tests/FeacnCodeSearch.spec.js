@@ -107,4 +107,42 @@ describe('FeacnCodeSearch.vue', () => {
 
     expect(wrapper.find('.no-results').exists()).toBe(true)
   })
+
+  it('shows error message when lookup fails', async () => {
+    mockLookup.mockRejectedValueOnce(new Error('fail'))
+    const wrapper = createWrapper()
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('err')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(wrapper.find('.search-error').exists()).toBe(true)
+  })
+
+  it('shows error message when getById fails while opening path', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
+    mockGetById.mockImplementation(id => {
+      if (id === 3) return Promise.reject(new Error('fail'))
+      if (id === 2) return Promise.resolve(child)
+      if (id === 1) return Promise.resolve(root)
+      return Promise.resolve(null)
+    })
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('leaf')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+
+    const resultItem = wrapper.find('.search-result-item')
+    await resultItem.trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).toHaveBeenCalledWith(3)
+    expect(wrapper.find('.search-error').exists()).toBe(true)
+  })
 })

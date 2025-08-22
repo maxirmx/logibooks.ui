@@ -87,7 +87,9 @@ async function selectSearchResult(item) {
     }
     await openPath(path)
   } catch (err) {
-    console.error('Failed to open path:', err)
+    searchError.value = err
+    searchResults.value = []
+    dropdownVisible.value = true
   }
 }
 
@@ -104,7 +106,6 @@ async function openPath(pathIds = []) {
   for (const id of pathIds) {
     const currentNode = nodes.find(n => n.id === id)
     if (!currentNode) {
-      console.warn('Node not found:', id)
       return
     }
     currentNode.expanded = true

@@ -23,12 +23,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+
 /**
  * Formats FEACN code name using data from the store
  * @param {string} code - FEACN code
  * @returns {Promise<string>} Formatted FEACN name
  */
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 
 export async function FormatFeacnName(code) {
   const store = useFeacnCodesStore()

@@ -36,6 +36,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { FormatFeacnName } from '@/helpers/feacn.name.helpers.js'
 
 const keyWordsStore = useKeyWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
@@ -48,6 +49,9 @@ const { alert } = storeToRefs(alertStore)
 
 // File upload reference
 const fileInput = ref(null)
+
+// Store for FEACN code tooltips (using reactive object instead of Map)
+const feacnTooltips = ref({})
 
 // Custom filter function for v-data-table
 function filterKeyWords(value, query, item) {
@@ -78,6 +82,38 @@ function getMatchTypeText(id) {
   return matchTypesStore.getName(id)
 }
 
+async function getFeacnTooltip(code) {
+  // Check if we already have the tooltip cached
+  if (feacnTooltips.value[code]) {
+    return feacnTooltips.value[code]
+  }
+  
+  try {
+    const tooltip = await FormatFeacnName(code)
+    feacnTooltips.value[code] = tooltip
+    return tooltip
+  } catch (error) {
+    const fallback = `Код ТН ВЭД ${code}`
+    feacnTooltips.value[code] = fallback
+    return fallback
+  }
+}
+
+// Lazy load tooltip when user hovers over a FEACN code
+async function loadTooltipOnHover(code) {
+  if (!feacnTooltips.value[code]) {
+    // Set loading placeholder
+    feacnTooltips.value[code] = 'Загрузка...'
+    // Load the actual tooltip
+    try {
+      const tooltip = await FormatFeacnName(code)
+      feacnTooltips.value[code] = tooltip
+    } catch (error) {
+      feacnTooltips.value[code] = `Код ТН ВЭД ${code}`
+    }
+  }
+}
+
 function openEditDialog(item) {
   router.push(`/keyword/edit/${item.id}`)
 }
@@ -98,6 +134,8 @@ async function fileSelected(files) {
   try {
     await keyWordsStore.upload(file)
     await keyWordsStore.getAll() 
+    // Clear cached tooltips since data may have changed
+    feacnTooltips.value = {}
   } catch (error) {
       alertStore.error('Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : ""))
   } finally {
@@ -148,6 +186,8 @@ defineExpose({
   openEditDialog,
   deleteKeyWord,
   getMatchTypeText,
+  getFeacnTooltip,
+  loadTooltipOnHover,
   openFileDialog,
   fileSelected
 })
@@ -232,7 +272,20 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.feacnCodes`]="{ item }">
-          <div v-for="code in item.feacnCodes" :key="code">{{ code }}</div>
+          <div v-for="code in item.feacnCodes" :key="code">
+            <v-tooltip location="top">
+              <template v-slot:activator="{ props }">
+                <span 
+                  v-bind="props" 
+                  class="feacn-code-tooltip"
+                  @mouseenter="loadTooltipOnHover(code)"
+                >
+                  {{ code }}
+                </span>
+              </template>
+              <span>{{ feacnTooltips[code] || 'Наведите для загрузки...' }}</span>
+            </v-tooltip>
+          </div>
         </template>
 
         <template v-slot:[`item.matchTypeId`]="{ item }">
@@ -255,5 +308,4 @@ defineExpose({
 
   </div>
 </template>
-
 

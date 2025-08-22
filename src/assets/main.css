@@ -1572,6 +1572,12 @@ a,
   border-color: #e17055;
 }
 
+/* FEACN code tooltip styles */
+.feacn-code-tooltip {
+  cursor: help;
+  text-decoration: underline dotted;
+}
+
 /* FEACN edit dialog item styles */
 .feacn-edit-dialog-item {
   cursor: pointer;
@@ -1580,3 +1586,7 @@ a,
   border-radius: 3px;
 }
 
+/* Ensure data tables use default arrow cursor */
+.v-data-table tbody tr td {
+  cursor: default !important;
+}

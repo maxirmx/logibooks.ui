@@ -37,8 +37,8 @@ export async function FormatFeacnName(code) {
     const info = await store.getByCode(code)
     if (!info) return 'Код ТН ВЭД не найден'
 
-    const normalized = info?.NormalizedName?.trim()
-    const name = info?.Name?.trim()
+    const normalized = info?.normalizedName?.trim()
+    const name = info?.name?.trim()
 
     if (normalized) {
       const lower = normalized.toLowerCase()

@@ -43,7 +43,7 @@ vi.mock('pinia', async () => {
   }
 })
 
-const mockFeacnCodesStore = createMockStore({
+const mockFeacnOrdersStore = createMockStore({
   orders: ref([
     { id: 1, title: 'Doc1', url: 'http://a' },
     { id: 2, title: 'Doc2', url: 'http://b' }
@@ -80,8 +80,8 @@ const mockAuthStore = createMockStore({
   isAdmin: ref(false)
 })
 
-vi.mock('@/stores/feacn.codes.store.js', () => ({
-  useFeacnCodesStore: vi.fn(() => mockFeacnCodesStore)
+vi.mock('@/stores/feacn.orders.store.js', () => ({
+  useFeacnOrdersStore: vi.fn(() => mockFeacnOrdersStore)
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -102,31 +102,31 @@ describe('FeacnCodes_List.vue', () => {
     setActivePinia(createPinia())
     
     vi.clearAllMocks()
-    mockFeacnCodesStore.orders.value = [
+    mockFeacnOrdersStore.orders.value = [
       { id: 1, title: 'Doc1', url: 'http://a' },
       { id: 2, title: 'Doc2', url: 'http://b' }
     ]
-    mockFeacnCodesStore.loading.value = false
-    mockFeacnCodesStore.error.value = null
-    mockFeacnCodesStore.prefixes.value = []
+    mockFeacnOrdersStore.loading.value = false
+    mockFeacnOrdersStore.error.value = null
+    mockFeacnOrdersStore.prefixes.value = []
     mockAuthStore.feacnorders_search.value = ''
     mockAuthStore.isAdmin.value = false
   })
 
   it('calls ensureLoaded on mount', () => {
     mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
-    expect(mockFeacnCodesStore.ensureLoaded).toHaveBeenCalled()
+    expect(mockFeacnOrdersStore.ensureLoaded).toHaveBeenCalled()
   })
 
   it('updateCodes calls store update', async () => {
-    mockFeacnCodesStore.update.mockResolvedValue()
+    mockFeacnOrdersStore.update.mockResolvedValue()
     const wrapper = mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
     await wrapper.vm.updateCodes()
-    expect(mockFeacnCodesStore.update).toHaveBeenCalled()
+    expect(mockFeacnOrdersStore.update).toHaveBeenCalled()
   })
 
   it('shows empty message when no orders', () => {
-    mockFeacnCodesStore.orders.value = []
+    mockFeacnOrdersStore.orders.value = []
     const wrapper = mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.text()).toContain('Список документов пуст')
   })
@@ -138,8 +138,8 @@ describe('FeacnCodes_List.vue', () => {
   })
 
   it('shows spinner and error message', () => {
-    mockFeacnCodesStore.loading.value = true
-    mockFeacnCodesStore.error.value = 'bad'
+    mockFeacnOrdersStore.loading.value = true
+    mockFeacnOrdersStore.error.value = 'bad'
     const wrapper = mount(FeacnCodesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).toContain('Ошибка при загрузке информации')

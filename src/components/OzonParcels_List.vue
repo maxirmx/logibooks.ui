@@ -32,7 +32,7 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
@@ -68,13 +68,13 @@ const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const keyWordsStore = useKeyWordsStore()
 const stopWordsStore = useStopWordsStore()
-const feacnCodesStore = useFeacnCodesStore()
+const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
-const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
+const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -139,7 +139,7 @@ onMounted(async () => {
     await parcelCheckStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await feacnCodesStore.ensureLoaded()
+    await feacnOrdersStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
     await countriesStore.ensureLoaded()

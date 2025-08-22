@@ -30,7 +30,7 @@ import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/feacncodes`
 
-export const useFeacnCodesStore = defineStore('feacn.codes', () => {
+export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
   const orders = ref([])
   const prefixes = ref([])
   const loading = ref(false)

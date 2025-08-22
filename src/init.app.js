@@ -102,7 +102,7 @@ import App from '@/App.vue'
 import router from '@/router'
 
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
@@ -165,13 +165,13 @@ export function initializeApp() {
     .use(VuetifyUseDialog)
 
   // Initialize global data after Pinia is set up
-  const feacnCodesStore = useFeacnCodesStore()
+  const feacnOrdersStore = useFeacnOrdersStore()
   const transportationTypesStore = useTransportationTypesStore()
   const customsProceduresStore = useCustomsProceduresStore()
   const countriesStore = useCountriesStore()
 
-  // Load feacnOrders globally at app startup
-  feacnCodesStore.ensureLoaded()
+  // Load FEACN orders globally at app startup
+  feacnOrdersStore.ensureLoaded()
   transportationTypesStore.ensureLoaded()
   customsProceduresStore.ensureLoaded()
   countriesStore.ensureLoaded()

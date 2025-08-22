@@ -24,9 +24,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import FeacnCodes_List from '@/components/FeacnCodes_List.vue'
+import FeacnOrders_List from '@/components/FeacnOrders_List.vue'
 </script>
 
 <template>
-  <FeacnCodes_List />
+  <FeacnOrders_List />
 </template>

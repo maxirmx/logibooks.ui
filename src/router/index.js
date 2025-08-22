@@ -146,7 +146,7 @@ const router = createRouter({
     {
       path: '/feacn',
       name: 'Коды ТН ВЭД',
-      component: () => import('@/views/FeacnCodes_View.vue')
+      component: () => import('@/views/FeacnOrders_View.vue')
     },
     {
       path: '/registers',

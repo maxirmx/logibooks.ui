@@ -24,6 +24,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { ref } from 'vue'
+
+// Global tooltip cache - shared across all components
+const globalFeacnTooltips = ref({})
 
 /**
  * Formats FEACN code name using data from the store
@@ -31,7 +35,7 @@ import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
  * @returns {Promise<string>} Formatted FEACN name
  */
 
-export async function FormatFeacnName(code) {
+export async function formatFeacnName(code) {
   const store = useFeacnCodesStore()
   try {
     const info = await store.getByCode(code)
@@ -53,3 +57,59 @@ export async function FormatFeacnName(code) {
   }
 }
 
+/**
+ * Gets FEACN tooltip with caching and lazy loading
+ * @param {string} code - FEACN code
+ * @param {boolean} showLoadingPlaceholder - Whether to show loading placeholder immediately
+ * @returns {Promise<string>} Cached or newly fetched FEACN tooltip
+ */
+export async function getFeacnTooltip(code, showLoadingPlaceholder = false) {
+  // Check if we already have the tooltip cached
+  if (globalFeacnTooltips.value[code]) {
+    return globalFeacnTooltips.value[code]
+  }
+  
+  // Set loading placeholder if requested (for hover scenarios)
+  if (showLoadingPlaceholder) {
+    globalFeacnTooltips.value[code] = 'Загрузка...'
+  }
+  
+  // formatFeacnName already handles all error cases gracefully
+  const tooltip = await formatFeacnName(code)
+  globalFeacnTooltips.value[code] = tooltip
+  return tooltip
+}
+
+/**
+ * Convenience function for loading tooltip on hover (shows loading placeholder)
+ * @param {string} code - FEACN code
+ * @returns {Promise<string>} Cached or newly fetched FEACN tooltip
+ */
+export async function loadFeacnTooltipOnHover(code) {
+  return await getFeacnTooltip(code, true)
+}
+
+/**
+ * Gets the reactive tooltip cache object
+ * @returns {Ref<Object>} Reactive tooltip cache
+ */
+export function useFeacnTooltips() {
+  return globalFeacnTooltips
+}
+
+/**
+ * Clears the tooltip cache (useful when data changes)
+ */
+export function clearFeacnTooltipCache() {
+  globalFeacnTooltips.value = {}
+}
+
+/**
+ * Preloads tooltips for an array of FEACN codes
+ * @param {string[]} codes - Array of FEACN codes
+ * @returns {Promise<void>}
+ */
+export async function preloadFeacnTooltips(codes) {
+  const uniqueCodes = [...new Set(codes)]
+  await Promise.all(uniqueCodes.map(code => getFeacnTooltip(code, false)))
+}

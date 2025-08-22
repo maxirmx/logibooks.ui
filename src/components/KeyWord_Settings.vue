@@ -34,7 +34,7 @@ import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
+import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/match.type.validation.js'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 
 const props = defineProps({

@@ -81,7 +81,8 @@ const router = createRouter({
     { path: '/keywords', component: { template: '<div>Keywords</div>' } },
     { path: '/keyword/create', component: { template: '<div>Create Keyword</div>' } },
     { path: '/keyword/edit/:id', component: { template: '<div>Edit Keyword</div>' } },
-    { path: '/feacn/orders', component: { template: '<div>Feacn</div>' } }
+    { path: '/feacn/codes', component: { template: '<div>Feacn Codes</div>' } },
+    { path: '/feacn/orders', component: { template: '<div>Feacn Orders</div>' } }
   ]
 })
 

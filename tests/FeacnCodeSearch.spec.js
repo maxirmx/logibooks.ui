@@ -145,4 +145,63 @@ describe('FeacnCodeSearch.vue', () => {
     expect(mockGetById).toHaveBeenCalledWith(3)
     expect(wrapper.find('.search-error').exists()).toBe(true)
   })
+
+  it('does not perform lookup when search key is empty or whitespace', async () => {
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('   ')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockLookup).not.toHaveBeenCalled()
+    expect(wrapper.find('.search-results').exists()).toBe(false)
+  })
+
+  it('ignores search result without id', async () => {
+    mockLookup.mockResolvedValueOnce([{ code: '0000', name: 'No ID' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('noid')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+
+    const resultItem = wrapper.find('.search-result-item')
+    await resultItem.trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).not.toHaveBeenCalled()
+    expect(wrapper.find('.search-results').exists()).toBe(false)
+  })
+
+  it('gracefully aborts opening path when a parent node is missing', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
+    mockGetById.mockImplementation(id => {
+      if (id === 3) return Promise.resolve(leaf)
+      if (id === 2) return Promise.resolve(null)
+      if (id === 1) return Promise.resolve(root)
+      return Promise.resolve(null)
+    })
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('leaf')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+
+    const resultItem = wrapper.find('.search-result-item')
+    await resultItem.trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).toHaveBeenCalledWith(3)
+    expect(mockGetById).toHaveBeenCalledWith(2)
+    expect(wrapper.find('.search-error').exists()).toBe(false)
+  })
 })

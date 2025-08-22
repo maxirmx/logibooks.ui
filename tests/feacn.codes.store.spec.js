@@ -1,202 +1,128 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn(), post: vi.fn() }
+  fetchWrapper: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+    postFile: vi.fn()
+  }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
-  apiUrl: 'http://localhost:8080/api'
+  apiUrl: 'http://localhost:3000/api'
 }))
 
-describe('feacn.codes store', () => {
+describe('feacn.codes.store.js', () => {
+  let store
+  let pinia
+
+  const mockCode = { id: 1, code: '1234567890', description: 'test' }
+  const mockCodes = [mockCode]
+
   beforeEach(() => {
-    setActivePinia(createPinia())
+    pinia = createPinia()
+    setActivePinia(pinia)
+    store = useFeacnCodesStore()
     vi.clearAllMocks()
+    store.error = null
   })
 
-  it('fetches orders from API', async () => {
-    const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
-    fetchWrapper.get.mockResolvedValue(mockOrders)
-
-    const store = useFeacnCodesStore()
-    await store.getOrders()
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-    expect(store.orders).toEqual(mockOrders)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-    expect(store.isInitialized).toBe(true)
-  })
-  
-  it('handles error when fetching orders', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.get.mockRejectedValue(testError)
-
-    const store = useFeacnCodesStore()
-    await store.getOrders()
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-    expect(store.orders).toEqual([])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
-    expect(store.isInitialized).toBe(false)
+  describe('initial state', () => {
+    it('sets defaults', () => {
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
   })
 
-  it('fetches prefixes for order', async () => {
-    const mockPrefixes = [{ id: 1, code: '1', exceptions: [] }]
-    fetchWrapper.get.mockResolvedValue(mockPrefixes)
+  describe('data retrieval', () => {
+    it('getById retrieves code by id', async () => {
+      fetchWrapper.get.mockResolvedValue(mockCode)
+      const res = await store.getById(1)
+      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/1')
+      expect(res).toEqual(mockCode)
+    })
 
-    const store = useFeacnCodesStore()
-    await store.getPrefixes(1)
+    it('getByCode retrieves code by code', async () => {
+      fetchWrapper.get.mockResolvedValue(mockCode)
+      const res = await store.getByCode('1234567890')
+      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/code/1234567890')
+      expect(res).toEqual(mockCode)
+    })
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/1/prefixes`)
-    expect(store.prefixes).toEqual(mockPrefixes)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-  
-  it('handles error when fetching prefixes', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.get.mockRejectedValue(testError)
+    it('lookup retrieves codes', async () => {
+      fetchWrapper.get.mockResolvedValue(mockCodes)
+      const res = await store.lookup('abc')
+      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/lookup/abc')
+      expect(res).toEqual(mockCodes)
+    })
 
-    const store = useFeacnCodesStore()
-    await store.getPrefixes(1)
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/1/prefixes`)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
-  })
-  
-  it('clears prefixes when no orderId is provided', async () => {
-    const store = useFeacnCodesStore()
-    store.prefixes.value = [{ id: 1 }] // Set some initial value
-    
-    await store.getPrefixes(null)
-    
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-    expect(store.prefixes).toEqual([])
+    it('getChildren retrieves children codes', async () => {
+      fetchWrapper.get.mockResolvedValue(mockCodes)
+      const res = await store.getChildren(1)
+      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/children?id=1')
+      expect(res).toEqual(mockCodes)
+    })
   })
 
-  it('calls update endpoint', async () => {
-    fetchWrapper.post.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([])
+  describe('upload operations', () => {
+    it('uploads file successfully', async () => {
+      const file = new File(['content'], 'codes.xlsx')
+      fetchWrapper.postFile.mockResolvedValue() // No return value for synchronous upload
 
-    const store = useFeacnCodesStore()
-    await store.update()
+      await store.upload(file)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-  
-  it('handles error when updating', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.post.mockRejectedValue(testError)
-
-    const store = useFeacnCodesStore()
-    await store.update()
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/update`)
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
+      expect(fetchWrapper.postFile).toHaveBeenCalledTimes(1)
+      const [url, formData] = fetchWrapper.postFile.mock.calls[0]
+      expect(url).toBe('http://localhost:3000/api/feacncodes/upload')
+      expect(formData).toBeInstanceOf(FormData)
+      expect(formData.get('file')).toBe(file)
+    })
   })
 
-  it('calls enable endpoint', async () => {
-    fetchWrapper.post.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([])
+  describe('error handling', () => {
+    it('sets error when request fails', async () => {
+      const err = new Error('fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.getById(1)).rejects.toThrow('fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
 
-    const store = useFeacnCodesStore()
-    await store.enable(3)
+    it('handles upload error', async () => {
+      const file = new File(['content'], 'codes.xlsx')
+      const err = new Error('upload fail')
+      fetchWrapper.postFile.mockRejectedValue(err)
+      await expect(store.upload(file)).rejects.toThrow('upload fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-  
-  it('handles error when enabling order', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.post.mockRejectedValue(testError)
+    it('handles getByCode error', async () => {
+      const err = new Error('code fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.getByCode('123')).rejects.toThrow('code fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
 
-    const store = useFeacnCodesStore()
-    await store.enable(3)
+    it('handles lookup error', async () => {
+      const err = new Error('lookup fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.lookup('abc')).rejects.toThrow('lookup fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/3/enable`)
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
-  })
-
-  it('calls disable endpoint', async () => {
-    fetchWrapper.post.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([])
-
-    const store = useFeacnCodesStore()
-    await store.disable(4)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-  
-  it('handles error when disabling order', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.post.mockRejectedValue(testError)
-
-    const store = useFeacnCodesStore()
-    await store.disable(4)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/4/disable`)
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
-  })
-  
-  it('ensures orders are loaded only once', async () => {
-    const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
-    fetchWrapper.get.mockResolvedValue(mockOrders)
-
-    const store = useFeacnCodesStore()
-    await store.ensureLoaded()
-    
-    // First call should call getOrders
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-    expect(store.isInitialized).toBe(true)
-    
-    // Reset the mock to verify it's not called again
-    fetchWrapper.get.mockClear()
-    
-    // Second call should not call getOrders since isInitialized is true
-    await store.ensureLoaded()
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-  })
-  
-  it('toggleEnabled calls enable when en is true', async () => {
-    fetchWrapper.post.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([])
-
-    const store = useFeacnCodesStore()
-    await store.toggleEnabled(5, true)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/5/enable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
-  })
-  
-  it('toggleEnabled calls disable when en is false', async () => {
-    fetchWrapper.post.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([])
-
-    const store = useFeacnCodesStore()
-    await store.toggleEnabled(6, false)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders/6/disable`)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacncodes/orders`)
+    it('handles getChildren error', async () => {
+      const err = new Error('children fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.getChildren(1)).rejects.toThrow('children fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
   })
 })

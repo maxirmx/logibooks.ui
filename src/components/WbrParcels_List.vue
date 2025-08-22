@@ -32,14 +32,14 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
-import { HasIssues, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
@@ -68,13 +68,13 @@ const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
-const feacnCodesStore = useFeacnCodesStore()
+const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
-const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
+const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -139,7 +139,7 @@ onMounted(async () => {
     await parcelCheckStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await feacnCodesStore.ensureLoaded()
+    await feacnOrdersStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
     await countriesStore.ensureLoaded()

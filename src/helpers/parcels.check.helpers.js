@@ -25,7 +25,7 @@
 
 /**
  * Generates stopwords text for display
- * @param {Object} item - The order item containing stopWordIds
+ * @param {Object} item - The parcel item containing stopWordIds
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @returns {string|null} - Formatted stopwords text or null if no stopwords
  */
@@ -45,7 +45,7 @@ export function getStopWordsText(item, stopWordsCollection) {
 
 /**
  * Generates feacn orders comment text for display
- * @param {Object} item - The order item containing feacnOrderIds
+ * @param {Object} item - The parcel item containing feacnOrderIds
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
  * @returns {string|null} - Formatted feacn orders comment text or null if no orders
  */
@@ -65,7 +65,7 @@ export function getFeacnOrdersText(item, feacnOrdersCollection) {
 
 /**
  * Generates complete stopwords information text
- * @param {Object} item - The order item containing stopWordIds
+ * @param {Object} item - The parcel item containing stopWordIds
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @returns {string|null} - Formatted complete stopwords information or null
  */
@@ -81,7 +81,7 @@ export function getStopWordsInfo(item, stopWordsCollection) {
 
 /**
  * Generates complete feacn orders information text
- * @param {Object} item - The order item containing feacnOrderIds
+ * @param {Object} item - The parcel item containing feacnOrderIds
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
  * @returns {string|null} - Formatted complete feacn orders information or null
  */
@@ -96,8 +96,8 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
 }
 
 /**
- * Generates combined check order information text with both feacn orders and stopwords
- * @param {Object} item - The order item containing feacnOrderIds and stopWordIds
+ * Generates combined check information text with both feacn orders and stopwords
+ * @param {Object} item - The parcel item containing feacnOrderIds and stopWordIds
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @returns {string|null} - Combined formatted information or null if neither present

@@ -33,14 +33,14 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
-import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/orders.check.helper.js'
+import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import {
   getFeacnCodesForKeywords,
@@ -63,7 +63,7 @@ const statusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
-const feacnCodesStore = useFeacnCodesStore()
+const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
 
@@ -71,14 +71,14 @@ await statusStore.ensureLoaded()
 await parcelCheckStatusStore.ensureLoaded()
 await stopWordsStore.ensureLoaded()
 await keyWordsStore.ensureLoaded()
-await feacnCodesStore.ensureLoaded()
+await feacnOrdersStore.ensureLoaded()
 await countriesStore.ensureLoaded()
 await parcelsStore.getById(props.id)
 await parcelViewsStore.add(props.id)
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
-const { orders: feacnOrders } = storeToRefs(feacnCodesStore)
+const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { countries } = storeToRefs(countriesStore)
 
 // Reactive reference to track current statusId for color updates

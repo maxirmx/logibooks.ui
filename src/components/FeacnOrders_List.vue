@@ -27,13 +27,13 @@
 
 import { ref, onMounted, watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
-const feacnStore = useFeacnCodesStore()
+const feacnStore = useFeacnOrdersStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
@@ -147,14 +147,14 @@ async function handleToggleOrderEnabled(order) {
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="feacn-codes-list">
-    <h1 class="primary-heading">Коды ТН ВЭД с ограничениями</h1>
+  <div class="settings table-3" data-testid="feacn-orders-list">
+    <h1 class="primary-heading">Запреты по ТН ВЭД</h1>
     <hr class="hr" />
 
     <div class="link-crt" v-if="isAdmin">
       <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
-        &nbsp;&nbsp;&nbsp;Обновить информацию о кодах ТН ВЭД с ограничениями
+        &nbsp;&nbsp;&nbsp;Обновить информацию об ограничениях по кодам ТН ВЭД
       </a>
     </div>
 

@@ -27,7 +27,7 @@
  * Helper functions for parcels list functionality shared between WBR and Ozon components
  */
 
-import { HasIssues } from '@/helpers/orders.check.helper.js'
+import { HasIssues } from '@/helpers/parcels.check.helpers.js'
 
 /**
  * Navigates to edit parcel page

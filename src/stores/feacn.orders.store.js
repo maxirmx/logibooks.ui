@@ -28,88 +28,116 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/feacncodes`
+const baseUrl = `${apiUrl}/feacnorders`
 
-export const useFeacnCodesStore = defineStore('feacnCodes', () => {
+export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
+  const orders = ref([])
+  const prefixes = ref([])
   const loading = ref(false)
   const error = ref(null)
-  async function getById(id) {
+  const isInitialized = ref(false)
+
+  async function getOrders() {
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/${id}`)
+      orders.value = await fetchWrapper.get(`${baseUrl}/orders`)
+      isInitialized.value = true
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function getByCode(code) {
+  async function ensureLoaded() {
+    if (!isInitialized.value && !loading.value) {
+      await getOrders()
+    }
+  }
+
+  async function getPrefixes(orderId) {
+    if (!orderId) {
+      prefixes.value = []
+      return
+    }
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/code/${code}`)
+      prefixes.value = await fetchWrapper.get(`${baseUrl}/orders/${orderId}/prefixes`)
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function lookup(key) {
+  async function update() {
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/lookup/${key}`)
+      await fetchWrapper.post(`${baseUrl}/update`)
+      // Reload orders after update
+      await getOrders()
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function getChildren(id = null) {
+  async function enable(orderId) {
     loading.value = true
     error.value = null
     try {
-      const query = id !== null && id !== undefined ? `?id=${id}` : ''
-      return await fetchWrapper.get(`${baseUrl}/children${query}`)
+      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/enable`)
+      await getOrders()
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function upload(file) {
+  async function disable(orderId) {
     loading.value = true
     error.value = null
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
-      // Upload is now synchronous - success means it's complete
+      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/disable`)
+      await getOrders()
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
   }
-
-  return {
-    loading,
-    error,
-    getById,
-    getByCode,
-    lookup,
-    getChildren,
-    upload
+  async function toggleEnabled(id, en) {
+    try {
+      loading.value = true
+      if (en) {
+        await enable(id)
+      } else {
+        await disable(id)
+      }
+    } finally {
+    loading.value = false
+    await getOrders()
+    loading.value = false
+    }
+  }
+ 
+  return { 
+    orders, 
+    prefixes, 
+    loading, 
+    error, 
+    isInitialized, 
+    getOrders, 
+    getPrefixes,
+    update,
+    enable,
+    disable,
+    ensureLoaded,
+    toggleEnabled
   }
 })
-

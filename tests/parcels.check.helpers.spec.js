@@ -10,9 +10,9 @@ import {
   HasNoIssues,
   IsApproved,
   getCheckStatusClass
-} from '@/helpers/orders.check.helper.js'
+} from '@/helpers/parcels.check.helpers.js'
 
-describe('orders.check.helper', () => {
+describe('parcels.check.helpers', () => {
   const mockStopWords = [
     { id: 1, word: 'forbidden' },
     { id: 2, word: 'banned' },

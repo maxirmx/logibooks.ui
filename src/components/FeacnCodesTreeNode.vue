@@ -31,16 +31,28 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  selectMode: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['toggle'])
+const emit = defineEmits(['toggle', 'select'])
 
-function handleToggle() {
-  // Don't allow toggling when disabled or loading
+function handleClick() {
+  // Don't allow interactions when disabled or loading
   if (props.disabled || props.node.loading) {
     return
   }
+
+  if (isLeafNode(props.node)) {
+    if (props.selectMode) {
+      emit('select', props.node)
+    }
+    return
+  }
+
   emit('toggle', props.node)
 }
 
@@ -55,14 +67,14 @@ function isLeafNode(node) {
 <template>
   <li class="tree-node">
     <div class="node-layout">
-      <!-- Code display - clickable only if not a leaf node and not disabled -->
-      <div 
-        class="node-code" 
-        :class="{ 
-          'clickable': !isLeafNode(node) && !disabled,
+      <!-- Code display - clickable for non-leaf nodes or selectable leaf nodes -->
+      <div
+        class="node-code"
+        :class="{
+          'clickable': (selectMode || !isLeafNode(node)) && !disabled,
           'disabled': disabled
         }"
-        @click="!isLeafNode(node) && !disabled ? handleToggle() : null"
+        @click="!disabled ? handleClick() : null"
       >
         {{ node.codeEx }}
       </div>
@@ -89,38 +101,40 @@ function isLeafNode(node) {
           <font-awesome-icon icon="fa-solid fa-spinner" spin />
         </span>
         <!-- Show plus/minus icon for expandable nodes -->
-        <span 
+        <span
           v-else
           class="toggle-icon"
           :class="{ 'disabled': disabled }"
-          @click="!disabled ? handleToggle() : null"
+          @click="!disabled ? handleClick() : null"
         >
-          <font-awesome-icon 
-            :icon="node.expanded ? 'fa-solid fa-minus' : 'fa-solid fa-plus'" 
+          <font-awesome-icon
+            :icon="node.expanded ? 'fa-solid fa-minus' : 'fa-solid fa-plus'"
           />
         </span>
         
-        <span 
-          class="node-label" 
-          :class="{ 
+        <span
+          class="node-label"
+          :class="{
             'loading': node.loading,
-            'clickable': !isLeafNode(node) && !disabled,
+            'clickable': (selectMode || !isLeafNode(node)) && !disabled,
             'disabled': disabled
           }"
-          @click="!isLeafNode(node) && !disabled ? handleToggle() : null"
+          @click="!disabled ? handleClick() : null"
         >
           {{ node.name }}
         </span>
       </div>
     </div>
-    
+
     <ul v-if="node.expanded && node.children.length > 0" class="child-nodes">
-      <FeacnCodesTreeNode 
-        v-for="child in node.children" 
-        :key="child.id" 
+      <FeacnCodesTreeNode
+        v-for="child in node.children"
+        :key="child.id"
         :node="child"
         :disabled="disabled"
+        :select-mode="selectMode"
         @toggle="$emit('toggle', $event)"
+        @select="$emit('select', $event)"
       />
     </ul>
   </li>
@@ -156,7 +170,7 @@ function isLeafNode(node) {
 }
 
 .node-code.clickable {
-  cursor: pointer; /* Pointer cursor only for non-leaf nodes */
+  cursor: pointer; /* Pointer cursor for interactive nodes */
 }
 
 .node-code.disabled {
@@ -213,7 +227,7 @@ function isLeafNode(node) {
 }
 
 .node-label {
-  cursor: default; /* Default cursor for leaf nodes */
+  cursor: default; /* Default cursor for non-interactive nodes */
   margin-left: 0.5rem;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
@@ -221,7 +235,7 @@ function isLeafNode(node) {
 }
 
 .node-label.clickable {
-  cursor: pointer; /* Pointer cursor only for non-leaf nodes */
+  cursor: pointer; /* Pointer cursor for interactive nodes */
 }
 
 .node-label.clickable:hover {

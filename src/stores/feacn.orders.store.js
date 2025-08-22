@@ -28,7 +28,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/feacncodes`
+const baseUrl = `${apiUrl}/feacnorders`
 
 export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
   const orders = ref([])

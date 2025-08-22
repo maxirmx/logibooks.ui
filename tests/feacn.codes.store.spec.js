@@ -34,9 +34,8 @@ describe('feacn.codes.store.js', () => {
 
   describe('initial state', () => {
     it('sets defaults', () => {
-      expect(store.feacnCodes).toEqual([])
-      expect(store.feacnCode).toEqual({ loading: true })
       expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
     })
   })
 
@@ -46,7 +45,6 @@ describe('feacn.codes.store.js', () => {
       const res = await store.getById(1)
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/1')
       expect(res).toEqual(mockCode)
-      expect(store.feacnCode).toEqual(mockCode)
     })
 
     it('getByCode retrieves code by code', async () => {
@@ -60,7 +58,6 @@ describe('feacn.codes.store.js', () => {
       fetchWrapper.get.mockResolvedValue(mockCodes)
       const res = await store.lookup('abc')
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/lookup/abc')
-      expect(store.feacnCodes).toEqual(mockCodes)
       expect(res).toEqual(mockCodes)
     })
 
@@ -68,7 +65,6 @@ describe('feacn.codes.store.js', () => {
       fetchWrapper.get.mockResolvedValue(mockCodes)
       const res = await store.getChildren(1)
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/children?id=1')
-      expect(store.feacnCodes).toEqual(mockCodes)
       expect(res).toEqual(mockCodes)
     })
   })

@@ -31,21 +31,13 @@ import { apiUrl } from '@/helpers/config.js'
 const baseUrl = `${apiUrl}/feacncodes`
 
 export const useFeacnCodesStore = defineStore('feacnCodes', () => {
-  const feacnCodes = ref([])
-  const feacnCode = ref({ loading: true })
   const loading = ref(false)
   const error = ref(null)
-
-  async function getById(id, refresh = false) {
-    if (refresh) {
-      feacnCode.value = { loading: true }
-    }
+  async function getById(id) {
     loading.value = true
     error.value = null
     try {
-      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      feacnCode.value = response
-      return response
+      return await fetchWrapper.get(`${baseUrl}/${id}`)
     } catch (err) {
       error.value = err
       throw err
@@ -54,16 +46,11 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     }
   }
 
-  async function getByCode(code, refresh = false) {
-    if (refresh) {
-      feacnCode.value = { loading: true }
-    }
+  async function getByCode(code) {
     loading.value = true
     error.value = null
     try {
-      const response = await fetchWrapper.get(`${baseUrl}/code/${code}`)
-      feacnCode.value = response
-      return response
+      return await fetchWrapper.get(`${baseUrl}/code/${code}`)
     } catch (err) {
       error.value = err
       throw err
@@ -76,9 +63,7 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetchWrapper.get(`${baseUrl}/lookup/${key}`)
-      feacnCodes.value = response || []
-      return response
+      return await fetchWrapper.get(`${baseUrl}/lookup/${key}`)
     } catch (err) {
       error.value = err
       throw err
@@ -92,9 +77,7 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     error.value = null
     try {
       const query = id !== null && id !== undefined ? `?id=${id}` : ''
-      const response = await fetchWrapper.get(`${baseUrl}/children${query}`)
-      feacnCodes.value = response || []
-      return response
+      return await fetchWrapper.get(`${baseUrl}/children${query}`)
     } catch (err) {
       error.value = err
       throw err
@@ -147,8 +130,6 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
   }
 
   return {
-    feacnCodes,
-    feacnCode,
     loading,
     error,
     getById,

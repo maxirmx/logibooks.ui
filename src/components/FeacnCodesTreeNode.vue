@@ -39,6 +39,13 @@ function handleToggle() {
   }
   emit('toggle', props.node)
 }
+
+function isLeafNode(node) {
+  // Check if node has code length exactly 10 and last character is a digit
+  return node.code && 
+         node.code.length === 10 && 
+         /\d$/.test(node.code)
+}
 </script>
 
 <template>
@@ -51,16 +58,26 @@ function handleToggle() {
       
       <!-- Content area with proper indentation -->
       <div class="node-content">
+        <!-- Show circle icon for leaf nodes (code length 10 and ends with digit) -->
         <span 
-          v-if="node.loaded && node.children.length === 0" 
+          v-if="isLeafNode(node)"
+          class="leaf-icon"
+        >
+          <font-awesome-icon icon="fa-solid fa-check-circle" />
+        </span>
+        <!-- Show placeholder when node is loaded and confirmed to have no children -->
+        <span 
+          v-else-if="node.loaded && node.children.length === 0" 
           class="toggle-placeholder"
         />
+        <!-- Show loading spinner when loading -->
         <span 
           v-else-if="node.loading"
           class="toggle-loading"
         >
           <font-awesome-icon icon="fa-solid fa-spinner" spin />
         </span>
+        <!-- Show plus/minus icon for expandable nodes -->
         <span 
           v-else
           class="toggle-icon"
@@ -107,19 +124,22 @@ function handleToggle() {
 .node-code {
   position: absolute;
   left: 0;
-  width: 130px; /* Adjust this width based on your codeEx length */
+  width: 150px; /* Adjust this width based on your codeEx length */
+  padding-left: 8px;
   padding-right: 8px;
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
-  color: #666;
-  text-align: right;
-  background-color: #f8f9fa;
-  border-right: 1px solid #e0e0e0;
+  text-align: left;
+  background-color: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .node-content {
-  margin-left: 140px; /* Should be node-code width + gap */
+  margin-left: 30px; 
   display: flex;
   align-items: center;
   padding: 0;
@@ -150,6 +170,15 @@ function handleToggle() {
   color: #999;
 }
 
+.leaf-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 1.2em;
+  font-size: 0.875rem;
+  color: #666;
+}
+
 .node-label {
   cursor: pointer;
   margin-left: 0.5rem;
@@ -171,7 +200,7 @@ function handleToggle() {
   list-style-type: none;
   padding-left: 1.5rem;
   margin: 0;
-  border-left: 1px solid #e0e0e0;
-  margin-left: 0.6rem;
+  border-left: 2px solid #d0d0d0;
+  margin-left: calc(30px + 0.5em); 
 }
 </style>

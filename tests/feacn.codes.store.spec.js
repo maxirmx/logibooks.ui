@@ -104,6 +104,7 @@ describe('feacn.codes.store.js', () => {
       fetchWrapper.get.mockRejectedValue(err)
       await expect(store.getById(1)).rejects.toThrow('fail')
       expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
     })
 
     it('handles upload error', async () => {
@@ -112,6 +113,47 @@ describe('feacn.codes.store.js', () => {
       fetchWrapper.postFile.mockRejectedValue(err)
       await expect(store.upload(file)).rejects.toThrow('upload fail')
       expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles getByCode error', async () => {
+      const err = new Error('code fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.getByCode('123')).rejects.toThrow('code fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles lookup error', async () => {
+      const err = new Error('lookup fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.lookup('abc')).rejects.toThrow('lookup fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles getChildren error', async () => {
+      const err = new Error('children fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.getChildren(1)).rejects.toThrow('children fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles upload progress error', async () => {
+      const err = new Error('progress fail')
+      fetchWrapper.get.mockRejectedValue(err)
+      await expect(store.getUploadProgress('abcd')).rejects.toThrow('progress fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles cancel upload error', async () => {
+      const err = new Error('cancel fail')
+      fetchWrapper.delete.mockRejectedValue(err)
+      await expect(store.cancelUpload('abcd')).rejects.toThrow('cancel fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
     })
   })
 })

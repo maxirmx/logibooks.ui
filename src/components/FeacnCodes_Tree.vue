@@ -24,70 +24,65 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { ref, onMounted, defineComponent, h, resolveComponent } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
-import { mapFeacnCodesToNodes, formatFeacnNodeLabel } from '@/helpers/feacncodes.tree.helpers.js'
+import { mapFeacnCodesToNodes } from '@/helpers/feacncodes.tree.helpers.js'
+import FeacnCodesTreeNode from '@/components/FeacnCodesTreeNode.vue'
 
 defineOptions({ name: 'FeacnCodes_Tree' })
 
 const store = useFeacnCodesStore()
 const rootNodes = ref([])
+const isLoading = ref(false)
 
 async function loadChildren(target = null) {
-  const parentId = target ? target.id : null
-  const children = await store.getChildren(parentId)
-  const mapped = mapFeacnCodesToNodes(children)
+  // Prevent concurrent loading for the same target
+  if (target && target.loading) {
+    return
+  }
+  
+  // Set loading state
   if (target) {
-    target.children = mapped
-    target.loaded = true
+    target.loading = true
   } else {
-    rootNodes.value = mapped
+    isLoading.value = true
+  }
+  
+  try {
+    const parentId = target ? target.id : null
+    const children = await store.getChildren(parentId)
+    const mapped = mapFeacnCodesToNodes(children)
+    
+    if (target) {
+      target.children = mapped
+      target.loaded = true
+    } else {
+      rootNodes.value = mapped
+    }
+  } catch (error) {
+    console.error('Failed to load children:', error)
+    // Optionally show error state
+  } finally {
+    // Clear loading state
+    if (target) {
+      target.loading = false
+    } else {
+      isLoading.value = false
+    }
   }
 }
 
 async function toggleNode(node) {
+  // Prevent toggling while loading
+  if (node.loading) {
+    return
+  }
+  
   node.expanded = !node.expanded
   if (node.expanded && !node.loaded) {
     await loadChildren(node)
   }
 }
-
-const TreeNode = defineComponent({
-  name: 'FeacnCodesTreeNode',
-  props: {
-    node: { type: Object, required: true }
-  },
-  setup(props) {
-    return () =>
-      h('li', [
-        (props.node.loaded && props.node.children.length === 0)
-          ? h('span', { class: 'toggle-placeholder' })
-          : h(
-              'span',
-              {
-                class: 'toggle-icon',
-                onClick: () => toggleNode(props.node)
-              },
-              [
-                h(resolveComponent('font-awesome-icon'), {
-                  icon: props.node.expanded ? 'fa-solid fa-minus' : 'fa-solid fa-plus'
-                })
-              ]
-            ),
-        h(
-          'span',
-          {
-            class: 'node-label',
-            onClick: () => toggleNode(props.node)
-          },
-          formatFeacnNodeLabel(props.node)
-        ),
-        props.node.expanded && props.node.children.length > 0
-          ? h('ul', props.node.children.map(child => h(TreeNode, { node: child, key: child.id })))
-          : null
-      ])
-  }
-})
 
 onMounted(() => {
   loadChildren()
@@ -95,8 +90,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <ul class="feacn-tree">
-    <TreeNode v-for="node in rootNodes" :key="node.id" :node="node" />
+  <div v-if="isLoading" class="loading-indicator">
+    Loading tree...
+  </div>
+  <ul v-else class="feacn-tree">
+    <FeacnCodesTreeNode 
+      v-for="node in rootNodes" 
+      :key="node.id" 
+      :node="node"
+      @toggle="toggleNode"
+    />
   </ul>
 </template>
 
@@ -105,18 +108,11 @@ onMounted(() => {
   list-style-type: none;
   padding-left: 0;
 }
-.toggle-icon {
-  cursor: pointer;
-  width: 1em;
-  display: inline-block;
-}
-.toggle-placeholder {
-  display: inline-block;
-  width: 1em;
-}
-.node-label {
-  cursor: pointer;
-  margin-left: 0.25rem;
+
+.loading-indicator {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
 }
 </style>
 

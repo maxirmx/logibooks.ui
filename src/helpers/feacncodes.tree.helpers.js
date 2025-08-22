@@ -33,7 +33,8 @@ export function mapFeacnCodesToNodes(codes = []) {
     ...c,
     children: [],
     expanded: false,
-    loaded: false
+    loaded: false,
+    loading: false
   }))
 }
 

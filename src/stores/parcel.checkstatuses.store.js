@@ -49,7 +49,6 @@ export const useParcelCheckStatusStore = defineStore('parcelCheckStatus', () => 
       statusMap.value = new Map(statuses.value.map(status => [status.id, status]))
     } catch (err) {
       error.value = err
-      console.error('Failed to fetch parcel check statuses:', err)
     } finally {
       loading.value = false
     }

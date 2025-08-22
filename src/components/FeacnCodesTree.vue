@@ -29,7 +29,7 @@ import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { mapFeacnCodesToNodes } from '@/helpers/feacncodes.tree.helpers.js'
 import FeacnCodesTreeNode from '@/components/FeacnCodesTreeNode.vue'
 
-defineOptions({ name: 'FeacnCodes_Tree' })
+defineOptions({ name: 'FeacnCodesTree' })
 
 const store = useFeacnCodesStore()
 const rootNodes = ref([])

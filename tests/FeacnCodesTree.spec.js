@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import FeacnCodes_Tree from '@/components/FeacnCodes_Tree.vue'
+import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const mockGetChildren = vi.fn()
@@ -16,7 +16,7 @@ const globalStubs = {
   'font-awesome-icon': true
 }
 
-describe('FeacnCodes_Tree.vue', () => {
+describe('FeacnCodesTree.vue', () => {
   const root = { id: 1, code: '01', codeEx: '01', name: 'Root', parentId: null }
   const child = { id: 2, code: '0101', codeEx: '0101', name: 'Child', parentId: 1 }
 
@@ -30,7 +30,7 @@ describe('FeacnCodes_Tree.vue', () => {
   })
 
   function createWrapper() {
-    return mount(FeacnCodes_Tree, {
+    return mount(FeacnCodesTree, {
       global: { stubs: globalStubs }
     })
   }

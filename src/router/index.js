@@ -144,8 +144,8 @@ const router = createRouter({
       component: () => import('@/views/Countries_View.vue')
     },
     {
-      path: '/feacn',
-      name: 'Коды ТН ВЭД',
+      path: '/feacn/orders',
+      name: 'Ограничения по кодам ТН ВЭД',
       component: () => import('@/views/FeacnOrders_View.vue')
     },
     {

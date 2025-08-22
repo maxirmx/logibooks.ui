@@ -38,12 +38,3 @@ export function mapFeacnCodesToNodes(codes = []) {
   }))
 }
 
-/**
- * Builds display label for a tree node
- * @param {Object} node - Tree node object
- * @returns {string} Display string in format "<CodeEx> : <Name>"
- */
-export function formatFeacnNodeLabel(node) {
-  return `${node.codeEx} : ${node.name}`
-}
-

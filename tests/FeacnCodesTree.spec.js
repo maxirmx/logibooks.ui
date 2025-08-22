@@ -51,7 +51,9 @@ describe('FeacnCodesTree.vue', () => {
     // Should hide loading and show tree
     expect(wrapper.find('.loading-indicator').exists()).toBe(false)
     expect(mockGetChildren).toHaveBeenCalledWith(null)
-    expect(wrapper.text()).toContain('01 : Root')
+    // Check for the separate code and name display
+    expect(wrapper.text()).toContain('01') // code
+    expect(wrapper.text()).toContain('Root') // name
     const icon = wrapper.find('font-awesome-icon-stub')
     expect(icon.exists()).toBe(true)
     expect(icon.attributes('icon')).toBe('fa-solid fa-plus')
@@ -65,7 +67,9 @@ describe('FeacnCodesTree.vue', () => {
     await flushPromises() // Wait for child loading
 
     expect(mockGetChildren).toHaveBeenCalledWith(1)
-    expect(wrapper.text()).toContain('0101 : Child')
+    // Check for the separate code and name display
+    expect(wrapper.text()).toContain('0101') // child code
+    expect(wrapper.text()).toContain('Child') // child name
   })
 
   it('shows minus icon when node expanded', async () => {
@@ -108,7 +112,9 @@ describe('FeacnCodesTree.vue', () => {
     await flushPromises()
     
     expect(mockGetChildren).toHaveBeenCalledWith(1)
-    expect(wrapper.text()).toContain('0101 : Child')
+    // Check for the separate code and name display
+    expect(wrapper.text()).toContain('0101') // child code
+    expect(wrapper.text()).toContain('Child') // child name
   })
 })
 

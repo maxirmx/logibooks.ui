@@ -25,6 +25,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -33,6 +34,7 @@ defineOptions({ name: 'FeacnCodes_Tree' })
 
 const store = useFeacnCodesStore()
 const alertStore = useAlertStore()
+const { alert } = storeToRefs(alertStore)
 const fileInput = ref(null)
 const treeRef = ref(null)
 const uploading = ref(false)
@@ -86,6 +88,12 @@ async function fileSelected(file) {
     </div>
 
     <FeacnCodesTree ref="treeRef" class="tree-wrapper" />
+    
+    <!-- Alert -->
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
   </div>
 </template>
 

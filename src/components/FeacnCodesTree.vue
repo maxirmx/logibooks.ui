@@ -96,22 +96,31 @@ defineExpose({
 
 <template>
   <div v-if="isLoading" class="loading-indicator">
-    Loading tree...
+    <font-awesome-icon icon="fa-solid fa-spinner" spin />
+    Загрузка дерева...
   </div>
-  <ul v-else class="feacn-tree">
-    <FeacnCodesTreeNode 
-      v-for="node in rootNodes" 
-      :key="node.id" 
-      :node="node"
-      @toggle="toggleNode"
-    />
-  </ul>
+  <div v-else class="tree-container">
+    <ul class="feacn-tree">
+      <FeacnCodesTreeNode 
+        v-for="node in rootNodes" 
+        :key="node.id" 
+        :node="node"
+        @toggle="toggleNode"
+      />
+    </ul>
+  </div>
 </template>
 
 <style scoped>
+.tree-container {
+  position: relative;
+  padding-left: 140px; /* Make room for the code column */
+}
+
 .feacn-tree {
   list-style-type: none;
   padding-left: 0;
+  margin: 0;
 }
 
 .loading-indicator {

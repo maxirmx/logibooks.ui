@@ -29,13 +29,16 @@ describe('FeacnCodesTreeNode.vue', () => {
     })
   }
 
-  it('renders node label correctly', () => {
+  it('renders node with code and name separately', () => {
     const wrapper = createWrapper({
       codeEx: '0101',
       name: 'Test Category'
     })
     
-    expect(wrapper.text()).toContain('0101 : Test Category')
+    // Check that codeEx is displayed in the code area
+    expect(wrapper.find('.node-code').text()).toBe('0101')
+    // Check that name is displayed in the label area
+    expect(wrapper.find('.node-label').text()).toBe('Test Category')
   })
 
   it('shows plus icon when node is collapsed', () => {
@@ -97,8 +100,11 @@ describe('FeacnCodesTreeNode.vue', () => {
     
     const childList = wrapper.find('ul')
     expect(childList.exists()).toBe(true)
-    expect(wrapper.text()).toContain('0101 : Child 1')
-    expect(wrapper.text()).toContain('0102 : Child 2')
+    // Check that children are rendered (they will have their own code and name areas)
+    expect(wrapper.text()).toContain('Child 1')
+    expect(wrapper.text()).toContain('Child 2')
+    expect(wrapper.text()).toContain('0101')
+    expect(wrapper.text()).toContain('0102')
   })
 
   it('does not render children when collapsed', () => {

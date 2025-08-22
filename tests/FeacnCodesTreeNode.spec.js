@@ -9,7 +9,7 @@ const globalStubs = {
 }
 
 describe('FeacnCodesTreeNode.vue', () => {
-  function createWrapper(nodeProps = {}) {
+  function createWrapper(nodeProps = {}, componentProps = {}) {
     const defaultNode = {
       id: 1,
       code: '01',
@@ -20,10 +20,11 @@ describe('FeacnCodesTreeNode.vue', () => {
       loading: false,
       children: []
     }
-    
+
     return mount(FeacnCodesTreeNode, {
       props: {
-        node: { ...defaultNode, ...nodeProps }
+        node: { ...defaultNode, ...nodeProps },
+        ...componentProps
       },
       global: { stubs: globalStubs }
     })
@@ -144,5 +145,22 @@ describe('FeacnCodesTreeNode.vue', () => {
     
     // Should not emit toggle event when loading
     expect(wrapper.emitted('toggle')).toBeFalsy()
+  })
+
+  it('emits select event for leaf node in select mode', async () => {
+    const wrapper = createWrapper(
+      { code: '0123456789', codeEx: '0123456789', name: 'Leaf Node' },
+      { selectMode: true }
+    )
+
+    const label = wrapper.find('.node-label')
+    expect(label.classes()).toContain('clickable')
+    const code = wrapper.find('.node-code')
+    expect(code.classes()).toContain('clickable')
+
+    await label.trigger('click')
+
+    expect(wrapper.emitted('select')).toBeTruthy()
+    expect(wrapper.emitted('select')[0][0]).toEqual(wrapper.props('node'))
   })
 })

@@ -374,6 +374,35 @@ describe('KeyWord_Settings.vue', () => {
       expect(vm.feacnCodes[0]).toBe(originalValue)
       expect(vm.searchIndex).toBe(null)
     })
+
+    it('shows arrow up icon and disables other controls when search is active', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      wrapper.vm.toggleSearch(0)
+      await nextTick()
+
+      const actionButton = wrapper.findAllComponents(ActionButton).find(btn => btn.props('icon').includes('arrow'))
+      expect(actionButton.props('icon')).toBe('fa-solid fa-arrow-up')
+
+      const wordInput = wrapper.find('input[name="word"]')
+      expect(wordInput.attributes('disabled')).toBeDefined()
+    })
+
+    it('closes search on Escape key press', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      wrapper.vm.toggleSearch(0)
+      await nextTick()
+
+      expect(wrapper.vm.searchIndex).toBe(0)
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await nextTick()
+
+      expect(wrapper.vm.searchIndex).toBe(null)
+    })
   })
 
   describe('Form Submission', () => {

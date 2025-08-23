@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
@@ -94,6 +94,8 @@ const { value: matchTypeId } = useField('matchTypeId')
 
 const searchIndex = ref(null)
 
+const searchActive = computed(() => searchIndex.value !== null)
+
 const feacnCodesError = computed(() => {
   const key = Object.keys(errors.value).find(k => k.startsWith('feacnCodes'))
   return key ? errors.value[key] : null
@@ -160,6 +162,24 @@ function handleCodeSelect(code) {
   }
   searchIndex.value = null
 }
+
+function handleEscape(event) {
+  if (event.key === 'Escape') {
+    searchIndex.value = null
+  }
+}
+
+watch(searchIndex, (val) => {
+  if (val !== null) {
+    document.addEventListener('keydown', handleEscape)
+  } else {
+    document.removeEventListener('keydown', handleEscape)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
+})
 
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
@@ -228,6 +248,7 @@ defineExpose({
           placeholder="Ключевое слово или фраза"
           v-model="word"
           @input="onWordInput"
+          :disabled="searchActive"
         />
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
       </div>
@@ -241,14 +262,16 @@ defineExpose({
         add-tooltip="Добавить код"
         remove-tooltip="Удалить код"
         :has-error="!!feacnCodesError"
+        :disabled="searchActive"
       >
         <template #extra="{ index }">
           <ActionButton
-            icon="fa-solid fa-arrow-down"
+            :icon="searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
             :item="index"
             @click="toggleSearch(index)"
             class="button-o-c ml-2"
             tooltip-text="Выбрать код"
+            :disabled="searchActive && searchIndex !== index"
           />
         </template>
       </FieldArrayWithButtons>
@@ -269,7 +292,7 @@ defineExpose({
               name="matchTypeId"
               :value="mt.id"
               v-model="matchTypeId"
-              :disabled="isOptionDisabled(mt.id)"
+              :disabled="isOptionDisabled(mt.id) || searchActive"
             />
             <span class="radio-mark"></span>
             {{ mt.name }}
@@ -279,7 +302,7 @@ defineExpose({
 
       <div v-if="errors.matchTypeId" class="alert alert-danger mt-3 mb-0">{{ errors.matchTypeId }}</div>
       <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saving">
+        <button class="button primary" type="submit" :disabled="saving || searchActive">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
@@ -288,6 +311,7 @@ defineExpose({
           class="button secondary"
           type="button"
           @click="cancel"
+          :disabled="searchActive"
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить

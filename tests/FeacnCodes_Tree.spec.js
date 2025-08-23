@@ -62,7 +62,6 @@ describe('FeacnCodes_Tree.vue', () => {
     await flushPromises()
 
     expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(alertSuccessMock).toHaveBeenCalledWith('Коды ТН ВЭД успешно загружены')
     expect(wrapper.vm.uploading).toBe(false)
   })
 
@@ -143,7 +142,6 @@ describe('FeacnCodes_Tree.vue', () => {
     await flushPromises()
 
     expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(alertSuccessMock).toHaveBeenCalledWith('Коды ТН ВЭД успешно загружены')
     expect(wrapper.vm.uploading).toBe(false)
   })
 })

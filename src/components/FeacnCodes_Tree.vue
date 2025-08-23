@@ -50,7 +50,6 @@ async function fileSelected(file) {
   
   try {
     await store.upload(file)
-    alertStore.success('Коды ТН ВЭД успешно загружены')
     // Refresh the tree to show updated data
     if (treeRef.value && treeRef.value.loadChildren) {
       await treeRef.value.loadChildren()

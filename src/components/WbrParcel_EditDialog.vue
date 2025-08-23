@@ -2,7 +2,23 @@
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 //
-// Redistribution and use in source and binary forms, with or without
+// Redistribution and use in source and binary foasync function lookupFeacnCodes(values) {
+  try {
+    // First update the parcel with current form values
+    await parcelsStore.update(item.value.id, values)
+    
+    // Then lookup FEACN codes and get the keyWordIds response
+    const result = await parcelsStore.lookupFeacnCode(item.value.id)
+    
+    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
+    if (result && result.keyWordIds && item.value) {
+      item.value.keyWordIds = result.keyWordIds
+    }
+  } catch (error) {
+    console.error('Failed to lookup FEACN codes:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+  }
+}t
 // modification, are permitted provided that the following conditions
 // are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -118,7 +134,6 @@ async function validateParcel(values) {
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
   } catch (error) {
-    console.error('Failed to validate parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
   }
 }
@@ -133,7 +148,6 @@ async function approveParcel(values) {
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
   } catch (error) {
-    console.error('Failed to approve parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
   }
 }
@@ -196,7 +210,6 @@ async function generateXml(values) {
     const filename = String(item.value?.shk || '').padStart(20, '0')
     await parcelsStore.generate(item.value.id, filename)
   } catch (error) {
-    console.error('Failed to generate XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
   }
 }
@@ -206,12 +219,15 @@ async function lookupFeacnCodes(values) {
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
-    // Then lookup FEACN codes
-    await parcelsStore.lookupFeacnCode(item.value.id)
-    // Reload the order data to reflect any changes
-    // await parcelsStore.getById(props.id)
+    
+    // Then lookup FEACN codes and get the keyWordIds response
+    const result = await parcelsStore.lookupFeacnCode(item.value.id)
+    
+    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
+    if (result && result.keyWordIds && item.value) {
+      item.value.keyWordIds = result.keyWordIds
+    }
   } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
   }
 }
@@ -232,7 +248,6 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
     // await parcelsStore.getById(props.id)
 
   } catch (error) {
-    console.error('Failed to update TN VED:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }

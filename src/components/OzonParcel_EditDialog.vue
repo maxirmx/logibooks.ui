@@ -1,6 +1,17 @@
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Loasync function approveParcel(values) {
+  try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then approve the parcel
+    await parcelsStore.approve(item.value.id)
+    // Optionally reload the order data to reflect any changes
+    await parcelsStore.getById(props.id)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
+  }
+}end application
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -115,7 +126,6 @@ async function validateParcel(values) {
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
   } catch (error) {
-    console.error('Failed to validate parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
   }
 }
@@ -191,7 +201,6 @@ async function generateXml(values) {
     // Then generate XML
     await parcelsStore.generate(props.id, item.value?.postingNumber)
   } catch (error) {
-    console.error('Failed to generate XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
   }
 }
@@ -201,12 +210,15 @@ async function lookupFeacnCodes(values) {
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
-    // Then lookup FEACN codes
-    await parcelsStore.lookupFeacnCode(item.value.id)
-    // Reload the order data to reflect any changes
-    await parcelsStore.getById(props.id)
+    
+    // Then lookup FEACN codes and get the keyWordIds response
+    const result = await parcelsStore.lookupFeacnCode(item.value.id)
+    
+    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
+    if (result && result.keyWordIds && item.value) {
+      item.value.keyWordIds = result.keyWordIds
+    }
   } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
   }
 }
@@ -226,7 +238,6 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
     // await parcelsStore.update(item.value.id, updatedValues)
     // await parcelsStore.getById(props.id)
   } catch (error) {
-    console.error('Failed to update TN VED:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }

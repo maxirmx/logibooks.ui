@@ -36,6 +36,8 @@ import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/match.type.validation.js'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
+import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   id: {
@@ -89,6 +91,8 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 const { value: feacnCodes } = useField('feacnCodes')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
+
+const searchIndex = ref(null)
 
 const feacnCodesError = computed(() => {
   const key = Object.keys(errors.value).find(k => k.startsWith('feacnCodes'))
@@ -146,6 +150,17 @@ function onCodeInput(event, index) {
   setFieldValue(`feacnCodes[${index}]`, inputValue)
 }
 
+function toggleSearch(index) {
+  searchIndex.value = searchIndex.value === index ? null : index
+}
+
+function handleCodeSelect(code) {
+  if (searchIndex.value !== null) {
+    setFieldValue(`feacnCodes[${searchIndex.value}]`, code)
+  }
+  searchIndex.value = null
+}
+
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   
@@ -185,7 +200,10 @@ defineExpose({
   onWordInput,
   onCodeInput,
   isOptionDisabled,
-  feacnCodes
+  feacnCodes,
+  toggleSearch,
+  handleCodeSelect,
+  searchIndex
 })
 </script>
 
@@ -223,7 +241,18 @@ defineExpose({
         add-tooltip="Добавить код"
         remove-tooltip="Удалить код"
         :has-error="!!feacnCodesError"
-      />
+      >
+        <template #extra="{ index }">
+          <ActionButton
+            icon="fa-solid fa-caret-down"
+            :item="index"
+            @click="toggleSearch(index)"
+            class="button-o-c ml-2"
+            tooltip-text="Выбрать код"
+          />
+        </template>
+      </FieldArrayWithButtons>
+      <FeacnCodeSearch v-if="searchIndex !== null" class="mt-2" @select="handleCodeSelect" />
       <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
       
       <div class="form-group">

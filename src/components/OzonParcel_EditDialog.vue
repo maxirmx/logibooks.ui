@@ -1,17 +1,8 @@
+<script setup>
+
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Loasync function approveParcel(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(props.id, values)
-    // Then approve the parcel
-    await parcelsStore.approve(item.value.id)
-    // Optionally reload the order data to reflect any changes
-    await parcelsStore.getById(props.id)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
-  }
-}end application
+// This file is a part of Logibooks core application
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -33,8 +24,6 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-
-<script setup>
 
 import router from '@/router'
 import { Form, Field } from 'vee-validate'

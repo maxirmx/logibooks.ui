@@ -183,11 +183,14 @@ function handleSelect(code) {
 <style scoped>
 .feacn-code-search {
   position: relative;
-  border: 1px solid #363636;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   padding: 8px;
-  background-color: #fff;
+  background-color: #f5f5f5;
+  color: #161616;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--input-border-color);
+  border-radius: 0.25rem;
 }
+
 .search-bar {
   display: flex;
   align-items: center;
@@ -197,6 +200,7 @@ function handleSelect(code) {
   flex: 1;
   padding: 4px 8px;
   margin-bottom: 8px;
+  border-radius: 0.25rem;
 }
 .search-bar :deep(.search-button) {
   margin-left: 4px;
@@ -208,8 +212,11 @@ function handleSelect(code) {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #363636;
+  background-color: #f5f5f5;
+  color: #161616;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--input-border-color);
+  border-radius: 0.25rem;
   z-index: 10;
   list-style: none;
   padding: 0;

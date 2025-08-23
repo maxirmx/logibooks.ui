@@ -43,9 +43,9 @@ const { alert } = storeToRefs(alertStore)
 
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-  { title: 'Код ТН ВЭД', key: 'code', sortable: true },
-  { title: 'Вставить перед', key: 'insertBefore', sortable: true },
-  { title: 'Вставить после', key: 'insertAfter', sortable: true }
+  { title: 'Код ТН ВЭД', key: 'code', sortable: true , width: '20%'},
+  { title: 'Вставить перед', key: 'insertBefore', sortable: true, width: '35%' },
+  { title: 'Вставить после', key: 'insertAfter', sortable: true, width: '35%' }
 ]
 
 onMounted(async () => {

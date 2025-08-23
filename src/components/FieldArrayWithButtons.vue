@@ -102,7 +102,9 @@ function getFieldProps(index) {
             </option>
           </template>
         </Field>
-        
+
+        <slot name="extra" :index="idx" />
+
         <!-- Minus button always after select -->
         <ActionButton
           icon="fa-solid fa-minus"

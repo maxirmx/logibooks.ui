@@ -274,7 +274,7 @@ describe('FieldArrayWithButtons', () => {
     const wrapper = mount({
       template: `
         <Form :validation-schema="schema" :initial-values="{ managers: [''] }" v-slot="{ errors }">
-          <FieldArrayWithButtons 
+          <FieldArrayWithButtons
             name="managers"
             label="Test Field"
             :has-error="!!errors.managers"
@@ -290,14 +290,38 @@ describe('FieldArrayWithButtons', () => {
       }
     })
     await flushPromises()
-    
+
     expect(wrapper.find('#managers_0').exists()).toBe(true)
-    
+
     // Add another field
     const plusButton = wrapper.find('button.field-container-plus')
     await plusButton.trigger('click')
     await flushPromises()
-    
+
     expect(wrapper.find('#managers_1').exists()).toBe(true)
+  })
+
+  it('renders content in extra slot', async () => {
+    const wrapper = mount({
+      template: `
+        <Form :validation-schema="schema" :initial-values="{ testField: [''] }">
+          <FieldArrayWithButtons name="testField" label="Test Field">
+            <template #extra="{ index }">
+              <span class="extra-slot">{{ index }}</span>
+            </template>
+          </FieldArrayWithButtons>
+        </Form>
+      `,
+      components: { Form, FieldArrayWithButtons },
+      setup() {
+        const schema = Yup.object().shape({
+          testField: Yup.array().of(Yup.string())
+        })
+        return { schema }
+      }
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.extra-slot').exists()).toBe(true)
   })
 })

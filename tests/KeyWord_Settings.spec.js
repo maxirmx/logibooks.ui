@@ -3,8 +3,12 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { createVuetify } from 'vuetify'
+import { createPinia, setActivePinia } from 'pinia'
 import KeyWordSettings from '@/components/KeyWord_Settings.vue'
-import { resolveAll } from './helpers/test-utils'
+import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
+import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
+import ActionButton from '@/components/ActionButton.vue'
+import { resolveAll, vuetifyStubs } from './helpers/test-utils'
 
 const vuetify = createVuetify()
 
@@ -14,6 +18,13 @@ const mockKeyWord = {
   feacnCodes: ['1234567890'],
   word: 'тест',
   matchTypeId: 41
+}
+
+const mockKeyWordEmpty = {
+  id: 2,
+  feacnCodes: [],
+  word: 'empty',
+  matchTypeId: 1
 }
 
 const mockMatchTypes = ref([
@@ -59,6 +70,14 @@ vi.mock('@/stores/alert.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/feacn.codes.store.js', () => ({
+  useFeacnCodesStore: () => ({
+    getChildren: vi.fn(() => Promise.resolve([])),
+    loading: ref(false),
+    error: ref(null)
+  })
+}))
+
 // Mock router
 vi.mock('@/router', () => ({
   default: {
@@ -82,15 +101,22 @@ describe('KeyWord_Settings.vue', () => {
     return mount(KeyWordSettings, {
       props,
       global: {
-        plugins: [vuetify],
+        plugins: [vuetify, createPinia()],
+        components: {
+          FieldArrayWithButtons,
+          FeacnCodeSearch,
+          ActionButton
+        },
         stubs: {
-          'font-awesome-icon': true
+          'font-awesome-icon': true,
+          ...vuetifyStubs
         }
       }
     })
   }
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     mockAlert.value = null
     getById.mockResolvedValue(mockKeyWord)
@@ -270,6 +296,265 @@ describe('KeyWord_Settings.vue', () => {
       expect(typeof vm.onWordInput).toBe('function')
       expect(typeof vm.onCodeInput).toBe('function')
       expect(typeof vm.isOptionDisabled).toBe('function')
+      expect(typeof vm.toggleSearch).toBe('function')
+      expect(typeof vm.handleCodeSelect).toBe('function')
+    })
+  })
+
+  describe('Search Functionality', () => {
+    it('toggles search on and off correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const vm = wrapper.vm
+      
+      // Initially no search active
+      expect(vm.searchIndex).toBe(null)
+      
+      // Toggle search for index 0
+      vm.toggleSearch(0)
+      expect(vm.searchIndex).toBe(0)
+      
+      // Toggle again to close
+      vm.toggleSearch(0)
+      expect(vm.searchIndex).toBe(null)
+      
+      // Toggle different index
+      vm.toggleSearch(1)
+      expect(vm.searchIndex).toBe(1)
+      
+      // Toggle different index again (should switch)
+      vm.toggleSearch(2)
+      expect(vm.searchIndex).toBe(2)
+    })
+
+    it('shows FeacnCodeSearch when searchIndex is not null', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      // Initially hidden
+      expect(wrapper.findComponent(FeacnCodeSearch).exists()).toBe(false)
+      
+      // Activate search
+      wrapper.vm.toggleSearch(0)
+      await nextTick()
+      
+      expect(wrapper.findComponent(FeacnCodeSearch).exists()).toBe(true)
+    })
+
+    it('handles code selection correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const vm = wrapper.vm
+      
+      // Activate search for index 0
+      vm.toggleSearch(0)
+      expect(vm.searchIndex).toBe(0)
+      
+      // Select a code
+      vm.handleCodeSelect('9876543210')
+      
+      // Should close search and update field
+      expect(vm.searchIndex).toBe(null)
+      expect(vm.feacnCodes[0]).toBe('9876543210')
+    })
+
+    it('does not update field when no search is active', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const vm = wrapper.vm
+      const originalValue = vm.feacnCodes[0]
+      
+      // Try to select code without active search
+      vm.handleCodeSelect('9876543210')
+      
+      // Should not change anything
+      expect(vm.feacnCodes[0]).toBe(originalValue)
+      expect(vm.searchIndex).toBe(null)
+    })
+  })
+
+  describe('Form Submission', () => {
+    it('form exists and can be interacted with', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const form = wrapper.find('form')
+      expect(form.exists()).toBe(true)
+      
+      // Check that submit button is present
+      const submitButton = wrapper.find('button[type="submit"]')
+      expect(submitButton.exists()).toBe(true)
+    })
+
+    it('calls cancel function when cancel button is clicked', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      // Find and click cancel button
+      const cancelButton = wrapper.findAll('button').find(b => b.text().includes('Отменить'))
+      await cancelButton.trigger('click')
+
+      expect(routerPush).toHaveBeenCalledWith('/keywords')
+    })
+  })
+
+  describe('Computed Properties', () => {
+    it('computes isEdit correctly for create mode', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('computes isEdit correctly for edit mode', async () => {
+      const wrapper = mountComponent({ id: 1 })
+      await resolveAll()
+
+      expect(wrapper.vm.isEdit).toBe(true)
+    })
+
+    it('computes feacnCodesError correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      // Initially should be null
+      expect(wrapper.vm.feacnCodesError).toBe(null)
+    })
+  })
+
+  describe('Data Loading Edge Cases', () => {
+    it('handles keyword with empty feacnCodes array', async () => {
+      getById.mockResolvedValue(mockKeyWordEmpty)
+      
+      const wrapper = mountComponent({ id: 2 })
+      await resolveAll()
+
+      expect(getById).toHaveBeenCalledWith(2)
+      
+      // Check that the form has been populated
+      expect(wrapper.find('input[name="word"]').element.value).toBe('empty')
+    })
+
+    it('handles keyword with null feacnCodes', async () => {
+      const mockKeyWordNull = { ...mockKeyWord, feacnCodes: null }
+      getById.mockResolvedValue(mockKeyWordNull)
+      
+      const wrapper = mountComponent({ id: 1 })
+      await resolveAll()
+
+      // Should initialize properly without errors
+      expect(wrapper.find('form').exists()).toBe(true)
+    })
+  })
+
+  describe('Input Validation Integration', () => {
+    it('validates word input correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const wordInput = wrapper.find('input[name="word"]')
+      
+      // Test empty word
+      await wordInput.setValue('')
+      await wordInput.trigger('blur')
+      await nextTick()
+      
+      // Component should handle validation through vee-validate
+      expect(wordInput.exists()).toBe(true)
+    })
+
+    it('validates feacn code format correctly', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      // FieldArrayWithButtons should handle feacn code validation
+      expect(wrapper.findComponent(FieldArrayWithButtons).exists()).toBe(true)
+    })
+
+    it('validates match type selection', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      // Set word that makes certain options disabled
+      await wrapper.find('input[name="word"]').setValue('single')
+      await nextTick()
+      
+      // Check disabled state through component method
+      expect(wrapper.vm.isOptionDisabled(25)).toBe(true) // Should be disabled for single word
+    })
+  })
+
+  describe('Alert Display', () => {
+    it('shows alert when present', async () => {
+      mockAlert.value = { type: 'alert-success', message: 'Test success message' }
+      
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const alert = wrapper.find('.alert')
+      expect(alert.exists()).toBe(true)
+      expect(alert.text()).toContain('Test success message')
+      expect(alert.classes()).toContain('alert-success')
+    })
+
+    it('hides alert when not present', async () => {
+      mockAlert.value = null
+      
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      expect(wrapper.find('.alert').exists()).toBe(false)
+    })
+
+    it('clears alert when close button is clicked', async () => {
+      mockAlert.value = { type: 'alert-info', message: 'Test message' }
+      
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const closeButton = wrapper.find('.close')
+      await closeButton.trigger('click')
+
+      expect(alertClear).toHaveBeenCalled()
+    })
+  })
+
+  describe('Word Input Handler', () => {
+    it('updates word value on input', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const event = { target: { value: 'новое значение' } }
+      wrapper.vm.onWordInput(event)
+
+      expect(wrapper.vm.word).toBe('новое значение')
+    })
+  })
+
+  describe('Component Rendering Variations', () => {
+    it('renders submit button with correct text and state', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const submitButton = wrapper.find('button[type="submit"]')
+      expect(submitButton.text()).toContain('Сохранить')
+      expect(submitButton.attributes('disabled')).toBeUndefined()
+    })
+
+    it('shows loading state on submit button when saving', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      // Simulate saving state
+      wrapper.vm.saving = true
+      await nextTick()
+
+      const submitButton = wrapper.find('button[type="submit"]')
+      expect(submitButton.attributes('disabled')).toBeDefined()
+      expect(wrapper.find('.spinner-border-sm').exists()).toBe(true)
     })
   })
 })

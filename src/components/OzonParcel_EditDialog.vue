@@ -195,24 +195,6 @@ async function generateXml(values) {
   }
 }
 
-// Lookup FEACN codes for this parcel
-async function lookupFeacnCodes(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
-    
-    // Then lookup FEACN codes and get the keyWordIds response
-    const result = await parcelsStore.lookupFeacnCode(item.value.id)
-    
-    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
-    if (result && result.keyWordIds && item.value) {
-      item.value.keyWordIds = result.keyWordIds
-    }
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-  }
-}
-
 // Select a FEACN code and update TN VED
 async function selectFeacnCode(feacnCode, values, setFieldValue) {
   try {
@@ -298,8 +280,8 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
         :columnTitles="ozonRegisterColumnTitles"
         :columnTooltips="ozonRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
-        :onLookupFeacnCodes="lookupFeacnCodes"
         :onSelectFeacnCode="selectFeacnCode"
+        @update:item="(updatedItem) => item = updatedItem"
       />
 
       <!-- Product Name Section -->

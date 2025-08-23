@@ -26,6 +26,7 @@
 <script setup>
 import { Field } from 'vee-validate'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -45,22 +46,38 @@ const props = defineProps({
   columnTooltips: { type: Object, required: true },
   // Function to set field value in parent form
   setFieldValue: { type: Function, required: true },
-  // Function to lookup FEACN codes
-  onLookupFeacnCodes: { type: Function, required: true },
   // Function to select a FEACN code
   onSelectFeacnCode: { type: Function, required: true }
 })
 
+const emit = defineEmits(['update:item'])
+
 const keyWordsStore = useKeyWordsStore()
+const parcelsStore = useParcelsStore()
+
+// Lookup FEACN codes for this parcel
+async function lookupFeacnCodes() {
+  try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.item.id, props.values)
+    
+    // Then lookup FEACN codes and get the keyWordIds response
+    const result = await parcelsStore.lookupFeacnCode(props.item.id)
+    
+    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
+    if (result && result.keyWordIds) {
+      const updatedItem = { ...props.item, keyWordIds: result.keyWordIds }
+      emit('update:item', updatedItem)
+    }
+  } catch (error) {
+    console.error('Failed to lookup FEACN codes:', error)
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+  }
+}
 
 // Handle FEACN code selection
 function handleSelectFeacnCode(feacnCode) {
   props.onSelectFeacnCode(feacnCode, props.values, props.setFieldValue)
-}
-
-// Handle lookup FEACN codes
-function handleLookupFeacnCodes() {
-  props.onLookupFeacnCodes(props.values)
 }
 </script>
 
@@ -81,7 +98,7 @@ function handleLookupFeacnCodes() {
             icon="fa-solid fa-magnifying-glass"
             tooltip-text="Сохранить и подбрать код ТН ВЭД"
             :disabled="isSubmitting"
-            @click="handleLookupFeacnCodes"
+            @click="lookupFeacnCodes"
           />
         </div>
       </div>

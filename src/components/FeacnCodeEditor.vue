@@ -67,14 +67,19 @@ function handleEscape(event) {
   }
 }
 
-watch(searchActive, val => {
+// Improved watch with defensive cleanup
+watch(searchActive, (val, oldVal) => {
+  // Remove listener first if it was previously attached
+  if (oldVal) {
+    document.removeEventListener('keydown', handleEscape)
+  }
+  // Add listener if needed
   if (val) {
     document.addEventListener('keydown', handleEscape)
-  } else {
-    document.removeEventListener('keydown', handleEscape)
   }
 })
 
+// Always try to remove on unmount
 onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
 })
@@ -173,12 +178,19 @@ async function handleCodeSelect(code) {
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  right: 0;
   z-index: 1000;
   width: 60vw;
+  max-width: 800px;
+  min-width: 400px;
+  background: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
 }
 
-/* Ensure parent containers don't clip the overlay */
+/* Ensure all parent containers allow overflow */
+.form-section,
+.form-row,
 .form-group {
   overflow: visible !important;
 }

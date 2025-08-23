@@ -69,7 +69,7 @@ async function loadTooltip(code) {
     try {
       const tooltip = await getFeacnTooltip(code)
       tooltipCache.value[code] = tooltip
-    } catch (error) {
+    } catch {
       tooltipCache.value[code] = 'Загрузка...'
     }
   }

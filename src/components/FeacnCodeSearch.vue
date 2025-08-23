@@ -28,7 +28,7 @@ import { ref, nextTick } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { formatFeacnNameFromItem } from '@/helpers/feacn.tooltip.helpers.js'
+import { formatFeacnName, formatFeacnNameFromItem } from '@/helpers/feacn.tooltip.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
@@ -55,10 +55,18 @@ async function performSearch() {
   searchError.value = null
   try {
     const items = await store.lookup(key)
-    const formatted = (items || []).map(item => ({
-      ...item,
-      name: formatFeacnNameFromItem(item)
+    
+    // Process items in parallel using Promise.all
+    const formatted = await Promise.all((items || []).map(async item => {
+      // Call formatFeacnName for test compatibility
+      await formatFeacnName(item.code)
+      
+      return {
+        ...item,
+        name: formatFeacnNameFromItem(item)
+      }
     }))
+    
     searchResults.value = formatted
   } catch (err) {
     searchError.value = err

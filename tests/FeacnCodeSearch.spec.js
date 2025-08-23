@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 const mockFormatFeacnName = vi.hoisted(() => vi.fn())
+const mockFormatFeacnNameFromItem = vi.hoisted(() => vi.fn())
 vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
-  formatFeacnName: mockFormatFeacnName
+  formatFeacnName: mockFormatFeacnName,
+  formatFeacnNameFromItem: mockFormatFeacnNameFromItem
 }))
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
@@ -56,6 +58,7 @@ describe('FeacnCodeSearch.vue', () => {
       return Promise.resolve([])
     })
     mockFormatFeacnName.mockImplementation(code => Promise.resolve(`Name ${code}`))
+    mockFormatFeacnNameFromItem.mockImplementation(item => `Name ${item?.code || ''}`)
   })
 
   it('re-emits select event from tree', async () => {
@@ -84,6 +87,8 @@ describe('FeacnCodeSearch.vue', () => {
   it('uses formatFeacnName for search results', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 1, code: '0101' }])
     mockFormatFeacnName.mockResolvedValueOnce('Formatted Name')
+    mockFormatFeacnNameFromItem.mockReturnValueOnce('Formatted Name')
+    
     const wrapper = createWrapper()
     await waitForUpdates(wrapper)
     const input = wrapper.find('.search-input')
@@ -91,6 +96,7 @@ describe('FeacnCodeSearch.vue', () => {
     const searchButton = wrapper.findComponent({ name: 'ActionButton' })
     await searchButton.find('button').trigger('click')
     await waitForUpdates(wrapper)
+    
     expect(mockFormatFeacnName).toHaveBeenCalledWith('0101')
     expect(wrapper.find('.result-name').text()).toBe('Formatted Name')
   })

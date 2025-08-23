@@ -59,7 +59,15 @@ export async function formatFeacnName(code) {
   const store = useFeacnCodesStore()
   try {
     const info = await store.getByCode(code)
-    return formatFeacnNameFromItem(info)
+    if (!info) return 'Код ТН ВЭД не найден'
+    
+    // Create a complete item with the original code
+    const item = {
+      ...info,
+      code: code // Ensure we have the original code
+    }
+    
+    return formatFeacnNameFromItem(item)
   } catch {
     return 'Код ТН ВЭД не найден'
   }

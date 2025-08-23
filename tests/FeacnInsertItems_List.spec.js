@@ -38,6 +38,7 @@ const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockError = vi.hoisted(() => vi.fn())
 const mockSuccess = vi.hoisted(() => vi.fn())
+const mockLoadTooltip = vi.hoisted(() => vi.fn())
 
 const mockInsertItems = ref([
   { id: 1, code: '1234567890', insertBefore: 'before1', insertAfter: 'after1' },
@@ -73,6 +74,11 @@ vi.mock('vuetify-use-dialog', () => ({
 
 vi.mock('@/router', () => ({
   default: { push: mockPush }
+}))
+
+vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+  loadFeacnTooltipOnHover: mockLoadTooltip,
+  useFeacnTooltips: () => ref({})
 }))
 
 describe('FeacnInsertItems_List.vue', () => {
@@ -122,6 +128,12 @@ describe('FeacnInsertItems_List.vue', () => {
     mockConfirm.mockResolvedValue(false)
     await wrapper.vm.deleteInsertItem(mockInsertItems.value[0])
     expect(removeItem).not.toHaveBeenCalled()
+  })
+
+  it('loads FEACN tooltip on hover', async () => {
+    const codeCell = wrapper.find('.feacn-code-tooltip')
+    await codeCell.trigger('mouseenter')
+    expect(mockLoadTooltip).toHaveBeenCalledWith('1234567890')
   })
 })
 

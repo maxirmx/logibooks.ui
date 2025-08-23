@@ -6,6 +6,7 @@ import { defaultGlobalStubs } from './helpers/test-utils.js'
 const mockLookup = vi.fn()
 const mockGetById = vi.fn()
 const mockGetChildren = vi.fn()
+const mockFormatFeacnName = vi.hoisted(() => vi.fn(code => Promise.resolve(`Name ${code}`)))
 
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: () => ({
@@ -13,6 +14,10 @@ vi.mock('@/stores/feacn.codes.store.js', () => ({
     getById: mockGetById,
     getChildren: mockGetChildren
   })
+}))
+
+vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+  formatFeacnName: mockFormatFeacnName
 }))
 
 const globalStubs = {

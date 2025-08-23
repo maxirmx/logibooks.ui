@@ -73,9 +73,16 @@ vi.mock('@/stores/alert.store.js', () => ({
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: () => ({
     getChildren: vi.fn(() => Promise.resolve([])),
+    lookup: vi.fn(() => Promise.resolve([])),
+    getById: vi.fn(() => Promise.resolve(null)),
+    getByCode: vi.fn(() => Promise.resolve(null)),
     loading: ref(false),
     error: ref(null)
   })
+}))
+
+vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+  formatFeacnName: vi.fn(code => Promise.resolve(`Name ${code}`))
 }))
 
 // Mock router

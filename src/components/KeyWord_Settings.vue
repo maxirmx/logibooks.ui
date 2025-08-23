@@ -244,7 +244,7 @@ defineExpose({
       >
         <template #extra="{ index }">
           <ActionButton
-            icon="fa-solid fa-arrow-down"
+            :icon="searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
             :item="index"
             @click="toggleSearch(index)"
             class="button-o-c ml-2"
@@ -252,7 +252,13 @@ defineExpose({
           />
         </template>
       </FieldArrayWithButtons>
-      <FeacnCodeSearch v-if="searchIndex !== null" class="mt-2" @select="handleCodeSelect" />
+      <FeacnCodeSearch
+        v-if="searchIndex !== null"
+        :selected-code="feacnCodes[searchIndex]"
+        :initial-query="word || feacnCodes[searchIndex]"
+        @select="handleCodeSelect"
+        @close="searchIndex = null"
+      />
       <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
       
       <div class="form-group">

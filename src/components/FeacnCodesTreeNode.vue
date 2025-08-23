@@ -35,6 +35,10 @@ const props = defineProps({
   selectMode: {
     type: Boolean,
     default: false
+  },
+  selectedCode: {
+    type: String,
+    default: ''
   }
 })
 
@@ -72,7 +76,8 @@ function isLeafNode(node) {
         class="node-code"
         :class="{
           'clickable': (selectMode || !isLeafNode(node)) && !disabled,
-          'disabled': disabled
+          'disabled': disabled,
+          'selected': node.code === selectedCode
         }"
         @click="!disabled ? handleClick() : null"
       >
@@ -117,7 +122,8 @@ function isLeafNode(node) {
           :class="{
             'loading': node.loading,
             'clickable': (selectMode || !isLeafNode(node)) && !disabled,
-            'disabled': disabled
+            'disabled': disabled,
+            'selected': node.code === selectedCode
           }"
           @click="!disabled ? handleClick() : null"
         >
@@ -251,6 +257,11 @@ function isLeafNode(node) {
   opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.node-label.selected,
+.node-code.selected {
+  background-color: #e6f7ff;
 }
 
 .child-nodes {

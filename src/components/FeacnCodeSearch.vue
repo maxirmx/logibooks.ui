@@ -24,23 +24,63 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { formatFeacnName } from '@/helpers/feacn.tooltip.helpers.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
-const emit = defineEmits(['select'])
+const props = defineProps({
+  selectedCode: {
+    type: String,
+    default: ''
+  },
+  initialQuery: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['select', 'close'])
 
 const store = useFeacnCodesStore()
-const searchKey = ref('')
+const searchKey = ref(props.initialQuery || '')
 const searchResults = ref([])
 const dropdownVisible = ref(false)
 const searching = ref(false)
 const searchError = ref(null)
 
+const currentSelection = ref(props.selectedCode || '')
 const treeRef = ref(null)
+
+onMounted(() => {
+  if (props.selectedCode) {
+    showSelectedCode(props.selectedCode)
+  }
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+watch(
+  () => props.selectedCode,
+  async (val) => {
+    currentSelection.value = val
+    if (val) {
+      await showSelectedCode(val)
+    }
+  }
+)
+
+function handleKeydown(event) {
+  if (event.key === 'Escape') {
+    emit('close')
+  }
+}
 
 async function performSearch() {
   const key = searchKey.value.trim()
@@ -54,7 +94,13 @@ async function performSearch() {
   searchError.value = null
   try {
     const items = await store.lookup(key)
-    searchResults.value = items || []
+    const mapped = await Promise.all(
+      (items || []).map(async item => ({
+        ...item,
+        name: await formatFeacnName(item.code)
+      }))
+    )
+    searchResults.value = mapped
   } catch (err) {
     searchError.value = err
     searchResults.value = []
@@ -86,6 +132,8 @@ async function selectSearchResult(item) {
       }
     }
     await openPath(path)
+    currentSelection.value = item.code
+    await scrollToSelection()
   } catch (err) {
     searchError.value = err
     searchResults.value = []
@@ -117,19 +165,50 @@ async function openPath(pathIds = []) {
   }
 }
 
+async function showSelectedCode(code) {
+  try {
+    const node = await store.getByCode(code)
+    if (!node) return
+    const path = []
+    let current = node
+    while (current) {
+      path.unshift(current.id)
+      if (current.parentId) {
+        current = await store.getById(current.parentId)
+      } else {
+        current = null
+      }
+    }
+    await openPath(path)
+    currentSelection.value = code
+    await scrollToSelection()
+  } catch {
+    // ignore errors
+  }
+}
+
+async function scrollToSelection() {
+  await nextTick()
+  const el = treeRef.value?.$el.querySelector('.selected')
+  if (el) {
+    el.scrollIntoView({ block: 'center' })
+  }
+}
+
 function handleSelect(code) {
   emit('select', code)
 }
 </script>
 
 <template>
-  <div class="feacn-code-search">
+  <div class="feacn-code-search-panel">
     <div class="search-bar">
       <input
         v-model="searchKey"
         @keyup.enter="performSearch"
         type="text"
         class="search-input"
+        placeholder="Часть кода ТН ВЭД или слово для поиска"
         :disabled="searching"
       />
       <ActionButton
@@ -161,14 +240,25 @@ function handleSelect(code) {
     <FeacnCodesTree
       ref="treeRef"
       select-mode
+      :selected-code="currentSelection"
       @select="handleSelect"
     />
   </div>
 </template>
 
 <style scoped>
-.feacn-code-search {
-  position: relative;
+.feacn-code-search-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 1000;
+  max-height: max(200px, 50vh);
+  overflow-y: auto;
 }
 .search-bar {
   display: flex;
@@ -178,6 +268,7 @@ function handleSelect(code) {
 .search-input {
   flex: 1;
   padding: 4px 8px;
+  border: 1px solid #ccc;
 }
 .search-bar :deep(.search-button) {
   margin-left: 4px;

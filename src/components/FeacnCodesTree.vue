@@ -31,7 +31,7 @@ import FeacnCodesTreeNode from '@/components/FeacnCodesTreeNode.vue'
 
 defineOptions({ name: 'FeacnCodesTree' })
 
-const { disabled = false, selectMode = false } = defineProps({
+const { disabled = false, selectMode = false, selectedCode = '' } = defineProps({
   disabled: {
     type: Boolean,
     default: false
@@ -39,6 +39,10 @@ const { disabled = false, selectMode = false } = defineProps({
   selectMode: {
     type: Boolean,
     default: false
+  },
+  selectedCode: {
+    type: String,
+    default: ''
   }
 })
 
@@ -127,6 +131,7 @@ defineExpose({
         :node="node"
         :disabled="disabled"
         :select-mode="selectMode"
+        :selected-code="selectedCode"
         @toggle="toggleNode"
         @select="handleSelect"
       />

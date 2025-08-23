@@ -154,6 +154,12 @@ const router = createRouter({
       component: () => import('@/views/FeacnCodes_View.vue')
     },
     {
+      path: '/feacn/insertitems',
+      name: 'Правила для формирования описания продукта',
+      component: () => import('@/views/FeacnInsertItems_View.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),

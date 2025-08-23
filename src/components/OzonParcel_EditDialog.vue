@@ -194,25 +194,6 @@ async function generateXml(values) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
   }
 }
-
-// Select a FEACN code and update TN VED
-async function selectFeacnCode(feacnCode, values, setFieldValue) {
-  try {
-    // Update the form field immediately
-    setFieldValue('tnVed', feacnCode)
-    
-    // Update the item's tnVed to trigger reactivity in computed properties
-    if (item.value) {
-      item.value.tnVed = feacnCode
-    }
-
-    // const updatedValues = { ...values, tnVed: feacnCode }
-    // await parcelsStore.update(item.value.id, updatedValues)
-    // await parcelsStore.getById(props.id)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
-  }
-}
 </script>
 
 <template>
@@ -280,7 +261,6 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
         :columnTitles="ozonRegisterColumnTitles"
         :columnTooltips="ozonRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
-        :onSelectFeacnCode="selectFeacnCode"
         @update:item="(updatedItem) => item = updatedItem"
       />
 

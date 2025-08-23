@@ -45,9 +45,7 @@ const props = defineProps({
   columnTitles: { type: Object, required: true },
   columnTooltips: { type: Object, required: true },
   // Function to set field value in parent form
-  setFieldValue: { type: Function, required: true },
-  // Function to select a FEACN code
-  onSelectFeacnCode: { type: Function, required: true }
+  setFieldValue: { type: Function, required: true }
 })
 
 const emit = defineEmits(['update:item'])
@@ -75,9 +73,18 @@ async function lookupFeacnCodes() {
   }
 }
 
-// Handle FEACN code selection
-function handleSelectFeacnCode(feacnCode) {
-  props.onSelectFeacnCode(feacnCode, props.values, props.setFieldValue)
+// Select a FEACN code and update TN VED
+async function selectFeacnCode(feacnCode) {
+  try {
+    // Update the form field immediately
+    props.setFieldValue('tnVed', feacnCode)
+    
+    // Update the item's tnVed to trigger reactivity in computed properties
+    const updatedItem = { ...props.item, tnVed: feacnCode }
+    emit('update:item', updatedItem)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
+  }
 }
 </script>
 
@@ -104,7 +111,7 @@ function handleSelectFeacnCode(feacnCode) {
       </div>
       <FeacnCodeSelectorW 
         :item="item" 
-        :onSelect="handleSelectFeacnCode"
+        :onSelect="selectFeacnCode"
       />
     </div>
   </div>

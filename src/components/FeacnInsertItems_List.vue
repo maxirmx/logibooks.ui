@@ -93,8 +93,7 @@ async function deleteInsertItem(item) {
   if (confirmed) {
     try {
       await insertItemsStore.remove(item.id)
-      alertStore.success('Фраза удалена')
-    } catch (error) {
+    } catch  {
       alertStore.error('Ошибка при удалении фразы')
     }
   }

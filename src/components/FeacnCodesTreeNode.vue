@@ -155,16 +155,16 @@ function isLeafNode(node) {
 .node-code {
   position: absolute;
   left: 0;
-  width: 150px; /* Adjust this width based on your codeEx length */
+  width: 130px; /* Adjust this width based on your codeEx length */
   padding-left: 8px;
   padding-right: 8px;
   font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
   text-align: left;
-  background-color: #ffffff;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f0f0f0;
+  color: #161616;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--input-border-color);
+  border-radius: 0.25rem;
   flex-shrink: 0;
   cursor: default; /* Default cursor for leaf nodes */
 }

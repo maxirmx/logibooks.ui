@@ -212,6 +212,10 @@
   border: 1px solid var(--input-border-color);
 }
 
+.input[disabled] {
+  cursor: not-allowed;
+}
+
 .input[readonly] {
   background-color: var(--input-readonly-bg);
   color: var(--input-readonly-text);

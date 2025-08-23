@@ -123,9 +123,8 @@ async function handleCodeSelect(code) {
   <!-- Feacn Code Section -->
   <div class="form-section">
     <div class="form-row">
-      <div class="form-group">
+        <div class="form-group feacn-search-wrapper">
         <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)">{{ columnTitles.tnVed }}:</label>
-        <div class="feacn-search-wrapper">
           <Field name="tnVed" id="tnVed" class="form-control input"
                  :disabled="searchActive"
                  :class="{
@@ -144,7 +143,7 @@ async function handleCodeSelect(code) {
             <ActionButton
               :item="item"
               icon="fa-solid fa-magnifying-glass"
-              tooltip-text="Сохранить и подбрать код ТН ВЭД"
+              tooltip-text="Сохранить и подобрать код"
               :disabled="isSubmitting || searchActive"
               @click="lookupFeacnCodes"
             />
@@ -155,7 +154,6 @@ async function handleCodeSelect(code) {
             @select="handleCodeSelect"
           />
         </div>
-      </div>
       <FeacnCodeSelectorW
         :item="item"
         :onSelect="selectFeacnCode"
@@ -167,6 +165,8 @@ async function handleCodeSelect(code) {
 <style scoped>
 .feacn-search-wrapper {
   position: relative;
+  /* Add this to ensure the container can contain the overlay */
+  z-index: 1;
 }
 
 .feacn-overlay {
@@ -174,6 +174,12 @@ async function handleCodeSelect(code) {
   top: calc(100% + 0.5rem);
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1000;
+  width: 60vw;
+}
+
+/* Ensure parent containers don't clip the overlay */
+.form-group {
+  overflow: visible !important;
 }
 </style>

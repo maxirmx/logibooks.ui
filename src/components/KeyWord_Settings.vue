@@ -253,29 +253,35 @@ defineExpose({
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
       </div>
 
-      <FieldArrayWithButtons
-        name="feacnCodes"
-        label="Код ТН ВЭД (10 цифр)"
-        field-type="input"
-        :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
-        placeholder="Введите код ТН ВЭД"
-        add-tooltip="Добавить код"
-        remove-tooltip="Удалить код"
-        :has-error="!!feacnCodesError"
-        :disabled="searchActive"
-      >
-        <template #extra="{ index }">
-          <ActionButton
-            :icon="searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-            :item="index"
-            @click="toggleSearch(index)"
-            class="button-o-c ml-2"
-            tooltip-text="Выбрать код"
-            :disabled="searchActive && searchIndex !== index"
-          />
-        </template>
-      </FieldArrayWithButtons>
-      <FeacnCodeSearch v-if="searchIndex !== null" class="mt-2" @select="handleCodeSelect" />
+      <div class="feacn-search-wrapper">
+        <FieldArrayWithButtons
+          name="feacnCodes"
+          label="Код ТН ВЭД (10 цифр)"
+          field-type="input"
+          :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
+          placeholder="Введите код ТН ВЭД"
+          add-tooltip="Добавить код"
+          remove-tooltip="Удалить код"
+          :has-error="!!feacnCodesError"
+          :disabled="searchActive"
+        >
+          <template #extra="{ index }">
+            <ActionButton
+              :icon="searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :item="index"
+              @click="toggleSearch(index)"
+              class="button-o-c ml-2"
+              tooltip-text="Выбрать код"
+              :disabled="searchActive && searchIndex !== index"
+            />
+          </template>
+        </FieldArrayWithButtons>
+        <FeacnCodeSearch
+          v-if="searchIndex !== null"
+          class="feacn-overlay"
+          @select="handleCodeSelect"
+        />
+      </div>
       <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
       
       <div class="form-group">
@@ -325,6 +331,20 @@ defineExpose({
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
-    </div>
+  </div>
   </div>
 </template>
+
+<style scoped>
+.feacn-search-wrapper {
+  position: relative;
+}
+
+.feacn-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+</style>

@@ -101,7 +101,7 @@ describe('FeacnInsertItems_List.vue', () => {
   })
 
   it('renders heading and items', () => {
-    expect(wrapper.text()).toContain('Фразы для формирования описания продукта')
+    expect(wrapper.text()).toContain('Правила для формирования описания продукта')
     const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
     expect(rows.length).toBe(2)
     expect(rows[0].text()).toContain('1234567890')

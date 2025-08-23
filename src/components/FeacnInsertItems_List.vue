@@ -94,7 +94,7 @@ async function deleteInsertItem(item) {
     try {
       await insertItemsStore.remove(item.id)
     } catch  {
-      alertStore.error('Ошибка при удалении фразы')
+      alertStore.error('Ошибка при удалении правила')
     }
   }
 }

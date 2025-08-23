@@ -24,7 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnInsertItemsStore } from '@/stores/feacn.insert.items.store.js'
@@ -32,6 +32,10 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
+import {
+  loadFeacnTooltipOnHover,
+  useFeacnTooltips
+} from '@/helpers/feacn.tooltip.helpers.js'
 
 const insertItemsStore = useFeacnInsertItemsStore()
 const authStore = useAuthStore()
@@ -40,6 +44,17 @@ const confirm = useConfirm()
 
 const { insertItems, loading } = storeToRefs(insertItemsStore)
 const { alert } = storeToRefs(alertStore)
+
+// Use shared FEACN tooltip cache
+const feacnTooltips = useFeacnTooltips()
+
+// Tooltip width limitation
+const tooltipMaxWidth = computed(() => {
+  if (typeof window !== 'undefined') {
+    return `${window.innerWidth * 0.5}px`
+  }
+  return '400px'
+})
 
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
@@ -117,6 +132,24 @@ defineExpose({
         density="compact"
         class="elevation-1 interlaced-table"
       >
+        <template v-slot:[`item.code`]="{ item }">
+          <v-tooltip
+            location="top"
+            content-class="feacn-tooltip"
+            :max-width="tooltipMaxWidth"
+          >
+            <template v-slot:activator="{ props }">
+              <span
+                v-bind="props"
+                class="feacn-code-tooltip"
+                @mouseenter="loadFeacnTooltipOnHover(item.code)"
+              >
+                {{ item.code }}
+              </span>
+            </template>
+            <span>{{ feacnTooltips[item.code] || 'Наведите для загрузки...' }}</span>
+          </v-tooltip>
+        </template>
         <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.isAdmin" class="actions-container">
             <ActionButton

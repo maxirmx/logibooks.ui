@@ -191,7 +191,7 @@ function handleSelect(code) {
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--input-border-color);
   border-radius: 0.25rem;
-  max-height: max(200px, 50vh);
+  max-height: max(200px, 30vh);
   display: flex;
   flex-direction: column;
 }

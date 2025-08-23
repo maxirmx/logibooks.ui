@@ -398,7 +398,8 @@ describe('KeyWord_Settings.vue', () => {
 
       expect(wrapper.vm.searchIndex).toBe(0)
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      // Use the global object to access KeyboardEvent constructor
+      document.dispatchEvent(new global.KeyboardEvent('keydown', { key: 'Escape' }))
       await nextTick()
 
       expect(wrapper.vm.searchIndex).toBe(null)

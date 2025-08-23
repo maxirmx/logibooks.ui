@@ -47,14 +47,6 @@ function isLeafNode(node) {
   return node?.code && node.code.length === 10 && /\d$/.test(node.code)
 }
 
-function handleKeyDown(event) {
-  if (event.key === 'Escape' && dropdownVisible.value) {
-    dropdownVisible.value = false
-    event.stopPropagation()
-    event.preventDefault()
-  }
-}
-
 async function performSearch() {
   const key = searchKey.value.trim()
   if (!key) {
@@ -157,14 +149,19 @@ async function openPath(pathIds = []) {
 function handleSelect(code) {
   emit('select', code)
 }
+
+function closeDropdown() {
+  dropdownVisible.value = false
+}
 </script>
 
 <template>
-  <div class="feacn-code-search" @keydown="handleKeyDown">
+  <div class="feacn-code-search">
     <div class="search-bar">
       <input
         v-model="searchKey"
         @keyup.enter="performSearch"
+        @keydown.esc="closeDropdown"
         @focus="dropdownVisible = false"
         @click="dropdownVisible = false"
         type="text"

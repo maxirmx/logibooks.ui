@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 const mockFormatFeacnName = vi.hoisted(() => vi.fn())
 const mockFormatFeacnNameFromItem = vi.hoisted(() => vi.fn())
 vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
@@ -157,8 +158,9 @@ describe('FeacnCodeSearch.vue', () => {
     await waitForUpdates(wrapper)
     expect(wrapper.find('.search-results').exists()).toBe(true)
 
-    await input.trigger('keydown', { key: 'Escape' })
-    await waitForUpdates(wrapper)
+    // Trigger the Escape key event
+    await input.trigger('keydown.esc')
+    await nextTick()
 
     expect(wrapper.find('.search-results').exists()).toBe(false)
   })
@@ -175,8 +177,9 @@ describe('FeacnCodeSearch.vue', () => {
     await waitForUpdates(wrapper)
     expect(wrapper.find('.search-results').exists()).toBe(true)
 
+    // Trigger a click on the input
     await input.trigger('click')
-    await waitForUpdates(wrapper)
+    await nextTick()
 
     expect(wrapper.find('.search-results').exists()).toBe(false)
   })

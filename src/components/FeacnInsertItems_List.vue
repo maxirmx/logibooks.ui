@@ -95,7 +95,7 @@ defineExpose({
 
 <template>
   <div class="settings table-2" data-testid="feacn-insert-items-list">
-    <h1 class="primary-heading">Фразы для формирования описания продукта</h1>
+    <h1 class="primary-heading">Правила для формирования описания продукта</h1>
     <hr class="hr" />
 
     <div class="link-crt">
@@ -104,7 +104,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-plus"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Добавить фразу
+        />&nbsp;&nbsp;&nbsp;Добавить правило
       </a>
     </div>
 
@@ -122,13 +122,13 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать фразу"
+              tooltip-text="Редактировать правило"
               @click="openEditDialog"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить фразу"
+              tooltip-text="Удалить правило"
               @click="deleteInsertItem"
             />
           </div>

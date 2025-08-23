@@ -113,6 +113,9 @@ function getUserName() {
             <RouterLink to="/keywords" class="link">Подбор ТН ВЭД</RouterLink>
           </v-list-item>
           <v-list-item>
+            <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
+          </v-list-item>
+          <v-list-item>
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>
           <v-list-item v-if="authStore.isAdmin">

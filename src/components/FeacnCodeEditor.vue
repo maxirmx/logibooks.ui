@@ -24,6 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
+import { ref, watch, onUnmounted } from 'vue'
 import { Field } from 'vee-validate'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -31,6 +32,7 @@ import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
+import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 
 const props = defineProps({
   // The parcel item
@@ -52,6 +54,30 @@ const emit = defineEmits(['update:item'])
 
 const keyWordsStore = useKeyWordsStore()
 const parcelsStore = useParcelsStore()
+
+const searchActive = ref(false)
+
+function toggleSearch() {
+  searchActive.value = !searchActive.value
+}
+
+function handleEscape(event) {
+  if (event.key === 'Escape') {
+    searchActive.value = false
+  }
+}
+
+watch(searchActive, val => {
+  if (val) {
+    document.addEventListener('keydown', handleEscape)
+  } else {
+    document.removeEventListener('keydown', handleEscape)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
+})
 
 // Lookup FEACN codes for this parcel
 async function lookupFeacnCodes() {
@@ -86,6 +112,11 @@ async function selectFeacnCode(feacnCode) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }
+
+async function handleCodeSelect(code) {
+  await selectFeacnCode(code)
+  searchActive.value = false
+}
 </script>
 
 <template>
@@ -94,23 +125,39 @@ async function selectFeacnCode(feacnCode) {
     <div class="form-row">
       <div class="form-group">
         <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)">{{ columnTitles.tnVed }}:</label>
-        <Field name="tnVed" id="tnVed" class="form-control input" 
-               :class="{ 
-                 'is-invalid': errors && errors.tnVed,
-                 [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
-               }" />
-        <div class="action-buttons">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-magnifying-glass"
-            tooltip-text="Сохранить и подбрать код ТН ВЭД"
-            :disabled="isSubmitting"
-            @click="lookupFeacnCodes"
+        <div class="feacn-search-wrapper">
+          <Field name="tnVed" id="tnVed" class="form-control input"
+                 :disabled="searchActive"
+                 :class="{
+                   'is-invalid': errors && errors.tnVed,
+                   [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
+                 }" />
+          <div class="action-buttons">
+            <ActionButton
+              :item="item"
+              :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              tooltip-text="Выбрать код"
+              class="button-o-c"
+              :disabled="isSubmitting"
+              @click="toggleSearch"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-magnifying-glass"
+              tooltip-text="Сохранить и подбрать код ТН ВЭД"
+              :disabled="isSubmitting || searchActive"
+              @click="lookupFeacnCodes"
+            />
+          </div>
+          <FeacnCodeSearch
+            v-if="searchActive"
+            class="feacn-overlay"
+            @select="handleCodeSelect"
           />
         </div>
       </div>
-      <FeacnCodeSelectorW 
-        :item="item" 
+      <FeacnCodeSelectorW
+        :item="item"
         :onSelect="selectFeacnCode"
       />
     </div>
@@ -118,5 +165,15 @@ async function selectFeacnCode(feacnCode) {
 </template>
 
 <style scoped>
-/* Component-specific styles can be added here if needed */
+.feacn-search-wrapper {
+  position: relative;
+}
+
+.feacn-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
 </style>

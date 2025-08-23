@@ -65,6 +65,10 @@ const props = defineProps({
   hasError: {
     type: Boolean,
     default: false
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -79,21 +83,22 @@ function getFieldProps(index) {
     <div v-for="(field, idx) in fields" :key="field.key" class="form-group mb-2">
       <label v-if="idx === 0" class="label">{{ label }}:</label>
       <div v-else class="label"></div>
-      
+
       <div class="field-container">
         <!-- Plus button positioned to the left for first option -->
-        <ActionButton 
+        <ActionButton
           v-if="idx === 0"
           icon="fa-solid fa-plus"
           :item="defaultValue"
           @click="push(defaultValue)"
           class="button-o-c field-container-plus"
           :tooltip-text="addTooltip"
+          :disabled="disabled"
         />
-        
+
         <Field :name="`${name}[${idx}]`" :as="fieldType" :id="`${name}_${idx}`"
           class="form-control input field-container-select" :class="{ 'is-invalid': hasError }"
-          v-bind="getFieldProps(idx)"
+          v-bind="{ ...getFieldProps(idx), disabled }"
         >
           <option v-if="fieldType === 'select'" value="">{{ placeholder }}</option>
           <template v-if="fieldType === 'select'">
@@ -102,13 +107,15 @@ function getFieldProps(index) {
             </option>
           </template>
         </Field>
-        
+
+        <slot name="extra" :index="idx" />
+
         <!-- Minus button always after select -->
         <ActionButton
           icon="fa-solid fa-minus"
           :item="idx"
           @click="remove(idx)"
-          :disabled="fields.length === 1"
+          :disabled="disabled || fields.length === 1"
           class="button-o-c ml-2"
           :tooltip-text="removeTooltip"
         />

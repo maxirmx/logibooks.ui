@@ -31,12 +31,18 @@ import FeacnCodesTreeNode from '@/components/FeacnCodesTreeNode.vue'
 
 defineOptions({ name: 'FeacnCodesTree' })
 
-const { disabled = false } = defineProps({
+const { disabled = false, selectMode = false } = defineProps({
   disabled: {
+    type: Boolean,
+    default: false
+  },
+  selectMode: {
     type: Boolean,
     default: false
   }
 })
+
+const emit = defineEmits(['select'])
 
 const store = useFeacnCodesStore()
 const rootNodes = ref([])
@@ -91,15 +97,20 @@ async function toggleNode(node) {
   }
 }
 
+function handleSelect(node) {
+  emit('select', node.code)
+}
+
 onMounted(() => {
   if (!disabled) {
     loadChildren()
   }
 })
 
-// Expose loadChildren method to parent component
+// Expose methods and state to parent component
 defineExpose({
-  loadChildren
+  loadChildren,
+  rootNodes
 })
 </script>
 
@@ -110,12 +121,14 @@ defineExpose({
   </div>
   <div v-else class="tree-container">
     <ul class="feacn-tree">
-      <FeacnCodesTreeNode 
-        v-for="node in rootNodes" 
-        :key="node.id" 
+      <FeacnCodesTreeNode
+        v-for="node in rootNodes"
+        :key="node.id"
         :node="node"
         :disabled="disabled"
+        :select-mode="selectMode"
         @toggle="toggleNode"
+        @select="handleSelect"
       />
     </ul>
   </div>

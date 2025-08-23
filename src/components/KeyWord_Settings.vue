@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
@@ -34,8 +34,10 @@ import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
+import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/match.type.validation.js'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
+import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   id: {
@@ -89,6 +91,10 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 const { value: feacnCodes } = useField('feacnCodes')
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
+
+const searchIndex = ref(null)
+
+const searchActive = computed(() => searchIndex.value !== null)
 
 const feacnCodesError = computed(() => {
   const key = Object.keys(errors.value).find(k => k.startsWith('feacnCodes'))
@@ -146,6 +152,35 @@ function onCodeInput(event, index) {
   setFieldValue(`feacnCodes[${index}]`, inputValue)
 }
 
+function toggleSearch(index) {
+  searchIndex.value = searchIndex.value === index ? null : index
+}
+
+function handleCodeSelect(code) {
+  if (searchIndex.value !== null) {
+    setFieldValue(`feacnCodes[${searchIndex.value}]`, code)
+  }
+  searchIndex.value = null
+}
+
+function handleEscape(event) {
+  if (event.key === 'Escape') {
+    searchIndex.value = null
+  }
+}
+
+watch(searchIndex, (val) => {
+  if (val !== null) {
+    document.addEventListener('keydown', handleEscape)
+  } else {
+    document.removeEventListener('keydown', handleEscape)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
+})
+
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   
@@ -185,12 +220,15 @@ defineExpose({
   onWordInput,
   onCodeInput,
   isOptionDisabled,
-  feacnCodes
+  feacnCodes,
+  toggleSearch,
+  handleCodeSelect,
+  searchIndex
 })
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     
@@ -210,20 +248,40 @@ defineExpose({
           placeholder="Ключевое слово или фраза"
           v-model="word"
           @input="onWordInput"
+          :disabled="searchActive"
         />
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
       </div>
 
-      <FieldArrayWithButtons
-        name="feacnCodes"
-        label="Код ТН ВЭД (10 цифр)"
-        field-type="input"
-        :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
-        placeholder="Введите код ТН ВЭД"
-        add-tooltip="Добавить код"
-        remove-tooltip="Удалить код"
-        :has-error="!!feacnCodesError"
-      />
+      <div class="feacn-search-wrapper">
+        <FieldArrayWithButtons
+          name="feacnCodes"
+          label="Код ТН ВЭД (10 цифр)"
+          field-type="input"
+          :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
+          placeholder="Введите код ТН ВЭД"
+          add-tooltip="Добавить код"
+          remove-tooltip="Удалить код"
+          :has-error="!!feacnCodesError"
+          :disabled="searchActive"
+        >
+          <template #extra="{ index }">
+            <ActionButton
+              :icon="searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :item="index"
+              @click="toggleSearch(index)"
+              class="button-o-c ml-2"
+              tooltip-text="Выбрать код"
+              :disabled="searchActive && searchIndex !== index"
+            />
+          </template>
+        </FieldArrayWithButtons>
+        <FeacnCodeSearch
+          v-if="searchIndex !== null"
+          class="feacn-overlay"
+          @select="handleCodeSelect"
+        />
+      </div>
       <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
       
       <div class="form-group">
@@ -240,7 +298,7 @@ defineExpose({
               name="matchTypeId"
               :value="mt.id"
               v-model="matchTypeId"
-              :disabled="isOptionDisabled(mt.id)"
+              :disabled="isOptionDisabled(mt.id) || searchActive"
             />
             <span class="radio-mark"></span>
             {{ mt.name }}
@@ -250,7 +308,7 @@ defineExpose({
 
       <div v-if="errors.matchTypeId" class="alert alert-danger mt-3 mb-0">{{ errors.matchTypeId }}</div>
       <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saving">
+        <button class="button primary" type="submit" :disabled="saving || searchActive">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
@@ -259,6 +317,7 @@ defineExpose({
           class="button secondary"
           type="button"
           @click="cancel"
+          :disabled="searchActive"
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
@@ -272,6 +331,20 @@ defineExpose({
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
-    </div>
+  </div>
   </div>
 </template>
+
+<style scoped>
+.feacn-search-wrapper {
+  position: relative;
+}
+
+.feacn-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+</style>

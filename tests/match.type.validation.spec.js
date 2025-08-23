@@ -30,9 +30,9 @@ import {
   isMatchTypeDisabled,
   validateMatchType,
   createMatchTypeValidationTest
-} from '@/helpers/matchTypeValidation.js'
+} from '@/helpers/match.type.validation.js'
 
-describe('matchTypeValidation', () => {
+describe('match.type.validation', () => {
   describe('parseWords', () => {
     it('parses single word correctly', () => {
       expect(parseWords('test')).toEqual(['test'])

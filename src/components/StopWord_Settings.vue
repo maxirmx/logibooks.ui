@@ -1,13 +1,4 @@
-// Copyright (C) 2025 Maximimport { ref, computed, onMounted, nextTick } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useForm, useField } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/yup'
-import * as Yup from 'yup'
-import router from '@/router'
-import { useStopWordsStore } from '@/stores/stop.words.store.js'
-import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
-import { parseWords, isSingleWordInput, isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'] Samsonov (www.sw.consulting)
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 //
@@ -43,7 +34,7 @@ import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/matchTypeValidation.js'
+import { isMatchTypeDisabled, createMatchTypeValidationTest } from '@/helpers/match.type.validation.js'
 
 const props = defineProps({
   id: {

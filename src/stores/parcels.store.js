@@ -52,9 +52,12 @@ export const useParcelsStore = defineStore('parcels', () => {
   async function getById(id) {
     item.value = { loading: true }
     try {
-      item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      const result = await fetchWrapper.get(`${baseUrl}/${id}`)
+      item.value = result
+      return result
     } catch (err) {
       item.value = { error: err }
+      return null
     }
   }
 
@@ -106,8 +109,8 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function lookupFeacnCode(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`)
-    return true
+    const result = await fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`)
+    return result
   }
 
   return {

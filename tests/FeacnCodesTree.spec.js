@@ -19,18 +19,27 @@ const globalStubs = {
 describe('FeacnCodesTree.vue', () => {
   const root = { id: 1, code: '01', codeEx: '01', name: 'Root', parentId: null }
   const child = { id: 2, code: '0101', codeEx: '0101', name: 'Child', parentId: 1 }
+  const leaf = {
+    id: 3,
+    code: '0101010101',
+    codeEx: '0101010101',
+    name: 'Leaf',
+    parentId: 2
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetChildren.mockImplementation(id => {
       if (id === null || id === undefined) return Promise.resolve([root])
       if (id === 1) return Promise.resolve([child])
+      if (id === 2) return Promise.resolve([leaf])
       return Promise.resolve([])
     })
   })
 
-  function createWrapper() {
+  function createWrapper(props = {}) {
     return mount(FeacnCodesTree, {
+      props,
       global: { stubs: globalStubs }
     })
   }
@@ -115,6 +124,27 @@ describe('FeacnCodesTree.vue', () => {
     // Check for the separate code and name display
     expect(wrapper.text()).toContain('0101') // child code
     expect(wrapper.text()).toContain('Child') // child name
+  })
+
+  it('emits select event with code when leaf node selected in select mode', async () => {
+    const wrapper = createWrapper({ selectMode: true })
+    await waitForMount(wrapper)
+
+    // Expand root to load child
+    await wrapper.find('.toggle-icon').trigger('click')
+    await flushPromises()
+
+    // Expand child to load leaf
+    const childToggle = wrapper.findAll('.toggle-icon').at(1)
+    await childToggle.trigger('click')
+    await flushPromises()
+
+    const leafLabel = wrapper.findAll('.node-label').find(n => n.text() === 'Leaf')
+    expect(leafLabel.classes()).toContain('clickable')
+    await leafLabel.trigger('click')
+
+    expect(wrapper.emitted('select')).toBeTruthy()
+    expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
   })
 })
 

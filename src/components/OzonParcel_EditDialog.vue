@@ -1,6 +1,8 @@
+<script setup>
+
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Logibooks core application
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -23,8 +25,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<script setup>
-
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -42,15 +42,10 @@ import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import {
-  getFeacnCodesForKeywords,
-  getFeacnCodeItemClass,
-  getTnVedCellClass,
-  getKeywordFeacnPairs,
-} from '@/helpers/parcels.list.helpers.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -91,11 +86,6 @@ watch(() => item.value?.statusId, (newStatusId) => {
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
-// Computed property for keyword/FEACN pairs
-const keywordsWithFeacn = computed(() =>
-  getKeywordFeacnPairs(item.value?.keyWordIds, keyWordsStore)
-)
-
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
   tnVed: Yup.string().required('Необходимо указать ТН ВЭД'),
@@ -115,7 +105,6 @@ async function validateParcel(values) {
     // Optionally reload the order data to reflect any changes
     await parcelsStore.getById(props.id)
   } catch (error) {
-    console.error('Failed to validate parcel:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
   }
 }
@@ -191,43 +180,7 @@ async function generateXml(values) {
     // Then generate XML
     await parcelsStore.generate(props.id, item.value?.postingNumber)
   } catch (error) {
-    console.error('Failed to generate XML:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
-  }
-}
-
-// Lookup FEACN codes for this parcel
-async function lookupFeacnCodes(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
-    // Then lookup FEACN codes
-    await parcelsStore.lookupFeacnCode(item.value.id)
-    // Reload the order data to reflect any changes
-    await parcelsStore.getById(props.id)
-  } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-  }
-}
-
-// Select a FEACN code and update TN VED
-async function selectFeacnCode(feacnCode, values, setFieldValue) {
-  try {
-    // Update the form field immediately
-    setFieldValue('tnVed', feacnCode)
-    
-    // Update the item's tnVed to trigger reactivity in computed properties
-    if (item.value) {
-      item.value.tnVed = feacnCode
-    }
-
-    // const updatedValues = { ...values, tnVed: feacnCode }
-    // await parcelsStore.update(item.value.id, updatedValues)
-    // await parcelsStore.getById(props.id)
-  } catch (error) {
-    console.error('Failed to update TN VED:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }
 </script>
@@ -289,63 +242,28 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
       </div>
 
       <!-- Feacn Code Section -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.tnVed }}:</label>
-            <Field name="tnVed" id="tnVed" class="form-control input" 
-                   :class="{ 
-                     'is-invalid': errors && errors.tnVed,
-                     [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
-                   }" />
-            <div class="action-buttons">
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-magnifying-glass"
-                tooltip-text="Сохранить и подобрать код ТН ВЭД"
-                :disabled="isSubmitting"
-                @click="() => lookupFeacnCodes(values)"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="label">Подбор:</label>
-            <div v-if="keywordsWithFeacn.length > 0" class="form-control feacn-lookup-column">
-              <div 
-                v-for="keyword in keywordsWithFeacn" 
-                :key="keyword.id"
-                style="display: flex; align-items: center; gap: 8px;"
-              >
-                <div 
-                  :class="[
-                    getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
-                    'feacn-edit-dialog-item'
-                  ]"
-                  style="flex: 1;"
-                  @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
-                >
-                  {{ keyword.feacnCode }} - {{ keyword.word }}
-                </div>
-                <div class="action-buttons">
-                  <ActionButton
-                    :item="keyword"
-                    :icon="keyword.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
-                    :tooltip-text="keyword.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
-                    :disabled="keyword.feacnCode === item.tnVed"
-                    @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
-                  />
-                </div>
-              </div>
-            </div>
-            <div v-else class="form-control">-</div>
-          </div>
-        </div>
-      </div>
+      <FeacnCodeEditor
+        :item="item"
+        :values="values"
+        :errors="errors"
+        :isSubmitting="isSubmitting"
+        :columnTitles="ozonRegisterColumnTitles"
+        :columnTooltips="ozonRegisterColumnTooltips"
+        :setFieldValue="setFieldValue"
+        @update:item="(updatedItem) => item = updatedItem"
+      />
 
       <!-- Product Name Section -->
       <div class="form-section">
-        <div class="form-row-1">
-          <OzonFormField name="productName" :errors="errors" />
+        <div class="form-row-1 product-name-row">
+          <label for="productName" class="label-1 product-name-label" :title="getFieldTooltip('productName', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">
+            {{ ozonRegisterColumnTitles.productName }}:
+          </label>
+          <Field
+            name="productName"
+            id="productName"
+            :class="['form-control', 'input-1', { 'is-invalid': errors && errors.productName }]"
+          />
         </div>
       </div>
             <!-- Product Identification & Details Section -->
@@ -430,3 +348,10 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
   </div>
 </template>
 
+<style scoped>
+/* Product name styling */
+.product-name-label {
+  width: 18.5%;
+  min-width: 180px;
+}
+</style>

@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -36,6 +36,11 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { 
+  loadFeacnTooltipOnHover, 
+  useFeacnTooltips, 
+  clearFeacnTooltipCache 
+} from '@/helpers/feacn.tooltip.helpers.js'
 
 const keyWordsStore = useKeyWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
@@ -48,6 +53,17 @@ const { alert } = storeToRefs(alertStore)
 
 // File upload reference
 const fileInput = ref(null)
+
+// Use global FEACN tooltips cache
+const feacnTooltips = useFeacnTooltips()
+
+// Tooltip width limitation
+const tooltipMaxWidth = computed(() => {
+  if (typeof window !== 'undefined') {
+    return `${window.innerWidth * 0.5}px`
+  }
+  return '400px' // fallback
+})
 
 // Custom filter function for v-data-table
 function filterKeyWords(value, query, item) {
@@ -98,6 +114,8 @@ async function fileSelected(files) {
   try {
     await keyWordsStore.upload(file)
     await keyWordsStore.getAll() 
+    // Clear cached tooltips since data may have changed
+    clearFeacnTooltipCache()
   } catch (error) {
       alertStore.error('Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : ""))
   } finally {
@@ -232,7 +250,24 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.feacnCodes`]="{ item }">
-          <div v-for="code in item.feacnCodes" :key="code">{{ code }}</div>
+          <div v-for="code in item.feacnCodes" :key="code">
+            <v-tooltip 
+              location="top"
+              content-class="feacn-tooltip"
+              :max-width="tooltipMaxWidth"
+            >
+              <template v-slot:activator="{ props }">
+                <span 
+                  v-bind="props" 
+                  class="feacn-code-tooltip"
+                  @mouseenter="loadFeacnTooltipOnHover(code)"
+                >
+                  {{ code }}
+                </span>
+              </template>
+              <span>{{ feacnTooltips[code] || 'Наведите для загрузки...' }}</span>
+            </v-tooltip>
+          </div>
         </template>
 
         <template v-slot:[`item.matchTypeId`]="{ item }">
@@ -255,5 +290,4 @@ defineExpose({
 
   </div>
 </template>
-
 

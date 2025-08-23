@@ -52,11 +52,11 @@ import {
   exportParcelXmlData,
   lookupFeacn,
   getFeacnCodesForKeywords,
-  getTnVedCellClass,
 } from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
+import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -299,14 +299,13 @@ function getGenericTemplateHeaders() {
           <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
         </template>
 
-        <!-- Special template for tnVed to display with color coding based on FEACN match -->
+        <!-- Special template for tnVed to display with FEACN tooltip -->
         <template #[`item.tnVed`]="{ item }">
-          <EditableCell 
-            :item="item" 
-            :display-value="item.tnVed || ''" 
-            :cell-class="`truncated-cell ${getTnVedCellClass(item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))}`" 
-            data-test="editable-cell" 
-            @click="editParcel" 
+          <FeacnCodeCurrent
+            :item="item"
+            :feacn-codes="getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)"
+            data-test="editable-cell"
+            @click="editParcel"
           />
         </template>
 

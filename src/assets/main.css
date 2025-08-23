@@ -212,6 +212,10 @@
   border: 1px solid var(--input-border-color);
 }
 
+.input[disabled] {
+  cursor: not-allowed;
+}
+
 .input[readonly] {
   background-color: var(--input-readonly-bg);
   color: var(--input-readonly-text);
@@ -977,8 +981,8 @@ a,
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 5rem;   /* Increase horizontal gap */
-  row-gap: 1rem;      /* Keep vertical gap as 1rem */
+  column-gap: 5rem;   
+  row-gap: 1rem;      
   margin-bottom: 0rem;
 }
 
@@ -1340,8 +1344,16 @@ a,
 
 .form-compact .label {
   font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
-  min-width: 120px;       /* Reduce from 140px to 120px */
 }
+
+.form-compact .label-1 {
+  font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
+}
+
+.form-compact .label-0 {
+  font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
+}
+
 
 .form-compact .input {
   font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
@@ -1572,6 +1584,19 @@ a,
   border-color: #e17055;
 }
 
+/* FEACN code tooltip styles */
+.feacn-code-tooltip {
+  cursor: help;
+  text-decoration: underline dotted;
+}
+
+/* Global FEACN tooltip width limitation */
+.feacn-tooltip {
+  max-width: 50vw !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
+}
+
 /* FEACN edit dialog item styles */
 .feacn-edit-dialog-item {
   cursor: pointer;
@@ -1580,3 +1605,7 @@ a,
   border-radius: 3px;
 }
 
+/* Ensure data tables use default arrow cursor */
+.v-data-table tbody tr td {
+  cursor: default !important;
+}

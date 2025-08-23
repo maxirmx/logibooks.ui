@@ -65,7 +65,7 @@ function isLeafNode(node) {
 </script>
 
 <template>
-  <li class="tree-node">
+  <li class="tree-node" :data-node-id="node.id">
     <div class="node-layout">
       <!-- Code display - clickable for non-leaf nodes or selectable leaf nodes -->
       <div

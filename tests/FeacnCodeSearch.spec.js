@@ -44,6 +44,7 @@ describe('FeacnCodeSearch.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    window.HTMLElement.prototype.scrollIntoView = vi.fn()
     mockLookup.mockResolvedValue([])
     mockGetById.mockImplementation(id => {
       if (id === 3) return Promise.resolve(leaf)
@@ -101,7 +102,30 @@ describe('FeacnCodeSearch.vue', () => {
     expect(wrapper.find('.result-name').text()).toBe('Formatted Name')
   })
 
-  it('searches and opens path from result', async () => {
+  it('searches and opens path from non-leaf result', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('child')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    expect(searchButton.exists()).toBe(true)
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockLookup).toHaveBeenCalledWith('child')
+    const resultItem = wrapper.find('.search-result-item')
+    expect(resultItem.exists()).toBe(true)
+
+    await resultItem.trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).toHaveBeenCalledWith(2)
+    expect(mockGetById).toHaveBeenCalledWith(1)
+  })
+
+  it('emits select when leaf result chosen', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
     const wrapper = createWrapper()
     await waitForUpdates(wrapper)
@@ -109,20 +133,52 @@ describe('FeacnCodeSearch.vue', () => {
     const input = wrapper.find('.search-input')
     await input.setValue('leaf')
     const searchButton = wrapper.findComponent({ name: 'ActionButton' })
-    expect(searchButton.exists()).toBe(true)
     await searchButton.find('button').trigger('click')
     await waitForUpdates(wrapper)
 
-    expect(mockLookup).toHaveBeenCalledWith('leaf')
     const resultItem = wrapper.find('.search-result-item')
-    expect(resultItem.exists()).toBe(true)
-
     await resultItem.trigger('click')
     await waitForUpdates(wrapper)
 
     expect(mockGetById).toHaveBeenCalledWith(3)
-    expect(mockGetById).toHaveBeenCalledWith(2)
-    expect(mockGetById).toHaveBeenCalledWith(1)
+    expect(wrapper.emitted('select')).toBeTruthy()
+    expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
+  })
+
+  it('closes dropdown on Escape key', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('child')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    expect(wrapper.find('.search-results').exists()).toBe(true)
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await waitForUpdates(wrapper)
+
+    expect(wrapper.find('.search-results').exists()).toBe(false)
+  })
+
+  it('closes dropdown when search input clicked', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    const input = wrapper.find('.search-input')
+    await input.setValue('child')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    expect(wrapper.find('.search-results').exists()).toBe(true)
+
+    await input.trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(wrapper.find('.search-results').exists()).toBe(false)
   })
 
   it('shows message when lookup returns no results', async () => {
@@ -211,18 +267,17 @@ describe('FeacnCodeSearch.vue', () => {
   })
 
   it('gracefully aborts opening path when a parent node is missing', async () => {
-    mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
+    mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
     mockGetById.mockImplementation(id => {
-      if (id === 3) return Promise.resolve(leaf)
-      if (id === 2) return Promise.resolve(null)
-      if (id === 1) return Promise.resolve(root)
+      if (id === 2) return Promise.resolve(child)
+      if (id === 1) return Promise.resolve(null)
       return Promise.resolve(null)
     })
     const wrapper = createWrapper()
     await waitForUpdates(wrapper)
 
     const input = wrapper.find('.search-input')
-    await input.setValue('leaf')
+    await input.setValue('child')
     const searchButton = wrapper.findComponent({ name: 'ActionButton' })
     await searchButton.find('button').trigger('click')
     await waitForUpdates(wrapper)
@@ -231,8 +286,8 @@ describe('FeacnCodeSearch.vue', () => {
     await resultItem.trigger('click')
     await waitForUpdates(wrapper)
 
-    expect(mockGetById).toHaveBeenCalledWith(3)
     expect(mockGetById).toHaveBeenCalledWith(2)
+    expect(mockGetById).toHaveBeenCalledWith(1)
     expect(wrapper.find('.search-error').exists()).toBe(false)
   })
 })

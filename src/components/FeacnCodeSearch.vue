@@ -43,6 +43,18 @@ const searchError = ref(null)
 
 const treeRef = ref(null)
 
+function isLeafNode(node) {
+  return node?.code && node.code.length === 10 && /\d$/.test(node.code)
+}
+
+function handleKeyDown(event) {
+  if (event.key === 'Escape' && dropdownVisible.value) {
+    dropdownVisible.value = false
+    event.stopPropagation()
+    event.preventDefault()
+  }
+}
+
 async function performSearch() {
   const key = searchKey.value.trim()
   if (!key) {
@@ -88,6 +100,12 @@ async function selectSearchResult(item) {
     if (!node) {
       return
     }
+
+    if (isLeafNode(node)) {
+      emit('select', node.code)
+      return
+    }
+
     const path = []
     let current = node
     while (current) {
@@ -99,6 +117,12 @@ async function selectSearchResult(item) {
       }
     }
     await openPath(path)
+
+    await nextTick()
+    const targetEl = treeRef.value?.$el.querySelector(`[data-node-id="${item.id}"]`)
+    if (targetEl && targetEl.scrollIntoView) {
+      targetEl.scrollIntoView({ block: 'center' })
+    }
   } catch (err) {
     searchError.value = err
     searchResults.value = []
@@ -136,11 +160,13 @@ function handleSelect(code) {
 </script>
 
 <template>
-  <div class="feacn-code-search">
+  <div class="feacn-code-search" @keydown="handleKeyDown">
     <div class="search-bar">
       <input
         v-model="searchKey"
         @keyup.enter="performSearch"
+        @focus="dropdownVisible = false"
+        @click="dropdownVisible = false"
         type="text"
         class="input search-input"
         :disabled="searching"

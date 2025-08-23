@@ -28,6 +28,7 @@ import { ref, nextTick } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { formatFeacnName } from '@/helpers/feacn.tooltip.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
@@ -54,7 +55,13 @@ async function performSearch() {
   searchError.value = null
   try {
     const items = await store.lookup(key)
-    searchResults.value = items || []
+    const formatted = await Promise.all(
+      (items || []).map(async item => ({
+        ...item,
+        name: await formatFeacnName(item.code)
+      }))
+    )
+    searchResults.value = formatted
   } catch (err) {
     searchError.value = err
     searchResults.value = []
@@ -131,6 +138,7 @@ function handleSelect(code) {
         type="text"
         class="search-input"
         :disabled="searching"
+        placeholder="Код ТН ВЭД или слово для поиска"
       />
       <ActionButton
         class="search-button"
@@ -169,6 +177,10 @@ function handleSelect(code) {
 <style scoped>
 .feacn-code-search {
   position: relative;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  background-color: #fff;
 }
 .search-bar {
   display: flex;
@@ -178,6 +190,7 @@ function handleSelect(code) {
 .search-input {
   flex: 1;
   padding: 4px 8px;
+  border: 1px solid #ccc;
 }
 .search-bar :deep(.search-button) {
   margin-left: 4px;

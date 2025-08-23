@@ -172,11 +172,13 @@ function handleSelect(code) {
         </li>
       </ul>
     </div>
-    <FeacnCodesTree
-      ref="treeRef"
-      select-mode
-      @select="handleSelect"
-    />
+    <div class="tree-container">
+      <FeacnCodesTree
+        ref="treeRef"
+        select-mode
+        @select="handleSelect"
+      />
+    </div>
   </div>
 </template>
 
@@ -189,6 +191,9 @@ function handleSelect(code) {
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--input-border-color);
   border-radius: 0.25rem;
+  max-height: max(200px, 50vh);
+  display: flex;
+  flex-direction: column;
 }
 
 .search-bar {
@@ -223,6 +228,10 @@ function handleSelect(code) {
   margin: 0;
   max-height: 200px;
   overflow-y: auto;
+}
+.tree-container {
+  overflow-y: auto;
+  flex: 1 1 auto;
 }
 .search-result-item {
   padding: 4px 8px;

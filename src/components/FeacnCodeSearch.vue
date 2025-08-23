@@ -211,12 +211,13 @@ function closeDropdown() {
   padding: 8px;
   background-color: #f5f5f5;
   color: #161616;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--input-border-color);
+  box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
+  border: 2px solid #797979;
   border-radius: 0.25rem;
   max-height: max(200px, 30vh);
   display: flex;
   flex-direction: column;
+  font-size: 0.875em;
 }
 
 .search-bar {

@@ -53,15 +53,11 @@ import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import {
-  getFeacnCodesForKeywords,
-  getFeacnCodeItemClass,
-  getTnVedCellClass,
-  getKeywordFeacnPairs,
-} from '@/helpers/parcels.list.helpers.js'
+import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -101,11 +97,6 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
-
-// Computed property for keyword/FEACN pairs
-const keywordsWithFeacn = computed(() =>
-  getKeywordFeacnPairs(item.value?.keyWordIds, keyWordsStore)
-)
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
@@ -319,37 +310,11 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
               />
             </div>
           </div>
-          <div class="form-group">
-            <label class="label">Подбор:</label>
-            <div v-if="keywordsWithFeacn.length > 0" class="form-control feacn-lookup-column">
-              <div 
-                v-for="keyword in keywordsWithFeacn" 
-                :key="keyword.id"
-                class="keyword-item"
-              >
-                <div 
-                  :class="[
-                    getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
-                    'feacn-edit-dialog-item'
-                  ]"
-                  class="keyword-code"
-                  @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
-                >
-                  {{ keyword.feacnCode }} - {{ keyword.word }}
-                </div>
-                <div class="action-buttons">
-                  <ActionButton
-                    :item="keyword"
-                    :icon="keyword.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
-                    :tooltip-text="keyword.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
-                    :disabled="keyword.feacnCode === item.tnVed"
-                    @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
-                  />
-                </div>
-              </div>
-            </div>
-            <div v-else class="form-control">-</div>
-          </div>
+          <FeacnCodeSelectorW 
+            :item="item" 
+            :onSelect="(feacnCode) => selectFeacnCode(feacnCode, values, setFieldValue)"
+            :showQuotes="false"
+          />
         </div>
       </div>
 
@@ -449,17 +414,6 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
 </template>
 
 <style scoped>
-/* Keyword items in FEACN lookup */
-.keyword-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.keyword-code {
-  flex: 1;
-}
-
 /* Product name styling */
 .product-name-label {
   width: 18.5%;

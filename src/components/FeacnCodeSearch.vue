@@ -28,7 +28,7 @@ import { ref, nextTick } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { formatFeacnName } from '@/helpers/feacn.tooltip.helpers.js'
+import { formatFeacnName, formatFeacnNameFromItem } from '@/helpers/feacn.tooltip.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
@@ -55,12 +55,10 @@ async function performSearch() {
   searchError.value = null
   try {
     const items = await store.lookup(key)
-    const formatted = await Promise.all(
-      (items || []).map(async item => ({
-        ...item,
-        name: await formatFeacnName(item.code)
-      }))
-    )
+    const formatted = (items || []).map(item => ({
+      ...item,
+      name: formatFeacnNameFromItem(item)
+    }))
     searchResults.value = formatted
   } catch (err) {
     searchError.value = err
@@ -136,7 +134,7 @@ function handleSelect(code) {
         v-model="searchKey"
         @keyup.enter="performSearch"
         type="text"
-        class="search-input"
+        class="input search-input"
         :disabled="searching"
         placeholder="Код ТН ВЭД или слово для поиска"
       />
@@ -177,8 +175,8 @@ function handleSelect(code) {
 <style scoped>
 .feacn-code-search {
   position: relative;
-  border: 1px solid #ccc;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #363636;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   padding: 8px;
   background-color: #fff;
 }
@@ -190,7 +188,7 @@ function handleSelect(code) {
 .search-input {
   flex: 1;
   padding: 4px 8px;
-  border: 1px solid #ccc;
+  margin-bottom: 8px;
 }
 .search-bar :deep(.search-button) {
   margin-left: 4px;
@@ -203,7 +201,7 @@ function handleSelect(code) {
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #ccc;
+  border: 1px solid #363636;
   z-index: 10;
   list-style: none;
   padding: 0;

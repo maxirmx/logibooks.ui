@@ -335,14 +335,14 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
               <div 
                 v-for="keyword in keywordsWithFeacn" 
                 :key="keyword.id"
-                style="display: flex; align-items: center; gap: 8px;"
+                class="keyword-item"
               >
                 <div 
                   :class="[
                     getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
                     'feacn-edit-dialog-item'
                   ]"
-                  style="flex: 1;"
+                  class="keyword-code"
                   @click="() => selectFeacnCode(keyword.feacnCode, values, setFieldValue)"
                 >
                   {{ keyword.feacnCode }} - "{{ keyword.word }}"
@@ -372,7 +372,14 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
             :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
             @click="isDescriptionVisible = !isDescriptionVisible"
           />
-          <WbrFormField name="productName" :errors="errors" />
+          <label for="productName" class="label-1 product-name-label" :title="getFieldTooltip('productName', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">
+            {{ wbrRegisterColumnTitles.productName }}:
+          </label>
+          <Field
+            name="productName"
+            id="productName"
+            :class="['form-control', 'input-1', { 'is-invalid': errors && errors.productName }]"
+          />
         </div>
         <div class="form-row-0" v-show="isDescriptionVisible">
           <div class="form-group-0">
@@ -461,3 +468,27 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
   </div>
 </template>
 
+<style scoped>
+/* Keyword items in FEACN lookup */
+.keyword-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.keyword-code {
+  flex: 1;
+}
+
+/* Product name styling */
+.product-name-label {
+  width: calc(18.5% - 40px);
+  min-width: 140px;
+}
+
+/* Override product name row alignment */
+.product-name-row {
+  display: flex;
+  align-items: center;
+}
+</style>

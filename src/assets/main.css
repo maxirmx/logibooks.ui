@@ -977,8 +977,8 @@ a,
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 5rem;   /* Increase horizontal gap */
-  row-gap: 1rem;      /* Keep vertical gap as 1rem */
+  column-gap: 5rem;   
+  row-gap: 1rem;      
   margin-bottom: 0rem;
 }
 
@@ -1340,8 +1340,16 @@ a,
 
 .form-compact .label {
   font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
-  min-width: 120px;       /* Reduce from 140px to 120px */
 }
+
+.form-compact .label-1 {
+  font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
+}
+
+.form-compact .label-0 {
+  font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */
+}
+
 
 .form-compact .input {
   font-size: 0.875rem;    /* Reduce from 1rem to 0.875rem */

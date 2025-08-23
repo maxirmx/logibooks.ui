@@ -244,7 +244,7 @@ defineExpose({
       >
         <template #extra="{ index }">
           <ActionButton
-            icon="fa-solid fa-caret-down"
+            icon="fa-solid fa-arrow-down"
             :item="index"
             @click="toggleSearch(index)"
             class="button-o-c ml-2"

@@ -70,6 +70,14 @@ vi.mock('@/stores/alert.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/feacn.codes.store.js', () => ({
+  useFeacnCodesStore: () => ({
+    getChildren: vi.fn(() => Promise.resolve([])),
+    loading: ref(false),
+    error: ref(null)
+  })
+}))
+
 // Mock router
 vi.mock('@/router', () => ({
   default: {

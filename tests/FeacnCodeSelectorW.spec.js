@@ -55,8 +55,7 @@ describe('FeacnCodeSelectorW', () => {
       keyWordIds: [1, 2],
       tnVed: '1234567890'
     },
-    onSelect: mockOnSelect,
-    showQuotes: true
+    onSelect: mockOnSelect
   }
 
   const createWrapper = (props = {}) => {
@@ -91,7 +90,7 @@ describe('FeacnCodeSelectorW', () => {
     expect(wrapper.text()).toContain('-')
   })
 
-  it('renders keywords with quotes when showQuotes is true', async () => {
+  it('renders keywords with quotes', async () => {
     const mockKeywords = [
       { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
       { id: 2, word: 'test keyword 2', feacnCode: '0987654321' }
@@ -100,26 +99,10 @@ describe('FeacnCodeSelectorW', () => {
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
     
-    wrapper = createWrapper({ showQuotes: true })
+    wrapper = createWrapper()
     
     expect(wrapper.text()).toContain('1234567890 - "test keyword 1"')
     expect(wrapper.text()).toContain('0987654321 - "test keyword 2"')
-  })
-
-  it('renders keywords without quotes when showQuotes is false', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
-      { id: 2, word: 'test keyword 2', feacnCode: '0987654321' }
-    ]
-    
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    
-    wrapper = createWrapper({ showQuotes: false })
-    
-    expect(wrapper.text()).toContain('1234567890 - test keyword 1')
-    expect(wrapper.text()).toContain('0987654321 - test keyword 2')
-    expect(wrapper.text()).not.toContain('"')
   })
 
   it('calls onSelect when keyword code is clicked', async () => {

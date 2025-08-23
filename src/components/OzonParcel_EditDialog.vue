@@ -53,11 +53,10 @@ import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
-import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
+import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -291,32 +290,17 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
       </div>
 
       <!-- Feacn Code Section -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.tnVed }}:</label>
-            <Field name="tnVed" id="tnVed" class="form-control input" 
-                   :class="{ 
-                     'is-invalid': errors && errors.tnVed,
-                     [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
-                   }" />
-            <div class="action-buttons">
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-magnifying-glass"
-                tooltip-text="Сохранить и подобрать код ТН ВЭД"
-                :disabled="isSubmitting"
-                @click="() => lookupFeacnCodes(values)"
-              />
-            </div>
-          </div>
-          <FeacnCodeSelectorW 
-            :item="item" 
-            :onSelect="(feacnCode) => selectFeacnCode(feacnCode, values, setFieldValue)"
-            :showQuotes="false"
-          />
-        </div>
-      </div>
+      <FeacnCodeEditor
+        :item="item"
+        :values="values"
+        :errors="errors"
+        :isSubmitting="isSubmitting"
+        :columnTitles="ozonRegisterColumnTitles"
+        :columnTooltips="ozonRegisterColumnTooltips"
+        :setFieldValue="setFieldValue"
+        :onLookupFeacnCodes="lookupFeacnCodes"
+        :onSelectFeacnCode="selectFeacnCode"
+      />
 
       <!-- Product Name Section -->
       <div class="form-section">

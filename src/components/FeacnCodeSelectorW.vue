@@ -36,8 +36,7 @@ import { useKeyWordsStore } from '@/stores/key.words.store.js'
 
 const props = defineProps({
   item: { type: Object, required: true },
-  onSelect: { type: Function, required: true },
-  showQuotes: { type: Boolean, default: true }
+  onSelect: { type: Function, required: true }
 })
 
 const keyWordsStore = useKeyWordsStore()
@@ -82,12 +81,7 @@ function handleMouseEnter(code) {
               @click="() => handleCodeSelect(keyword.feacnCode)"
               @mouseenter="() => handleMouseEnter(keyword.feacnCode)"
             >
-              <template v-if="showQuotes">
-                {{ keyword.feacnCode }} - "{{ keyword.word }}"
-              </template>
-              <template v-else>
-                {{ keyword.feacnCode }} - {{ keyword.word }}
-              </template>
+              {{ keyword.feacnCode }} - "{{ keyword.word }}"
             </div>
           </template>
           <template #default>

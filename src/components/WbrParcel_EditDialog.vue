@@ -2,23 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 //
-// Redistribution and use in source and binary foasync function lookupFeacnCodes(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
-    
-    // Then lookup FEACN codes and get the keyWordIds response
-    const result = await parcelsStore.lookupFeacnCode(item.value.id)
-    
-    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
-    if (result && result.keyWordIds && item.value) {
-      item.value.keyWordIds = result.keyWordIds
-    }
-  } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-  }
-}t
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -58,11 +42,10 @@ import { ref, watch, computed } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
-import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import WbrFormField from './WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
-import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
+import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -301,32 +284,17 @@ async function selectFeacnCode(feacnCode, values, setFieldValue) {
       </div>
 
       <!-- Feacn Code Section -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.tnVed }}:</label>
-            <Field name="tnVed" id="tnVed" class="form-control input" 
-                   :class="{ 
-                     'is-invalid': errors && errors.tnVed,
-                     [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
-                   }" />
-            <div class="action-buttons">
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-magnifying-glass"
-                tooltip-text="Сохранить и подбрать код ТН ВЭД"
-                :disabled="isSubmitting"
-                @click="() => lookupFeacnCodes(values)"
-              />
-            </div>
-          </div>
-          <FeacnCodeSelectorW 
-            :item="item" 
-            :onSelect="(feacnCode) => selectFeacnCode(feacnCode, values, setFieldValue)"
-            :showQuotes="true"
-          />
-        </div>
-      </div>
+      <FeacnCodeEditor
+        :item="item"
+        :values="values"
+        :errors="errors"
+        :isSubmitting="isSubmitting"
+        :columnTitles="wbrRegisterColumnTitles"
+        :columnTooltips="wbrRegisterColumnTooltips"
+        :setFieldValue="setFieldValue"
+        :onLookupFeacnCodes="lookupFeacnCodes"
+        :onSelectFeacnCode="selectFeacnCode"
+      />
 
       <!-- Product Name and description Section -->
       <div class="form-section">

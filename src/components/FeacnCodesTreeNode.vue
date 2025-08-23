@@ -86,7 +86,7 @@ function isLeafNode(node) {
           v-if="isLeafNode(node)"
           class="leaf-icon"
         >
-          <font-awesome-icon icon="fa-solid fa-check-circle" />
+          <font-awesome-icon icon="fa-solid fa-check" />
         </span>
         <!-- Show placeholder when node is loaded and confirmed to have no children -->
         <span 

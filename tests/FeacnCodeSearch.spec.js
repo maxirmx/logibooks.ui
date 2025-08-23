@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+const mockFormatFeacnName = vi.hoisted(() => vi.fn())
+const mockFormatFeacnNameFromItem = vi.hoisted(() => vi.fn())
+vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+  formatFeacnName: mockFormatFeacnName,
+  formatFeacnNameFromItem: mockFormatFeacnNameFromItem
+}))
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
@@ -51,6 +57,8 @@ describe('FeacnCodeSearch.vue', () => {
       if (id === 2) return Promise.resolve([leaf])
       return Promise.resolve([])
     })
+    mockFormatFeacnName.mockImplementation(code => Promise.resolve(`Name ${code}`))
+    mockFormatFeacnNameFromItem.mockImplementation(item => `Name ${item?.code || ''}`)
   })
 
   it('re-emits select event from tree', async () => {
@@ -68,6 +76,29 @@ describe('FeacnCodeSearch.vue', () => {
 
     expect(wrapper.emitted('select')).toBeTruthy()
     expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
+  })
+
+  it('has placeholder text', () => {
+    const wrapper = createWrapper()
+    const input = wrapper.find('.search-input')
+    expect(input.attributes('placeholder')).toBe('Код ТН ВЭД или слово для поиска')
+  })
+
+  it('uses formatFeacnName for search results', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 1, code: '0101' }])
+    mockFormatFeacnName.mockResolvedValueOnce('Formatted Name')
+    mockFormatFeacnNameFromItem.mockReturnValueOnce('Formatted Name')
+    
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+    const input = wrapper.find('.search-input')
+    await input.setValue('test')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    
+    expect(mockFormatFeacnName).toHaveBeenCalledWith('0101')
+    expect(wrapper.find('.result-name').text()).toBe('Formatted Name')
   })
 
   it('searches and opens path from result', async () => {

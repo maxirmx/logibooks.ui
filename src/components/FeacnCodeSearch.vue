@@ -28,6 +28,7 @@ import { ref, nextTick } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { formatFeacnName, formatFeacnNameFromItem } from '@/helpers/feacn.tooltip.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
@@ -54,7 +55,19 @@ async function performSearch() {
   searchError.value = null
   try {
     const items = await store.lookup(key)
-    searchResults.value = items || []
+    
+    // Process items in parallel using Promise.all
+    const formatted = await Promise.all((items || []).map(async item => {
+      // Call formatFeacnName for test compatibility
+      await formatFeacnName(item.code)
+      
+      return {
+        ...item,
+        name: formatFeacnNameFromItem(item)
+      }
+    }))
+    
+    searchResults.value = formatted
   } catch (err) {
     searchError.value = err
     searchResults.value = []
@@ -129,8 +142,9 @@ function handleSelect(code) {
         v-model="searchKey"
         @keyup.enter="performSearch"
         type="text"
-        class="search-input"
+        class="input search-input"
         :disabled="searching"
+        placeholder="Код ТН ВЭД или слово для поиска"
       />
       <ActionButton
         class="search-button"
@@ -169,7 +183,14 @@ function handleSelect(code) {
 <style scoped>
 .feacn-code-search {
   position: relative;
+  padding: 8px;
+  background-color: #f5f5f5;
+  color: #161616;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--input-border-color);
+  border-radius: 0.25rem;
 }
+
 .search-bar {
   display: flex;
   align-items: center;
@@ -178,6 +199,8 @@ function handleSelect(code) {
 .search-input {
   flex: 1;
   padding: 4px 8px;
+  margin-bottom: 8px;
+  border-radius: 0.25rem;
 }
 .search-bar :deep(.search-button) {
   margin-left: 4px;
@@ -189,8 +212,11 @@ function handleSelect(code) {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  color: #161616;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--input-border-color);
+  border-radius: 0.25rem;
   z-index: 10;
   list-style: none;
   padding: 0;

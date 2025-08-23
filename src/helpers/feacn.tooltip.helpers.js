@@ -30,6 +30,26 @@ import { ref } from 'vue'
 const globalFeacnTooltips = ref({})
 
 /**
+ * Formats FEACN code name from an item object without making API calls
+ * @param {Object} item - FEACN item object with normalizedName, name, and code properties
+ * @returns {string} Formatted FEACN name
+ */
+export function formatFeacnNameFromItem(item) {
+  if (!item) return 'Код ТН ВЭД не найден'
+
+  const normalized = item?.normalizedName?.trim()
+  if (normalized) {
+    const lower = normalized.toLowerCase()
+    return lower.charAt(0).toUpperCase() + lower.slice(1)
+  }
+
+  const name = item?.name?.trim()
+  if (name) return name
+
+  return `Код ТН ВЭД ${item.code || ''}`
+}
+
+/**
  * Formats FEACN code name using data from the store
  * @param {string} code - FEACN code
  * @returns {Promise<string>} Formatted FEACN name
@@ -40,18 +60,14 @@ export async function formatFeacnName(code) {
   try {
     const info = await store.getByCode(code)
     if (!info) return 'Код ТН ВЭД не найден'
-
-    const normalized = info?.normalizedName?.trim()
-    const name = info?.name?.trim()
-
-    if (normalized) {
-      const lower = normalized.toLowerCase()
-      return lower.charAt(0).toUpperCase() + lower.slice(1)
+    
+    // Create a complete item with the original code
+    const item = {
+      ...info,
+      code: code // Ensure we have the original code
     }
-
-    if (name) return name
-
-    return `Код ТН ВЭД ${code}`
+    
+    return formatFeacnNameFromItem(item)
   } catch {
     return 'Код ТН ВЭД не найден'
   }

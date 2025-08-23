@@ -1578,6 +1578,13 @@ a,
   text-decoration: underline dotted;
 }
 
+/* Global FEACN tooltip width limitation */
+.feacn-tooltip {
+  max-width: 50vw !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
+}
+
 /* FEACN edit dialog item styles */
 .feacn-edit-dialog-item {
   cursor: pointer;

@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -56,6 +56,14 @@ const fileInput = ref(null)
 
 // Use global FEACN tooltips cache
 const feacnTooltips = useFeacnTooltips()
+
+// Tooltip width limitation
+const tooltipMaxWidth = computed(() => {
+  if (typeof window !== 'undefined') {
+    return `${window.innerWidth * 0.5}px`
+  }
+  return '400px' // fallback
+})
 
 // Custom filter function for v-data-table
 function filterKeyWords(value, query, item) {
@@ -243,7 +251,11 @@ defineExpose({
 
         <template v-slot:[`item.feacnCodes`]="{ item }">
           <div v-for="code in item.feacnCodes" :key="code">
-            <v-tooltip location="top">
+            <v-tooltip 
+              location="top"
+              content-class="feacn-tooltip"
+              :max-width="tooltipMaxWidth"
+            >
               <template v-slot:activator="{ props }">
                 <span 
                   v-bind="props" 

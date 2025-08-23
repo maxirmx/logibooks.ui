@@ -81,13 +81,54 @@ describe('feacn.insert.items.store.js', () => {
       expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems/1')
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems')
     })
+
+    it('getById refresh flag resets insertItem before fetch', async () => {
+      fetchWrapper.get.mockResolvedValue(mockItem)
+      store.insertItem = { id: 99 }
+      await store.getById(1, true)
+      expect(store.insertItem).toEqual(mockItem)
+    })
+
+    it('ensureLoaded fetches items when not initialized', async () => {
+      fetchWrapper.get.mockResolvedValue(mockItems)
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems')
+      expect(store.insertItems).toEqual(mockItems)
+    })
+
+    it('ensureLoaded skips fetch when already initialized', async () => {
+      store.isInitialized = true
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
   })
 
   describe('error handling', () => {
-    it('sets error when request fails', async () => {
+    it('sets error when getAll fails', async () => {
       const err = new Error('fail')
       fetchWrapper.get.mockRejectedValue(err)
       await expect(store.getAll()).rejects.toThrow('fail')
+      expect(store.error).toBe(err)
+    })
+
+    it('sets error when create fails', async () => {
+      const err = new Error('fail')
+      fetchWrapper.post.mockRejectedValue(err)
+      await expect(store.create(mockItem)).rejects.toThrow('fail')
+      expect(store.error).toBe(err)
+    })
+
+    it('sets error when update fails', async () => {
+      const err = new Error('fail')
+      fetchWrapper.put.mockRejectedValue(err)
+      await expect(store.update(1, mockItem)).rejects.toThrow('fail')
+      expect(store.error).toBe(err)
+    })
+
+    it('sets error when remove fails', async () => {
+      const err = new Error('fail')
+      fetchWrapper.delete.mockRejectedValue(err)
+      await expect(store.remove(1)).rejects.toThrow('fail')
       expect(store.error).toBe(err)
     })
   })

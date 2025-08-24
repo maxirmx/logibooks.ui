@@ -79,6 +79,9 @@ const { countries } = storeToRefs(countriesStore)
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
 
+// Track overlay state for disabling form elements
+const overlayActive = ref(false)
+
 // Watch for changes in item.statusId to initialize currentStatusId
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
@@ -195,7 +198,7 @@ async function generateXml(values) {
       Посылка {{ item?.shk ? item.shk : '[без номера]' }}
     </h1>
     <hr class="hr" />
-    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit, setFieldValue }">
+    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit, setFieldValue }" :class="{ 'form-disabled': overlayActive }">
 
       <!-- Order Identification & Status Section -->
       <div class="form-section">
@@ -255,6 +258,7 @@ async function generateXml(values) {
         :columnTooltips="wbrRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
         @update:item="(updatedItem) => item = updatedItem"
+        @overlay-state-changed="overlayActive = $event"
       />
 
       <!-- Product Name and description Section -->
@@ -373,5 +377,22 @@ async function generateXml(values) {
 .product-name-row {
   display: flex;
   align-items: center;
+}
+
+/* Overlay state styling */
+.form-disabled .form-control,
+.form-disabled button,
+.form-disabled select,
+.form-disabled textarea,
+.form-disabled .v-field,
+.form-disabled .v-btn {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-disabled .feacn-search-wrapper {
+  pointer-events: auto;
+  opacity: 1;
 }
 </style>

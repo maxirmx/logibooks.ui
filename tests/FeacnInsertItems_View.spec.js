@@ -23,38 +23,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-<script setup>
-defineProps({
-  item: { required: true },
-  icon: { type: String, required: true },
-  tooltipText: { type: String, required: true },
-  iconSize: { type: String, default: '1x' },
-  disabled: { type: Boolean, default: false }
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { createVuetify } from 'vuetify'
+import FeacnInsertItems_View from '@/views/FeacnInsertItems_View.vue'
+import FeacnInsertItems_List from '@/components/FeacnInsertItems_List.vue'
+
+const vuetify = createVuetify()
+
+vi.mock('@/components/FeacnInsertItems_List.vue', () => ({
+  default: {
+    name: 'FeacnInsertItems_List',
+    template: '<div data-test="fi-list">FeacnInsertItems_List Component</div>'
+  }
+}))
+
+describe('FeacnInsertItems_View', () => {
+  let wrapper
+
+  beforeEach(() => {
+    wrapper = mount(FeacnInsertItems_View, {
+      global: { plugins: [vuetify] }
+    })
+  })
+
+  it('renders FeacnInsertItems_List component', () => {
+    const list = wrapper.findComponent(FeacnInsertItems_List)
+    expect(list.exists()).toBe(true)
+  })
+
+  it('has correct structure', () => {
+    expect(wrapper.find('[data-test="fi-list"]').exists()).toBe(true)
+  })
 })
 
-defineEmits(['click'])
-</script>
-<template>
-  <v-tooltip :text="tooltipText" :disabled="disabled">
-    <template v-slot:activator="{ props }">
-      <button 
-        type="button" 
-        @click="$emit('click', item)" 
-        :class="['anti-btn', { 'disabled-btn': disabled }, $attrs.class]"
-        v-bind="props"
-        :disabled="disabled"
-      >
-        <font-awesome-icon :size="iconSize" :icon="icon"  class="button-o-c"/>
-      </button>
-    </template>
-  </v-tooltip>
-</template>
-
-<style scoped>
-
-.anti-btn:focus {
-  border: none;
-  outline: none;
-}
-
-</style>

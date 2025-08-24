@@ -24,37 +24,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-defineProps({
-  item: { required: true },
-  icon: { type: String, required: true },
-  tooltipText: { type: String, required: true },
-  iconSize: { type: String, default: '1x' },
-  disabled: { type: Boolean, default: false }
-})
+import { useRoute } from 'vue-router'
+import FeacnInsertItem_Settings from '@/components/FeacnInsertItem_Settings.vue'
 
-defineEmits(['click'])
+const route = useRoute()
 </script>
+
 <template>
-  <v-tooltip :text="tooltipText" :disabled="disabled">
-    <template v-slot:activator="{ props }">
-      <button 
-        type="button" 
-        @click="$emit('click', item)" 
-        :class="['anti-btn', { 'disabled-btn': disabled }, $attrs.class]"
-        v-bind="props"
-        :disabled="disabled"
-      >
-        <font-awesome-icon :size="iconSize" :icon="icon"  class="button-o-c"/>
-      </button>
-    </template>
-  </v-tooltip>
+  <FeacnInsertItem_Settings :mode="'edit'" :insert-item-id="route.params.id" />
 </template>
-
-<style scoped>
-
-.anti-btn:focus {
-  border: none;
-  outline: none;
-}
-
-</style>

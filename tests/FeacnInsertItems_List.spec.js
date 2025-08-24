@@ -41,8 +41,8 @@ const mockSuccess = vi.hoisted(() => vi.fn())
 const mockLoadTooltip = vi.hoisted(() => vi.fn())
 
 const mockInsertItems = ref([
-  { id: 1, code: '1234567890', insertBefore: 'before1', insertAfter: 'after1' },
-  { id: 2, code: '0987654321', insertBefore: 'before2', insertAfter: 'after2' }
+  { id: 1, code: '1234567890', insBefore: 'before1', insAfter: 'after1' },
+  { id: 2, code: '0987654321', insBefore: 'before2', insAfter: 'after2' }
 ])
 
 // Mock stores and modules

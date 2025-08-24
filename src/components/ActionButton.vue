@@ -49,3 +49,12 @@ defineEmits(['click'])
     </template>
   </v-tooltip>
 </template>
+
+<style scoped>
+
+.anti-btn:focus {
+  border: none;
+  outline: none;
+}
+
+</style>

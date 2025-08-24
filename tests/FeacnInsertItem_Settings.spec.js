@@ -81,20 +81,20 @@ describe('FeacnInsertItem_Settings.vue', () => {
     create.mockResolvedValue({})
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '1234567890')
-    wrapper.vm.setFieldValue('insertBefore', 'before')
-    wrapper.vm.setFieldValue('insertAfter', 'after')
+    wrapper.vm.setFieldValue('insBefore', 'before')
+    wrapper.vm.setFieldValue('insAfter', 'after')
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith({ code: '1234567890', insertBefore: 'before', insertAfter: 'after' })
+    expect(create).toHaveBeenCalledWith({ code: '1234567890', insBefore: 'before', insAfter: 'after' })
   })
 
   it('loads data in edit mode and updates', async () => {
-    getById.mockResolvedValue({ code: '1111111111', insertBefore: 'b', insertAfter: 'a' })
+    getById.mockResolvedValue({ code: '1111111111', insBefore: 'b', insAfter: 'a' })
     update.mockResolvedValue({})
     const wrapper = mountComponent({ mode: 'edit', insertItemId: 1 })
     await flushPromises()
     await wrapper.vm.onSubmit()
     expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, { code: '1111111111', insertBefore: 'b', insertAfter: 'a' })
+    expect(update).toHaveBeenCalledWith(1, { code: '1111111111', insBefore: 'b', insAfter: 'a' })
   })
 
   it('toggles FeacnCodeSearch and selects code', async () => {

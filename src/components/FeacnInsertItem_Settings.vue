@@ -60,8 +60,8 @@ const schema = toTypedSchema(
     code: Yup.string()
       .required('Код ТН ВЭД обязателен')
       .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
-    insertBefore: Yup.string().required('Текст перед обязателен'),
-    insertAfter: Yup.string().required('Текст после обязателен')
+    insBefore: Yup.string(),
+    insAfter: Yup.string()
   })
 )
 
@@ -69,14 +69,14 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     code: '',
-    insertBefore: '',
-    insertAfter: ''
+    insBefore: '',
+    insAfter: ''
   }
 })
 
 const { value: code } = useField('code')
-const { value: insertBefore } = useField('insertBefore')
-const { value: insertAfter } = useField('insertAfter')
+const { value: insBefore } = useField('insBefore')
+const { value: insAfter } = useField('insAfter')
 
 const searchActive = ref(false)
 
@@ -134,8 +134,8 @@ onMounted(async () => {
         resetForm({
           values: {
             code: item.code || '',
-            insertBefore: item.insertBefore || '',
-            insertAfter: item.insertAfter || ''
+            insBefore: item.insBefore || '',
+            insAfter: item.insAfter || ''
           }
         })
       }
@@ -170,7 +170,7 @@ function cancel() {
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
 
@@ -180,63 +180,62 @@ function cancel() {
 
     <form v-else @submit.prevent="onSubmit">
       <div class="feacn-search-wrapper">
-        <label for="code" class="label">Код ТН ВЭД:</label>
-        <div class="d-flex">
-          <input
-            name="code"
-            id="code"
-            type="text"
-            class="form-control input"
-            :class="{ 'is-invalid': errors.code }"
-            maxlength="10"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            v-model="code"
-            @input="onCodeInput"
-            :disabled="searchActive"
-            placeholder="Введите код ТН ВЭД"
-          />
-          <ActionButton
-            :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-            :item="null"
-            @click="toggleSearch"
-            class="ml-2"
-            tooltip-text="Выбрать код"
-            :disabled="false"
-          />
+        <div class="form-group">
+            <label for="code" class="label">Код ТН ВЭД:</label>
+            <input
+                name="code"
+                id="code"
+                type="text"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.code }"
+                maxlength="10"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                v-model="code"
+                @input="onCodeInput"
+                :disabled="searchActive"
+                placeholder="Введите код ТН ВЭД"
+            />
+            <ActionButton
+                :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+                :item="null"
+                @click="toggleSearch"
+                class="ml-2 mr-2"
+                tooltip-text="Выбрать код"
+                :disabled="false"
+            />
+            <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+            <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" />
         </div>
-        <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-        <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" />
+      </div>
+      <div class="form-group">
+        <label for="insBefore" class="label">Вставить перед:</label>
+        <input
+          name="insBefore"
+          id="insBefore"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.insBefore }"
+          v-model="insBefore"
+          :disabled="searchActive"
+          placeholder="Текст для вставки перед описанием (не обязательно)"
+        />
+        <div v-if="errors.insBefore" class="invalid-feedback">{{ errors.insBefore }}</div>
       </div>
 
       <div class="form-group">
-        <label for="insertBefore" class="label">Вставить перед:</label>
+        <label for="insAfter" class="label">Вставить после:</label>
         <input
-          name="insertBefore"
-          id="insertBefore"
+          name="insAfter"
+          id="insAfter"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.insertBefore }"
-          v-model="insertBefore"
+          :class="{ 'is-invalid': errors.insAfter }"
+          v-model="insAfter"
           :disabled="searchActive"
-          placeholder="Текст перед"
+          placeholder="Текст для вставки после описанием (не обязательно)"
         />
-        <div v-if="errors.insertBefore" class="invalid-feedback">{{ errors.insertBefore }}</div>
-      </div>
-
-      <div class="form-group">
-        <label for="insertAfter" class="label">Вставить после:</label>
-        <input
-          name="insertAfter"
-          id="insertAfter"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.insertAfter }"
-          v-model="insertAfter"
-          :disabled="searchActive"
-          placeholder="Текст после"
-        />
-        <div v-if="errors.insertAfter" class="invalid-feedback">{{ errors.insertAfter }}</div>
+        <div v-if="errors.insAfter" class="invalid-feedback">{{ errors.insAfter }}</div>
       </div>
 
       <div class="form-group mt-8">

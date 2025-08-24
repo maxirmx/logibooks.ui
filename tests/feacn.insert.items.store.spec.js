@@ -20,11 +20,11 @@ describe('feacn.insert.items.store.js', () => {
   let pinia
 
   const mockItems = [
-    { id: 1, code: '1234567890', insertBefore: '111', insertAfter: '222' },
-    { id: 2, code: '0987654321', insertBefore: '333', insertAfter: '444' }
+    { id: 1, code: '1234567890', insBefore: '111', insAfter: '222' },
+    { id: 2, code: '0987654321', insBefore: '333', insAfter: '444' }
   ]
 
-  const mockItem = { id: 1, code: '1234567890', insertBefore: '111', insertAfter: '222' }
+  const mockItem = { id: 1, code: '1234567890', insBefore: '111', insAfter: '222' }
 
   beforeEach(() => {
     pinia = createPinia()

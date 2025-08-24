@@ -50,7 +50,7 @@ const props = defineProps({
   setFieldValue: { type: Function, required: true }
 })
 
-const emit = defineEmits(['update:item'])
+const emit = defineEmits(['update:item', 'overlay-state-changed'])
 
 const keyWordsStore = useKeyWordsStore()
 const parcelsStore = useParcelsStore()
@@ -77,6 +77,9 @@ watch(searchActive, (val, oldVal) => {
   if (val) {
     document.addEventListener('keydown', handleEscape)
   }
+  
+  // Emit overlay state to parent
+  emit('overlay-state-changed', val)
 })
 
 // Always try to remove on unmount
@@ -178,15 +181,13 @@ async function handleCodeSelect(code) {
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  z-index: 1000;
+  right: 0;
+  z-index: 100;
   width: 60vw;
   max-width: 800px;
   min-width: 400px;
-  background: white;
-  border: 1px solid #ddd;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
 }
+
 
 /* Ensure all parent containers allow overflow */
 .form-section,

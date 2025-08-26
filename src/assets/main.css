@@ -1165,6 +1165,9 @@ a,
   padding: 2px 8px;
   min-width: 80px;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Highlight status when there are issues */
@@ -1179,12 +1182,22 @@ a,
   background-color: rgba(33, 150, 243, 0.15);
   color: #1976d2;
   border: 1px solid rgba(33, 150, 243, 0.3);
+  overflow: ellipsis;
 }
 
 .status-cell.no-issues {
   background-color: rgba(76, 175, 80, 0.15);
   color: #388e3c;
   border: 1px solid rgba(76, 175, 80, 0.3);
+  overflow: ellipsis;
+}
+
+.status-cell.is-approved-with-excise {
+  background-color: rgba(255, 107, 53, 0.25);
+  color: #d84315;
+  border: 1px solid rgba(255, 107, 53, 0.5);
+  font-weight: 600;
+  overflow: ellipsis;
 }
 
 .status-cell.is-approved {
@@ -1192,7 +1205,9 @@ a,
   color: #2e7d32;
   border: 1px solid rgba(76, 175, 80, 0.5);
   font-weight: 600;
+  overflow: ellipsis;
 }
+
 
 /* Stopwords information styling */
 .stopwords-info {
@@ -1269,7 +1284,7 @@ a,
 /* Action buttons container for horizontal alignment */
 .action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.1rem;
   align-items: center;
   margin-left: 0.5rem;
   margin-right: 0.5rem;

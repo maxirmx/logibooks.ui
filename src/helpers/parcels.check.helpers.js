@@ -138,7 +138,11 @@ export function HasNoIssues(checkStatusId) {
 }
 
 export function IsApproved(checkStatusId) {
-  return checkStatusId > 300
+  return checkStatusId > 300 && checkStatusId < 399
+}
+
+export function IsApprovedWithExcise(checkStatusId) {
+  return checkStatusId == 399
 }
 
 /**
@@ -161,6 +165,9 @@ export function getCheckStatusClass(checkStatusId) {
   }
   if (IsApproved(checkStatusId)) {
     return 'is-approved'
+  }
+  if (IsApprovedWithExcise(checkStatusId)) {
+    return 'is-approved-with-excise'
   }
   return ''
 }

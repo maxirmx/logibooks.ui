@@ -46,6 +46,12 @@ import WbrFormField from './WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
+import { 
+  validateParcel as validateParcelHelper, 
+  approveParcel as approveParcelHelper, 
+  approveParcelWithExcise as approveParcelWithExciseHelper, 
+  generateXml as generateXmlHelper 
+} from '@/helpers/parcel.actions.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -103,44 +109,32 @@ const schema = Yup.object().shape({
 
 
 async function validateParcel(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
-    // Then validate the parcel
-    await parcelsStore.validate(item.value.id)
-    // Optionally reload the order data to reflect any changes
-    await parcelsStore.getById(props.id)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
-  }
+  await validateParcelHelper({
+    values,
+    item,
+    parcelId: props.id,
+    parcelsStore
+  })
 }
 
 // Approve the parcel
 async function approveParcel(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(props.id, values)
-    // Then approve the parcel
-    await parcelsStore.approve(item.value.id)
-    // Optionally reload the order data to reflect any changes
-    await parcelsStore.getById(props.id)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
-  }
+  await approveParcelHelper({
+    values,
+    item,
+    parcelId: props.id,
+    parcelsStore
+  })
 }
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(props.id, values)
-    // Then approve the parcel with excise
-    await parcelsStore.approve(item.value.id, true)
-    // Optionally reload the order data to reflect any changes
-    await parcelsStore.getById(props.id)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки с акцизом'
-  }
+  await approveParcelWithExciseHelper({
+    values,
+    item,
+    parcelId: props.id,
+    parcelsStore
+  })
 }
 
 // Handle saving and moving to the next parcel
@@ -194,15 +188,12 @@ async function onBack(values) {
 
 // Generate XML for this parcel
 async function generateXml(values) {
-  try {
-    // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
-    // Then generate XML
-    const filename = String(item.value?.shk || '').padStart(20, '0')
-    await parcelsStore.generate(item.value.id, filename)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
-  }
+  await generateXmlHelper({
+    values,
+    item,
+    parcelsStore,
+    filenameOrGenerator: (parcel) => String(parcel?.shk || '').padStart(20, '0')
+  })
 }
 </script>
 
@@ -243,6 +234,7 @@ async function generateXml(values) {
                 tooltip-text="Сохранить и согласовать"
                 :disabled="isSubmitting"
                 @click="() => approveParcel(values)"
+                variant="green"
               />
               <ActionButton
                 :item="item"
@@ -250,6 +242,7 @@ async function generateXml(values) {
                 tooltip-text="Сохранить и согласовать c акцизом"
                 :disabled="isSubmitting"
                 @click="() => approveParcelWithExcise(values)"
+                variant="orange"
               />
             </div>
           </div>

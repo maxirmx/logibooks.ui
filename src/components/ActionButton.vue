@@ -52,9 +52,30 @@ defineEmits(['click'])
 
 <style scoped>
 
+anti-btn {
+  float: right;
+  margin-left: 0.5rem;
+  text-decoration: none;
+  color: rgb(75, 75, 75);
+  transition: 0.4s;
+}
+
+.anti-btn:hover {
+  color: #1976d2;
+  transform: scale(1.2);
+  transition: all 0.2s ease-in-out;
+}
+
+
 .anti-btn:focus {
   border: none;
   outline: none;
 }
+
+.anti-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 
 </style>

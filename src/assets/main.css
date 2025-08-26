@@ -567,13 +567,6 @@ a,
   transition: 0.4s;
 }
 
-.anti-btn {
-  float: right;
-  margin-left: 0.5rem;
-  text-decoration: none;
-  color: rgb(75, 75, 75);
-  transition: 0.4s;
-}
 
 @media (hover: hover) {
   a:hover {

@@ -616,11 +616,6 @@ const headers = [
   cursor: not-allowed;
 }
 
-.anti-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .clickable-cell {
   cursor: pointer;
 }

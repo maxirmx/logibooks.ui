@@ -115,7 +115,7 @@ async function validateParcel(values) {
   }
 }
 
-// Approve/согласовать the parcel
+// Approve the parcel
 async function approveParcel(values) {
   try {
     // First update the parcel with current form values
@@ -126,6 +126,20 @@ async function approveParcel(values) {
     await parcelsStore.getById(props.id)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
+  }
+}
+
+// Approve the parcel with excise
+async function approveParcelWithExcise(values) {
+  try {
+    // First update the parcel with current form values
+    await parcelsStore.update(props.id, values)
+    // Then approve the parcel with excise
+    await parcelsStore.approve(item.value.id, true)
+    // Optionally reload the order data to reflect any changes
+    await parcelsStore.getById(props.id)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки с акцизом'
   }
 }
 
@@ -229,6 +243,13 @@ async function generateXml(values) {
                 tooltip-text="Сохранить и согласовать"
                 :disabled="isSubmitting"
                 @click="() => approveParcel(values)"
+              />
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-check-circle"
+                tooltip-text="Сохранить и согласовать c акцизом"
+                :disabled="isSubmitting"
+                @click="() => approveParcelWithExcise(values)"
               />
             </div>
           </div>

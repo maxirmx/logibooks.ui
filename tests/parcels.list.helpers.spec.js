@@ -153,7 +153,7 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('approveParcelData', () => {
-    it('should approve parcel successfully', async () => {
+    it('should approve parcel successfully (default withExcise=false)', async () => {
       const mockStore = {
         approve: vi.fn().mockResolvedValue(),
         error: ''
@@ -163,11 +163,25 @@ describe('Parcels List Helpers', () => {
 
       await approveParcelData(item, mockStore, mockLoadOrders)
 
-      expect(mockStore.approve).toHaveBeenCalledWith(123)
+      expect(mockStore.approve).toHaveBeenCalledWith(123, false)
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 
-    it('should handle approval errors', async () => {
+    it('should approve parcel with excise when withExcise=true', async () => {
+      const mockStore = {
+        approve: vi.fn().mockResolvedValue(),
+        error: ''
+      }
+      const mockLoadOrders = vi.fn()
+      const item = { id: 123 }
+
+      await approveParcelData(item, mockStore, mockLoadOrders, true)
+
+      expect(mockStore.approve).toHaveBeenCalledWith(123, true)
+      expect(mockLoadOrders).toHaveBeenCalled()
+    })
+
+    it('should handle approval errors without excise', async () => {
       const mockStore = {
         approve: vi.fn().mockRejectedValue({
           response: { data: { message: 'Approval failed' } }
@@ -180,6 +194,20 @@ describe('Parcels List Helpers', () => {
       await approveParcelData(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Approval failed')
+      expect(mockLoadOrders).not.toHaveBeenCalled()
+    })
+
+    it('should handle approval errors with excise and show appropriate message', async () => {
+      const mockStore = {
+        approve: vi.fn().mockRejectedValue(new Error('Network error')),
+        error: ''
+      }
+      const mockLoadOrders = vi.fn()
+      const item = { id: 123 }
+
+      await approveParcelData(item, mockStore, mockLoadOrders, true)
+
+      expect(mockStore.error).toBe('Ошибка при согласовании посылки с акцизом')
       expect(mockLoadOrders).not.toHaveBeenCalled()
     })
   })

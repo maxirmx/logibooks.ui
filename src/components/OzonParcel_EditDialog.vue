@@ -191,7 +191,7 @@ async function generateXml(values) {
 <template>
   <div class="settings form-4 form-compact">
     <h1 class="primary-heading">
-      Посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
+      {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }} 
     </h1>
     <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit, setFieldValue }" :class="{ 'form-disabled': overlayActive }">

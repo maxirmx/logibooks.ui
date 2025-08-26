@@ -185,6 +185,7 @@ const headers = computed(() => {
     { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
 
     // Order Identification & Status - Key identifiers and current state
+    { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },

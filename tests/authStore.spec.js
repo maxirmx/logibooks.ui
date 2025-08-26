@@ -61,7 +61,7 @@ describe('auth store', () => {
       expect(store.users_page).toBe(1)
       expect(store.registers_per_page).toBe(10)
       expect(store.registers_search).toBe('')
-      expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'desc' }])
       expect(store.registers_page).toBe(1)
       expect(store.returnUrl).toBeNull()
       expect(store.re_jwt).toBeNull()
@@ -334,14 +334,6 @@ describe('auth store', () => {
   })
 
   describe('registers list parameters', () => {
-    it('initializes registers parameters with default values', () => {
-      const store = useAuthStore()
-      expect(store.registers_per_page).toBe(10)
-      expect(store.registers_search).toBe('')
-      expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'asc' }])
-      expect(store.registers_page).toBe(1)
-    })
-
     it('allows updating registers_per_page', () => {
       const store = useAuthStore()
       store.registers_per_page = 25

@@ -1,7 +1,7 @@
 @import './base.css';
 
 :root {
-  --gtc-color-1: #33ABE3;
+  --gtc-color-1: #1976d2;
 
   /* Order form colors */
   --input-border-color: #ddd;
@@ -991,6 +991,7 @@ a,
   grid-template-columns: 1fr;
   row-gap: 1rem;
   margin-bottom: 0rem;
+  margin-top: 1rem;
 }
 
 .product-name-row {
@@ -1243,43 +1244,6 @@ a,
   word-wrap: break-word;
 }
 
-/* Validate button styling */
-.validate-btn {
-  background-color: #f8f9fa;
-  border: 1px solid #ced4da;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  margin-left: 0.5rem;
-  border-radius: 4px;
-  color: #495057;
-  transition: all 0.2s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.25rem;
-  height: 2.25rem;
-  font-size: 0.875rem;
-}
-
-.validate-btn:hover {
-  background-color: #e9ecef;
-  border-color: #adb5bd;
-  color: #212529;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.validate-btn:active {
-  background-color: #dee2e6;
-  border-color: #adb5bd;
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.validate-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
 
 /* Action buttons container for horizontal alignment */
 .action-buttons {
@@ -1288,6 +1252,8 @@ a,
   align-items: center;
   margin-left: 0.5rem;
   margin-right: 0.5rem;
+  overflow: visible;
+  padding: 0.25rem;
 }
 
 /* Approve button styling - same as validate button */
@@ -1327,10 +1293,6 @@ a,
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Remove individual button margin since we're using flexbox gap */
-.action-buttons .validate-btn {
-  margin-left: 0;
-}
 
 @media (max-width: 768px) {
   .form-row {
@@ -1417,10 +1379,6 @@ a,
   height: auto;            
 }
 
-.form-compact .validate-btn {
-  font-size: 0.875rem;    
-  padding: 0.2rem 0.4rem;
-}
 */
 .form-compact .form-actions {
   margin-top: 0.75rem;    /* Reduce top margin */

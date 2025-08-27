@@ -195,11 +195,57 @@ async function generateXml(values) {
 
 <template>
   <div class="settings form-4 form-compact">
-    <h1 class="primary-heading">
-      {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
-    </h1>
-    <hr class="hr" />
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit, setFieldValue }" :class="{ 'form-disabled': overlayActive }">
+    <div class="header-with-actions">
+      <h1 class="primary-heading">
+        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
+      </h1>
+      
+      <!-- Action buttons -->
+      <div class="header-actions">
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-play" 
+          :iconSize="'3x'"
+          tooltip-text="Следующая проблема"
+          :disabled="isSubmitting"
+          @click="handleSubmit(onSubmit)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-check-double" 
+          :iconSize="'3x'"
+          tooltip-text="Сохранить"
+          :disabled="isSubmitting"
+          @click="onSave(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-file-export" 
+          :iconSize="'3x'"
+          tooltip-text="Накладная"
+          :disabled="isSubmitting || HasIssues(item?.checkStatusId)"
+          @click="generateXml(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-arrow-left" 
+          :iconSize="'3x'"
+          tooltip-text="Назад"
+          :disabled="isSubmitting"
+          @click="onBack(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-xmark" 
+          :iconSize="'3x'"
+          tooltip-text="Отменить"
+          :disabled="isSubmitting"
+          @click="router.push(`/registers/${props.registerId}/parcels`)"
+        />
+      </div>
+    </div>
+    <hr class="hr" />
 
       <!-- Order Identification & Status Section -->
       <div class="form-section">
@@ -223,6 +269,7 @@ async function generateXml(values) {
                 tooltip-text="Сохранить и проверить"
                 :disabled="isSubmitting"
                 @click="() => validateParcel(values)"
+                :iconSize="'2x'"
               />
               <ActionButton
                 :item="item"
@@ -231,6 +278,7 @@ async function generateXml(values) {
                 :disabled="isSubmitting"
                 @click="() => approveParcel(values)"
                 variant="green"
+                :iconSize="'2x'"
               />
               <ActionButton
                 :item="item"
@@ -239,6 +287,7 @@ async function generateXml(values) {
                 :disabled="isSubmitting"
                 @click="() => approveParcelWithExcise(values)"
                 variant="orange"
+                :iconSize="'2x'"
               />
             </div>
           </div>
@@ -328,51 +377,6 @@ async function generateXml(values) {
         </div>
       </div>
 
-      <!-- Action buttons -->
-
-      <div class="form-actions">
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-play" 
-          :iconSize="'3x'"
-          tooltip-text="Следующая проблема"
-          :disabled="isSubmitting"
-          @click="handleSubmit(onSubmit)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-check-double" 
-          :iconSize="'3x'"
-          tooltip-text="Сохранить"
-          :disabled="isSubmitting"
-          @click="onSave(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-file-export" 
-          :iconSize="'3x'"
-          tooltip-text="Накладная"
-          :disabled="isSubmitting || HasIssues(item?.checkStatusId)"
-          @click="generateXml(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-arrow-left" 
-          :iconSize="'3x'"
-          tooltip-text="Назад"
-          :disabled="isSubmitting"
-          @click="onBack(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-xmark" 
-          :iconSize="'3x'"
-          tooltip-text="Отменить"
-          :disabled="isSubmitting"
-          @click="router.push(`/registers/${props.registerId}/parcels`)"
-        />
-      </div>
-
     </Form>
 
     <div v-if="item?.loading" class="text-center m-5">
@@ -386,6 +390,73 @@ async function generateXml(values) {
 </template>
 
 <style scoped>
+/* Header with actions layout */
+.header-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  
+  /* Control panel styling */
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+  
+  /* Ensure it flows below heading on narrow screens */
+  min-width: min-content;
+}
+
+/* Primary heading with ellipsis */
+.primary-heading {
+  margin: 0;
+  flex: 1;
+  min-width: 0; /* Allow shrinking */
+  
+  /* Ellipsis on overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  /* Ensure it takes available space but can shrink */
+  max-width: calc(100% - 300px); /* Reserve space for buttons */
+}
+
+.form-section,
+.form-row,
+.form-group {
+  overflow: visible !important;
+}
+
+
+/* On small screens, ensure full width for heading and buttons flow below */
+@media (max-width: 768px) {
+  .header-with-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .primary-heading {
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+  }
+}
+
 /* Product name styling */
 .product-name-label {
   width: 18.5%;

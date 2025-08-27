@@ -211,7 +211,7 @@ nav a:first-of-type {
 
 :deep(.v-list-item:hover) {
     color: #eeeeee;
-    background-color: var(--gtc-color-1);
+    background-color: var(--primary-color);
 }
 
 /* Style for nested menu items */

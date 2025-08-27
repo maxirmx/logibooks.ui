@@ -76,7 +76,7 @@ vi.mock('@/router', () => ({
   default: { push: mockPush }
 }))
 
-vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+vi.mock('@/helpers/feacn.info.helpers.js', () => ({
   loadFeacnTooltipOnHover: mockLoadTooltip,
   useFeacnTooltips: () => ref({})
 }))

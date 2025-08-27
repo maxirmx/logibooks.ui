@@ -32,7 +32,7 @@ import {
   updateParcelTnVed
 } from '@/helpers/parcels.list.helpers.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
-import { getFeacnTooltip } from '@/helpers/feacn.tooltip.helpers.js'
+import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
 
 const props = defineProps({
   item: { type: Object, required: true }

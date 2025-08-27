@@ -35,7 +35,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import {
   loadFeacnTooltipOnHover,
   useFeacnTooltips
-} from '@/helpers/feacn.tooltip.helpers.js'
+} from '@/helpers/feacn.info.helpers.js'
 
 const insertItemsStore = useFeacnInsertItemsStore()
 const authStore = useAuthStore()

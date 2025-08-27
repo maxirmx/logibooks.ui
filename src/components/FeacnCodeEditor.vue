@@ -102,7 +102,6 @@ async function lookupFeacnCodes() {
       emit('update:item', updatedItem)
     }
   } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
   }
 }

@@ -76,7 +76,6 @@ async function loadChildren(target = null) {
     console.error('Failed to load children:', error)
     // Optionally show error state
   } finally {
-    // Clear loading state
     if (target) {
       target.loading = false
     } else {

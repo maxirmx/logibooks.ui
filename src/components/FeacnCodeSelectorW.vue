@@ -31,7 +31,7 @@ import {
   getFeacnCodeItemClass,
   getKeywordFeacnPairs,
 } from '@/helpers/parcels.list.helpers.js'
-import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.tooltip.helpers.js'
+import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 
 const props = defineProps({

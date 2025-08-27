@@ -3,7 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 const mockFormatFeacnName = vi.hoisted(() => vi.fn())
 const mockFormatFeacnNameFromItem = vi.hoisted(() => vi.fn())
-vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+vi.mock('@/helpers/feacn.info.helpers.js', () => ({
   formatFeacnName: mockFormatFeacnName,
   formatFeacnNameFromItem: mockFormatFeacnNameFromItem
 }))
@@ -59,7 +59,7 @@ describe('FeacnCodeSearch.vue', () => {
       if (id === 2) return Promise.resolve([leaf])
       return Promise.resolve([])
     })
-    mockFormatFeacnName.mockImplementation(code => Promise.resolve(`Name ${code}`))
+    mockFormatFeacnName.mockImplementation(code => Promise.resolve({ name: `Name ${code}`, found: true }))
     mockFormatFeacnNameFromItem.mockImplementation(item => `Name ${item?.code || ''}`)
   })
 
@@ -88,7 +88,7 @@ describe('FeacnCodeSearch.vue', () => {
 
   it('uses formatFeacnName for search results', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 1, code: '0101' }])
-    mockFormatFeacnName.mockResolvedValueOnce('Formatted Name')
+    mockFormatFeacnName.mockResolvedValueOnce({ name: 'Formatted Name', found: true })
     mockFormatFeacnNameFromItem.mockReturnValueOnce('Formatted Name')
     
     const wrapper = createWrapper()

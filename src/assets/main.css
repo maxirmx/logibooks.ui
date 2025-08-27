@@ -1570,6 +1570,18 @@ a,
   margin-top: 1px;
 }
 
+.tnved-cell.not-exists {
+  font-size: 1em;
+  padding: 1px 4px;
+  background-color: #fbecec;
+  border-radius: 3px;
+  border: 1px solid #f90202;
+  min-width: fit-content;
+  display: inline-block;
+  margin-top: 1px;
+}
+
+
 /* Clickable FEACN code items */
 .feacn-code-item.clickable {
   cursor: pointer;

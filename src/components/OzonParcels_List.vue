@@ -35,6 +35,7 @@ import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
@@ -52,6 +53,7 @@ import {
   exportParcelXmlData,
   lookupFeacn,
   getFeacnCodesForKeywords,
+  loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
 import EditableCell from '@/components/EditableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -71,6 +73,9 @@ const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
+const alertStore = useAlertStore()
+
+const { alert } = storeToRefs(alertStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -114,18 +119,16 @@ async function fetchRegister() {
   }
 }
 
-function loadOrders() {
-  if (isComponentMounted.value) {
-    parcelsStore.getAll(props.registerId)
-  }
+async function loadOrdersWrapper() {
+  await loadOrders(props.registerId, parcelsStore, isComponentMounted, alertStore)
 }
 
 // Provide the loadOrders function for child components
-provide('loadOrders', loadOrders)
+provide('loadOrders', loadOrdersWrapper)
 
 const watcherStop = watch(
   [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
-  loadOrders,
+  loadOrdersWrapper,
   { immediate: true }
 )
 
@@ -154,7 +157,6 @@ onMounted(async () => {
     await fetchRegister()
   } catch (error) {
     if (isComponentMounted.value) {
-      console.error('Failed to initialize component:', error)
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {
@@ -217,19 +219,15 @@ async function exportParcelXml(item) {
 }
 
 async function validateParcel(item) {
-  await validateParcelData(item, parcelsStore, loadOrders)
+  await validateParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function lookupFeacnCodes(item) {
-  await lookupFeacn(item, parcelsStore, loadOrders)
+  await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function approveParcel(item) {
-  await approveParcelData(item, parcelsStore, loadOrders)
-}
-
-function getRowProps(data) {
-  return getRowPropsForParcel(data)
+  await approveParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
 // Function to filter headers that need generic templates
@@ -276,7 +274,7 @@ function getGenericTemplateHeaders() {
           v-model:sort-by="parcels_sort_by"
           :headers="headers"
           :items="items"
-          :row-props="getRowProps"
+          :row-props="getRowPropsForParcel"
           :items-length="totalCount"
           :loading="loading"
           density="compact"
@@ -407,6 +405,10 @@ function getGenericTemplateHeaders() {
     </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
+    </div>
+    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
     </div>
   </div>
 </template>

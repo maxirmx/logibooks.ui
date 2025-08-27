@@ -250,6 +250,21 @@ export const useRegistersStore = defineStore('registers', () => {
     return null
   }
 
+  async function theNextParcel(parcelId) {
+    loading.value = true
+    error.value = null
+    try {
+      return await fetchWrapper.get(`${baseUrl}/the-nextparcel/${parcelId}`)
+    } catch (err) {
+      error.value = err
+    }
+    finally {
+      loading.value = false
+    }
+    return null
+  }
+
+
   async function remove(id) {
     loading.value = true
     error.value = null
@@ -286,6 +301,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generate,
     download,
     nextParcel,
+    theNextParcel,
     remove,
     uploadFile
   }

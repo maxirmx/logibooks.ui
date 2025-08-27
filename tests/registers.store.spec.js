@@ -1037,4 +1037,162 @@ describe('registers store', () => {
       expect(store.loading).toBe(false)
     })
   })
+
+  describe('theNextParcel method', () => {
+    it('requests the next parcel with correct id and endpoint', async () => {
+      const parcel = { id: 3, registerId: 1, tnVed: '87654321' }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(5)
+      
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/5`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('returns null when theNextParcel API call fails', async () => {
+      const error = new Error('Network error')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(5)
+      
+      expect(result).toBeNull()
+      expect(store.error).toEqual(error)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/5`
+      )
+    })
+    
+    it('returns a parcel with complete information structure', async () => {
+      const expectedParcel = { 
+        id: 10, 
+        registerId: 2, 
+        tnVed: '12345678', 
+        statusId: 1,
+        checkStatusId: 100,
+        shk: 'SHK123456',
+        postingNumber: 'POST789',
+        keyWordIds: [1, 2, 3]
+      }
+      fetchWrapper.get.mockResolvedValue(expectedParcel)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(1)
+      
+      expect(result).toEqual(expectedParcel)
+      expect(result.id).toBe(10)
+      expect(result.registerId).toBe(2)
+    })
+    
+    it('handles the case when there is no next parcel available', async () => {
+      // API returns null when there's no next parcel
+      fetchWrapper.get.mockResolvedValue(null)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(99)
+      
+      expect(result).toBeNull()
+      expect(store.error).toBeNull()
+    })
+    
+    it('properly manages loading state during execution', async () => {
+      const parcel = { id: 7, registerId: 3 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      
+      // Before call
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+      
+      // Start the call but don't await it yet
+      const promise = store.theNextParcel(5)
+      
+      // During the call
+      expect(store.loading).toBe(true)
+      
+      // After the call completes
+      await promise
+      expect(store.loading).toBe(false)
+    })
+
+    it('clears previous error state before making request', async () => {
+      const store = useRegistersStore()
+      store.error = 'Previous error'
+      
+      const parcel = { id: 15 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      
+      await store.theNextParcel(10)
+      
+      expect(store.error).toBeNull()
+    })
+
+    it('handles different parcel ID types correctly', async () => {
+      const parcel = { id: 42 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      
+      // Test with number
+      await store.theNextParcel(123)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/123`
+      )
+      
+      // Test with string number
+      await store.theNextParcel('456')
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/456`
+      )
+    })
+
+    it('maintains error state when API call fails', async () => {
+      const networkError = new Error('Connection timeout')
+      fetchWrapper.get.mockRejectedValue(networkError)
+      const store = useRegistersStore()
+      
+      const result = await store.theNextParcel(5)
+      
+      expect(result).toBeNull()
+      expect(store.error).toBe(networkError)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles server errors gracefully', async () => {
+      const serverError = new Error('Internal Server Error')
+      serverError.status = 500
+      fetchWrapper.get.mockRejectedValue(serverError)
+      const store = useRegistersStore()
+      
+      const result = await store.theNextParcel(5)
+      
+      expect(result).toBeNull()
+      expect(store.error).toBe(serverError)
+      expect(store.loading).toBe(false)
+    })
+
+    it('handles not found errors appropriately', async () => {
+      const notFoundError = new Error('Parcel not found')
+      notFoundError.status = 404
+      fetchWrapper.get.mockRejectedValue(notFoundError)
+      const store = useRegistersStore()
+      
+      const result = await store.theNextParcel(999)
+      
+      expect(result).toBeNull()
+      expect(store.error).toBe(notFoundError)
+    })
+
+    it('ensures loading state is always reset even if error occurs', async () => {
+      const error = new Error('Unexpected error')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useRegistersStore()
+      
+      expect(store.loading).toBe(false)
+      
+      const promise = store.theNextParcel(5)
+      expect(store.loading).toBe(true)
+      
+      await promise
+      expect(store.loading).toBe(false)
+    })
+  })
 })

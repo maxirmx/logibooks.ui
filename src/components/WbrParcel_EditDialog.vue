@@ -68,9 +68,6 @@ const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
 
-// Add a separate loading state for header actions
-const headerActionsLoading = ref(false)
-
 await statusStore.ensureLoaded()
 await parcelCheckStatusStore.ensureLoaded()
 await stopWordsStore.ensureLoaded()
@@ -141,10 +138,12 @@ async function approveParcelWithExcise(values) {
 }
 
 // Handle saving and moving to the next parcel
-async function onSubmit(values) {
+async function onSubmit(values, useTheNext = false) {
   try {
     await parcelsStore.update(props.id, values)
-    const nextParcel = await registersStore.nextParcel(props.id)
+    const nextParcel = useTheNext 
+      ? await registersStore.theNextParcel(props.id)
+      : await registersStore.nextParcel(props.id)
     
     if (nextParcel) {
       const nextUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
@@ -202,7 +201,7 @@ async function generateXml(values) {
 
 <template>
   <div class="settings form-4 form-compact">
-    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, handleSubmit, setFieldValue }" :class="{ 'form-disabled': overlayActive }">
+    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, setFieldValue }" :class="{ 'form-disabled': overlayActive }">
     <div class="header-with-actions">
       <h1 class="primary-heading">
         {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.shk ? item.shk : '[без номера]' }}
@@ -211,43 +210,51 @@ async function generateXml(values) {
       <div class="header-actions">
         <ActionButton 
           :item="{}" 
+          icon="fa-solid fa-arrow-right" 
+          :iconSize="'3x'"
+          tooltip-text="Следующая посылка"
+          :disabled="isSubmitting"
+          @click="onSubmit(values, true)"
+        />
+        <ActionButton 
+          :item="{}" 
           icon="fa-solid fa-play" 
           :iconSize="'3x'"
           tooltip-text="Следующая проблема"
-          :disabled="isSubmitting || headerActionsLoading"
-          @click="onSubmit(handleSubmit)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-check-double" 
-          :iconSize="'3x'"
-          tooltip-text="Сохранить"
-          :disabled="isSubmitting || headerActionsLoading"
-          @click="onSave(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-file-export" 
-          :iconSize="'3x'"
-          tooltip-text="Накладная"
-          :disabled="isSubmitting || headerActionsLoading || HasIssues(item?.checkStatusId)"
-          @click="generateXml(values)"
+          :disabled="isSubmitting"
+          @click="onSubmit(values, false)"
         />
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-arrow-left" 
           :iconSize="'3x'"
           tooltip-text="Назад"
-          :disabled="isSubmitting || headerActionsLoading"
+          :disabled="isSubmitting"
           @click="onBack(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-check-double" 
+          :iconSize="'3x'"
+          tooltip-text="Сохранить"
+          :disabled="isSubmitting"
+          @click="onSave(values)"
         />
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-xmark" 
           :iconSize="'3x'"
           tooltip-text="Отменить"
-          :disabled="isSubmitting || headerActionsLoading"
+          :disabled="isSubmitting"
           @click="router.push(`/registers/${props.registerId}/parcels`)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-file-export" 
+          :iconSize="'3x'"
+          tooltip-text="XML накладная"
+          :disabled="isSubmitting || HasIssues(item?.checkStatusId)"
+          @click="generateXml(values)"
         />
       </div>
     </div>

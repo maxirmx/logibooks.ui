@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
-import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.tooltip.helpers.js'
+import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 
 const componentProps = defineProps({
   item: { type: Object, required: true },
@@ -13,7 +13,7 @@ const emit = defineEmits(['click'])
 const feacnTooltips = useFeacnTooltips()
 
 const cellClass = computed(() => {
-  const tnvedClass = getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
+  const tnvedClass =  getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
   return tnvedClass ? `truncated-cell ${tnvedClass}` : 'truncated-cell feacn-code-tooltip'
 })
 
@@ -39,7 +39,7 @@ function handleMouseEnter() {
     <template #default>
       <div class="d-flex align-center">
         <font-awesome-icon icon="fa-solid fa-pen" class="mr-3" />
-        {{ feacnTooltips[componentProps.item.tnVed] || 'Наведите для загрузки...' }}
+        {{ feacnTooltips[componentProps.item.tnVed]?.name || 'Наведите для загрузки...' }}
       </div>
     </template>
   </v-tooltip>

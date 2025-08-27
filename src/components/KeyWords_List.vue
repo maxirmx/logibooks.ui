@@ -40,7 +40,7 @@ import {
   loadFeacnTooltipOnHover, 
   useFeacnTooltips, 
   clearFeacnTooltipCache 
-} from '@/helpers/feacn.tooltip.helpers.js'
+} from '@/helpers/feacn.info.helpers.js'
 
 const keyWordsStore = useKeyWordsStore()
 const matchTypesStore = useWordMatchTypesStore()

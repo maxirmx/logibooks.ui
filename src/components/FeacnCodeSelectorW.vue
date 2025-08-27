@@ -26,12 +26,8 @@
 <script setup>
 import { computed } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
-import {
-  getFeacnCodesForKeywords,
-  getFeacnCodeItemClass,
-  getKeywordFeacnPairs,
-} from '@/helpers/parcels.list.helpers.js'
-import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.tooltip.helpers.js'
+import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs } from '@/helpers/parcels.list.helpers.js'
+import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 
 const props = defineProps({
@@ -87,7 +83,7 @@ function handleMouseEnter(code) {
           <template #default>
             <div class="d-flex align-center">
               <font-awesome-icon icon="fa-solid fa-info-circle" class="mr-3" />
-              {{ feacnTooltips[keyword.feacnCode] || 'Наведите для загрузки...' }}
+              {{ feacnTooltips[keyword.feacnCode]?.name || 'Наведите для загрузки...' }}
             </div>
           </template>
         </v-tooltip>

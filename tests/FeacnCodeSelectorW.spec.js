@@ -13,7 +13,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
 }))
 
 // Mock the tooltip helper
-vi.mock('@/helpers/feacn.tooltip.helpers.js', () => ({
+vi.mock('@/helpers/feacn.info.helpers.js', () => ({
   useFeacnTooltips: vi.fn(() => ({ value: {} })),
   loadFeacnTooltipOnHover: vi.fn(() => Promise.resolve('Test tooltip'))
 }))
@@ -33,7 +33,7 @@ describe('FeacnCodeSelectorW', () => {
     
     // Import the mocked functions
     const { getKeywordFeacnPairs, getFeacnCodeItemClass, getFeacnCodesForKeywords } = await import('@/helpers/parcels.list.helpers.js')
-    const { useFeacnTooltips, loadFeacnTooltipOnHover } = await import('@/helpers/feacn.tooltip.helpers.js')
+    const { useFeacnTooltips, loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
     
     // Reset mocks
     vi.mocked(getKeywordFeacnPairs).mockClear()
@@ -187,7 +187,7 @@ describe('FeacnCodeSelectorW', () => {
     ]
     
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    const { loadFeacnTooltipOnHover } = await import('@/helpers/feacn.tooltip.helpers.js')
+    const { loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
     
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
     vi.mocked(loadFeacnTooltipOnHover).mockResolvedValue('Test FEACN tooltip')

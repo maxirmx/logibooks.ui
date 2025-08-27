@@ -58,6 +58,7 @@ import {
   faArrowUp,
   faArrowDown,
   faArrowLeft,
+  faArrowRight,
   faMagnifyingGlass,
   faSpinner
 } from '@fortawesome/free-solid-svg-icons'
@@ -90,6 +91,7 @@ library.add(
   faArrowUp,
   faArrowDown,
   faArrowLeft,
+  faArrowRight,
   faMagnifyingGlass,
   faSpinner
 )

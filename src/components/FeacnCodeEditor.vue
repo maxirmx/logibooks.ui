@@ -102,7 +102,6 @@ async function lookupFeacnCodes() {
       emit('update:item', updatedItem)
     }
   } catch (error) {
-    console.error('Failed to lookup FEACN codes:', error)
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
   }
 }
@@ -132,21 +131,23 @@ async function handleCodeSelect(code) {
   <div class="form-section">
     <div class="form-row">
         <div class="form-group feacn-search-wrapper">
-        <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)">{{ columnTitles.tnVed }}:</label>
+          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)">{{ columnTitles.tnVed }}:</label>
           <Field name="tnVed" id="tnVed" class="form-control input"
                  :disabled="searchActive"
                  :class="{
                    'is-invalid': errors && errors.tnVed,
                    [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
-                 }" />
+                 }" 
+          />
           <div class="action-buttons">
             <ActionButton
               :item="item"
               :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-              tooltip-text="Выбрать код"
+              :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
               class="button-o-c"
               :disabled="isSubmitting"
               @click="toggleSearch"
+              :iconSize="'2x'"
             />
             <ActionButton
               :item="item"
@@ -154,6 +155,7 @@ async function handleCodeSelect(code) {
               tooltip-text="Сохранить и подобрать код"
               :disabled="isSubmitting || searchActive"
               @click="lookupFeacnCodes"
+              :iconSize="'2x'"
             />
           </div>
           <FeacnCodeSearch

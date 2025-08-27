@@ -28,7 +28,7 @@ import { ref, nextTick } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { formatFeacnName, formatFeacnNameFromItem } from '@/helpers/feacn.tooltip.helpers.js'
+import { formatFeacnName, formatFeacnNameFromItem } from '@/helpers/feacn.info.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 

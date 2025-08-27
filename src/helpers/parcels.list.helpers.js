@@ -28,6 +28,7 @@
  */
 
 import { HasIssues } from '@/helpers/parcels.check.helpers.js'
+import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 
 /**
  * Navigates to edit parcel page
@@ -237,10 +238,18 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
  * @returns {string} CSS class name
  */
 export function getTnVedCellClass(tnVed, feacnCodes) {
+  // Check if tnVed code was not found in globalFeacnInfo
+  if (tnVed) {
+    const cachedInfo = getCachedFeacnInfo(tnVed)
+    if (cachedInfo && cachedInfo.found === false) {
+      return 'tnved-cell not-exists'
+    }
+  }
+  
   if (!feacnCodes || feacnCodes.length === 0) {
     return ''
   }
-  
+ 
   const isMatched = tnVed && feacnCodes.includes(tnVed)
   return isMatched ? 'tnved-cell matched' : 'tnved-cell unmatched'
 }
@@ -262,5 +271,36 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
     }
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
+  }
+}
+
+/**
+ * Loads orders/parcels for a register with FEACN info preloading
+ * @param {number} registerId - The register ID
+ * @param {Object} parcelsStore - The parcels store instance
+ * @param {Object} isComponentMounted - Ref indicating if component is mounted
+ * @param {Object} alertStore - The alert store instance for error reporting
+ * @returns {Promise<void>}
+ */
+export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore) {
+  if (isComponentMounted.value) {
+    await parcelsStore.getAll(registerId)
+    
+    // Preload FEACN info for all tnved values in the current page
+    if (parcelsStore.items && parcelsStore.items.length > 0) {
+      const tnvedCodes = parcelsStore.items
+        .map(parcel => parcel.tnVed)
+        .filter(tnved => tnved && tnved.trim() !== '')
+      
+      if (tnvedCodes.length > 0) {
+        try {
+          await preloadFeacnInfo(tnvedCodes)
+        } catch {
+          if (alertStore) {
+            alertStore.error('Не удалось загрузить информацию о кодах ТН ВЭД')
+          }
+        }
+      }
+    }
   }
 }

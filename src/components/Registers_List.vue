@@ -628,59 +628,59 @@ const headers = [
 .customer-select {
   font-size: 1rem;
   font-weight: 500;
-  color: var(--primary-color, #1976d2);
+  color: var(--primary-color, #333333);
 }
 
 .customer-select :deep(.v-field__input) {
   font-size: 1rem;
   font-weight: 500;
-  color: var(--primary-color, #1976d2);
+  color: var(--primary-color, #333333);
 }
 
 .customer-select :deep(.v-field__field) {
-  border-color: var(--primary-color, #1976d2);
+  border-color: var(--primary-color, #333333);
 }
 
 .customer-select :deep(.v-field__outline) {
-  border-color: var(--primary-color, #1976d2);
+  border-color: var(--primary-color, #333333);
 }
 
 .customer-select :deep(.v-select__selection) {
-  color: var(--primary-color, #1976d2);
+  color: var(--primary-color, #333333);
 }
 
 .customer-select :deep(.v-field__append-inner) {
-  color: var(--primary-color, #1976d2);
+  color: var(--primary-color, #333333);
 }
 
 .customer-select :deep(.v-list-item) {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 
 .customer-select :deep(.v-list-item-title) {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 
 .customer-select :deep(.v-list-item__title) {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 
 .customer-select :deep(.v-list-item__content) {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 </style>
 
 <style>
 /* Global styles for customer select dropdown */
 .v-overlay .v-list .v-list-item {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 
 .v-overlay .v-list .v-list-item .v-list-item__title {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 
 .v-overlay .v-list .v-list-item .v-list-item__content {
-  color: var(--primary-color, #1976d2) !important;
+  color: var(--primary-color, #333333) !important;
 }
 </style>

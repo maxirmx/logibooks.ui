@@ -346,27 +346,46 @@ async function generateXml(values) {
       <!-- Action buttons -->
 
       <div class="form-actions">
-        <button class="button primary" @click="handleSubmit(onSubmit)" type="button" :disabled="isSubmitting">
-          <font-awesome-icon size="1x" icon="fa-solid fa-play" class="mr-1" />
-          Следующая проблема
-        </button>
-         <button class="button primary" type="button" @click="onSave(values)" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          Сохранить
-        </button>
-        <button class="button primary" type="button" @click="generateXml(values)" :disabled="isSubmitting || HasIssues(item?.checkStatusId)">
-          <font-awesome-icon size="1x" icon="fa-solid fa-file-export" class="mr-1" />
-          Накладная
-        </button>
-        <button class="button secondary" type="button" @click="onBack(values)" :disabled="isSubmitting">
-          <font-awesome-icon size="1x" icon="fa-solid fa-arrow-left" class="mr-1" />
-          Назад
-        </button>
-        <button class="button secondary" type="button" @click="router.push(`/registers/${props.registerId}/parcels`)" :disabled="isSubmitting">
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-play" 
+          :iconSize="'3x'"
+          tooltip-text="Следующая проблема"
+          :disabled="isSubmitting"
+          @click="handleSubmit(onSubmit)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-check-double" 
+          :iconSize="'3x'"
+          tooltip-text="Сохранить"
+          :disabled="isSubmitting"
+          @click="onSave(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-file-export" 
+          :iconSize="'3x'"
+          tooltip-text="Накладная"
+          :disabled="isSubmitting || HasIssues(item?.checkStatusId)"
+          @click="generateXml(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-arrow-left" 
+          :iconSize="'3x'"
+          tooltip-text="Назад"
+          :disabled="isSubmitting"
+          @click="onBack(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-xmark" 
+          :iconSize="'3x'"
+          tooltip-text="Отменить"
+          :disabled="isSubmitting"
+          @click="router.push(`/registers/${props.registerId}/parcels`)"
+        />
       </div>
 
     </Form>

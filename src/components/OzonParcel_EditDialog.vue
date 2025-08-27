@@ -137,7 +137,6 @@ async function approveParcelWithExcise(values) {
 async function onSubmit(values, useTheNext = false) {
   try {
     await parcelsStore.update(props.id, values)
-    console.log("Saved parcel", props.id, values)
     const nextParcel = useTheNext 
       ? await registersStore.theNextParcel(props.id)
       : await registersStore.nextParcel(props.id)

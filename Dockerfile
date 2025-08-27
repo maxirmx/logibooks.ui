@@ -29,7 +29,7 @@ WORKDIR /app
 
 # Add build arguments with default values
 ARG API_URL=https://logibooks.sw.consulting:8085/api
-ARG ENABLE_LOG=true
+ARG ENABLE_LOG=false
 ENV VITE_API_URL=$API_URL
 ENV VITE_ENABLE_LOG=$ENABLE_LOG
 

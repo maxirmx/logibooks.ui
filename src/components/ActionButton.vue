@@ -53,7 +53,7 @@ defineEmits(['click'])
 
 <style scoped>
 
-anti-btn {
+.anti-btn {
   float: right;
   margin-left: 0.5rem;
   text-decoration: none;

@@ -211,7 +211,7 @@ async function generateXml(values) {
           <div class="form-group">
             <label for="statusId" class="label" :title="getFieldTooltip('statusId', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.statusId }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
-                   @change="(e) => currentStatusId = parseInt(e.target.value)">
+                 @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>

@@ -13,7 +13,7 @@ const emit = defineEmits(['click'])
 const feacnTooltips = useFeacnTooltips()
 
 const cellClass = computed(() => {
-  const tnvedClass = getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
+  const tnvedClass =  getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
   return tnvedClass ? `truncated-cell ${tnvedClass}` : 'truncated-cell feacn-code-tooltip'
 })
 

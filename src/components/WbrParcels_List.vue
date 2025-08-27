@@ -189,7 +189,6 @@ const headers = computed(() => {
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     { title: 'Подбор', key: 'feacnLookup', sortable: false, align: 'center', width: '120px' },
@@ -210,7 +209,10 @@ const headers = computed(() => {
 
     // Recipient Information - Who receives the order
     { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' }
+    { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
+
+    // Status Information - Current state of the order
+    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' }
   ]
 })
 

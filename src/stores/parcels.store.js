@@ -103,8 +103,17 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
-  async function approve(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/approve`)
+  async function approve(id, withExcise = false) {
+    const params = new URLSearchParams()
+    if (withExcise) {
+      params.append('withExcise', 'true')
+    }
+    
+    const url = params.toString() 
+      ? `${baseUrl}/${id}/approve?${params.toString()}`
+      : `${baseUrl}/${id}/approve`
+    
+    await fetchWrapper.post(url)
     return true
   }
 

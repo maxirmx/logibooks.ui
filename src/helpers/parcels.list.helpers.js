@@ -70,14 +70,18 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Function} loadOrdersFn - Function to reload orders
+ * @param {boolean} withExcise - Whether to approve with excise (default: false)
  * @returns {Promise<void>}
  */
-export async function approveParcelData(item, parcelsStore, loadOrdersFn) {
+export async function approveParcelData(item, parcelsStore, loadOrdersFn, withExcise = false) {
   try {
-    await parcelsStore.approve(item.id)
+    await parcelsStore.approve(item.id, withExcise)
     loadOrdersFn()
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
+    const errorMessage = withExcise 
+      ? 'Ошибка при согласовании посылки с акцизом'
+      : 'Ошибка при согласовании посылки'
+    parcelsStore.error = error?.response?.data?.message || errorMessage
   }
 }
 

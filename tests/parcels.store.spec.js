@@ -239,7 +239,7 @@ describe('parcels store', () => {
   })
 
   describe('approve method', () => {
-    it('calls approve endpoint with correct id', async () => {
+    it('calls approve endpoint with correct id (default withExcise=false)', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 
       const store = useParcelsStore()
@@ -249,7 +249,27 @@ describe('parcels store', () => {
       expect(result).toBe(true)
     })
 
-    it('throws error when approve fails', async () => {
+    it('calls approve endpoint with withExcise=false explicitly', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      const result = await store.approve(123, false)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
+      expect(result).toBe(true)
+    })
+
+    it('calls approve endpoint with withExcise=true', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      const result = await store.approve(123, true)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?withExcise=true`)
+      expect(result).toBe(true)
+    })
+
+    it('throws error when approve fails without withExcise', async () => {
       const error = new Error('Approval failed')
       fetchWrapper.post.mockRejectedValue(error)
 
@@ -257,6 +277,16 @@ describe('parcels store', () => {
 
       await expect(store.approve(123)).rejects.toThrow('Approval failed')
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
+    })
+
+    it('throws error when approve fails with withExcise=true', async () => {
+      const error = new Error('Approval with excise failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.approve(123, true)).rejects.toThrow('Approval with excise failed')
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?withExcise=true`)
     })
   })
 

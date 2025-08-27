@@ -142,7 +142,7 @@ export function IsApproved(checkStatusId) {
 }
 
 export function IsApprovedWithExcise(checkStatusId) {
-  return checkStatusId == 399
+  return checkStatusId === 399
 }
 
 /**

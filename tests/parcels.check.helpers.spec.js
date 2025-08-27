@@ -9,6 +9,7 @@ import {
   IsNotChecked,
   HasNoIssues,
   IsApproved,
+  IsApprovedWithExcise,
   getCheckStatusClass
 } from '@/helpers/parcels.check.helpers.js'
 
@@ -266,16 +267,24 @@ describe('parcels.check.helpers', () => {
     })
 
     describe('IsApproved', () => {
-      it('returns true for status IDs > 300', () => {
+      it('returns true for status IDs > 300 && < 399', () => {
         expect(IsApproved(301)).toBe(true)
-        expect(IsApproved(400)).toBe(true)
-        expect(IsApproved(999)).toBe(true)
+        expect(IsApproved(398)).toBe(true)
       })
 
       it('returns false for status IDs <= 300', () => {
         expect(IsApproved(250)).toBe(false)
         expect(IsApproved(300)).toBe(false)
       })
+    })
+
+    describe('IsApprovedWithExcise', () => {
+      it('returns true for status IDs = 399', () => {
+        expect(IsApprovedWithExcise(301)).toBe(false)
+        expect(IsApprovedWithExcise(399)).toBe(true)
+        expect(IsApprovedWithExcise(400)).toBe(false)
+      })
+
     })
 
     describe('getCheckStatusClass', () => {
@@ -298,8 +307,11 @@ describe('parcels.check.helpers', () => {
 
       it('returns "is-approved" for status IDs indicating approved', () => {
         expect(getCheckStatusClass(301)).toBe('is-approved')
-        expect(getCheckStatusClass(400)).toBe('is-approved')
-        expect(getCheckStatusClass(999)).toBe('is-approved')
+        expect(getCheckStatusClass(398)).toBe('is-approved')
+      })
+
+      it('returns "is-approved-with-excise" for status IDs indicating approved with excise', () => {
+        expect(getCheckStatusClass(399)).toBe('is-approved-with-excise')
       })
 
       it('returns empty string for undefined or null status IDs', () => {

@@ -215,8 +215,8 @@ function closeDropdown() {
   border: 2px solid #797979;
   border-radius: 0.25rem;
   /* Increase overall search panel height */
-  max-height: max(500px, 70vh);
-  min-height: 40vh;
+  max-height: max(500px, 40vh);
+  min-height: 20vh;
   display: flex;
   flex-direction: column;
   font-size: 0.875em;

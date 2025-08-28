@@ -136,7 +136,7 @@ defineExpose({
 <style scoped>
 .tree-container {
   position: relative;
-  padding-left: 130px; /* Match the code column width exactly */
+  padding-left: 130px;
 }
 
 .feacn-tree {

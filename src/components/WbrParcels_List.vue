@@ -41,7 +41,6 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -55,7 +54,7 @@ import {
   getFeacnCodesForKeywords,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
-import EditableCell from '@/components/EditableCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
@@ -78,8 +77,6 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
-const { stopWords } = storeToRefs(stopWordsStore)
-const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -292,17 +289,32 @@ function getGenericTemplateHeaders() {
         >
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <EditableCell :item="item" :display-value="item[header.key] || ''" cell-class="truncated-cell" data-test="editable-cell" @click="editParcel" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="item[header.key] || ''" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
         </template>
 
         <!-- Special template for statusId to display status title with color -->
         <template #[`item.statusId`]="{ item }">
-          <EditableCell :item="item" :display-value="parcelStatusStore.getStatusTitle(item.statusId)" cell-class="truncated-cell status-cell" data-test="editable-cell" @click="editParcel" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="parcelStatusStore.getStatusTitle(item.statusId)" 
+            cell-class="truncated-cell status-cell clickable-cell" 
+            @click="editParcel" 
+          />
         </template>
 
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
-          <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" 
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatusId)}`" 
+            @click="editParcel" 
+          />
         </template>
 
         <!-- Special template for tnVed to display with FEACN tooltip -->
@@ -337,7 +349,11 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <EditableCell :item="item" :display-value="countriesStore.getCountryAlpha2(item.countryCode)" cell-class="truncated-cell" data-test="editable-cell" :tooltip-text="countriesStore.getCountryShortName(item.countryCode)" @click="editParcel" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" />
         </template>
 
         <template #[`item.actions`]="{ item }">
@@ -345,7 +361,7 @@ function getGenericTemplateHeaders() {
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать посылку" @click="editParcel" />
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
           </div>
         </template>

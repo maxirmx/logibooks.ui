@@ -235,11 +235,11 @@ describe('ActionButton', () => {
       const wrapper = createWrapper({
         item: { id: 1, shk: 'SKU123' },
         icon: 'fa-solid fa-upload',
-        tooltipText: 'Выгрузить накладную для посылки'
+        tooltipText: 'Выгрузить XML накладную для посылки'
       })
       
       expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-upload')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).props('text')).toBe('Выгрузить накладную для посылки')
+      expect(wrapper.findComponent({ name: 'VTooltip' }).props('text')).toBe('Выгрузить XML накладную для посылки')
     })
 
     it('works as approve button', () => {

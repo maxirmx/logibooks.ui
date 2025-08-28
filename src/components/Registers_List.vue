@@ -56,7 +56,7 @@ import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
-import EditableCell from '@/components/EditableCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 
 const validationState = reactive(createValidationState())
@@ -436,34 +436,84 @@ const headers = [
         class="elevation-1 interlaced-table"
       >
         <template #[`item.dealNumber`]="{ item }">
-          <EditableCell :item="item" :display-value="item.dealNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="item.dealNumber" 
+            cell-class="truncated-cell clickable-cell open-parcels-link" 
+            @click="openParcels" 
+          />
         </template>
         <template #[`item.senderId`]="{ item }">
-          <EditableCell :item="item" :display-value="getCustomerName(item.senderId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="getCustomerName(item.senderId)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.recipientId`]="{ item }">
-          <EditableCell :item="item" :display-value="getCustomerName(item.recipientId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="getCustomerName(item.recipientId)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.destCountryCode`]="{ item }">
-          <EditableCell :item="item" :display-value="countriesStore.getCountryShortName(item.destCountryCode)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryShortName(item.destCountryCode)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.origCountryCode`]="{ item }">
-          <EditableCell :item="item" :display-value="countriesStore.getCountryShortName(item.origCountryCode)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryShortName(item.origCountryCode)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.date`]="{ item }">
-          <EditableCell :item="item" :display-value="formatDate(item.date)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="formatDate(item.date)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
-          <EditableCell :item="item" :display-value="item.invoiceNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="item.invoiceNumber" 
+            cell-class="truncated-cell clickable-cell open-parcels-link" 
+            @click="openParcels" 
+          />
         </template>
         <template #[`item.invoiceDate`]="{ item }">
-          <EditableCell :item="item" :display-value="formatDate(item.invoiceDate)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="formatDate(item.invoiceDate)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
-          <EditableCell :item="item" :display-value="transportationTypesStore.getName(item.transportationTypeId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="transportationTypesStore.getName(item.transportationTypeId)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.customsProcedureId`]="{ item }">
-          <EditableCell :item="item" :display-value="customsProceduresStore.getName(item.customsProcedureId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
+          <ClickableCell 
+            :item="item" 
+            :display-value="customsProceduresStore.getName(item.customsProcedureId)" 
+            cell-class="truncated-cell clickable-cell edit-register-link" 
+            @click="editRegister" 
+          />
         </template>
         <template #[`item.ordersTotal`]="{ item }">
           <v-tooltip>
@@ -523,7 +573,7 @@ const headers = [
 
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegisterWrapper" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладные для всех посылок в реестре" @click="exportAllXml" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладные для всех посылок в реестре" @click="exportAllXml" />
             <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
             <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" />
           </div>
@@ -614,10 +664,6 @@ const headers = [
 .action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.clickable-cell {
-  cursor: pointer;
 }
 
 .upload-links {

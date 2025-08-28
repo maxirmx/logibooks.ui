@@ -214,7 +214,9 @@ function closeDropdown() {
   box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
   border: 2px solid #797979;
   border-radius: 0.25rem;
-  max-height: max(200px, 30vh);
+  /* Increase overall search panel height */
+  max-height: max(500px, 40vh);
+  min-height: 20vh;
   display: flex;
   flex-direction: column;
   font-size: 0.875em;
@@ -250,7 +252,7 @@ function closeDropdown() {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 200px;
+  max-height: 320px;
   overflow-y: auto;
 }
 .tree-container {

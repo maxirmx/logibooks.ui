@@ -35,6 +35,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -203,8 +204,12 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
-async function onSubmit(values, { setErrors }) {
+async function onSubmit(values, actions = {}) {
   if (!isComponentMounted.value) return
+  
+  // Handle both form submission and direct calls
+  const { setErrors } = actions || {}
+  
   try {
     if (props.create) {
       const result = await registersStore.upload(uploadFile.value, item.value.companyId)
@@ -222,7 +227,13 @@ async function onSubmit(values, { setErrors }) {
     }
   } catch (error) {
     if (isComponentMounted.value) {
-      setErrors({ apiError: error.message || String(error) })
+      // Use setErrors if available (form submission), otherwise use store error
+      if (setErrors && typeof setErrors === 'function') {
+        setErrors({ apiError: error.message || String(error) })
+      } else {
+        // For ActionButton clicks, use store error
+        registersStore.error = error.message || String(error)
+      }
     }
   }
 }
@@ -238,14 +249,39 @@ function getCustomerName(customerId) {
 
 <template>
   <div class="settings form-3 form-compact">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
-    <hr class="hr" />
+   
     <Form
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, values, isSubmitting }"
     >
+      <div class="header-with-actions">
+        <h1 class="primary-heading">
+          {{ getTitle() }}
+      </h1>
+      <!-- Action buttons moved inside Form scope -->
+      <div class="header-actions">
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-check-double" 
+          :iconSize="'3x'"
+          tooltip-text="Сохранить"
+          :disabled="isSubmitting"
+          @click="onSubmit(values)"
+        />
+        <ActionButton 
+          :item="{}" 
+          icon="fa-solid fa-xmark" 
+          :iconSize="'3x'"
+          tooltip-text="Отменить"
+          :disabled="isSubmitting"
+          @click="router.push(`/registers`)"
+        />
+      </div>
+    </div>
+    
+    <hr class="hr" />
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
@@ -381,7 +417,8 @@ function getCustomerName(customerId) {
         </div>
       </div>
 
-      <div class="form-actions">
+      <!-- actions moved to header -->
+      <div class="form-actions" style="display: none;">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
@@ -402,3 +439,100 @@ function getCustomerName(customerId) {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Header with actions layout */
+.header-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  
+  /* Control panel styling */
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+  
+  /* Ensure it flows below heading on narrow screens */
+  min-width: min-content;
+}
+
+/* Primary heading with ellipsis */
+.primary-heading {
+  margin: 0;
+  flex: 1;
+  min-width: 0; /* Allow shrinking */
+  
+  /* Ellipsis on overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  /* Ensure it takes available space but can shrink */
+  max-width: calc(100% - 300px); /* Reserve space for buttons */
+}
+
+.form-section,
+.form-row,
+.form-group {
+  overflow: visible !important;
+}
+
+/* On small screens, ensure full width for heading and buttons flow below */
+@media (max-width: 768px) {
+  .header-with-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .primary-heading {
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+  }
+}
+
+/* Product name styling */
+.product-name-label {
+  width: calc(18.5% - 50px);
+  min-width: 140px;
+}
+
+/* Override product name row alignment */
+.product-name-row {
+  display: flex;
+  align-items: center;
+}
+
+/* Overlay state styling */
+.form-disabled .form-control,
+.form-disabled button,
+.form-disabled select,
+.form-disabled textarea,
+.form-disabled .v-field,
+.form-disabled .v-btn {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-disabled .feacn-search-wrapper {
+  pointer-events: auto;
+  opacity: 1;
+}
+</style>

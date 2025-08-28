@@ -361,7 +361,7 @@ function getGenericTemplateHeaders() {
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать посылку" @click="editParcel" />
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
           </div>
         </template>

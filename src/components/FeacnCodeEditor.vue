@@ -131,13 +131,14 @@ async function handleCodeSelect(code) {
   <div class="form-section">
     <div class="form-row">
         <div class="form-group feacn-search-wrapper">
-          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)">{{ columnTitles.tnVed }}:</label>
+          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)" @dblclick="toggleSearch">{{ columnTitles.tnVed }}:</label>
           <Field name="tnVed" id="tnVed" class="form-control input"
-                 :disabled="searchActive"
+                 :readonly="searchActive"
                  :class="{
                    'is-invalid': errors && errors.tnVed,
                    [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
-                 }" 
+                 }"
+                 @dblclick="toggleSearch"
           />
           <div class="action-buttons">
             <ActionButton
@@ -185,9 +186,9 @@ async function handleCodeSelect(code) {
   left: 0;
   right: 0;
   z-index: 100;
-  width: 60vw;
-  max-width: 800px;
-  min-width: 400px;
+  width: 90vw;
+  max-width: 1600px;
+  min-width: 600px;
 }
 
 

@@ -200,10 +200,10 @@ async function generateXml(values) {
     <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, setFieldValue }" :class="{ 'form-disabled': overlayActive }">
     <div class="header-with-actions">
       <h1 class="primary-heading">
-        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
+        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }} 
       </h1>
-      
-      <!-- Action buttons -->
+      <!-- Action buttons moved inside Form scope -->
+      <div class="header-actions">        
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-arrow-right" 
@@ -253,6 +253,7 @@ async function generateXml(values) {
           @click="generateXml(values)"
         />
       </div>
+    </div>
     <hr class="hr" />
 
       <!-- Order Identification & Status Section -->

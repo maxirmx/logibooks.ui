@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import EditableCell from '@/components/EditableCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 
-describe('EditableCell', () => {
+describe('ClickableCell', () => {
   const defaultProps = {
     item: { id: 1, name: 'Test Item' },
     displayValue: 'Test Value'
   }
 
   function createWrapper(props = {}) {
-    return mount(EditableCell, {
+    return mount(ClickableCell, {
       props: { ...defaultProps, ...props }
     })
   }
@@ -31,7 +31,7 @@ describe('EditableCell', () => {
     })
 
     it('displays custom slot content', () => {
-      const wrapper = mount(EditableCell, {
+      const wrapper = mount(ClickableCell, {
         props: defaultProps,
         slots: {
           default: '<strong>Custom Content</strong>'
@@ -99,7 +99,7 @@ describe('EditableCell', () => {
 
   describe('slot props', () => {
     it('provides item and value to slot', () => {
-      const wrapper = mount(EditableCell, {
+      const wrapper = mount(ClickableCell, {
         props: defaultProps,
         slots: {
           default: ({ item, value }) => `Item: ${item.name}, Value: ${value}`
@@ -111,7 +111,7 @@ describe('EditableCell', () => {
 
     it('provides correct item data to slot', () => {
       const item = { id: 5, companyName: 'Test Company' }
-      const wrapper = mount(EditableCell, {
+      const wrapper = mount(ClickableCell, {
         props: { item, displayValue: 'Company Display' },
         slots: {
           default: ({ item }) => `Company: ${item.companyName}`

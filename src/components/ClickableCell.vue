@@ -43,3 +43,9 @@ defineEmits(['click'])
     </slot>
   </span>
 </template>
+
+<style scoped>
+.clickable-cell {
+  cursor: pointer;
+}
+</style>

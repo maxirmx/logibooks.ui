@@ -254,7 +254,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, values, isSubmitting }"
+      v-slot="{ errors, isSubmitting }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">

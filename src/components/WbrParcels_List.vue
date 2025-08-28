@@ -312,7 +312,7 @@ function getGenericTemplateHeaders() {
           <ClickableCell 
             :item="item" 
             :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" 
-            :cell-class="`truncated-cell status-cell  clickable-cell ${getCheckStatusClass(item.checkStatusId)}`" 
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatusId)}`" 
             @click="editParcel" 
           />
         </template>

@@ -27,32 +27,19 @@
 defineProps({
   item: { type: Object, required: true },
   displayValue: { type: [String, Number, null, undefined], default: '' },
-  cellClass: { type: String, default: 'clickable-cell' },
-  tooltipText: { type: String, default: '' },
-  tooltipIcon: { type: String, default: 'fa-solid fa-pen' }
+  cellClass: { type: String, default: 'clickable-cell' }
 })
 
 defineEmits(['click'])
 </script>
 
 <template>
-  <v-tooltip>
-    <template #activator="{ props }">
-      <span
-        :class="cellClass"
-        v-bind="props"
-        @click="$emit('click', item)"
-      >
-        <slot :item="item" :value="displayValue">
-          {{ displayValue }}
-        </slot>
-      </span>
-    </template>
-    <template #default>
-      <div class="d-flex align-center">
-        <font-awesome-icon :icon="tooltipIcon" class="mr-3" />
-        {{ tooltipText || displayValue }}
-      </div>
-    </template>
-  </v-tooltip>
+  <span
+    :class="cellClass"
+    @click="$emit('click', item)"
+  >
+    <slot :item="item" :value="displayValue">
+      {{ displayValue }}
+    </slot>
+  </span>
 </template>

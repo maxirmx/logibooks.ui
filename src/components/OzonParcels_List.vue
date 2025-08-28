@@ -41,7 +41,6 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -78,8 +77,6 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
-const { stopWords } = storeToRefs(stopWordsStore)
-const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -296,7 +293,7 @@ function getGenericTemplateHeaders() {
 
         <!-- Special template for checkStatusId to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
-          <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" :tooltip-text="getCheckStatusTooltip(item, parcelCheckStatusStore.getStatusTitle, feacnOrders, stopWords)" @click="editParcel" />
+          <EditableCell :item="item" :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" :cell-class="`truncated-cell status-cell ${getCheckStatusClass(item.checkStatusId)}`" data-test="editable-cell" @click="editParcel" />
         </template>
 
         <!-- Special template for tnVed to display with FEACN tooltip -->
@@ -331,7 +328,7 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <EditableCell :item="item" :display-value="countriesStore.getCountryAlpha2(item.countryCode)" cell-class="truncated-cell" data-test="editable-cell" :tooltip-text="countriesStore.getCountryShortName(item.countryCode)" @click="editParcel" />
+          <EditableCell :item="item" :display-value="countriesStore.getCountryAlpha2(item.countryCode)" cell-class="truncated-cell" data-test="editable-cell" @click="editParcel" />
         </template>
 
         <template #[`item.actions`]="{ item }">

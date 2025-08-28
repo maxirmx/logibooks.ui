@@ -436,7 +436,7 @@ const headers = [
         class="elevation-1 interlaced-table"
       >
         <template #[`item.dealNumber`]="{ item }">
-          <EditableCell :item="item" :display-value="item.dealNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
+          <EditableCell :item="item" :display-value="item.dealNumber" cell-class="truncated-cell open-parcels-link" @click="openParcels" />
         </template>
         <template #[`item.senderId`]="{ item }">
           <EditableCell :item="item" :display-value="getCustomerName(item.senderId)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
@@ -454,7 +454,7 @@ const headers = [
           <EditableCell :item="item" :display-value="formatDate(item.date)" cell-class="truncated-cell edit-register-link" @click="editRegister" />
         </template>
         <template #[`item.invoiceNumber`]="{ item }">
-          <EditableCell :item="item" :display-value="item.invoiceNumber" cell-class="truncated-cell open-parcels-link" tooltip-icon="fa-solid fa-list" @click="openParcels" />
+          <EditableCell :item="item" :display-value="item.invoiceNumber" cell-class="truncated-cell open-parcels-link" @click="openParcels" />
         </template>
         <template #[`item.invoiceDate`]="{ item }">
           <EditableCell :item="item" :display-value="formatDate(item.invoiceDate)" cell-class="truncated-cell edit-register-link" @click="editRegister" />

@@ -26,8 +26,7 @@
 <script setup>
 
 import { Field } from 'vee-validate'
-import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
-import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 
 defineProps({
   name: { type: String, required: true },
@@ -44,7 +43,6 @@ defineProps({
     <label 
       :for="name" 
       :class="fullWidth ? 'label-1' : 'label'" 
-      :title="getFieldTooltip(name, wbrRegisterColumnTitles, wbrRegisterColumnTooltips)"
     >
       {{ wbrRegisterColumnTitles[name] }}:
     </label>

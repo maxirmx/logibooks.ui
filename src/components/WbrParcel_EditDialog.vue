@@ -265,14 +265,14 @@ async function generateXml(values) {
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="statusId" class="label" :title="getFieldTooltip('statusId', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.statusId }}:</label>
+            <label for="statusId" class="label">{{ wbrRegisterColumnTitles.statusId }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
                  @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">{{ wbrRegisterColumnTitles.checkStatusId }}:</label>
+            <label for="checkStatusId" class="label">{{ wbrRegisterColumnTitles.checkStatusId }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatusId)">
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
@@ -307,7 +307,7 @@ async function generateXml(values) {
           </div>
           <!-- Last view -->
           <div class="form-group" v-if="item?.dTime">
-            <label for="lastView" class="label" title="Последний просмотр">Последний просмотр текущим пользователем:</label>
+            <label for="lastView" class="label">Последний просмотр текущим пользователем:</label>
             <div class="readonly-field">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '[неизвестно]' }}
             </div>
@@ -344,7 +344,7 @@ async function generateXml(values) {
             @click="isDescriptionVisible = !isDescriptionVisible"
             :iconSize="'2x'"
           />
-          <label for="productName" class="label-1 product-name-label" :title="getFieldTooltip('productName', wbrRegisterColumnTitles, wbrRegisterColumnTooltips)">
+          <label for="productName" class="label-1 product-name-label">
             {{ wbrRegisterColumnTitles.productName }}:
           </label>
           <Field
@@ -380,7 +380,6 @@ async function generateXml(values) {
               target="_blank"
               rel="noopener noreferrer"
               class="product-link-inline"
-              :title="productLinkWithProtocol"
             >
               {{ productLinkWithProtocol }}
             </a>

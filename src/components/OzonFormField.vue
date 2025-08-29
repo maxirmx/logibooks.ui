@@ -26,8 +26,7 @@
 <script setup>
 
 import { Field } from 'vee-validate'
-import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
+import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 
 defineProps({
   name: { type: String, required: true },
@@ -43,7 +42,6 @@ defineProps({
     <label 
       :for="name" 
       :class="fullWidth ? 'label-1' : 'label'" 
-      :title="getFieldTooltip(name, ozonRegisterColumnTitles, ozonRegisterColumnTooltips)"
     >
       {{ ozonRegisterColumnTitles[name] }}:
     </label>

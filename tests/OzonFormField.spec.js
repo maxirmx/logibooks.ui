@@ -143,7 +143,7 @@ describe('OzonFormField', () => {
 
     const label = wrapper.find('label')
     expect(label.exists()).toBe(true)
-    expect(label.attributes('title')).toBeDefined()
+    expect(label.attributes('title')).toBeUndefined()
   })
 
   it('does not display validation error styling when no errors exist', () => {

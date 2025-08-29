@@ -307,8 +307,8 @@ async function generateXml(values) {
           </div>
           <!-- Last view -->
           <div class="form-group" v-if="item?.dTime">
-            <label for="lastView" class="label">Последний просмотр текущим пользователем:</label>
-            <div class="readonly-field">
+            <label for="last-view" class="label">Последний просмотр текущим пользователем:</label>
+            <div class="readonly-field" id="last-view">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '[неизвестно]' }}
             </div>
           </div>          
@@ -371,7 +371,13 @@ async function generateXml(values) {
       <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
-          <WbrFormField name="shk" :errors="errors" :fullWidth="false" />
+          <div class="form-group">
+            <label for="shk" class="label">{{ wbrRegisterColumnTitles.shk }}:</label>
+            <div class="readonly-field" id="shk">
+              {{ item?.shk ? item.shk : '[неизвестен]' }}
+            </div>
+          </div>          
+
           <div class="form-group">
             <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
             <a

@@ -286,7 +286,7 @@ describe('WbrFormField', () => {
 
       const label = wrapper.find('label')
       expect(label.exists()).toBe(true)
-      expect(label.attributes('title')).toBeDefined()
+      expect(label.attributes('title')).toBeUndefined()
     })
   })
 })

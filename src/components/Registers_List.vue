@@ -147,14 +147,14 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
-function getOrdersByCheckStatusTooltip(item) {
-  if (!item?.ordersByCheckStatus) return ''
-  return Object.entries(item.ordersByCheckStatus)
+function getParcelsByCheckStatusTooltip(item) {
+  if (!item?.parcelsByCheckStatus) return ''
+  return Object.entries(item.parcelsByCheckStatus)
     .map(([statusId, count]) => `${parcelCheckStatusStore.getStatusTitle(Number(statusId)) ?? 'Неизвестно'}: ${count}`)
     .join('\n')
 }
 
-// Load companies and order statuses on component mount
+// Load companies and parcel statuses on component mount
 onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
@@ -345,6 +345,11 @@ function cancelValidationWrapper() {
   }
 }
 
+function formatInvoiceInfo(item) {
+  const { invoiceNumber, invoiceDate } = item
+  return invoiceNumber ? `№ ${invoiceNumber} от ${formatDate(invoiceDate)}` : ''
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -358,16 +363,15 @@ function formatDate(dateStr) {
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center', width: '280px' },
   { title: 'Номер сделки', key: 'dealNumber', align: 'center' },
-  { title: 'Дата загрузки', key: 'date', align: 'center' },
   { title: 'Отправитель', key: 'senderId', align: 'center' },
   { title: 'Страна отправления', key: 'origCountryCode', align: 'center' },
   { title: 'Получатель', key: 'recipientId', align: 'center' },
   { title: 'Страна назначения', key: 'destCountryCode', align: 'center' },
-  { title: 'Номер накладной', key: 'invoiceNumber', align: 'center' },
-  { title: 'Дата накладной', key: 'invoiceDate', align: 'center' },
+  { title: 'ТСД', key: 'invoice', align: 'center' },
   { title: 'Транспорт', key: 'transportationTypeId', align: 'center' },
   { title: 'Процедура', key: 'customsProcedureId', align: 'center' },
-  { title: 'Посылки', key: 'ordersTotal', align: 'center' }
+  { title: 'Посылки/Места', key: 'parcelsTotal', align: 'center' },
+  { title: 'Дата загрузки', key: 'date', align: 'center' }
 ]
 
 </script>
@@ -483,20 +487,12 @@ const headers = [
             @click="editRegister" 
           />
         </template>
-        <template #[`item.invoiceNumber`]="{ item }">
+        <template #[`item.invoice`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="item.invoiceNumber" 
+            :display-value="formatInvoiceInfo(item)" 
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
-          />
-        </template>
-        <template #[`item.invoiceDate`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="formatDate(item.invoiceDate)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
           />
         </template>
         <template #[`item.transportationTypeId`]="{ item }">
@@ -515,13 +511,13 @@ const headers = [
             @click="editRegister" 
           />
         </template>
-        <template #[`item.ordersTotal`]="{ item }">
+        <template #[`item.parcelsTotal`]="{ item }">
           <v-tooltip>
             <template #activator="{ props }">
-              <span class="truncated-cell" v-bind="props">{{ item.ordersTotal }}</span>
+              <span class="truncated-cell" v-bind="props">{{ item.parcelsTotal }}/{{ item.placesTotal }}</span>
             </template>
             <template #default>
-              <div style="white-space: pre-line">{{ getOrdersByCheckStatusTooltip(item) }}</div>
+              <div style="white-space: pre-line">{{ getParcelsByCheckStatusTooltip(item) }}</div>
             </template>
           </v-tooltip>
         </template>

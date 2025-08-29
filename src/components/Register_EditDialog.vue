@@ -61,6 +61,19 @@ const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 
+    if (!props.create) {
+      await registersStore.getById(props.id)
+    } else {
+      // Set default values for new records
+      if (!item.value.customsProcedureId) {
+        item.value.customsProcedureId = 1
+      }
+      if (!item.value.transportationTypeId) {
+        item.value.transportationTypeId = 1
+      }
+    }
+
+
 onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
@@ -77,17 +90,6 @@ onMounted(async () => {
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
-    if (!props.create) {
-      await registersStore.getById(props.id)
-    } else {
-      // Set default values for new records
-      if (!item.value.customsProcedureId) {
-        item.value.customsProcedureId = 1
-      }
-      if (!item.value.transportationTypeId) {
-        item.value.transportationTypeId = 1
-      }
-    }
     if (isComponentMounted.value) {
       updateExportStatusFromProc()
     }

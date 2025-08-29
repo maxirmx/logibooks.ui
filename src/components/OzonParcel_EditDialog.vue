@@ -40,7 +40,6 @@ import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from './OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
@@ -260,14 +259,14 @@ async function generateXml(values) {
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="statusId" class="label" :title="getFieldTooltip('statusId', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.statusId }}:</label>
+            <label for="statusId" class="label">{{ ozonRegisterColumnTitles.statusId }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
                    @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatusId" class="label" :title="getFieldTooltip('checkStatusId', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">{{ ozonRegisterColumnTitles.checkStatusId }}:</label>
+            <label for="checkStatusId" class="label">{{ ozonRegisterColumnTitles.checkStatusId }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatusId)">
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
@@ -332,7 +331,7 @@ async function generateXml(values) {
       <!-- Product Name Section -->
       <div class="form-section">
         <div class="form-row-1 product-name-row">
-          <label for="productName" class="label-1 product-name-label" :title="getFieldTooltip('productName', ozonRegisterColumnTitles, ozonRegisterColumnTooltips)">
+          <label for="productName" class="label-1 product-name-label">
             {{ ozonRegisterColumnTitles.productName }}:
           </label>
           <Field
@@ -345,7 +344,12 @@ async function generateXml(values) {
             <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
-          <OzonFormField name="postingNumber" :errors="errors" :fullWidth="false" />
+          <div class="form-group">
+            <label for="postingNumber" class="label">{{ ozonRegisterColumnTitles.postingNumber }}:</label>
+            <div class="readonly-field" id="postingNumber">
+              {{ item?.postingNumber ? item.postingNumber : '[неизвестен]' }}
+            </div>
+          </div>
           <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
           <OzonFormField name="article" :errors="errors" :fullWidth="false" />
           <div class="form-group">
@@ -356,7 +360,6 @@ async function generateXml(values) {
               target="_blank"
               rel="noopener noreferrer"
               class="product-link-inline"
-              :title="productLinkWithProtocol"
             >
               {{ productLinkWithProtocol }}
             </a>
@@ -373,11 +376,6 @@ async function generateXml(values) {
           <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <OzonFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
-      </div>
-
-      <!-- Recipient Information Section -->
-      <div class="form-section">
-        <h3 class="section-title">Информация о получателе</h3>
         <div class="form-row">
           <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />

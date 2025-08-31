@@ -82,10 +82,12 @@ const {
   parcels_sort_by,
   parcels_page,
   parcels_status,
+  parcels_check_status,
   parcels_tnved
 } = storeToRefs(authStore)
 
 parcels_status.value = null
+parcels_check_status.value = null
 parcels_tnved.value = ''
 
 const registerFileName = ref('')
@@ -124,7 +126,7 @@ async function loadOrdersWrapper() {
 provide('loadOrders', loadOrdersWrapper)
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved],
   loadOrdersWrapper,
   { immediate: true }
 )
@@ -173,6 +175,14 @@ onUnmounted(() => {
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
   ...parcelStatusStore.parcelStatuses.map(status => ({
+    value: status.id,
+    title: status.title
+  }))
+])
+
+const checkStatusOptions = computed(() => [
+  { value: null, title: 'Все' },
+  ...parcelCheckStatusStore.statuses.map(status => ({
     value: status.id,
     title: status.title
   }))
@@ -248,6 +258,13 @@ function getGenericTemplateHeaders() {
           v-model="parcels_status"
           :items="statusOptions"
           label="Статус"
+          density="compact"
+          style="min-width: 250px"
+        />
+        <v-select
+          v-model="parcels_check_status"
+          :items="checkStatusOptions"
+          label="Статус проверки"
           density="compact"
           style="min-width: 250px"
         />

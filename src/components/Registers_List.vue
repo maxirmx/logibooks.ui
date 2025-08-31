@@ -78,6 +78,7 @@ const parcelCheckStatusStore = useParcelCheckStatusStore()
 
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
+const runningAction = ref(false)
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -260,50 +261,74 @@ function editRegister(item) {
 }
 
 function exportAllXml(item) {
-  registersStore.generate(item.id, item.invoiceNumber)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    registersStore.generate(item.id, item.invoiceNumber)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 async function downloadRegister(item) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
     await registersStore.download(item.id, item.fileName)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 async function deleteRegister(item) {
-  const content = `Удалить реестр "${item.fileName}" ?`
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: content
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const content = `Удалить реестр "${item.fileName}" ?`
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
 
-  if (confirmed) {
-    try {
-      await registersStore.remove(item.id)
-    } catch (err) {
-      alertStore.error('Ошибка при удалении реестра' + (err.message ? `: ${err.message}` : ''))
+    if (confirmed) {
+      try {
+        await registersStore.remove(item.id)
+      } catch (err) {
+        alertStore.error('Ошибка при удалении реестра' + (err.message ? `: ${err.message}` : ''))
+      }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
 async function validateRegisterWrapper(item) {
-  validationState.operation = 'validation'
-  pollingFunction = () =>
-    pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
-  await validateRegister(
-    item,
-    validationState,
-    registersStore,
-    alertStore,
-    () => pollingTimer.stop(),
-    () => pollingTimer.start()
-  )
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    validationState.operation = 'validation'
+    pollingFunction = () =>
+      pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
+    await validateRegister(
+      item,
+      validationState,
+      registersStore,
+      alertStore,
+      () => pollingTimer.stop(),
+      () => pollingTimer.start()
+    )
+  } finally {
+    runningAction.value = false
+  }
 }
 
 async function pollFeacnLookup() {
@@ -327,6 +352,8 @@ async function pollFeacnLookup() {
 }
 
 async function lookupFeacnCodes(item) {
+  if (runningAction.value) return
+  runningAction.value = true
   try {
     validationState.operation = 'lookup-feacn'
     pollingTimer.stop()
@@ -340,6 +367,8 @@ async function lookupFeacnCodes(item) {
     pollingTimer.start()
   } catch (err) {
     alertStore.error(err.message || String(err))
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -533,8 +562,8 @@ const headers = [
 
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" />
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" :disabled="runningAction || loading" />
             
             <div class="bulk-status-inline">
               <div v-if="isInEditMode(item.id)" class="status-selector-inline">
@@ -549,20 +578,20 @@ const headers = [
                   density="compact" 
                   hide-details 
                   hide-no-data 
-                  :disabled="loading" 
+                  :disabled="runningAction || loading" 
                 />
                 <ActionButton 
                   :item="item" 
                   icon="fa-solid fa-check" 
                   tooltip-text="Применить статус" 
-                  :disabled="loading || !getSelectedStatusId(item.id)" 
+                  :disabled="runningAction || loading || !getSelectedStatusId(item.id)" 
                   @click="() => applyStatusToAllOrders(item.id, getSelectedStatusId(item.id))" 
                 />
                 <ActionButton 
                   :item="item" 
                   icon="fa-solid fa-xmark" 
                   tooltip-text="Отменить" 
-                  :disabled="loading" 
+                  :disabled="runningAction || loading" 
                   @click="() => cancelStatusChange(item.id)" 
                 />
               </div>
@@ -571,16 +600,16 @@ const headers = [
                 :item="item" 
                 icon="fa-solid fa-pen-to-square" 
                 tooltip-text="Изменить статус всех посылок в реестре" 
-                :disabled="loading" 
+                :disabled="runningAction || loading" 
                 @click="() => bulkChangeStatus(item.id)" 
               />
             </div>
 
-            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegisterWrapper" />
-            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладные для всех посылок в реестре" @click="exportAllXml" />
-            <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegisterWrapper" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладные для всех посылок в реестре" @click="exportAllXml" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" :disabled="runningAction || loading" />
           </div>
         </template>
       </v-data-table-server>

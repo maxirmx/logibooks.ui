@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useCompaniesStore } from '@/stores/companies.store.js'
@@ -46,6 +46,7 @@ const confirm = useConfirm()
 const { companies, loading } = storeToRefs(companiesStore)
 countriesStore.ensureLoaded()
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
 
 // Remove local search and itemsPerPage refs - use auth store instead
 
@@ -99,31 +100,37 @@ function openCreateDialog() {
 }
 
 async function deleteCompany(company) {
-  const content = 'Удалить компанию "' + company.name + '" ?'
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: content
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const content = 'Удалить компанию "' + company.name + '" ?'
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
 
-  if (confirmed) {
-    try {
-      await companiesStore.remove(company.id)
-    } catch (error) {
-      if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить информацию о компании, у которой есть связанные записи')
-      } else {
-        alertStore.error('Ошибка при удалении информации о компании')
+    if (confirmed) {
+      try {
+        await companiesStore.remove(company.id)
+      } catch (error) {
+        if (error.message?.includes('409')) {
+          alertStore.error('Нельзя удалить информацию о компании, у которой есть связанные записи')
+        } else {
+          alertStore.error('Ошибка при удалении информации о компании')
+        }
       }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -194,8 +201,8 @@ defineExpose({
 
         <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.isAdmin" class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" :disabled="runningAction || loading" />
           </div>
         </template>
       </v-data-table>

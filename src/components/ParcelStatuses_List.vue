@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -43,6 +43,7 @@ const confirm = useConfirm()
 
 const { parcelStatuses, loading } = storeToRefs(parcelStatusesStore)
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
 
 // Custom filter function for v-data-table
 function filterParcelStatuses(value, query, item) {
@@ -75,31 +76,37 @@ function openCreateDialog() {
 }
 
 async function deleteParcelStatus(parcelStatus) {
-  const content = 'Удалить статус посылки "' + parcelStatus.title + '" ?'
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: content
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const content = 'Удалить статус посылки "' + parcelStatus.title + '" ?'
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
 
-  if (confirmed) {
-    try {
-      await parcelStatusesStore.remove(parcelStatus.id)
-    } catch (error) {
-      if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить статус посылки, у которого есть связанные записи')
-      } else {
-        alertStore.error('Ошибка при удалении статуса посылки')
+    if (confirmed) {
+      try {
+        await parcelStatusesStore.remove(parcelStatus.id)
+      } catch (error) {
+        if (error.message?.includes('409')) {
+          alertStore.error('Нельзя удалить статус посылки, у которого есть связанные записи')
+        } else {
+          alertStore.error('Ошибка при удалении статуса посылки')
+        }
       }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -172,12 +179,14 @@ defineExpose({
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать статус посылки"
               @click="openEditDialog"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить статус посылки"
               @click="deleteParcelStatus"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>

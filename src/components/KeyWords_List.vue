@@ -50,6 +50,7 @@ const confirm = useConfirm()
 
 const { keyWords, loading } = storeToRefs(keyWordsStore)
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
 
 // File upload reference
 const fileInput = ref(null)
@@ -126,31 +127,37 @@ async function fileSelected(files) {
 }
 
 async function deleteKeyWord(keyWord) {
-  const content = 'Удалить ключевое слово "' + keyWord.word + '" ?'
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: content
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const content = 'Удалить ключевое слово "' + keyWord.word + '" ?'
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
 
-  if (confirmed) {
-    try {
-      await keyWordsStore.remove(keyWord.id)
-    } catch (error) {
-      if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить ключевое слово, у которого есть связанные записи')
-      } else {
-        alertStore.error('Ошибка при удалении ключевого слова')
+    if (confirmed) {
+      try {
+        await keyWordsStore.remove(keyWord.id)
+      } catch (error) {
+        if (error.message?.includes('409')) {
+          alertStore.error('Нельзя удалить ключевое слово, у которого есть связанные записи')
+        } else {
+          alertStore.error('Ошибка при удалении ключевого слова')
+        }
       }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -239,12 +246,14 @@ defineExpose({
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать ключевое слово или фразу"
               @click="openEditDialog"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить ключевое слово или фразу"
               @click="deleteKeyWord"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>

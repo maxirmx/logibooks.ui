@@ -27,6 +27,7 @@
 
 import router from '@/router'
 
+import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -38,6 +39,7 @@ const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
 const { users } = storeToRefs(usersStore)
+const runningAction = ref(false)
 usersStore.getAll()
 
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -93,30 +95,36 @@ function filterUsers(value, query, item) {
 
 
 async function deleteUser(item) {
-  const content = 'Удалить пользователя "' + item.firstName + ' ' + item.lastName + '" ?'
-  const result = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: content
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const content = 'Удалить пользователя "' + item.firstName + ' ' + item.lastName + '" ?'
+    const result = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
 
-  if (result) {
-    usersStore
-      .delete(item.id)
-      .then(() => {
-        usersStore.getAll()
-      })
-      .catch((error) => {
-        alertStore.error(error)
-      })
+    if (result) {
+      usersStore
+        .delete(item.id)
+        .then(() => {
+          usersStore.getAll()
+        })
+        .catch((error) => {
+          alertStore.error(error)
+        })
+    }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -180,8 +188,8 @@ const headers = [
 
         <template v-slot:[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" :disabled="runningAction || users?.loading" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" :disabled="runningAction || users?.loading" />
           </div>
         </template>
       </v-data-table>

@@ -24,7 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnInsertItemsStore } from '@/stores/feacn.insert.items.store.js'
@@ -44,6 +44,7 @@ const confirm = useConfirm()
 
 const { insertItems, loading } = storeToRefs(insertItemsStore)
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
 
 // Use shared FEACN tooltip cache
 const feacnTooltips = useFeacnTooltips()
@@ -76,26 +77,32 @@ function openCreateDialog() {
 }
 
 async function deleteInsertItem(item) {
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: 'Удалить фразу?'
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Удалить фразу?'
+    })
 
-  if (confirmed) {
-    try {
-      await insertItemsStore.remove(item.id)
-    } catch  {
-      alertStore.error('Ошибка при удалении правила')
+    if (confirmed) {
+      try {
+        await insertItemsStore.remove(item.id)
+      } catch  {
+        alertStore.error('Ошибка при удалении правила')
+      }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -156,12 +163,14 @@ defineExpose({
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать правило"
               @click="openEditDialog"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить правило"
               @click="deleteInsertItem"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>

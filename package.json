@@ -1,6 +1,10 @@
 {
   "name": "logibooks-ui",
+<<<<<<< HEAD
   "version": "0.11.2",
+=======
+  "version": "0.11.0",
+>>>>>>> f7a6839 (filter by checkstatus)
   "private": true,
   "type": "module",
   "scripts": {

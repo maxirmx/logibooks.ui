@@ -449,42 +449,42 @@ describe('auth store', () => {
 
     it('initializes selectedParcelId fields with null values', () => {
       const store = useAuthStore()
-      expect(store.selectedWbrParcelId).toBeNull()
-      expect(store.selectedOzonParcelId).toBeNull()
+      expect(store.selectedParcelId).toBeNull()
+      expect(store.selectedParcelId).toBeNull()
     })
 
-    it('allows updating selectedWbrParcelId', () => {
+    it('allows updating selectedParcelId', () => {
       const store = useAuthStore()
       
-      store.selectedWbrParcelId = 123
-      expect(store.selectedWbrParcelId).toBe(123)
+      store.selectedParcelId = 123
+      expect(store.selectedParcelId).toBe(123)
       
-      store.selectedWbrParcelId = null
-      expect(store.selectedWbrParcelId).toBeNull()
+      store.selectedParcelId = null
+      expect(store.selectedParcelId).toBeNull()
     })
 
-    it('allows updating selectedOzonParcelId', () => {
+    it('allows updating selectedParcelId', () => {
       const store = useAuthStore()
       
-      store.selectedOzonParcelId = 456
-      expect(store.selectedOzonParcelId).toBe(456)
+      store.selectedParcelId = 456
+      expect(store.selectedParcelId).toBe(456)
       
-      store.selectedOzonParcelId = null
-      expect(store.selectedOzonParcelId).toBeNull()
+      store.selectedParcelId = null
+      expect(store.selectedParcelId).toBeNull()
     })
 
     it('allows independent management of both selectedParcelId fields', () => {
       const store = useAuthStore()
       
-      store.selectedWbrParcelId = 123
-      store.selectedOzonParcelId = 456
+      store.selectedParcelId = 123
+      store.selectedParcelId = 456
       
-      expect(store.selectedWbrParcelId).toBe(123)
-      expect(store.selectedOzonParcelId).toBe(456)
+      expect(store.selectedParcelId).toBe(123)
+      expect(store.selectedParcelId).toBe(456)
       
-      store.selectedWbrParcelId = 789
-      expect(store.selectedWbrParcelId).toBe(789)
-      expect(store.selectedOzonParcelId).toBe(456) // Should remain unchanged
+      store.selectedParcelId = 789
+      expect(store.selectedParcelId).toBe(789)
+      expect(store.selectedParcelId).toBe(456) // Should remain unchanged
     })
   })
 })

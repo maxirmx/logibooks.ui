@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { watch, ref, computed, onMounted, onUnmounted, provide } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -84,8 +84,11 @@ const {
   parcels_status,
   parcels_check_status,
   parcels_tnved,
-  selectedOzonParcelId
+  selectedParcelId
 } = storeToRefs(authStore)
+
+// Template ref for the data table
+const dataTableRef = ref(null)
 
 parcels_status.value = null
 parcels_check_status.value = null
@@ -95,19 +98,19 @@ parcels_tnved.value = ''
 function updateSelectedParcelId() {
   if (items.value?.length > 0) {
     // Check if current selection is on the page
-    const isCurrentOnPage = items.value.some(item => item.id === selectedOzonParcelId.value)
+    const isCurrentOnPage = items.value.some(item => item.id === selectedParcelId.value)
     if (!isCurrentOnPage) {
-      selectedOzonParcelId.value = null
+      selectedParcelId.value = null
     }
   } else {
-    selectedOzonParcelId.value = null
+    selectedParcelId.value = null
   }
 }
 
-// Watch for items changes to update selection
+// Watch for items changes to update selection and scroll to selected item
 watch(
   () => items.value,
-  (newItems) => {
+  () => {
     updateSelectedParcelId()
   },
   { immediate: true }
@@ -117,15 +120,39 @@ watch(
 watch(
   parcels_page,
   () => {
-    selectedOzonParcelId.value = null
+    selectedParcelId.value = null
   }
 )
 
 // Custom row props function with selection highlighting
 function getRowPropsForOzonParcel(data) {
   const baseClass = getRowPropsForParcel(data).class
-  const selectedClass = data.item.id === selectedOzonParcelId.value ? 'selected-parcel-row' : ''
+  const selectedClass = data.item.id === selectedParcelId.value ? 'selected-parcel-row' : ''
   return { class: `${baseClass} ${selectedClass}`.trim() }
+}
+
+// Scroll to selected item function
+function scrollToSelectedItem() {
+  if (!selectedParcelId.value || !dataTableRef.value) return
+  
+  nextTick(() => {
+    try {
+      // Find the selected row by looking for the selected-parcel-row class
+      const tableElement = dataTableRef.value.$el || dataTableRef.value
+      const selectedRow = tableElement.querySelector('.selected-parcel-row')
+      
+      if (selectedRow) {
+        // Scroll the row into view with smooth behavior
+        selectedRow.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        })
+      }
+    } catch (error) {
+      console.warn('Could not scroll to selected item:', error)
+    }
+  })
 }
 
 const registerFileName = ref('')
@@ -192,6 +219,13 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await fetchRegister()
+
+    updateSelectedParcelId()
+    // Scroll to selected item if it exists on current page
+    if (selectedParcelId.value) {
+      scrollToSelectedItem()
+    }
+
   } catch (error) {
     if (isComponentMounted.value) {
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
@@ -258,28 +292,28 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
-  selectedOzonParcelId.value = item.id
+  selectedParcelId.value = item.id
   navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {
-  selectedOzonParcelId.value = item.id
+  selectedParcelId.value = item.id
   const filename = item.postingNumber
   await exportParcelXmlData(item, parcelsStore, filename)
 }
 
 async function validateParcel(item) {
-  selectedOzonParcelId.value = item.id
+  selectedParcelId.value = item.id
   await validateParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function lookupFeacnCodes(item) {
-  selectedOzonParcelId.value = item.id
+  selectedParcelId.value = item.id
   await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function approveParcel(item) {
-  selectedOzonParcelId.value = item.id
+  selectedParcelId.value = item.id
   await approveParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
@@ -325,6 +359,7 @@ function getGenericTemplateHeaders() {
     <v-card>
       <div style="overflow-x: auto;">
         <v-data-table-server
+          ref="dataTableRef"
           v-if="items?.length || loading"
           v-model:items-per-page="parcels_per_page"
           items-per-page-text="Посылок на странице"
@@ -335,7 +370,7 @@ function getGenericTemplateHeaders() {
           :headers="headers"
           :items="items"
           :row-props="getRowPropsForOzonParcel"
-          @click:row="(event, { item }) => { selectedOzonParcelId = item.id }"
+          @click:row="(event, { item }) => { selectedParcelId = item.id }"
           :items-length="totalCount"
           :loading="loading"
           density="compact"

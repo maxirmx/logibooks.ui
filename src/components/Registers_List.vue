@@ -312,8 +312,6 @@ async function deleteRegister(item) {
 }
 
 async function validateRegisterWrapper(item) {
-  if (runningAction.value) return
-  runningAction.value = true
   try {
     validationState.operation = 'validation'
     pollingFunction = () =>
@@ -326,8 +324,8 @@ async function validateRegisterWrapper(item) {
       () => pollingTimer.stop(),
       () => pollingTimer.start()
     )
-  } finally {
-    runningAction.value = false
+  } catch (err) {
+    alertStore.error(err.message || String(err))
   }
 }
 
@@ -352,8 +350,6 @@ async function pollFeacnLookup() {
 }
 
 async function lookupFeacnCodes(item) {
-  if (runningAction.value) return
-  runningAction.value = true
   try {
     validationState.operation = 'lookup-feacn'
     pollingTimer.stop()
@@ -367,8 +363,6 @@ async function lookupFeacnCodes(item) {
     pollingTimer.start()
   } catch (err) {
     alertStore.error(err.message || String(err))
-  } finally {
-    runningAction.value = false
   }
 }
 

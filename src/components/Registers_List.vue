@@ -346,9 +346,11 @@ function cancelValidationWrapper() {
 }
 
 function formatInvoiceInfo(item) {
-  const { invoiceNumber, invoiceDate } = item
+  const { invoiceNumber, invoiceDate, transportationTypeId } = item
+  const transportationDocument = transportationTypesStore.getDocument(transportationTypeId)
   const formattedDate = invoiceDate ? ` от ${formatDate(invoiceDate)}` : ''
-  return invoiceNumber ? `№ ${invoiceNumber}${formattedDate}` : ''
+  const invN = invoiceNumber ? ` ${invoiceNumber}${formattedDate}` : ''
+  return `${transportationDocument}${invN}`
 }
 
 function formatDate(dateStr) {
@@ -369,7 +371,6 @@ const headers = [
   { title: 'Получатель', key: 'recipientId', align: 'center' },
   { title: 'Страна назначения', key: 'destCountryCode', align: 'center' },
   { title: 'ТСД', key: 'invoice', align: 'center' },
-  { title: 'Транспорт', key: 'transportationTypeId', align: 'center' },
   { title: 'Процедура', key: 'customsProcedureId', align: 'center' },
   { title: 'Посылки/Места', key: 'parcelsTotal', align: 'center' },
   { title: 'Дата загрузки', key: 'date', align: 'center' }
@@ -494,14 +495,6 @@ const headers = [
             :display-value="formatInvoiceInfo(item)" 
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
-          />
-        </template>
-        <template #[`item.transportationTypeId`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="transportationTypesStore.getName(item.transportationTypeId)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
           />
         </template>
         <template #[`item.customsProcedureId`]="{ item }">

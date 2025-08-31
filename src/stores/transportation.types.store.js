@@ -38,5 +38,10 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
     return type ? type.name : `Тип ${id}`
   }
 
-  return { types, loading, error, getAll, ensureLoaded, getName }
+  function getDocument(id) {
+    const type = typeMap.value.get(id)
+    return type ? type.document : `[Тип ${id}]`
+  }
+
+  return { types, loading, error, getAll, ensureLoaded, getName, getDocument }
 })

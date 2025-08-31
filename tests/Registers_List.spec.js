@@ -125,7 +125,8 @@ vi.mock('@/stores/transportation.types.store.js', () => ({
     types: mockTransportationTypes,
     getAll: getTransportationTypesAll,
     ensureLoaded: vi.fn(),
-    getName: vi.fn(id => `Type ${id}`)
+    getName: vi.fn(id => `Type ${id}`),
+    getDocument: vi.fn(id => `Doc ${id}`)
   })
 }))
 

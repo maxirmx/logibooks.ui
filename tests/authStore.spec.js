@@ -472,19 +472,5 @@ describe('auth store', () => {
       store.selectedParcelId = null
       expect(store.selectedParcelId).toBeNull()
     })
-
-    it('allows independent management of both selectedParcelId fields', () => {
-      const store = useAuthStore()
-      
-      store.selectedParcelId = 123
-      store.selectedParcelId = 456
-      
-      expect(store.selectedParcelId).toBe(123)
-      expect(store.selectedParcelId).toBe(456)
-      
-      store.selectedParcelId = 789
-      expect(store.selectedParcelId).toBe(789)
-      expect(store.selectedParcelId).toBe(456) // Should remain unchanged
-    })
   })
 })

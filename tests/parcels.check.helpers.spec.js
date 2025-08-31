@@ -10,7 +10,9 @@ import {
   HasNoIssues,
   IsApproved,
   IsApprovedWithExcise,
-  getCheckStatusClass
+  getCheckStatusClass,
+  HIDDEN_CHECK_STATUS_IDS,
+  isSelectableCheckStatus
 } from '@/helpers/parcels.check.helpers.js'
 
 describe('parcels.check.helpers', () => {
@@ -317,6 +319,30 @@ describe('parcels.check.helpers', () => {
       it('returns empty string for undefined or null status IDs', () => {
         expect(getCheckStatusClass(undefined)).toBe('')
         expect(getCheckStatusClass(null)).toBe('')
+      })
+    })
+
+    describe('HIDDEN_CHECK_STATUS_IDS', () => {
+      it('contains the expected hidden check status IDs', () => {
+        expect(HIDDEN_CHECK_STATUS_IDS).toEqual([102, 103, 200])
+      })
+    })
+
+    describe('isSelectableCheckStatus', () => {
+      it('returns false for hidden check status IDs', () => {
+        expect(isSelectableCheckStatus({ id: 102, title: 'Hidden 1' })).toBe(false)
+        expect(isSelectableCheckStatus({ id: 103, title: 'Hidden 2' })).toBe(false)
+        expect(isSelectableCheckStatus({ id: 200, title: 'Hidden 3' })).toBe(false)
+      })
+
+      it('returns true for selectable check status IDs', () => {
+        expect(isSelectableCheckStatus({ id: 1, title: 'Visible 1' })).toBe(true)
+        expect(isSelectableCheckStatus({ id: 50, title: 'Visible 2' })).toBe(true)
+        expect(isSelectableCheckStatus({ id: 101, title: 'Visible 3' })).toBe(true)
+        expect(isSelectableCheckStatus({ id: 104, title: 'Visible 4' })).toBe(true)
+        expect(isSelectableCheckStatus({ id: 199, title: 'Visible 5' })).toBe(true)
+        expect(isSelectableCheckStatus({ id: 201, title: 'Visible 6' })).toBe(true)
+        expect(isSelectableCheckStatus({ id: 300, title: 'Visible 7' })).toBe(true)
       })
     })
   })

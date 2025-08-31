@@ -40,7 +40,7 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
-import { HasIssues, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { HasIssues, getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -183,10 +183,12 @@ const statusOptions = computed(() => [
 
 const checkStatusOptions = computed(() => [
   { value: null, title: 'Все' },
-  ...parcelCheckStatusStore.statuses.map(status => ({
-    value: status.id,
-    title: status.title
-  }))
+  ...parcelCheckStatusStore.statuses
+    .filter(isSelectableCheckStatus)
+    .map(status => ({
+      value: status.id,
+      title: status.title
+    }))
 ])
 
 const headers = computed(() => {

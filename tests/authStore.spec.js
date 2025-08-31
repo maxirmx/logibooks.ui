@@ -446,5 +446,45 @@ describe('auth store', () => {
       store.registers_search = null
       expect(store.registers_search).toBeNull()
     })
+
+    it('initializes selectedParcelId fields with null values', () => {
+      const store = useAuthStore()
+      expect(store.selectedWbrParcelId).toBeNull()
+      expect(store.selectedOzonParcelId).toBeNull()
+    })
+
+    it('allows updating selectedWbrParcelId', () => {
+      const store = useAuthStore()
+      
+      store.selectedWbrParcelId = 123
+      expect(store.selectedWbrParcelId).toBe(123)
+      
+      store.selectedWbrParcelId = null
+      expect(store.selectedWbrParcelId).toBeNull()
+    })
+
+    it('allows updating selectedOzonParcelId', () => {
+      const store = useAuthStore()
+      
+      store.selectedOzonParcelId = 456
+      expect(store.selectedOzonParcelId).toBe(456)
+      
+      store.selectedOzonParcelId = null
+      expect(store.selectedOzonParcelId).toBeNull()
+    })
+
+    it('allows independent management of both selectedParcelId fields', () => {
+      const store = useAuthStore()
+      
+      store.selectedWbrParcelId = 123
+      store.selectedOzonParcelId = 456
+      
+      expect(store.selectedWbrParcelId).toBe(123)
+      expect(store.selectedOzonParcelId).toBe(456)
+      
+      store.selectedWbrParcelId = 789
+      expect(store.selectedWbrParcelId).toBe(789)
+      expect(store.selectedOzonParcelId).toBe(456) // Should remain unchanged
+    })
   })
 })

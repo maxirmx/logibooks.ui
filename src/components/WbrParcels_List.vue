@@ -83,12 +83,50 @@ const {
   parcels_page,
   parcels_status,
   parcels_check_status,
-  parcels_tnved
+  parcels_tnved,
+  selectedWbrParcelId
 } = storeToRefs(authStore)
 
 parcels_status.value = null
 parcels_check_status.value = null
 parcels_tnved.value = ''
+
+// Selected parcel management
+function updateSelectedParcelId() {
+  if (items.value?.length > 0) {
+    // Check if current selection is on the page
+    const isCurrentOnPage = items.value.some(item => item.id === selectedWbrParcelId.value)
+    if (!isCurrentOnPage) {
+      selectedWbrParcelId.value = null
+    }
+  } else {
+    selectedWbrParcelId.value = null
+  }
+}
+
+// Watch for items changes to update selection
+watch(
+  () => items.value,
+  (newItems) => {
+    updateSelectedParcelId()
+  },
+  { immediate: true }
+)
+
+// Watch for page changes to set selection to null
+watch(
+  parcels_page,
+  () => {
+    selectedWbrParcelId.value = null
+  }
+)
+
+// Custom row props function with selection highlighting
+function getRowPropsForWbrParcel(data) {
+  const baseClass = getRowPropsForParcel(data).class
+  const selectedClass = data.item.id === selectedWbrParcelId.value ? 'selected-parcel-row' : ''
+  return { class: `${baseClass} ${selectedClass}`.trim() }
+}
 
 const registerFileName = ref('')
 const registerDealNumber = ref('')
@@ -226,23 +264,28 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
+  selectedWbrParcelId.value = item.id
   navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {
+  selectedWbrParcelId.value = item.id
   const filename = String(item.shk || '').padStart(20, '0')
   await exportParcelXmlData(item, parcelsStore, filename)
 }
 
 async function validateParcel(item) {
+  selectedWbrParcelId.value = item.id
   await validateParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function lookupFeacnCodes(item) {
+  selectedWbrParcelId.value = item.id
   await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function approveParcel(item) {
+  selectedWbrParcelId.value = item.id
   await approveParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
@@ -297,7 +340,8 @@ function getGenericTemplateHeaders() {
           v-model:sort-by="parcels_sort_by"
           :headers="headers"
           :items="items"
-          :row-props="getRowPropsForParcel"
+          :row-props="getRowPropsForWbrParcel"
+          @click:row="(event, { item }) => { selectedWbrParcelId = item.id }"
           :items-length="totalCount"
           :loading="loading"
           density="compact"
@@ -456,3 +500,9 @@ function getGenericTemplateHeaders() {
   </div>
 </template>
 
+<style scoped>
+/* Visual emphasis for the selected parcel row */
+:deep(.selected-parcel-row) {
+  border: 2px dashed #5d798f !important;
+}
+</style>

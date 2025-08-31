@@ -83,6 +83,8 @@ export const useAuthStore = defineStore('auth', () => {
   const feacnprefixes_search = ref('')
   const feacnprefixes_sort_by = ref([])
   const feacnprefixes_page = ref(1)
+  const selectedWbrParcelId = ref(null)
+  const selectedOzonParcelId = ref(null)
   const returnUrl = ref(null)
   const re_jwt = ref(null)
   const re_tgt = ref(null)
@@ -206,6 +208,8 @@ export const useAuthStore = defineStore('auth', () => {
     feacnprefixes_search,
     feacnprefixes_sort_by,
     feacnprefixes_page,
+    selectedWbrParcelId,
+    selectedOzonParcelId,
     returnUrl,
     re_jwt,
     re_tgt,

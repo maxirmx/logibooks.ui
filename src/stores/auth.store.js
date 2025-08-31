@@ -207,7 +207,12 @@ export const useAuthStore = defineStore('auth', () => {
     feacnprefixes_search,
     feacnprefixes_sort_by,
     feacnprefixes_page,
+<<<<<<< HEAD
     selectedParcelId,
+=======
+    selectedWbrParcelId,
+    selectedOzonParcelId,
+>>>>>>> bdecfbb (selected row)
     returnUrl,
     re_jwt,
     re_tgt,

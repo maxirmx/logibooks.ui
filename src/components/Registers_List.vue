@@ -151,7 +151,11 @@ function getCustomerName(customerId) {
 
 // Helper functions to get country short names (reactive to countries store changes)
 function getCountryShortName(countryCode) {
+<<<<<<< HEAD
   if (!countryCode || !countries?.value) return countryCode
+=======
+  if (!countryCode || !countries.value) return countryCode
+>>>>>>> 0e15969 (snapshot)
   const num = Number(countryCode)
   if (num == 643) return 'Россия' // Special case for Russia
   const country = countries.value.find(c => c.isoNumeric === num)

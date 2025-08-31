@@ -68,6 +68,24 @@ describe('feacn.codes.store.js', () => {
     })
   })
 
+  describe('bulk lookup', () => {
+    it('bulkLookup posts codes and returns results', async () => {
+      const mockResult = { results: { '111': { id: 1 }, '222': null } }
+      fetchWrapper.post.mockResolvedValue(mockResult)
+      const res = await store.bulkLookup(['111', '222'])
+      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/bulk-lookup', { codes: ['111', '222'] })
+      expect(res).toEqual(mockResult)
+    })
+
+    it('handles bulkLookup error', async () => {
+      const err = new Error('bulk fail')
+      fetchWrapper.post.mockRejectedValue(err)
+      await expect(store.bulkLookup(['111'])).rejects.toThrow('bulk fail')
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+  })
+
   describe('upload operations', () => {
     it('uploads file successfully', async () => {
       const file = new File(['content'], 'codes.xlsx')

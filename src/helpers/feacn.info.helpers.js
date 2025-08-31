@@ -207,23 +207,55 @@ export function clearFeacnInfoCache() {
 }
 
 /**
- * Preloads tooltips for an array of FEACN codes
- * @param {string[]} codes - Array of FEACN codes
- * @returns {Promise<void>}
- */
-export async function preloadFeacnTooltips(codes) {
-  const uniqueCodes = [...new Set(codes)]
-  await Promise.all(uniqueCodes.map(code => getFeacnInfo(code, false)))
-}
-
-/**
  * Preloads FEACN info for an array of codes (new name for clarity)
  * @param {string[]} codes - Array of FEACN codes
  * @returns {Promise<void>}
  */
 export async function preloadFeacnInfo(codes) {
-  const uniqueCodes = [...new Set(codes)]
-  await Promise.all(uniqueCodes.map(code => getFeacnInfo(code, false)))
+  if (!codes || !Array.isArray(codes) || codes.length === 0) return
+
+  // Normalize and deduplicate
+  const uniqueCodes = [...new Set(
+    codes
+      .filter(c => c !== null && c !== undefined)
+      .map(c => String(c).trim())
+      .filter(c => c.length > 0)
+  )]
+
+  // Filter out codes that are already cached (either found or not found)
+  const codesToLoad = uniqueCodes.filter(code => !globalFeacnInfo.value[code])
+
+  if (codesToLoad.length === 0) return
+
+  const store = useFeacnCodesStore()
+  try {
+    // Prefer bulk lookup to minimize requests
+    const response = await store.bulkLookup(codesToLoad)
+    const results = (response && (response.results || response.Results)) || response || {}
+
+    for (const code of codesToLoad) {
+      const dto = results?.[code] ?? null
+      if (dto) {
+        // Use item-based formatter to build display name
+        const item = { ...dto, code }
+        globalFeacnInfo.value[code] = {
+          name: formatFeacnNameFromItem(item),
+          found: true,
+          loading: false
+        }
+      } else {
+        // Not found case
+        globalFeacnInfo.value[code] = {
+          name: 'Несуществующий код ТН ВЭД',
+          found: false,
+          loading: false
+        }
+      }
+    }
+  } catch {
+    // Fallback to previous per-code loading if bulk lookup fails
+    await Promise.all(codesToLoad.map(code => getFeacnInfo(code, false)))
+  }
 }
 
 /**

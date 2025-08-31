@@ -143,7 +143,7 @@ function setSelectedStatusId(registerId, statusId) {
 
 // Function to get customer name by customerId
 function getCustomerName(customerId) {
-  if (!customerId || !companies.value) return 'Неизвестно'
+  if (!customerId || !companies?.value) return 'Неизвестно'
   const company = companies.value.find((c) => c.id === customerId)
   if (!company) return 'Неизвестно'
   return company.shortName || company.name || 'Неизвестно'
@@ -151,7 +151,7 @@ function getCustomerName(customerId) {
 
 // Helper functions to get country short names (reactive to countries store changes)
 function getCountryShortName(countryCode) {
-  if (!countryCode || !countries.value) return countryCode
+  if (!countryCode || !countries?.value) return countryCode
   const num = Number(countryCode)
   if (num == 643) return 'Россия' // Special case for Russia
   const country = countries.value.find(c => c.isoNumeric === num)
@@ -360,7 +360,7 @@ function cancelValidationWrapper() {
 function formatInvoiceInfo(item) {
   const { invoiceNumber, invoiceDate, transportationTypeId } = item
   // Access the reactive transportation types to ensure reactivity
-  const transportationDocument = transportationTypes.value ? 
+  const transportationDocument = transportationTypes?.value ? 
     transportationTypesStore.getDocument(transportationTypeId) : 
     `[Тип ${transportationTypeId}]`
   const formattedDate = invoiceDate ? ` от ${formatDate(invoiceDate)}` : ''

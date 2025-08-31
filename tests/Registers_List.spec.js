@@ -52,6 +52,12 @@ vi.mock('pinia', async () => {
       } else if (store.getAll && store.countries) {
         // countries store
         return { countries: mockCountries }
+      } else if (store.types && store.getName && store.getDocument) {
+        // transportation types store
+        return { types: mockTransportationTypes }
+      } else if (store.procedures && store.getName) {
+        // customs procedures store
+        return { procedures: mockCustomsProcedures }
       } else {
         // auth store or other stores - return safe defaults
         return {

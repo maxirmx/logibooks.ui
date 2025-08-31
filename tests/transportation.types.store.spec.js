@@ -69,4 +69,79 @@ describe('transportation types store', () => {
     expect(store.getName(2)).toBe('Авиа')
     expect(store.getName(5)).toBe('Тип 5')
   })
+
+  it('getDocument returns document or fallback', async () => {
+    const store = useTransportationTypesStore()
+    fetchWrapper.get.mockResolvedValueOnce([
+      { id: 1, name: 'Авто', document: 'Автомобильный транспорт' },
+      { id: 2, name: 'Авиа', document: 'Авиационный транспорт' }
+    ])
+    await store.getAll()
+
+    expect(store.getDocument(1)).toBe('Автомобильный транспорт')
+    expect(store.getDocument(2)).toBe('Авиационный транспорт')
+    expect(store.getDocument(999)).toBe('[Тип 999]')
+  })
+
+  it('getDocument returns fallback when document is missing', async () => {
+    const store = useTransportationTypesStore()
+    fetchWrapper.get.mockResolvedValueOnce([
+      { id: 3, name: 'Морской' } // no document property
+    ])
+    await store.getAll()
+
+    expect(store.getDocument(3)).toBeUndefined() // Should be undefined when document property is missing
+    expect(store.getDocument(999)).toBe('[Тип 999]') // Should be fallback when type doesn't exist
+  })
+
+  it('handles empty response from server', async () => {
+    const store = useTransportationTypesStore()
+    fetchWrapper.get.mockResolvedValueOnce(null)
+    await store.getAll()
+
+    expect(store.types).toEqual([])
+    expect(store.getName(1)).toBe('Тип 1')
+    expect(store.getDocument(1)).toBe('[Тип 1]')
+  })
+
+  it('ensureLoaded does not reload when already loaded', async () => {
+    const data = [{ id: 1, name: 'Авто', document: 'Автомобильный транспорт' }]
+    fetchWrapper.get.mockResolvedValue(data)
+    const store = useTransportationTypesStore()
+
+    // First load
+    await store.ensureLoaded()
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+    // Add some data to simulate loaded state
+    store.types.push({ id: 2, name: 'Test' })
+
+    // Should not load again since types array is not empty
+    await store.ensureLoaded()
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+  })
+
+  it('ensureLoaded does not reload when already loading', async () => {
+    const data = [{ id: 1, name: 'Авто' }]
+    let resolvePromise
+    const loadingPromise = new Promise(resolve => {
+      resolvePromise = resolve
+    })
+    
+    fetchWrapper.get.mockImplementation(() => loadingPromise)
+    const store = useTransportationTypesStore()
+
+    // Start first load
+    const firstLoad = store.ensureLoaded()
+    
+    // Try to load again while first is still in progress
+    const secondLoad = store.ensureLoaded()
+    
+    // Resolve the mock
+    resolvePromise(data)
+    await firstLoad
+    await secondLoad
+
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+  })
 })

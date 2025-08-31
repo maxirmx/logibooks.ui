@@ -83,8 +83,10 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const countriesStore = useCountriesStore()
+const { countries } = storeToRefs(countriesStore)
 
 const transportationTypesStore = useTransportationTypesStore()
+const { types: transportationTypes } = storeToRefs(transportationTypesStore)
 
 const customsProceduresStore = useCustomsProceduresStore()
 
@@ -141,10 +143,20 @@ function setSelectedStatusId(registerId, statusId) {
 
 // Function to get customer name by customerId
 function getCustomerName(customerId) {
-  if (!customerId || !companies.value) return 'Неизвестно'
+  if (!customerId || !companies?.value) return 'Неизвестно'
   const company = companies.value.find((c) => c.id === customerId)
   if (!company) return 'Неизвестно'
   return company.shortName || company.name || 'Неизвестно'
+}
+
+// Helper functions to get country short names (reactive to countries store changes)
+function getCountryShortName(countryCode) {
+  if (!countryCode || !countries?.value) return countryCode
+  const num = Number(countryCode)
+  if (num == 643) return 'Россия' // Special case for Russia
+  const country = countries.value.find(c => c.isoNumeric === num)
+  if (!country) return countryCode
+  return country.nameRuShort || country.nameRuOfficial || countryCode
 }
 
 function getParcelsByCheckStatusTooltip(item) {
@@ -346,8 +358,14 @@ function cancelValidationWrapper() {
 }
 
 function formatInvoiceInfo(item) {
-  const { invoiceNumber, invoiceDate } = item
-  return invoiceNumber ? `№ ${invoiceNumber} от ${formatDate(invoiceDate)}` : ''
+  const { invoiceNumber, invoiceDate, transportationTypeId } = item
+  // Access the reactive transportation types to ensure reactivity
+  const transportationDocument = transportationTypes?.value ? 
+    transportationTypesStore.getDocument(transportationTypeId) : 
+    `[Тип ${transportationTypeId}]`
+  const formattedDate = invoiceDate ? ` от ${formatDate(invoiceDate)}` : ''
+  const invN = invoiceNumber ? ` ${invoiceNumber}${formattedDate}` : ''
+  return `${transportationDocument}${invN}`
 }
 
 function formatDate(dateStr) {
@@ -368,7 +386,6 @@ const headers = [
   { title: 'Получатель', key: 'recipientId', align: 'center' },
   { title: 'Страна назначения', key: 'destCountryCode', align: 'center' },
   { title: 'ТСД', key: 'invoice', align: 'center' },
-  { title: 'Транспорт', key: 'transportationTypeId', align: 'center' },
   { title: 'Процедура', key: 'customsProcedureId', align: 'center' },
   { title: 'Посылки/Места', key: 'parcelsTotal', align: 'center' },
   { title: 'Дата загрузки', key: 'date', align: 'center' }
@@ -466,7 +483,7 @@ const headers = [
         <template #[`item.destCountryCode`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="countriesStore.getCountryShortName(item.destCountryCode)" 
+            :display-value="getCountryShortName(item.destCountryCode)" 
             cell-class="truncated-cell clickable-cell edit-register-link" 
             @click="editRegister" 
           />
@@ -474,7 +491,7 @@ const headers = [
         <template #[`item.origCountryCode`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="countriesStore.getCountryShortName(item.origCountryCode)" 
+            :display-value="getCountryShortName(item.origCountryCode)" 
             cell-class="truncated-cell clickable-cell edit-register-link" 
             @click="editRegister" 
           />
@@ -493,14 +510,6 @@ const headers = [
             :display-value="formatInvoiceInfo(item)" 
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
-          />
-        </template>
-        <template #[`item.transportationTypeId`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="transportationTypesStore.getName(item.transportationTypeId)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
           />
         </template>
         <template #[`item.customsProcedureId`]="{ item }">

@@ -82,7 +82,7 @@ function handleMouseEnter(code) {
           </template>
           <template #default>
             <div class="d-flex align-center">
-              <font-awesome-icon icon="fa-solid fa-info-circle" class="mr-3" />
+              <font-awesome-icon icon="fa-solid fa-eye" class="mr-3" />
               {{ feacnTooltips[keyword.feacnCode]?.name || 'Наведите для загрузки...' }}
             </div>
           </template>

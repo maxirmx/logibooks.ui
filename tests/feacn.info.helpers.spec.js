@@ -1,21 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { 
-  formatFeacnName, 
+  formatFeacnName,
+  formatFeacnNameFromItem,
   getFeacnTooltip,
   getFeacnInfo,
   getFeacnSearchStatus,
   isFeacnLoading,
+  loadFeacnTooltipOnHover,
   useFeacnTooltips, 
+  useFeacnInfo,
   clearFeacnTooltipCache,
   clearFeacnInfoCache,
-  getCachedFeacnInfo
+  getCachedFeacnInfo,
+  preloadFeacnInfo
 } from '@/helpers/feacn.info.helpers.js'
 
 const getByCodeMock = vi.fn()
+const bulkLookupMock = vi.fn()
 
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: () => ({
-    getByCode: getByCodeMock
+    getByCode: getByCodeMock,
+    bulkLookup: bulkLookupMock
   })
 }))
 
@@ -224,4 +230,273 @@ describe('cache management', () => {
     expect(getCachedFeacnInfo('123')).toBe(null)
   })
 })
+
+describe('formatFeacnNameFromItem', () => {
+  it('returns default message for null item', () => {
+    const result = formatFeacnNameFromItem(null)
+    expect(result).toBe('Код ТН ВЭД не задан')
+  })
+
+  it('returns default message for undefined item', () => {
+    const result = formatFeacnNameFromItem(undefined)
+    expect(result).toBe('Код ТН ВЭД не задан')
+  })
+
+  it('formats normalized name with proper case', () => {
+    const item = { normalizedName: 'ПРОДУКТ ПИТАНИЯ', name: 'ignored', code: '123' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Продукт питания')
+  })
+
+  it('trims and formats normalized name', () => {
+    const item = { normalizedName: '  МОЛОЧНЫЕ ПРОДУКТЫ  ', name: 'ignored', code: '123' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Молочные продукты')
+  })
+
+  it('falls back to name when normalized name is empty', () => {
+    const item = { normalizedName: '', name: 'Dairy Products', code: '123' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Dairy Products')
+  })
+
+  it('falls back to name when normalized name is whitespace', () => {
+    const item = { normalizedName: '   ', name: 'Meat Products', code: '456' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Meat Products')
+  })
+
+  it('trims name when used', () => {
+    const item = { normalizedName: '', name: '  Fish Products  ', code: '789' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Fish Products')
+  })
+
+  it('returns code-based message when both names are empty', () => {
+    const item = { normalizedName: '', name: '', code: '000' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Код ТН ВЭД 000')
+  })
+
+  it('returns code-based message when both names are whitespace', () => {
+    const item = { normalizedName: '   ', name: '   ', code: '111' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Код ТН ВЭД 111')
+  })
+
+  it('returns code-based message when names are undefined', () => {
+    const item = { code: '222' }
+    const result = formatFeacnNameFromItem(item)
+    expect(result).toBe('Код ТН ВЭД 222')
+  })
+})
+
+describe('loadFeacnTooltipOnHover', () => {
+  it('calls getFeacnTooltip with showLoadingPlaceholder=true', async () => {
+    getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
+    
+    const result = await loadFeacnTooltipOnHover('123')
+    expect(result).toBe('Продукт')
+    
+    // Verify loading placeholder was set
+    const cache = useFeacnTooltips()
+    expect(cache.value['123']).toEqual({
+      name: 'Продукт',
+      found: true,
+      loading: false
+    })
+  })
+})
+
+describe('useFeacnTooltips and useFeacnInfo', () => {
+  it('useFeacnTooltips returns the reactive cache object', () => {
+    const cache = useFeacnTooltips()
+    expect(cache).toBeDefined()
+    expect(cache.value).toBeDefined()
+  })
+
+  it('useFeacnInfo returns the same reactive cache object', () => {
+    const cache1 = useFeacnTooltips()
+    const cache2 = useFeacnInfo()
+    expect(cache1).toBe(cache2)
+  })
+
+  it('cache is reactive and updates correctly', async () => {
+    getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
+    
+    const cache = useFeacnInfo()
+    await getFeacnInfo('123')
+    
+    expect(cache.value['123']).toEqual({
+      name: 'Продукт',
+      found: true,
+      loading: false
+    })
+  })
+})
+
+describe('preloadFeacnInfo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    clearFeacnInfoCache()
+  })
+
+  it('handles null codes array', async () => {
+    await preloadFeacnInfo(null)
+    expect(bulkLookupMock).not.toHaveBeenCalled()
+  })
+
+  it('handles undefined codes array', async () => {
+    await preloadFeacnInfo(undefined)
+    expect(bulkLookupMock).not.toHaveBeenCalled()
+  })
+
+  it('handles empty codes array', async () => {
+    await preloadFeacnInfo([])
+    expect(bulkLookupMock).not.toHaveBeenCalled()
+  })
+
+  it('filters out null and undefined codes', async () => {
+    bulkLookupMock.mockResolvedValue({})
+    await preloadFeacnInfo(['123', null, undefined, '456'])
+    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
+  })
+
+  it('filters out empty and whitespace codes', async () => {
+    bulkLookupMock.mockResolvedValue({})
+    await preloadFeacnInfo(['123', '', '   ', '456'])
+    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
+  })
+
+  it('deduplicates codes', async () => {
+    bulkLookupMock.mockResolvedValue({})
+    await preloadFeacnInfo(['123', '123', '456', '123'])
+    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
+  })
+
+  it('trims codes', async () => {
+    bulkLookupMock.mockResolvedValue({})
+    await preloadFeacnInfo(['  123  ', '456'])
+    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
+  })
+
+  it('converts codes to strings', async () => {
+    bulkLookupMock.mockResolvedValue({})
+    await preloadFeacnInfo([123, 456])
+    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
+  })
+
+  it('skips already cached codes', async () => {
+    // Pre-cache one code
+    await getFeacnInfo('123')
+    
+    bulkLookupMock.mockResolvedValue({})
+    await preloadFeacnInfo(['123', '456'])
+    expect(bulkLookupMock).toHaveBeenCalledWith(['456'])
+  })
+
+  it('handles successful bulk lookup with results property', async () => {
+    bulkLookupMock.mockResolvedValue({
+      results: {
+        '123': { normalizedName: 'ПРОДУКТ А', name: 'Product A' },
+        '456': { normalizedName: 'ПРОДУКТ Б', name: 'Product B' }
+      }
+    })
+    
+    await preloadFeacnInfo(['123', '456', '789'])
+    
+    const cache = getCachedFeacnInfo('123')
+    expect(cache).toEqual({
+      name: 'Продукт а',
+      found: true,
+      loading: false
+    })
+    
+    const cache2 = getCachedFeacnInfo('456')
+    expect(cache2).toEqual({
+      name: 'Продукт б',
+      found: true,
+      loading: false
+    })
+    
+    const cache3 = getCachedFeacnInfo('789')
+    expect(cache3).toEqual({
+      name: 'Несуществующий код ТН ВЭД',
+      found: false,
+      loading: false
+    })
+  })
+
+  it('handles successful bulk lookup with Results property (capital R)', async () => {
+    bulkLookupMock.mockResolvedValue({
+      Results: {
+        '123': { normalizedName: 'ПРОДУКТ', name: 'Product' }
+      }
+    })
+    
+    await preloadFeacnInfo(['123'])
+    
+    const cache = getCachedFeacnInfo('123')
+    expect(cache).toEqual({
+      name: 'Продукт',
+      found: true,
+      loading: false
+    })
+  })
+
+  it('handles successful bulk lookup with direct results object', async () => {
+    bulkLookupMock.mockResolvedValue({
+      '123': { normalizedName: 'ПРОДУКТ', name: 'Product' }
+    })
+    
+    await preloadFeacnInfo(['123'])
+    
+    const cache = getCachedFeacnInfo('123')
+    expect(cache).toEqual({
+      name: 'Продукт',
+      found: true,
+      loading: false
+    })
+  })
+
+  it('falls back to individual loading when bulk lookup fails', async () => {
+    bulkLookupMock.mockRejectedValue(new Error('Bulk lookup failed'))
+    getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
+    
+    await preloadFeacnInfo(['123'])
+    
+    expect(getByCodeMock).toHaveBeenCalledWith('123')
+    const cache = getCachedFeacnInfo('123')
+    expect(cache).toEqual({
+      name: 'Продукт',
+      found: true,
+      loading: false
+    })
+  })
+
+  it('formats items correctly using formatFeacnNameFromItem', async () => {
+    bulkLookupMock.mockResolvedValue({
+      '123': { normalizedName: '', name: 'Fallback Name' }
+    })
+    
+    await preloadFeacnInfo(['123'])
+    
+    const cache = getCachedFeacnInfo('123')
+    expect(cache).toEqual({
+      name: 'Fallback Name',
+      found: true,
+      loading: false
+    })
+  })
+
+  it('does nothing when all codes are already cached', async () => {
+    // Pre-cache codes
+    await getFeacnInfo('123')
+    await getFeacnInfo('456')
+    
+    await preloadFeacnInfo(['123', '456'])
+    expect(bulkLookupMock).not.toHaveBeenCalled()
+  })
+})
+
 })

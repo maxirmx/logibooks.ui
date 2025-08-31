@@ -57,6 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
   const parcels_sort_by = ref([{ key: 'id', order: 'asc' }])
   const parcels_page = ref(1)
   const parcels_status = ref(null)
+  const parcels_check_status = ref(null)
   const parcels_tnved = ref('')
   const parcelstatuses_per_page = ref(10)
   const parcelstatuses_search = ref('')
@@ -82,6 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
   const feacnprefixes_search = ref('')
   const feacnprefixes_sort_by = ref([])
   const feacnprefixes_page = ref(1)
+  const selectedParcelId = ref(null)
   const returnUrl = ref(null)
   const re_jwt = ref(null)
   const re_tgt = ref(null)
@@ -179,6 +181,7 @@ export const useAuthStore = defineStore('auth', () => {
     parcels_sort_by,
     parcels_page,
     parcels_status,
+    parcels_check_status,
     parcels_tnved,
     parcelstatuses_per_page,
     parcelstatuses_search,
@@ -204,6 +207,7 @@ export const useAuthStore = defineStore('auth', () => {
     feacnprefixes_search,
     feacnprefixes_sort_by,
     feacnprefixes_page,
+    selectedParcelId,
     returnUrl,
     re_jwt,
     re_tgt,

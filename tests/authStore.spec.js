@@ -446,5 +446,31 @@ describe('auth store', () => {
       store.registers_search = null
       expect(store.registers_search).toBeNull()
     })
+
+    it('initializes selectedParcelId fields with null values', () => {
+      const store = useAuthStore()
+      expect(store.selectedParcelId).toBeNull()
+      expect(store.selectedParcelId).toBeNull()
+    })
+
+    it('allows updating selectedParcelId', () => {
+      const store = useAuthStore()
+      
+      store.selectedParcelId = 123
+      expect(store.selectedParcelId).toBe(123)
+      
+      store.selectedParcelId = null
+      expect(store.selectedParcelId).toBeNull()
+    })
+
+    it('allows updating selectedParcelId', () => {
+      const store = useAuthStore()
+      
+      store.selectedParcelId = 456
+      expect(store.selectedParcelId).toBe(456)
+      
+      store.selectedParcelId = null
+      expect(store.selectedParcelId).toBeNull()
+    })
   })
 })

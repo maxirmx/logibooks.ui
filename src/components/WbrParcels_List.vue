@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { watch, ref, computed, onMounted, onUnmounted, provide } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -40,7 +40,7 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
-import { HasIssues, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { HasIssues, getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -82,11 +82,79 @@ const {
   parcels_sort_by,
   parcels_page,
   parcels_status,
-  parcels_tnved
+  parcels_check_status,
+  parcels_tnved,
+  selectedParcelId
 } = storeToRefs(authStore)
 
+// Template ref for the data table
+const dataTableRef = ref(null)
+
 parcels_status.value = null
+parcels_check_status.value = null
 parcels_tnved.value = ''
+
+// Selected parcel management
+function updateSelectedParcelId() {
+  if (items.value?.length > 0) {
+    // Check if current selection is on the page
+    const isCurrentOnPage = items.value.some(item => item.id === selectedParcelId.value)
+    if (!isCurrentOnPage) {
+      selectedParcelId.value = null
+    }
+  } else {
+    selectedParcelId.value = null
+  }
+}
+
+// Watch for items changes to update selection and scroll to selected item
+watch(
+  () => items.value,
+  () => {
+    updateSelectedParcelId()
+  },
+  { immediate: true }
+)
+
+// Watch for page changes to set selection to null
+watch(
+  parcels_page,
+  () => {
+    selectedParcelId.value = null
+  }
+)
+
+// Custom row props function with selection highlighting
+function getRowPropsForWbrParcel(data) {
+  const baseClass = getRowPropsForParcel(data).class
+  const selectedClass = data.item.id === selectedParcelId.value ? 'selected-parcel-row' : ''
+  return { class: `${baseClass} ${selectedClass}`.trim() }
+}
+
+// Scroll to selected item function
+function scrollToSelectedItem() {
+  console.log('Scrolling to selected item:', selectedParcelId.value)
+  if (!selectedParcelId.value || !dataTableRef.value) return
+  
+  nextTick(() => {
+    try {
+      // Find the selected row by looking for the selected-parcel-row class
+      const tableElement = dataTableRef.value.$el || dataTableRef.value
+      const selectedRow = tableElement.querySelector('.selected-parcel-row')
+      
+      if (selectedRow) {
+        // Scroll the row into view with smooth behavior
+        selectedRow.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        })
+      }
+    } catch (error) {
+      console.warn('Could not scroll to selected item:', error)
+    }
+  })
+}
 
 const registerFileName = ref('')
 const registerDealNumber = ref('')
@@ -124,7 +192,7 @@ async function loadOrdersWrapper() {
 provide('loadOrders', loadOrdersWrapper)
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_tnved],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved],
   loadOrdersWrapper,
   { immediate: true }
 )
@@ -152,6 +220,13 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await fetchRegister()
+
+    updateSelectedParcelId()
+    // Scroll to selected item if it exists on current page
+    if (selectedParcelId.value) {
+      scrollToSelectedItem()
+    }
+
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при инициализации компонента')
@@ -179,6 +254,16 @@ const statusOptions = computed(() => [
   }))
 ])
 
+const checkStatusOptions = computed(() => [
+  { value: null, title: 'Все' },
+  ...parcelCheckStatusStore.statuses
+    .filter(isSelectableCheckStatus)
+    .map(status => ({
+      value: status.id,
+      title: status.title
+    }))
+])
+
 const headers = computed(() => {
   return [
     // Actions - Always first for easy access
@@ -186,12 +271,12 @@ const headers = computed(() => {
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: 'Подбор', key: 'feacnLookup', sortable: false, align: 'center', width: '120px' },
+    { title: 'Подбор', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' },
 
     // Product Identification & Details - What the order contains
-    { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
 
@@ -214,23 +299,28 @@ const headers = computed(() => {
 })
 
 function editParcel(item) {
+  selectedParcelId.value = item.id
   navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function exportParcelXml(item) {
+  selectedParcelId.value = item.id
   const filename = String(item.shk || '').padStart(20, '0')
   await exportParcelXmlData(item, parcelsStore, filename)
 }
 
 async function validateParcel(item) {
+  selectedParcelId.value = item.id
   await validateParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function lookupFeacnCodes(item) {
+  selectedParcelId.value = item.id
   await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
 }
 
 async function approveParcel(item) {
+  selectedParcelId.value = item.id
   await approveParcelData(item, parcelsStore, loadOrdersWrapper)
 }
 
@@ -257,6 +347,13 @@ function getGenericTemplateHeaders() {
           density="compact"
           style="min-width: 250px"
         />
+        <v-select
+          v-model="parcels_check_status"
+          :items="checkStatusOptions"
+          label="Статус проверки"
+          density="compact"
+          style="min-width: 250px"
+        />
         <v-text-field
           v-model="parcels_tnved"
           label="ТН ВЭД"
@@ -269,6 +366,7 @@ function getGenericTemplateHeaders() {
     <v-card>
       <div style="overflow-x: auto;">
         <v-data-table-server
+          ref="dataTableRef"
           v-if="items?.length || loading"
           v-model:items-per-page="parcels_per_page"
           items-per-page-text="Посылок на странице"
@@ -278,7 +376,8 @@ function getGenericTemplateHeaders() {
           v-model:sort-by="parcels_sort_by"
           :headers="headers"
           :items="items"
-          :row-props="getRowPropsForParcel"
+          :row-props="getRowPropsForWbrParcel"
+          @click:row="(event, { item }) => { selectedParcelId = item.id }"
           :items-length="totalCount"
           :loading="loading"
           density="compact"
@@ -437,3 +536,8 @@ function getGenericTemplateHeaders() {
   </div>
 </template>
 
+<style scoped>
+:deep(.selected-parcel-row) {
+  border: 2px dashed #5d798f !important;
+}
+</style>

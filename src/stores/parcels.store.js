@@ -33,6 +33,10 @@ export const useParcelsStore = defineStore('parcels', () => {
         params.append('statusId', authStore.parcels_status.toString())
       }
       
+      if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
+        params.append('checkStatusId', authStore.parcels_check_status.toString())
+      }
+      
       if (authStore.parcels_tnved) {
         params.append('tnVed', authStore.parcels_tnved)
       }

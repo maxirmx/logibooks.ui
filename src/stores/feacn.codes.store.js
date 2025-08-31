@@ -72,6 +72,20 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     }
   }
 
+  // Bulk lookup FEACN codes
+  async function bulkLookup(codes) {
+    loading.value = true
+    error.value = null
+    try {
+      return await fetchWrapper.post(`${baseUrl}/bulk-lookup`, { codes })
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function getChildren(id = null) {
     loading.value = true
     error.value = null
@@ -108,6 +122,7 @@ export const useFeacnCodesStore = defineStore('feacnCodes', () => {
     getById,
     getByCode,
     lookup,
+    bulkLookup,
     getChildren,
     upload
   }

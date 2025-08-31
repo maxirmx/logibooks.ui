@@ -263,15 +263,6 @@ async function handleToggleOrderEnabled(order) {
 <style scoped>
 /* Visual emphasis for the selected order row */
 :deep(.selected-order-row) {
-  background-color: rgba(25, 118, 210, 0.08) !important;
   border-left: 4px solid #1976d2 !important;
-}
-
-:deep(.selected-order-row:hover) {
-  background-color: rgba(25, 118, 210, 0.12) !important;
-}
-
-:deep(.selected-order-row td) {
-  background-color: transparent !important;
 }
 </style>

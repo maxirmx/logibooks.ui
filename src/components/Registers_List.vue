@@ -347,7 +347,8 @@ function cancelValidationWrapper() {
 
 function formatInvoiceInfo(item) {
   const { invoiceNumber, invoiceDate } = item
-  return invoiceNumber ? `№ ${invoiceNumber} от ${formatDate(invoiceDate)}` : ''
+  const formattedDate = invoiceDate ? ` от ${formatDate(invoiceDate)}` : ''
+  return invoiceNumber ? `№ ${invoiceNumber}${formattedDate}` : ''
 }
 
 function formatDate(dateStr) {

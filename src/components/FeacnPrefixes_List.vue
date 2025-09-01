@@ -66,8 +66,23 @@ const headers = [
 
 onMounted(async () => {
   await prefixesStore.getAll()
-  await preloadFeacnInfo(prefixes.value.map(p => p.code))
+  // Extract codes for preloading, handling both string and object formats
+  const codes = prefixes.value.map(p => p.code)
+  const exceptionCodes = prefixes.value.flatMap(p => 
+    p.exceptions ? p.exceptions.map(exc => getExceptionCode(exc)) : []
+  )
+  await preloadFeacnInfo([...codes, ...exceptionCodes])
 })
+
+// Helper function to get exception code from either string or FeacnPrefixExceptionDto
+function getExceptionCode(exception) {
+  return typeof exception === 'string' ? exception : exception.code
+}
+
+// Helper function to get unique key for exception items
+function getExceptionKey(exception, index) {
+  return typeof exception === 'string' ? exception : `${exception.id || index}-${exception.code}`
+}
 
 function openCreateDialog() {
   router.push('/feacn/prefix/create')
@@ -105,7 +120,9 @@ async function deletePrefix(item) {
 defineExpose({
   openCreateDialog,
   openEditDialog,
-  deletePrefix
+  deletePrefix,
+  getExceptionCode,
+  getExceptionKey
 })
 </script>
 
@@ -143,7 +160,7 @@ defineExpose({
 
         <template v-slot:[`item.exceptions`]="{ item }">
           <span v-if="item.exceptions && item.exceptions.length">
-            <span v-for="(code, index) in item.exceptions" :key="code">
+            <span v-for="(exception, index) in item.exceptions" :key="getExceptionKey(exception, index)">
               <v-tooltip
                 location="top"
                 content-class="feacn-tooltip"
@@ -153,12 +170,12 @@ defineExpose({
                   <span
                     v-bind="props"
                     class="feacn-code-tooltip"
-                    @mouseenter="loadFeacnTooltipOnHover(code)"
+                    @mouseenter="loadFeacnTooltipOnHover(getExceptionCode(exception))"
                   >
-                    {{ code }}
+                    {{ getExceptionCode(exception) }}
                   </span>
                 </template>
-                <span>{{ feacnTooltips[code]?.name || 'Наведите для загрузки...' }}</span>
+                <span>{{ feacnTooltips[getExceptionCode(exception)]?.name || 'Наведите для загрузки...' }}</span>
               </v-tooltip>
               <span v-if="index < item.exceptions.length - 1">, </span>
             </span>

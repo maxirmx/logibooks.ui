@@ -15,8 +15,18 @@ const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
 
 const mockPrefixes = ref([
-  { id: 1, code: '0101', description: 'd1', exceptions: ['111'] },
-  { id: 2, code: '0202', description: 'd2', exceptions: [] }
+  { 
+    id: 1, 
+    code: '0101', 
+    description: 'd1', 
+    exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }] 
+  },
+  { 
+    id: 2, 
+    code: '0202', 
+    description: 'd2', 
+    exceptions: []
+  }
 ])
 
 const mockFeacnInfo = ref({
@@ -75,7 +85,7 @@ describe('FeacnPrefixes_List.vue', () => {
 
   it('fetches prefixes and preloads FEACN info on mount', () => {
     expect(getAllPrefixes).toHaveBeenCalled()
-    expect(preloadFeacnInfo).toHaveBeenCalledWith(['0101', '0202'])
+    expect(preloadFeacnInfo).toHaveBeenCalledWith(['0101', '0202', '111'])
   })
 
   it('renders prefixes using derived description', () => {
@@ -124,6 +134,29 @@ describe('FeacnPrefixes_List.vue', () => {
     mockConfirm.mockResolvedValue(false)
     await wrapper.vm.deletePrefix(mockPrefixes.value[0])
     expect(removePrefix).not.toHaveBeenCalled()
+  })
+
+  it('getExceptionCode handles string exceptions', () => {
+    expect(wrapper.vm.getExceptionCode('123')).toBe('123')
+  })
+
+  it('getExceptionCode handles object exceptions', () => {
+    const exception = { id: 1, code: '456', feacnPrefixId: 1 }
+    expect(wrapper.vm.getExceptionCode(exception)).toBe('456')
+  })
+
+  it('getExceptionKey generates keys for string exceptions', () => {
+    expect(wrapper.vm.getExceptionKey('123', 0)).toBe('123')
+  })
+
+  it('getExceptionKey generates keys for object exceptions', () => {
+    const exception = { id: 1, code: '456', feacnPrefixId: 1 }
+    expect(wrapper.vm.getExceptionKey(exception, 0)).toBe('1-456')
+  })
+
+  it('getExceptionKey handles object exceptions without id', () => {
+    const exception = { code: '789', feacnPrefixId: 1 }
+    expect(wrapper.vm.getExceptionKey(exception, 2)).toBe('2-789')
   })
 })
 

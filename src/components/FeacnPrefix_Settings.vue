@@ -77,10 +77,15 @@ onMounted(async () => {
     try {
       const item = await prefixesStore.getById(props.prefixId)
       if (item) {
+        // Convert FeacnPrefixExceptionDto[] to string[] for UI display
+        const exceptionCodes = item.exceptions && item.exceptions.length 
+          ? item.exceptions.map(exc => typeof exc === 'string' ? exc : exc.code)
+          : ['']
+        
         resetForm({
           values: {
             code: item.code || '',
-            exceptions: item.exceptions && item.exceptions.length ? item.exceptions : ['']
+            exceptions: exceptionCodes
           }
         })
       }
@@ -96,10 +101,17 @@ onMounted(async () => {
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   try {
+    // Prepare data for API - convert UI format to DTO format
+    const submitData = {
+      code: values.code,
+      // Filter out empty strings and convert to the format expected by CreateDto
+      exceptions: values.exceptions.filter(exc => exc && exc.trim() !== '')
+    }
+
     if (isCreate.value) {
-      await prefixesStore.create(values)
+      await prefixesStore.create(submitData)
     } else {
-      await prefixesStore.update(props.prefixId, values)
+      await prefixesStore.update(props.prefixId, submitData)
     }
     router.push('/feacn/prefixes')
   } catch (error) {

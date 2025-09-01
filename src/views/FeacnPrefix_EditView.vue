@@ -27,10 +27,15 @@
 import { useRoute } from 'vue-router'
 import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
 
-const route = useRoute()
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true
+  }
+})
 </script>
 
 <template>
-  <FeacnPrefix_Settings :mode="'edit'" :prefix-id="route.params.id" />
+  <FeacnPrefix_Settings :mode="'edit'" :prefix-id="props.id" />
 </template>
 

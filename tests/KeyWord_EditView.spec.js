@@ -31,18 +31,6 @@ import KeyWord_Settings from '@/components/KeyWord_Settings.vue'
 
 const vuetify = createVuetify()
 
-// Mock the route
-const mockRoute = {
-  params: {
-    id: '123'
-  }
-}
-
-// Mock useRoute
-vi.mock('vue-router', () => ({
-  useRoute: () => mockRoute
-}))
-
 // Mock the KeyWord_Settings component
 vi.mock('@/components/KeyWord_Settings.vue', () => ({
   default: {
@@ -57,6 +45,9 @@ describe('KeyWord_EditView', () => {
 
   beforeEach(() => {
     wrapper = mount(KeyWord_EditView, {
+      props: {
+        id: 123
+      },
       global: {
         plugins: [vuetify]
       }
@@ -64,13 +55,13 @@ describe('KeyWord_EditView', () => {
   })
 
   it('should render KeyWord_Settings component', () => {
-    const stopWordSettings = wrapper.findComponent(KeyWord_Settings)
-    expect(stopWordSettings.exists()).toBe(true)
+    const keyWordSettings = wrapper.findComponent(KeyWord_Settings)
+    expect(keyWordSettings.exists()).toBe(true)
   })
 
   it('should pass route id to KeyWord_Settings component', () => {
-    const stopWordSettings = wrapper.findComponent(KeyWord_Settings)
-    expect(stopWordSettings.props('id')).toBe('123')
+    const keyWordSettings = wrapper.findComponent(KeyWord_Settings)
+    expect(keyWordSettings.props('id')).toBe(123)
   })
 
   it('should have correct component structure', () => {
@@ -79,9 +70,5 @@ describe('KeyWord_EditView', () => {
 
   it('should be a simple wrapper component for edit mode', () => {
     expect(wrapper.html()).toContain('KeyWord_Settings Component with ID: 123')
-  })
-
-  it('should get route parameter correctly', () => {
-    expect(wrapper.vm.route.params.id).toBe('123')
   })
 })

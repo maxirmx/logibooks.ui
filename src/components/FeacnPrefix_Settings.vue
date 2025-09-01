@@ -30,10 +30,11 @@ import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
-import { useFeacnInsertItemsStore } from '@/stores/feacn.insert.items.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
+import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
   mode: {
@@ -41,13 +42,13 @@ const props = defineProps({
     required: true,
     validator: (value) => ['create', 'edit'].includes(value)
   },
-  insertItemId: {
+  prefixId: {
     type: [String, Number],
     required: false
   }
 })
 
-const insertItemsStore = useFeacnInsertItemsStore()
+const prefixesStore = useFeacnPrefixesStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
@@ -57,11 +58,8 @@ const loading = ref(false)
 
 const schema = toTypedSchema(
   Yup.object({
-    code: Yup.string()
-      .required('Код ТН ВЭД обязателен')
-      .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
-    insBefore: Yup.string(),
-    insAfter: Yup.string()
+    code: Yup.string().required('Префикс обязателен'),
+    exceptions: Yup.array().of(Yup.string())
   })
 )
 
@@ -69,47 +67,41 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     code: '',
-    insBefore: '',
-    insAfter: ''
+    exceptions: ['']
   }
 })
 
 const { value: code } = useField('code')
-const { value: insBefore } = useField('insBefore')
-const { value: insAfter } = useField('insAfter')
 
-const searchActive = ref(false)
+const codeSearchActive = ref(false)
+const exceptionSearchIndex = ref(null)
 
-function getTitle() {
-  return isCreate.value
-    ? 'Создание правила для формирования описания продукта'
-    : 'Редактирование правила для формирования описания продукта'
-}
+const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
 
-function getButtonText() {
-  return isCreate.value ? 'Создать' : 'Сохранить'
-}
-
-function onCodeInput(event) {
-  const inputValue = event.target.value.replace(/\D/g, '').slice(0, 10)
-  if (inputValue !== event.target.value) {
-    event.target.value = inputValue
-  }
-  setFieldValue('code', inputValue)
-}
-
-function toggleSearch() {
-  searchActive.value = !searchActive.value
+function toggleCodeSearch() {
+  codeSearchActive.value = !codeSearchActive.value
 }
 
 function handleCodeSelect(feacnCode) {
   setFieldValue('code', feacnCode)
-  searchActive.value = false
+  codeSearchActive.value = false
+}
+
+function toggleExceptionSearch(index) {
+  exceptionSearchIndex.value = exceptionSearchIndex.value === index ? null : index
+}
+
+function handleExceptionCodeSelect(code) {
+  if (exceptionSearchIndex.value !== null) {
+    setFieldValue(`exceptions[${exceptionSearchIndex.value}]`, code)
+  }
+  exceptionSearchIndex.value = null
 }
 
 function handleEscape(event) {
   if (event.key === 'Escape') {
-    searchActive.value = false
+    codeSearchActive.value = false
+    exceptionSearchIndex.value = null
   }
 }
 
@@ -129,19 +121,23 @@ onMounted(async () => {
   if (!isCreate.value) {
     loading.value = true
     try {
-      const item = await insertItemsStore.getById(props.insertItemId)
+      const item = await prefixesStore.getById(props.prefixId)
       if (item) {
+        // Convert FeacnPrefixExceptionDto[] to string[] for UI display
+        const exceptionCodes = item.exceptions && item.exceptions.length 
+          ? item.exceptions.map(exc => typeof exc === 'string' ? exc : exc.code)
+          : ['']
+        
         resetForm({
           values: {
             code: item.code || '',
-            insBefore: item.insBefore || '',
-            insAfter: item.insAfter || ''
+            exceptions: exceptionCodes
           }
         })
       }
     } catch {
-      alertStore.error('Ошибка при загрузке данных правила')
-      router.push('/feacn/insertitems')
+      alertStore.error('Ошибка при загрузке данных префикса')
+      router.push('/feacn/prefixes')
     } finally {
       loading.value = false
     }
@@ -151,27 +147,34 @@ onMounted(async () => {
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   try {
-    if (isCreate.value) {
-      await insertItemsStore.create(values)
-    } else {
-      await insertItemsStore.update(props.insertItemId, values)
+    // Prepare data for API - convert UI format to DTO format
+    const submitData = {
+      code: values.code,
+      // Filter out empty strings and convert to the format expected by CreateDto
+      exceptions: values.exceptions.filter(exc => exc && exc.trim() !== '')
     }
-    router.push('/feacn/insertitems')
+
+    if (isCreate.value) {
+      await prefixesStore.create(submitData)
+    } else {
+      await prefixesStore.update(props.prefixId, submitData)
+    }
+    router.push('/feacn/prefixes')
   } catch (error) {
-    setErrors({ apiError: error.message || 'Ошибка при сохранении правила' })
+    setErrors({ apiError: error.message || 'Ошибка при сохранении префикса' })
   } finally {
     saving.value = false
   }
 })
 
 function cancel() {
-  router.push('/feacn/insertitems')
+  router.push('/feacn/prefixes')
 }
 </script>
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
+    <h1 class="primary-heading">{{ isCreate ? 'Создание префикса ТН ВЭД' : 'Редактирование префикса ТН ВЭД' }}</h1>
     <hr class="hr" />
 
     <div v-if="loading" class="text-center m-5">
@@ -181,68 +184,65 @@ function cancel() {
     <form v-else @submit.prevent="onSubmit">
       <div class="feacn-search-wrapper">
         <div class="form-group">
-            <label for="code" class="label">Код ТН ВЭД:</label>
-            <input
-                name="code"
-                id="code"
-                type="text"
-                class="form-control input"
-                :class="{ 'is-invalid': errors.code }"
-                maxlength="10"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                v-model="code"
-                @input="onCodeInput"
-                :disabled="searchActive"
-                placeholder="Введите код ТН ВЭД"
-            />
-            <ActionButton
-                :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-                :item="null"
-                @click="toggleSearch"
-                class="ml-2 mr-2"
-                :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
-                :disabled="false"
-            />
-            <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-            <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" />
+          <label for="code" class="label">Префикс:</label>
+          <input
+            name="code"
+            id="code"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.code }"
+            v-model="code"
+            :disabled="searchActive"
+            placeholder="Введите префикс ТН ВЭД"
+          />
+          <ActionButton
+            :icon="codeSearchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :item="null"
+            @click="toggleCodeSearch"
+            class="ml-2 mr-2"
+            :tooltip-text="codeSearchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
+            :disabled="false"
+          />
+          <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" />
         </div>
       </div>
-      <div class="form-group">
-        <label for="insBefore" class="label">Вставить перед:</label>
-        <input
-          name="insBefore"
-          id="insBefore"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.insBefore }"
-          v-model="insBefore"
-          :disabled="searchActive"
-          placeholder="Текст для вставки перед описанием (не обязательно)"
-        />
-        <div v-if="errors.insBefore" class="invalid-feedback">{{ errors.insBefore }}</div>
-      </div>
 
-      <div class="form-group">
-        <label for="insAfter" class="label">Вставить после:</label>
-        <input
-          name="insAfter"
-          id="insAfter"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.insAfter }"
-          v-model="insAfter"
+      <div class="feacn-search-wrapper">
+        <FieldArrayWithButtons
+          name="exceptions"
+          label="Исключения"
+          field-type="input"
+          placeholder="Код-исключение"
+          add-tooltip="Добавить исключение"
+          remove-tooltip="Удалить исключение"
           :disabled="searchActive"
-          placeholder="Текст для вставки после описанием (не обязательно)"
+          :has-error="!!errors.exceptions"
+        >
+          <template #extra="{ index }">
+            <ActionButton
+              :icon="searchActive && exceptionSearchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :item="index"
+              @click="toggleExceptionSearch(index)"
+              class="ml-2 mr-2"
+              :tooltip-text="searchActive && exceptionSearchIndex === index ? 'Скрыть дерево кодов' : 'Выбрать код'"
+              :disabled="searchActive && exceptionSearchIndex !== index"
+            />
+          </template>
+        </FieldArrayWithButtons>
+        <FeacnCodeSearch
+          v-if="exceptionSearchIndex !== null"
+          class="feacn-overlay"
+          @select="handleExceptionCodeSelect"
         />
-        <div v-if="errors.insAfter" class="invalid-feedback">{{ errors.insAfter }}</div>
       </div>
+      <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
 
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="saving || searchActive">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButtonText() }}
+          {{ isCreate ? 'Создать' : 'Сохранить' }}
         </button>
         <button class="button secondary" type="button" @click="cancel" :disabled="searchActive">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
@@ -253,7 +253,6 @@ function cancel() {
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </form>
 
-    <!-- Alert -->
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

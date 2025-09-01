@@ -121,11 +121,11 @@ describe('parcel tooltip helpers', () => {
       
       mockGetStatusTitle.mockReturnValue('Статус 150')
         vi.mocked(parcelsCheckHelpers.HasIssues).mockReturnValue(true)
-        vi.mocked(parcelsCheckHelpers.getCheckStatusInfo).mockReturnValue('Возможные ограничения по коду ТН ВЭД:\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted')
+        vi.mocked(parcelsCheckHelpers.getCheckStatusInfo).mockReturnValue('Ограничения по коду ТН ВЭД (постановление):\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted')
       
       const result = getCheckStatusTooltip(item, mockGetStatusTitle, feacnOrders, stopWords)
       
-      expect(result).toBe('Статус 150\nВозможные ограничения по коду ТН ВЭД:\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted')
+      expect(result).toBe('Статус 150\nОграничения по коду ТН ВЭД (постановление):\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted')
       expect(mockGetStatusTitle).toHaveBeenCalledWith(150)
       expect(parcelsCheckHelpers.HasIssues).toHaveBeenCalledWith(150)
       expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(item, feacnOrders, stopWords)

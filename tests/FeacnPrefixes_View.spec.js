@@ -26,49 +26,32 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
-import StopWord_EditView from '@/views/StopWord_EditView.vue'
-import StopWord_Settings from '@/components/StopWord_Settings.vue'
+import FeacnPrefixes_View from '@/views/FeacnPrefixes_View.vue'
+import FeacnPrefixes_List from '@/components/FeacnPrefixes_List.vue'
 
 const vuetify = createVuetify()
 
-// Mock the StopWord_Settings component
-vi.mock('@/components/StopWord_Settings.vue', () => ({
+vi.mock('@/components/FeacnPrefixes_List.vue', () => ({
   default: {
-    name: 'StopWord_Settings',
-    props: ['id'],
-    template: '<div data-test="stopword-settings">StopWord_Settings Component with ID: {{ id }}</div>'
+    name: 'FeacnPrefixes_List',
+    template: '<div data-test="fp-list">FeacnPrefixes_List Component</div>'
   }
 }))
 
-describe('StopWord_EditView', () => {
+describe('FeacnPrefixes_View', () => {
   let wrapper
 
   beforeEach(() => {
-    wrapper = mount(StopWord_EditView, {
-      props: {
-        id: 123
-      },
-      global: {
-        plugins: [vuetify]
-      }
-    })
+    wrapper = mount(FeacnPrefixes_View, { global: { plugins: [vuetify] } })
   })
 
-  it('should render StopWord_Settings component', () => {
-    const stopWordSettings = wrapper.findComponent(StopWord_Settings)
-    expect(stopWordSettings.exists()).toBe(true)
+  it('renders FeacnPrefixes_List component', () => {
+    const list = wrapper.findComponent(FeacnPrefixes_List)
+    expect(list.exists()).toBe(true)
   })
 
-  it('should pass route id to StopWord_Settings component', () => {
-    const stopWordSettings = wrapper.findComponent(StopWord_Settings)
-    expect(stopWordSettings.props('id')).toBe(123)
-  })
-
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="stopword-settings"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component for edit mode', () => {
-    expect(wrapper.html()).toContain('StopWord_Settings Component with ID: 123')
+  it('has correct structure', () => {
+    expect(wrapper.find('[data-test="fp-list"]').exists()).toBe(true)
   })
 })
+

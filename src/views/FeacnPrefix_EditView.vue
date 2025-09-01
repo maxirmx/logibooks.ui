@@ -24,7 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import StopWord_Settings from '@/components/StopWord_Settings.vue'
+import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
 
 const props = defineProps({
   id: {
@@ -35,5 +35,6 @@ const props = defineProps({
 </script>
 
 <template>
-  <StopWord_Settings :id="props.id" />
+  <FeacnPrefix_Settings :mode="'edit'" :prefix-id="props.id" />
 </template>
+

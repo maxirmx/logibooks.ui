@@ -95,6 +95,30 @@ export function getStopWordsInfo(item, stopWordsCollection) {
 }
 
 /**
+ * Generates complete manually created feacn prefixes information text
+ * @param {Object} item - The parcel item containing feacnPrefixIds
+ * @param {Array} feacnPrefixesCollection - Collection of all feacn prefixes
+ * @returns {string|null} - Formatted complete feacn prefixes information or null
+ */
+export function getFeacnPrefixesInfo(item, feacnPrefixesCollection) {
+  if (!item?.feacnPrefixIds || item.feacnPrefixIds.length === 0) {
+    return null
+  }
+
+  const feacnPrefixesList = item.feacnPrefixIds
+    .map(id => feacnPrefixesCollection.find(fp => fp.id === id))
+    .filter(fp => fp) // Remove any undefined values
+    .map(fp => `'${fp.code}'`)
+    .join(', ')
+
+  if (feacnPrefixesList) {
+    return `Ограничения по коду ТН ВЭД (установлено вручную): ${feacnPrefixesList}`
+  }
+
+  return null
+}
+
+/**
  * Generates complete feacn orders information text
  * @param {Object} item - The parcel item containing feacnOrderIds
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
@@ -104,7 +128,7 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
   const feacnOrdersList = getFeacnOrdersText(item, feacnOrdersCollection)
   
   if (feacnOrdersList) {
-    return `Возможные ограничения по коду ТН ВЭД: ${feacnOrdersList}`
+    return `Ограничения по коду ТН ВЭД (постановление): ${feacnOrdersList}`
   }
   
   return null
@@ -115,24 +139,17 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
  * @param {Object} item - The parcel item containing feacnOrderIds and stopWordIds
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
  * @param {Array} stopWordsCollection - Collection of all stopwords
+ * @param {Array} feacnPrefixesCollection - Collection of all manually set feacn prefixes
  * @returns {string|null} - Combined formatted information or null if neither present
  */
-export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollection) {
+export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollection, feacnPrefixesCollection) {
   const feacnInfo = getFeacnOrdersInfo(item, feacnOrdersCollection)
   const stopWordsInfo = getStopWordsInfo(item, stopWordsCollection)
-  if (feacnInfo && stopWordsInfo) {
-    return `${feacnInfo}; ${stopWordsInfo}`
-  }
+  const feacnPrefixesInfo = getFeacnPrefixesInfo(item, feacnPrefixesCollection)
   
-  if (feacnInfo) {
-    return feacnInfo
-  }
+  const allInfo = [feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
   
-  if (stopWordsInfo) {
-    return stopWordsInfo
-  }
-  
-  return null
+  return allInfo.length > 0 ? allInfo.join('; ') : null
 }
 
 /**

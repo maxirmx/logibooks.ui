@@ -124,6 +124,38 @@ describe('feacn.prefix.store.js', () => {
     })
   })
 
+  describe('reset', () => {
+    it('restores initial state', async () => {
+      // mutate state
+      store.prefixes = [{ id: 99 }]
+      store.prefix = { id: 99 }
+      store.loading = true
+      store.error = new Error('fail')
+      store.isInitialized = true
+
+      // reset store
+      store.$reset()
+
+      expect(store.prefixes).toEqual([])
+      expect(store.prefix).toEqual({ loading: true })
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(null)
+      expect(store.isInitialized).toBe(false)
+    })
+
+    it('allows ensureLoaded to refetch after reset', async () => {
+      fetchWrapper.get.mockResolvedValue(mockPrefixes)
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+      store.$reset()
+
+      fetchWrapper.get.mockResolvedValue([])
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('error handling', () => {
     it('sets error when getAll fails', async () => {
       const err = new Error('fail')

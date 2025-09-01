@@ -36,7 +36,7 @@ export const useFeacnPrefixesStore = defineStore('feacnPrefixes', () => {
   const loading = ref(false)
   const error = ref(null)
   const isInitialized = ref(false)
-  let loadPromise = null
+  const loadPromise = ref(null)
 
   async function getAll() {
     loading.value = true
@@ -54,12 +54,12 @@ export const useFeacnPrefixesStore = defineStore('feacnPrefixes', () => {
 
   async function ensureLoaded() {
     if (isInitialized.value) return
-    if (!loadPromise) {
-      loadPromise = getAll().finally(() => {
-        loadPromise = null
+    if (!loadPromise.value) {
+      loadPromise.value = getAll().finally(() => {
+        loadPromise.value = null
       })
     }
-    await loadPromise
+    await loadPromise.value
   }
 
   async function getById(id, refresh = false) {
@@ -118,6 +118,15 @@ export const useFeacnPrefixesStore = defineStore('feacnPrefixes', () => {
     }
   }
 
+  function reset() {
+    prefixes.value = []
+    prefix.value = { loading: true }
+    loading.value = false
+    error.value = null
+    isInitialized.value = false
+    loadPromise.value = null
+  }
+
   return {
     prefixes,
     prefix,
@@ -129,7 +138,8 @@ export const useFeacnPrefixesStore = defineStore('feacnPrefixes', () => {
     create,
     update,
     remove,
-    ensureLoaded
+    ensureLoaded,
+    $reset: reset
   }
 })
 

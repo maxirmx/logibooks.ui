@@ -24,13 +24,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
+import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefix.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -70,6 +72,35 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 })
 
 const { value: code } = useField('code')
+
+const searchActive = ref(false)
+
+function toggleSearch() {
+  searchActive.value = !searchActive.value
+}
+
+function handleCodeSelect(feacnCode) {
+  setFieldValue('code', feacnCode)
+  searchActive.value = false
+}
+
+function handleEscape(event) {
+  if (event.key === 'Escape') {
+    searchActive.value = false
+  }
+}
+
+watch(searchActive, (val) => {
+  if (val) {
+    document.addEventListener('keydown', handleEscape)
+  } else {
+    document.removeEventListener('keydown', handleEscape)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
+})
 
 onMounted(async () => {
   if (!isCreate.value) {
@@ -136,18 +167,30 @@ function cancel() {
     </div>
 
     <form v-else @submit.prevent="onSubmit">
-      <div class="form-group">
-        <label for="code" class="label">Префикс:</label>
-        <input
-          name="code"
-          id="code"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.code }"
-          v-model="code"
-          placeholder="Введите префикс ТН ВЭД"
-        />
-        <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+      <div class="feacn-search-wrapper">
+        <div class="form-group">
+          <label for="code" class="label">Префикс:</label>
+          <input
+            name="code"
+            id="code"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.code }"
+            v-model="code"
+            :disabled="searchActive"
+            placeholder="Введите префикс ТН ВЭД"
+          />
+          <ActionButton
+            :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :item="null"
+            @click="toggleSearch"
+            class="ml-2 mr-2"
+            tooltip-text="Выбрать код"
+            :disabled="false"
+          />
+          <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+          <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" />
+        </div>
       </div>
 
       <FieldArrayWithButtons
@@ -157,17 +200,18 @@ function cancel() {
         placeholder="Код-исключение"
         add-tooltip="Добавить исключение"
         remove-tooltip="Удалить исключение"
+        :disabled="searchActive"
         :has-error="!!errors.exceptions"
       />
       <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
 
       <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saving">
+        <button class="button primary" type="submit" :disabled="saving || searchActive">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ isCreate ? 'Создать' : 'Сохранить' }}
         </button>
-        <button class="button secondary" type="button" @click="cancel">
+        <button class="button secondary" type="button" @click="cancel" :disabled="searchActive">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
@@ -182,4 +226,18 @@ function cancel() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.feacn-search-wrapper {
+  position: relative;
+}
+
+.feacn-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+</style>
 

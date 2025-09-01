@@ -14,6 +14,26 @@ vi.mock('@/components/FieldArrayWithButtons.vue', () => ({
   }
 }))
 
+// Mock FeacnCodeSearch
+vi.mock('@/components/FeacnCodeSearch.vue', () => ({
+  default: {
+    name: 'FeacnCodeSearch',
+    props: [],
+    emits: ['select'],
+    template: '<div data-test="feacn-code-search"></div>'
+  }
+}))
+
+// Mock ActionButton
+vi.mock('@/components/ActionButton.vue', () => ({
+  default: {
+    name: 'ActionButton',
+    props: ['icon', 'item', 'tooltipText', 'disabled'],
+    emits: ['click'],
+    template: '<button data-test="action-button" @click="$emit(\'click\')">{{ icon }}</button>'
+  }
+}))
+
 // Mock stores
 const getById = vi.fn()
 const create = vi.fn()
@@ -116,6 +136,42 @@ describe('FeacnPrefix_Settings.vue', () => {
   it('renders FieldArrayWithButtons', () => {
     const wrapper = mountComponent()
     expect(wrapper.find('[data-test="fab-stub"]').exists()).toBe(true)
+  })
+
+  it('renders ActionButton and FeacnCodeSearch when search is toggled', async () => {
+    const wrapper = mountComponent()
+    
+    // Should render ActionButton
+    expect(wrapper.find('[data-test="action-button"]').exists()).toBe(true)
+    
+    // Should not show search initially
+    expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
+    
+    // Click the action button to toggle search
+    await wrapper.find('[data-test="action-button"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    
+    // Should show search now
+    expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(true)
+  })
+
+  it('handles code selection from FeacnCodeSearch', async () => {
+    const wrapper = mountComponent()
+    
+    // Toggle search on
+    await wrapper.find('[data-test="action-button"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    
+    // Simulate code selection
+    const feacnCodeSearch = wrapper.findComponent({ name: 'FeacnCodeSearch' })
+    await feacnCodeSearch.vm.$emit('select', '123456')
+    
+    // Check that code field is updated
+    expect(wrapper.vm.code).toBe('123456')
+    
+    // Search should be closed
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
   })
 })
 

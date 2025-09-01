@@ -267,11 +267,11 @@ defineExpose({
         >
           <template #extra="{ index }">
             <ActionButton
-              :icon="searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :icon="searchActive && searchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
               :item="index"
               @click="toggleSearch(index)"
               class="button-o-c ml-2"
-              tooltip-text="Выбрать код"
+              :tooltip-text="searchActive && searchIndex === index ? 'Скрыть дерево кодов' : 'Выбрать код'"
               :disabled="searchActive && searchIndex !== index"
             />
           </template>

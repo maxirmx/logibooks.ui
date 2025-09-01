@@ -201,7 +201,7 @@ function cancel() {
                 :item="null"
                 @click="toggleSearch"
                 class="ml-2 mr-2"
-                tooltip-text="Выбрать код"
+                :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
                 :disabled="false"
             />
             <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>

@@ -73,20 +73,35 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
 
 const { value: code } = useField('code')
 
-const searchActive = ref(false)
+const codeSearchActive = ref(false)
+const exceptionSearchIndex = ref(null)
 
-function toggleSearch() {
-  searchActive.value = !searchActive.value
+const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
+
+function toggleCodeSearch() {
+  codeSearchActive.value = !codeSearchActive.value
 }
 
 function handleCodeSelect(feacnCode) {
   setFieldValue('code', feacnCode)
-  searchActive.value = false
+  codeSearchActive.value = false
+}
+
+function toggleExceptionSearch(index) {
+  exceptionSearchIndex.value = exceptionSearchIndex.value === index ? null : index
+}
+
+function handleExceptionCodeSelect(code) {
+  if (exceptionSearchIndex.value !== null) {
+    setFieldValue(`exceptions[${exceptionSearchIndex.value}]`, code)
+  }
+  exceptionSearchIndex.value = null
 }
 
 function handleEscape(event) {
   if (event.key === 'Escape') {
-    searchActive.value = false
+    codeSearchActive.value = false
+    exceptionSearchIndex.value = null
   }
 }
 
@@ -181,28 +196,46 @@ function cancel() {
             placeholder="Введите префикс ТН ВЭД"
           />
           <ActionButton
-            :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :icon="codeSearchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
             :item="null"
-            @click="toggleSearch"
+            @click="toggleCodeSearch"
             class="ml-2 mr-2"
-            tooltip-text="Выбрать код"
+            :tooltip-text="codeSearchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
             :disabled="false"
           />
           <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-          <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" />
+          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" />
         </div>
       </div>
 
-      <FieldArrayWithButtons
-        name="exceptions"
-        label="Исключения"
-        field-type="input"
-        placeholder="Код-исключение"
-        add-tooltip="Добавить исключение"
-        remove-tooltip="Удалить исключение"
-        :disabled="searchActive"
-        :has-error="!!errors.exceptions"
-      />
+      <div class="feacn-search-wrapper">
+        <FieldArrayWithButtons
+          name="exceptions"
+          label="Исключения"
+          field-type="input"
+          placeholder="Код-исключение"
+          add-tooltip="Добавить исключение"
+          remove-tooltip="Удалить исключение"
+          :disabled="searchActive"
+          :has-error="!!errors.exceptions"
+        >
+          <template #extra="{ index }">
+            <ActionButton
+              :icon="searchActive && exceptionSearchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :item="index"
+              @click="toggleExceptionSearch(index)"
+              class="ml-2 mr-2"
+              :tooltip-text="searchActive && exceptionSearchIndex === index ? 'Скрыть дерево кодов' : 'Выбрать код'"
+              :disabled="searchActive && exceptionSearchIndex !== index"
+            />
+          </template>
+        </FieldArrayWithButtons>
+        <FeacnCodeSearch
+          v-if="exceptionSearchIndex !== null"
+          class="feacn-overlay"
+          @select="handleExceptionCodeSelect"
+        />
+      </div>
       <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
 
       <div class="form-group mt-8">

@@ -246,11 +246,14 @@ describe('FieldArrayWithButtons', () => {
     const validTypes = ['select', 'input', 'textarea']
     const component = FieldArrayWithButtons
     const validator = component.props.fieldType.validator
-    
+
     validTypes.forEach(type => {
       expect(validator(type)).toBe(true)
     })
-    
+
+    // also allows component objects
+    expect(validator({})).toBe(true)
+
     expect(validator('invalid')).toBe(false)
   })
 

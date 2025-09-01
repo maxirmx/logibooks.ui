@@ -34,9 +34,14 @@ const props = defineProps({
     required: true
   },
   fieldType: {
-    type: String,
+    type: [String, Object],
     default: 'select',
-    validator: (value) => ['select', 'input', 'textarea'].includes(value)
+    validator: (value) => {
+      if (typeof value === 'string') {
+        return ['select', 'input', 'textarea'].includes(value)
+      }
+      return typeof value === 'object'
+    }
   },
   options: {
     type: Array,

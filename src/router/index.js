@@ -154,6 +154,21 @@ const router = createRouter({
       component: () => import('@/views/FeacnPrefixes_View.vue')
     },
     {
+      path: '/feacnprefix/create',
+      name: 'Создание префикса ТН ВЭД',
+      component: () => import('@/views/FeacnPrefix_CreateView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/feacnprefix/edit/:id',
+      name: 'Редактирование префикса ТН ВЭД',
+      component: () => import('@/views/FeacnPrefix_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/feacn/codes',
       name: 'Коды ТН ВЭД',
       component: () => import('@/views/FeacnCodes_View.vue')

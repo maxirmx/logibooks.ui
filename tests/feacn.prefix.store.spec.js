@@ -52,10 +52,14 @@ describe('feacn.prefix.store.js', () => {
 
     it('getById retrieves prefix by id', async () => {
       fetchWrapper.get.mockResolvedValue(mockPrefix)
-      const res = await store.getById(1)
+      const promise = store.getById(1)
+      expect(store.loading).toBe(true)
+      expect(store.prefix).toEqual({ loading: true })
+      const res = await promise
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes/1')
       expect(res).toEqual(mockPrefix)
       expect(store.prefix).toEqual(mockPrefix)
+      expect(store.loading).toBe(false)
     })
 
     it('create posts prefix and refreshes list', async () => {
@@ -82,10 +86,21 @@ describe('feacn.prefix.store.js', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes')
     })
 
-    it('getById refresh flag resets prefix before fetch', async () => {
+    it('getById refresh flag replaces prefix before fetch', async () => {
       fetchWrapper.get.mockResolvedValue(mockPrefix)
       store.prefix = { id: 99 }
-      await store.getById(1, true)
+      const promise = store.getById(1, true)
+      expect(store.prefix).toEqual({ loading: true })
+      await promise
+      expect(store.prefix).toEqual(mockPrefix)
+    })
+
+    it('getById without refresh preserves existing data while loading', async () => {
+      fetchWrapper.get.mockResolvedValue(mockPrefix)
+      store.prefix = { id: 99 }
+      const promise = store.getById(1)
+      expect(store.prefix).toEqual({ id: 99, loading: true })
+      await promise
       expect(store.prefix).toEqual(mockPrefix)
     })
 
@@ -94,6 +109,12 @@ describe('feacn.prefix.store.js', () => {
       await store.ensureLoaded()
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes')
       expect(store.prefixes).toEqual(mockPrefixes)
+    })
+
+    it('ensureLoaded caches concurrent calls', async () => {
+      fetchWrapper.get.mockResolvedValue(mockPrefixes)
+      await Promise.all([store.ensureLoaded(), store.ensureLoaded()])
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     })
 
     it('ensureLoaded skips fetch when already initialized', async () => {

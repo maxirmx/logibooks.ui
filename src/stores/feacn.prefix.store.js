@@ -36,6 +36,7 @@ export const useFeacnPrefixesStore = defineStore('feacnPrefixes', () => {
   const loading = ref(false)
   const error = ref(null)
   const isInitialized = ref(false)
+  let loadPromise = null
 
   async function getAll() {
     loading.value = true
@@ -52,15 +53,17 @@ export const useFeacnPrefixesStore = defineStore('feacnPrefixes', () => {
   }
 
   async function ensureLoaded() {
-    if (!isInitialized.value && !loading.value) {
-      await getAll()
+    if (isInitialized.value) return
+    if (!loadPromise) {
+      loadPromise = getAll().finally(() => {
+        loadPromise = null
+      })
     }
+    await loadPromise
   }
 
   async function getById(id, refresh = false) {
-    if (refresh) {
-      prefix.value = { loading: true }
-    }
+    prefix.value = refresh ? { loading: true } : { ...prefix.value, loading: true }
     loading.value = true
     try {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)

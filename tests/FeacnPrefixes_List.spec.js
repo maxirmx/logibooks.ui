@@ -159,5 +159,3 @@ describe('FeacnPrefixes_List.vue', () => {
     expect(wrapper.vm.getExceptionKey(exception, 2)).toBe('2-789')
   })
 })
-
-

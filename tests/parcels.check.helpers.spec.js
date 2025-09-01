@@ -4,6 +4,7 @@ import {
   getStopWordsInfo, 
   getFeacnOrdersText, 
   getFeacnOrdersInfo, 
+  getFeacnPrefixesInfo,
   getCheckStatusInfo,
   HasIssues,
   IsNotChecked,
@@ -28,6 +29,12 @@ describe('parcels.check.helpers', () => {
     { id: 3, comment: 'Medical equipment' },
     { id: 4, comment: '' }, // Empty comment
     { id: 5 } // No comment field
+  ]
+
+  const mockFeacnPrefixes = [
+    { id: 1, code: '1234' },
+    { id: 2, code: '5678' },
+    { id: 3, code: '9012' }
   ]
 
   describe('getStopWordsText', () => {
@@ -154,7 +161,7 @@ describe('parcels.check.helpers', () => {
     it('returns formatted info text with prefix', () => {
       const item = { feacnOrderIds: [1, 2] }
       const result = getFeacnOrdersInfo(item, mockFeacnOrders)
-      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals', 'Dangerous goods'")
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'")
     })
 
     it('returns null when feacn orders text is empty', () => {
@@ -164,58 +171,126 @@ describe('parcels.check.helpers', () => {
     })
   })
 
+  describe('getFeacnPrefixesInfo', () => {
+    it('returns null when item has no feacnPrefixIds', () => {
+      const item = {}
+      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
+      expect(result).toBeNull()
+    })
+
+    it('returns null when item has empty feacnPrefixIds array', () => {
+      const item = { feacnPrefixIds: [] }
+      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
+      expect(result).toBeNull()
+    })
+
+    it('returns formatted feacn prefixes info text for single prefix', () => {
+      const item = { feacnPrefixIds: [1] }
+      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
+    })
+
+    it('returns formatted feacn prefixes info text for multiple prefixes', () => {
+      const item = { feacnPrefixIds: [1, 2, 3] }
+      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678', '9012'")
+    })
+
+    it('filters out non-existent feacn prefix IDs', () => {
+      const item = { feacnPrefixIds: [1, 999, 2] }
+      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678'")
+    })
+
+    it('returns null when no valid feacn prefix IDs exist', () => {
+      const item = { feacnPrefixIds: [999, 888] }
+      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
+      expect(result).toBeNull()
+    })
+  })
+
   describe('getCheckStatusInfo', () => {
+    it('returns combined information when all three types are present', () => {
+      const item = { feacnOrderIds: [1], stopWordIds: [1], feacnPrefixIds: [1] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
+    })
+
     it('returns combined information when both feacn orders and stopwords are present', () => {
       const item = { feacnOrderIds: [1, 2], stopWordIds: [1, 2] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'")
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'")
+    })
+
+    it('returns combined information when both feacn orders and prefixes are present', () => {
+      const item = { feacnOrderIds: [1], feacnPrefixIds: [1, 2] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678'")
+    })
+
+    it('returns combined information when both stopwords and prefixes are present', () => {
+      const item = { stopWordIds: [1, 2], feacnPrefixIds: [1] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden', 'banned'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
     })
 
     it('returns only feacn orders information when only feacn orders are present', () => {
-      const item = { feacnOrderIds: [1], stopWordIds: [] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals'")
+      const item = { feacnOrderIds: [1], stopWordIds: [], feacnPrefixIds: [] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'")
     })
 
     it('returns only stopwords information when only stopwords are present', () => {
-      const item = { feacnOrderIds: [], stopWordIds: [1, 3] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
+      const item = { feacnOrderIds: [], stopWordIds: [1, 3], feacnPrefixIds: [] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBe("Стоп-слова и фразы: 'forbidden', 'restricted'")
     })
 
-    it('returns null when neither feacn orders nor stopwords are present', () => {
-      const item = { feacnOrderIds: [], stopWordIds: [] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
+    it('returns only prefixes information when only prefixes are present', () => {
+      const item = { feacnOrderIds: [], stopWordIds: [], feacnPrefixIds: [2, 3] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '5678', '9012'")
+    })
+
+    it('returns null when no information is present', () => {
+      const item = { feacnOrderIds: [], stopWordIds: [], feacnPrefixIds: [] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBeNull()
     })
 
     it('returns null when item has no relevant properties', () => {
       const item = {}
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBeNull()
     })
 
     it('returns null when item is null', () => {
-      const result = getCheckStatusInfo(null, mockFeacnOrders, mockStopWords)
+      const result = getCheckStatusInfo(null, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBeNull()
     })
 
     it('handles case when feacn orders exist but have no comments', () => {
-      const item = { feacnOrderIds: [4, 5], stopWordIds: [1] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
+      const item = { feacnOrderIds: [4, 5], stopWordIds: [1], feacnPrefixIds: [] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
     })
 
     it('handles case when stopwords have invalid IDs', () => {
-      const item = { feacnOrderIds: [1], stopWordIds: [999] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Возможные ограничения по коду ТН ВЭД: 'Restricted chemicals'")
+      const item = { feacnOrderIds: [1], stopWordIds: [999], feacnPrefixIds: [1] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
     })
 
     it('handles case when feacn orders have invalid IDs', () => {
-      const item = { feacnOrderIds: [999], stopWordIds: [1] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+      const item = { feacnOrderIds: [999], stopWordIds: [1], feacnPrefixIds: [2] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '5678'")
+    })
+
+    it('handles case when feacn prefixes have invalid IDs', () => {
+      const item = { feacnOrderIds: [1], stopWordIds: [1], feacnPrefixIds: [999] }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'")
     })
   })
 

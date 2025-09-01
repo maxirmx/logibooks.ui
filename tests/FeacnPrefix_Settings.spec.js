@@ -39,7 +39,7 @@ const getById = vi.fn()
 const create = vi.fn()
 const update = vi.fn()
 
-vi.mock('@/stores/feacn.prefix.store.js', () => ({
+vi.mock('@/stores/feacn.prefixes.store.js', () => ({
   useFeacnPrefixesStore: () => ({
     getById,
     create,

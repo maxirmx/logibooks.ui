@@ -33,7 +33,7 @@ import * as Yup from 'yup'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { useFeacnPrefixesStore } from '@/stores/feacn.prefix.store.js'
+import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({

@@ -1,5 +1,5 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { useFeacnPrefixesStore } from '@/stores/feacn.prefix.store.js'
+import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
@@ -15,7 +15,7 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:3000/api'
 }))
 
-describe('feacn.prefix.store.js', () => {
+describe('feacn.prefixes.store.js', () => {
   let store
   let pinia
 

@@ -35,7 +35,7 @@ const mockFeacnInfo = ref({
   '111': { name: 'Exception 111' }
 })
 
-vi.mock('@/stores/feacn.prefix.store.js', () => ({
+vi.mock('@/stores/feacn.prefixes.store.js', () => ({
   useFeacnPrefixesStore: () => ({
     prefixes: mockPrefixes,
     loading: ref(false),

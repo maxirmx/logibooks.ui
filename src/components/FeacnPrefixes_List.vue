@@ -27,7 +27,7 @@
 import { onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useFeacnPrefixesStore } from '@/stores/feacn.prefix.store.js'
+import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'

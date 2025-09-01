@@ -34,6 +34,7 @@ import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.j
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
+import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -64,6 +65,7 @@ const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
+const feacnPrefixesStore = useFeacnPrefixesStore()
 const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
 
@@ -72,6 +74,7 @@ await parcelCheckStatusStore.ensureLoaded()
 await stopWordsStore.ensureLoaded()
 await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
+await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
 await parcelsStore.getById(props.id)
 await parcelViewsStore.add(props.id)
@@ -79,6 +82,7 @@ await parcelViewsStore.add(props.id)
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
+const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
 
 // Reactive reference to track current statusId for color updates
@@ -312,9 +316,9 @@ async function generateXml(values) {
             </div>
           </div>          
           <!-- Stopwords information when there are issues -->
-          <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords)" class="form-group stopwords-info">
+          <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" class="form-group stopwords-info">
             <div class="stopwords-text">
-              {{ getCheckStatusInfo(item, feacnOrders, stopWords) }}
+              {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
             </div>
           </div>
         </div>

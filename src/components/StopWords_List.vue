@@ -25,7 +25,7 @@
 
 <script setup>
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -45,6 +45,7 @@ const confirm = useConfirm()
 
 const { stopWords, loading } = storeToRefs(stopWordsStore)
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
 
 // Custom filter function for v-data-table
 function filterStopWords(value, query, item) {
@@ -82,31 +83,37 @@ function openCreateDialog() {
 }
 
 async function deleteStopWord(stopWord) {
-  const content = 'Удалить стоп-слово "' + stopWord.word + '" ?'
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: content
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const content = 'Удалить стоп-слово "' + stopWord.word + '" ?'
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
 
-  if (confirmed) {
-    try {
-      await stopWordsStore.remove(stopWord.id)
-    } catch (error) {
-      if (error.message?.includes('409')) {
-        alertStore.error('Нельзя удалить стоп-слово, у которого есть связанные записи')
-      } else {
-        alertStore.error('Ошибка при удалении стоп-слова')
+    if (confirmed) {
+      try {
+        await stopWordsStore.remove(stopWord.id)
+      } catch (error) {
+        if (error.message?.includes('409')) {
+          alertStore.error('Нельзя удалить стоп-слово, у которого есть связанные записи')
+        } else {
+          alertStore.error('Ошибка при удалении стоп-слова')
+        }
       }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -174,12 +181,14 @@ defineExpose({
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать стоп-слово или фразу"
               @click="openEditDialog"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить стоп-слово или фразу"
               @click="deleteStopWord"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>

@@ -158,6 +158,7 @@ function scrollToSelectedItem() {
 const registerFileName = ref('')
 const registerDealNumber = ref('')
 const registerLoading = ref(true)
+const runningAction = ref(false)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const registerName = computed(() => {
@@ -297,24 +298,48 @@ function editParcel(item) {
 }
 
 async function exportParcelXml(item) {
-  selectedParcelId.value = item.id
-  const filename = item.postingNumber
-  await exportParcelXmlData(item, parcelsStore, filename)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    selectedParcelId.value = item.id
+    const filename = item.postingNumber
+    await exportParcelXmlData(item, parcelsStore, filename)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 async function validateParcel(item) {
-  selectedParcelId.value = item.id
-  await validateParcelData(item, parcelsStore, loadOrdersWrapper)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    selectedParcelId.value = item.id
+    await validateParcelData(item, parcelsStore, loadOrdersWrapper)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 async function lookupFeacnCodes(item) {
-  selectedParcelId.value = item.id
-  await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    selectedParcelId.value = item.id
+    await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 async function approveParcel(item) {
-  selectedParcelId.value = item.id
-  await approveParcelData(item, parcelsStore, loadOrdersWrapper)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    selectedParcelId.value = item.id
+    await approveParcelData(item, parcelsStore, loadOrdersWrapper)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 // Function to filter headers that need generic templates
@@ -451,11 +476,11 @@ function getGenericTemplateHeaders() {
 
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" />
-            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" />
-            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="HasIssues(item.checkStatusId)" />
-            <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="runningAction || loading || HasIssues(item.checkStatusId)" />
+            <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" :disabled="runningAction || loading" />
           </div>
         </template>
       </v-data-table-server>

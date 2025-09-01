@@ -27,9 +27,14 @@
 import { useRoute } from 'vue-router'
 import StopWord_Settings from '@/components/StopWord_Settings.vue'
 
-const route = useRoute()
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true
+  }
+})
 </script>
 
 <template>
-  <StopWord_Settings :id="route.params.id" />
+  <StopWord_Settings :id="props.id" />
 </template>

@@ -27,9 +27,14 @@
 import { useRoute } from 'vue-router'
 import FeacnInsertItem_Settings from '@/components/FeacnInsertItem_Settings.vue'
 
-const route = useRoute()
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true
+  }
+})
 </script>
 
 <template>
-  <FeacnInsertItem_Settings :mode="'edit'" :insert-item-id="route.params.id" />
+  <FeacnInsertItem_Settings :mode="'edit'" :insert-item-id="props.id" />
 </template>

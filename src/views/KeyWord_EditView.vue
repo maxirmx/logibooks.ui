@@ -27,9 +27,14 @@
 import { useRoute } from 'vue-router'
 import KeyWord_Settings from '@/components/KeyWord_Settings.vue'
 
-const route = useRoute()
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true
+  }
+})
 </script>
 
 <template>
-  <KeyWord_Settings :id="route.params.id" />
+  <KeyWord_Settings :id="props.id" />
 </template>

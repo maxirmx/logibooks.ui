@@ -145,8 +145,13 @@ const router = createRouter({
     },
     {
       path: '/feacn/orders',
-      name: 'Запреты по ТН ВЭД',
+      name: 'Запреты по постановлениям',
       component: () => import('@/views/FeacnOrders_View.vue')
+    },
+    {
+      path: '/feacn/prefixes',
+      name: 'Запреты по ТН ВЭД',
+      component: () => import('@/views/FeacnPrefixes_View.vue')
     },
     {
       path: '/feacn/codes',

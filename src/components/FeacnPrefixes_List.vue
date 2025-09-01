@@ -88,7 +88,7 @@ defineExpose({
 
 <template>
   <div class="settings table-3" data-testid="feacn-prefixes-list">
-    <h1 class="primary-heading">Префиксы ТН ВЭД</h1>
+    <h1 class="primary-heading">Префиксы ТН ВЭД для формирования запретов</h1>
     <hr class="hr" />
 
     <div class="link-crt">

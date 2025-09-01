@@ -107,7 +107,10 @@ function getUserName() {
             <RouterLink to="/feacn/codes" class="link">Коды ТН ВЭД</RouterLink>
           </v-list-item>
           <v-list-item>
-            <RouterLink to="/feacn/orders" class="link">Запреты по ТН ВЭД</RouterLink>
+            <RouterLink to="/feacn/orders" class="link">Постановления</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/feacn/prefixes" class="link">Запреты по ТН ВЭД</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/keywords" class="link">Подбор ТН ВЭД</RouterLink>

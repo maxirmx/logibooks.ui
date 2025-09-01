@@ -24,7 +24,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { useRoute } from 'vue-router'
 import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
 
 const props = defineProps({

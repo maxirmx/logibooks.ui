@@ -24,7 +24,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { useRoute } from 'vue-router'
 import FeacnInsertItem_Settings from '@/components/FeacnInsertItem_Settings.vue'
 
 const props = defineProps({

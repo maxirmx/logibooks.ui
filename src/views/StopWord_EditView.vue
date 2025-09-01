@@ -24,7 +24,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { useRoute } from 'vue-router'
 import StopWord_Settings from '@/components/StopWord_Settings.vue'
 
 const props = defineProps({

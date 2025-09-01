@@ -6,16 +6,6 @@ import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
 
 const vuetify = createVuetify()
 
-const mockRoute = {
-  params: {
-    id: '123'
-  }
-}
-
-vi.mock('vue-router', () => ({
-  useRoute: () => mockRoute
-}))
-
 vi.mock('@/components/FeacnPrefix_Settings.vue', () => ({
   default: {
     name: 'FeacnPrefix_Settings',
@@ -29,6 +19,9 @@ describe('FeacnPrefix_EditView.vue', () => {
 
   beforeEach(() => {
     wrapper = mount(FeacnPrefix_EditView, {
+      props: {
+        id: 123
+      },
       global: { plugins: [vuetify] }
     })
   })
@@ -40,7 +33,7 @@ describe('FeacnPrefix_EditView.vue', () => {
 
   it('passes route id to FeacnPrefix_Settings', () => {
     const comp = wrapper.findComponent(FeacnPrefix_Settings)
-    expect(comp.props('prefixId')).toBe('123')
+    expect(comp.props('prefixId')).toBe(123)
   })
 
   it('renders stub content', () => {

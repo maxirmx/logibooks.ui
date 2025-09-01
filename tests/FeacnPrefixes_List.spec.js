@@ -69,6 +69,15 @@ describe('FeacnPrefixes_List.vue', () => {
     expect(firstRowCells[2].text()).toBe('Derived 0101')
   })
 
+  it('does not call loadFeacnTooltipOnHover when hovering code', async () => {
+    const codeSpan = wrapper
+      .findAll('[data-testid="v-data-table"] .v-data-table-row')[0]
+      .findAll('.v-data-table-cell')[1]
+      .find('span')
+    await codeSpan.trigger('mouseenter')
+    expect(loadFeacnTooltipOnHover).not.toHaveBeenCalled()
+  })
+
   it('calls loadFeacnTooltipOnHover for exceptions on hover', async () => {
     const exceptionSpan = wrapper
       .findAll('[data-testid="v-data-table"] .v-data-table-row')[0]

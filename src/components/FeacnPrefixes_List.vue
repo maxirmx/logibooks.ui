@@ -111,22 +111,7 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.code`]="{ item }">
-          <v-tooltip
-            location="top"
-            content-class="feacn-tooltip"
-            :max-width="tooltipMaxWidth"
-          >
-            <template v-slot:activator="{ props }">
-              <span
-                v-bind="props"
-                class="feacn-code-tooltip"
-                @mouseenter="loadFeacnTooltipOnHover(item.code)"
-              >
-                {{ item.code }}
-              </span>
-            </template>
-            <span>{{ feacnTooltips[item.code]?.name || 'Наведите для загрузки...' }}</span>
-          </v-tooltip>
+          <span>{{ item.code }}</span>
         </template>
 
         <template v-slot:[`item.description`]="{ item }">

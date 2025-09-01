@@ -24,16 +24,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import StopWord_Settings from '@/components/StopWord_Settings.vue'
-
-const props = defineProps({
-  id: {
-    type: Number,
-    required: true
-  }
-})
+import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
 </script>
 
 <template>
-  <StopWord_Settings :id="props.id" />
+  <FeacnPrefix_Settings :mode="'create'" />
 </template>
+

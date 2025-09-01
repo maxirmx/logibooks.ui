@@ -26,10 +26,12 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import router from '@/router'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefix.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import {
   preloadFeacnInfo,
   loadFeacnTooltipOnHover,
@@ -39,6 +41,7 @@ import {
 const prefixesStore = useFeacnPrefixesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
+const confirm = useConfirm()
 
 const { prefixes, loading } = storeToRefs(prefixesStore)
 const { alert } = storeToRefs(alertStore)
@@ -63,26 +66,63 @@ const headers = [
 
 onMounted(async () => {
   await prefixesStore.getAll()
-  await preloadFeacnInfo(prefixes.value.map(p => p.code))
+  // Extract codes for preloading, handling both string and object formats
+  const codes = prefixes.value.map(p => p.code)
+  const exceptionCodes = prefixes.value.flatMap(p => 
+    p.exceptions ? p.exceptions.map(exc => getExceptionCode(exc)) : []
+  )
+  await preloadFeacnInfo([...codes, ...exceptionCodes])
 })
 
+// Helper function to get exception code from either string or FeacnPrefixExceptionDto
+function getExceptionCode(exception) {
+  return typeof exception === 'string' ? exception : exception.code
+}
+
+// Helper function to get unique key for exception items
+function getExceptionKey(exception, index) {
+  return typeof exception === 'string' ? exception : `${exception.id || index}-${exception.code}`
+}
+
 function openCreateDialog() {
-  console.log('openCreateDialog stub')
+  router.push('/feacn/prefix/create')
 }
 
 function openEditDialog(item) {
-  console.log('openEditDialog stub', item)
+  router.push(`/feacn/prefix/edit/${item.id}`)
 }
 
-function deletePrefix(item) {
-  console.log('deletePrefix stub', item)
+async function deletePrefix(item) {
+  const confirmed = await confirm({
+    title: 'Подтверждение',
+    confirmationText: 'Удалить',
+    cancellationText: 'Не удалять',
+    dialogProps: {
+      width: '30%',
+      minWidth: '250px'
+    },
+    confirmationButtonProps: {
+      color: 'orange-darken-3'
+    },
+    content: 'Удалить префикс?'
+  })
+
+  if (confirmed) {
+    try {
+      await prefixesStore.remove(item.id)
+    } catch {
+      alertStore.error('Ошибка при удалении префикса')
+    }
+  }
 }
 
 // Expose for testing
 defineExpose({
   openCreateDialog,
   openEditDialog,
-  deletePrefix
+  deletePrefix,
+  getExceptionCode,
+  getExceptionKey
 })
 </script>
 
@@ -120,7 +160,7 @@ defineExpose({
 
         <template v-slot:[`item.exceptions`]="{ item }">
           <span v-if="item.exceptions && item.exceptions.length">
-            <span v-for="(code, index) in item.exceptions" :key="code">
+            <span v-for="(exception, index) in item.exceptions" :key="getExceptionKey(exception, index)">
               <v-tooltip
                 location="top"
                 content-class="feacn-tooltip"
@@ -130,12 +170,12 @@ defineExpose({
                   <span
                     v-bind="props"
                     class="feacn-code-tooltip"
-                    @mouseenter="loadFeacnTooltipOnHover(code)"
+                    @mouseenter="loadFeacnTooltipOnHover(getExceptionCode(exception))"
                   >
-                    {{ code }}
+                    {{ getExceptionCode(exception) }}
                   </span>
                 </template>
-                <span>{{ feacnTooltips[code]?.name || 'Наведите для загрузки...' }}</span>
+                <span>{{ feacnTooltips[getExceptionCode(exception)]?.name || 'Наведите для загрузки...' }}</span>
               </v-tooltip>
               <span v-if="index < item.exceptions.length - 1">, </span>
             </span>

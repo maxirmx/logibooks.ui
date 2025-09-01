@@ -31,18 +31,6 @@ import StopWord_Settings from '@/components/StopWord_Settings.vue'
 
 const vuetify = createVuetify()
 
-// Mock the route
-const mockRoute = {
-  params: {
-    id: '123'
-  }
-}
-
-// Mock useRoute
-vi.mock('vue-router', () => ({
-  useRoute: () => mockRoute
-}))
-
 // Mock the StopWord_Settings component
 vi.mock('@/components/StopWord_Settings.vue', () => ({
   default: {
@@ -57,6 +45,9 @@ describe('StopWord_EditView', () => {
 
   beforeEach(() => {
     wrapper = mount(StopWord_EditView, {
+      props: {
+        id: 123
+      },
       global: {
         plugins: [vuetify]
       }
@@ -70,7 +61,7 @@ describe('StopWord_EditView', () => {
 
   it('should pass route id to StopWord_Settings component', () => {
     const stopWordSettings = wrapper.findComponent(StopWord_Settings)
-    expect(stopWordSettings.props('id')).toBe('123')
+    expect(stopWordSettings.props('id')).toBe(123)
   })
 
   it('should have correct component structure', () => {
@@ -79,9 +70,5 @@ describe('StopWord_EditView', () => {
 
   it('should be a simple wrapper component for edit mode', () => {
     expect(wrapper.html()).toContain('StopWord_Settings Component with ID: 123')
-  })
-
-  it('should get route parameter correctly', () => {
-    expect(wrapper.vm.route.params.id).toBe('123')
   })
 })

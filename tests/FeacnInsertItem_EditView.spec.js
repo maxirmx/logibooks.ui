@@ -6,16 +6,6 @@ import FeacnInsertItem_Settings from '@/components/FeacnInsertItem_Settings.vue'
 
 const vuetify = createVuetify()
 
-const mockRoute = {
-  params: {
-    id: '123'
-  }
-}
-
-vi.mock('vue-router', () => ({
-  useRoute: () => mockRoute
-}))
-
 vi.mock('@/components/FeacnInsertItem_Settings.vue', () => ({
   default: {
     name: 'FeacnInsertItem_Settings',
@@ -29,6 +19,9 @@ describe('FeacnInsertItem_EditView.vue', () => {
 
   beforeEach(() => {
     wrapper = mount(FeacnInsertItem_EditView, {
+      props: {
+        id: 123
+      },
       global: { plugins: [vuetify] }
     })
   })
@@ -40,7 +33,7 @@ describe('FeacnInsertItem_EditView.vue', () => {
 
   it('passes route id to FeacnInsertItem_Settings', () => {
     const comp = wrapper.findComponent(FeacnInsertItem_Settings)
-    expect(comp.props('insertItemId')).toBe('123')
+    expect(comp.props('insertItemId')).toBe(123)
   })
 
   it('renders stub content', () => {

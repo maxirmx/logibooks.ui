@@ -20,11 +20,35 @@ describe('feacn.prefix.store.js', () => {
   let pinia
 
   const mockPrefixes = [
-    { id: 1, code: '0101', intervalCode: '0', description: 'd1', comment: 'c1', exceptions: ['111'] },
-    { id: 2, code: '0202', intervalCode: '0', description: 'd2', comment: 'c2', exceptions: ['222', '333'] }
+    { 
+      id: 1, 
+      code: '0101', 
+      intervalCode: '0', 
+      description: 'd1', 
+      comment: 'c1', 
+      exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }] 
+    },
+    { 
+      id: 2, 
+      code: '0202', 
+      intervalCode: '0', 
+      description: 'd2', 
+      comment: 'c2', 
+      exceptions: [
+        { id: 2, code: '222', feacnPrefixId: 2 }, 
+        { id: 3, code: '333', feacnPrefixId: 2 }
+      ] 
+    }
   ]
 
-  const mockPrefix = { id: 1, code: '0101', intervalCode: '0', description: 'd1', comment: 'c1', exceptions: ['111'] }
+  const mockPrefix = { 
+    id: 1, 
+    code: '0101', 
+    intervalCode: '0', 
+    description: 'd1', 
+    comment: 'c1', 
+    exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }] 
+  }
 
   beforeEach(() => {
     pinia = createPinia()
@@ -102,6 +126,22 @@ describe('feacn.prefix.store.js', () => {
       expect(store.prefix).toEqual({ id: 99, loading: true })
       await promise
       expect(store.prefix).toEqual(mockPrefix)
+    })
+
+    it('handles create DTO format with string exceptions', async () => {
+      const createDto = { code: '0404', exceptions: ['444', '555'] }
+      fetchWrapper.post.mockResolvedValue({})
+      fetchWrapper.get.mockResolvedValue(mockPrefixes)
+      await store.create(createDto)
+      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes', createDto)
+    })
+
+    it('handles update DTO format with string exceptions', async () => {
+      const updateDto = { code: '0505', exceptions: ['666'] }
+      fetchWrapper.put.mockResolvedValue({})
+      fetchWrapper.get.mockResolvedValue(mockPrefixes)
+      await store.update(1, updateDto)
+      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes/1', updateDto)
     })
 
     it('ensureLoaded fetches prefixes when not initialized', async () => {

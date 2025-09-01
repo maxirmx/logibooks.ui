@@ -24,7 +24,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { useRoute } from 'vue-router'
 import KeyWord_Settings from '@/components/KeyWord_Settings.vue'
 
 const props = defineProps({

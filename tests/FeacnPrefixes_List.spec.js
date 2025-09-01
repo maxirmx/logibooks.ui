@@ -8,8 +8,11 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Hoisted mocks
 const getAllPrefixes = vi.hoisted(() => vi.fn())
+const removePrefix = vi.hoisted(() => vi.fn())
 const preloadFeacnInfo = vi.hoisted(() => vi.fn())
 const loadFeacnTooltipOnHover = vi.hoisted(() => vi.fn())
+const mockPush = vi.hoisted(() => vi.fn())
+const mockConfirm = vi.hoisted(() => vi.fn())
 
 const mockPrefixes = ref([
   { id: 1, code: '0101', description: 'd1', exceptions: ['111'] },
@@ -26,7 +29,8 @@ vi.mock('@/stores/feacn.prefix.store.js', () => ({
   useFeacnPrefixesStore: () => ({
     prefixes: mockPrefixes,
     loading: ref(false),
-    getAll: getAllPrefixes
+    getAll: getAllPrefixes,
+    remove: removePrefix
   })
 }))
 
@@ -37,7 +41,8 @@ vi.mock('@/stores/auth.store.js', () => ({
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: ref(null),
-    clear: vi.fn()
+    clear: vi.fn(),
+    error: vi.fn()
   })
 }))
 
@@ -47,13 +52,24 @@ vi.mock('@/helpers/feacn.info.helpers.js', () => ({
   useFeacnTooltips: () => mockFeacnInfo
 }))
 
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => mockConfirm
+}))
+
+vi.mock('@/router', () => ({
+  default: { push: mockPush }
+}))
+
 describe('FeacnPrefixes_List.vue', () => {
   let wrapper
 
   beforeEach(() => {
     getAllPrefixes.mockClear()
+    removePrefix.mockClear()
     preloadFeacnInfo.mockClear()
     loadFeacnTooltipOnHover.mockClear()
+    mockPush.mockClear()
+    mockConfirm.mockClear()
     wrapper = mount(FeacnPrefixesList, { global: { stubs: vuetifyStubs } })
   })
 
@@ -87,15 +103,28 @@ describe('FeacnPrefixes_List.vue', () => {
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('111')
   })
 
-  it('provides stub action handlers', () => {
-    expect(typeof wrapper.vm.openCreateDialog).toBe('function')
-    expect(typeof wrapper.vm.openEditDialog).toBe('function')
-    expect(typeof wrapper.vm.deletePrefix).toBe('function')
+  it('navigates to create view on link click', async () => {
+    const link = wrapper.find('a.link')
+    await link.trigger('click')
+    expect(mockPush).toHaveBeenCalledWith('/feacn/prefix/create')
+  })
 
-    const firstRowButtons = wrapper
-      .findAll('[data-testid="v-data-table"] .v-data-table-row')[0]
-      .findAll('.anti-btn')
-    expect(firstRowButtons.length).toBe(2)
+  it('navigates to edit view via function', async () => {
+    await wrapper.vm.openEditDialog(mockPrefixes.value[0])
+    expect(mockPush).toHaveBeenCalledWith('/feacn/prefix/edit/1')
+  })
+
+  it('removes prefix when confirmed', async () => {
+    mockConfirm.mockResolvedValue(true)
+    await wrapper.vm.deletePrefix(mockPrefixes.value[0])
+    expect(removePrefix).toHaveBeenCalledWith(1)
+  })
+
+  it('does not remove prefix when cancelled', async () => {
+    mockConfirm.mockResolvedValue(false)
+    await wrapper.vm.deletePrefix(mockPrefixes.value[0])
+    expect(removePrefix).not.toHaveBeenCalled()
   })
 })
+
 

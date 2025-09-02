@@ -16,6 +16,7 @@ import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
@@ -38,6 +39,7 @@ const props = defineProps({
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
+const authStore = useAuthStore()
 const statusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
@@ -56,6 +58,9 @@ await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
 await parcelsStore.getById(props.id)
 await parcelViewsStore.add(props.id)
+
+// Set the selected parcel ID in auth store
+authStore.selectedParcelId = props.id
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)

@@ -247,7 +247,7 @@ export function getTnVedCellClass(tnVed, feacnCodes) {
   }
   
   if (!feacnCodes || feacnCodes.length === 0) {
-    return ''
+    return 'tnved-cell orphan'
   }
  
   const isMatched = tnVed && feacnCodes.includes(tnVed)

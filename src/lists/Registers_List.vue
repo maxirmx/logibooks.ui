@@ -128,6 +128,7 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
+
 // Helper functions to get country short names (reactive to countries store changes)
 function getCountryShortName(countryCode) {
   if (!countryCode || !countries?.value) return countryCode
@@ -382,12 +383,9 @@ function formatDate(dateStr) {
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center', width: '280px' },
   { title: 'Номер сделки', key: 'dealNumber', align: 'center' },
-  { title: 'Отправитель', key: 'senderId', align: 'center' },
-  { title: 'Страна отправления', key: 'origCountryCode', align: 'center' },
-  { title: 'Получатель', key: 'recipientId', align: 'center' },
-  { title: 'Страна назначения', key: 'destCountryCode', align: 'center' },
   { title: 'ТСД', key: 'invoice', align: 'center' },
-  { title: 'Процедура', key: 'customsProcedureId', align: 'center' },
+  { title: 'Страны', key: 'countries', align: 'center' },
+  { title: 'Отправитель/Получатель', key: 'senderRecepient', align: 'center' },
   { title: 'Посылки/Места', key: 'parcelsTotal', align: 'center' },
   { title: 'Дата загрузки', key: 'date', align: 'center' }
 ]
@@ -465,37 +463,32 @@ const headers = [
             @click="openParcels" 
           />
         </template>
-        <template #[`item.senderId`]="{ item }">
+        <template #[`item.senderRecepient`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="getCustomerName(item.senderId)" 
             cell-class="truncated-cell clickable-cell edit-register-link" 
             @click="editRegister" 
-          />
+          >
+            <template #default>
+              <span>{{ getCustomerName(item.senderId) }}</span>
+              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
+              <span>{{ getCustomerName(item.recipientId) }}</span>
+            </template>
+          </ClickableCell>
         </template>
-        <template #[`item.recipientId`]="{ item }">
+        <template #[`item.countries`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="getCustomerName(item.recipientId)" 
             cell-class="truncated-cell clickable-cell edit-register-link" 
             @click="editRegister" 
-          />
-        </template>
-        <template #[`item.destCountryCode`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="getCountryShortName(item.destCountryCode)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
-          />
-        </template>
-        <template #[`item.origCountryCode`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="getCountryShortName(item.origCountryCode)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
-          />
+          >
+            <template #default>
+              <span>{{ customsProceduresStore.getName(item.customsProcedureId) }}: </span>
+              <span>{{ getCountryShortName(item.origCountryCode) }}</span>
+              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
+              <span>{{ getCountryShortName(item.destCountryCode) }}</span>
+            </template>
+          </ClickableCell>
         </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 
@@ -511,14 +504,6 @@ const headers = [
             :display-value="formatInvoiceInfo(item)" 
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
-          />
-        </template>
-        <template #[`item.customsProcedureId`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="customsProceduresStore.getName(item.customsProcedureId)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
           />
         </template>
         <template #[`item.parcelsTotal`]="{ item }">
@@ -670,6 +655,10 @@ const headers = [
 .action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.arrow-icon {
+  opacity: 0.8;
 }
 
 .upload-links {

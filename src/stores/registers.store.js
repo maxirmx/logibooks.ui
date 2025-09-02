@@ -4,6 +4,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -237,10 +238,14 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function nextParcel(parcelId) {
+    const authStore = useAuthStore()
+    
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/nextparcel/${parcelId}`)
+      const params = buildParcelsFilterParams(authStore)
+
+      return await fetchWrapper.get(`${baseUrl}/nextparcel/${parcelId}?${params.toString()}`)
     } catch (err) {
       error.value = err
     }
@@ -251,10 +256,14 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function theNextParcel(parcelId) {
+    const authStore = useAuthStore()
+    
     loading.value = true
     error.value = null
     try {
-      return await fetchWrapper.get(`${baseUrl}/the-nextparcel/${parcelId}`)
+      const params = buildParcelsFilterParams(authStore)
+
+      return await fetchWrapper.get(`${baseUrl}/the-nextparcel/${parcelId}?${params.toString()}`)
     } catch (err) {
       error.value = err
     }

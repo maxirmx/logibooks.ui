@@ -566,12 +566,12 @@ describe('Parcels List Helpers', () => {
   describe('getTnVedCellClass', () => {
     it('should return empty string when no feacnCodes provided', () => {
       const result = getTnVedCellClass('123', [])
-      expect(result).toBe('')
+      expect(result).toBe('tnved-cell orphan')
     })
 
     it('should return empty string when feacnCodes is null', () => {
       const result = getTnVedCellClass('123', null)
-      expect(result).toBe('')
+      expect(result).toBe('tnved-cell orphan')
     })
   })
 

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import FeacnPrefix_EditView from '@/views/FeacnPrefix_EditView.vue'
-import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
+import FeacnPrefix_Settings from '@/dialogs/FeacnPrefix_Settings.vue'
 
 const vuetify = createVuetify()
 
-vi.mock('@/components/FeacnPrefix_Settings.vue', () => ({
+vi.mock('@/dialogs/FeacnPrefix_Settings.vue', () => ({
   default: {
     name: 'FeacnPrefix_Settings',
     props: ['mode', 'prefixId'],

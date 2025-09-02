@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import FeacnPrefix_Settings from '@/components/FeacnPrefix_Settings.vue'
+import FeacnPrefix_Settings from '@/dialogs/FeacnPrefix_Settings.vue'
 
 // Stub FieldArrayWithButtons
 vi.mock('@/components/FieldArrayWithButtons.vue', () => ({

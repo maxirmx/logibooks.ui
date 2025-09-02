@@ -27,12 +27,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import KeyWords_View from '@/views/KeyWords_View.vue'
-import KeyWords_List from '@/components/KeyWords_List.vue'
+import KeyWords_List from '@/lists/KeyWords_List.vue'
 
 const vuetify = createVuetify()
 
 // Mock the KeyWords_List component
-vi.mock('@/components/KeyWords_List.vue', () => ({
+vi.mock('@/lists/KeyWords_List.vue', () => ({
   default: {
     name: 'KeyWords_List',
     template: '<div data-test="keywords-list">KeyWords_List Component</div>'

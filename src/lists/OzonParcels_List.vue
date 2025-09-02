@@ -1,29 +1,7 @@
+<script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks frontend application
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
-// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-
-<script setup>
 
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -39,7 +17,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
-import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
+import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
@@ -67,13 +45,13 @@ const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
 const parcelCheckStatusStore = useParcelCheckStatusStore()
-const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
+const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
-
 const alertStore = useAlertStore()
+
 const { alert } = storeToRefs(alertStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
@@ -125,7 +103,7 @@ watch(
 )
 
 // Custom row props function with selection highlighting
-function getRowPropsForWbrParcel(data) {
+function getRowPropsForOzonParcel(data) {
   const baseClass = getRowPropsForParcel(data).class
   const selectedClass = data.item.id === selectedParcelId.value ? 'selected-parcel-row' : ''
   return { class: `${baseClass} ${selectedClass}`.trim() }
@@ -133,7 +111,6 @@ function getRowPropsForWbrParcel(data) {
 
 // Scroll to selected item function
 function scrollToSelectedItem() {
-  console.log('Scrolling to selected item:', selectedParcelId.value)
   if (!selectedParcelId.value || !dataTableRef.value) return
   
   nextTick(() => {
@@ -159,9 +136,9 @@ function scrollToSelectedItem() {
 const registerFileName = ref('')
 const registerDealNumber = ref('')
 const registerLoading = ref(true)
+const runningAction = ref(false)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
-const runningAction = ref(false)
 const registerName = computed(() => {
   if (registerLoading.value) {
     return 'Загрузка реестра...'
@@ -230,7 +207,6 @@ onMounted(async () => {
 
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error('Ошибка при инициализации компонента')
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {
@@ -272,30 +248,25 @@ const headers = computed(() => {
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' },
-
-    // Product Identification & Details - What the order contains
-    { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
-
-    // Physical Properties - Tangible characteristics
-    { title: wbrRegisterColumnTitles.countryCode, sortable: false, key: 'countryCode', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.weightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
-
-    // Financial Information - Pricing and currency
-    { title: wbrRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
-
-    // Recipient Information - Who receives the order
-    { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
-
+    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
+    { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
+    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
+    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' },
     // Status Information - Current state of the order
-    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' }
   ]
 })
 
@@ -309,7 +280,7 @@ async function exportParcelXml(item) {
   runningAction.value = true
   try {
     selectedParcelId.value = item.id
-    const filename = String(item.shk || '').padStart(20, '0')
+    const filename = item.postingNumber
     await exportParcelXmlData(item, parcelsStore, filename)
   } finally {
     runningAction.value = false
@@ -401,14 +372,14 @@ function getGenericTemplateHeaders() {
           v-model:sort-by="parcels_sort_by"
           :headers="headers"
           :items="items"
-          :row-props="getRowPropsForWbrParcel"
+          :row-props="getRowPropsForOzonParcel"
           @click:row="(event, { item }) => { selectedParcelId = item.id }"
           :items-length="totalCount"
           :loading="loading"
           density="compact"
           fixed-header
           hide-default-footer
-          class="elevation-1 single-line-table interlaced-table wbr-parcels-table"
+          class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
           style="min-width: fit-content;"
         >
         <!-- Add tooltip templates for each data field -->
@@ -477,12 +448,13 @@ function getGenericTemplateHeaders() {
             :item="item" 
             :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
             cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" />
+            @click="editParcel" 
+          />
         </template>
 
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать посылку" @click="editParcel" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="runningAction || loading || HasIssues(item.checkStatusId)" />
@@ -547,7 +519,7 @@ function getGenericTemplateHeaders() {
 
     <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Реестр пуст</div>
     <div v-if="loading || isInitializing" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg"></span>
+      <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     </v-card>
     <div v-if="error" class="text-center m-5">
@@ -557,7 +529,6 @@ function getGenericTemplateHeaders() {
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
     </div>
-
   </div>
 </template>
 
@@ -565,4 +536,6 @@ function getGenericTemplateHeaders() {
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
 }
+
 </style>
+

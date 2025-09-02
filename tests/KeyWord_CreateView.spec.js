@@ -27,12 +27,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import KeyWord_CreateView from '@/views/KeyWord_CreateView.vue'
-import KeyWord_Settings from '@/components/KeyWord_Settings.vue'
+import KeyWord_Settings from '@/dialogs/KeyWord_Settings.vue'
 
 const vuetify = createVuetify()
 
 // Mock the KeyWord_Settings component
-vi.mock('@/components/KeyWord_Settings.vue', () => ({
+vi.mock('@/dialogs/KeyWord_Settings.vue', () => ({
   default: {
     name: 'KeyWord_Settings',
     props: ['id'],

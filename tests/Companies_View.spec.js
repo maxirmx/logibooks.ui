@@ -7,7 +7,7 @@ import * as directives from 'vuetify/directives'
 import CompaniesView from '@/views/Companies_View.vue'
 
 // Mock the Companies_List component
-vi.mock('@/components/Companies_List.vue', () => ({
+vi.mock('@/lists/Companies_List.vue', () => ({
   default: {
     name: 'Companies_List',
     template: '<div data-testid="companies-list">Companies List Component</div>'

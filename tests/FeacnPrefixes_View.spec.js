@@ -27,11 +27,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import FeacnPrefixes_View from '@/views/FeacnPrefixes_View.vue'
-import FeacnPrefixes_List from '@/components/FeacnPrefixes_List.vue'
+import FeacnPrefixes_List from '@/lists/FeacnPrefixes_List.vue'
 
 const vuetify = createVuetify()
 
-vi.mock('@/components/FeacnPrefixes_List.vue', () => ({
+vi.mock('@/lists/FeacnPrefixes_List.vue', () => ({
   default: {
     name: 'FeacnPrefixes_List',
     template: '<div data-test="fp-list">FeacnPrefixes_List Component</div>'

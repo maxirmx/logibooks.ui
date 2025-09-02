@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import FeacnOrders_View from '@/views/FeacnOrders_View.vue'
-import FeacnOrders_List from '@/components/FeacnOrders_List.vue'
+import FeacnOrders_List from '@/lists/FeacnOrders_List.vue'
 
 const vuetify = createVuetify()
 
-vi.mock('@/components/FeacnOrders_List.vue', () => ({
+vi.mock('@/lists/FeacnOrders_List.vue', () => ({
   default: {
     name: 'FeacnOrders_List',
     template: '<div data-test="feacn-orders-list">FeacnOrders_List Component</div>'

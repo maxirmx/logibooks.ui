@@ -9,6 +9,30 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn(), downloadFile: vi.fn() }
 }))
 
+vi.mock('@/stores/parcels.store.js', () => ({
+  buildParcelsFilterParams: vi.fn((authStore, additionalParams = {}) => {
+    const params = new URLSearchParams(additionalParams)
+    
+    // Add sorting parameters
+    params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
+    params.append('sortOrder', authStore.parcels_sort_by?.[0]?.order || 'asc')
+    
+    if (authStore.parcels_status !== null && authStore.parcels_status !== undefined) {
+      params.append('statusId', authStore.parcels_status.toString())
+    }
+    
+    if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
+      params.append('checkStatusId', authStore.parcels_check_status.toString())
+    }
+    
+    if (authStore.parcels_tnved) {
+      params.append('tnVed', authStore.parcels_tnved)
+    }
+
+    return params
+  })
+}))
+
 
 vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
@@ -42,7 +66,11 @@ describe('registers store', () => {
     registers_page: 1,
     registers_per_page: 10,
     registers_sort_by: [{ key: 'id', order: 'asc' }],
-    registers_search: ''
+    registers_search: '',
+    parcels_sort_by: [{ key: 'id', order: 'asc' }],
+    parcels_status: null,
+    parcels_check_status: null,
+    parcels_tnved: ''
   }
 
   beforeEach(() => {
@@ -973,13 +1001,68 @@ describe('registers store', () => {
   })
 
   describe('nextParcel method', () => {
-    it('requests next parcel with correct id', async () => {
+    it('requests next parcel with correct id and default parameters', async () => {
       const parcel = { id: 2 }
       fetchWrapper.get.mockResolvedValue(parcel)
       const store = useRegistersStore()
       const result = await store.nextParcel(5)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/5`
+        `${apiUrl}/registers/nextparcel/5?sortBy=id&sortOrder=asc`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('requests next parcel with custom sorting parameters', async () => {
+      const customAuthStore = {
+        ...defaultAuthStore,
+        parcels_sort_by: [{ key: 'tnVed', order: 'desc' }]
+      }
+      useAuthStore.mockReturnValueOnce(customAuthStore)
+      
+      const parcel = { id: 3 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(7)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextparcel/7?sortBy=tnVed&sortOrder=desc`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('requests next parcel with filtering parameters', async () => {
+      const customAuthStore = {
+        ...defaultAuthStore,
+        parcels_status: 1,
+        parcels_check_status: 100,
+        parcels_tnved: '12345678'
+      }
+      useAuthStore.mockReturnValueOnce(customAuthStore)
+      
+      const parcel = { id: 4 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(8)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextparcel/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusId=100&tnVed=12345678`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('requests next parcel with partial filtering parameters', async () => {
+      const customAuthStore = {
+        ...defaultAuthStore,
+        parcels_status: 2,
+        parcels_check_status: null,
+        parcels_tnved: ''
+      }
+      useAuthStore.mockReturnValueOnce(customAuthStore)
+      
+      const parcel = { id: 5 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.nextParcel(9)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextparcel/9?sortBy=id&sortOrder=asc&statusId=2`
       )
       expect(result).toEqual(parcel)
     })
@@ -992,7 +1075,7 @@ describe('registers store', () => {
       expect(result).toBeNull()
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/5`
+        `${apiUrl}/registers/nextparcel/5?sortBy=id&sortOrder=asc`
       )
     })
     
@@ -1039,14 +1122,69 @@ describe('registers store', () => {
   })
 
   describe('theNextParcel method', () => {
-    it('requests the next parcel with correct id and endpoint', async () => {
+    it('requests the next parcel with correct id and default parameters', async () => {
       const parcel = { id: 3, registerId: 1, tnVed: '87654321' }
       fetchWrapper.get.mockResolvedValue(parcel)
       const store = useRegistersStore()
       const result = await store.theNextParcel(5)
       
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/5`
+        `${apiUrl}/registers/the-nextparcel/5?sortBy=id&sortOrder=asc`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('requests the next parcel with custom sorting parameters', async () => {
+      const customAuthStore = {
+        ...defaultAuthStore,
+        parcels_sort_by: [{ key: 'tnVed', order: 'desc' }]
+      }
+      useAuthStore.mockReturnValueOnce(customAuthStore)
+      
+      const parcel = { id: 6 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(10)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/10?sortBy=tnVed&sortOrder=desc`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('requests the next parcel with filtering parameters', async () => {
+      const customAuthStore = {
+        ...defaultAuthStore,
+        parcels_status: 3,
+        parcels_check_status: 200,
+        parcels_tnved: '87654321'
+      }
+      useAuthStore.mockReturnValueOnce(customAuthStore)
+      
+      const parcel = { id: 7 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(11)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/11?sortBy=id&sortOrder=asc&statusId=3&checkStatusId=200&tnVed=87654321`
+      )
+      expect(result).toEqual(parcel)
+    })
+
+    it('requests the next parcel with partial filtering parameters', async () => {
+      const customAuthStore = {
+        ...defaultAuthStore,
+        parcels_status: null,
+        parcels_check_status: 150,
+        parcels_tnved: ''
+      }
+      useAuthStore.mockReturnValueOnce(customAuthStore)
+      
+      const parcel = { id: 8 }
+      fetchWrapper.get.mockResolvedValue(parcel)
+      const store = useRegistersStore()
+      const result = await store.theNextParcel(12)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/the-nextparcel/12?sortBy=id&sortOrder=asc&checkStatusId=150`
       )
       expect(result).toEqual(parcel)
     })
@@ -1060,7 +1198,7 @@ describe('registers store', () => {
       expect(result).toBeNull()
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/5`
+        `${apiUrl}/registers/the-nextparcel/5?sortBy=id&sortOrder=asc`
       )
     })
     
@@ -1134,13 +1272,13 @@ describe('registers store', () => {
       // Test with number
       await store.theNextParcel(123)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/123`
+        `${apiUrl}/registers/the-nextparcel/123?sortBy=id&sortOrder=asc`
       )
       
       // Test with string number
       await store.theNextParcel('456')
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/456`
+        `${apiUrl}/registers/the-nextparcel/456?sortBy=id&sortOrder=asc`
       )
     })
 

@@ -6,6 +6,28 @@ import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/parcels`
 
+export function buildParcelsFilterParams(authStore, additionalParams = {}) {
+  const params = new URLSearchParams(additionalParams)
+  
+  // Add sorting parameters
+  params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
+  params.append('sortOrder', authStore.parcels_sort_by?.[0]?.order || 'asc')
+  
+  if (authStore.parcels_status !== null && authStore.parcels_status !== undefined) {
+    params.append('statusId', authStore.parcels_status.toString())
+  }
+  
+  if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
+    params.append('checkStatusId', authStore.parcels_check_status.toString())
+  }
+  
+  if (authStore.parcels_tnved) {
+    params.append('tnVed', authStore.parcels_tnved)
+  }
+
+  return params
+}
+
 export const useParcelsStore = defineStore('parcels', () => {
   const items = ref([])
   const item = ref({})
@@ -21,25 +43,11 @@ export const useParcelsStore = defineStore('parcels', () => {
     loading.value = true
     error.value = null
     try {
-      const params = new URLSearchParams({
+      const params = buildParcelsFilterParams(authStore, {
         registerId: registerId.toString(),
         page: authStore.parcels_page.toString(),
-        pageSize: authStore.parcels_per_page.toString(),
-        sortBy: authStore.parcels_sort_by?.[0]?.key || 'id',
-        sortOrder: authStore.parcels_sort_by?.[0]?.order || 'asc'
+        pageSize: authStore.parcels_per_page.toString()
       })
-      
-      if (authStore.parcels_status !== null && authStore.parcels_status !== undefined) {
-        params.append('statusId', authStore.parcels_status.toString())
-      }
-      
-      if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
-        params.append('checkStatusId', authStore.parcels_check_status.toString())
-      }
-      
-      if (authStore.parcels_tnved) {
-        params.append('tnVed', authStore.parcels_tnved)
-      }
 
       const response = await fetchWrapper.get(`${baseUrl}?${params.toString()}`)
       items.value = response.items || []

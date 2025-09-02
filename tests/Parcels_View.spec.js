@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 
-vi.mock('@/components/WbrParcels_List.vue', () => ({
+vi.mock('@/lists/WbrParcels_List.vue', () => ({
   default: {
     name: 'WbrParcels_List',
     props: ['register-id'],
@@ -13,7 +13,7 @@ vi.mock('@/components/WbrParcels_List.vue', () => ({
   }
 }))
 
-vi.mock('@/components/OzonParcels_List.vue', () => ({
+vi.mock('@/lists/OzonParcels_List.vue', () => ({
   default: {
     name: 'OzonParcels_List',
     props: ['register-id'],

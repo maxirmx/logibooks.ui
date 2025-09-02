@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import ParcelStatusesList from '@/components/ParcelStatuses_List.vue'
+import ParcelStatusesList from '@/lists/ParcelStatuses_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues

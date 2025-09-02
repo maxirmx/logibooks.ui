@@ -28,7 +28,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import StopWordsList from '@/components/StopWords_List.vue'
+import StopWordsList from '@/lists/StopWords_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues

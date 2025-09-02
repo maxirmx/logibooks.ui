@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import FeacnInsertItem_EditView from '@/views/FeacnInsertItem_EditView.vue'
-import FeacnInsertItem_Settings from '@/components/FeacnInsertItem_Settings.vue'
+import FeacnInsertItem_Settings from '@/dialogs/FeacnInsertItem_Settings.vue'
 
 const vuetify = createVuetify()
 
-vi.mock('@/components/FeacnInsertItem_Settings.vue', () => ({
+vi.mock('@/dialogs/FeacnInsertItem_Settings.vue', () => ({
   default: {
     name: 'FeacnInsertItem_Settings',
     props: ['mode', 'insertItemId'],

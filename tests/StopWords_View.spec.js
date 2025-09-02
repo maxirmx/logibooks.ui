@@ -27,12 +27,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import StopWords_View from '@/views/StopWords_View.vue'
-import StopWords_List from '@/components/StopWords_List.vue'
+import StopWords_List from '@/lists/StopWords_List.vue'
 
 const vuetify = createVuetify()
 
 // Mock the StopWords_List component
-vi.mock('@/components/StopWords_List.vue', () => ({
+vi.mock('@/lists/StopWords_List.vue', () => ({
   default: {
     name: 'StopWords_List',
     template: '<div data-test="stopwords-list">StopWords_List Component</div>'

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import CountriesList from '@/components/Countries_List.vue'
+import CountriesList from '@/lists/Countries_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const mockItems = ref([

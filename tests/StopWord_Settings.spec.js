@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import StopWordSettings from '@/components/StopWord_Settings.vue'
+import StopWordSettings from '@/dialogs/StopWord_Settings.vue'
 import { resolveAll } from './helpers/test-utils'
 
 // Mock data

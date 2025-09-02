@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import FeacnInsertItem_Settings from '@/components/FeacnInsertItem_Settings.vue'
+import FeacnInsertItem_Settings from '@/dialogs/FeacnInsertItem_Settings.vue'
 
 // Stub components
 vi.mock('@/components/FeacnCodeSearch.vue', () => ({

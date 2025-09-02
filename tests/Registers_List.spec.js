@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import RegistersList from '@/components/Registers_List.vue'
+import RegistersList from '@/lists/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { Suspense } from 'vue'
-import ParcelStatusSettings from '@/components/ParcelStatus_Settings.vue'
+import ParcelStatusSettings from '@/dialogs/ParcelStatus_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
 

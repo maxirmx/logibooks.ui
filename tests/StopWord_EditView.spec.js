@@ -27,12 +27,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import StopWord_EditView from '@/views/StopWord_EditView.vue'
-import StopWord_Settings from '@/components/StopWord_Settings.vue'
+import StopWord_Settings from '@/dialogs/StopWord_Settings.vue'
 
 const vuetify = createVuetify()
 
 // Mock the StopWord_Settings component
-vi.mock('@/components/StopWord_Settings.vue', () => ({
+vi.mock('@/dialogs/StopWord_Settings.vue', () => ({
   default: {
     name: 'StopWord_Settings',
     props: ['id'],

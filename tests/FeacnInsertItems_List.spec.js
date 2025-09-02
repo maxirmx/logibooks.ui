@@ -28,7 +28,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import FeacnInsertItemsList from '@/components/FeacnInsertItems_List.vue'
+import FeacnInsertItemsList from '@/lists/FeacnInsertItems_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Hoisted mocks

@@ -5,7 +5,7 @@ import ParcelStatusesView from '@/views/ParcelStatuses_View.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 // Mock the ParcelStatuses_List component
-vi.mock('@/components/ParcelStatuses_List.vue', () => ({
+vi.mock('@/lists/ParcelStatuses_List.vue', () => ({
   default: {
     name: 'ParcelStatusesList',
     template: '<div class="parcel-statuses-list-stub" data-testid="parcel-statuses-list">ParcelStatuses List Component</div>'

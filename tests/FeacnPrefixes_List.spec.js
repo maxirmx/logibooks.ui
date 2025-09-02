@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import FeacnPrefixesList from '@/components/FeacnPrefixes_List.vue'
+import FeacnPrefixesList from '@/lists/FeacnPrefixes_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Hoisted mocks

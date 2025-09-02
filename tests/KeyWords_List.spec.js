@@ -28,7 +28,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import KeyWordsList from '@/components/KeyWords_List.vue'
+import KeyWordsList from '@/lists/KeyWords_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Mock functions at top level to avoid hoisting issues

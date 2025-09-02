@@ -24,7 +24,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
@@ -44,6 +44,7 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { prefixes, loading } = storeToRefs(prefixesStore)
+const runningAction = ref(false)
 const { alert } = storeToRefs(alertStore)
 
 // Shared FEACN info cache
@@ -93,26 +94,32 @@ function openEditDialog(item) {
 }
 
 async function deletePrefix(item) {
-  const confirmed = await confirm({
-    title: 'Подтверждение',
-    confirmationText: 'Удалить',
-    cancellationText: 'Не удалять',
-    dialogProps: {
-      width: '30%',
-      minWidth: '250px'
-    },
-    confirmationButtonProps: {
-      color: 'orange-darken-3'
-    },
-    content: 'Удалить префикс?'
-  })
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Удалить префикс?'
+    })
 
-  if (confirmed) {
-    try {
-      await prefixesStore.remove(item.id)
-    } catch {
-      alertStore.error('Ошибка при удалении префикса')
+    if (confirmed) {
+      try {
+        await prefixesStore.remove(item.id)
+      } catch {
+        alertStore.error('Ошибка при удалении префикса')
+      }
     }
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -190,12 +197,14 @@ defineExpose({
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать префикс"
               @click="openEditDialog"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить префикс"
               @click="deletePrefix"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>

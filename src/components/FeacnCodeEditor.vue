@@ -38,13 +38,24 @@ const parcelsStore = useParcelsStore()
 const formValues = useFormValues()
 
 const searchActive = ref(false)
+const tnVedClassValue = ref('')
 
 // Computed property that reacts to current form values
 const tnVedClass = computed(() => {
-  const currentTnVed = formValues.value.tnVed || props.item?.tnVed
-  const feacnCodes = getFeacnCodesForKeywords(props.item?.keyWordIds, keyWordsStore)
-  return getTnVedCellClass(currentTnVed, feacnCodes)
+  return tnVedClassValue.value
 })
+
+// Watch for changes and update class asynchronously
+watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.keyWordIds], async () => {
+  try {
+    const currentTnVed = formValues.value.tnVed || props.item?.tnVed
+    const feacnCodes = getFeacnCodesForKeywords(props.item?.keyWordIds, keyWordsStore)
+    tnVedClassValue.value = await getTnVedCellClass(currentTnVed, feacnCodes)
+  } catch (error) {
+    console.error('Error getting TN VED cell class:', error)
+    tnVedClassValue.value = ''
+  }
+}, { immediate: true })
 
 function toggleSearch() {
   searchActive.value = !searchActive.value

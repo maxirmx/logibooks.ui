@@ -17,6 +17,7 @@ const { alert } = storeToRefs(alertStore)
 const fileInput = ref(null)
 const treeRef = ref(null)
 const uploading = ref(false)
+const treeKey = ref(0) // Add key for forcing re-render
 
 function openFileDialog() {
   fileInput.value?.click()
@@ -29,10 +30,7 @@ async function fileSelected(file) {
   
   try {
     await store.upload(file)
-    // Refresh the tree to show updated data
-    if (treeRef.value && treeRef.value.loadChildren) {
-      await treeRef.value.loadChildren()
-    }
+    treeKey.value += 1
   } catch (error) {
     alertStore.error('Ошибка при загрузке файла: ' + (error.message || 'Неизвестная ошибка'))
   } finally {
@@ -65,7 +63,12 @@ async function fileSelected(file) {
     </div>
 
     <div class="tree-container" :class="{ 'disabled': uploading }">
-      <FeacnCodesTree ref="treeRef" class="tree-wrapper" :disabled="uploading" />
+      <FeacnCodesTree 
+        ref="treeRef" 
+        :key="treeKey"
+        class="tree-wrapper" 
+        :disabled="uploading" 
+      />
       <div v-if="uploading" class="loading-overlay">
         <div class="loading-content">
           <font-awesome-icon icon="fa-solid fa-spinner" spin size="2x" />

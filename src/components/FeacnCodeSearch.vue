@@ -7,7 +7,7 @@ import { ref, nextTick } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { formatFeacnName, formatFeacnNameFromItem } from '@/helpers/feacn.info.helpers.js'
+import { formatFeacnNameFromItem } from '@/helpers/feacn.info.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
@@ -42,7 +42,7 @@ async function performSearch() {
     // Process items in parallel using Promise.all
     const formatted = await Promise.all((items || []).map(async item => {
       // Call formatFeacnName for test compatibility
-      await formatFeacnName(item.code)
+      // await formatFeacnName(item.code)
       
       return {
         ...item,

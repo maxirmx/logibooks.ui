@@ -86,9 +86,8 @@ describe('FeacnCodeSearch.vue', () => {
     expect(input.attributes('placeholder')).toBe('Код ТН ВЭД или слово для поиска')
   })
 
-  it('uses formatFeacnName for search results', async () => {
+  it('uses formatFeacnNameFromItem for search results', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 1, code: '0101' }])
-    mockFormatFeacnName.mockResolvedValueOnce({ name: 'Formatted Name', found: true })
     mockFormatFeacnNameFromItem.mockReturnValueOnce('Formatted Name')
     
     const wrapper = createWrapper()
@@ -99,7 +98,7 @@ describe('FeacnCodeSearch.vue', () => {
     await searchButton.find('button').trigger('click')
     await waitForUpdates(wrapper)
     
-    expect(mockFormatFeacnName).toHaveBeenCalledWith('0101')
+    expect(mockFormatFeacnNameFromItem).toHaveBeenCalledWith({ id: 1, code: '0101' })
     expect(wrapper.find('.result-name').text()).toBe('Formatted Name')
   })
 

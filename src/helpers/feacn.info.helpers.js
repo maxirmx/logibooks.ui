@@ -270,7 +270,7 @@ export async function preloadFeacnInfo(codes) {
     // For other errors, fallback to individual loading
     try {
       await Promise.all(codesToLoad.map(code => getFeacnInfo(code, false)))
-    } catch {
+    } catch  {
       // If individual loading also fails, mark codes as not checked
       for (const code of codesToLoad) {
         globalFeacnInfo.value[code] = {

@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 
@@ -15,11 +15,21 @@ const componentProps = defineProps({
 const emit = defineEmits(['click'])
 
 const feacnTooltips = useFeacnTooltips()
+const tnvedClass = ref('feacn-code-tooltip')
 
 const cellClass = computed(() => {
-  const tnvedClass =  getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
-  return tnvedClass ? `truncated-cell ${tnvedClass}` : 'truncated-cell feacn-code-tooltip'
+  return tnvedClass.value ? `truncated-cell ${tnvedClass.value}` : 'truncated-cell feacn-code-tooltip'
 })
+
+// Watch for changes and update class asynchronously
+watch([() => componentProps.item.tnVed, () => componentProps.feacnCodes], async () => {
+  try {
+    tnvedClass.value = await getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
+  } catch (error) {
+    console.error('Error getting TN VED cell class:', error)
+    tnvedClass.value = 'feacn-code-tooltip'
+  }
+}, { immediate: true })
 
 function handleMouseEnter() {
   if (componentProps.item.tnVed) {

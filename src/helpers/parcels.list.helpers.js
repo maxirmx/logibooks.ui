@@ -235,21 +235,28 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
  * Helper function to get CSS class for TN VED cell based on FEACN codes
  * @param {string} tnVed - The current TN VED code
  * @param {Array<string>} feacnCodes - Array of FEACN codes
- * @returns {string} CSS class name
+ * @returns {Promise<string>} CSS class name
  */
-export function getTnVedCellClass(tnVed, feacnCodes) {
+export async function getTnVedCellClass(tnVed, feacnCodes) {
   // Check if tnVed code was not found in globalFeacnInfo
   if (tnVed) {
-    const cachedInfo = getCachedFeacnInfo(tnVed)
-    if (cachedInfo && cachedInfo.found === false) {
+    let cachedInfo = getCachedFeacnInfo(tnVed)
+
+    // If not found in cache, load it first
+    if (cachedInfo == null) {
+      await preloadFeacnInfo([tnVed])
+      cachedInfo = getCachedFeacnInfo(tnVed)
+    }
+
+    if (!cachedInfo || cachedInfo.found === false) {
       return 'tnved-cell not-exists'
     }
   }
-  
+ 
   if (!feacnCodes || feacnCodes.length === 0) {
     return 'tnved-cell orphan'
   }
- 
+  
   const isMatched = tnVed && feacnCodes.includes(tnVed)
   return isMatched ? 'tnved-cell matched' : 'tnved-cell unmatched'
 }

@@ -3,8 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks frontend application
 
-import { ref, watch, onUnmounted } from 'vue'
-import { Field } from 'vee-validate'
+import { ref, watch, computed, onUnmounted } from 'vue'
+import { Field, useFormValues } from 'vee-validate'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
@@ -34,7 +34,28 @@ const emit = defineEmits(['update:item', 'overlay-state-changed'])
 const keyWordsStore = useKeyWordsStore()
 const parcelsStore = useParcelsStore()
 
+// Get current form values
+const formValues = useFormValues()
+
 const searchActive = ref(false)
+const tnVedClassValue = ref('')
+
+// Computed property that reacts to current form values
+const tnVedClass = computed(() => {
+  return tnVedClassValue.value
+})
+
+// Watch for changes and update class asynchronously
+watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.keyWordIds], async () => {
+  try {
+    const currentTnVed = formValues.value.tnVed || props.item?.tnVed
+    const feacnCodes = getFeacnCodesForKeywords(props.item?.keyWordIds, keyWordsStore)
+    tnVedClassValue.value = await getTnVedCellClass(currentTnVed, feacnCodes)
+  } catch (error) {
+    console.error('Error getting TN VED cell class:', error)
+    tnVedClassValue.value = ''
+  }
+}, { immediate: true })
 
 function toggleSearch() {
   searchActive.value = !searchActive.value
@@ -103,6 +124,7 @@ async function handleCodeSelect(code) {
   await selectFeacnCode(code)
   searchActive.value = false
 }
+
 </script>
 
 <template>
@@ -110,30 +132,30 @@ async function handleCodeSelect(code) {
   <div class="form-section">
     <div class="form-row">
         <div class="form-group feacn-search-wrapper">
-          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', columnTitles, columnTooltips)" @dblclick="toggleSearch">{{ columnTitles.tnVed }}:</label>
+          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', props.columnTitles, props.columnTooltips)" @dblclick="toggleSearch">{{ props.columnTitles.tnVed }}:</label>
           <Field name="tnVed" id="tnVed" class="form-control input"
                  :readonly="searchActive"
                  :class="{
-                   'is-invalid': errors && errors.tnVed,
-                   [getTnVedCellClass(values.tnVed || item?.tnVed, getFeacnCodesForKeywords(item?.keyWordIds, keyWordsStore))]: true
+                   'is-invalid': props.errors && props.errors.tnVed,
+                   [tnVedClass]: true
                  }"
                  @dblclick="toggleSearch"
           />
           <div class="action-buttons">
             <ActionButton
-              :item="item"
+              :item="props.item"
               :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
               :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
               class="button-o-c"
-              :disabled="isSubmitting"
+              :disabled="props.isSubmitting"
               @click="toggleSearch"
               :iconSize="'2x'"
             />
             <ActionButton
-              :item="item"
+              :item="props.item"
               icon="fa-solid fa-magnifying-glass"
               tooltip-text="Сохранить и подобрать код"
-              :disabled="isSubmitting || searchActive"
+              :disabled="props.isSubmitting || searchActive"
               @click="lookupFeacnCodes"
               :iconSize="'2x'"
             />
@@ -145,7 +167,7 @@ async function handleCodeSelect(code) {
           />
         </div>
       <FeacnCodeSelectorW
-        :item="item"
+        :item="props.item"
         :onSelect="selectFeacnCode"
       />
     </div>

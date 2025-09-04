@@ -134,7 +134,7 @@ function isLeafNode(node) {
 .node-code {
   position: absolute;
   left: 0;
-  width: 130px; /* Adjust this width based on your codeEx length */
+  width: 160px; /* Adjust this width based on your codeEx length */
   padding-left: 8px;
   padding-right: 8px;
   font-family: 'Courier New', monospace;
@@ -159,7 +159,7 @@ function isLeafNode(node) {
 }
 
 .node-content {
-  margin-left: 30px; 
+  margin-left: 50px; 
   display: flex;
   align-items: center;
   padding: 0;
@@ -237,6 +237,6 @@ function isLeafNode(node) {
   padding-left: 1.5rem;
   margin: 0;
   border-left: 2px solid #d0d0d0;
-  margin-left: calc(30px + 0.5em); 
+  margin-left: calc(50px + 0.5em); 
 }
 </style>

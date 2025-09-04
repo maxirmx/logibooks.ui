@@ -564,13 +564,23 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('getTnVedCellClass', () => {
-    it('should return empty string when no feacnCodes provided', () => {
-      const result = getTnVedCellClass('123', [])
+    it('should return not-exists when tnVed is provided but not found, even with empty feacnCodes', async () => {
+      const result = await getTnVedCellClass('123', [])
+      expect(result).toBe('tnved-cell not-exists')
+    })
+
+    it('should return not-exists when tnVed is provided but not found, even with null feacnCodes', async () => {
+      const result = await getTnVedCellClass('123', null)
+      expect(result).toBe('tnved-cell not-exists')
+    })
+
+    it('should return orphan when no tnVed is provided and feacnCodes is empty', async () => {
+      const result = await getTnVedCellClass('', [])
       expect(result).toBe('tnved-cell orphan')
     })
 
-    it('should return empty string when feacnCodes is null', () => {
-      const result = getTnVedCellClass('123', null)
+    it('should return orphan when no tnVed is provided and feacnCodes is null', async () => {
+      const result = await getTnVedCellClass(null, null)
       expect(result).toBe('tnved-cell orphan')
     })
   })

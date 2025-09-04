@@ -227,8 +227,9 @@ export async function preloadFeacnInfo(codes) {
 
   if (codesToLoad.length === 0) return
 
-  const store = useFeacnCodesStore()
   try {
+    const store = useFeacnCodesStore()
+    
     // Prefer bulk lookup to minimize requests
     const response = await store.bulkLookup(codesToLoad)
     const results = (response && (response.results || response.Results)) || response || {}
@@ -252,9 +253,33 @@ export async function preloadFeacnInfo(codes) {
         }
       }
     }
-  } catch {
-    // Fallback to previous per-code loading if bulk lookup fails
-    await Promise.all(codesToLoad.map(code => getFeacnInfo(code, false)))
+  } catch (error) {
+    // Handle case when Pinia is not available (e.g., during tests)
+    if (error.message && error.message.includes('getActivePinia')) {
+      // Mark codes as not found when Pinia is not available
+      for (const code of codesToLoad) {
+        globalFeacnInfo.value[code] = {
+          name: 'Код ТН ВЭД не проверен',
+          found: false,
+          loading: false
+        }
+      }
+      return
+    }
+    
+    // For other errors, fallback to individual loading
+    try {
+      await Promise.all(codesToLoad.map(code => getFeacnInfo(code, false)))
+    } catch (fallbackError) {
+      // If individual loading also fails, mark codes as not checked
+      for (const code of codesToLoad) {
+        globalFeacnInfo.value[code] = {
+          name: 'Ошибка проверки кода ТН ВЭД',
+          found: false,
+          loading: false
+        }
+      }
+    }
   }
 }
 

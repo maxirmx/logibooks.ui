@@ -134,7 +134,7 @@ function isLeafNode(node) {
 .node-code {
   position: absolute;
   left: 0;
-  width: 130px; /* Adjust this width based on your codeEx length */
+  width: 135px; /* Adjust this width based on your codeEx length */
   padding-left: 8px;
   padding-right: 8px;
   font-family: 'Courier New', monospace;

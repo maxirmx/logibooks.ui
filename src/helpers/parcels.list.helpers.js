@@ -238,16 +238,24 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
  * @returns {string} CSS class name
  */
 export function getTnVedCellClass(tnVed, feacnCodes) {
-  // Check if tnVed code was not found in globalFeacnInfo
-  if (tnVed) {
-    const cachedInfo = getCachedFeacnInfo(tnVed)
-    if (cachedInfo && cachedInfo.found === false) {
-      return 'tnved-cell not-exists'
-    }
-  }
-  
+  // First check if feacnCodes is empty or null
   if (!feacnCodes || feacnCodes.length === 0) {
     return 'tnved-cell orphan'
+  }
+  
+  // Check if tnVed code was not found in globalFeacnInfo
+  if (tnVed) {
+    let cachedInfo = getCachedFeacnInfo(tnVed)
+
+    // If not found in cache, load it first
+    if (cachedInfo == null) {
+      preloadFeacnInfo([tnVed])
+      cachedInfo = getCachedFeacnInfo(tnVed)
+    }
+
+    if (!cachedInfo || cachedInfo.found === false) {
+      return 'tnved-cell not-exists'
+    }
   }
  
   const isMatched = tnVed && feacnCodes.includes(tnVed)

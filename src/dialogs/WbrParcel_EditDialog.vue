@@ -122,6 +122,9 @@ async function validateParcel(values, sw) {
   if (runningAction.value) return
   runningAction.value = true
   try {
+    // Wait for both next parcel promises to complete before calling helper
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    
     await validateParcelData(values, item, parcelsStore, sw)
   } finally {
     runningAction.value = false
@@ -133,6 +136,9 @@ async function approveParcel(values) {
   if (runningAction.value) return
   runningAction.value = true
   try {
+    // Wait for both next parcel promises to complete before calling helper
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    
     await approveParcelHelper(values, item, parcelsStore)
   } finally {
     runningAction.value = false
@@ -144,6 +150,9 @@ async function approveParcelWithExcise(values) {
   if (runningAction.value) return
   runningAction.value = true
   try {
+    // Wait for both next parcel promises to complete before calling helper
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    
     await approveParcelWithExciseHelper(values, item, parcelsStore)
   } finally {
     runningAction.value = false
@@ -189,6 +198,9 @@ function onSave(values) {
 // Save current parcel and navigate to the previous one if available
 async function onBack(values) {
   try {
+    // Wait for both next parcel promises to complete before processing
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    
     await parcelsStore.update(props.id, values)
     const prevParcel = await parcelViewsStore.back()
 
@@ -211,6 +223,9 @@ async function generateXml(values) {
   if (runningAction.value) return
   runningAction.value = true
   try {
+    // Wait for both next parcel promises to complete before calling helper
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    
     await generateXmlHelper(values, item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
   } finally {
     runningAction.value = false

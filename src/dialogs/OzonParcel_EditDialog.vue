@@ -26,7 +26,7 @@ import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import { 
-  validateParcel as validateParcelHelper, 
+  validateParcelData, 
   approveParcel as approveParcelHelper, 
   approveParcelWithExcise as approveParcelWithExciseHelper,
   generateXml as generateXmlHelper 
@@ -91,13 +91,8 @@ const schema = Yup.object().shape({
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
 
-async function validateParcel(values) {
-  await validateParcelHelper({
-    values,
-    item,
-    parcelId: props.id,
-    parcelsStore
-  })
+async function validateParcel(values, sw) {
+  await validateParcelData(values, item, props.id, parcelsStore, sw)
 }
 
 async function approveParcel(values) {
@@ -193,7 +188,7 @@ async function generateXml(values) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-arrow-right" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Следующая посылка"
           :disabled="isSubmitting"
           @click="onSubmit(values, true)"
@@ -201,7 +196,7 @@ async function generateXml(values) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-play" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Следующая проблема"
           :disabled="isSubmitting"
           @click="onSubmit(values, false)"
@@ -209,7 +204,7 @@ async function generateXml(values) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-arrow-left" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Назад"
           :disabled="isSubmitting"
           @click="onBack(values)"
@@ -217,7 +212,7 @@ async function generateXml(values) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-check-double" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Сохранить"
           :disabled="isSubmitting"
           @click="onSave(values)"
@@ -225,7 +220,7 @@ async function generateXml(values) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-xmark" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Отменить"
           :disabled="isSubmitting"
           @click="router.push(`/registers/${props.registerId}/parcels`)"
@@ -233,7 +228,7 @@ async function generateXml(values) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-file-export" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="XML накладная"
           :disabled="isSubmitting || HasIssues(item?.checkStatusId)"
           @click="generateXml(values)"
@@ -260,11 +255,19 @@ async function generateXml(values) {
             <div class="action-buttons">
               <ActionButton
                 :item="item"
-                icon="fa-solid fa-clipboard-check"
-                tooltip-text="Сохранить и проверить"
+                icon="fa-solid fa-spell-check"
+                tooltip-text="Сохранить и проверить стоп-слова"
                 :disabled="isSubmitting"
-                @click="() => validateParcel(values)"
-                :iconSize="'2x'"
+                @click="() => validateParcel(values, true)"
+                :iconSize="'1x'"
+              />
+              <ActionButton
+                :item="item"
+                icon="fa-solid fa-anchor-circle-check"
+                tooltip-text="Сохранить и проверить коды ТН ВЭД"
+                :disabled="isSubmitting"
+                @click="() => validateParcel(values, false)"
+                :iconSize="'1x'"
               />
               <ActionButton
                 :item="item"
@@ -273,7 +276,7 @@ async function generateXml(values) {
                 :disabled="isSubmitting"
                 @click="() => approveParcel(values)"
                 variant="green"
-                :iconSize="'2x'"
+                :iconSize="'1x'"
               />
               <ActionButton
                 :item="item"
@@ -282,7 +285,7 @@ async function generateXml(values) {
                 :disabled="isSubmitting"
                 @click="() => approveParcelWithExcise(values)"
                 variant="orange"
-                :iconSize="'2x'"
+                :iconSize="'1x'"
               />
             </div>
           </div>

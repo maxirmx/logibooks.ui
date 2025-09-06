@@ -23,6 +23,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { useAlertStore } from '@/stores/alert.store.js'
+
 /**
  * Validates a parcel with current form values
  * @param {Object} params - Parameters object
@@ -30,18 +32,22 @@
  * @param {Object} params.item - Current parcel item ref
  * @param {number} params.parcelId - Parcel ID for reloading
  * @param {Object} params.parcelsStore - Parcels store instance
+ * @param {boolean} sw - Whether to validate against Stopwords (true) or FEACN (false)
  * @returns {Promise<void>}
  */
-export async function validateParcel({ values, item, parcelId, parcelsStore }) {
+export async function validateParcelData(values, item, parcelId, parcelsStore, sw) {
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
     // Then validate the parcel
-    await parcelsStore.validate(item.value.id)
+    await parcelsStore.validate(item.value.id, sw)
     // Optionally reload the order data to reflect any changes
-    await parcelsStore.getById(parcelId)
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке посылки'
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
+  } finally {
+    await parcelsStore.getById(parcelId)
   }
 }
 
@@ -55,19 +61,22 @@ export async function validateParcel({ values, item, parcelId, parcelsStore }) {
  * @param {boolean} params.withExcise - Whether to approve with excise (default: false)
  * @returns {Promise<void>}
  */
-export async function approveParcel({ values, item, parcelId, parcelsStore, withExcise = false }) {
+export async function approveParcel(values, item, parcelId, parcelsStore, withExcise = false) {
   try {
     // First update the parcel with current form values
     await parcelsStore.update(parcelId, values)
     // Then approve the parcel
     await parcelsStore.approve(item.value.id, withExcise)
     // Reload the order data to reflect any changes
-    await parcelsStore.getById(parcelId)
   } catch (error) {
     const errorMessage = withExcise 
       ? 'Ошибка при согласовании посылки с акцизом'
       : 'Ошибка при согласовании посылки'
     parcelsStore.error = error?.response?.data?.message || errorMessage
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
+  } finally {
+    await parcelsStore.getById(parcelId)
   }
 }
 
@@ -80,7 +89,7 @@ export async function approveParcel({ values, item, parcelId, parcelsStore, with
  * @param {string|Function} params.filenameOrGenerator - Either a filename string or a function that returns filename
  * @returns {Promise<void>}
  */
-export async function generateXml({ values, item, parcelsStore, filenameOrGenerator }) {
+export async function generateXml(values, item, parcelsStore, filenameOrGenerator) {
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
@@ -97,6 +106,8 @@ export async function generateXml({ values, item, parcelsStore, filenameOrGenera
     await parcelsStore.generate(item.value.id, filename)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
   }
 }
 

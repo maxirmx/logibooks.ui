@@ -64,9 +64,9 @@ describe('ActionButton', () => {
     })
 
     it('applies custom icon size', () => {
-      const wrapper = createWrapper({ iconSize: '2x' })
+      const wrapper = createWrapper({ iconSize: '1x' })
       const fontAwesome = wrapper.findComponent({ name: 'FontAwesomeIcon' })
-      expect(fontAwesome.props('size')).toBe('2x')
+      expect(fontAwesome.props('size')).toBe('1x')
     })
 
     it('renders with tooltip', () => {

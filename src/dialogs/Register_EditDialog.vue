@@ -245,7 +245,7 @@ function getCustomerName(customerId) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-check-double" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Сохранить"
           :disabled="isSubmitting"
           @click="onSubmit(values)"
@@ -253,7 +253,7 @@ function getCustomerName(customerId) {
         <ActionButton 
           :item="{}" 
           icon="fa-solid fa-xmark" 
-          :iconSize="'3x'"
+          :iconSize="'2x'"
           tooltip-text="Отменить"
           :disabled="isSubmitting"
           @click="router.push(`/registers`)"

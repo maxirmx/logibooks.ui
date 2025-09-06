@@ -149,7 +149,7 @@ async function handleCodeSelect(code) {
               class="button-o-c"
               :disabled="props.isSubmitting"
               @click="toggleSearch"
-              :iconSize="'2x'"
+              :iconSize="'1x'"
             />
             <ActionButton
               :item="props.item"
@@ -157,7 +157,7 @@ async function handleCodeSelect(code) {
               tooltip-text="Сохранить и подобрать код"
               :disabled="props.isSubmitting || searchActive"
               @click="lookupFeacnCodes"
-              :iconSize="'2x'"
+              :iconSize="'1x'"
             />
           </div>
           <FeacnCodeSearch

@@ -242,25 +242,57 @@ describe('parcels store', () => {
 
   })
 
-  describe('validate method', () => {
-    it('calls validate endpoint with correct id', async () => {
+  describe('validateSw method', () => {
+    it('calls validate-sw endpoint with correct id', async () => {
       fetchWrapper.post.mockResolvedValue(undefined) // 204 No Content
 
       const store = useParcelsStore()
-      const result = await store.validate(789)
+      const result = await store.validate(789, true)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw`)
       expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(null)
     })
 
-    it('throws error when validate fails', async () => {
+    it('returns false and sets error when validateSw fails', async () => {
       const error = new Error('Validation failed')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useParcelsStore()
+      const result = await store.validate(789, true)
 
-      await expect(store.validate(789)).rejects.toThrow('Validation failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw`)
+      expect(result).toBe(false)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(error)
+    })
+  })
+
+  describe('validateFc method', () => {
+    it('calls validate-fc endpoint with correct id', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined) // 204 No Content
+
+      const store = useParcelsStore()
+      const result = await store.validate(123, false)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/validate-fc`)
+      expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(null)
+    })
+
+    it('returns false and sets error when validateFc fails', async () => {
+      const error = new Error('Validation failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+      const result = await store.validate(123, false)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/validate-fc`)
+      expect(result).toBe(false)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(error)
     })
   })
 

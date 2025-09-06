@@ -110,9 +110,23 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function validate(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/validate`)
-    return true
+  async function validate(id, sw) {
+    loading.value = true
+    error.value = null
+    try {
+      if (sw) {
+        await fetchWrapper.post(`${baseUrl}/${id}/validate-sw`)
+      }
+      else {
+        await fetchWrapper.post(`${baseUrl}/${id}/validate-fc`)
+      }
+      return true
+    } catch (err) {
+      error.value = err
+      return false
+    } finally {
+      loading.value = false
+    }
   }
 
   async function approve(id, withExcise = false) {

@@ -30,6 +30,8 @@
 import { HasIssues } from '@/helpers/parcels.check.helpers.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 
+import { useAlertStore } from '@/stores/alert.store.js'
+
 /**
  * Navigates to edit parcel page
  * @param {Object} router - Vue router instance
@@ -51,18 +53,26 @@ export function navigateToEditParcel(router, item, routeName, queryParams = {}) 
 }
 
 /**
- * Validates a parcel - handles platform-specific validation
+ * Validates a parcel against Stopwords or FEACN codes
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Function} loadOrdersFn - Function to reload orders
+ * @param {boolean} sw - Whether to validate against Stopwords (true) or FEACN (false)
  * @returns {Promise<void>}
  */
-export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
+export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
   try {
-    await parcelsStore.validate(item.id)
-    loadOrdersFn()
+    if (sw) {
+      await parcelsStore.validateSw(item.id)
+    } else {
+      await parcelsStore.validateFc(item.id)
+    }
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
+  } finally {
+    loadOrdersFn()
   }
 }
 
@@ -77,12 +87,15 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
 export async function approveParcelData(item, parcelsStore, loadOrdersFn, withExcise = false) {
   try {
     await parcelsStore.approve(item.id, withExcise)
-    loadOrdersFn()
   } catch (error) {
     const errorMessage = withExcise 
       ? 'Ошибка при согласовании посылки с акцизом'
       : 'Ошибка при согласовании посылки'
     parcelsStore.error = error?.response?.data?.message || errorMessage
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
+  } finally {
+    loadOrdersFn()
   }
 }
 
@@ -138,6 +151,8 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
     await parcelsStore.generate(item.id, filename)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
   }
 }
 
@@ -151,12 +166,15 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
 export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
   try {
     await parcelsStore.lookupFeacnCode(item.id)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
+  }
+  finally {
     if (loadOrdersFn) {
       loadOrdersFn()
     }
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-
   }
 }
 
@@ -273,11 +291,15 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
   try {
     const updatedItem = { ...item, tnVed: feacnCode }
     await parcelsStore.update(item.id, updatedItem)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
+    const alertStore = useAlertStore()
+    alertStore.error = parcelsStore.error
+  }
+  finally {
     if (loadOrdersFn) {
       loadOrdersFn()
     }
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }
 

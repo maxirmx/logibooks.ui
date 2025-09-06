@@ -287,12 +287,23 @@ async function exportParcelXml(item) {
   }
 }
 
-async function validateParcel(item) {
+async function validateParcelSw(item) {
   if (runningAction.value) return
   runningAction.value = true
   try {
     selectedParcelId.value = item.id
-    await validateParcelData(item, parcelsStore, loadOrdersWrapper)
+    await validateParcelData(item, parcelsStore, loadOrdersWrapper, true)
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function validateParcelFc(item) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    selectedParcelId.value = item.id
+    await validateParcelData(item, parcelsStore, loadOrdersWrapper, false)
   } finally {
     runningAction.value = false
   }
@@ -455,7 +466,8 @@ function getGenericTemplateHeaders() {
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить посылку" @click="validateParcel" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-spell-check" tooltip-text="Проверить по стоп-словам" @click="validateParcelSw" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-anchor-status-check" tooltip-text="Проверить по кодам ТН ВЭД" @click="validateParcelFc" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="runningAction || loading || HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" :disabled="runningAction || loading" />

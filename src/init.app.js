@@ -60,7 +60,9 @@ import {
   faArrowLeft,
   faArrowRight,
   faMagnifyingGlass,
-  faSpinner
+  faSpinner,
+  faSpellCheck,
+  faAnchorCircleCheck
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -93,7 +95,9 @@ library.add(
   faArrowLeft,
   faArrowRight,
   faMagnifyingGlass,
-  faSpinner
+  faSpinner,
+  faSpellCheck,
+  faAnchorCircleCheck
 )
 
 import 'vuetify/styles'

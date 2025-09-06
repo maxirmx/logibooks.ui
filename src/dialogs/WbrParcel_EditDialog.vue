@@ -17,6 +17,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
@@ -59,6 +60,9 @@ await countriesStore.ensureLoaded()
 await parcelsStore.getById(props.id)
 await parcelViewsStore.add(props.id)
 
+const alertStore = useAlertStore()
+const { alert } = storeToRefs(alertStore)
+
 // Set the selected parcel ID in auth store
 authStore.selectedParcelId = props.id
 
@@ -67,6 +71,10 @@ const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
+
+// Track loading state from store and running actions
+const { loading } = storeToRefs(parcelsStore)
+const runningAction = ref(false)
 
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
@@ -95,17 +103,35 @@ const schema = Yup.object().shape({
 
 
 async function validateParcel(values, sw) {
-  await validateParcelData(values, item, parcelsStore, sw)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await validateParcelData(values, item, parcelsStore, sw)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 // Approve the parcel
 async function approveParcel(values) {
-  await approveParcelHelper(values, item, parcelsStore)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await approveParcelHelper(values, item, parcelsStore)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values) {
-  await approveParcelWithExciseHelper( values, item, parcelsStore)
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await approveParcelWithExciseHelper(values, item, parcelsStore)
+  } finally {
+    runningAction.value = false
+  }
 }
 
 // Handle saving and moving to the next parcel
@@ -161,7 +187,13 @@ async function onBack(values) {
 
 // Generate XML for this parcel
 async function generateXml(values) {
-  await generateXmlHelper(values, item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await generateXmlHelper(values, item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
+  } finally {
+    runningAction.value = false
+  }
 }
 
 </script>
@@ -180,7 +212,7 @@ async function generateXml(values) {
           icon="fa-solid fa-arrow-right" 
           :iconSize="'2x'"
           tooltip-text="Следующая посылка"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || runningAction || loading"
           @click="onSubmit(values, true)"
         />
         <ActionButton 
@@ -188,7 +220,7 @@ async function generateXml(values) {
           icon="fa-solid fa-play" 
           :iconSize="'2x'"
           tooltip-text="Следующая проблема"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || runningAction || loading"
           @click="onSubmit(values, false)"
         />
         <ActionButton 
@@ -196,7 +228,7 @@ async function generateXml(values) {
           icon="fa-solid fa-arrow-left" 
           :iconSize="'2x'"
           tooltip-text="Назад"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || runningAction || loading"
           @click="onBack(values)"
         />
         <ActionButton 
@@ -204,7 +236,7 @@ async function generateXml(values) {
           icon="fa-solid fa-check-double" 
           :iconSize="'2x'"
           tooltip-text="Сохранить"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || runningAction || loading"
           @click="onSave(values)"
         />
         <ActionButton 
@@ -212,7 +244,7 @@ async function generateXml(values) {
           icon="fa-solid fa-xmark" 
           :iconSize="'2x'"
           tooltip-text="Отменить"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || runningAction || loading"
           @click="router.push(`/registers/${props.registerId}/parcels`)"
         />
         <ActionButton 
@@ -220,7 +252,7 @@ async function generateXml(values) {
           icon="fa-solid fa-file-export" 
           :iconSize="'2x'"
           tooltip-text="XML накладная"
-          :disabled="isSubmitting || HasIssues(item?.checkStatusId)"
+          :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId)"
           @click="generateXml(values)"
         />
       </div>
@@ -248,7 +280,7 @@ async function generateXml(values) {
                 :item="item"
                 icon="fa-solid fa-spell-check"
                 tooltip-text="Сохранить и проверить стоп-слова"
-                :disabled="isSubmitting"
+                :disabled="isSubmitting || runningAction || loading"
                 @click="() => validateParcel(values, true)"
                 :iconSize="'1x'"
               />
@@ -256,7 +288,7 @@ async function generateXml(values) {
                 :item="item"
                 icon="fa-solid fa-anchor-circle-check"
                 tooltip-text="Сохранить и проверить коды ТН ВЭД"
-                :disabled="isSubmitting"
+                :disabled="isSubmitting || runningAction || loading"
                 @click="() => validateParcel(values, false)"
                 :iconSize="'1x'"
               />
@@ -264,7 +296,7 @@ async function generateXml(values) {
                 :item="item"
                 icon="fa-solid fa-check-circle"
                 tooltip-text="Сохранить и согласовать"
-                :disabled="isSubmitting"
+                :disabled="isSubmitting || runningAction || loading"
                 @click="() => approveParcel(values)"
                 variant="green"
                 :iconSize="'1x'"
@@ -273,7 +305,7 @@ async function generateXml(values) {
                 :item="item"
                 icon="fa-solid fa-check-circle"
                 tooltip-text="Сохранить и согласовать c акцизом"
-                :disabled="isSubmitting"
+                :disabled="isSubmitting || runningAction || loading"
                 @click="() => approveParcelWithExcise(values)"
                 variant="orange"
                 :iconSize="'1x'"
@@ -390,6 +422,10 @@ async function generateXml(values) {
     </div>
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка: {{ item.error }}</div>
+    </div>
+    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
     </div>
   </div>
 </template>

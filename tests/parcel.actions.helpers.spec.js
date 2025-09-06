@@ -135,12 +135,7 @@ describe('parcel actions helpers', () => {
 
   describe('approveParcelWithExcise', () => {
     it('should call approveParcel with withExcise=true', async () => {
-      await approveParcelWithExcise({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
+      await approveParcelWithExcise(mockValues,  mockItem,  mockParcelsStore)
 
       expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, true)
     })

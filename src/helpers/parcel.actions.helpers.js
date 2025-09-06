@@ -92,6 +92,6 @@ export async function generateXml(values, item, parcelsStore, filenameOrGenerato
  * @param {Object} params - Parameters object (same as approveParcel)
  * @returns {Promise<void>}
  */
-export async function approveParcelWithExcise({ values, item, parcelsStore }) {
+export async function approveParcelWithExcise(values, item, parcelsStore) {
   return approveParcel(values, item, parcelsStore, true)
 }

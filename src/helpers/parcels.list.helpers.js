@@ -309,9 +309,11 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
  */
 export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore) {
   if (isComponentMounted.value) {
-    await parcelsStore.getAll(registerId)
-    if (parcelsStore.items && parcelsStore.items.length > 0) {
-      const tnvedCodes = parcelsStore.items
+    // Get data without updating the reactive store yet
+    const response = await parcelsStore.getAll(registerId, { updateStore: false })
+    
+    if (response && response.items && response.items.length > 0) {
+      const tnvedCodes = response.items
         .map(parcel => parcel.tnVed)
         .filter(tnved => tnved && tnved.trim() !== '')
       
@@ -325,5 +327,8 @@ export async function loadOrders(registerId, parcelsStore, isComponentMounted, a
         }
       }
     }
+    
+    // Now update the reactive store - watchers will fire with FEACN data ready
+    parcelsStore.updateItems(response)
   }
 }

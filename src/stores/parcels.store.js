@@ -37,7 +37,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
 
-  async function getAll(registerId) {
+  async function getAll(registerId, options = { updateStore: true }) {
     const authStore = useAuthStore()
     loading.value = true
     error.value = null
@@ -49,15 +49,41 @@ export const useParcelsStore = defineStore('parcels', () => {
       })
 
       const response = await fetchWrapper.get(`${baseUrl}?${params.toString()}`)
-      items.value = response.items || []
-      totalCount.value = response.pagination?.totalCount || 0
-      hasNextPage.value = response.pagination?.hasNextPage || false
-      hasPreviousPage.value = response.pagination?.hasPreviousPage || false
+      const responseItems = response.items || []
+      
+      if (options.updateStore) {
+        items.value = responseItems
+        totalCount.value = response.pagination?.totalCount || 0
+        hasNextPage.value = response.pagination?.hasNextPage || false
+        hasPreviousPage.value = response.pagination?.hasPreviousPage || false
+      }
+      
+      return {
+        items: responseItems,
+        pagination: {
+          totalCount: response.pagination?.totalCount || 0,
+          hasNextPage: response.pagination?.hasNextPage || false,
+          hasPreviousPage: response.pagination?.hasPreviousPage || false
+        }
+      }
     } catch (err) {
       error.value = err
+      throw err
     } finally {
-      loading.value = false
+      if (options.updateStore) {
+        loading.value = false
+      }
     }
+  }
+
+  function updateItems(responseData) {
+    if (responseData) {
+      items.value = responseData.items || []
+      totalCount.value = responseData.pagination?.totalCount || 0
+      hasNextPage.value = responseData.pagination?.hasNextPage || false
+      hasPreviousPage.value = responseData.pagination?.hasPreviousPage || false
+    }
+    loading.value = false
   }
 
   async function getById(id) {
@@ -158,6 +184,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     getAll,
     getById,
     update,
+    updateItems,
     generate,
     validate,
     approve,

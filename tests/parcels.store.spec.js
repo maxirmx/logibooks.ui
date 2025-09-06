@@ -126,7 +126,11 @@ describe('parcels store', () => {
     const error = new Error('Failed to fetch orders')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useParcelsStore()
-    await store.getAll(1)
+    try {
+      await store.getAll(1)
+    } catch (thrownError) {
+      expect(thrownError).toBe(error)
+    }
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)
   })

@@ -467,7 +467,7 @@ function getGenericTemplateHeaders() {
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о посылке" @click="editParcel" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-spell-check" tooltip-text="Проверить по стоп-словам" @click="validateParcelSw" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-anchor-status-check" tooltip-text="Проверить по кодам ТН ВЭД" @click="validateParcelFc" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-anchor-circle-check" tooltip-text="Проверить по кодам ТН ВЭД" @click="validateParcelFc" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="runningAction || loading || HasIssues(item.checkStatusId)" />
             <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" :disabled="runningAction || loading" />

@@ -126,7 +126,7 @@ describe('Parcels List Helpers', () => {
   describe('validateParcelData', () => {
     it('should validate SW parcel successfully when sw=true', async () => {
       const mockStore = {
-        validateSw: vi.fn().mockResolvedValue(),
+        validate: vi.fn().mockResolvedValue(),
         error: ''
       }
       const mockLoadOrders = vi.fn()
@@ -134,13 +134,13 @@ describe('Parcels List Helpers', () => {
 
       await validateParcelData(item, mockStore, mockLoadOrders, true)
 
-      expect(mockStore.validateSw).toHaveBeenCalledWith(123)
+      expect(mockStore.validate).toHaveBeenCalledWith(123, true)
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should validate FC parcel successfully when sw=false', async () => {
       const mockStore = {
-        validateFc: vi.fn().mockResolvedValue(),
+        validate: vi.fn().mockResolvedValue(),
         error: ''
       }
       const mockLoadOrders = vi.fn()
@@ -148,14 +148,14 @@ describe('Parcels List Helpers', () => {
 
       await validateParcelData(item, mockStore, mockLoadOrders, false)
 
-      expect(mockStore.validateFc).toHaveBeenCalledWith(123)
+      expect(mockStore.validate).toHaveBeenCalledWith(123, false)
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should handle SW validation errors', async () => {
       const mockStore = {
-        validateSw: vi.fn().mockRejectedValue({
-          response: { data: { message: 'SW Validation failed' } }
+        validate: vi.fn().mockRejectedValue({
+          response: { data: { message: 'Ошибка при проверке информации о посылке' } }
         }),
         error: ''
       }
@@ -164,7 +164,7 @@ describe('Parcels List Helpers', () => {
 
       await validateParcelData(item, mockStore, mockLoadOrders, true)
 
-      expect(mockStore.error).toBe('SW Validation failed')
+      expect(mockStore.error).toBe('Ошибка при проверке информации о посылке')
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 

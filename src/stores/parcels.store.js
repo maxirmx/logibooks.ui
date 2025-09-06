@@ -39,7 +39,6 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function getAll(registerId) {
     const authStore = useAuthStore()
-    
     loading.value = true
     error.value = null
     try {

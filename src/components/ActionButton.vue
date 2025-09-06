@@ -34,7 +34,7 @@ defineEmits(['click'])
 
 .anti-btn {
   float: right;
-  margin-left: 0.5rem;
+  margin-left: 1px;
   text-decoration: none;
   color: rgb(75, 75, 75);
   transition: 0.4s;

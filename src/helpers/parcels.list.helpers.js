@@ -62,11 +62,7 @@ export function navigateToEditParcel(router, item, routeName, queryParams = {}) 
  */
 export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
   try {
-    if (sw) {
-      await parcelsStore.validateSw(item.id)
-    } else {
-      await parcelsStore.validateFc(item.id)
-    }
+    await parcelsStore.validate(item.id, sw)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     const alertStore = useAlertStore()
@@ -314,8 +310,6 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
 export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore) {
   if (isComponentMounted.value) {
     await parcelsStore.getAll(registerId)
-    
-    // Preload FEACN info for all tnved values in the current page
     if (parcelsStore.items && parcelsStore.items.length > 0) {
       const tnvedCodes = parcelsStore.items
         .map(parcel => parcel.tnVed)

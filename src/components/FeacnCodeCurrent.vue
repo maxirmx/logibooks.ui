@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Logibooks ui application 
 
 import { computed, ref, watch } from 'vue'
 import { getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'

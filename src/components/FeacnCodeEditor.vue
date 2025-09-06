@@ -26,10 +26,17 @@ const props = defineProps({
   columnTitles: { type: Object, required: true },
   columnTooltips: { type: Object, required: true },
   // Function to set field value in parent form
-  setFieldValue: { type: Function, required: true }
+  setFieldValue: { type: Function, required: true },
+  // Next parcel promises from parent
+  nextParcelPromises: { 
+    type: Object, 
+    default: () => ({ theNext: null, next: null }) 
+  },
+  // Running action flag from parent
+  runningAction: { type: [Boolean, Object], default: false }
 })
 
-const emit = defineEmits(['update:item', 'overlay-state-changed'])
+const emit = defineEmits(['update:item', 'overlay-state-changed', 'set-running-action'])
 
 const keyWordsStore = useKeyWordsStore()
 const parcelsStore = useParcelsStore()
@@ -39,6 +46,15 @@ const formValues = useFormValues()
 
 const searchActive = ref(false)
 const tnVedClassValue = ref('')
+
+// Computed properties for disabled states to ensure reactivity
+const isSearchButtonDisabled = computed(() => {
+  return props.isSubmitting || props.runningAction
+})
+
+const isLookupButtonDisabled = computed(() => {
+  return props.isSubmitting || props.runningAction || searchActive.value 
+})
 
 // Computed property that reacts to current form values
 const tnVedClass = computed(() => {
@@ -51,8 +67,7 @@ watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.
     const currentTnVed = formValues.value.tnVed || props.item?.tnVed
     const feacnCodes = getFeacnCodesForKeywords(props.item?.keyWordIds, keyWordsStore)
     tnVedClassValue.value = await getTnVedCellClass(currentTnVed, feacnCodes)
-  } catch (error) {
-    console.error('Error getting TN VED cell class:', error)
+  } catch {
     tnVedClassValue.value = ''
   }
 }, { immediate: true })
@@ -89,7 +104,14 @@ onUnmounted(() => {
 
 // Lookup FEACN codes for this parcel
 async function lookupFeacnCodes() {
+  if (props.runningAction) return
+  emit('set-running-action', true)
   try {
+    // Wait for next parcel promises if they exist
+    if (props.nextParcelPromises.theNext && props.nextParcelPromises.next) {
+      await Promise.all([props.nextParcelPromises.theNext, props.nextParcelPromises.next])
+    }
+    
     // First update the parcel with current form values
     await parcelsStore.update(props.item.id, props.values)
     
@@ -103,6 +125,8 @@ async function lookupFeacnCodes() {
     }
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+  } finally {
+    emit('set-running-action', false)
   }
 }
 
@@ -147,7 +171,7 @@ async function handleCodeSelect(code) {
               :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
               :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
               class="button-o-c"
-              :disabled="props.isSubmitting"
+              :disabled="isSearchButtonDisabled"
               @click="toggleSearch"
               :iconSize="'1x'"
             />
@@ -155,7 +179,7 @@ async function handleCodeSelect(code) {
               :item="props.item"
               icon="fa-solid fa-magnifying-glass"
               tooltip-text="Сохранить и подобрать код"
-              :disabled="props.isSubmitting || searchActive"
+              :disabled="isLookupButtonDisabled"
               @click="lookupFeacnCodes"
               :iconSize="'1x'"
             />

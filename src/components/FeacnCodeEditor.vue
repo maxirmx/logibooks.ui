@@ -67,7 +67,7 @@ watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.
     const currentTnVed = formValues.value.tnVed || props.item?.tnVed
     const feacnCodes = getFeacnCodesForKeywords(props.item?.keyWordIds, keyWordsStore)
     tnVedClassValue.value = await getTnVedCellClass(currentTnVed, feacnCodes)
-  } catch (error) {
+  } catch {
     tnVedClassValue.value = ''
   }
 }, { immediate: true })

@@ -18,7 +18,7 @@ import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -76,6 +76,12 @@ const { countries } = storeToRefs(countriesStore)
 const { loading } = storeToRefs(parcelsStore)
 const runningAction = ref(false)
 
+// Pre-fetch next parcels - will be populated in onMounted
+const theNextParcelResult = ref(null)
+const nextParcelResult = ref(null)
+let theNextParcelPromise = null
+let nextParcelPromise = null
+
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
 
@@ -88,6 +94,16 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
+
+// Pre-fetch next parcels after component is mounted
+onMounted(() => {
+  theNextParcelPromise = registersStore.theNextParcel(props.id)
+  nextParcelPromise = registersStore.nextParcel(props.id)
+  
+  // Store results when promises resolve
+  theNextParcelPromise.then(result => theNextParcelResult.value = result)
+  nextParcelPromise.then(result => nextParcelResult.value = result)
+})
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
@@ -133,10 +149,13 @@ async function approveParcelWithExcise(values) {
 // Handle saving and moving to the next parcel
 async function onSubmit(values, useTheNext = false) {
   try {
+    loading.value = true
     await parcelsStore.update(props.id, values)
+    
+    // Wait for the appropriate next parcel promise to resolve
     const nextParcel = useTheNext 
-      ? await registersStore.theNextParcel(props.id)
-      : await registersStore.nextParcel(props.id)
+      ? await theNextParcelPromise
+      : await nextParcelPromise
     
     if (nextParcel) {
       const nextUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
@@ -147,6 +166,8 @@ async function onSubmit(values, useTheNext = false) {
     }
   } catch (error) {
     parcelsStore.error = error?.message || String(error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -307,10 +328,10 @@ async function generateXml(values) {
             </div>
           </div>
           <!-- Last view -->
-          <div class="form-group" v-if="item?.dTime">
-            <label for="lastView" class="label" title="Последний просмотр">Последний просмотр текущим пользователем:</label>
+          <div class="form-group">
+            <label for="lastView" class="label">Последний просмотр:</label>
             <div class="readonly-field">
-              {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '[неизвестно]' }}
+              {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
             </div>
           </div>          
           <!-- Stopwords information when there are issues -->
@@ -393,10 +414,6 @@ async function generateXml(values) {
 
     </Form>
 
-    <div v-if="item?.loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg"></span>
-      <div>Загрузка данных...</div>
-    </div>
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка: {{ item.error }}</div>
     </div>

@@ -33,7 +33,7 @@ const props = defineProps({
     default: () => ({ theNext: null, next: null }) 
   },
   // Running action flag from parent
-  runningAction: { type: Object, required: true }
+  runningAction: { type: [Boolean, Object], default: false }
 })
 
 const emit = defineEmits(['update:item', 'overlay-state-changed', 'set-running-action'])
@@ -104,7 +104,7 @@ onUnmounted(() => {
 
 // Lookup FEACN codes for this parcel
 async function lookupFeacnCodes() {
-  if (props.runningAction.value) return
+  if (props.runningAction) return
   emit('set-running-action', true)
   try {
     // Wait for next parcel promises if they exist

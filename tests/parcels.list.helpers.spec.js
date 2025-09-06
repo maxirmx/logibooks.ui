@@ -1,6 +1,6 @@
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Logibooks ui application 
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -19,6 +19,13 @@ vi.mock('../src/helpers/config.js', () => ({
 // Mock helper functions
 vi.mock('../src/helpers/parcels.check.helpers.js', () => ({
   HasIssues: vi.fn(() => false)
+}))
+
+// Mock Pinia stores
+vi.mock('../src/stores/alert.store.js', () => ({
+  useAlertStore: vi.fn(() => ({
+    error: vi.fn()
+  }))
 }))
 
 import {
@@ -117,47 +124,62 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('validateParcelData', () => {
-    it('should validate WBR parcel successfully', async () => {
+    it('should validate SW parcel successfully when sw=true', async () => {
       const mockStore = {
-        validate: vi.fn().mockResolvedValue()
+        validate: vi.fn().mockResolvedValue(),
+        error: ''
       }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await validateParcelData(item, mockStore, mockLoadOrders)
+      await validateParcelData(item, mockStore, mockLoadOrders, true)
 
-      expect(mockStore.validate).toHaveBeenCalledWith(123)
+      expect(mockStore.validate).toHaveBeenCalledWith(123, true)
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 
-    it('should handle validation errors', async () => {
+    it('should validate FC parcel successfully when sw=false', async () => {
+      const mockStore = {
+        validate: vi.fn().mockResolvedValue(),
+        error: ''
+      }
+      const mockLoadOrders = vi.fn()
+      const item = { id: 123 }
+
+      await validateParcelData(item, mockStore, mockLoadOrders, false)
+
+      expect(mockStore.validate).toHaveBeenCalledWith(123, false)
+      expect(mockLoadOrders).toHaveBeenCalled()
+    })
+
+    it('should handle SW validation errors', async () => {
       const mockStore = {
         validate: vi.fn().mockRejectedValue({
-          response: { data: { message: 'Validation failed' } }
+          response: { data: { message: 'Ошибка при проверке информации о посылке' } }
         }),
         error: ''
       }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await validateParcelData(item, mockStore, mockLoadOrders)
+      await validateParcelData(item, mockStore, mockLoadOrders, true)
 
-      expect(mockStore.error).toBe('Validation failed')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockStore.error).toBe('Ошибка при проверке информации о посылке')
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
 
-    it('should handle validation errors with default message', async () => {
+    it('should handle FC validation errors with default message', async () => {
       const mockStore = {
-        validate: vi.fn().mockRejectedValue(new Error('Network error')),
+        validateFc: vi.fn().mockRejectedValue(new Error('Network error')),
         error: ''
       }
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await validateParcelData(item, mockStore, mockLoadOrders)
+      await validateParcelData(item, mockStore, mockLoadOrders, false)
 
       expect(mockStore.error).toBe('Ошибка при проверке информации о посылке')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
   })
 
@@ -259,7 +281,7 @@ describe('Parcels List Helpers', () => {
       await approveParcelData(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Approval failed')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should handle approval errors with excise and show appropriate message', async () => {
@@ -273,7 +295,7 @@ describe('Parcels List Helpers', () => {
       await approveParcelData(item, mockStore, mockLoadOrders, true)
 
       expect(mockStore.error).toBe('Ошибка при согласовании посылки с акцизом')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
   })
 
@@ -317,7 +339,7 @@ describe('Parcels List Helpers', () => {
       await lookupFeacn(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Lookup failed')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should handle lookup errors with default message', async () => {
@@ -331,7 +353,7 @@ describe('Parcels List Helpers', () => {
       await lookupFeacn(item, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Ошибка при подборе кодов ТН ВЭД')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
   })
 
@@ -628,7 +650,7 @@ describe('Parcels List Helpers', () => {
       await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Update failed')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should handle update errors with default message', async () => {
@@ -643,7 +665,7 @@ describe('Parcels List Helpers', () => {
       await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
 
       expect(mockStore.error).toBe('Ошибка при обновлении ТН ВЭД')
-      expect(mockLoadOrders).not.toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalled()
     })
   })
 

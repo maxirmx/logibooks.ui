@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Logibooks ui application 
 
 defineProps({
   item: { required: true },
@@ -34,7 +34,7 @@ defineEmits(['click'])
 
 .anti-btn {
   float: right;
-  margin-left: 0.5rem;
+  margin-left: 1px;
   text-decoration: none;
   color: rgb(75, 75, 75);
   transition: 0.4s;

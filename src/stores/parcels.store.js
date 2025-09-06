@@ -1,3 +1,7 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
@@ -37,9 +41,8 @@ export const useParcelsStore = defineStore('parcels', () => {
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
 
-  async function getAll(registerId) {
+  async function getAll(registerId, options = { updateStore: true }) {
     const authStore = useAuthStore()
-    
     loading.value = true
     error.value = null
     try {
@@ -50,15 +53,41 @@ export const useParcelsStore = defineStore('parcels', () => {
       })
 
       const response = await fetchWrapper.get(`${baseUrl}?${params.toString()}`)
-      items.value = response.items || []
-      totalCount.value = response.pagination?.totalCount || 0
-      hasNextPage.value = response.pagination?.hasNextPage || false
-      hasPreviousPage.value = response.pagination?.hasPreviousPage || false
+      const responseItems = response.items || []
+      
+      if (options.updateStore) {
+        items.value = responseItems
+        totalCount.value = response.pagination?.totalCount || 0
+        hasNextPage.value = response.pagination?.hasNextPage || false
+        hasPreviousPage.value = response.pagination?.hasPreviousPage || false
+      }
+      
+      return {
+        items: responseItems,
+        pagination: {
+          totalCount: response.pagination?.totalCount || 0,
+          hasNextPage: response.pagination?.hasNextPage || false,
+          hasPreviousPage: response.pagination?.hasPreviousPage || false
+        }
+      }
     } catch (err) {
       error.value = err
+      throw err
     } finally {
-      loading.value = false
+      if (options.updateStore) {
+        loading.value = false
+      }
     }
+  }
+
+  function updateItems(responseData) {
+    if (responseData) {
+      items.value = responseData.items || []
+      totalCount.value = responseData.pagination?.totalCount || 0
+      hasNextPage.value = responseData.pagination?.hasNextPage || false
+      hasPreviousPage.value = responseData.pagination?.hasPreviousPage || false
+    }
+    loading.value = false
   }
 
   async function getById(id) {
@@ -110,9 +139,23 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function validate(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/validate`)
-    return true
+  async function validate(id, sw) {
+    loading.value = true
+    error.value = null
+    try {
+      if (sw) {
+        await fetchWrapper.post(`${baseUrl}/${id}/validate-sw`)
+      }
+      else {
+        await fetchWrapper.post(`${baseUrl}/${id}/validate-fc`)
+      }
+      return true
+    } catch (err) {
+      error.value = err
+      return false
+    } finally {
+      loading.value = false
+    }
   }
 
   async function approve(id, withExcise = false) {
@@ -145,6 +188,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     getAll,
     getById,
     update,
+    updateItems,
     generate,
     validate,
     approve,

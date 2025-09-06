@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Logibooks ui application 
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'

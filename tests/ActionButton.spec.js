@@ -1,3 +1,7 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
@@ -64,9 +68,9 @@ describe('ActionButton', () => {
     })
 
     it('applies custom icon size', () => {
-      const wrapper = createWrapper({ iconSize: '2x' })
+      const wrapper = createWrapper({ iconSize: '1x' })
       const fontAwesome = wrapper.findComponent({ name: 'FontAwesomeIcon' })
-      expect(fontAwesome.props('size')).toBe('2x')
+      expect(fontAwesome.props('size')).toBe('1x')
     })
 
     it('renders with tooltip', () => {

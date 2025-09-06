@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
+// This file is a part of Logibooks ui application 
 
 import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -252,7 +252,7 @@ defineExpose({
                   {{ code }}
                 </span>
               </template>
-              <span>{{ feacnTooltips[code] || 'Наведите для загрузки...' }}</span>
+              <span>{{ feacnTooltips[code].name || 'Наведите для загрузки...' }}</span>
             </v-tooltip>
           </div>
         </template>

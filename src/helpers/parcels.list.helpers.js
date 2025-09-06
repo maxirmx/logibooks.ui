@@ -1,27 +1,6 @@
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks frontend application
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
-// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+// This file is a part of Logibooks ui application 
 
 /**
  * Helper functions for parcels list functionality shared between WBR and Ozon components
@@ -29,6 +8,8 @@
 
 import { HasIssues } from '@/helpers/parcels.check.helpers.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
+
+import { useAlertStore } from '@/stores/alert.store.js'
 
 /**
  * Navigates to edit parcel page
@@ -51,18 +32,22 @@ export function navigateToEditParcel(router, item, routeName, queryParams = {}) 
 }
 
 /**
- * Validates a parcel - handles platform-specific validation
+ * Validates a parcel against Stopwords or FEACN codes
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Function} loadOrdersFn - Function to reload orders
+ * @param {boolean} sw - Whether to validate against Stopwords (true) or FEACN (false)
  * @returns {Promise<void>}
  */
-export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
+export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
   try {
-    await parcelsStore.validate(item.id)
-    loadOrdersFn()
+    await parcelsStore.validate(item.id, sw)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
+    const alertStore = useAlertStore()
+    alertStore.error(parcelsStore.error)
+  } finally {
+    loadOrdersFn()
   }
 }
 
@@ -77,12 +62,15 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn) {
 export async function approveParcelData(item, parcelsStore, loadOrdersFn, withExcise = false) {
   try {
     await parcelsStore.approve(item.id, withExcise)
-    loadOrdersFn()
   } catch (error) {
     const errorMessage = withExcise 
       ? 'Ошибка при согласовании посылки с акцизом'
       : 'Ошибка при согласовании посылки'
     parcelsStore.error = error?.response?.data?.message || errorMessage
+    const alertStore = useAlertStore()
+    alertStore.error(parcelsStore.error)
+  } finally {
+    loadOrdersFn()
   }
 }
 
@@ -138,6 +126,8 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
     await parcelsStore.generate(item.id, filename)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
+    const alertStore = useAlertStore()
+    alertStore.error(parcelsStore.error)
   }
 }
 
@@ -151,12 +141,15 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
 export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
   try {
     await parcelsStore.lookupFeacnCode(item.id)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
+    const alertStore = useAlertStore()
+    alertStore.error(parcelsStore.error)
+  }
+  finally {
     if (loadOrdersFn) {
       loadOrdersFn()
     }
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-
   }
 }
 
@@ -273,11 +266,15 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
   try {
     const updatedItem = { ...item, tnVed: feacnCode }
     await parcelsStore.update(item.id, updatedItem)
+  } catch (error) {
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
+    const alertStore = useAlertStore()
+    alertStore.error(parcelsStore.error)
+  }
+  finally {
     if (loadOrdersFn) {
       loadOrdersFn()
     }
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
   }
 }
 
@@ -291,11 +288,11 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
  */
 export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore) {
   if (isComponentMounted.value) {
-    await parcelsStore.getAll(registerId)
+    // Get data without updating the reactive store yet
+    const response = await parcelsStore.getAll(registerId, { updateStore: false })
     
-    // Preload FEACN info for all tnved values in the current page
-    if (parcelsStore.items && parcelsStore.items.length > 0) {
-      const tnvedCodes = parcelsStore.items
+    if (response && response.items && response.items.length > 0) {
+      const tnvedCodes = response.items
         .map(parcel => parcel.tnVed)
         .filter(tnved => tnved && tnved.trim() !== '')
       
@@ -309,5 +306,8 @@ export async function loadOrders(registerId, parcelsStore, isComponentMounted, a
         }
       }
     }
+    
+    // Now update the reactive store - watchers will fire with FEACN data ready
+    parcelsStore.updateItems(response)
   }
 }

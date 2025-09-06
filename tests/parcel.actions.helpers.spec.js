@@ -1,10 +1,21 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { 
-  validateParcel, 
+  validateParcelData, 
   approveParcel, 
   generateXml,
   approveParcelWithExcise 
 } from '@/helpers/parcel.actions.helpers.js'
+
+// Mock the alert store
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: vi.fn(() => ({
+    error: vi.fn()
+  }))
+}))
 
 describe('parcel actions helpers', () => {
   let mockParcelsStore
@@ -17,7 +28,7 @@ describe('parcel actions helpers', () => {
     
     mockItem = {
       value: {
-        id: 123,
+        id: parcelId,
         postingNumber: 'ABC123',
         shk: '12345'
       }
@@ -38,18 +49,13 @@ describe('parcel actions helpers', () => {
     }
   })
 
-  describe('validateParcel', () => {
+  describe('validateParcelData', () => {
     it('should validate parcel successfully', async () => {
-      await validateParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
+      await validateParcelData(mockValues, mockItem, mockParcelsStore, true)
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.validate).toHaveBeenCalledWith(123)
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
+      expect(mockParcelsStore.validate).toHaveBeenCalledWith(123, true)
+      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
 
@@ -63,57 +69,36 @@ describe('parcel actions helpers', () => {
       }
       mockParcelsStore.update.mockRejectedValue(error)
 
-      await validateParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
-
+      await validateParcelData(mockValues, mockItem, mockParcelsStore, false)
       expect(mockParcelsStore.error).toBe('Validation failed')
+
     })
 
     it('should handle validation errors with default message', async () => {
       mockParcelsStore.validate.mockRejectedValue(new Error('Network error'))
 
-      await validateParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
+      await validateParcelData(mockValues, mockItem, mockParcelsStore, true)
 
-      expect(mockParcelsStore.error).toBe('Ошибка при проверке посылки')
+      expect(mockParcelsStore.error).toBe('Ошибка при проверке информации о посылке')
     })
   })
 
   describe('approveParcel', () => {
     it('should approve parcel successfully without excise', async () => {
-      await approveParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
+      await approveParcel(mockValues, mockItem, mockParcelsStore)
 
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(parcelId, mockValues)
+      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
       expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, false)
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
+      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
 
     it('should approve parcel successfully with excise', async () => {
-      await approveParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore,
-        withExcise: true
-      })
+      await approveParcel(mockValues, mockItem, mockParcelsStore, true)
 
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(parcelId, mockValues)
+      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
       expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, true)
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
+      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
 
@@ -121,13 +106,7 @@ describe('parcel actions helpers', () => {
       const error = new Error('Approval failed')
       mockParcelsStore.approve.mockRejectedValue(error)
 
-      await approveParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
-
+      await approveParcel(mockValues, mockItem, mockParcelsStore)
       expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
     })
 
@@ -135,14 +114,7 @@ describe('parcel actions helpers', () => {
       const error = new Error('Approval failed')
       mockParcelsStore.approve.mockRejectedValue(error)
 
-      await approveParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore,
-        withExcise: true
-      })
-
+      await approveParcel(mockValues, mockItem, mockParcelsStore, true)
       expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки с акцизом')
     })
 
@@ -156,25 +128,14 @@ describe('parcel actions helpers', () => {
       }
       mockParcelsStore.approve.mockRejectedValue(error)
 
-      await approveParcel({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
-
+      await approveParcel(mockValues, mockItem, mockParcelsStore)
       expect(mockParcelsStore.error).toBe('Custom approval error')
     })
   })
 
   describe('approveParcelWithExcise', () => {
     it('should call approveParcel with withExcise=true', async () => {
-      await approveParcelWithExcise({
-        values: mockValues,
-        item: mockItem,
-        parcelId,
-        parcelsStore: mockParcelsStore
-      })
+      await approveParcelWithExcise(mockValues,  mockItem,  mockParcelsStore)
 
       expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, true)
     })
@@ -184,12 +145,7 @@ describe('parcel actions helpers', () => {
     it('should generate XML with string filename', async () => {
       const filename = 'test-filename'
 
-      await generateXml({
-        values: mockValues,
-        item: mockItem,
-        parcelsStore: mockParcelsStore,
-        filenameOrGenerator: filename
-      })
+      await generateXml(mockValues, mockItem, mockParcelsStore, filename)
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
       expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, filename)
@@ -199,12 +155,7 @@ describe('parcel actions helpers', () => {
     it('should generate XML with filename generator function', async () => {
       const filenameGenerator = vi.fn().mockReturnValue('generated-filename')
 
-      await generateXml({
-        values: mockValues,
-        item: mockItem,
-        parcelsStore: mockParcelsStore,
-        filenameOrGenerator: filenameGenerator
-      })
+      await generateXml(mockValues, mockItem, mockParcelsStore, filenameGenerator)
 
       expect(filenameGenerator).toHaveBeenCalledWith(mockItem.value)
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
@@ -221,12 +172,7 @@ describe('parcel actions helpers', () => {
       }
       mockParcelsStore.generate.mockRejectedValue(error)
 
-      await generateXml({
-        values: mockValues,
-        item: mockItem,
-        parcelsStore: mockParcelsStore,
-        filenameOrGenerator: 'test-file'
-      })
+      await generateXml(mockValues, mockItem, mockParcelsStore, 'test-file')
 
       expect(mockParcelsStore.error).toBe('XML generation failed')
     })
@@ -234,12 +180,7 @@ describe('parcel actions helpers', () => {
     it('should handle generate XML errors with default message', async () => {
       mockParcelsStore.generate.mockRejectedValue(new Error('Network error'))
 
-      await generateXml({
-        values: mockValues,
-        item: mockItem,
-        parcelsStore: mockParcelsStore,
-        filenameOrGenerator: 'test-file'
-      })
+      await generateXml(mockValues, mockItem, mockParcelsStore, 'test-file')
 
       expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
     })

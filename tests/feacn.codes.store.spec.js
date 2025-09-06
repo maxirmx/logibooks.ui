@@ -1,3 +1,7 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 import { setActivePinia, createPinia } from 'pinia'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'

@@ -1,4 +1,8 @@
 /* @vitest-environment jsdom */
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import FeacnCodes_Tree from '@/components/FeacnCodes_Tree.vue'

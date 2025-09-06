@@ -584,10 +584,10 @@ describe('registers.list.helpers', () => {
           finished: false
         })
         
-        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn)
-        
+        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn, true)
+
         expect(stopPollingFn).toHaveBeenCalled()
-        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123)
+        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123, true)
         expect(validationState.handleId).toBe('validation-handle-123')
         expect(validationState.total).toBe(100)
         expect(validationState.processed).toBe(0)
@@ -599,10 +599,10 @@ describe('registers.list.helpers', () => {
         const errorMessage = 'Validation failed to start'
         mockRegistersStore.validate.mockRejectedValueOnce(new Error(errorMessage))
         
-        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn)
-        
+        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn, false)
+
         expect(stopPollingFn).toHaveBeenCalled()
-        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123)
+        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123, false)
         expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
         expect(validationState.show).toBe(false)
         expect(startPollingFn).not.toHaveBeenCalled()

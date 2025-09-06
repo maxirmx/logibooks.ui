@@ -730,24 +730,25 @@ describe('registers store', () => {
   })
 
   describe('validation API', () => {
-    it('starts validation and returns handle', async () => {
+    it('starts validation for stop-words and returns handle', async () => {
       const handle = { id: '1234' }
       fetchWrapper.post.mockResolvedValue(handle)
 
       const store = useRegistersStore()
-      const result = await store.validate(1)
+      const result = await store.validate(1, true)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/validate`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/validate-sw`)
       expect(result).toEqual(handle)
     })
 
-    it('handles validation error', async () => {
+    it('starts validation for FEACN and handles error', async () => {
       const error = new Error('Validation failed')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useRegistersStore()
-      
-      await expect(store.validate(1)).rejects.toThrow('Validation failed')
+
+      await expect(store.validate(1, false)).rejects.toThrow('Validation failed')
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/validate-fc`)
       expect(store.error).toBe(error)
     })
 

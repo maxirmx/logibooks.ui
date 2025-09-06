@@ -233,12 +233,13 @@ export async function pollValidation(validationState, registersStore, alertStore
  * @param {Object} alertStore - The alert store instance
  * @param {Function} stopPollingFn - Function to stop polling
  * @param {Function} startPollingFn - Function to start polling
+ * @param {boolean} sw - Whether to validate against Stopwords (true) or FEACN codes (false)
  * @returns {Promise<void>}
  */
-export async function validateRegister(item, validationState, registersStore, alertStore, stopPollingFn, startPollingFn) {
+export async function validateRegister(item, validationState, registersStore, alertStore, stopPollingFn, startPollingFn, sw) {
   try {
     stopPollingFn()
-    const res = await registersStore.validate(item.id)
+    const res = await registersStore.validate(item.id, sw)
     validationState.handleId = res.id
     validationState.total = 0
     validationState.processed = 0

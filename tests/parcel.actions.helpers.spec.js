@@ -13,7 +13,7 @@ import {
 // Mock the alert store
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: vi.fn(() => ({
-    error: null
+    error: vi.fn()
   }))
 }))
 

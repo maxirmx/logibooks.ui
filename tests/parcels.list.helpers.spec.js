@@ -24,7 +24,7 @@ vi.mock('../src/helpers/parcels.check.helpers.js', () => ({
 // Mock Pinia stores
 vi.mock('../src/stores/alert.store.js', () => ({
   useAlertStore: vi.fn(() => ({
-    error: ''
+    error: vi.fn()
   }))
 }))
 

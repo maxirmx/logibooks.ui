@@ -373,8 +373,11 @@ async function generateXml(values) {
         :columnTitles="wbrRegisterColumnTitles"
         :columnTooltips="wbrRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
+        :nextParcelPromises="{ theNext: theNextPromise, next: nextPromise }"
+        :runningAction="runningAction"
         @update:item="(updatedItem) => item = updatedItem"
         @overlay-state-changed="overlayActive = $event"
+        @set-running-action="runningAction = $event"
       />
 
       <!-- Product Name and description Section -->

@@ -367,8 +367,11 @@ async function generateXml(values) {
         :columnTitles="ozonRegisterColumnTitles"
         :columnTooltips="ozonRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
+        :nextParcelPromises="{ theNext: theNextPromise, next: nextPromise }"
+        :runningAction="runningAction"
         @update:item="(updatedItem) => item = updatedItem"
         @overlay-state-changed="overlayActive = $event"
+        @set-running-action="runningAction = $event"
       />
 
       <!-- Product Name Section -->

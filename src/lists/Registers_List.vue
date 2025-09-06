@@ -290,7 +290,7 @@ async function deleteRegister(item) {
   }
 }
 
-async function validateRegisterWrapper(item) {
+async function validateRegisterSw(item) {
   try {
     validationState.operation = 'validation'
     pollingFunction = () =>
@@ -301,7 +301,27 @@ async function validateRegisterWrapper(item) {
       registersStore,
       alertStore,
       () => pollingTimer.stop(),
-      () => pollingTimer.start()
+      () => pollingTimer.start(),
+      true
+    )
+  } catch (err) {
+    alertStore.error(err.message || String(err))
+  }
+}
+
+async function validateRegisterFc(item) {
+  try {
+    validationState.operation = 'validation'
+    pollingFunction = () =>
+      pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
+    await validateRegister(
+      item,
+      validationState,
+      registersStore,
+      alertStore,
+      () => pollingTimer.stop(),
+      () => pollingTimer.start(),
+      false
     )
   } catch (err) {
     alertStore.error(err.message || String(err))
@@ -562,7 +582,8 @@ const headers = [
               />
             </div>
 
-            <ActionButton :item="item" icon="fa-solid fa-clipboard-check" tooltip-text="Проверить реестр" @click="validateRegisterWrapper" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-spell-check" tooltip-text="Проверить по стоп-словам" @click="validateRegisterSw" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-anchor-circle-check" tooltip-text="Проверить по кодам ТН ВЭД" @click="validateRegisterFc" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладные для всех посылок в реестре" @click="exportAllXml" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" :disabled="runningAction || loading" />

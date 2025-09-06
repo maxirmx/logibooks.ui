@@ -141,9 +141,12 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function validate(registerId) {
+  async function validate(registerId, sw) {
     try {
-      const result = await fetchWrapper.post(`${baseUrl}/${registerId}/validate`)
+      const url = sw
+        ? `${baseUrl}/${registerId}/validate-sw`
+        : `${baseUrl}/${registerId}/validate-fc`
+      const result = await fetchWrapper.post(url)
       return result
     } catch (err) {
       error.value = err

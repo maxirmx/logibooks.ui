@@ -18,10 +18,8 @@ export async function validateParcelData(values, item, parcelsStore, sw) {
     await parcelsStore.validate(item.value.id, sw)
   } catch (error) {
     const alertStore = useAlertStore()
-    alertStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
-    if (parcelsStore) {
-      parcelsStore.error = alertStore.error
-    }
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
+    alertStore.error(parcelsStore.error)
   } finally {
       await parcelsStore.getById(item.value.id)
   }
@@ -50,7 +48,7 @@ export async function approveParcel(values, item, parcelsStore, withExcise = fal
     parcelsStore.error = error?.response?.data?.message || errorMessage
 
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore?.error || errorMessage
+    alertStore.error(parcelsStore?.error || errorMessage)
   } finally {
       await parcelsStore.getById(item.value.id)
   }
@@ -83,7 +81,7 @@ export async function generateXml(values, item, parcelsStore, filenameOrGenerato
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore.error
+    alertStore.error(parcelsStore.error)
   }
 }
 

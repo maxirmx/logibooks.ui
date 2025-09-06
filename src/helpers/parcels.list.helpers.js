@@ -45,7 +45,7 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore.error
+    alertStore.error(parcelsStore.error)
   } finally {
     loadOrdersFn()
   }
@@ -68,7 +68,7 @@ export async function approveParcelData(item, parcelsStore, loadOrdersFn, withEx
       : 'Ошибка при согласовании посылки'
     parcelsStore.error = error?.response?.data?.message || errorMessage
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore.error
+    alertStore.error(parcelsStore.error)
   } finally {
     loadOrdersFn()
   }
@@ -127,7 +127,7 @@ export async function exportParcelXmlData(item, parcelsStore, filename) {
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore.error
+    alertStore.error(parcelsStore.error)
   }
 }
 
@@ -144,7 +144,7 @@ export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore.error
+    alertStore.error(parcelsStore.error)
   }
   finally {
     if (loadOrdersFn) {
@@ -269,7 +269,7 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
     const alertStore = useAlertStore()
-    alertStore.error = parcelsStore.error
+    alertStore.error(parcelsStore.error)
   }
   finally {
     if (loadOrdersFn) {

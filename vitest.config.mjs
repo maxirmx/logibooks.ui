@@ -1,3 +1,7 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 import { fileURLToPath } from 'node:url'
 import { mergeConfig } from 'vite'
 import { configDefaults, defineConfig } from 'vitest/config'

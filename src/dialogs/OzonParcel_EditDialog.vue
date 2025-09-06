@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks core application
+// This file is a part of Logibooks ui application 
 
 import router from '@/router'
 import { Form, Field } from 'vee-validate'

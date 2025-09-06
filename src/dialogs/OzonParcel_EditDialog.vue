@@ -92,26 +92,16 @@ const schema = Yup.object().shape({
 })
 
 async function validateParcel(values, sw) {
-  await validateParcelData(values, item, props.id, parcelsStore, sw)
+  await validateParcelData(values, item,  parcelsStore, sw)
 }
 
 async function approveParcel(values) {
-  await approveParcelHelper({
-    values,
-    item,
-    parcelId: props.id,
-    parcelsStore
-  })
+  await approveParcelHelper(values, item, parcelsStore)
 }
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values) {
-  await approveParcelWithExciseHelper({
-    values,
-    item,
-    parcelId: props.id,
-    parcelsStore
-  })
+  await approveParcelWithExciseHelper(values, item, parcelsStore)
 }
 
 // Handle saving and moving to the next parcel
@@ -167,12 +157,7 @@ async function onBack(values) {
 
 // Generate XML for this parcel
 async function generateXml(values) {
-  await generateXmlHelper({
-    values,
-    item,
-    parcelsStore,
-    filenameOrGenerator: item.value?.postingNumber
-  })
+  await generateXmlHelper(values, item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
 }
 </script>
 

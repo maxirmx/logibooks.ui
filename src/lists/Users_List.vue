@@ -38,6 +38,9 @@ function getCredentials(item) {
     if (item.roles && item.roles.includes('administrator')) {
       crd.push('Администратор')
     }
+    if (item.roles && item.roles.includes('sr-logist')) {
+      crd.push('Старший логист')
+    }
     if (item.roles && item.roles.includes('logist')) {
       crd.push('Логист')
     }

@@ -18,6 +18,9 @@ function translate(param) {
   if (param.isLogist === 'LOGIST' || param.isLogist === true) {
     roles.push(roleLogist)
   }
+  if (param.isSrLogist === 'SR_LOGIST' || param.isSrLogist === true) {
+    roles.push('sr-logist')
+  }
   if (param.isAdmin === 'ADMIN' || param.isAdmin === true) {
     roles.push(roleAdmin)
   }
@@ -30,6 +33,7 @@ function translate(param) {
   }
   const res = { ...param, roles }
   delete res.isAdmin
+  delete res.isSrLogist
   delete res.isLogist
   delete res.password2
   return res
@@ -69,6 +73,8 @@ export const useUsersStore = defineStore('users', () => {
       if (trnslt) {
         user.value.isAdmin =
           user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'NONE'
+        user.value.isSrLogist =
+          user.value.roles && user.value.roles.includes('sr-logist') ? 'SR_LOGIST' : 'NONE'
         user.value.isLogist =
           user.value.roles && user.value.roles.includes(roleLogist) ? 'LOGIST' : 'NONE'
       }

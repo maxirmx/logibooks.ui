@@ -79,6 +79,7 @@ describe('router guards', () => {
   it('redirects authenticated logist away from login to registers', async () => {
     authStore.user = { id: 1 }
     authStore.isLogist = true
+    authStore.isSrLogist = false
     authStore.isAdmin = false
     await router.push('/login')
     await router.isReady()
@@ -89,6 +90,7 @@ describe('router guards', () => {
     authStore.user = { id: 2 }
     authStore.isAdmin = true
     authStore.isLogist = false
+    authStore.isSrLogist = false
     await router.push('/login')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/users')
@@ -97,6 +99,7 @@ describe('router guards', () => {
   it('redirects authenticated logist admin away from login to registers (logist priority)', async () => {
     authStore.user = { id: 3 }
     authStore.isLogist = true
+    authStore.isSrLogist = true
     authStore.isAdmin = true
     await router.push('/login')
     await router.isReady()
@@ -107,6 +110,7 @@ describe('router guards', () => {
     authStore.user = { id: 4 }
     authStore.isAdmin = false
     authStore.isLogist = false
+    authStore.isSrLogist = false
     await router.push('/login')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/user/edit/4')
@@ -115,7 +119,8 @@ describe('router guards', () => {
   it('prevents non-logist user from accessing registers', async () => {
     authStore.user = { id: 3 }
     authStore.isLogist = false
-    
+    authStore.isSrLogist = false
+
     await router.push('/registers')
     await router.isReady()
     

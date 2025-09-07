@@ -64,7 +64,7 @@ function getUserName() {
         </div>
       </template>
       <v-list v-if="authStore.user">
-        <v-list-item v-if="authStore.isLogist">
+        <v-list-item v-if="authStore.isLogist || authStore.isSrLogist">
           <RouterLink to="/registers" class="link">Реестры</RouterLink>
         </v-list-item>
         <v-list-item v-if="!authStore.isAdmin">
@@ -75,7 +75,7 @@ function getUserName() {
         </v-list-item>
 
         <!-- Справочники -->
-        <v-list-group>
+        <v-list-group  v-if="authStore.isAdmin || authStore.isSrLogist">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Справочники"></v-list-item>
           </template>
@@ -100,10 +100,10 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
           </v-list-item>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
           </v-list-item>
         </v-list-group>

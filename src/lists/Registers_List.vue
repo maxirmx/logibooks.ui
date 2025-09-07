@@ -74,7 +74,7 @@ const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
 
 const authStore = useAuthStore()
-const { registers_per_page, registers_search, registers_sort_by, registers_page } =
+const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isSrLogist } =
   storeToRefs(authStore)
 
 const fileInput = ref(null)
@@ -401,7 +401,7 @@ function formatDate(dateStr) {
 }
 
 const headers = [
-  { title: '', key: 'actions', sortable: false, align: 'center', width: '280px' },
+  { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber', align: 'center' },
   { title: 'ТСД', key: 'invoice', align: 'center' },
   { title: 'Страны', key: 'countries', align: 'center' },
@@ -417,7 +417,7 @@ const headers = [
     <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
-    <div class="link-crt d-flex upload-links">
+    <div class="link-crt d-flex upload-links" v-if="isAdmin || isSrLogist">
       <a @click="openFileDialog" class="link" tabindex="0">
         <font-awesome-icon
           size="1x"
@@ -542,7 +542,7 @@ const headers = [
             <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" :disabled="runningAction || loading" />
             
-            <div class="bulk-status-inline">
+            <div class="bulk-status-inline" v-if="isAdmin || isSrLogist">
               <div v-if="isInEditMode(item.id)" class="status-selector-inline">
                 <v-select 
                   :model-value="getSelectedStatusId(item.id)" 
@@ -582,12 +582,54 @@ const headers = [
               />
             </div>
 
-            <ActionButton :item="item" icon="fa-solid fa-spell-check" tooltip-text="Проверить по стоп-словам" @click="validateRegisterSw" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-anchor-circle-check" tooltip-text="Проверить по кодам ТН ВЭД" @click="validateRegisterFc" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подбор кодов ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладные для всех посылок в реестре" @click="exportAllXml" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-file-export" tooltip-text="Экспортировать реестр" @click="downloadRegister" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить реестр" @click="deleteRegister" :disabled="runningAction || loading" />
+            <ActionButton 
+              v-if="isAdmin || isSrLogist"
+              :item="item" 
+              icon="fa-solid fa-spell-check" 
+              tooltip-text="Проверить по стоп-словам" 
+              @click="validateRegisterSw" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              v-if="isAdmin || isSrLogist"
+              :item="item" 
+              icon="fa-solid fa-anchor-circle-check" 
+              tooltip-text="Проверить по кодам ТН ВЭД" 
+              @click="validateRegisterFc" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              v-if="isAdmin || isSrLogist"
+              :item="item" 
+              icon="fa-solid fa-magnifying-glass" 
+              tooltip-text="Подбор кодов ТН ВЭД" 
+              @click="lookupFeacnCodes" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              v-if="isAdmin || isSrLogist"
+              :item="item" 
+              icon="fa-solid fa-upload" 
+              tooltip-text="Выгрузить XML накладные для всех посылок в реестре" 
+              @click="exportAllXml" 
+              :disabled="runningAction || loading" 
+              />
+            <ActionButton 
+              v-if="isAdmin || isSrLogist"
+              :item="item" 
+              icon="fa-solid fa-file-export" 
+              tooltip-text="Экспортировать реестр" 
+              @click="downloadRegister" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton
+              v-if="isAdmin"
+              :item="item" 
+              icon="fa-solid fa-trash-can" 
+              tooltip-text="Удалить реестр" 
+              @click="deleteRegister" 
+              :disabled="runningAction || loading" 
+            />
           </div>
         </template>
       </v-data-table-server>

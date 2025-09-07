@@ -91,6 +91,9 @@ function getCredentials() {
     if (user.value.roles && user.value.roles.includes('administrator')) {
       crd.push('Администратор')
     }
+    if (user.value.roles && user.value.roles.includes('sr-logist')) {
+      crd.push('Старший логист')
+    }
     if (user.value.roles && user.value.roles.includes('logist')) {
       crd.push('Логист')
     }
@@ -104,7 +107,7 @@ function onSubmit(values, { setErrors }) {
       return usersStore
         .add(values, true)
         .then(() =>
-          router.push(getHomeRoute())
+          router.push(getHomeRoute(true))
         )
         .catch((error) => setErrors({ apiError: error.message || String(error) }))
     } else {
@@ -134,7 +137,7 @@ function onSubmit(values, { setErrors }) {
     return usersStore
       .update(props.id, values, true)
       .then(() =>
-        router.push(getHomeRoute())
+        router.push(getHomeRoute(true))
       )
       .catch((error) => setErrors({ apiError: error.message || String(error) }))
   }
@@ -288,6 +291,14 @@ function onSubmit(values, { setErrors }) {
         />
         <label for="isAdmin">Администратор</label>
         <Field
+          id="isSrLogist"
+          type="checkbox"
+          name="isSrLogist"
+          class="checkbox checkbox-styled"
+          value="SR_LOGIST"
+        />
+        <label for="isSrLogist">Старший логист</label>
+        <Field
           id="isLogist"
           type="checkbox"
           name="isLogist"
@@ -308,7 +319,7 @@ function onSubmit(values, { setErrors }) {
           class="button secondary"
           type="button"
           @click="
-            $router.push(getHomeRoute())
+            $router.push(getHomeRoute(true))
           "
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />

@@ -47,24 +47,25 @@ const router = createRouter({
       path: '/users',
       name: 'Пользователи',
       component: () => import('@/views/Users_View.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/companies',
       name: 'Компании',
-      component: () => import('@/views/Companies_View.vue')
+      component: () => import('@/views/Companies_View.vue'),
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/parcelstatuses',
       name: 'Статусы посылок',
       component: () => import('@/views/ParcelStatuses_View.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/parcelstatus/create',
       name: 'Регистрация статуса посылки',
       component: () => import('@/views/ParcelStatus_CreateView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/parcelstatus/edit/:id',
@@ -73,19 +74,19 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/keywords',
       name: 'Ключевые слова и фразы',
       component: () => import('@/views/KeyWords_View.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/keyword/create',
       name: 'Регистрация ключевого слова или фразы',
       component: () => import('@/views/KeyWord_CreateView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/keyword/edit/:id',
@@ -94,19 +95,19 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/stopwords',
       name: 'Стоп-слова и фразы',
       component: () => import('@/views/StopWords_View.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/stopword/create',
       name: 'Регистрация стоп-слова или фразы',
       component: () => import('@/views/StopWord_CreateView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/stopword/edit/:id',
@@ -115,28 +116,31 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/countries',
       name: 'Страны',
-      component: () => import('@/views/Countries_View.vue')
+      component: () => import('@/views/Countries_View.vue'),
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacn/orders',
       name: 'Запреты по постановлениям',
-      component: () => import('@/views/FeacnOrders_View.vue')
+      component: () => import('@/views/FeacnOrders_View.vue'),
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacn/prefixes',
       name: 'Запреты по ТН ВЭД',
-      component: () => import('@/views/FeacnPrefixes_View.vue')
+      component: () => import('@/views/FeacnPrefixes_View.vue'),
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacn/prefix/create',
       name: 'Создание префикса ТН ВЭД',
       component: () => import('@/views/FeacnPrefix_CreateView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacn/prefix/edit/:id',
@@ -145,24 +149,25 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacn/codes',
       name: 'Коды ТН ВЭД',
-      component: () => import('@/views/FeacnCodes_View.vue')
+      component: () => import('@/views/FeacnCodes_View.vue'),
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacn/insertitems',
       name: 'Правила для формирования описания продукта',
       component: () => import('@/views/FeacnInsertItems_View.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacninsertitem/create',
       name: 'Создание правила формирования описания продукта',
       component: () => import('@/views/FeacnInsertItem_CreateView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/feacninsertitem/edit/:id',
@@ -171,7 +176,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/registers',
@@ -223,7 +228,7 @@ const router = createRouter({
       path: '/company/create',
       name: 'Регистрация компании',
       component: () => import('@/views/Company_CreateView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     },
     {
       path: '/company/edit/:id',
@@ -232,7 +237,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresAdmin: true }
+      meta: { resAdminOrSrLogist: true }
     }
   ]
 })
@@ -296,11 +301,11 @@ router.beforeEach(async (to) => {
     }
 
     // Check role-specific permissions
-    if (to.meta.requiresAdmin && !auth.isAdmin) {
+    if (to.meta.resAdminOrSrLogist && !auth.isAdmin && !auth.isSrLogist) {
       return routeToLogin(to, auth)
     }
 
-    if (to.meta.requiresLogist && !auth.isLogist) {
+    if (to.meta.requiresLogist && !auth.isLogist && !auth.isSrLogist) {
       return routeToLogin(to, auth)
     }
 

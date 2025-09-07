@@ -97,7 +97,7 @@ describe('users store', () => {
       fetchWrapper.post.mockResolvedValue({})
       
       const store = useUsersStore()
-      const newUser = { firstName: 'John', lastName: 'Doe', isAdmin: 'ADMIN', isLogist: 'LOGIST' }
+      const newUser = { firstName: 'John', lastName: 'Doe', isAdmin: 'ADMIN', isLogist: 'LOGIST', isSrLogist: 'SR_LOGIST' }
       
       await store.add(newUser, true)
       
@@ -106,7 +106,7 @@ describe('users store', () => {
         expect.objectContaining({
           firstName: 'John',
           lastName: 'Doe',
-          roles: expect.arrayContaining(['logist', 'administrator'])
+          roles: expect.arrayContaining(['logist', 'administrator', 'sr-logist'])
         })
       )
     })
@@ -144,7 +144,7 @@ describe('users store', () => {
     })
 
     it('getById translates roles to isAdmin/isLogist when trnslt=true', async () => {
-      const testUser = { id: 5, firstName: 'Jane', roles: ['administrator', 'logist'] }
+      const testUser = { id: 5, firstName: 'Jane', roles: ['administrator', 'logist', 'sr-logist'] }
       fetchWrapper.get.mockResolvedValue(testUser)
       
       const store = useUsersStore()
@@ -152,6 +152,7 @@ describe('users store', () => {
       
       expect(store.user.isAdmin).toBe('ADMIN')
       expect(store.user.isLogist).toBe('LOGIST')
+      expect(store.user.isSrLogist).toBe('SR_LOGIST')
     })
 
     it('update calls API with correct parameters', async () => {

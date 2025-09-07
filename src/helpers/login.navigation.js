@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
  * based on user roles and permissions
  * @returns {string} The path to redirect to
  */
-export function getHomeRoute() {
+export function getHomeRoute(from_user_dialog = false) {
   const authStore = useAuthStore()
   
   // No user means we should go to login
@@ -18,7 +18,8 @@ export function getHomeRoute() {
   }
 
   // Priority: logist > administrator > regular user
-  if (authStore.isLogist) return '/registers'
+  if (from_user_dialog && authStore.isAdmin) return '/users'
+  if (authStore.isLogist || authStore.isSrLogist) return '/registers'
   if (authStore.isAdmin) return '/users'
   
   // Regular user - go to edit profile

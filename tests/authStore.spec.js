@@ -59,6 +59,7 @@ describe('auth store', () => {
       // isAdmin should be falsy when there's no user
       expect(store.isAdmin).toBeFalsy()
       expect(store.isLogist).toBeFalsy()
+      expect(store.isSrLogist).toBeFalsy()
       expect(store.users_per_page).toBe(10)
       expect(store.users_search).toBe('')
       expect(store.users_sort_by).toEqual(['id'])
@@ -81,6 +82,7 @@ describe('auth store', () => {
       expect(store.user).toEqual(testUser)
       expect(store.isAdmin).toBe(true)
       expect(store.isLogist).toBeFalsy()
+      expect(store.isSrLogist).toBeFalsy()
     })
 
     it('correctly identifies admin users', () => {
@@ -98,13 +100,16 @@ describe('auth store', () => {
     it('correctly identifies logist users', () => {
       const store = useAuthStore()
       store.user = { id: 1, roles: ['logist'] }
+      expect(store.isSrLogist).toBe(false)
       expect(store.isLogist).toBe(true)
       
       store.user = { id: 2, roles: ['administrator'] }
       expect(store.isLogist).toBe(false)
       
-      store.user = { id: 3, roles: ['administrator', 'logist'] }
-      expect(store.isLogist).toBe(true)
+      store.user = { id: 3, roles: ['administrator', 'sr-logist'] }
+      expect(store.isLogist).toBe(false)
+      expect(store.isSrLogist).toBe(true)
+      expect(store.isAdmin).toBe(true)
     })
 
     it('handles register view parameters correctly', () => {

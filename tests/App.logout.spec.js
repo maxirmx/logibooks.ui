@@ -155,6 +155,7 @@ describe('App Logout Functionality', () => {
     expect(authStore.user).toBeNull()
     // Since these are computed properties based on user.roles, they become falsy when user is null
     expect(authStore.isAdmin).toBeFalsy()
+    expect(authStore.isSrLogist).toBeFalsy()
     expect(authStore.isLogist).toBeFalsy()
   })
 

@@ -63,7 +63,10 @@ vi.mock('@/router', () => ({
 
 vi.mock('@/helpers/feacn.info.helpers.js', () => ({
   loadFeacnTooltipOnHover: mockLoadTooltip,
-  useFeacnTooltips: () => ref({})
+  useFeacnTooltips: () => ref({
+    '1234567890': { name: 'Test tooltip for 1234567890' },
+    '0987654321': { name: 'Test tooltip for 0987654321' }
+  })
 }))
 
 describe('FeacnInsertItems_List.vue', () => {

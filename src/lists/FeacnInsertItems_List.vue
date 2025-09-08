@@ -132,7 +132,7 @@ defineExpose({
                 {{ item.code }}
               </span>
             </template>
-            <span>{{ feacnTooltips[item.code] || 'Наведите для загрузки...' }}</span>
+            <span>{{ feacnTooltips[item.code].name || 'Наведите для загрузки...' }}</span>
           </v-tooltip>
         </template>
         <template v-slot:[`item.actions`]="{ item }">

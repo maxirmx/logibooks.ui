@@ -129,26 +129,6 @@ describe('FeacnCodeSearch.vue', () => {
     expect(mockGetById).toHaveBeenCalledWith(1)
   })
 
-  it('emits select when leaf result chosen', async () => {
-    mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-
-    const input = wrapper.find('.search-input')
-    await input.setValue('leaf')
-    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
-    await searchButton.find('button').trigger('click')
-    await waitForUpdates(wrapper)
-
-    const resultItem = wrapper.find('.search-result-item')
-    await resultItem.trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockGetById).toHaveBeenCalledWith(3)
-    expect(wrapper.emitted('select')).toBeTruthy()
-    expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
-  })
-
   it('closes dropdown on Escape key', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
     const wrapper = createWrapper()

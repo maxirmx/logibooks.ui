@@ -390,7 +390,7 @@ describe('KeyWord_Settings.vue', () => {
       expect(actionButton.props('icon')).toBe('fa-solid fa-arrow-up')
 
       const wordInput = wrapper.find('input[name="word"]')
-      expect(wordInput.attributes('disabled')).toBeDefined()
+      expect(wordInput.attributes('readonly')).toBeDefined()
     })
 
     it('closes search on Escape key press', async () => {

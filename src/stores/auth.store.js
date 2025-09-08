@@ -84,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
   const feacninsertitems_search = ref('')
   const feacninsertitems_sort_by = ref([])
   const feacninsertitems_page = ref(1)
+  const selectedOrderId = ref(null)
   const selectedParcelId = ref(null)
   const returnUrl = ref(null)
   const re_jwt = ref(null)
@@ -216,6 +217,7 @@ export const useAuthStore = defineStore('auth', () => {
     feacninsertitems_search,
     feacninsertitems_sort_by,
     feacninsertitems_page,
+    selectedOrderId,
     selectedParcelId,
     returnUrl,
     re_jwt,

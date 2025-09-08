@@ -36,6 +36,7 @@ vi.mock('pinia', async () => {
           feacnprefixes_search: store.feacnprefixes_search,
           feacnprefixes_sort_by: store.feacnprefixes_sort_by,
           feacnprefixes_page: store.feacnprefixes_page,
+          selectedOrderId: store.selectedOrderId,
           isAdmin: store.isAdmin,
           isAdminOrSrLogist: store.isAdminOrSrLogist
         }
@@ -82,6 +83,7 @@ const mockAuthStore = createMockStore({
   feacnprefixes_search: ref(''),
   feacnprefixes_sort_by: ref([]),
   feacnprefixes_page: ref(1),
+  selectedOrderId: ref(null),
   isAdmin: ref(false),
   isSrLogist: ref(false),
   isLogist: ref(false),

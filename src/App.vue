@@ -75,7 +75,7 @@ function getUserName() {
         </v-list-item>
 
         <!-- Справочники -->
-        <v-list-group  v-if="authStore.isAdmin || authStore.isSrLogist">
+        <v-list-group  v-if="authStore.hasAnyRole">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Справочники"></v-list-item>
           </template>

@@ -206,7 +206,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-2">
     <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     

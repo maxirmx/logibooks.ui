@@ -58,7 +58,7 @@ function filterCompanies(value, query, item) {
 
 // Table headers
 const headers = [
-  { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
+  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
   { title: 'Название', key: 'displayName', sortable: false },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
   { title: 'Город', key: 'city', sortable: true }
@@ -131,8 +131,8 @@ defineExpose({
     <h1 class="primary-heading">Компании</h1>
     <hr class="hr" />
 
-    <div class="link-crt">
-      <router-link v-if="authStore.isAdmin" to="/company/create" class="link">
+    <div class="link-crt" v-if="authStore.isAdminOrSrLogist">
+      <router-link to="/company/create" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-building"
@@ -178,7 +178,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdmin" class="actions-container">
+          <div v-if="authStore.isAdminOrSrLogist  " class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" :disabled="runningAction || loading" />
           </div>

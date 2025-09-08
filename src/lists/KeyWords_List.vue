@@ -63,7 +63,7 @@ function filterKeyWords(value, query, item) {
 
 // Table headers
 const headers = [
-  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
+  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Ключевое слово или фраза', key: 'word', sortable: true },
   { title: 'Коды ТН ВЭД', key: 'feacnCodes', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
@@ -161,8 +161,8 @@ defineExpose({
     <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
     <hr class="hr" />
 
-    <div class="link-crt d-flex upload-links">
-      <a v-if="authStore.isAdmin" @click="openFileDialog" class="link">
+    <div class="link-crt d-flex upload-links"  v-if="authStore.isAdminOrSrLogist">
+      <a @click="openFileDialog" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-file-import"
@@ -179,8 +179,8 @@ defineExpose({
       />
     </div>
 
-    <div class="link-crt d-flex upload-links">
-      <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
+    <div class="link-crt d-flex upload-links" v-if="authStore.isAdminOrSrLogist">
+      <a @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-plus"
@@ -218,7 +218,7 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdmin" class="actions-container">
+          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

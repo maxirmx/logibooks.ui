@@ -38,7 +38,7 @@ const tooltipMaxWidth = computed(() => {
 })
 
 const headers = [
-  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
+  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Префикс', key: 'code', align: 'start', width: '120px' },
   { title: 'Описание', key: 'description', align: 'start' },
   { title: 'Исключения', key: 'exceptions', align: 'start' }
@@ -113,12 +113,12 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="feacn-prefixes-list">
+  <div class="settings table-2" data-testid="feacn-prefixes-list">
     <h1 class="primary-heading">Префиксы ТН ВЭД для формирования запретов</h1>
     <hr class="hr" />
 
     <div class="link-crt">
-      <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
+      <a v-if="authStore.isAdminOrSrLogist" @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-plus"
@@ -170,7 +170,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdmin" class="actions-container">
+          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

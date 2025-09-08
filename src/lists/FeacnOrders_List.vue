@@ -24,7 +24,7 @@ const {
   feacnprefixes_search,
   feacnprefixes_sort_by,
   feacnprefixes_page,
-  isAdmin
+  isAdminOrSrLogist
 } = storeToRefs(authStore)
 
 
@@ -126,10 +126,10 @@ async function handleToggleOrderEnabled(order) {
 
 <template>
   <div class="settings table-3" data-testid="feacn-orders-list">
-    <h1 class="primary-heading">Запреты по ТН ВЭД</h1>
+    <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
     <hr class="hr" />
 
-    <div class="link-crt" v-if="isAdmin">
+    <div class="link-crt" v-if="isAdminOrSrLogist">
       <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
         &nbsp;&nbsp;&nbsp;Обновить информацию об ограничениях по кодам ТН ВЭД
@@ -166,9 +166,10 @@ async function handleToggleOrderEnabled(order) {
               <button
                 type="button"
                 class="action-btn"
+                :class="{ 'disabled-btn': loading || !isAdminOrSrLogist }"
                 v-bind="props"
                 @click.stop="handleToggleOrderEnabled(item)"
-                :disabled="loading"
+                :disabled="loading || !isAdminOrSrLogist"
                 data-testid="toggle-order-enabled"
               >
                 <font-awesome-icon

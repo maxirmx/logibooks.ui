@@ -138,7 +138,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-2">
     <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</h1>
     <hr class="hr" />
     

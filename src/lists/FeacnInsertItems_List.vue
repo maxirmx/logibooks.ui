@@ -37,7 +37,7 @@ const tooltipMaxWidth = computed(() => {
 })
 
 const headers = [
-  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
+  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Код ТН ВЭД', key: 'code', sortable: true , width: '20%'},
   { title: 'Вставить перед', key: 'insBefore', sortable: true, width: '35%' },
   { title: 'Вставить после', key: 'insAfter', sortable: true, width: '35%' }
@@ -99,7 +99,7 @@ defineExpose({
     <hr class="hr" />
 
     <div class="link-crt">
-      <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
+      <a v-if="authStore.isAdminOrSrLogist" @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-plus"
@@ -136,7 +136,7 @@ defineExpose({
           </v-tooltip>
         </template>
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdmin" class="actions-container">
+          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

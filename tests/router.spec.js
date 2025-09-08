@@ -32,7 +32,6 @@ import router from '@/router'
 async function resetRouter(to = "/recover") {
   await router.replace(to);
   await router.isReady();
-
 }
 
 describe('router guards', () => {

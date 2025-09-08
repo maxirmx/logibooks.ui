@@ -82,7 +82,6 @@ describe('router guards', () => {
     authStore.isLogist = true
     authStore.isSrLogist = false
     authStore.isAdmin = false
-    authStore.isSrLogist = false
     authStore.isAdminOrSrLogist = authStore.isAdmin || authStore.isSrLogist
     authStore.isLogistOrSrLogist = authStore.isLogist || authStore.isSrLogist
 

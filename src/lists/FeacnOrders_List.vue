@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, onMounted, watch, computed } from 'vue'
+import { onMounted, watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'

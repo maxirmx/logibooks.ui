@@ -206,7 +206,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <h1 class="primary-heading">{{ isEdit ? 'Редактировать слово или фразу для подбора ТН ВЭД' : 'Регистрация слова или фразы для подбора ТН ВЭД' }}</h1>
     <hr class="hr" />
     
@@ -226,7 +226,7 @@ defineExpose({
           placeholder="Ключевое слово или фраза"
           v-model="word"
           @input="onWordInput"
-          :disabled="searchActive"
+          :readonly="searchActive"
         />
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
       </div>
@@ -236,12 +236,18 @@ defineExpose({
           name="feacnCodes"
           label="Код ТН ВЭД (10 цифр)"
           field-type="input"
-          :field-props="({ index }) => ({ maxlength: 10, inputmode: 'numeric', pattern: '[0-9]*', onInput: (event) => onCodeInput(event, index) })"
+          :field-props="({ index }) => ({ 
+            maxlength: 10, 
+            inputmode: 'numeric', 
+            pattern: '[0-9]*', 
+            onInput: (event) => onCodeInput(event, index),
+            onDblclick: () => toggleSearch(index),
+            readonly: searchActive && searchIndex !== index
+          })"
           placeholder="Введите код ТН ВЭД"
           add-tooltip="Добавить код"
           remove-tooltip="Удалить код"
           :has-error="!!feacnCodesError"
-          :disabled="searchActive"
         >
           <template #extra="{ index }">
             <ActionButton

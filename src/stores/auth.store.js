@@ -20,11 +20,16 @@ export const useAuthStore = defineStore('auth', () => {
   const isLogist = computed(() =>
     user.value?.roles?.includes('logist')
   )
-
   const isSrLogist = computed(() =>
     user.value?.roles?.includes('sr-logist')
   )
-
+  const isAdminOrSrLogist = computed(() =>
+    isAdmin.value || isSrLogist.value 
+  )
+  const isLogistOrSrLogist = computed(() =>
+    isLogist.value || isSrLogist.value
+  )
+  
   const users_per_page = ref(10)
   const users_search = ref('')
   const users_sort_by = ref(['id'])
@@ -197,7 +202,9 @@ export const useAuthStore = defineStore('auth', () => {
     re_tgt,
     isAdmin,
     isSrLogist,
+    isAdminOrSrLogist,
     isLogist,
+    isLogistOrSrLogist,
     // actions
     check,
     register,

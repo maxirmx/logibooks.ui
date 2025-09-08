@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, onMounted, watch, computed } from 'vue'
+import { onMounted, watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -24,11 +24,9 @@ const {
   feacnprefixes_search,
   feacnprefixes_sort_by,
   feacnprefixes_page,
-  isAdmin
+  selectedOrderId,
+  isAdminOrSrLogist
 } = storeToRefs(authStore)
-
-
-const selectedOrderId = ref(null)
 
 // Always keep selectedOrderId in sync with visible orders
 watch(
@@ -37,12 +35,13 @@ watch(
     if (!newOrders?.length) {
       selectedOrderId.value = null
     } else {
-      // Find first order with Enabled === true
-      const firstEnabled = newOrders.find(o => o.Enabled === true)
-      const newSelectedId = firstEnabled ? firstEnabled.id : newOrders[0].id
+      // Only update selectedOrderId if current value is invalid or not set
       if (!selectedOrderId.value || !newOrders.some(o => o.id === selectedOrderId.value)) {
+        // Find first order with Enabled === true
+        const firstEnabled = newOrders.find(o => o.Enabled === true)
+        const newSelectedId = firstEnabled ? firstEnabled.id : newOrders[0].id
         selectedOrderId.value = newSelectedId
-        // Update prefixes when default row is set
+        // Update prefixes when new order is selected
         if (newSelectedId) await feacnStore.getPrefixes(newSelectedId)
       }
     }
@@ -58,11 +57,16 @@ watch(selectedOrderId, async (id) => {
 onMounted(async () => {
   await feacnStore.ensureLoaded()
   if (orders.value?.length > 0) {
-    const firstEnabled = orders.value.find(o => o.Enabled === true)
-    const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id
-    selectedOrderId.value = newSelectedId
-    // Update prefixes when default row is set on mount
-    if (newSelectedId) await feacnStore.getPrefixes(newSelectedId)
+    // Only set selectedOrderId if it's not already set or if the persisted value is invalid
+    if (!selectedOrderId.value || !orders.value.some(o => o.id === selectedOrderId.value)) {
+      const firstEnabled = orders.value.find(o => o.Enabled === true)
+      const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id
+      selectedOrderId.value = newSelectedId
+    }
+    // Always load prefixes for the current selectedOrderId (whether persisted or newly set)
+    if (selectedOrderId.value) {
+      await feacnStore.getPrefixes(selectedOrderId.value)
+    }
   }
 })
 
@@ -126,10 +130,10 @@ async function handleToggleOrderEnabled(order) {
 
 <template>
   <div class="settings table-3" data-testid="feacn-orders-list">
-    <h1 class="primary-heading">Запреты по ТН ВЭД</h1>
+    <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
     <hr class="hr" />
 
-    <div class="link-crt" v-if="isAdmin">
+    <div class="link-crt" v-if="isAdminOrSrLogist">
       <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
         &nbsp;&nbsp;&nbsp;Обновить информацию об ограничениях по кодам ТН ВЭД
@@ -166,9 +170,10 @@ async function handleToggleOrderEnabled(order) {
               <button
                 type="button"
                 class="action-btn"
+                :class="{ 'disabled-btn': loading || !isAdminOrSrLogist }"
                 v-bind="props"
                 @click.stop="handleToggleOrderEnabled(item)"
-                :disabled="loading"
+                :disabled="loading || !isAdminOrSrLogist"
                 data-testid="toggle-order-enabled"
               >
                 <font-awesome-icon

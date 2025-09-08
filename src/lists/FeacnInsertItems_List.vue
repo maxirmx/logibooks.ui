@@ -11,6 +11,8 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { mdiMagnify } from '@mdi/js'
 import {
   loadFeacnTooltipOnHover,
   useFeacnTooltips
@@ -36,8 +38,26 @@ const tooltipMaxWidth = computed(() => {
   return '400px'
 })
 
+// Custom filter function for v-data-table
+function filterInsertItems(value, query, item) {
+  if (query === null || item === null) {
+    return false
+  }
+  const i = item.raw
+  if (i === null) {
+    return false
+  }
+  const q = query.toLocaleUpperCase()
+
+  return (
+    (i.code?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.insBefore?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.insAfter?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+  )
+}
+
 const headers = [
-  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
+  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Код ТН ВЭД', key: 'code', sortable: true , width: '20%'},
   { title: 'Вставить перед', key: 'insBefore', sortable: true, width: '35%' },
   { title: 'Вставить после', key: 'insAfter', sortable: true, width: '35%' }
@@ -89,7 +109,8 @@ async function deleteInsertItem(item) {
 defineExpose({
   openCreateDialog,
   openEditDialog,
-  deleteInsertItem
+  deleteInsertItem,
+  filterInsertItems
 })
 </script>
 
@@ -99,7 +120,7 @@ defineExpose({
     <hr class="hr" />
 
     <div class="link-crt">
-      <a v-if="authStore.isAdmin" @click="openCreateDialog" class="link">
+      <a v-if="authStore.isAdminOrSrLogist" @click="openCreateDialog" class="link">
         <font-awesome-icon
           size="1x"
           icon="fa-solid fa-plus"
@@ -108,11 +129,29 @@ defineExpose({
       </a>
     </div>
 
+    <div v-if="insertItems?.length">
+      <v-text-field
+        v-model="authStore.feacninsertitems_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по правилам"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="insertItems?.length"
+        v-model:items-per-page="authStore.feacninsertitems_per_page"
+        items-per-page-text="Правил на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="authStore.feacninsertitems_page"
         :headers="headers"
         :items="insertItems"
+        :search="authStore.feacninsertitems_search"
+        v-model:sort-by="authStore.feacninsertitems_sort_by"
+        :custom-filter="filterInsertItems"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -132,11 +171,11 @@ defineExpose({
                 {{ item.code }}
               </span>
             </template>
-            <span>{{ feacnTooltips[item.code] || 'Наведите для загрузки...' }}</span>
+            <span>{{ feacnTooltips[item.code]?.name|| 'Наведите для загрузки...' }}</span>
           </v-tooltip>
         </template>
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdmin" class="actions-container">
+          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

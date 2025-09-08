@@ -22,10 +22,6 @@ const searchError = ref(null)
 
 const treeRef = ref(null)
 
-function isLeafNode(node) {
-  return node?.code && node.code.length === 10 && /\d$/.test(node.code)
-}
-
 async function performSearch() {
   const key = searchKey.value.trim()
   if (!key) {
@@ -69,11 +65,6 @@ async function selectSearchResult(item) {
   try {
     const node = await store.getById(item.id)
     if (!node) {
-      return
-    }
-
-    if (isLeafNode(node)) {
-      emit('select', node.code)
       return
     }
 

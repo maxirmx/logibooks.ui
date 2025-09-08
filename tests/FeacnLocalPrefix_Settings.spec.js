@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import FeacnPrefix_Settings from '@/dialogs/FeacnPrefix_Settings.vue'
+import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
 
 // Stub FieldArrayWithButtons
 vi.mock('@/components/FieldArrayWithButtons.vue', () => ({
@@ -77,14 +77,14 @@ vi.mock('pinia', async () => {
   }
 })
 
-describe('FeacnPrefix_Settings.vue', () => {
+describe('FeacnLocalPrefix_Settings.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
   const mountComponent = (props = { mode: 'create' }) =>
-    mount(FeacnPrefix_Settings, {
+    mount(FeacnLocalPrefix_Settings, {
       props,
       global: {
         stubs: { 'font-awesome-icon': true }

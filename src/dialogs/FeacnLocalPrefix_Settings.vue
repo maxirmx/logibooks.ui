@@ -171,7 +171,8 @@ function cancel() {
             class="form-control input"
             :class="{ 'is-invalid': errors.code }"
             v-model="code"
-            :disabled="searchActive"
+            @dblclick="toggleCodeSearch"
+            :readonly="searchActive"
             placeholder="Введите префикс ТН ВЭД"
           />
           <ActionButton
@@ -192,10 +193,13 @@ function cancel() {
           name="exceptions"
           label="Исключения"
           field-type="input"
+          :field-props="({ index }) => ({
+            onDblclick: () => toggleExceptionSearch(index),
+            readonly: searchActive && exceptionSearchIndex !== index
+          })"
           placeholder="Код-исключение"
           add-tooltip="Добавить исключение"
           remove-tooltip="Удалить исключение"
-          :disabled="searchActive"
           :has-error="!!errors.exceptions"
         >
           <template #extra="{ index }">

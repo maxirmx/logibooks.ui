@@ -74,8 +74,7 @@ const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
 
 const authStore = useAuthStore()
-const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isSrLogist } =
-  storeToRefs(authStore)
+const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedCustomerId = ref(WBR_COMPANY_ID)
@@ -417,7 +416,7 @@ const headers = [
     <h1 class="primary-heading">Реестры</h1>
     <hr class="hr" />
 
-    <div class="link-crt d-flex upload-links" v-if="isAdmin || isSrLogist">
+    <div class="link-crt d-flex upload-links" v-if="isAdminOrSrLogist">
       <a @click="openFileDialog" class="link" tabindex="0">
         <font-awesome-icon
           size="1x"
@@ -542,7 +541,7 @@ const headers = [
             <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" :disabled="runningAction || loading" />
             
-            <div class="bulk-status-inline" v-if="isAdmin || isSrLogist">
+            <div class="bulk-status-inline" v-if="isAdminOrSrLogist">
               <div v-if="isInEditMode(item.id)" class="status-selector-inline">
                 <v-select 
                   :model-value="getSelectedStatusId(item.id)" 
@@ -583,7 +582,7 @@ const headers = [
             </div>
 
             <ActionButton 
-              v-if="isAdmin || isSrLogist"
+              v-if="isAdminOrSrLogist"
               :item="item" 
               icon="fa-solid fa-spell-check" 
               tooltip-text="Проверить по стоп-словам" 
@@ -591,7 +590,7 @@ const headers = [
               :disabled="runningAction || loading" 
             />
             <ActionButton 
-              v-if="isAdmin || isSrLogist"
+              v-if="isAdminOrSrLogist"
               :item="item" 
               icon="fa-solid fa-anchor-circle-check" 
               tooltip-text="Проверить по кодам ТН ВЭД" 
@@ -599,7 +598,7 @@ const headers = [
               :disabled="runningAction || loading" 
             />
             <ActionButton 
-              v-if="isAdmin || isSrLogist"
+              v-if="isAdminOrSrLogist"
               :item="item" 
               icon="fa-solid fa-magnifying-glass" 
               tooltip-text="Подбор кодов ТН ВЭД" 
@@ -607,7 +606,7 @@ const headers = [
               :disabled="runningAction || loading" 
             />
             <ActionButton 
-              v-if="isAdmin || isSrLogist"
+              v-if="isAdminOrSrLogist"
               :item="item" 
               icon="fa-solid fa-upload" 
               tooltip-text="Выгрузить XML накладные для всех посылок в реестре" 
@@ -615,7 +614,7 @@ const headers = [
               :disabled="runningAction || loading" 
               />
             <ActionButton 
-              v-if="isAdmin || isSrLogist"
+              v-if="isAdminOrSrLogist"
               :item="item" 
               icon="fa-solid fa-file-export" 
               tooltip-text="Экспортировать реестр" 

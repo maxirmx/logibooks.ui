@@ -172,7 +172,8 @@ function cancel() {
                 pattern="[0-9]*"
                 v-model="code"
                 @input="onCodeInput"
-                :disabled="searchActive"
+                @dblclick="toggleSearch"
+                :readonly="searchActive"
                 placeholder="Введите код ТН ВЭД"
             />
             <ActionButton
@@ -196,7 +197,7 @@ function cancel() {
           class="form-control input"
           :class="{ 'is-invalid': errors.insBefore }"
           v-model="insBefore"
-          :disabled="searchActive"
+          :readonly="searchActive"
           placeholder="Текст для вставки перед описанием (не обязательно)"
         />
         <div v-if="errors.insBefore" class="invalid-feedback">{{ errors.insBefore }}</div>
@@ -211,7 +212,7 @@ function cancel() {
           class="form-control input"
           :class="{ 'is-invalid': errors.insAfter }"
           v-model="insAfter"
-          :disabled="searchActive"
+          :readonly="searchActive"
           placeholder="Текст для вставки после описанием (не обязательно)"
         />
         <div v-if="errors.insAfter" class="invalid-feedback">{{ errors.insAfter }}</div>

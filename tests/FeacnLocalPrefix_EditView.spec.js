@@ -5,24 +5,24 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
-import FeacnPrefix_EditView from '@/views/FeacnPrefix_EditView.vue'
-import FeacnPrefix_Settings from '@/dialogs/FeacnPrefix_Settings.vue'
+import FeacnLocalPrefix_EditView from '@/views/FeacnLocalPrefix_EditView.vue'
+import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
 
 const vuetify = createVuetify()
 
-vi.mock('@/dialogs/FeacnPrefix_Settings.vue', () => ({
+vi.mock('@/dialogs/FeacnLocalPrefix_Settings.vue', () => ({
   default: {
-    name: 'FeacnPrefix_Settings',
+    name: 'FeacnLocalPrefix_Settings',
     props: ['mode', 'prefixId'],
     template: '<div data-test="fp-settings">Fp Settings {{ prefixId }}</div>'
   }
 }))
 
-describe('FeacnPrefix_EditView.vue', () => {
+describe('FeacnLocalPrefix_EditView.vue', () => {
   let wrapper
 
   beforeEach(() => {
-    wrapper = mount(FeacnPrefix_EditView, {
+    wrapper = mount(FeacnLocalPrefix_EditView, {
       props: {
         id: 123
       },
@@ -30,13 +30,13 @@ describe('FeacnPrefix_EditView.vue', () => {
     })
   })
 
-  it('renders FeacnPrefix_Settings component', () => {
-    const comp = wrapper.findComponent(FeacnPrefix_Settings)
+  it('renders FeacnLocalPrefix_Settings component', () => {
+    const comp = wrapper.findComponent(FeacnLocalPrefix_Settings)
     expect(comp.exists()).toBe(true)
   })
 
-  it('passes route id to FeacnPrefix_Settings', () => {
-    const comp = wrapper.findComponent(FeacnPrefix_Settings)
+  it('passes route id to FeacnLocalPrefix_Settings', () => {
+    const comp = wrapper.findComponent(FeacnLocalPrefix_Settings)
     expect(comp.props('prefixId')).toBe(123)
   })
 

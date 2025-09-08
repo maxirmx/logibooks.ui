@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import FeacnPrefixesList from '@/lists/FeacnPrefixes_List.vue'
+import FeacnLocalPrefixesList from '@/lists/FeacnLocalPrefixes_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Hoisted mocks
@@ -49,7 +49,13 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
-  useAuthStore: () => ({ isAdmin: ref(true) })
+  useAuthStore: () => ({ 
+    isAdmin: ref(true),
+    isSrLogist: ref(false),
+    isLogist: ref(false),
+    isAdminOrSrLogist: ref(true),
+    isLogistOrSrLogist: ref(false)
+  })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -74,7 +80,7 @@ vi.mock('@/router', () => ({
   default: { push: mockPush }
 }))
 
-describe('FeacnPrefixes_List.vue', () => {
+describe('FeacnLocalPrefixes_List.vue', () => {
   let wrapper
 
   beforeEach(() => {
@@ -84,7 +90,7 @@ describe('FeacnPrefixes_List.vue', () => {
     loadFeacnTooltipOnHover.mockClear()
     mockPush.mockClear()
     mockConfirm.mockClear()
-    wrapper = mount(FeacnPrefixesList, { global: { stubs: vuetifyStubs } })
+    wrapper = mount(FeacnLocalPrefixesList, { global: { stubs: vuetifyStubs } })
   })
 
   it('fetches prefixes and preloads FEACN info on mount', () => {

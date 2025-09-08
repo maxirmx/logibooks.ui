@@ -8,12 +8,18 @@ import { storeToRefs } from 'pinia'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 defineOptions({ name: 'FeacnCodes_Tree' })
 
 const store = useFeacnCodesStore()
+
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+
+const authStore = useAuthStore()
+const { isAdminOrSrLogist } = storeToRefs(authStore)
+
 const fileInput = ref(null)
 const treeRef = ref(null)
 const uploading = ref(false)
@@ -44,7 +50,7 @@ async function fileSelected(file) {
   <div class="settings table-2 feacn-codes-tree-container">
     <h1 class="primary-heading">Коды ТН ВЭД</h1>
     <hr class="hr" />
-    <div class="link-crt d-flex upload-links">
+    <div class="link-crt d-flex upload-links" v-if="isAdminOrSrLogist">
       <a @click="openFileDialog" class="link" tabindex="0" :class="{ disabled: uploading }">
         <font-awesome-icon
           size="1x"

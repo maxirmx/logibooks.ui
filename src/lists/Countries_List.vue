@@ -27,7 +27,7 @@ const {
   countries_search,
   countries_sort_by,
   countries_page,
-  isAdmin
+  isAdminOrSrLogist
 } = storeToRefs(authStore)
 
 function filterCodes(value, query, item) {
@@ -64,7 +64,7 @@ const headers = [
     <h1 class="primary-heading">Cтраны</h1>
     <hr class="hr" />
 
-    <div class="link-crt" v-if="isAdmin">
+    <div class="link-crt" v-if="isAdminOrSrLogist">
       <a @click="updateCodes" class="link">
         <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
         &nbsp;&nbsp;&nbsp;Обновить информацию о странах

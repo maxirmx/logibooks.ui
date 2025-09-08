@@ -47,25 +47,40 @@ const router = createRouter({
       path: '/users',
       name: 'Пользователи',
       component: () => import('@/views/Users_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdmin: true }
     },
     {
       path: '/companies',
       name: 'Компании',
       component: () => import('@/views/Companies_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
+    },
+    {
+      path: '/company/create',
+      name: 'Регистрация компании',
+      component: () => import('@/views/Company_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/company/edit/:id',
+      name: 'Изменить информацию о компании',
+      component: () => import('@/views/Company_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/parcelstatuses',
       name: 'Статусы посылок',
       component: () => import('@/views/ParcelStatuses_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/parcelstatus/create',
       name: 'Регистрация статуса посылки',
       component: () => import('@/views/ParcelStatus_CreateView.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/parcelstatus/edit/:id',
@@ -74,19 +89,19 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/keywords',
       name: 'Ключевые слова и фразы',
       component: () => import('@/views/KeyWords_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/keyword/create',
       name: 'Регистрация ключевого слова или фразы',
       component: () => import('@/views/KeyWord_CreateView.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/keyword/edit/:id',
@@ -95,19 +110,19 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/stopwords',
       name: 'Стоп-слова и фразы',
       component: () => import('@/views/StopWords_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/stopword/create',
       name: 'Регистрация стоп-слова или фразы',
       component: () => import('@/views/StopWord_CreateView.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/stopword/edit/:id',
@@ -116,58 +131,58 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/countries',
       name: 'Страны',
       component: () => import('@/views/Countries_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/feacn/orders',
       name: 'Запреты по постановлениям',
       component: () => import('@/views/FeacnOrders_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/feacn/prefixes',
       name: 'Запреты по ТН ВЭД',
-      component: () => import('@/views/FeacnPrefixes_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      component: () => import('@/views/FeacnLocalPrefixes_View.vue'),
+      meta: { reqAnyRole: true }
     },
     {
       path: '/feacn/prefix/create',
       name: 'Создание префикса ТН ВЭД',
-      component: () => import('@/views/FeacnPrefix_CreateView.vue'),
-      meta: { resAdminOrSrLogist: true }
+      component: () => import('@/views/FeacnLocalPrefix_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/feacn/prefix/edit/:id',
       name: 'Редактирование префикса ТН ВЭД',
-      component: () => import('@/views/FeacnPrefix_EditView.vue'),
+      component: () => import('@/views/FeacnLocalPrefix_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/feacn/codes',
       name: 'Коды ТН ВЭД',
       component: () => import('@/views/FeacnCodes_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/feacn/insertitems',
       name: 'Правила для формирования описания продукта',
       component: () => import('@/views/FeacnInsertItems_View.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAnyRole: true }
     },
     {
       path: '/feacninsertitem/create',
       name: 'Создание правила формирования описания продукта',
       component: () => import('@/views/FeacnInsertItem_CreateView.vue'),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/feacninsertitem/edit/:id',
@@ -176,13 +191,13 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { resAdminOrSrLogist: true }
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
-      meta: { requiresLogist: true, hideSidebar: true }
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
       path: '/registers/:id/parcels',
@@ -191,7 +206,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { requiresLogist: true, hideSidebar: true }
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
       path: '/registers/:registerId/parcels/edit/:id',
@@ -201,20 +216,20 @@ const router = createRouter({
         registerId: Number(route.params.registerId),
         id: Number(route.params.id)
       }),
-      meta: { requiresLogist: true, hideSidebar: true }
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
       path: '/register/edit/:id',
       name: 'Редактирование реестра',
       component: () => import('@/views/Register_EditView.vue'),
       props: (route) => ({ id: Number(route.params.id) }),
-      meta: { requiresLogist: true, hideSidebar: true }
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
       path: '/register/load',
       name: 'Загрузка реестра',
       component: () => import('@/views/Register_LoadView.vue'),
-      meta: { requiresLogist: true, hideSidebar: true }
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
       path: '/user/edit/:id',
@@ -224,21 +239,6 @@ const router = createRouter({
         id: Number(route.params.id)
       })
     },
-    {
-      path: '/company/create',
-      name: 'Регистрация компании',
-      component: () => import('@/views/Company_CreateView.vue'),
-      meta: { resAdminOrSrLogist: true }
-    },
-    {
-      path: '/company/edit/:id',
-      name: 'Изменить информацию о компании',
-      component: () => import('@/views/Company_EditView.vue'),
-      props: (route) => ({
-        id: Number(route.params.id)
-      }),
-      meta: { resAdminOrSrLogist: true }
-    }
   ]
 })
 
@@ -301,11 +301,15 @@ router.beforeEach(async (to) => {
     }
 
     // Check role-specific permissions
-    if (to.meta.resAdminOrSrLogist && !auth.isAdmin && !auth.isSrLogist) {
+    if (to.meta.reqAdminOrSrLogist && !auth.isAdminOrSrLogist) {
       return routeToLogin(to, auth)
     }
 
-    if (to.meta.requiresLogist && !auth.isLogist && !auth.isSrLogist) {
+    if (to.meta.reqLogistOrSrLogist && !auth.isLogistOrSrLogist) {
+      return routeToLogin(to, auth)
+    }
+
+    if (to.meta.reqAnyRole && !auth.hasAnyRole) {
       return routeToLogin(to, auth)
     }
 

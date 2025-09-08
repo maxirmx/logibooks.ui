@@ -49,7 +49,13 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
-  useAuthStore: () => ({ isAdmin: ref(true) })
+  useAuthStore: () => ({ 
+    isAdmin: ref(true),
+    isSrLogist: ref(false),
+    isLogist: ref(false),
+    isAdminOrSrLogist: ref(true),
+    isLogistOrSrLogist: ref(false)
+  })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({

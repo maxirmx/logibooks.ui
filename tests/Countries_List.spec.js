@@ -53,7 +53,11 @@ vi.mock('@/stores/auth.store.js', () => ({
     countries_search: codesSearch,
     countries_sort_by: codesSortBy,
     countries_page: codesPage,
-    isAdmin: mockIsAdmin
+    isAdmin: mockIsAdmin,
+    isSrLogist: ref(false),
+    isLogist: ref(false),
+    isAdminOrSrLogist: mockIsAdmin,
+    isLogistOrSrLogist: ref(false)
   })
 }))
 

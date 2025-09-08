@@ -36,7 +36,8 @@ vi.mock('pinia', async () => {
           feacnprefixes_search: store.feacnprefixes_search,
           feacnprefixes_sort_by: store.feacnprefixes_sort_by,
           feacnprefixes_page: store.feacnprefixes_page,
-          isAdmin: store.isAdmin
+          isAdmin: store.isAdmin,
+          isAdminOrSrLogist: store.isAdminOrSrLogist
         }
       }
       if (store.alert) {
@@ -81,7 +82,11 @@ const mockAuthStore = createMockStore({
   feacnprefixes_search: ref(''),
   feacnprefixes_sort_by: ref([]),
   feacnprefixes_page: ref(1),
-  isAdmin: ref(false)
+  isAdmin: ref(false),
+  isSrLogist: ref(false),
+  isLogist: ref(false),
+  isAdminOrSrLogist: ref(false),
+  isLogistOrSrLogist: ref(false)
 })
 
 vi.mock('@/stores/feacn.orders.store.js', () => ({
@@ -137,6 +142,7 @@ describe('FeacnOrders_List.vue', () => {
 
   it('renders admin update button when user is admin', () => {
     mockAuthStore.isAdmin.value = true
+    mockAuthStore.isAdminOrSrLogist.value = true
     const wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.text()).toContain('Обновить информацию об ограничениях')
   })

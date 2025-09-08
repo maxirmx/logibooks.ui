@@ -54,6 +54,10 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     isAdmin: ref(true),
+    isSrLogist: ref(false),
+    isLogist: ref(false),
+    isAdminOrSrLogist: ref(true),
+    isLogistOrSrLogist: ref(false),
     user: ref({ id: 1, roles: ['administrator'] }),
     parcelstatuses_per_page: ref(10),
     parcelstatuses_search: ref(''),

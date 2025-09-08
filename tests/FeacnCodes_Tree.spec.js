@@ -5,6 +5,7 @@
 
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ref } from 'vue'
 import FeacnCodes_Tree from '@/components/FeacnCodes_Tree.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
@@ -12,17 +13,47 @@ const uploadMock = vi.fn()
 const alertSuccessMock = vi.fn()
 const alertErrorMock = vi.fn()
 
+// Mock Pinia's storeToRefs to return the mock values
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: vi.fn((store) => {
+      if (store.isAdminOrSrLogist) {
+        return { 
+          isAdminOrSrLogist: store.isAdminOrSrLogist
+        }
+      }
+      if (store.alert) {
+        return { alert: store.alert }
+      }
+      return {}
+    })
+  }
+})
+
+const mockAuthStore = {
+  isAdminOrSrLogist: ref(true)
+}
+
+const mockAlertStore = {
+  alert: ref(null),
+  success: alertSuccessMock,
+  error: alertErrorMock
+}
+
 vi.mock('@/stores/feacn.codes.store.js', () => ({
   useFeacnCodesStore: () => ({
     upload: uploadMock
   })
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => mockAuthStore
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({
-    success: alertSuccessMock,
-    error: alertErrorMock
-  })
+  useAlertStore: () => mockAlertStore
 }))
 
 const globalStubs = {

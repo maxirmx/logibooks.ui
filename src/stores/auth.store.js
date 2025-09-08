@@ -76,6 +76,10 @@ export const useAuthStore = defineStore('auth', () => {
   const feacnprefixes_search = ref('')
   const feacnprefixes_sort_by = ref([])
   const feacnprefixes_page = ref(1)
+  const feacnlocalprefixes_per_page = ref(10)
+  const feacnlocalprefixes_search = ref('')
+  const feacnlocalprefixes_sort_by = ref([])
+  const feacnlocalprefixes_page = ref(1)
   const feacninsertitems_per_page = ref(10)
   const feacninsertitems_search = ref('')
   const feacninsertitems_sort_by = ref([])
@@ -204,6 +208,10 @@ export const useAuthStore = defineStore('auth', () => {
     feacnprefixes_search,
     feacnprefixes_sort_by,
     feacnprefixes_page,
+    feacnlocalprefixes_per_page,
+    feacnlocalprefixes_search,
+    feacnlocalprefixes_sort_by,
+    feacnlocalprefixes_page,
     feacninsertitems_per_page,
     feacninsertitems_search,
     feacninsertitems_sort_by,

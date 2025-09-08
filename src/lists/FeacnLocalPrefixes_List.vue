@@ -11,6 +11,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useConfirm } from 'vuetify-use-dialog'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { mdiMagnify } from '@mdi/js'
 import {
   preloadFeacnInfo,
   loadFeacnTooltipOnHover,
@@ -36,6 +38,28 @@ const tooltipMaxWidth = computed(() => {
   }
   return '400px'
 })
+
+// Custom filter function for v-data-table
+function filterLocalPrefixes(value, query, item) {
+  if (query === null || item === null) {
+    return false
+  }
+  const i = item.raw
+  if (i === null) {
+    return false
+  }
+  const q = query.toLocaleUpperCase()
+
+  return (
+    (i.code?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (feacnTooltips.value[i.code]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.exceptions?.some(exc => {
+      const exceptionCode = getExceptionCode(exc)
+      return exceptionCode.toLocaleUpperCase().includes(q) ||
+             (feacnTooltips.value[exceptionCode]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+    }) ?? false)
+  )
+}
 
 const headers = [
   ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
@@ -108,7 +132,8 @@ defineExpose({
   openEditDialog,
   deletePrefix,
   getExceptionCode,
-  getExceptionKey
+  getExceptionKey,
+  filterLocalPrefixes
 })
 </script>
 
@@ -127,11 +152,29 @@ defineExpose({
       </a>
     </div>
 
+    <div v-if="prefixes?.length">
+      <v-text-field
+        v-model="authStore.feacnlocalprefixes_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по префиксам ТН ВЭД"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
     <v-card>
       <v-data-table
         v-if="prefixes?.length"
+        v-model:items-per-page="authStore.feacnlocalprefixes_per_page"
+        items-per-page-text="Префиксов на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="authStore.feacnlocalprefixes_page"
         :headers="headers"
         :items="prefixes"
+        :search="authStore.feacnlocalprefixes_search"
+        v-model:sort-by="authStore.feacnlocalprefixes_sort_by"
+        :custom-filter="filterLocalPrefixes"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"

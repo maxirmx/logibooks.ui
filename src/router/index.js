@@ -148,19 +148,19 @@ const router = createRouter({
     {
       path: '/feacn/prefixes',
       name: 'Запреты по ТН ВЭД',
-      component: () => import('@/views/FeacnPrefixes_View.vue'),
+      component: () => import('@/views/FeacnLocalPrefixes_View.vue'),
       meta: { reqAnyRole: true }
     },
     {
       path: '/feacn/prefix/create',
       name: 'Создание префикса ТН ВЭД',
-      component: () => import('@/views/FeacnPrefix_CreateView.vue'),
+      component: () => import('@/views/FeacnLocalPrefix_CreateView.vue'),
       meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/feacn/prefix/edit/:id',
       name: 'Редактирование префикса ТН ВЭД',
-      component: () => import('@/views/FeacnPrefix_EditView.vue'),
+      component: () => import('@/views/FeacnLocalPrefix_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

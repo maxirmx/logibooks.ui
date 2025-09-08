@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import FeacnPrefix_Settings from '@/dialogs/FeacnPrefix_Settings.vue'
+import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
 
 const props = defineProps({
   id: {
@@ -14,6 +14,6 @@ const props = defineProps({
 </script>
 
 <template>
-  <FeacnPrefix_Settings :mode="'edit'" :prefix-id="props.id" />
+  <FeacnLocalPrefix_Settings :mode="'edit'" :prefix-id="props.id" />
 </template>
 

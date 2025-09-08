@@ -3,10 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import FeacnPrefixes_List from '@/lists/FeacnPrefixes_List.vue'
+import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
 </script>
 
 <template>
-  <FeacnPrefixes_List />
+  <FeacnLocalPrefix_Settings :mode="'create'" />
 </template>
 

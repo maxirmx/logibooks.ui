@@ -40,7 +40,11 @@ vi.mock('@/stores/auth.store.js', () => ({
     isSrLogist: ref(false),
     isLogist: ref(false),
     isAdminOrSrLogist: ref(true),
-    isLogistOrSrLogist: ref(false)
+    isLogistOrSrLogist: ref(false),
+    feacninsertitems_per_page: ref(10),
+    feacninsertitems_search: ref(''),
+    feacninsertitems_sort_by: ref([]),
+    feacninsertitems_page: ref(1)
   })
 }))
 
@@ -122,6 +126,35 @@ describe('FeacnInsertItems_List.vue', () => {
     const codeCell = wrapper.find('.feacn-code-tooltip')
     await codeCell.trigger('mouseenter')
     expect(mockLoadTooltip).toHaveBeenCalledWith('1234567890')
+  })
+
+  describe('Filter Functionality', () => {
+    it('filters insert items correctly', () => {
+      const filterFn = wrapper.vm.filterInsertItems
+
+      // Test filter by code
+      expect(filterFn('123', '123', { raw: { code: '1234567890' } })).toBe(true)
+      
+      // Test filter by insBefore
+      expect(filterFn('before', 'before', { raw: { insBefore: 'before1' } })).toBe(true)
+      
+      // Test filter by insAfter  
+      expect(filterFn('after', 'after', { raw: { insAfter: 'after1' } })).toBe(true)
+      
+      // Test case insensitive
+      expect(filterFn('BEFORE', 'BEFORE', { raw: { insBefore: 'before1' } })).toBe(true)
+      
+      // Test non-matching filter
+      expect(filterFn('xyz', 'xyz', { raw: { code: '1234567890' } })).toBe(false)
+      
+      // Test null/undefined handling
+      expect(filterFn(null, null, { raw: { code: '1234567890' } })).toBe(false)
+      expect(filterFn('test', 'test', null)).toBe(false)
+      expect(filterFn('test', 'test', { raw: null })).toBe(false)
+      
+      // Test empty object
+      expect(filterFn('test', 'test', { raw: { } })).toBe(false)
+    })
   })
 })
 

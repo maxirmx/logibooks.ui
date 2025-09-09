@@ -77,7 +77,7 @@ const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
 
 const fileInput = ref(null)
-const selectedCustomerId = ref(WBR_COMPANY_ID)
+const selectedCustomerId = ref(OZON_COMPANY_ID)
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -168,7 +168,6 @@ onMounted(async () => {
     await companiesStore.getAll()
   } catch (error) {
     if (isComponentMounted.value) {
-      console.error('Failed to initialize component:', error)
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {

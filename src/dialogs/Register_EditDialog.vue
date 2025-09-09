@@ -38,6 +38,7 @@ const isExport = ref(true)
 const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
+const isSubmitting = ref(false)
 
     if (!props.create) {
       await registersStore.getById(props.id)
@@ -187,8 +188,14 @@ function getButton() {
 async function onSubmit(values, actions = {}) {
   if (!isComponentMounted.value) return
   
+  // Guard against multiple submissions
+  if (isSubmitting.value) return
+  
   // Handle both form submission and direct calls
   const { setErrors } = actions || {}
+  
+  // Set submitting state
+  isSubmitting.value = true
   
   try {
     if (props.create) {
@@ -215,6 +222,9 @@ async function onSubmit(values, actions = {}) {
         registersStore.error = error.message || String(error)
       }
     }
+  } finally {
+    // Always reset submitting state
+    isSubmitting.value = false
   }
 }
 
@@ -234,7 +244,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, values, isSubmitting }"
+      v-slot="{ errors, values }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">

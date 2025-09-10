@@ -29,6 +29,10 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
     params.append('tnVed', authStore.parcels_tnved)
   }
 
+  if (authStore.parcels_number) {
+    params.append('number', authStore.parcels_number)
+  }
+
   return params
 }
 

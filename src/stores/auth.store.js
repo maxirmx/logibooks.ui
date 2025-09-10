@@ -52,6 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
   const parcels_status = ref(null)
   const parcels_check_status = ref(null)
   const parcels_tnved = ref('')
+  const parcels_number = ref('')
   const parcelstatuses_per_page = ref(10)
   const parcelstatuses_search = ref('')
   const parcelstatuses_sort_by = ref(['id'])
@@ -185,6 +186,7 @@ export const useAuthStore = defineStore('auth', () => {
     parcels_status,
     parcels_check_status,
     parcels_tnved,
+    parcels_number,
     parcelstatuses_per_page,
     parcelstatuses_search,
     parcelstatuses_sort_by,

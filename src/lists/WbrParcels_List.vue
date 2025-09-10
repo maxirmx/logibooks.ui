@@ -63,6 +63,7 @@ const {
   parcels_status,
   parcels_check_status,
   parcels_tnved,
+  parcels_number,
   selectedParcelId
 } = storeToRefs(authStore)
 
@@ -72,6 +73,7 @@ const dataTableRef = ref(null)
 parcels_status.value = null
 parcels_check_status.value = null
 parcels_tnved.value = ''
+parcels_number.value = ''
 
 // Selected parcel management
 function updateSelectedParcelId() {
@@ -172,7 +174,7 @@ async function loadOrdersWrapper() {
 provide('loadOrders', loadOrdersWrapper)
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved, parcels_number],
   loadOrdersWrapper,
   { immediate: true }
 )
@@ -375,6 +377,12 @@ function getGenericTemplateHeaders() {
           density="compact"
           style="min-width: 200px;"
         />
+        <v-text-field
+          v-model="parcels_number"
+          label="Номер посылки"
+          density="compact"
+          style="min-width: 200px;"
+        />
       </div>
     </div>
 
@@ -486,6 +494,13 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-pen" 
               tooltip-text="Редактировать посылку" 
               @click="editParcel" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-spell-check" 
+              tooltip-text="Проверить по стоп-словам" 
+              @click="validateParcelSw" 
               :disabled="runningAction || loading" 
             />
             <ActionButton 

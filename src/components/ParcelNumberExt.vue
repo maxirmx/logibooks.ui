@@ -6,7 +6,7 @@
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 
-const props = defineProps({
+defineProps({
   item: { type: Object, required: true },
   fieldName: { type: String, default: 'postingNumber' }, // field to display (postingNumber for Ozon, shk for WBR)
   disabled: { type: Boolean, default: false }

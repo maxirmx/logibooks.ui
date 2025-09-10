@@ -36,6 +36,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -467,6 +468,15 @@ function getGenericTemplateHeaders() {
             :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
             cell-class="truncated-cell clickable-cell" 
             @click="editParcel" />
+        </template>
+
+        <template #[`item.shk`]="{ item }">
+          <ParcelNumberExt 
+            :item="item" 
+            field-name="shk"
+            :disabled="runningAction || loading"
+            @click="editParcel" 
+          />
         </template>
 
         <template #[`item.actions`]="{ item }">

@@ -36,6 +36,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -404,48 +405,12 @@ function getGenericTemplateHeaders() {
         </template>
 
         <template #[`item.postingNumber`]="{ item }">
-          <div class="action-buttons">
-          <ClickableCell 
+          <ParcelNumberExt 
             :item="item" 
-            :display-value="item.postingNumber || ''" 
-            cell-class="truncated-cell clickable-cell" 
+            field-name="postingNumber"
+            :disabled="runningAction || loading"
             @click="editParcel" 
           />
-            <ActionButton 
-              v-if="item.fellowItems?.length > 0 && !item?.blockedByFellowItem && !item?.excsiseByFellowItem"
-              :item="item" 
-              icon="fa-solid fa-comment-dots" 
-              tooltip-text="Товары с тем же номером посылки" @click="editParcel" 
-              :disabled="runningAction || loading" 
-            />
-            <ActionButton 
-              v-if="item?.blockedByFellowItem"
-              :item="item" 
-              icon="fa-solid fa-comment-slash" 
-              tooltip-text="Запрет из-за товара с тем же номером посылки" 
-              @click="editParcel" 
-              :disabled="runningAction || loading" 
-              variant="red"
-            />
-            <ActionButton 
-              v-if="item?.excsiseByFellowItem"
-              :item="item" 
-              icon="fa-solid fa-comment-dollar" 
-              tooltip-text="Акциз из-за товара с тем же номером посылки" 
-              @click="editParcel" 
-              :disabled="runningAction || loading" 
-              variant="orange"
-            />
-            <ActionButton 
-              v-if="item?.markedByFellowItem"
-              :item="item" 
-              icon="fa-solid fa-comment-nodes" 
-              tooltip-text="Товара с тем же номером посылки помечен партнёром" 
-              @click="editParcel" 
-              :disabled="runningAction || loading" 
-              variant="blue"
-            />
-          </div>
         </template>
 
         <!-- Special template for statusId to display status title with color -->

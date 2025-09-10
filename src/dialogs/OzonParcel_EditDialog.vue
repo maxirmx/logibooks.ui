@@ -38,6 +38,9 @@ const props = defineProps({
   id: { type: Number, required: true }
 })
 
+// track current parcel id so we can swap inline without changing route
+const currentParcelId = ref(props.id)
+
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
@@ -57,14 +60,15 @@ await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
 await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
-await parcelsStore.getById(props.id)
-await parcelViewsStore.add(props.id)
+// load initial parcel by currentParcelId
+await parcelsStore.getById(currentParcelId.value)
+await parcelViewsStore.add(currentParcelId.value)
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
 // Set the selected parcel ID in auth store
-authStore.selectedParcelId = props.id
+authStore.selectedParcelId = currentParcelId.value
 
 const { item } = storeToRefs(parcelsStore)
 const { stopWords } = storeToRefs(stopWordsStore)
@@ -82,6 +86,17 @@ const nextParcelResult = ref(null)
 let theNextParcelPromise = null
 let nextParcelPromise = null
 
+function initNeighborPromises(id) {
+  theNextParcelResult.value = null
+  nextParcelResult.value = null
+
+  theNextParcelPromise = registersStore.theNextParcel(id)
+  nextParcelPromise = registersStore.nextParcel(id)
+
+  theNextParcelPromise.then(result => theNextParcelResult.value = result)
+  nextParcelPromise.then(result => nextParcelResult.value = result)
+}
+
 // Reactive reference to track current statusId for color updates
 const currentStatusId = ref(null)
 
@@ -97,12 +112,7 @@ const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLi
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
-  theNextParcelPromise = registersStore.theNextParcel(props.id)
-  nextParcelPromise = registersStore.nextParcel(props.id)
-  
-  // Store results when promises resolve
-  theNextParcelPromise.then(result => theNextParcelResult.value = result)
-  nextParcelPromise.then(result => nextParcelResult.value = result)
+  initNeighborPromises(currentParcelId.value)
 })
 
 const schema = Yup.object().shape({
@@ -159,16 +169,29 @@ async function approveParcelWithExcise(values) {
 async function onSubmit(values, useTheNext = false) {
   try {
     loading.value = true
-    await parcelsStore.update(props.id, values)
-    
+    // use currentParcelId so inline swaps work
+    await parcelsStore.update(currentParcelId.value, values)
+
     // Wait for the appropriate next parcel promise to resolve
-    const nextParcel = useTheNext 
+    const nextParcel = useTheNext
       ? await theNextParcelPromise
       : await nextParcelPromise
-    
+
     if (nextParcel) {
-      const nextUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
-      router.push(nextUrl)
+      // Inline swap: set item to preview, update current id and authStore,
+      // re-init neighbor promises and load full details in background.
+      item.value = nextParcel
+      currentParcelId.value = nextParcel.id
+      authStore.selectedParcelId = nextParcel.id
+
+      // re-init neighbor promises for the newly active parcel
+      initNeighborPromises(currentParcelId.value)
+  // update URL without remount
+      const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
+      router.replace(newUrl)
+
+  // fetch full parcel data in background (keeps UI responsive)
+  // parcelsStore.getById(nextParcel.id).catch(() => {/* ignore, store handles errors */})
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`
       router.push(fallbackUrl)
@@ -182,7 +205,7 @@ async function onSubmit(values, useTheNext = false) {
 
 function onSave(values) {
   return parcelsStore
-    .update(props.id, values)
+    .update(currentParcelId.value, values)
     .then(() => {
       router.push(`/registers/${props.registerId}/parcels`)
     })
@@ -196,15 +219,24 @@ async function onBack(values) {
   try {
     // Wait for both next parcel promises to complete before processing
     await Promise.all([theNextParcelPromise, nextParcelPromise])
-    
-    await parcelsStore.update(props.id, values)
+    await parcelsStore.update(currentParcelId.value, values)
     const prevParcel = await parcelViewsStore.back()
 
     if (prevParcel) {
-      // Ensure registerId is defined, fallback to current registerId if needed
-      const registerId = prevParcel.registerId || props.registerId
-      const prevUrl = `/registers/${registerId}/parcels/edit/${prevParcel.id}`
-      router.push(prevUrl)
+      // Inline swap to previous parcel: preview -> set item, update id and auth
+      item.value = prevParcel
+      currentParcelId.value = prevParcel.id
+      authStore.selectedParcelId = prevParcel.id
+
+      // re-init neighbor promises for the newly active parcel
+      initNeighborPromises(currentParcelId.value)
+
+      // fetch full parcel data in background
+      // update URL without remount
+      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
+      router.replace(prevUrl)
+
+      //parcelsStore.getById(prevParcel.id).catch(() => {/* ignore, store handles errors */})
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`
       router.push(fallbackUrl)

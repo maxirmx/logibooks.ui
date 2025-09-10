@@ -96,8 +96,10 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     h.key !== 'checkStatusId' && 
     h.key !== 'countryCode' &&
     h.key !== 'feacnLookup' &&
-    h.key !== 'tnVed'
-  )
+    h.key !== 'tnVed' &&
+    h.key !== 'postingNumber' &&
+    h.key !== 'shk'
+  ) 
 }
 
 /**

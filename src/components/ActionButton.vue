@@ -20,7 +20,14 @@ defineEmits(['click'])
       <button 
         type="button" 
         @click="$emit('click', item)" 
-        :class="['anti-btn', { 'disabled-btn': disabled, 'anti-btn-orange': variant === 'orange', 'anti-btn-green': variant === 'green' }, $attrs.class]"
+        :class="['anti-btn', { 
+          'disabled-btn': disabled, 
+          'anti-btn-orange': variant === 'orange', 
+          'anti-btn-green': variant === 'green', 
+          'anti-btn-red': variant === 'red', 
+          'anti-btn-blue': variant === 'blue' 
+          }, 
+          $attrs.class]"
         v-bind="props"
         :disabled="disabled"
       >
@@ -93,5 +100,39 @@ defineEmits(['click'])
   color: #66bb6a !important;
 }
 
+.anti-btn-red {
+  color: #d3223f !important;
+}
 
+.anti-btn-red:hover {
+  color: #e34b5f !important;
+  transform: scale(1.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.anti-btn-red .button-o-c {
+  color: #d3223f !important;
+}
+
+.anti-btn-red:hover .button-o-c {
+  color: #e34b5f !important;
+}
+
+.anti-btn-blue {
+  color: #1976d2 !important;
+}
+
+.anti-btn-blue:hover {
+  color: #2196f3 !important;
+  transform: scale(1.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.anti-btn-blue .button-o-c {
+  color: #1976d2 !important;
+}
+
+.anti-btn-blue:hover .button-o-c {
+  color: #2196f3 !important;
+}
 </style>

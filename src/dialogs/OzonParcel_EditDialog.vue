@@ -26,6 +26,7 @@ import OzonFormField from '@/components/OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { 
   validateParcelData, 
   approveParcel as approveParcelHelper, 
@@ -315,7 +316,7 @@ async function generateXml(values) {
           icon="fa-solid fa-file-export" 
           :iconSize="'2x'"
           tooltip-text="XML накладная"
-          :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId)"
+          :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem"
           @click="generateXml(values)"
         />
       </div>
@@ -424,9 +425,13 @@ async function generateXml(values) {
         <div class="form-row">
           <div class="form-group">
             <label for="postingNumber" class="label">{{ ozonRegisterColumnTitles.postingNumber }}:</label>
-            <div class="readonly-field" id="postingNumber">
-              {{ item?.postingNumber ? item.postingNumber : '[неизвестен]' }}
-            </div>
+            <ParcelNumberExt 
+              :item="item"
+              field-name="postingNumber"
+              :disabled="isSubmitting || runningAction || loading"
+              class="readonly-parcel-number"
+              @click="() => {/* No action needed for readonly display */}"
+            />
           </div>
           <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
           <OzonFormField name="article" :errors="errors" :fullWidth="false" />

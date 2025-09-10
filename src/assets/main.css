@@ -1165,6 +1165,19 @@ a,
   align-items: center;
 }
 
+/* Readonly parcel number styling */
+.readonly-parcel-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: default;
+}
+
+.readonly-parcel-number:hover {
+  background-color: transparent;
+}
+
 /* Status cell styling similar to Orders_List */
 .status-cell {
   font-weight: 500;

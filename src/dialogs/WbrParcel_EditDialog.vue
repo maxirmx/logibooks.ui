@@ -26,6 +26,7 @@ import WbrFormField from '@/components/WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { 
   validateParcelData, 
   approveParcel as approveParcelHelper, 
@@ -320,7 +321,7 @@ async function generateXml(values) {
           icon="fa-solid fa-file-export" 
           :iconSize="'2x'"
           tooltip-text="XML накладная"
-          :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId)"
+          :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem"
           @click="generateXml(values)"
         />
       </div>
@@ -451,9 +452,13 @@ async function generateXml(values) {
         <div class="form-row">
           <div class="form-group">
             <label for="shk" class="label">{{ wbrRegisterColumnTitles.shk }}:</label>
-            <div class="readonly-field" id="shk">
-              {{ item?.shk ? item.shk : '[неизвестен]' }}
-            </div>
+            <ParcelNumberExt 
+              :item="item"
+              field-name="shk"
+              :disabled="isSubmitting || runningAction || loading"
+              class="readonly-parcel-number"
+              @click="() => {/* No action needed for readonly display */}"
+            />
           </div>          
 
           <div class="form-group">

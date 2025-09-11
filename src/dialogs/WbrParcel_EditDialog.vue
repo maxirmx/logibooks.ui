@@ -193,12 +193,12 @@ async function onSubmit(values, useTheNext = false) {
       // re-init neighbor promises for the newly active parcel
       initNeighborPromises(currentParcelId.value)
 
-  // update URL without remount
-  const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
-  router.replace(newUrl)
+      // update URL without remount
+      const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
+      router.replace(newUrl)
 
-  // fetch full parcel data in background (keeps UI responsive)
-  parcelsStore.getById(nextParcel.id).catch(() => {/* ignore, store handles errors */})
+      // fetch full parcel data in background (keeps UI responsive)
+      parcelsStore.getById(nextParcel.id).catch(() => {/* ignore, store handles errors */})
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`
       router.push(fallbackUrl)

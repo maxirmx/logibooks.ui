@@ -413,7 +413,7 @@ const headers = [
 <template>
   <div class="settings table-3">
     <h1 class="primary-heading">Реестры</h1>
-    <hr class="hr" />
+    <hr class="hr" />git createParcelNumberExtHandlers
 
     <div class="link-crt d-flex upload-links" v-if="isAdminOrSrLogist">
       <a @click="openFileDialog" class="link" tabindex="0">

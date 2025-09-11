@@ -105,7 +105,7 @@ describe('ParcelNumberExt', () => {
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-slash')
       expect(actionButtons[0].props('variant')).toBe('red')
-      expect(actionButtons[0].props('tooltipText')).toBe('Запрет товара с тем же номером посылки')
+      expect(actionButtons[0].props('tooltipText')).toBe('Есть запрет товара с тем же номером посылки')
     })
 
     it('shows excise indicator when excsiseByFellowItem is true', () => {
@@ -119,7 +119,7 @@ describe('ParcelNumberExt', () => {
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-dollar')
       expect(actionButtons[0].props('variant')).toBe('orange')
-      expect(actionButtons[0].props('tooltipText')).toBe('Подакцизный товар с тем же номером посылки')
+      expect(actionButtons[0].props('tooltipText')).toBe('Есть подакцизный товар с тем же номером посылки')
     })
 
     it('shows marked indicator when markedByFellowItem is true', () => {

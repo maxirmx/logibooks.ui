@@ -29,7 +29,8 @@ const mockAuthStore = {
   parcels_sort_by: [{ key: 'id', order: 'asc' }],
   parcels_status: null,
   parcels_check_status: null,
-  parcels_tnved: ''
+  parcels_tnved: '',
+  parcels_number: ''
 }
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -47,6 +48,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_status = null
     mockAuthStore.parcels_check_status = null
     mockAuthStore.parcels_tnved = ''
+    mockAuthStore.parcels_number = ''
   })
 
   it('fetches data with default parameters from auth store', async () => {
@@ -97,6 +99,29 @@ describe('parcels store', () => {
     await store.getAll(3)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels?registerId=3&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=2&checkStatusId=4&tnVed=BB`
+    )
+  })
+
+  it('fetches data with parcel number filtering', async () => {
+    mockAuthStore.parcels_number = 'TEST123'
+    
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+    await store.getAll(1)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&number=TEST123`
+    )
+  })
+
+  it('fetches data with combined tnved and number filtering', async () => {
+    mockAuthStore.parcels_tnved = 'AA'
+    mockAuthStore.parcels_number = 'OZON456'
+    
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+    await store.getAll(2)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=2&page=1&pageSize=100&sortBy=id&sortOrder=asc&tnVed=AA&number=OZON456`
     )
   })
 

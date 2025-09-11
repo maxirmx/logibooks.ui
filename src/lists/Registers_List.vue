@@ -404,7 +404,7 @@ const headers = [
   { title: 'ТСД', key: 'invoice', align: 'center' },
   { title: 'Страны', key: 'countries', align: 'center' },
   { title: 'Отправитель/Получатель', key: 'senderRecepient', align: 'center' },
-  { title: 'Посылки/Места', key: 'parcelsTotal', align: 'center' },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal', align: 'center' },
   { title: 'Дата загрузки', key: 'date', align: 'center' }
 ]
 

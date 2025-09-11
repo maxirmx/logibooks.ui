@@ -32,10 +32,12 @@ import {
   getFeacnCodesForKeywords,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
+import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -62,15 +64,12 @@ const {
   parcels_status,
   parcels_check_status,
   parcels_tnved,
+  parcels_number,
   selectedParcelId
 } = storeToRefs(authStore)
 
 // Template ref for the data table
 const dataTableRef = ref(null)
-
-parcels_status.value = null
-parcels_check_status.value = null
-parcels_tnved.value = ''
 
 // Selected parcel management
 function updateSelectedParcelId() {
@@ -171,7 +170,7 @@ async function loadOrdersWrapper() {
 provide('loadOrders', loadOrdersWrapper)
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved, parcels_number],
   loadOrdersWrapper,
   { immediate: true }
 )
@@ -282,6 +281,10 @@ function editParcel(item) {
   navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
+function handleFellows(item) {
+  handleFellowsClick(item.registerId, item.shk)
+}
+
 async function exportParcelXml(item) {
   if (runningAction.value) return
   runningAction.value = true
@@ -371,6 +374,12 @@ function getGenericTemplateHeaders() {
         <v-text-field
           v-model="parcels_tnved"
           label="ТН ВЭД"
+          density="compact"
+          style="min-width: 200px;"
+        />
+        <v-text-field
+          v-model="parcels_number"
+          label="Номер посылки"
           density="compact"
           style="min-width: 200px;"
         />
@@ -469,14 +478,60 @@ function getGenericTemplateHeaders() {
             @click="editParcel" />
         </template>
 
+        <template #[`item.shk`]="{ item }">
+          <ParcelNumberExt 
+            :item="item" 
+            field-name="shk"
+            :disabled="runningAction || loading"
+            @click="editParcel" 
+            @fellows="handleFellows"
+          />
+        </template>
+
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать посылку" @click="editParcel" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-spell-check" tooltip-text="Проверить по стоп-словам" @click="validateParcelSw" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-anchor-circle-check" tooltip-text="Проверить по кодам ТН ВЭД" @click="validateParcelFc" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-magnifying-glass" tooltip-text="Подобрать код ТН ВЭД" @click="lookupFeacnCodes" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-upload" tooltip-text="Выгрузить XML накладную для посылки" @click="exportParcelXml" :disabled="runningAction || loading || HasIssues(item.checkStatusId)" />
-            <ActionButton :item="item" icon="fa-solid fa-check-circle" tooltip-text="Согласовать" @click="approveParcel" :disabled="runningAction || loading" />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-pen" 
+              tooltip-text="Редактировать посылку" 
+              @click="editParcel" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-spell-check" 
+              tooltip-text="Проверить по стоп-словам" 
+              @click="validateParcelSw" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-anchor-circle-check" 
+              tooltip-text="Проверить по кодам ТН ВЭД" 
+              @click="validateParcelFc" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-magnifying-glass" 
+              tooltip-text="Подобрать код ТН ВЭД" 
+              @click="lookupFeacnCodes" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-upload" 
+              tooltip-text="Выгрузить XML накладную для посылки" 
+              @click="exportParcelXml" 
+              :disabled="runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-check-circle" 
+              tooltip-text="Согласовать" 
+              @click="approveParcel" 
+              :disabled="runningAction || loading" 
+            />
           </div>
         </template>
       </v-data-table-server>

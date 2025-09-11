@@ -41,7 +41,11 @@ import {
   faMagnifyingGlass,
   faSpinner,
   faSpellCheck,
-  faAnchorCircleCheck
+  faAnchorCircleCheck,
+  faCommentDollar,
+  faCommentSlash,
+  faCommentDots,
+  faCommentNodes
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -76,7 +80,11 @@ library.add(
   faMagnifyingGlass,
   faSpinner,
   faSpellCheck,
-  faAnchorCircleCheck
+  faAnchorCircleCheck,
+  faCommentDollar,
+  faCommentSlash,
+  faCommentDots,
+  faCommentNodes
 )
 
 import 'vuetify/styles'

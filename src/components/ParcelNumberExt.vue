@@ -12,10 +12,14 @@ defineProps({
   disabled: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['click'])
+const emit = defineEmits(['click', 'fellows'])
 
 function handleClick(item) {
   emit('click', item)
+}
+
+function handleFellowsClick(item) {
+  emit('fellows', item)
 }
 </script>
 
@@ -32,15 +36,15 @@ function handleClick(item) {
       :item="item" 
       icon="fa-solid fa-comment-dots" 
       tooltip-text="Есть товары с тем же номером посылки" 
-      @click="handleClick" 
+      @click="handleFellowsClick" 
       :disabled="disabled" 
     />
     <ActionButton 
       v-if="item?.blockedByFellowItem"
       :item="item" 
       icon="fa-solid fa-comment-slash" 
-      tooltip-text="Запрет из-за товара с тем же номером посылки" 
-      @click="handleClick" 
+      tooltip-text="Есть запрет товара с тем же номером посылки" 
+      @click="handleFellowsClick" 
       :disabled="disabled" 
       variant="red"
     />
@@ -48,8 +52,8 @@ function handleClick(item) {
       v-if="item?.excsiseByFellowItem"
       :item="item" 
       icon="fa-solid fa-comment-dollar" 
-      tooltip-text="Акциз из-за товара с тем же номером посылки" 
-      @click="handleClick" 
+      tooltip-text="Есть подакцизный товар с тем же номером посылки" 
+      @click="handleFellowsClick" 
       :disabled="disabled" 
       variant="orange"
     />
@@ -57,8 +61,8 @@ function handleClick(item) {
       v-if="item?.markedByFellowItem"
       :item="item" 
       icon="fa-solid fa-comment-nodes" 
-      tooltip-text="Товара с тем же номером посылки помечен партнёром" 
-      @click="handleClick" 
+      tooltip-text="Товар с тем же номером посылки помечен партнёром" 
+      @click="handleFellowsClick" 
       :disabled="disabled" 
       variant="blue"
     />

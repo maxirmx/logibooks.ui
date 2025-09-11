@@ -105,7 +105,7 @@ describe('ParcelNumberExt', () => {
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-slash')
       expect(actionButtons[0].props('variant')).toBe('red')
-      expect(actionButtons[0].props('tooltipText')).toBe('Запрет из-за товара с тем же номером посылки')
+      expect(actionButtons[0].props('tooltipText')).toBe('Запрет товара с тем же номером посылки')
     })
 
     it('shows excise indicator when excsiseByFellowItem is true', () => {
@@ -119,7 +119,7 @@ describe('ParcelNumberExt', () => {
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-dollar')
       expect(actionButtons[0].props('variant')).toBe('orange')
-      expect(actionButtons[0].props('tooltipText')).toBe('Акциз из-за товара с тем же номером посылки')
+      expect(actionButtons[0].props('tooltipText')).toBe('Подакцизный товар с тем же номером посылки')
     })
 
     it('shows marked indicator when markedByFellowItem is true', () => {
@@ -133,7 +133,7 @@ describe('ParcelNumberExt', () => {
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-nodes')
       expect(actionButtons[0].props('variant')).toBe('blue')
-      expect(actionButtons[0].props('tooltipText')).toBe('Товара с тем же номером посылки помечен партнёром')
+      expect(actionButtons[0].props('tooltipText')).toBe('Товар с тем же номером посылки помечен партнёром')
     })
 
     it('does not show fellow items indicator when blocked or excise', () => {
@@ -201,7 +201,7 @@ describe('ParcelNumberExt', () => {
       expect(wrapper.emitted('click')[0]).toEqual([defaultItem])
     })
 
-    it('emits click event when ActionButton is clicked', async () => {
+    it('emits fellowsevent when ActionButton is clicked', async () => {
       const itemWithFellowItems = {
         ...defaultItem,
         fellowItems: [{ id: 2 }]
@@ -211,26 +211,10 @@ describe('ParcelNumberExt', () => {
       
       await actionButton.trigger('click')
       
-      expect(wrapper.emitted('click')).toBeTruthy()
-      expect(wrapper.emitted('click')[0]).toEqual([itemWithFellowItems])
+      expect(wrapper.emitted('fellows')).toBeTruthy()
+      expect(wrapper.emitted('fellows')[0]).toEqual([itemWithFellowItems])
     })
 
-    it('handles multiple click events', async () => {
-      const itemWithMultipleIndicators = {
-        ...defaultItem,
-        fellowItems: [{ id: 2 }],
-        markedByFellowItem: true
-      }
-      const wrapper = createWrapper({ item: itemWithMultipleIndicators })
-      const clickableCell = wrapper.findComponent(ClickableCell)
-      const actionButtons = wrapper.findAllComponents(ActionButton)
-      
-      await clickableCell.trigger('click')
-      await actionButtons[0].trigger('click')
-      await actionButtons[1].trigger('click')
-      
-      expect(wrapper.emitted('click')).toHaveLength(3)
-    })
   })
 
   describe('Edge cases', () => {

@@ -32,6 +32,7 @@ import {
   getFeacnCodesForKeywords,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
+import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
@@ -69,11 +70,6 @@ const {
 
 // Template ref for the data table
 const dataTableRef = ref(null)
-
-parcels_status.value = null
-parcels_check_status.value = null
-parcels_tnved.value = ''
-parcels_number.value = ''
 
 // Selected parcel management
 function updateSelectedParcelId() {
@@ -285,6 +281,10 @@ function editParcel(item) {
   navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
+function handleFellows(item) {
+  handleFellowsClick(item.registerId, item.shk)
+}
+
 async function exportParcelXml(item) {
   if (runningAction.value) return
   runningAction.value = true
@@ -484,6 +484,7 @@ function getGenericTemplateHeaders() {
             field-name="shk"
             :disabled="runningAction || loading"
             @click="editParcel" 
+            @fellows="handleFellows"
           />
         </template>
 

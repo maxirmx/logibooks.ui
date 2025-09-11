@@ -27,6 +27,7 @@ import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { 
   validateParcelData, 
   approveParcel as approveParcelHelper, 
@@ -265,6 +266,11 @@ async function generateXml(values) {
   }
 }
 
+// Handle fellows click - redirect to parcels list with filter
+function handleFellows() {
+  handleFellowsClick(item.value.registerId, item.value.shk)
+}
+
 </script>
 
 <template>
@@ -458,6 +464,7 @@ async function generateXml(values) {
               :disabled="isSubmitting || runningAction || loading"
               class="readonly-parcel-number"
               @click="() => {/* No action needed for readonly display */}"
+              @fellows="handleFellows"
             />
           </div>          
 

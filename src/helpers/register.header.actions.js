@@ -54,10 +54,6 @@ export function useRegisterHeaderActions({
 
   const registerReady = computed(() => !!currentRegister.value && !registerLoadingRef.value)
 
-  const validationActionsDisabled = computed(() =>
-    !registerReady.value || tableLoadingRef.value || runningActionRef.value
-  )
-
   const generalActionsDisabled = computed(() =>
     !registerReady.value || tableLoadingRef.value || runningActionRef.value
   )
@@ -81,17 +77,17 @@ export function useRegisterHeaderActions({
   }
 
   const runValidateRegisterSw = async () => {
-    if (validationActionsDisabled.value) return
+    if (generalActionsDisabled.value) return
     await runWithLock(validateRegisterSw, false)
   }
 
   const runValidateRegisterFc = async () => {
-    if (validationActionsDisabled.value) return
+    if (generalActionsDisabled.value) return
     await runWithLock(validateRegisterFc, false)
   }
 
   const runLookupFeacnCodes = async () => {
-    if (validationActionsDisabled.value) return
+    if (generalActionsDisabled.value) return
     await runWithLock(lookupFeacnCodes, false)
   }
 
@@ -127,7 +123,6 @@ export function useRegisterHeaderActions({
   return {
     validationState,
     progressPercent,
-    validationActionsDisabled,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterFc: runValidateRegisterFc,

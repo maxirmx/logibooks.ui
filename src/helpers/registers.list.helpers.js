@@ -372,7 +372,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
 
   async function lookupFeacnCodes(item) {
     try {
-      validationState.operation = 'lookup-feacn'
+      validationState.operation = 'lookup-feacn-codes'
       pollingTimer.stop()
       pollingFunction = pollFeacnLookup
       const res = await registersStore.lookupFeacnCodes(item.id)
@@ -404,7 +404,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
   }
 
   function cancelValidationWrapper() {
-    if (validationState.operation === 'lookup-feacn') {
+    if (validationState.operation === 'lookup-feacn-codes') {
       if (validationState.handleId) {
         registersStore
           .cancelLookupFeacnCodes(validationState.handleId)

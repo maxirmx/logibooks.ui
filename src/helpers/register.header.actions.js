@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, watch, ref } from 'vue'
+import { computed, watch, ref, unref } from 'vue'
 import { createRegisterActionHandlers } from '@/helpers/registers.list.helpers.js'
 
 /**
@@ -47,7 +47,7 @@ export function useRegisterHeaderActions({
   const runningActionRef = runningAction ?? ref(false)
 
   const currentRegister = computed(() => {
-    const register = registersStore?.item
+    const register = unref(registersStore?.item)
     if (!register || register.loading || register.error) {
       return null
     }
@@ -113,17 +113,20 @@ export function useRegisterHeaderActions({
     await runWithLock(downloadRegister, true)
   }
 
+  function handleValidationDialogClose(show, previous) {
+    const dialogClosed = previous && !show
+    const componentMounted = isComponentMounted?.value ?? true
+    const canReloadOrders = typeof loadOrders === 'function'
+
+    if (dialogClosed && componentMounted && canReloadOrders) {
+      Promise.resolve(loadOrders()).catch(() => {})
+    }
+  }
+
   const stopValidationWatcher = watch(
     () => validationState.show,
     (show, previous) => {
-      if (
-        previous &&
-        !show &&
-        (isComponentMounted?.value ?? true) &&
-        typeof loadOrders === 'function'
-      ) {
-        Promise.resolve(loadOrders()).catch(() => {})
-      }
+      handleValidationDialogClose(show, previous)
     }
   )
 

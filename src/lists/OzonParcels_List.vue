@@ -677,7 +677,7 @@ function getGenericTemplateHeaders() {
     <v-dialog v-model="validationState.show" width="300">
       <v-card>
         <v-card-title class="primary-heading">
-          {{ validationState.operation === 'lookup-feacn' ? 'Подбор кодов ТН ВЭД' : 'Проверка реестра' }}
+          {{ validationState.operation === 'lookup-feacn-codes' ? 'Подбор кодов ТН ВЭД' : 'Проверка реестра' }}
         </v-card-title>
         <v-card-text class="text-center">
           <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">

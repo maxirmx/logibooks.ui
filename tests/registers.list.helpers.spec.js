@@ -760,7 +760,7 @@ describe('registers.list.helpers', () => {
         await handlers.lookupFeacnCodes({ id: 5 })
 
         expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5)
-        expect(handlers.validationState.operation).toBe('lookup-feacn')
+        expect(handlers.validationState.operation).toBe('lookup-feacn-codes')
         expect(handlers.validationState.handleId).toBe(2)
       })
 
@@ -779,7 +779,7 @@ describe('registers.list.helpers', () => {
       })
 
       it('cancels lookup validation and hides dialog', async () => {
-        handlers.validationState.operation = 'lookup-feacn'
+        handlers.validationState.operation = 'lookup-feacn-codes'
         handlers.validationState.handleId = 77
         handlers.validationState.show = true
 

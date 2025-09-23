@@ -12,12 +12,7 @@ import {
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
   setBulkStatusSelectedId,
-  createValidationState,
-  calculateValidationProgress,
-  pollValidation,
-  validateRegister,
-  cancelValidation,
-  createPollingTimer
+  createRegisterActionHandlers
 } from '@/helpers/registers.list.helpers.js'
 
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -36,17 +31,6 @@ import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
-
-const validationState = reactive(createValidationState())
-validationState.operation = null
-let pollingFunction = null
-const pollingTimer = createPollingTimer(() => {
-  if (pollingFunction) {
-    // Allow async functions; errors are handled inside the polling functions
-    pollingFunction()
-  }
-})
-const progressPercent = computed(() => calculateValidationProgress(validationState))
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -72,6 +56,23 @@ const customsProceduresStore = useCustomsProceduresStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
+
+const {
+  validationState,
+  progressPercent,
+  validateRegisterSw: validateRegisterSwAction,
+  validateRegisterFc: validateRegisterFcAction,
+  lookupFeacnCodes: lookupFeacnCodesAction,
+  exportAllXml: exportAllXmlAction,
+  downloadRegister: downloadRegisterAction,
+  cancelValidation: cancelRegisterValidation,
+  stopPolling: stopRegisterPolling
+} = createRegisterActionHandlers(registersStore, alertStore)
+
+const validateRegisterSw = validateRegisterSwAction
+const validateRegisterFc = validateRegisterFcAction
+const lookupFeacnCodes = lookupFeacnCodesAction
+const cancelValidationWrapper = cancelRegisterValidation
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
@@ -179,7 +180,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
-  pollingTimer.stop()
+  stopRegisterPolling()
   if (watcherStop) {
     watcherStop()
   }
@@ -237,11 +238,11 @@ function editRegister(item) {
   router.push('/register/edit/' + item.id)
 }
 
-function exportAllXml(item) {
+async function exportAllXml(item) {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    registersStore.generate(item.id, item.invoiceNumber)
+    await exportAllXmlAction(item)
   } finally {
     runningAction.value = false
   }
@@ -251,7 +252,7 @@ async function downloadRegister(item) {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    await registersStore.download(item.id, item.fileName)
+    await downloadRegisterAction(item)
   } finally {
     runningAction.value = false
   }
@@ -285,95 +286,6 @@ async function deleteRegister(item) {
     }
   } finally {
     runningAction.value = false
-  }
-}
-
-async function validateRegisterSw(item) {
-  try {
-    validationState.operation = 'validation'
-    pollingFunction = () =>
-      pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
-    await validateRegister(
-      item,
-      validationState,
-      registersStore,
-      alertStore,
-      () => pollingTimer.stop(),
-      () => pollingTimer.start(),
-      true
-    )
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  }
-}
-
-async function validateRegisterFc(item) {
-  try {
-    validationState.operation = 'validation'
-    pollingFunction = () =>
-      pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
-    await validateRegister(
-      item,
-      validationState,
-      registersStore,
-      alertStore,
-      () => pollingTimer.stop(),
-      () => pollingTimer.start(),
-      false
-    )
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  }
-}
-
-async function pollFeacnLookup() {
-  if (!validationState.handleId) return
-  try {
-    const progress = await registersStore.getLookupFeacnCodesProgress(validationState.handleId)
-    validationState.total = progress.total
-    validationState.processed = progress.processed
-
-    if (progress.finished || progress.total === -1 || progress.processed === -1) {
-      validationState.show = false
-      pollingTimer.stop()
-      await registersStore.getAll()
-    }
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-    validationState.show = false
-    pollingTimer.stop()
-    await registersStore.getAll()
-  }
-}
-
-async function lookupFeacnCodes(item) {
-  try {
-    validationState.operation = 'lookup-feacn'
-    pollingTimer.stop()
-    pollingFunction = pollFeacnLookup
-    const res = await registersStore.lookupFeacnCodes(item.id)
-    validationState.handleId = res.id
-    validationState.total = 0
-    validationState.processed = 0
-    validationState.show = true
-    await pollFeacnLookup()
-    pollingTimer.start()
-  } catch (err) {
-    alertStore.error(err.message || String(err))
-  }
-}
-
-function cancelValidationWrapper() {
-  if (validationState.operation === 'lookup-feacn') {
-    if (validationState.handleId) {
-      registersStore
-        .cancelLookupFeacnCodes(validationState.handleId)
-        .catch(() => {})
-    }
-    validationState.show = false
-    pollingTimer.stop()
-  } else {
-    cancelValidation(validationState, registersStore, () => pollingTimer.stop())
   }
 }
 

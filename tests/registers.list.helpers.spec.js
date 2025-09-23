@@ -21,6 +21,7 @@ import {
   validateRegister,
   cancelValidation,
   createPollingTimer,
+  createRegisterActionHandlers,
   POLLING_INTERVAL_MS
 } from '@/helpers/registers.list.helpers'
 
@@ -718,6 +719,70 @@ describe('registers.list.helpers', () => {
     describe('POLLING_INTERVAL_MS', () => {
       it('has correct default value', () => {
         expect(POLLING_INTERVAL_MS).toBe(1000)
+      })
+    })
+
+    describe('createRegisterActionHandlers', () => {
+      let registersStore
+      let alertStore
+      let handlers
+
+      beforeEach(() => {
+        vi.clearAllMocks()
+
+        registersStore = {
+          generate: vi.fn().mockResolvedValue(),
+          download: vi.fn().mockResolvedValue(),
+          validate: vi.fn().mockResolvedValue({ id: 1 }),
+          lookupFeacnCodes: vi.fn().mockResolvedValue({ id: 2 }),
+          getValidationProgress: vi.fn().mockResolvedValue({ total: 1, processed: 1, finished: true }),
+          getLookupFeacnCodesProgress: vi.fn().mockResolvedValue({ total: 1, processed: 1, finished: true }),
+          cancelValidation: vi.fn().mockResolvedValue(),
+          cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
+          getAll: vi.fn().mockResolvedValue()
+        }
+
+        alertStore = { error: vi.fn() }
+
+        handlers = createRegisterActionHandlers(registersStore, alertStore)
+      })
+
+      it('validates register via stop-words path and updates state', async () => {
+        await handlers.validateRegisterSw({ id: 10 })
+
+        expect(registersStore.validate).toHaveBeenCalledWith(10, true)
+        expect(handlers.validationState.operation).toBe('validation')
+      })
+
+      it('looks up FEACN codes and tracks handle id', async () => {
+        await handlers.lookupFeacnCodes({ id: 5 })
+
+        expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5)
+        expect(handlers.validationState.operation).toBe('lookup-feacn')
+        expect(handlers.validationState.handleId).toBe(2)
+      })
+
+      it('exports XML and downloads register files', async () => {
+        await handlers.exportAllXml({ id: 3, invoiceNumber: 'INV-3' })
+        expect(registersStore.generate).toHaveBeenCalledWith(3, 'INV-3')
+
+        await handlers.downloadRegister({ id: 4, fileName: 'file.xlsx' })
+        expect(registersStore.download).toHaveBeenCalledWith(4, 'file.xlsx')
+      })
+
+      it('cancels lookup validation and hides dialog', async () => {
+        handlers.validationState.operation = 'lookup-feacn'
+        handlers.validationState.handleId = 77
+        handlers.validationState.show = true
+
+        await handlers.cancelValidation()
+
+        expect(registersStore.cancelLookupFeacnCodes).toHaveBeenCalledWith(77)
+        expect(handlers.validationState.show).toBe(false)
+      })
+
+      it('exposes stopPolling function', () => {
+        expect(() => handlers.stopPolling()).not.toThrow()
       })
     })
   })

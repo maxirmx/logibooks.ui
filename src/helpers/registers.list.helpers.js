@@ -312,7 +312,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     if (typeof pollingFunction === 'function') {
       try {
         await pollingFunction()
-      } catch (err) {
+      } catch {
         // Errors are handled inside polling functions; ensure timer stops on failure
         pollingTimer.stop()
       }

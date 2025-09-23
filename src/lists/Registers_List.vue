@@ -63,7 +63,9 @@ const {
   validateRegisterSw: validateRegisterSwAction,
   validateRegisterFc: validateRegisterFcAction,
   lookupFeacnCodes: lookupFeacnCodesAction,
+  /* --
   exportAllXml: exportAllXmlAction,
+  -- */
   downloadRegister: downloadRegisterAction,
   cancelValidation: cancelRegisterValidation,
   stopPolling: stopRegisterPolling
@@ -238,6 +240,7 @@ function editRegister(item) {
   router.push('/register/edit/' + item.id)
 }
 
+/* -- 
 async function exportAllXml(item) {
   if (runningAction.value) return
   runningAction.value = true
@@ -247,6 +250,7 @@ async function exportAllXml(item) {
     runningAction.value = false
   }
 }
+-- */
 
 async function downloadRegister(item) {
   if (runningAction.value) return
@@ -516,6 +520,7 @@ const headers = [
               @click="lookupFeacnCodes" 
               :disabled="runningAction || loading" 
             />
+            <!-- 
             <ActionButton 
               v-if="isAdminOrSrLogist"
               :item="item" 
@@ -524,6 +529,7 @@ const headers = [
               @click="exportAllXml" 
               :disabled="runningAction || loading" 
               />
+            -->  
             <ActionButton 
               v-if="isAdminOrSrLogist"
               :item="item" 

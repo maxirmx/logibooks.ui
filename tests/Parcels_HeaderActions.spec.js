@@ -261,7 +261,7 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    expect(buttons).toHaveLength(5)
+    expect(buttons).toHaveLength(6)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -276,6 +276,9 @@ describe.each([
     expect(registerHeaderActionsMock.exportAllXml).toHaveBeenCalled()
 
     await buttons[4].trigger('click')
+    expect(registerHeaderActionsMock.exportAllXml).toHaveBeenCalled()
+
+    await buttons[5].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
   })
 

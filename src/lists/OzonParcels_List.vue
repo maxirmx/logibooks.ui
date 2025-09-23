@@ -376,6 +376,7 @@ function getGenericTemplateHeaders() {
           :item="registersStore.item"
           icon="fa-solid fa-spell-check"
           tooltip-text="Проверить по стоп-словам"
+          :iconSize="'2x'"
           @click="validateRegisterSwHeader"
           :disabled="validationActionsDisabled"
         />
@@ -383,6 +384,7 @@ function getGenericTemplateHeaders() {
           :item="registersStore.item"
           icon="fa-solid fa-anchor-circle-check"
           tooltip-text="Проверить по кодам ТН ВЭД"
+          :iconSize="'2x'"
           @click="validateRegisterFcHeader"
           :disabled="validationActionsDisabled"
         />
@@ -390,13 +392,25 @@ function getGenericTemplateHeaders() {
           :item="registersStore.item"
           icon="fa-solid fa-magnifying-glass"
           tooltip-text="Подбор кодов ТН ВЭД"
+          :iconSize="'2x'"
           @click="lookupRegisterFeacnCodes"
           :disabled="validationActionsDisabled"
         />
         <ActionButton
           :item="registersStore.item"
           icon="fa-solid fa-upload"
-          tooltip-text="Выгрузить XML накладные для реестра"
+          tooltip-text="Выгрузить XML накладные для реестра (без акциза)"
+          :iconSize="'2x'"
+          variant="green"
+          @click="exportRegisterXml"
+          :disabled="generalActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-upload"
+          tooltip-text="Выгрузить XML накладные для реестра (акциз)"
+          :iconSize="'2x'"
+          variant="orange"
           @click="exportRegisterXml"
           :disabled="generalActionsDisabled"
         />
@@ -404,6 +418,7 @@ function getGenericTemplateHeaders() {
           :item="registersStore.item"
           icon="fa-solid fa-file-export"
           tooltip-text="Экспортировать реестр"
+          :iconSize="'2x'"
           @click="downloadRegisterFile"
           :disabled="generalActionsDisabled"
         />

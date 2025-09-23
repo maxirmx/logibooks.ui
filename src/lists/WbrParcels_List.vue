@@ -174,7 +174,6 @@ provide('loadOrders', loadOrdersWrapper)
 const {
   validationState,
   progressPercent,
-  validationActionsDisabled,
   generalActionsDisabled,
   validateRegisterSw: validateRegisterSwHeader,
   validateRegisterFc: validateRegisterFcHeader,
@@ -385,7 +384,7 @@ function getGenericTemplateHeaders() {
           tooltip-text="Проверить по стоп-словам"
           :iconSize="'2x'"
           @click="validateRegisterSwHeader"
-          :disabled="validationActionsDisabled"
+          :disabled="generalActionsDisabled"
         />
         <ActionButton
           :item="registersStore.item"
@@ -393,7 +392,7 @@ function getGenericTemplateHeaders() {
           tooltip-text="Проверить по кодам ТН ВЭД"
           :iconSize="'2x'"
           @click="validateRegisterFcHeader"
-          :disabled="validationActionsDisabled"
+          :disabled="generalActionsDisabled"
         />
         <ActionButton
           :item="registersStore.item"
@@ -401,7 +400,7 @@ function getGenericTemplateHeaders() {
           tooltip-text="Подбор кодов ТН ВЭД"
           :iconSize="'2x'"
           @click="lookupRegisterFeacnCodes"
-          :disabled="validationActionsDisabled"
+          :disabled="generalActionsDisabled"
         />
         <ActionButton
           :item="registersStore.item"

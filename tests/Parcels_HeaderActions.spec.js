@@ -18,7 +18,6 @@ function createRegisterHeaderActionsMock() {
   return {
     validationState: reactive({ show: false, operation: null, total: 0, processed: 0 }),
     progressPercent: ref(0),
-    validationActionsDisabled: ref(false),
     generalActionsDisabled: ref(false),
     validateRegisterSw: vi.fn(),
     validateRegisterFc: vi.fn(),

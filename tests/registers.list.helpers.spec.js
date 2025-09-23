@@ -732,6 +732,8 @@ describe('registers.list.helpers', () => {
 
         registersStore = {
           generate: vi.fn().mockResolvedValue(),
+          generateExcise: vi.fn().mockResolvedValue(),
+          generateWithoutExcise: vi.fn().mockResolvedValue(),
           download: vi.fn().mockResolvedValue(),
           validate: vi.fn().mockResolvedValue({ id: 1 }),
           lookupFeacnCodes: vi.fn().mockResolvedValue({ id: 2 }),
@@ -762,9 +764,15 @@ describe('registers.list.helpers', () => {
         expect(handlers.validationState.handleId).toBe(2)
       })
 
-      it('exports XML and downloads register files', async () => {
+      it('exports XML variants and downloads register files', async () => {
         await handlers.exportAllXml({ id: 3, invoiceNumber: 'INV-3' })
         expect(registersStore.generate).toHaveBeenCalledWith(3, 'INV-3')
+
+        await handlers.exportAllXmlWithoutExcise({ id: 8, invoiceNumber: 'INV-8' })
+        expect(registersStore.generateWithoutExcise).toHaveBeenCalledWith(8, 'INV-8')
+
+        await handlers.exportAllXmlExcise({ id: 9, invoiceNumber: 'INV-9' })
+        expect(registersStore.generateExcise).toHaveBeenCalledWith(9, 'INV-9')
 
         await handlers.downloadRegister({ id: 4, fileName: 'file.xlsx' })
         expect(registersStore.download).toHaveBeenCalledWith(4, 'file.xlsx')

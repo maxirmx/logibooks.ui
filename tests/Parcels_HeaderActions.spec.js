@@ -23,6 +23,8 @@ function createRegisterHeaderActionsMock() {
     validateRegisterFc: vi.fn(),
     lookupFeacnCodes: vi.fn(),
     exportAllXml: vi.fn(),
+    exportAllXmlWithoutExcise: vi.fn(),
+    exportAllXmlExcise: vi.fn(),
     downloadRegister: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
@@ -272,10 +274,10 @@ describe.each([
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
     await buttons[3].trigger('click')
-    expect(registerHeaderActionsMock.exportAllXml).toHaveBeenCalled()
+    expect(registerHeaderActionsMock.exportAllXmlWithoutExcise).toHaveBeenCalled()
 
     await buttons[4].trigger('click')
-    expect(registerHeaderActionsMock.exportAllXml).toHaveBeenCalled()
+    expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
 
     await buttons[5].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()

@@ -391,6 +391,14 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await registersStore.generate(item.id, item.invoiceNumber)
   }
 
+  async function exportAllXmlWithoutExcise(item) {
+    await registersStore.generateWithoutExcise(item.id, item.invoiceNumber)
+  }
+
+  async function exportAllXmlExcise(item) {
+    await registersStore.generateExcise(item.id, item.invoiceNumber)
+  }
+
   async function downloadRegister(item) {
     await registersStore.download(item.id, item.fileName)
   }
@@ -420,6 +428,8 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     validateRegisterFc,
     lookupFeacnCodes,
     exportAllXml,
+    exportAllXmlWithoutExcise,
+    exportAllXmlExcise,
     downloadRegister,
     cancelValidation: cancelValidationWrapper,
     stopPolling

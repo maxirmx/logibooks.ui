@@ -177,7 +177,8 @@ const {
   validateRegisterSw: validateRegisterSwHeader,
   validateRegisterFc: validateRegisterFcHeader,
   lookupFeacnCodes: lookupRegisterFeacnCodes,
-  exportAllXml: exportRegisterXml,
+  exportAllXmlWithoutExcise: exportRegisterXmlWithoutExcise,
+  exportAllXmlExcise: exportRegisterXmlExcise,
   downloadRegister: downloadRegisterFile,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
@@ -401,7 +402,7 @@ function getGenericTemplateHeaders() {
           tooltip-text="Выгрузить XML накладные для реестра (без акциза)"
           :iconSize="'2x'"
           variant="green"
-          @click="exportRegisterXml"
+          @click="exportRegisterXmlWithoutExcise"
           :disabled="generalActionsDisabled"
         />
         <ActionButton
@@ -410,7 +411,7 @@ function getGenericTemplateHeaders() {
           tooltip-text="Выгрузить XML накладные для реестра (акциз)"
           :iconSize="'2x'"
           variant="orange"
-          @click="exportRegisterXml"
+          @click="exportRegisterXmlExcise"
           :disabled="generalActionsDisabled"
         />
         <ActionButton

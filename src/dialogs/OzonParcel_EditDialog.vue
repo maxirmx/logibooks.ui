@@ -319,9 +319,9 @@ function handleFellows() {
         />
         <ActionButton 
           :item="{}" 
-          icon="fa-solid fa-file-export" 
+          icon="fa-solid fa-upload" 
           :iconSize="'2x'"
-          tooltip-text="XML накладная"
+          tooltip-text="Выгрузить XML накладную"
           :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem"
           @click="generateXml(values)"
         />

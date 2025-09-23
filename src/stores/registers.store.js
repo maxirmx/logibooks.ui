@@ -215,7 +215,50 @@ export const useRegistersStore = defineStore('registers', () => {
         filename
       )
     } catch (err) {
-      console.error('Error downloading file:', err)
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function generateExcise(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      let filename
+      if (invoiceNumber !== null && invoiceNumber !== undefined) {
+        filename = `IndPost_${invoiceNumber}-акциз.zip`
+      } else {
+        filename = `IndPost_${id}-акциз.zip`
+      }
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/generate-excise`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function generateWithoutExcise(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      let filename
+      if (invoiceNumber !== null && invoiceNumber !== undefined) {
+        filename = `IndPost_${invoiceNumber}-без-акциза.zip`
+      } else {
+        filename = `IndPost_${id}-без-акциза.zip`
+      }
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/generate-without-excise`,
+        filename
+      )
+    } catch (err) {
       error.value = err
       throw err
     } finally {
@@ -315,6 +358,8 @@ export const useRegistersStore = defineStore('registers', () => {
     getLookupFeacnCodesProgress,
     cancelLookupFeacnCodes,
     generate,
+    generateExcise,
+    generateWithoutExcise,
     download,
     nextParcel,
     theNextParcel,

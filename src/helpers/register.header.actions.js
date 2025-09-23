@@ -35,6 +35,8 @@ export function useRegisterHeaderActions({
     validateRegisterFc,
     lookupFeacnCodes,
     exportAllXml,
+    exportAllXmlWithoutExcise,
+    exportAllXmlExcise,
     downloadRegister,
     cancelValidation,
     stopPolling
@@ -96,6 +98,16 @@ export function useRegisterHeaderActions({
     await runWithLock(exportAllXml, true)
   }
 
+  const runExportAllXmlWithoutExcise = async () => {
+    if (generalActionsDisabled.value) return
+    await runWithLock(exportAllXmlWithoutExcise, true)
+  }
+
+  const runExportAllXmlExcise = async () => {
+    if (generalActionsDisabled.value) return
+    await runWithLock(exportAllXmlExcise, true)
+  }
+
   const runDownloadRegister = async () => {
     if (generalActionsDisabled.value) return
     await runWithLock(downloadRegister, true)
@@ -128,6 +140,8 @@ export function useRegisterHeaderActions({
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
     exportAllXml: runExportAllXml,
+    exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
+    exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,
     cancelValidation,
     stop

@@ -1,6 +1,8 @@
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
+
+import { reactive, computed } from 'vue'
 
 /**
  * Helper functions for bulk status change functionality in Registers List
@@ -273,7 +275,7 @@ export function cancelValidation(validationState, registersStore, stopPollingFn)
  */
 export function createPollingTimer(pollFunction, interval = POLLING_INTERVAL_MS) {
   let timer = null
-  
+
   return {
     start() {
       if (!timer) {
@@ -289,5 +291,137 @@ export function createPollingTimer(pollFunction, interval = POLLING_INTERVAL_MS)
     isRunning() {
       return timer !== null
     }
+  }
+}
+
+/**
+ * Creates reusable handlers for register-level actions shared across lists
+ * @param {Object} registersStore - Registers store instance
+ * @param {Object} alertStore - Alert store instance
+ * @returns {Object} Action handlers and validation state
+ */
+export function createRegisterActionHandlers(registersStore, alertStore) {
+  const validationState = reactive({
+    ...createValidationState(),
+    operation: null
+  })
+
+  let pollingFunction = null
+
+  const pollingTimer = createPollingTimer(async () => {
+    if (typeof pollingFunction === 'function') {
+      try {
+        await pollingFunction()
+      } catch {
+        // Errors are handled inside polling functions; ensure timer stops on failure
+        pollingTimer.stop()
+      }
+    }
+  })
+
+  const progressPercent = computed(() => calculateValidationProgress(validationState))
+
+  async function pollFeacnLookup() {
+    if (!validationState.handleId) return
+
+    try {
+      const progress = await registersStore.getLookupFeacnCodesProgress(validationState.handleId)
+      validationState.total = progress.total
+      validationState.processed = progress.processed
+
+      if (progress.finished || progress.total === -1 || progress.processed === -1) {
+        validationState.show = false
+        pollingTimer.stop()
+        await registersStore.getAll()
+      }
+    } catch (err) {
+      alertStore.error(err?.message || String(err))
+      validationState.show = false
+      pollingTimer.stop()
+      await registersStore.getAll()
+    }
+  }
+
+  async function runValidation(item, sw) {
+    try {
+      validationState.operation = 'validation'
+      pollingFunction = () =>
+        pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
+
+      await validateRegister(
+        item,
+        validationState,
+        registersStore,
+        alertStore,
+        () => pollingTimer.stop(),
+        () => pollingTimer.start(),
+        sw
+      )
+    } catch (err) {
+      alertStore.error(err?.message || String(err))
+    }
+  }
+
+  async function validateRegisterSw(item) {
+    await runValidation(item, true)
+  }
+
+  async function validateRegisterFc(item) {
+    await runValidation(item, false)
+  }
+
+  async function lookupFeacnCodes(item) {
+    try {
+      validationState.operation = 'lookup-feacn'
+      pollingTimer.stop()
+      pollingFunction = pollFeacnLookup
+      const res = await registersStore.lookupFeacnCodes(item.id)
+      validationState.handleId = res.id
+      validationState.total = 0
+      validationState.processed = 0
+      validationState.show = true
+      await pollFeacnLookup()
+      pollingTimer.start()
+    } catch (err) {
+      alertStore.error(err?.message || String(err))
+    }
+  }
+
+  async function exportAllXml(item) {
+    await registersStore.generate(item.id, item.invoiceNumber)
+  }
+
+  async function downloadRegister(item) {
+    await registersStore.download(item.id, item.fileName)
+  }
+
+  function cancelValidationWrapper() {
+    if (validationState.operation === 'lookup-feacn') {
+      if (validationState.handleId) {
+        registersStore
+          .cancelLookupFeacnCodes(validationState.handleId)
+          .catch(() => {})
+      }
+      validationState.show = false
+      pollingTimer.stop()
+    } else {
+      cancelValidation(validationState, registersStore, () => pollingTimer.stop())
+    }
+  }
+
+  function stopPolling() {
+    pollingTimer.stop()
+  }
+
+  return {
+    validationState,
+    progressPercent,
+    validateRegisterSw,
+    validateRegisterFc,
+    lookupFeacnCodes,
+    exportAllXml,
+    downloadRegister,
+    cancelValidation: cancelValidationWrapper,
+    stopPolling
   }
 }

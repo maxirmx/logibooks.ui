@@ -12,6 +12,19 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
 
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
+import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
+const companiesStore = useCompaniesStore()
+const countriesStore = useCountriesStore()
+const transportationTypesStore = useTransportationTypesStore()
+const customsProceduresStore = useCustomsProceduresStore()
+const parcelStatusesStore = useParcelStatusesStore()
+const parcelCheckStatusStore = useParcelCheckStatusStore()
+
 const schema = Yup.object().shape({
   login_email: Yup.string()
     .required('Необходимо указать электронную почту')
@@ -32,7 +45,15 @@ function onSubmit(values, { setErrors }) {
 
   return authStore
     .login(login_email, login_password)
-    .then(() => router.push(getHomeRoute()))
+    .then(async () => {
+      await parcelStatusesStore.ensureLoaded()
+      await parcelCheckStatusStore.ensureLoaded()
+      await countriesStore.ensureLoaded()
+      await transportationTypesStore.ensureLoaded()
+      await customsProceduresStore.ensureLoaded()
+      await companiesStore.getAll()
+      router.push(getHomeRoute())
+    })
     .catch((error) => setErrors({ apiError: error.message || String(error) }))
 }
 </script>

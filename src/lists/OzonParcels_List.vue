@@ -33,6 +33,7 @@ import {
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
+import { useRegisterHeaderActions } from '@/helpers/register.header.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
@@ -65,7 +66,8 @@ const {
   parcels_check_status,
   parcels_tnved,
   parcels_number,
-  selectedParcelId
+  selectedParcelId,
+  isAdminOrSrLogist
 } = storeToRefs(authStore)
 
 // Template ref for the data table
@@ -168,6 +170,28 @@ async function loadOrdersWrapper() {
 // Provide the loadOrders function for child components
 provide('loadOrders', loadOrdersWrapper)
 
+const {
+  validationState,
+  progressPercent,
+  validationActionsDisabled,
+  generalActionsDisabled,
+  validateRegisterSw: validateRegisterSwHeader,
+  validateRegisterFc: validateRegisterFcHeader,
+  lookupFeacnCodes: lookupRegisterFeacnCodes,
+  exportAllXml: exportRegisterXml,
+  downloadRegister: downloadRegisterFile,
+  cancelValidation: cancelRegisterValidation,
+  stop: stopRegisterHeaderActions
+} = useRegisterHeaderActions({
+  registersStore,
+  alertStore,
+  runningAction,
+  tableLoading: loading,
+  registerLoading,
+  loadOrders: loadOrdersWrapper,
+  isComponentMounted
+})
+
 const watcherStop = watch(
   [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved, parcels_number],
   loadOrdersWrapper,
@@ -217,6 +241,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
+  stopRegisterHeaderActions()
   if (watcherStop) {
     watcherStop()
   }
@@ -342,9 +367,63 @@ function getGenericTemplateHeaders() {
 
 <template>
   <div class="settings table-3">
-    <h1 class="primary-heading">
-      {{ registerName }}
-    </h1>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">
+        {{ registerName }}
+      </h1>
+      <div v-if="isAdminOrSrLogist" class="header-actions">
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-spell-check"
+          tooltip-text="Проверить по стоп-словам"
+          :iconSize="'2x'"
+          @click="validateRegisterSwHeader"
+          :disabled="validationActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-anchor-circle-check"
+          tooltip-text="Проверить по кодам ТН ВЭД"
+          :iconSize="'2x'"
+          @click="validateRegisterFcHeader"
+          :disabled="validationActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-magnifying-glass"
+          tooltip-text="Подбор кодов ТН ВЭД"
+          :iconSize="'2x'"
+          @click="lookupRegisterFeacnCodes"
+          :disabled="validationActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-upload"
+          tooltip-text="Выгрузить XML накладные для реестра (без акциза)"
+          :iconSize="'2x'"
+          variant="green"
+          @click="exportRegisterXml"
+          :disabled="generalActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-upload"
+          tooltip-text="Выгрузить XML накладные для реестра (акциз)"
+          :iconSize="'2x'"
+          variant="orange"
+          @click="exportRegisterXml"
+          :disabled="generalActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-file-export"
+          tooltip-text="Экспортировать реестр"
+          :iconSize="'2x'"
+          @click="downloadRegisterFile"
+          :disabled="generalActionsDisabled"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
 
@@ -594,6 +673,22 @@ function getGenericTemplateHeaders() {
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
     </div>
+
+    <v-dialog v-model="validationState.show" width="300">
+      <v-card>
+        <v-card-title class="primary-heading">
+          {{ validationState.operation === 'lookup-feacn' ? 'Подбор кодов ТН ВЭД' : 'Проверка реестра' }}
+        </v-card-title>
+        <v-card-text class="text-center">
+          <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">
+            {{ progressPercent }}%
+          </v-progress-circular>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="cancelRegisterValidation">Отменить</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

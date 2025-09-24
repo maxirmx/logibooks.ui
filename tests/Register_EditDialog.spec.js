@@ -75,7 +75,7 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
   useCustomsProceduresStore: () => procStore
 }))
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
-vi.mock('@/router', () => ({ default: { push: vi.fn() } }))
+vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Simple stubs for vee-validate components
 const FormStub = {
@@ -95,6 +95,17 @@ function getGroupByLabel(wrapper, text) {
   return wrapper
     .findAll('.form-group')
     .find((g) => g.find('label').text().includes(text))
+}
+
+function createDeferred() {
+  let resolve
+  let reject
+  const promise = new Promise((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+
+  return { promise, resolve, reject }
 }
 
 describe('Register_EditDialog', () => {
@@ -198,6 +209,37 @@ describe('Register_EditDialog', () => {
     // Verify navigation occurred
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
+
+  it('shows action dialog while upload is in progress', async () => {
+    const deferred = createDeferred()
+    upload.mockReturnValueOnce(deferred.promise)
+    registersStore.uploadFile.value = new File(['data'], 'upload.xlsx')
+    mockItem.value = { fileName: 'upload.xlsx', companyId: 5 }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } }
+    })
+
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    const submitPromise = dialog.vm.onSubmit({}, { setErrors: () => {} })
+
+    await nextTick()
+    expect(dialog.vm.actionDialogState.show).toBe(true)
+
+    deferred.resolve({})
+    await submitPromise
+    await nextTick()
+
+    expect(dialog.vm.actionDialogState.show).toBe(false)
+    expect(router.push).toHaveBeenCalledWith('/registers')
+  })
   
   it('handles errors in create mode with Reference object', async () => {
     // Mock upload success but update failure
@@ -221,7 +263,7 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit(formValues, { setErrors })
     await resolveAll()
-    
+
     // Verify upload was called
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
     
@@ -233,6 +275,8 @@ describe('Register_EditDialog', () => {
     
     // Verify navigation did not occur
     expect(router.push).not.toHaveBeenCalled()
+
+    expect(dialog.vm.actionDialogState.show).toBe(false)
   })
 })
 

@@ -14,6 +14,8 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionDialog from '@/components/ActionDialog.vue'
+import { useActionDialog } from '@/composables/useActionDialog.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -32,6 +34,8 @@ const customsProceduresStore = useCustomsProceduresStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
+
+const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
 // Id = 1 --> Code = 10 (Экспорт) 
 const isExport = ref(true)
@@ -199,14 +203,19 @@ async function onSubmit(values, actions = {}) {
   
   try {
     if (props.create) {
-      const result = await registersStore.upload(uploadFile.value, item.value.companyId)
-      if (!isComponentMounted.value) return
-      // If upload returns Reference object with id, call update
-      if (result && typeof result.id === 'number') {
-        await registersStore.update(result.id, values)
+      showActionDialog('upload-register')
+      try {
+        const result = await registersStore.upload(uploadFile.value, item.value.companyId)
         if (!isComponentMounted.value) return
+        // If upload returns Reference object with id, call update
+        if (result && typeof result.id === 'number') {
+          await registersStore.update(result.id, values)
+          if (!isComponentMounted.value) return
+        }
+        await router.push('/registers')
+      } finally {
+        hideActionDialog()
       }
-      await router.push('/registers')
     } else {
       await registersStore.update(props.id, values)
       if (!isComponentMounted.value) return
@@ -427,6 +436,7 @@ function getCustomerName(customerId) {
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ item.error }}</div>
     </div>
+    <ActionDialog :action-dialog="actionDialogState" />
   </div>
 </template>
 

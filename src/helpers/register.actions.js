@@ -3,12 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, watch, ref, unref, reactive } from 'vue'
-
-const ACTION_DIALOG_TITLES = {
-  'export-all-xml-without-excise': 'Подготовка файлов',
-  'export-all-xml-excise': 'Подготовка файлов',
-  'download-register': 'Подготовка файла реестра'
-}
+import { useActionDialog } from '@/composables/useActionDialog.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
@@ -255,11 +250,7 @@ export function useRegisterHeaderActions({
   const tableLoadingRef = tableLoading ?? ref(false)
   const runningActionRef = runningAction ?? ref(false)
 
-  const actionDialogState = reactive({
-    show: false,
-    operation: null,
-    title: ''
-  })
+  const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -278,18 +269,6 @@ export function useRegisterHeaderActions({
     validationState.show ||
     actionDialogState.show
   )
-
-  function showActionDialog(operation) {
-    actionDialogState.operation = operation
-    actionDialogState.title = ACTION_DIALOG_TITLES[operation] ?? 'Пожалуйста, подождите'
-    actionDialogState.show = true
-  }
-
-  function hideActionDialog() {
-    actionDialogState.show = false
-    actionDialogState.operation = null
-    actionDialogState.title = ''
-  }
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
     const register = currentRegister.value

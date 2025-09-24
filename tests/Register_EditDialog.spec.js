@@ -240,7 +240,6 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.actionDialogState.show).toBe(false)
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
-  
   it('handles errors in create mode with Reference object', async () => {
     // Mock upload success but update failure
     upload.mockResolvedValueOnce({ id: 42 })

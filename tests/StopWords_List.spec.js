@@ -367,7 +367,8 @@ describe('StopWords_List.vue', () => {
       expect(headers).toEqual([
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
         { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
-        { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
+        { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
+        { title: 'Причина запрета', key: 'explanation', sortable: true }
       ])
     })
   })

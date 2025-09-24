@@ -97,7 +97,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     wrapper.vm.setFieldValue('code', '0101')
     wrapper.vm.setFieldValue('exceptions', ['111', ''])
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith({ code: '0101', exceptions: ['111'] })
+    expect(create).toHaveBeenCalledWith({ code: '0101', exceptions: ['111'], comment: '' })
   })
 
   it('loads data in edit mode and updates', async () => {
@@ -111,7 +111,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     await flushPromises()
     await wrapper.vm.onSubmit()
     expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, { code: '0202', exceptions: ['222'] })
+    expect(update).toHaveBeenCalledWith(1, { code: '0202', exceptions: ['222'], comment: '' })
   })
 
   it('handles mixed exception formats in edit mode', async () => {
@@ -125,7 +125,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     await flushPromises()
     await wrapper.vm.onSubmit()
     expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, { code: '0303', exceptions: ['333', '444'] })
+    expect(update).toHaveBeenCalledWith(1, { code: '0303', exceptions: ['333', '444'], comment: '' })
   })
 
   it('filters out empty exception strings on submit', async () => {
@@ -134,7 +134,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     wrapper.vm.setFieldValue('code', '0404')
     wrapper.vm.setFieldValue('exceptions', ['555', '', '666', '   '])
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith({ code: '0404', exceptions: ['555', '666'] })
+    expect(create).toHaveBeenCalledWith({ code: '0404', exceptions: ['555', '666'], comment: '' })
   })
 
   it('renders FieldArrayWithButtons', () => {

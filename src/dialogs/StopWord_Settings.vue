@@ -44,19 +44,24 @@ const schema = toTypedSchema(Yup.object().shape({
       'is-enabled',
       'Выбранный тип соответствия недоступен для текущего слова/фразы',
       createMatchTypeValidationTest()
-    )    
+    ),
+  explanation: Yup
+    .string()
 }))
 
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     word: '',
-    matchTypeId: 41
+    matchTypeId: 41,
+    explanation: ''
   }
 })
 
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
+const { value: explanation } = useField('explanation')
+
 
 function isOptionDisabled(value) {
   return isMatchTypeDisabled(value, word.value)
@@ -74,7 +79,8 @@ onMounted(async () => {
         resetForm({
           values: {
             word: loadedStopWord.word,
-            matchTypeId: loadedStopWord.matchTypeId
+            matchTypeId: loadedStopWord.matchTypeId,
+            explanation: loadedStopWord.explanation || ''
           }
         })
         await nextTick()
@@ -102,7 +108,8 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
   
   const stopWordData = {
     word: values.word.trim(),
-    matchTypeId: values.matchTypeId
+    matchTypeId: values.matchTypeId,
+    explanation: values.explanation ? values.explanation.trim() : ''
   }
 
   // Include id for updates
@@ -160,6 +167,20 @@ defineExpose({
           @input="onWordInput"
         />
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
+      </div>
+
+      <div class="form-group">
+        <label for="explanation" class="label">Причина запрета:</label>
+        <input
+          name="explanation"
+          id="explanation"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.explanation }"
+          placeholder="Причина запрета"
+          v-model="explanation"
+        />
+        <div v-if="errors.explanation" class="invalid-feedback">{{ errors.explanation }}</div>
       </div>
 
       <div class="form-group">

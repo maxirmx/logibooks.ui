@@ -13,8 +13,8 @@ import router from '@/router'
 
 let lastRegisterActions = null
 
-vi.mock('@/helpers/registers.list.helpers.js', async () => {
-  const actual = await vi.importActual('@/helpers/registers.list.helpers.js')
+vi.mock('@/helpers/register.actions.js', async () => {
+  const actual = await vi.importActual('@/helpers/register.actions.js')
   return {
     ...actual,
     createRegisterActionHandlers: vi.fn((...args) => {
@@ -329,13 +329,6 @@ describe('Registers_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
     })
 
-/* --    
-    it('calls generate when exportAllXml is called', () => {
-      const item = { id: 456, invoiceNumber: 'INV' }
-      wrapper.vm.exportAllXml(item)
-      expect(generateFn).toHaveBeenCalledWith(456, 'INV')
-    })
--- */
   })
 
   describe('table cell interactions', () => {

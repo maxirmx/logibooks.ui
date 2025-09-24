@@ -2,8 +2,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, watch, ref, unref } from 'vue'
+import { computed, watch, ref, unref, reactive } from 'vue'
 import { createRegisterActionHandlers } from '@/helpers/registers.list.helpers.js'
+
+const ACTION_DIALOG_TITLES = {
+  'export-all-xml-without-excise': 'Подготовка файлов',
+  'export-all-xml-excise': 'Подготовка файлов',
+  'download-register': 'Подготовка файла реестра'
+}
 
 /**
  * Composable that wires register-level actions (validation, FEACN lookup, exports)
@@ -34,7 +40,6 @@ export function useRegisterHeaderActions({
     validateRegisterSw,
     validateRegisterFc,
     lookupFeacnCodes,
-    exportAllXml,
     exportAllXmlWithoutExcise,
     exportAllXmlExcise,
     downloadRegister,
@@ -45,6 +50,12 @@ export function useRegisterHeaderActions({
   const registerLoadingRef = registerLoading ?? ref(false)
   const tableLoadingRef = tableLoading ?? ref(false)
   const runningActionRef = runningAction ?? ref(false)
+
+  const actionDialogState = reactive({
+    show: false,
+    operation: null,
+    title: ''
+  })
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -60,9 +71,22 @@ export function useRegisterHeaderActions({
     !registerReady.value || tableLoadingRef.value || runningActionRef.value
   )
 
-  async function runWithLock(action, lock = true) {
+  function showActionDialog(operation) {
+    actionDialogState.operation = operation
+    actionDialogState.title = ACTION_DIALOG_TITLES[operation] ?? 'Пожалуйста, подождите'
+    actionDialogState.show = true
+  }
+
+  function hideActionDialog() {
+    actionDialogState.show = false
+    actionDialogState.operation = null
+    actionDialogState.title = ''
+  }
+
+  async function runWithLock(action, lock = true, checkDisabled = true) {
     const register = currentRegister.value
     if (!register) return
+    if (checkDisabled && generalActionsDisabled.value) return
     if (lock && runningActionRef.value) return
 
     if (lock) {
@@ -79,38 +103,37 @@ export function useRegisterHeaderActions({
   }
 
   const runValidateRegisterSw = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(validateRegisterSw, false)
+    await runWithLock(validateRegisterSw, true)
   }
 
   const runValidateRegisterFc = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(validateRegisterFc, false)
+    await runWithLock(validateRegisterFc, true)
   }
 
   const runLookupFeacnCodes = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(lookupFeacnCodes, false)
+    await runWithLock(lookupFeacnCodes, true)
   }
 
-  const runExportAllXml = async () => {
+  const runActionWithDialog = async (action, operation) => {
     if (generalActionsDisabled.value) return
-    await runWithLock(exportAllXml, true)
+    showActionDialog(operation)
+    try {
+      await runWithLock(action, true, false)
+    } finally {
+      hideActionDialog()
+    }
   }
 
   const runExportAllXmlWithoutExcise = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(exportAllXmlWithoutExcise, true)
+    await runActionWithDialog(exportAllXmlWithoutExcise, 'export-all-xml-without-excise')
   }
 
   const runExportAllXmlExcise = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(exportAllXmlExcise, true)
+    await runActionWithDialog(exportAllXmlExcise, 'export-all-xml-excise')
   }
 
   const runDownloadRegister = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(downloadRegister, true)
+    await runActionWithDialog(downloadRegister, 'download-register')
   }
 
   function handleValidationDialogClose(show, previous) {
@@ -133,16 +156,17 @@ export function useRegisterHeaderActions({
   function stop() {
     stopValidationWatcher()
     stopPolling()
+    hideActionDialog()
   }
 
   return {
     validationState,
     progressPercent,
+    actionDialog: actionDialogState,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
-    exportAllXml: runExportAllXml,
     exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,

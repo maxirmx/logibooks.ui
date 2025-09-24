@@ -12,6 +12,7 @@ import {
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
   setBulkStatusSelectedId,
+  createRegisterActionHandlers
 } from '@/helpers/registers.list.helpers.js'
 
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -55,6 +56,12 @@ const customsProceduresStore = useCustomsProceduresStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
+
+const {
+  validationState,
+  progressPercent,
+  stopPolling
+} = createRegisterActionHandlers(registersStore, alertStore)
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
@@ -165,6 +172,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  stopPolling()
 })
 
 function openFileDialog() {
@@ -280,6 +288,11 @@ const headers = [
   { title: 'Товаров/Посылок', key: 'parcelsTotal', align: 'center' },
   { title: 'Дата загрузки', key: 'date', align: 'center' }
 ]
+
+defineExpose({
+  validationState,
+  progressPercent
+})
 
 </script>
 

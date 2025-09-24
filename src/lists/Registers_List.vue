@@ -11,9 +11,9 @@ import {
   applyBulkStatusToAllOrders,
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
-  setBulkStatusSelectedId,
-  createRegisterActionHandlers
+  setBulkStatusSelectedId
 } from '@/helpers/registers.list.helpers.js'
+import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'

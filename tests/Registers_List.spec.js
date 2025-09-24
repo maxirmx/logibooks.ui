@@ -13,8 +13,8 @@ import router from '@/router'
 
 let lastRegisterActions = null
 
-vi.mock('@/helpers/registers.list.helpers.js', async () => {
-  const actual = await vi.importActual('@/helpers/registers.list.helpers.js')
+vi.mock('@/helpers/register.actions.js', async () => {
+  const actual = await vi.importActual('@/helpers/register.actions.js')
   return {
     ...actual,
     createRegisterActionHandlers: vi.fn((...args) => {

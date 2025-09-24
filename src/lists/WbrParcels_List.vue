@@ -33,7 +33,7 @@ import {
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
-import { useRegisterHeaderActions } from '@/helpers/register.header.actions.js'
+import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'

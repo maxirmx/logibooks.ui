@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
-import { useRegisterHeaderActions } from '@/helpers/register.header.actions.js'
+import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 
 function createDeferred() {
   let resolve

@@ -180,7 +180,7 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => stores.alert
 }))
 
-vi.mock('@/helpers/register.header.actions.js', () => ({
+vi.mock('@/helpers/register.actions.js', () => ({
   useRegisterHeaderActions: vi.fn(() => registerHeaderActionsMock)
 }))
 

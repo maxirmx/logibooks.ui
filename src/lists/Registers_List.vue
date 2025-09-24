@@ -12,7 +12,6 @@ import {
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
   setBulkStatusSelectedId,
-  createRegisterActionHandlers
 } from '@/helpers/registers.list.helpers.js'
 
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -56,25 +55,6 @@ const customsProceduresStore = useCustomsProceduresStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
-
-const {
-  validationState,
-  progressPercent,
-  validateRegisterSw: validateRegisterSwAction,
-  validateRegisterFc: validateRegisterFcAction,
-  lookupFeacnCodes: lookupFeacnCodesAction,
-  /* --
-  exportAllXml: exportAllXmlAction,
-  -- */
-  downloadRegister: downloadRegisterAction,
-  cancelValidation: cancelRegisterValidation,
-  stopPolling: stopRegisterPolling
-} = createRegisterActionHandlers(registersStore, alertStore)
-
-const validateRegisterSw = validateRegisterSwAction
-const validateRegisterFc = validateRegisterFcAction
-const lookupFeacnCodes = lookupFeacnCodesAction
-const cancelValidationWrapper = cancelRegisterValidation
 
 const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
@@ -182,7 +162,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
-  stopRegisterPolling()
   if (watcherStop) {
     watcherStop()
   }
@@ -238,28 +217,6 @@ function openParcels(item) {
 
 function editRegister(item) {
   router.push('/register/edit/' + item.id)
-}
-
-/* -- 
-async function exportAllXml(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    await exportAllXmlAction(item)
-  } finally {
-    runningAction.value = false
-  }
-}
--- */
-
-async function downloadRegister(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    await downloadRegisterAction(item)
-  } finally {
-    runningAction.value = false
-  }
 }
 
 async function deleteRegister(item) {
@@ -495,49 +452,6 @@ const headers = [
                 @click="() => bulkChangeStatus(item.id)" 
               />
             </div>
-
-            <ActionButton 
-              v-if="isAdminOrSrLogist"
-              :item="item" 
-              icon="fa-solid fa-spell-check" 
-              tooltip-text="Проверить по стоп-словам" 
-              @click="validateRegisterSw" 
-              :disabled="runningAction || loading" 
-            />
-            <ActionButton 
-              v-if="isAdminOrSrLogist"
-              :item="item" 
-              icon="fa-solid fa-anchor-circle-check" 
-              tooltip-text="Проверить по кодам ТН ВЭД" 
-              @click="validateRegisterFc" 
-              :disabled="runningAction || loading" 
-            />
-            <ActionButton 
-              v-if="isAdminOrSrLogist"
-              :item="item" 
-              icon="fa-solid fa-magnifying-glass" 
-              tooltip-text="Подбор кодов ТН ВЭД" 
-              @click="lookupFeacnCodes" 
-              :disabled="runningAction || loading" 
-            />
-            <!-- 
-            <ActionButton 
-              v-if="isAdminOrSrLogist"
-              :item="item" 
-              icon="fa-solid fa-upload" 
-              tooltip-text="Выгрузить XML накладные для всех посылок в реестре" 
-              @click="exportAllXml" 
-              :disabled="runningAction || loading" 
-              />
-            -->  
-            <ActionButton 
-              v-if="isAdminOrSrLogist"
-              :item="item" 
-              icon="fa-solid fa-file-export" 
-              tooltip-text="Экспортировать реестр" 
-              @click="downloadRegister" 
-              :disabled="runningAction || loading" 
-            />
             <ActionButton
               v-if="isAdmin"
               :item="item" 
@@ -561,22 +475,6 @@ const headers = [
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
     </div>
-
-    <v-dialog v-model="validationState.show" width="300">
-      <v-card>
-        <v-card-title class="primary-heading">
-          {{ validationState.operation === 'lookup-feacn-codes' ? 'Подбор кодов ТН ВЭД' : 'Проверка реестра' }}
-        </v-card-title>
-        <v-card-text class="text-center">
-          <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">
-            {{ progressPercent }}%
-          </v-progress-circular>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="cancelValidationWrapper">Отменить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </div>
 </template>
 

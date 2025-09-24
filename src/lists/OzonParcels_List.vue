@@ -39,6 +39,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -173,6 +174,7 @@ provide('loadOrders', loadOrdersWrapper)
 const {
   validationState,
   progressPercent,
+  actionDialog: actionDialogState,
   generalActionsDisabled,
   validateRegisterSw: validateRegisterSwHeader,
   validateRegisterFc: validateRegisterFcHeader,
@@ -674,21 +676,12 @@ function getGenericTemplateHeaders() {
       {{ alert.message }}
     </div>
 
-    <v-dialog v-model="validationState.show" width="300">
-      <v-card>
-        <v-card-title class="primary-heading">
-          {{ validationState.operation === 'lookup-feacn-codes' ? 'Подбор кодов ТН ВЭД' : 'Проверка реестра' }}
-        </v-card-title>
-        <v-card-text class="text-center">
-          <v-progress-circular :model-value="progressPercent" :size="70" :width="7" color="primary">
-            {{ progressPercent }}%
-          </v-progress-circular>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="cancelRegisterValidation">Отменить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <RegisterActionsDialogs
+      :validation-state="validationState"
+      :progress-percent="progressPercent"
+      :cancel-validation="cancelRegisterValidation"
+      :action-dialog="actionDialogState"
+    />
   </div>
 </template>
 

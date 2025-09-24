@@ -2,8 +2,15 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, watch, ref, unref } from 'vue'
+import { computed, watch, ref, unref, reactive } from 'vue'
 import { createRegisterActionHandlers } from '@/helpers/registers.list.helpers.js'
+
+const ACTION_DIALOG_TITLES = {
+  'export-all-xml': 'Подготовка XML накладных',
+  'export-all-xml-without-excise': 'Подготовка XML накладных (без акциза)',
+  'export-all-xml-excise': 'Подготовка XML накладных (акциз)',
+  'download-register': 'Подготовка файла реестра'
+}
 
 /**
  * Composable that wires register-level actions (validation, FEACN lookup, exports)
@@ -46,6 +53,12 @@ export function useRegisterHeaderActions({
   const tableLoadingRef = tableLoading ?? ref(false)
   const runningActionRef = runningAction ?? ref(false)
 
+  const actionDialogState = reactive({
+    show: false,
+    operation: null,
+    title: ''
+  })
+
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
     if (!register || register.loading || register.error) {
@@ -59,6 +72,18 @@ export function useRegisterHeaderActions({
   const generalActionsDisabled = computed(() =>
     !registerReady.value || tableLoadingRef.value || runningActionRef.value
   )
+
+  function showActionDialog(operation) {
+    actionDialogState.operation = operation
+    actionDialogState.title = ACTION_DIALOG_TITLES[operation] ?? 'Пожалуйста, подождите'
+    actionDialogState.show = true
+  }
+
+  function hideActionDialog() {
+    actionDialogState.show = false
+    actionDialogState.operation = null
+    actionDialogState.title = ''
+  }
 
   async function runWithLock(action, lock = true) {
     const register = currentRegister.value
@@ -93,24 +118,30 @@ export function useRegisterHeaderActions({
     await runWithLock(lookupFeacnCodes, false)
   }
 
-  const runExportAllXml = async () => {
+  const runActionWithDialog = async (action, operation) => {
     if (generalActionsDisabled.value) return
-    await runWithLock(exportAllXml, true)
+    showActionDialog(operation)
+    try {
+      await runWithLock(action, true)
+    } finally {
+      hideActionDialog()
+    }
+  }
+
+  const runExportAllXml = async () => {
+    await runActionWithDialog(exportAllXml, 'export-all-xml')
   }
 
   const runExportAllXmlWithoutExcise = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(exportAllXmlWithoutExcise, true)
+    await runActionWithDialog(exportAllXmlWithoutExcise, 'export-all-xml-without-excise')
   }
 
   const runExportAllXmlExcise = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(exportAllXmlExcise, true)
+    await runActionWithDialog(exportAllXmlExcise, 'export-all-xml-excise')
   }
 
   const runDownloadRegister = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(downloadRegister, true)
+    await runActionWithDialog(downloadRegister, 'download-register')
   }
 
   function handleValidationDialogClose(show, previous) {
@@ -133,11 +164,13 @@ export function useRegisterHeaderActions({
   function stop() {
     stopValidationWatcher()
     stopPolling()
+    hideActionDialog()
   }
 
   return {
     validationState,
     progressPercent,
+    actionDialog: actionDialogState,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterFc: runValidateRegisterFc,

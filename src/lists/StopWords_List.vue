@@ -45,7 +45,8 @@ function filterStopWords(value, query, item) {
 const headers = [
   ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
-  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
+  { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
+  { title: 'Причина запрета', key: 'explanation', sortable: true }
 ]
 
 function getMatchTypeText(id) {
@@ -111,7 +112,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="stop-words-list">
+  <div class="settings table-3" data-testid="stop-words-list">
     <h1 class="primary-heading">Стоп-слова и фразы</h1>
     <hr class="hr" />
 

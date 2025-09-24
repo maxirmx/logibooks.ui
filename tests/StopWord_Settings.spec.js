@@ -225,7 +225,8 @@ describe('StopWord_Settings.vue', () => {
       
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
-        matchTypeId: 1
+        matchTypeId: 1,
+        explanation: ''
       })
     })
 
@@ -309,7 +310,8 @@ describe('StopWord_Settings.vue', () => {
       expect(update).toHaveBeenCalledWith(1, {
         id: 1,
         word: 'обновленное',
-        matchTypeId: 41
+        matchTypeId: 41,
+        explanation: ''
       })
     })
 

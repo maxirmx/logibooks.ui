@@ -38,7 +38,8 @@ const loading = ref(false)
 const schema = toTypedSchema(
   Yup.object({
     code: Yup.string().required('Префикс обязателен'),
-    exceptions: Yup.array().of(Yup.string())
+    exceptions: Yup.array().of(Yup.string()),
+    comment: Yup.string()
   })
 )
 
@@ -46,11 +47,13 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     code: '',
-    exceptions: ['']
+    exceptions: [''],
+    comment: ''
   }
 })
 
 const { value: code } = useField('code')
+const { value: comment } = useField('comment')
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
@@ -110,7 +113,8 @@ onMounted(async () => {
         resetForm({
           values: {
             code: item.code || '',
-            exceptions: exceptionCodes
+            exceptions: exceptionCodes,
+            comment: item.comment || ''
           }
         })
       }
@@ -130,7 +134,8 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     const submitData = {
       code: values.code,
       // Filter out empty strings and convert to the format expected by CreateDto
-      exceptions: values.exceptions.filter(exc => exc && exc.trim() !== '')
+      exceptions: values.exceptions.filter(exc => exc && exc.trim() !== ''),
+      comment: values.comment ? values.comment.trim() : ''
     }
 
     if (isCreate.value) {
@@ -186,6 +191,20 @@ function cancel() {
           <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
           <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" />
         </div>
+      </div>
+
+      <div class="form-group">
+        <label for="comment" class="label">Причина запрета:</label>
+        <input
+          name="comment"
+          id="comment"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.comment }"
+          placeholder="Причина запрета"
+          v-model="comment"
+        />
+        <div v-if="errors.comment" class="invalid-feedback">{{ errors.comment }}</div>
       </div>
 
       <div class="feacn-search-wrapper">

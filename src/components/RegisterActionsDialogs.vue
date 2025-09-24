@@ -17,10 +17,17 @@ const validationTitle = computed(() =>
 const progressValue = computed(() => unref(props.progressPercent) ?? 0)
 
 const actionDialogTitle = computed(() => props.actionDialog?.title ?? 'Пожалуйста, подождите')
+const actionDialogVisible = computed(() => props.actionDialog?.show ?? false)
+
+const onValidationDialogUpdate = (value) => {
+  if (!value) {
+    props.cancelValidation()
+  }
+}
 </script>
 
 <template>
-  <v-dialog v-model="validationState.show" width="300">
+  <v-dialog :model-value="validationState.show" width="300" @update:model-value="onValidationDialogUpdate">
     <v-card>
       <v-card-title class="primary-heading">
         {{ validationTitle }}
@@ -36,7 +43,7 @@ const actionDialogTitle = computed(() => props.actionDialog?.title ?? 'Пожа�
     </v-card>
   </v-dialog>
 
-  <v-dialog v-model="actionDialog.show" width="300">
+  <v-dialog :model-value="actionDialogVisible" width="300" persistent>
     <v-card>
       <v-card-title class="primary-heading">
         {{ actionDialogTitle }}

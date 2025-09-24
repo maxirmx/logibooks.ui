@@ -6,9 +6,8 @@ import { computed, watch, ref, unref, reactive } from 'vue'
 import { createRegisterActionHandlers } from '@/helpers/registers.list.helpers.js'
 
 const ACTION_DIALOG_TITLES = {
-  'export-all-xml': 'Подготовка XML накладных',
-  'export-all-xml-without-excise': 'Подготовка XML накладных (без акциза)',
-  'export-all-xml-excise': 'Подготовка XML накладных (акциз)',
+  'export-all-xml-without-excise': 'Подготовка файлов',
+  'export-all-xml-excise': 'Подготовка файлов',
   'download-register': 'Подготовка файла реестра'
 }
 
@@ -41,7 +40,6 @@ export function useRegisterHeaderActions({
     validateRegisterSw,
     validateRegisterFc,
     lookupFeacnCodes,
-    exportAllXml,
     exportAllXmlWithoutExcise,
     exportAllXmlExcise,
     downloadRegister,
@@ -85,9 +83,10 @@ export function useRegisterHeaderActions({
     actionDialogState.title = ''
   }
 
-  async function runWithLock(action, lock = true) {
+  async function runWithLock(action, lock = true, checkDisabled = true) {
     const register = currentRegister.value
     if (!register) return
+    if (checkDisabled && generalActionsDisabled.value) return
     if (lock && runningActionRef.value) return
 
     if (lock) {
@@ -104,32 +103,25 @@ export function useRegisterHeaderActions({
   }
 
   const runValidateRegisterSw = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(validateRegisterSw, false)
+    await runWithLock(validateRegisterSw, true)
   }
 
   const runValidateRegisterFc = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(validateRegisterFc, false)
+    await runWithLock(validateRegisterFc, true)
   }
 
   const runLookupFeacnCodes = async () => {
-    if (generalActionsDisabled.value) return
-    await runWithLock(lookupFeacnCodes, false)
+    await runWithLock(lookupFeacnCodes, true)
   }
 
   const runActionWithDialog = async (action, operation) => {
     if (generalActionsDisabled.value) return
     showActionDialog(operation)
     try {
-      await runWithLock(action, true)
+      await runWithLock(action, true, false)
     } finally {
       hideActionDialog()
     }
-  }
-
-  const runExportAllXml = async () => {
-    await runActionWithDialog(exportAllXml, 'export-all-xml')
   }
 
   const runExportAllXmlWithoutExcise = async () => {
@@ -175,7 +167,6 @@ export function useRegisterHeaderActions({
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
-    exportAllXml: runExportAllXml,
     exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,

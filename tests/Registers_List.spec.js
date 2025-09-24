@@ -329,13 +329,6 @@ describe('Registers_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
     })
 
-/* --    
-    it('calls generate when exportAllXml is called', () => {
-      const item = { id: 456, invoiceNumber: 'INV' }
-      wrapper.vm.exportAllXml(item)
-      expect(generateFn).toHaveBeenCalledWith(456, 'INV')
-    })
--- */
   })
 
   describe('table cell interactions', () => {

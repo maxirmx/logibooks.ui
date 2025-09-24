@@ -23,7 +23,6 @@ function createRegisterHeaderActionsMock() {
     validateRegisterSw: vi.fn(),
     validateRegisterFc: vi.fn(),
     lookupFeacnCodes: vi.fn(),
-    exportAllXml: vi.fn(),
     exportAllXmlWithoutExcise: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     downloadRegister: vi.fn(),

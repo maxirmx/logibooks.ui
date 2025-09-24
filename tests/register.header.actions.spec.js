@@ -76,7 +76,7 @@ describe('useRegisterHeaderActions', () => {
     const promise = exportAllXmlWithoutExcise()
 
     expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Подготовка XML накладных (без акциза)')
+    expect(actionDialog.title).toBe('Подготовка файлов')
     expect(registersStore.generateWithoutExcise).toHaveBeenCalledWith(1, 'INV-1')
 
     deferred.resolve()

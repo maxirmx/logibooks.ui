@@ -1,5 +1,12 @@
 <template>
   <div class="pagination-footer">
+    <div class="pagination-footer__section pagination-footer__spinner">
+      <span 
+        v-if="loading || initializing" 
+        class="spinner-border spinner-border-sm align-center"
+      ></span>
+    </div>
+
     <div class="pagination-footer__section pagination-footer__items">
       <span class="pagination-footer__label">Записей на странице:</span>
       <v-select
@@ -80,7 +87,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { mdiChevronTripleUp } from '@mdi/js'
 
 const props = defineProps({
@@ -93,7 +100,8 @@ const props = defineProps({
 
   showRange: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  initializing: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:itemsPerPage', 'update:page'])
@@ -184,6 +192,11 @@ function scrollToTop() {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+}
+
+.pagination-footer__spinner {
+  min-width: 30px; /* Reserve space for spinner */
+  justify-content: flex-start;
 }
 
 .pagination-footer__items {

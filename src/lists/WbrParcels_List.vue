@@ -628,14 +628,12 @@ function getGenericTemplateHeaders() {
         :total-count="totalCount"
         :max-page="maxPage"
         :loading="loading"
+        :initializing="isInitializing"
         page-control="input"
       />
     </div>
 
     <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Реестр пуст</div>
-    <div v-if="loading || isInitializing" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg"></span>
-    </div>
     </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>

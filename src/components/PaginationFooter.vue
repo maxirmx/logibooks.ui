@@ -78,7 +78,6 @@
         variant="text"
         :icon="mdiChevronTripleUp"
         size="small"
-        title="Прокрутить вверх"
         @click="scrollToTop"
         class="pagination-footer__scroll-button"
       />

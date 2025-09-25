@@ -40,6 +40,7 @@ import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
+import PaginationFooter from '@/components/PaginationFooter.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -127,6 +128,7 @@ watch(
   parcels_page,
   () => {
     selectedParcelId.value = null
+    scrollToPageStart()
   }
 )
 
@@ -161,6 +163,22 @@ function scrollToSelectedItem() {
   })
 }
 
+function scrollToPageStart() {
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  nextTick(() => {
+    const tableElement = dataTableRef.value?.$el || dataTableRef.value
+    if (!tableElement) return
+
+    if (typeof tableElement.scrollTo === 'function') {
+      tableElement.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (typeof tableElement === 'object' && 'scrollTop' in tableElement) {
+      tableElement.scrollTop = 0
+    }
+  })
+}
 const registerFileName = ref('')
 const registerDealNumber = ref('')
 const registerLoading = ref(true)
@@ -638,65 +656,15 @@ function getGenericTemplateHeaders() {
 
     <!-- Custom pagination controls outside the scrollable area -->
     <div v-if="items?.length || loading" class="v-data-table-footer">
-      <div class="v-data-table-footer__items-per-page">
-        <span>Посылок на странице:</span>
-        <v-select
-          v-model="parcels_per_page"
-          :items="itemsPerPageOptions"
-          density="compact"
-          variant="plain"
-          hide-details
-          class="v-data-table-footer__items-per-page-select"
-        />
-        <div>{{ Math.min((parcels_page - 1) * parcels_per_page + 1, totalCount) }}-{{ Math.min(parcels_page * parcels_per_page, totalCount) }} из {{ totalCount }}</div>
-
-        <v-btn
-          variant="text"
-          icon="$first"
-          size="small"
-          :disabled="parcels_page <= 1"
-          @click="parcels_page = 1"
-        />
-
-        <v-btn
-          variant="text"
-          icon="$prev"
-          size="small"
-          :disabled="parcels_page <= 1"
-          @click="parcels_page = Math.max(1, parcels_page - 1)"
-        />
-
-        <v-btn
-          variant="text"
-          icon="$next"
-          size="small"
-          :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
-          @click="parcels_page = Math.min(Math.ceil(totalCount / parcels_per_page), parcels_page + 1)"
-        />
-
-        <v-btn
-          variant="text"
-          icon="$last"
-          size="small"
-          :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
-          @click="parcels_page = Math.ceil(totalCount / parcels_per_page)"
-        />
-        
-        <!-- Direct page input -->
-        <div class="page-input" style="display:flex; align-items:center; gap:8px; margin-left:8px;">
-          <span>Страница</span>
-          <v-select
-            v-model="parcels_page"
-            :items="pageOptions"
-            item-title="title"
-            item-value="value"
-            density="compact"
-            variant="plain"
-            hide-details
-            style="width:70px"
-          />
-        </div>
-      </div>
+      <PaginationFooter
+        v-model:items-per-page="parcels_per_page"
+        v-model:page="parcels_page"
+        :items-per-page-options="itemsPerPageOptions"
+        :page-options="pageOptions"
+        :total-count="totalCount"
+        :max-page="maxPage"
+        :loading="loading"
+      />
     </div>
 
     <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Реестр пуст</div>
@@ -727,4 +695,9 @@ function getGenericTemplateHeaders() {
 }
 
 </style>
+
+
+
+
+
 

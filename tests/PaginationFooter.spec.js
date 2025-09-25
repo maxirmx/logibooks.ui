@@ -69,15 +69,9 @@ describe('PaginationFooter', () => {
   })
 
   describe('Page Control', () => {
-    it('renders page select by default', () => {
+    it('always renders page select', () => {
       expect(wrapper.find('.pagination-footer__page-select').exists()).toBe(true)
       expect(wrapper.find('.pagination-footer__page-input').exists()).toBe(false)
-    })
-
-    it('renders page input when pageControl is "input"', async () => {
-      await wrapper.setProps({ pageControl: 'input' })
-      expect(wrapper.find('.pagination-footer__page-select').exists()).toBe(false)
-      expect(wrapper.find('.pagination-footer__page-input').exists()).toBe(true)
     })
 
     it('generates correct page options', () => {
@@ -126,40 +120,6 @@ describe('PaginationFooter', () => {
       await wrapper.vm.$nextTick()
       expect(wrapper.emitted('update:itemsPerPage')).toBeTruthy()
       expect(wrapper.emitted('update:itemsPerPage')[0]).toEqual([50])
-    })
-  })
-
-  describe('Page Input Handling', () => {
-    beforeEach(async () => {
-      await wrapper.setProps({ pageControl: 'input' })
-    })
-
-    it('clamps page input to valid range', () => {
-      const component = wrapper.vm
-      
-      // Test lower bound
-      component.pageInput = '0'
-      component.commitPageInput()
-      expect(component.pageInput).toBe('1')
-      
-      // Test upper bound
-      component.pageInput = '20'
-      component.commitPageInput()
-      expect(component.pageInput).toBe('10')
-    })
-
-    it('handles invalid input gracefully', () => {
-      const component = wrapper.vm
-      component.pageInput = 'abc'
-      component.commitPageInput()
-      expect(component.pageInput).toBe('1') // Should revert to current page
-    })
-
-    it('strips non-numeric characters', () => {
-      const component = wrapper.vm
-      component.pageInput = '5abc'
-      component.commitPageInput()
-      expect(component.pageInput).toBe('5')
     })
   })
 

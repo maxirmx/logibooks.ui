@@ -55,7 +55,6 @@
       <div class="pagination-footer__page-control">
         <span class="pagination-footer__label">Страница</span>
         <v-select
-          v-if="pageControl === 'select'"
           v-model="pageSelectModel"
           :items="pageSelectItems"
           item-title="title"
@@ -66,19 +65,6 @@
           class="pagination-footer__page-select"
           :disabled="controlsDisabled"
         />
-        <div v-else class="pagination-footer__page-input-group">
-          <v-text-field
-            v-model="pageInput"
-            density="compact"
-            variant="plain"
-            hide-details
-            class="pagination-footer__page-input"
-            :disabled="controlsDisabled"
-            @keyup.enter="commitPageInput"
-            @blur="commitPageInput"
-          />
-          <span class="pagination-footer__page-max">/ {{ effectiveMaxPage }}</span>
-        </div>
       </div>
 
       <v-btn
@@ -104,11 +90,7 @@ const props = defineProps({
   totalCount: { type: Number, default: 0 },
   itemsPerPageOptions: { type: Array, default: () => [] },
   pageOptions: { type: Array, default: null },
-  pageControl: {
-    type: String,
-    default: 'select',
-    validator: (value) => ['select', 'input'].includes(value)
-  },
+
   showRange: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
   loading: { type: Boolean, default: false }
@@ -158,14 +140,7 @@ const pageSelectModel = computed({
   }
 })
 
-const pageInput = ref(String(props.page || 1))
 
-watch(
-  () => props.page,
-  (value) => {
-    pageInput.value = String(value || 1)
-  }
-)
 
 function clampPage(raw) {
   const candidate = Number.isNaN(raw) ? props.page : raw
@@ -179,15 +154,7 @@ function setPage(target) {
   }
 }
 
-function commitPageInput() {
-  const trimmed = pageInput.value?.toString().trim() ?? ''
-  const parsed = parseInt(trimmed.replace(/[^0-9]/g, ''), 10)
-  const numeric = clampPage(Number.isNaN(parsed) ? props.page : parsed)
-  pageInput.value = String(numeric)
-  if (numeric !== props.page) {
-    emit('update:page', numeric)
-  }
-}
+
 
 const isFirstDisabled = computed(() => controlsDisabled.value || props.page <= 1)
 const isPrevDisabled = computed(() => controlsDisabled.value || props.page <= 1)
@@ -249,20 +216,6 @@ function scrollToTop() {
 
 .pagination-footer__page-select {
   width: 60px;
-}
-
-.pagination-footer__page-input-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pagination-footer__page-input {
-  width: 70px;
-}
-
-.pagination-footer__page-max {
-  font-size: 0.875rem;
 }
 
 .pagination-footer__scroll-button {

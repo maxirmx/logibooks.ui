@@ -73,6 +73,26 @@ const {
 
 // Template ref for the data table
 const dataTableRef = ref(null)
+// local page input model to allow typing a target page directly
+const pageInput = ref('')
+
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+
+// Keep pageInput in sync with parcels_page
+watch(parcels_page, (v) => {
+  pageInput.value = String(v)
+})
+
+function goToPageFromInput() {
+  const parsed = parseInt((pageInput.value || '').toString().replace(/[^0-9]/g, ''), 10)
+  if (!parsed || isNaN(parsed)) {
+    pageInput.value = String(parcels_page.value)
+    return
+  }
+  const target = Math.min(Math.max(1, parsed), maxPage.value)
+  parcels_page.value = target
+  pageInput.value = String(target)
+}
 
 // Selected parcel management
 function updateSelectedParcelId() {
@@ -668,6 +688,21 @@ function getGenericTemplateHeaders() {
           :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
           @click="parcels_page = Math.ceil(totalCount / parcels_per_page)"
         />
+        
+        <!-- Direct page input -->
+  <div class="page-input" style="display:flex; align-items:center; gap:8px; margin-left:8px;">
+          <span>Страница</span>
+          <v-text-field
+            v-model="pageInput"
+            density="compact"
+            variant="plain"
+            hide-details
+            style="width:80px"
+            @keyup.enter="goToPageFromInput"
+            @blur="goToPageFromInput"
+          />
+          <span>/ {{ maxPage }}</span>
+        </div>
       </div>
     </div>
 

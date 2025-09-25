@@ -74,6 +74,32 @@ const {
 // Template ref for the data table
 const dataTableRef = ref(null)
 
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+
+// Provide page options for a select control. For very large page counts, return a compact set
+const pageOptions = computed(() => {
+  const mp = maxPage.value
+  const current = parcels_page.value || 1
+  if (mp <= 200) {
+    return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
+  }
+
+  const set = new Set()
+  // first 10
+  for (let i = 1; i <= 10; i++) set.add(i)
+  // last 10
+  for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
+  // around current
+  for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
+
+  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
+})
+
+// When max page decreases (e.g. due to filters), clamp current page
+watch(maxPage, (v) => {
+  if (parcels_page.value > v) parcels_page.value = v
+})
+
 // Selected parcel management
 function updateSelectedParcelId() {
   if (items.value?.length > 0) {
@@ -622,13 +648,8 @@ function getGenericTemplateHeaders() {
           hide-details
           class="v-data-table-footer__items-per-page-select"
         />
-      </div>
-
-      <div class="v-data-table-footer__info">
         <div>{{ Math.min((parcels_page - 1) * parcels_per_page + 1, totalCount) }}-{{ Math.min(parcels_page * parcels_per_page, totalCount) }} из {{ totalCount }}</div>
-      </div>
 
-      <div class="v-data-table-footer__pagination">
         <v-btn
           variant="text"
           icon="$first"
@@ -660,6 +681,21 @@ function getGenericTemplateHeaders() {
           :disabled="parcels_page >= Math.ceil(totalCount / parcels_per_page)"
           @click="parcels_page = Math.ceil(totalCount / parcels_per_page)"
         />
+        
+        <!-- Direct page input -->
+        <div class="page-input" style="display:flex; align-items:center; gap:8px; margin-left:8px;">
+          <span>Страница</span>
+          <v-select
+            v-model="parcels_page"
+            :items="pageOptions"
+            item-title="title"
+            item-value="value"
+            density="compact"
+            variant="plain"
+            hide-details
+            style="width:70px"
+          />
+        </div>
       </div>
     </div>
 

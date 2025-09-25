@@ -80,12 +80,22 @@
           <span class="pagination-footer__page-max">/ {{ effectiveMaxPage }}</span>
         </div>
       </div>
+
+      <v-btn
+        variant="text"
+        :icon="mdiChevronTripleUp"
+        size="small"
+        title="Прокрутить вверх"
+        @click="scrollToTop"
+        class="pagination-footer__scroll-button"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { mdiChevronTripleUp } from '@mdi/js'
 
 const props = defineProps({
   page: { type: Number, required: true },
@@ -183,6 +193,13 @@ const isFirstDisabled = computed(() => controlsDisabled.value || props.page <= 1
 const isPrevDisabled = computed(() => controlsDisabled.value || props.page <= 1)
 const isNextDisabled = computed(() => controlsDisabled.value || props.page >= effectiveMaxPage.value)
 const isLastDisabled = computed(() => controlsDisabled.value || props.page >= effectiveMaxPage.value)
+
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
 </script>
 
 <style scoped>
@@ -246,6 +263,10 @@ const isLastDisabled = computed(() => controlsDisabled.value || props.page >= ef
 
 .pagination-footer__page-max {
   font-size: 0.875rem;
+}
+
+.pagination-footer__scroll-button {
+  margin-left: 0.5rem;
 }
 
 .pagination-footer :deep(.v-field) {

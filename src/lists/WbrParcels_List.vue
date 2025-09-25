@@ -103,7 +103,6 @@ watch(
   parcels_page,
   () => {
     selectedParcelId.value = null
-    scrollToPageStart()
   }
 )
 
@@ -116,7 +115,6 @@ function getRowPropsForWbrParcel(data) {
 
 // Scroll to selected item function
 function scrollToSelectedItem() {
-  console.log('Scrolling to selected item:', selectedParcelId.value)
   if (!selectedParcelId.value || !dataTableRef.value) return
   
   nextTick(() => {

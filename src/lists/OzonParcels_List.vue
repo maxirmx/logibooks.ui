@@ -128,7 +128,6 @@ watch(
   parcels_page,
   () => {
     selectedParcelId.value = null
-    scrollToPageStart()
   }
 )
 

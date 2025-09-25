@@ -162,22 +162,6 @@ function scrollToSelectedItem() {
   })
 }
 
-function scrollToPageStart() {
-  if (typeof window !== 'undefined') {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  nextTick(() => {
-    const tableElement = dataTableRef.value?.$el || dataTableRef.value
-    if (!tableElement) return
-
-    if (typeof tableElement.scrollTo === 'function') {
-      tableElement.scrollTo({ top: 0, behavior: 'smooth' })
-    } else if (typeof tableElement === 'object' && 'scrollTop' in tableElement) {
-      tableElement.scrollTop = 0
-    }
-  })
-}
 const registerFileName = ref('')
 const registerDealNumber = ref('')
 const registerLoading = ref(true)

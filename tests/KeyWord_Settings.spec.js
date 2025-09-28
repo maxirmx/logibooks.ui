@@ -185,12 +185,12 @@ describe('KeyWord_Settings.vue', () => {
 
       const vm = wrapper.vm
       
-      // For single word: disable options 21-30
+      // For single word: disable options 21-3=40
       expect(vm.isOptionDisabled(1)).toBe(false)   // Should be enabled
       expect(vm.isOptionDisabled(15)).toBe(false)  // Should be enabled
-      expect(vm.isOptionDisabled(21)).toBe(true)   // Should be disabled (21-30 range)
-      expect(vm.isOptionDisabled(25)).toBe(true)   // Should be disabled (21-30 range)
-      expect(vm.isOptionDisabled(31)).toBe(false)  // Should be enabled
+      expect(vm.isOptionDisabled(21)).toBe(true)   // Should be disabled (21-40 range)
+      expect(vm.isOptionDisabled(25)).toBe(true)   // Should be disabled (21-40 range)
+      expect(vm.isOptionDisabled(31)).toBe(true)   // Should be disabled (21-40 range)
       expect(vm.isOptionDisabled(41)).toBe(false)  // Should be enabled
     })
 
@@ -204,14 +204,14 @@ describe('KeyWord_Settings.vue', () => {
 
       const vm = wrapper.vm
       
-      // For multi-word: disable options 11-20 and >30
+      // For multi-word: disable options 11-20 and >40
       expect(vm.isOptionDisabled(1)).toBe(false)   // Should be enabled
       expect(vm.isOptionDisabled(11)).toBe(true)   // Should be disabled (11-20 range)
       expect(vm.isOptionDisabled(15)).toBe(true)   // Should be disabled (11-20 range)
       expect(vm.isOptionDisabled(21)).toBe(false)  // Should be enabled
       expect(vm.isOptionDisabled(25)).toBe(false)  // Should be enabled
-      expect(vm.isOptionDisabled(31)).toBe(true)   // Should be disabled (>30)
-      expect(vm.isOptionDisabled(41)).toBe(true)   // Should be disabled (>30)
+      expect(vm.isOptionDisabled(31)).toBe(false)  // Should be enabled
+      expect(vm.isOptionDisabled(41)).toBe(true)   // Should be disabled (>40)
     })
   })
 

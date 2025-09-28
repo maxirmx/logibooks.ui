@@ -34,11 +34,11 @@ export function isMatchTypeDisabled(matchTypeId, wordInput) {
   const isSingle = isSingleWordInput(wordInput)
   
   if (isSingle) {
-    // For single words: disable match types 21-30
-    return matchTypeId >= 21 && matchTypeId <= 30
+    // For single words: disable match types 21-40
+    return matchTypeId >= 21 && matchTypeId <= 40
   } else {
-    // For multi-word: disable match types 11-20 and >30
-    return (matchTypeId >= 11 && matchTypeId <= 20) || matchTypeId > 30
+    // For multi-word: disable match types 11-20 and >40
+    return (matchTypeId >= 11 && matchTypeId <= 20) || matchTypeId > 40
   }
 }
 

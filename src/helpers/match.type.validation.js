@@ -11,7 +11,7 @@ export function parseWords(input) {
   if (!input || typeof input !== 'string') {
     return []
   }
-  return input.match(/[\p{L}\d-]+/gu) || []
+  return input.match(/[\p{L}\d]+/gu) || []
 }
 
 /**

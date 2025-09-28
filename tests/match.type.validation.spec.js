@@ -26,9 +26,9 @@ describe('match.type.validation', () => {
     })
 
     it('handles words with hyphens', () => {
-      expect(parseWords('test-word')).toEqual(['test-word'])
-      expect(parseWords('multi-word phrase')).toEqual(['multi-word', 'phrase'])
-      expect(parseWords('авто-мото запчасти')).toEqual(['авто-мото', 'запчасти'])
+      expect(parseWords('test-word')).toEqual(['test', 'word'])
+      expect(parseWords('multi-word phrase')).toEqual(['multi', 'word', 'phrase'])
+      expect(parseWords('авто-мото запчасти')).toEqual(['авто', 'мото', 'запчасти'])
     })
 
     it('handles words with numbers', () => {
@@ -60,7 +60,7 @@ describe('match.type.validation', () => {
     it('identifies single word inputs correctly', () => {
       expect(isSingleWordInput('test')).toBe(true)
       expect(isSingleWordInput('слово')).toBe(true)
-      expect(isSingleWordInput('test-word')).toBe(true)
+      expect(isSingleWordInput('test-word')).toBe(false)
       expect(isSingleWordInput('test123')).toBe(true)
     })
 
@@ -223,7 +223,7 @@ describe('comprehensive integration tests', () => {
       { word: 'автомобильные запчасти', matchTypeId: 41, expected: false }, // Disabled for multi
       
       // Edge cases
-      { word: 'test-word', matchTypeId: 25, expected: false }, // Hyphenated = single word
+      { word: 'test-word', matchTypeId: 25, expected: true }, // Hyphenated = multi-word now
       { word: 'test123', matchTypeId: 25, expected: false }, // With numbers = single word
       { word: '', matchTypeId: 25, expected: false }, // Empty = single word
     ]

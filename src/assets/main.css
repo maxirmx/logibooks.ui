@@ -1542,8 +1542,8 @@ a,
 }
 
 .feacn-code-item.matched-weak {
-  background-color: #d4edda;
-  border: 1px solid #6fe228;
+  background-color: #ebedd4;
+  border-color: #28a745;
 }
 
 
@@ -1567,9 +1567,9 @@ a,
 .tnved-cell.matched-weak {
   font-size: 1em;
   padding: 1px 4px;
-  background-color: #d4edda;
+  background-color: #ebedd4;
   border-radius: 3px;
-  border: 1px solid #6fe228;
+  border: 1px solid #28a745;
   min-width: fit-content;
   display: inline-block;
   margin-top: 1px;

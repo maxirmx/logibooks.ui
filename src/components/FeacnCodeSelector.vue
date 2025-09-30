@@ -8,7 +8,8 @@ import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { 
   getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
-  updateParcelTnVed
+  updateParcelTnVed,
+  getMatchType
 } from '@/helpers/parcels.list.helpers.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
@@ -76,7 +77,16 @@ function getTooltipText(code) {
           @mouseenter="loadTooltip(code)"
         >
           <span class="d-inline-flex align-center">
-            <font-awesome-icon v-if="code === item.tnVed" icon="fa-solid fa-check-double" class="mr-1" />
+            <font-awesome-icon 
+              v-if="getMatchType(code, item.tnVed) === 'exact'" 
+              icon="fa-solid fa-check-double" 
+              class="mr-1" 
+            />
+            <font-awesome-icon 
+              v-else-if="getMatchType(code, item.tnVed) === 'weak'" 
+              icon="fa-solid fa-ellipsis-vertical"
+              class="mr-1"
+            />
             {{ code }}
           </span>
         </div>

@@ -268,6 +268,28 @@ export async function getTnVedCellClass(tnVed, feacnCodes) {
 }
 
 /**
+ * Helper function to check if a code is exactly matched or weakly matched
+ * @param {string} code - The code to check
+ * @param {string} tnVed - The current TN VED code
+ * @returns {string} 'exact', 'weak', or 'none'
+ */
+export function getMatchType(code, tnVed) {
+  if (!code || !tnVed) {
+    return 'none'
+  }
+  
+  if (code === tnVed) {
+    return 'exact'
+  }
+  
+  if (code.substring(0, 6) === tnVed.substring(0, 6)) {
+    return 'weak'
+  }
+  
+  return 'none'
+}
+
+/**
  * Updates a parcel's TN VED code
  * @param {Object} item - The parcel item
  * @param {string} feacnCode - The FEACN code to set as TN VED

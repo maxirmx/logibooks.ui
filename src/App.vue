@@ -5,7 +5,7 @@
 
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useStatusStore } from '@/stores/status.store.js'
 
 import { useDisplay } from 'vuetify'
@@ -15,9 +15,80 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
- onMounted(() => {
+
+onMounted(() => {
   statusStore.fetchStatus().catch(() => {})
- })
+})
+
+const ruDateFormatter = new Intl.DateTimeFormat('ru-RU')
+const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+})
+
+function pickDateValue(rate) {
+  return (
+    rate?.rateDate ??
+    rate?.date ??
+    rate?.exchangeDate ??
+    rate?.updatedAt ??
+    rate?.timestamp ??
+    rate?.createdAt
+  )
+}
+
+function pickNumericRate(rate) {
+  const value =
+    rate?.rate ??
+    rate?.value ??
+    rate?.amount ??
+    rate?.exchangeRate ??
+    rate?.quote ??
+    rate?.price
+
+  if (typeof value === 'number') {
+    return rateNumberFormatter.format(value)
+  }
+
+  if (typeof value === 'string' && value.trim() !== '') {
+    return value
+  }
+
+  return ''
+}
+
+function formatExchangeRate(currency) {
+  const rate = statusStore.exchangeRates?.find((item) => {
+    const code = item?.currencyCode ?? item?.currency ?? item?.code
+    return code?.toUpperCase() === currency
+  })
+
+  if (!rate) {
+    return ''
+  }
+
+  let formattedDate = ''
+  const dateValue = pickDateValue(rate)
+  if (dateValue) {
+    const parsedDate = new Date(dateValue)
+    if (!Number.isNaN(parsedDate.getTime())) {
+      formattedDate = ruDateFormatter.format(parsedDate)
+    }
+  }
+
+  const formattedRate = pickNumericRate(rate)
+
+  if (!formattedRate) {
+    return formattedDate ? `${formattedDate} ${currency}/RUB` : ''
+  }
+
+  const datePrefix = formattedDate ? `${formattedDate} ` : ''
+
+  return `${datePrefix}${currency}/RUB ${formattedRate}`
+}
+
+const usdExchangeRate = computed(() => formatExchangeRate('USD'))
+const eurExchangeRate = computed(() => formatExchangeRate('EUR'))
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 
@@ -56,6 +127,10 @@ function getUserName() {
       </template>
       <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
+      <div class="exchange-rates" v-if="usdExchangeRate || eurExchangeRate">
+        <span v-if="usdExchangeRate">{{ usdExchangeRate }}</span>
+        <span v-if="eurExchangeRate">{{ eurExchangeRate }}</span>
+      </div>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
       <template v-slot:prepend>
@@ -156,6 +231,19 @@ function getUserName() {
   margin-top: 0;
   margin-bottom: 0;
   font-size: smaller;
+}
+
+.exchange-rates {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.exchange-rates span {
+  display: inline-flex;
+  align-items: center;
 }
 
 nav {

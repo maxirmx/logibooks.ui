@@ -28,10 +28,12 @@ describe('status store', () => {
     fetchWrapper.get.mockResolvedValue({
       appVersion: '1.2.3',
       dbVersion: '20240624',
-      exchangeRates: [
-        { currencyCode: 'USD', rate: 92.12, rateDate: '2024-06-24' },
-        { currencyCode: 'EUR', rate: 101.98, rateDate: '2024-06-24' },
-      ],
+      exchangeRates: {
+        rates: [
+          { currencyCode: 'USD', rate: 92.12, rateDate: '2024-06-24' },
+          { currencyCode: 'EUR', rate: 101.98, rateDate: '2024-06-24' },
+        ]
+      },
     })
 
     const store = useStatusStore()
@@ -52,6 +54,7 @@ describe('status store', () => {
     fetchWrapper.get.mockResolvedValue({
       appVersion: '2.0.0',
       dbVersion: '20240630',
+      exchangeRates: {},
     })
 
     const store = useStatusStore()

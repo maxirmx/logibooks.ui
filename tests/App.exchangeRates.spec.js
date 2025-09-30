@@ -83,8 +83,8 @@ describe('App exchange rates display', () => {
 
   it('displays USD and EUR exchange rates when available', async () => {
     statusStore.exchangeRates = [
-      { currencyCode: 'USD', rate: 92.1234, rateDate: '2024-06-29T00:00:00.000Z' },
-      { currencyCode: 'EUR', rate: 101.9876, rateDate: '2024-06-30T00:00:00.000Z' },
+      { alphabeticCode: 'USD', rate: 92.1234, date: '2024-06-29T00:00:00.000Z' },
+      { alphabeticCode: 'EUR', rate: 101.9876, date: '2024-06-30T00:00:00.000Z' },
     ]
 
     const wrapper = mountApp()
@@ -92,13 +92,13 @@ describe('App exchange rates display', () => {
 
     const rateItems = wrapper.findAll('.exchange-rates span')
     expect(rateItems).toHaveLength(2)
-    expect(rateItems[0].text()).toBe('29.06.2024 USD/RUB 92,1234')
-    expect(rateItems[1].text()).toBe('30.06.2024 EUR/RUB 101,9876')
+    expect(rateItems[0].text()).toBe('USD/RUB 29.06.2024 92,1234')
+    expect(rateItems[1].text()).toBe('EUR/RUB 30.06.2024 101,9876')
   })
 
   it('renders only available exchange rates', async () => {
     statusStore.exchangeRates = [
-      { currencyCode: 'USD', rate: 95.5, rateDate: '2024-07-01' },
+      { alphabeticCode: 'USD', rate: 95.5, date: '2024-07-01' },
     ]
 
     const wrapper = mountApp()
@@ -106,7 +106,7 @@ describe('App exchange rates display', () => {
 
     const rateItems = wrapper.findAll('.exchange-rates span')
     expect(rateItems).toHaveLength(1)
-    expect(rateItems[0].text()).toBe('01.07.2024 USD/RUB 95,50')
+    expect(rateItems[0].text()).toBe('USD/RUB 01.07.2024 95,5000')
     expect(wrapper.text()).not.toContain('EUR/RUB')
   })
 })

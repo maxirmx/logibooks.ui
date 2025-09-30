@@ -230,16 +230,16 @@ describe('countries store', () => {
       // Reset the mock for a successful call
       fetchWrapper.get.mockResolvedValueOnce([{ isoNumeric: 643, isoAlpha2: 'RU' }])
       
-      // ensureLoaded should NOT retry automatically since initialized flag is set
-      // This is the expected behavior - once initialized, it won't retry
-      store.ensureLoaded()
+      // ensureLoaded will retry since the previous attempt failed and error state is set
+      // This is the expected behavior - it retries after errors
+      await store.ensureLoaded()
       
-      // Should still only have been called once (the failed call)
-      expect(fetchWrapper.get).toHaveBeenCalledOnce()
+      // Should have been called twice now (failed call + retry)
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
       
       // To retry, we need to call getAll() directly
       await store.getAll()
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(3)
       expect(store.error).toBeNull()
     })
   })

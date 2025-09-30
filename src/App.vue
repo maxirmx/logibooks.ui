@@ -27,24 +27,23 @@ const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
 })
 
 function formatExchangeRate(currency) {
-  console.log('Formatting exchange rate for', currency) 
   const rate = statusStore.exchangeRates?.find((item) => {
     const code = item?.alphabeticCode
     return code?.toUpperCase() === currency
   })
 
   if (!rate) {
-    return '1'
+    return ''
   }
 
   const parsedDate = (new Date(rate.date)).getTime()
   if (Number.isNaN(parsedDate)) {
-    return '2'
+    return ''
   }
   const formattedDate = ruDateFormatter.format(parsedDate)
 
   if (typeof rate.rate !== 'number') {
-    return '3'
+    return ''
   }
   const formattedRate = rateNumberFormatter.format(rate.rate)
 

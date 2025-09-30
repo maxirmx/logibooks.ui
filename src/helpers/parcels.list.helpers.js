@@ -222,8 +222,16 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
     return 'feacn-code-item'
   }
   
-  const isMatched = tnVed && allFeacnCodes.includes(tnVed) && feacnCode === tnVed
-  return `feacn-code-item clickable ${isMatched ? 'matched' : 'unmatched'}`
+  const matchType = getMatchType(feacnCode, tnVed)
+  
+  switch (matchType) {
+    case 'exact':
+      return 'feacn-code-item clickable matched'
+    case 'weak':
+      return 'feacn-code-item clickable matched-weak'
+    default:
+      return 'feacn-code-item clickable unmatched'
+  }
 }
 
 /**
@@ -252,8 +260,37 @@ export async function getTnVedCellClass(tnVed, feacnCodes) {
     return 'tnved-cell orphan'
   }
   
-  const isMatched = tnVed && feacnCodes.includes(tnVed)
-  return isMatched ? 'tnved-cell matched' : 'tnved-cell unmatched'
+  // Check for exact match first
+  if (tnVed && feacnCodes.includes(tnVed)) {
+    return 'tnved-cell matched'
+  }
+
+  // Check for weak match using getMatchType helper
+  const hasWeakMatch = tnVed && feacnCodes.some(code => getMatchType(code, tnVed) === 'weak')
+
+  return hasWeakMatch ? 'tnved-cell matched-weak' : 'tnved-cell unmatched'
+}
+
+/**
+ * Helper function to check if a code is exactly matched or weakly matched
+ * @param {string} code - The code to check
+ * @param {string} tnVed - The current TN VED code
+ * @returns {string} 'exact', 'weak', or 'none'
+ */
+export function getMatchType(code, tnVed) {
+  if (!code || !tnVed) {
+    return 'none'
+  }
+  
+  if (code === tnVed) {
+    return 'exact'
+  }
+  
+  if (code.substring(0, 6) === tnVed.substring(0, 6)) {
+    return 'weak'
+  }
+  
+  return 'none'
 }
 
 /**

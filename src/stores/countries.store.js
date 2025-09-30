@@ -21,6 +21,7 @@ export const useCountriesStore = defineStore('countries', () => {
     error.value = null
     try {
       countries.value = await fetchWrapper.get(`${baseUrl}/compact`)
+      initialized = true
     } catch (err) {
       error.value = err
     } finally {
@@ -57,7 +58,6 @@ export const useCountriesStore = defineStore('countries', () => {
 
   async function ensureLoaded() {
     if (!initialized && !loading.value) {
-      initialized = true
       await getAll()
     }
   }

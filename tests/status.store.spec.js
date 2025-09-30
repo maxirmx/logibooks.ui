@@ -24,10 +24,16 @@ describe('status store', () => {
     vi.clearAllMocks()
   })
 
-  it('fetchStatus sets versions from API', async () => {
+  it('fetchStatus sets versions and exchange rates from API', async () => {
     fetchWrapper.get.mockResolvedValue({
       appVersion: '1.2.3',
-      dbVersion: '20240624'
+      dbVersion: '20240624',
+      exchangeRates: {
+        rates: [
+          { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
+          { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
+        ]
+      },
     })
 
     const store = useStatusStore()
@@ -38,5 +44,26 @@ describe('status store', () => {
     )
     expect(store.coreVersion).toBe('1.2.3')
     expect(store.dbVersion).toBe('20240624')
+    expect(store.exchangeRates).toEqual([
+      { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
+      { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
+    ])
+  })
+
+  it('fetchStatus resets exchange rates when API does not return them', async () => {
+    fetchWrapper.get.mockResolvedValue({
+      appVersion: '2.0.0',
+      dbVersion: '20240630',
+      exchangeRates: {},
+    })
+
+    const store = useStatusStore()
+    store.exchangeRates = [
+      { alphabeticCode: 'USD', rate: 91.1, date: '2024-06-01' },
+    ]
+
+    await store.fetchStatus()
+
+    expect(store.exchangeRates).toEqual([])
   })
 })

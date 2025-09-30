@@ -12,14 +12,17 @@ const baseUrl = `${apiUrl}/status`
 export const useStatusStore = defineStore('status', () => {
   const coreVersion = ref('')
   const dbVersion = ref('')
+  const exchangeRates = ref([])
 
   async function fetchStatus() {
     coreVersion.value = undefined
     dbVersion.value = undefined
+    exchangeRates.value = []
     const res = await fetchWrapper.get(`${baseUrl}/status`)
     coreVersion.value = res.appVersion
     dbVersion.value = res.dbVersion
+    exchangeRates.value = Array.isArray(res.exchangeRates?.rates) ? res.exchangeRates.rates : []
   }
 
-  return { coreVersion, dbVersion, fetchStatus }
+  return { coreVersion, dbVersion, exchangeRates, fetchStatus }
 })

@@ -26,6 +26,7 @@ export const useParcelCheckStatusStore = defineStore('parcelCheckStatus', () => 
 
       // Build a map for quick lookups
       statusMap.value = new Map(statuses.value.map(status => [status.id, status]))
+      initialized = true
     } catch (err) {
       error.value = err
     } finally {
@@ -46,7 +47,6 @@ export const useParcelCheckStatusStore = defineStore('parcelCheckStatus', () => 
   let initialized = false
   async function ensureLoaded() {
     if (!initialized && statuses.value.length === 0 && !loading.value) {
-      initialized = true
       await fetchStatuses()
     }
   }

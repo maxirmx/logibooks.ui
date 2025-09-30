@@ -24,6 +24,7 @@ export const useCustomsProceduresStore = defineStore('customsProcedures', () => 
       const res = await fetchWrapper.get(baseUrl)
       procedures.value = res || []
       procedureMap.value = new Map(procedures.value.map(p => [p.id, p]))
+      initialized = true
     } catch (err) {
       error.value = err
     } finally {
@@ -33,7 +34,6 @@ export const useCustomsProceduresStore = defineStore('customsProcedures', () => 
 
   async function ensureLoaded() {
     if (!initialized && procedures.value.length === 0 && !loading.value) {
-      initialized = true
       await getAll()
     }
   }

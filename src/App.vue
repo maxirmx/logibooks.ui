@@ -5,7 +5,7 @@
 
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useStatusStore } from '@/stores/status.store.js'
 
 import { useDisplay } from 'vuetify'
@@ -15,9 +15,44 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
- onMounted(() => {
+
+onMounted(() => {
   statusStore.fetchStatus().catch(() => {})
- })
+})
+
+const ruDateFormatter = new Intl.DateTimeFormat('ru-RU')
+const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4,
+})
+
+function formatExchangeRate(currency) {
+  const rate = statusStore.exchangeRates?.find((item) => {
+    const code = item?.alphabeticCode
+    return code?.toUpperCase() === currency
+  })
+
+  if (!rate) {
+    return ''
+  }
+
+  const parsedDate = (new Date(rate.date)).getTime()
+  if (Number.isNaN(parsedDate)) {
+    return ''
+  }
+  const formattedDate = ruDateFormatter.format(parsedDate)
+
+  if (typeof rate.rate !== 'number') {
+    return ''
+  }
+  const formattedRate = rateNumberFormatter.format(rate.rate)
+
+  const datePrefix = formattedDate ? `${formattedDate} ` : ''
+  return `${currency}/RUB ${datePrefix}${formattedRate}`
+}
+
+const usdExchangeRate = computed(() => formatExchangeRate('USD'))
+const eurExchangeRate = computed(() => formatExchangeRate('EUR'))
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 
@@ -56,6 +91,10 @@ function getUserName() {
       </template>
       <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
+      <div class="primary-heading exchange-rates" v-if="usdExchangeRate || eurExchangeRate">
+        <span v-if="usdExchangeRate">{{ usdExchangeRate }}</span>
+        <span v-if="eurExchangeRate">{{ eurExchangeRate }}</span>
+      </div>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
       <template v-slot:prepend>
@@ -156,6 +195,20 @@ function getUserName() {
   margin-top: 0;
   margin-bottom: 0;
   font-size: smaller;
+}
+
+.exchange-rates {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  margin-right: 3rem;
+}
+
+.exchange-rates span {
+  display: inline-flex;
+  align-items: center;
 }
 
 nav {

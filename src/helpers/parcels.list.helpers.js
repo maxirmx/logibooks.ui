@@ -222,8 +222,12 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
     return 'feacn-code-item'
   }
   
-  const isMatched = tnVed && allFeacnCodes.includes(tnVed) && feacnCode === tnVed
-  return `feacn-code-item clickable ${isMatched ? 'matched' : 'unmatched'}`
+  const isMatched = tnVed && feacnCode === tnVed
+  if (isMatched) {
+    return 'feacn-code-item clickable matched'
+  }
+  const isMatchedWeak = tnVed && feacnCode.substring(0, 6) === tnVed.substring(0, 6)
+  return `feacn-code-item clickable ${isMatchedWeak ? 'matched-weak' : 'unmatched'}`
 }
 
 /**
@@ -253,7 +257,14 @@ export async function getTnVedCellClass(tnVed, feacnCodes) {
   }
   
   const isMatched = tnVed && feacnCodes.includes(tnVed)
-  return isMatched ? 'tnved-cell matched' : 'tnved-cell unmatched'
+
+  if (isMatched) {
+    return 'tnved-cell matched'
+  }
+
+  const isMatchedWeak = tnVed && feacnCodes.some(code => code.substring(0, 6) === tnVed.substring(0, 6))
+
+  return isMatchedWeak ? 'tnved-cell matched-weak' : 'tnved-cell unmatched'
 }
 
 /**

@@ -1541,6 +1541,12 @@ a,
   border-color: #28a745;
 }
 
+.feacn-code-item.matched-weak {
+  background-color: #d4edda;
+  border: 1px solid #6fe228;
+}
+
+
 .feacn-code-item.unmatched {
   background-color: #fff3cd;
   border-color: #fd7e14;
@@ -1557,6 +1563,19 @@ a,
   margin-top: 1px;
   text-align: center;
 }
+
+.tnved-cell.matched-weak {
+  font-size: 1em;
+  padding: 1px 4px;
+  background-color: #d4edda;
+  border-radius: 3px;
+  border: 1px solid #6fe228;
+  min-width: fit-content;
+  display: inline-block;
+  margin-top: 1px;
+  text-align: center;
+}
+
 
 .tnved-cell.unmatched {
   font-size: 1em;

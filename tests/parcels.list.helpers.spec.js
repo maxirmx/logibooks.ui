@@ -28,6 +28,12 @@ vi.mock('../src/stores/alert.store.js', () => ({
   }))
 }))
 
+// Mock FEACN info helpers
+vi.mock('../src/helpers/feacn.info.helpers.js', () => ({
+  getCachedFeacnInfo: vi.fn(),
+  preloadFeacnInfo: vi.fn()
+}))
+
 import {
   navigateToEditParcel,
   validateParcelData,
@@ -44,6 +50,9 @@ import {
   updateParcelTnVed,
   loadOrders
 } from '../src/helpers/parcels.list.helpers.js'
+
+// Import mocked FEACN info helpers
+import { getCachedFeacnInfo, preloadFeacnInfo } from '../src/helpers/feacn.info.helpers.js'
 
 describe('Parcels List Helpers', () => {
   beforeEach(() => {
@@ -583,6 +592,46 @@ describe('Parcels List Helpers', () => {
       const result = getFeacnCodeItemClass('123', null, ['123', '456'])
       expect(result).toBe('feacn-code-item clickable unmatched')
     })
+
+    it('should return matched-weak class when first 6 characters match', () => {
+      const result = getFeacnCodeItemClass('1234567890', '1234561111', ['1234567890', '9876543210'])
+      expect(result).toBe('feacn-code-item clickable matched-weak')
+    })
+
+    it('should return matched-weak class when feacnCode is shorter but first 6 match', () => {
+      const result = getFeacnCodeItemClass('123456', '1234567890', ['123456', '9876543210'])
+      expect(result).toBe('feacn-code-item clickable matched-weak')
+    })
+
+    it('should return matched-weak class when tnVed is shorter but first 6 match', () => {
+      const result = getFeacnCodeItemClass('1234567890', '123456', ['1234567890', '9876543210'])
+      expect(result).toBe('feacn-code-item clickable matched-weak')
+    })
+
+    it('should return unmatched class when first 6 characters do not match', () => {
+      const result = getFeacnCodeItemClass('1234567890', '9876543210', ['1234567890', '1111111111'])
+      expect(result).toBe('feacn-code-item clickable unmatched')
+    })
+
+    it('should prioritize exact match over weak match', () => {
+      const result = getFeacnCodeItemClass('1234567890', '1234567890', ['1234567890', '1234561111'])
+      expect(result).toBe('feacn-code-item clickable matched')
+    })
+
+    it('should handle codes shorter than 6 characters for weak match', () => {
+      const result = getFeacnCodeItemClass('12345', '12345', ['12345', '67890'])
+      expect(result).toBe('feacn-code-item clickable matched')
+    })
+
+    it('should handle codes shorter than 6 characters - no weak match when lengths differ', () => {
+      const result = getFeacnCodeItemClass('1234', '123456', ['1234', '67890'])
+      expect(result).toBe('feacn-code-item clickable unmatched')
+    })
+
+    it('should handle weak match when both codes have same first 6 characters but different lengths', () => {
+      const result = getFeacnCodeItemClass('123456789', '123456123', ['123456789', '67890'])
+      expect(result).toBe('feacn-code-item clickable matched-weak')
+    })
   })
 
   describe('getTnVedCellClass', () => {
@@ -604,6 +653,75 @@ describe('Parcels List Helpers', () => {
     it('should return orphan when no tnVed is provided and feacnCodes is null', async () => {
       const result = await getTnVedCellClass(null, null)
       expect(result).toBe('tnved-cell orphan')
+    })
+
+    it('should return matched when tnVed exactly matches a feacnCode', async () => {
+      // Mock the FEACN info to return found=true
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234567890', ['1234567890', '9876543210'])
+      expect(result).toBe('tnved-cell matched')
+    })
+
+    it('should return matched-weak when first 6 characters match', async () => {
+      // Mock the FEACN info to return found=true  
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234567890', ['1234561111', '9876543210'])
+      expect(result).toBe('tnved-cell matched-weak')
+    })
+
+    it('should return matched-weak when tnVed is shorter but first 6 match', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('123456', ['1234567890', '9876543210'])
+      expect(result).toBe('tnved-cell matched-weak')
+    })
+
+    it('should return matched-weak when feacnCode is shorter but first 6 match', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234567890', ['123456', '9876543210'])
+      expect(result).toBe('tnved-cell matched-weak')
+    })
+
+    it('should return unmatched when first 6 characters do not match', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234567890', ['9876543210', '1111111111'])
+      expect(result).toBe('tnved-cell unmatched')
+    })
+
+    it('should prioritize exact match over weak match', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234567890', ['1234567890', '1234561111'])
+      expect(result).toBe('tnved-cell matched')
+    })
+
+    it('should handle codes shorter than 6 characters for weak match', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234', ['1234', '5678'])
+      expect(result).toBe('tnved-cell matched')
+    })
+
+    it('should return not-exists even when weak match would be possible', async () => {
+      // Mock to return not found
+      getCachedFeacnInfo
+        .mockReturnValueOnce(null) // First call returns null (not in cache)
+        .mockReturnValueOnce({ found: false }) // Second call after preload returns not found
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('1234567890', ['1234561111', '9876543210'])
+      expect(result).toBe('tnved-cell not-exists')
     })
   })
 

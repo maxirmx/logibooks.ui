@@ -29,11 +29,13 @@ vi.mock('@/stores/parcels.store.js', () => ({
 const mockGetFeacnCodesForKeywords = vi.fn()
 const mockGetFeacnCodeItemClass = vi.fn()
 const mockUpdateParcelTnVed = vi.fn().mockResolvedValue({ success: true })
+const mockGetMatchType = vi.fn()
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getFeacnCodesForKeywords: (keyWordIds) => mockGetFeacnCodesForKeywords(keyWordIds),
   getFeacnCodeItemClass: (code, selectedCode, codes) => mockGetFeacnCodeItemClass(code, selectedCode, codes),
-  updateParcelTnVed: (...args) => mockUpdateParcelTnVed(...args)
+  updateParcelTnVed: (...args) => mockUpdateParcelTnVed(...args),
+  getMatchType: (code, tnVed) => mockGetMatchType(code, tnVed)
 }))
 
 // Mock FontAwesome
@@ -86,6 +88,20 @@ describe('FeacnCodeSelector', () => {
     // Set up mock implementation for getFeacnCodeItemClass
     mockGetFeacnCodeItemClass.mockImplementation((code, selectedCode) => {
       return code === selectedCode ? 'selected-code' : 'unselected-code'
+    })
+    
+    // Set up mock implementation for getMatchType
+    mockGetMatchType.mockImplementation((code, tnVed) => {
+      if (!code || !tnVed) {
+        return 'none'
+      }
+      if (code === tnVed) {
+        return 'exact'
+      }
+      if (code.substring(0, 6) === tnVed.substring(0, 6)) {
+        return 'weak'
+      }
+      return 'none'
     })
   })
 

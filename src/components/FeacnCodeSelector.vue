@@ -91,9 +91,17 @@ function getTooltipText(code) {
           </span>
         </div>
       </template>
-      <div v-if="code === item.tnVed">
+      <div v-if="getMatchType(code, item.tnVed) === 'exact'">
         <div>
           <font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано
+        </div>
+        <div>
+          {{ getTooltipText(code) }}
+        </div>
+      </div>
+      <div v-else-if="getMatchType(code, item.tnVed) === 'weak'">
+        <div>
+          <font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Частичное совпадение
         </div>
         <div>
           {{ getTooltipText(code) }}

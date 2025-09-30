@@ -222,12 +222,16 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
     return 'feacn-code-item'
   }
   
-  const isMatched = tnVed && feacnCode === tnVed
-  if (isMatched) {
-    return 'feacn-code-item clickable matched'
+  const matchType = getMatchType(feacnCode, tnVed)
+  
+  switch (matchType) {
+    case 'exact':
+      return 'feacn-code-item clickable matched'
+    case 'weak':
+      return 'feacn-code-item clickable matched-weak'
+    default:
+      return 'feacn-code-item clickable unmatched'
   }
-  const isMatchedWeak = tnVed && feacnCode.substring(0, 6) === tnVed.substring(0, 6)
-  return `feacn-code-item clickable ${isMatchedWeak ? 'matched-weak' : 'unmatched'}`
 }
 
 /**
@@ -256,15 +260,15 @@ export async function getTnVedCellClass(tnVed, feacnCodes) {
     return 'tnved-cell orphan'
   }
   
-  const isMatched = tnVed && feacnCodes.includes(tnVed)
-
-  if (isMatched) {
+  // Check for exact match first
+  if (tnVed && feacnCodes.includes(tnVed)) {
     return 'tnved-cell matched'
   }
 
-  const isMatchedWeak = tnVed && feacnCodes.some(code => code.substring(0, 6) === tnVed.substring(0, 6))
+  // Check for weak match using getMatchType helper
+  const hasWeakMatch = tnVed && feacnCodes.some(code => getMatchType(code, tnVed) === 'weak')
 
-  return isMatchedWeak ? 'tnved-cell matched-weak' : 'tnved-cell unmatched'
+  return hasWeakMatch ? 'tnved-cell matched-weak' : 'tnved-cell unmatched'
 }
 
 /**

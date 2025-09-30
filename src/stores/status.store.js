@@ -21,7 +21,7 @@ export const useStatusStore = defineStore('status', () => {
     const res = await fetchWrapper.get(`${baseUrl}/status`)
     coreVersion.value = res.appVersion
     dbVersion.value = res.dbVersion
-    exchangeRates.value = Array.isArray(res.exchangeRates.rates) ? res.exchangeRates.rates : []
+    exchangeRates.value = Array.isArray(res.exchangeRates?.rates) ? res.exchangeRates.rates : []
   }
 
   return { coreVersion, dbVersion, exchangeRates, fetchStatus }

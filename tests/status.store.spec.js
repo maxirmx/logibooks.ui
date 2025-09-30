@@ -30,8 +30,8 @@ describe('status store', () => {
       dbVersion: '20240624',
       exchangeRates: {
         rates: [
-          { currencyCode: 'USD', rate: 92.12, rateDate: '2024-06-24' },
-          { currencyCode: 'EUR', rate: 101.98, rateDate: '2024-06-24' },
+          { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
+          { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
         ]
       },
     })
@@ -45,8 +45,8 @@ describe('status store', () => {
     expect(store.coreVersion).toBe('1.2.3')
     expect(store.dbVersion).toBe('20240624')
     expect(store.exchangeRates).toEqual([
-      { currencyCode: 'USD', rate: 92.12, rateDate: '2024-06-24' },
-      { currencyCode: 'EUR', rate: 101.98, rateDate: '2024-06-24' },
+      { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
+      { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
     ])
   })
 
@@ -59,7 +59,7 @@ describe('status store', () => {
 
     const store = useStatusStore()
     store.exchangeRates = [
-      { currencyCode: 'USD', rate: 91.1, rateDate: '2024-06-01' },
+      { alphabeticCode: 'USD', rate: 91.1, date: '2024-06-01' },
     ]
 
     await store.fetchStatus()

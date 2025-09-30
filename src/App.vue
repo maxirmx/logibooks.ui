@@ -22,69 +22,34 @@ onMounted(() => {
 
 const ruDateFormatter = new Intl.DateTimeFormat('ru-RU')
 const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
-  minimumFractionDigits: 2,
+  minimumFractionDigits: 4,
   maximumFractionDigits: 4,
 })
 
-function pickDateValue(rate) {
-  return (
-    rate?.rateDate ??
-    rate?.date ??
-    rate?.exchangeDate ??
-    rate?.updatedAt ??
-    rate?.timestamp ??
-    rate?.createdAt
-  )
-}
-
-function pickNumericRate(rate) {
-  const value =
-    rate?.rate ??
-    rate?.value ??
-    rate?.amount ??
-    rate?.exchangeRate ??
-    rate?.quote ??
-    rate?.price
-
-  if (typeof value === 'number') {
-    return rateNumberFormatter.format(value)
-  }
-
-  if (typeof value === 'string' && value.trim() !== '') {
-    return value
-  }
-
-  return ''
-}
-
 function formatExchangeRate(currency) {
+  console.log('Formatting exchange rate for', currency) 
   const rate = statusStore.exchangeRates?.find((item) => {
-    const code = item?.currencyCode ?? item?.currency ?? item?.code
+    const code = item?.alphabeticCode
     return code?.toUpperCase() === currency
   })
 
   if (!rate) {
-    return ''
+    return '1'
   }
 
-  let formattedDate = ''
-  const dateValue = pickDateValue(rate)
-  if (dateValue) {
-    const parsedDate = new Date(dateValue)
-    if (!Number.isNaN(parsedDate.getTime())) {
-      formattedDate = ruDateFormatter.format(parsedDate)
-    }
+  const parsedDate = (new Date(rate.date)).getTime()
+  if (Number.isNaN(parsedDate)) {
+    return '2'
   }
+  const formattedDate = ruDateFormatter.format(parsedDate)
 
-  const formattedRate = pickNumericRate(rate)
-
-  if (!formattedRate) {
-    return formattedDate ? `${formattedDate} ${currency}/RUB` : ''
+  if (typeof rate.rate !== 'number') {
+    return '3'
   }
+  const formattedRate = rateNumberFormatter.format(rate.rate)
 
   const datePrefix = formattedDate ? `${formattedDate} ` : ''
-
-  return `${datePrefix}${currency}/RUB ${formattedRate}`
+  return `${currency}/RUB ${datePrefix}${formattedRate}`
 }
 
 const usdExchangeRate = computed(() => formatExchangeRate('USD'))
@@ -127,7 +92,7 @@ function getUserName() {
       </template>
       <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
-      <div class="exchange-rates" v-if="usdExchangeRate || eurExchangeRate">
+      <div class="primary-heading exchange-rates" v-if="usdExchangeRate || eurExchangeRate">
         <span v-if="usdExchangeRate">{{ usdExchangeRate }}</span>
         <span v-if="eurExchangeRate">{{ eurExchangeRate }}</span>
       </div>
@@ -239,6 +204,7 @@ function getUserName() {
   gap: 0.75rem;
   font-size: 0.875rem;
   white-space: nowrap;
+  margin-right: 3rem;
 }
 
 .exchange-rates span {

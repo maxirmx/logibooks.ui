@@ -23,6 +23,7 @@ export const useWordMatchTypesStore = defineStore('wordMatchTypes', () => {
       const response = await fetchWrapper.get(`${baseUrl}`)
       matchTypes.value = response || []
       matchTypeMap.value = new Map(matchTypes.value.map(t => [t.id, t]))
+      initialized.value = true
     } catch (err) {
       error.value = err
     } finally {
@@ -38,7 +39,6 @@ export const useWordMatchTypesStore = defineStore('wordMatchTypes', () => {
   const initialized = ref(false)
   async function ensureLoaded() {
     if (!initialized.value && matchTypes.value.length === 0 && !loading.value) {
-      initialized.value = true
       await fetchMatchTypes()
     }
   }

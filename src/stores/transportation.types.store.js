@@ -24,6 +24,7 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
       const res = await fetchWrapper.get(baseUrl)
       types.value = res || []
       typeMap.value = new Map(types.value.map(t => [t.id, t]))
+      initialized = true
     } catch (err) {
       error.value = err
     } finally {
@@ -32,7 +33,6 @@ export const useTransportationTypesStore = defineStore('transportationTypes', ()
   }
   async function ensureLoaded() {
     if (!initialized && types.value.length === 0 && !loading.value) {
-      initialized = true
       await getAll()
     }
   }

@@ -22,6 +22,7 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
       const response = await fetchWrapper.get(baseUrl)
       parcelStatuses.value = response || []
       statusMap.value = new Map(parcelStatuses.value.map(status => [status.id, status]))
+      initialized = true
     } finally {
       loading.value = false
     }
@@ -74,7 +75,6 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
   let initialized = false
   async function ensureLoaded() {
     if (!initialized && parcelStatuses.value.length === 0 && !loading.value) {
-      initialized = true
       await getAll()
     }
   }

@@ -48,7 +48,7 @@ function formatExchangeRate(currency) {
   const formattedRate = rateNumberFormatter.format(rate.rate)
 
   const datePrefix = formattedDate ? `${formattedDate} ` : ''
-  return `${currency}/RUB ${datePrefix}${formattedRate}`
+  return `${currency} ${datePrefix}${formattedRate}`
 }
 
 const usdExchangeRate = computed(() => formatExchangeRate('USD'))

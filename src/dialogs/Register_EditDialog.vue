@@ -258,7 +258,7 @@ async function onSubmit(values, actions = {}) {
                               uploadError?.message || 
                               'Ошибка при загрузке файла реестра'
           
-          showErrorDialog('Ошибка загрузки', errorMessage)
+          showErrorDialog('Не удалось загрузить файл реестра', errorMessage)
           
           // Wait for user to close error dialog, then navigate
           await new Promise(resolve => {

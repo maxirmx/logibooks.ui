@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue'
+/* eslint-disable vue/no-v-text-v-html-on-component */
+import { computed, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -14,10 +15,31 @@ const dialogVisible = computed(() => props.show)
 function closeDialog() {
   emit('close')
 }
+
+function handleKeydown(event) {
+  if (props.show && (event.key === 'Enter' || event.key === 'Escape')) {
+    event.preventDefault()
+    closeDialog()
+  }
+}
+
+// Add/remove event listener when dialog opens/closes
+watch(() => props.show, (newValue) => {
+  if (newValue) {
+    document.addEventListener('keydown', handleKeydown)
+  } else {
+    document.removeEventListener('keydown', handleKeydown)
+  }
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
-  <v-dialog :model-value="dialogVisible" width="500" persistent>
+  <v-dialog :model-value="dialogVisible" width="900" persistent>
     <v-card>
       <v-card-title class="primary-heading">
         {{ title }}

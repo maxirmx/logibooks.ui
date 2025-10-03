@@ -15,6 +15,7 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
+import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 
 const props = defineProps({
@@ -36,6 +37,25 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
+
+// Error dialog state
+const errorDialogState = ref({
+  show: false,
+  title: '',
+  message: ''
+})
+
+function showErrorDialog(title, message) {
+  errorDialogState.value = {
+    show: true,
+    title,
+    message
+  }
+}
+
+function hideErrorDialog() {
+  errorDialogState.value.show = false
+}
 
 // Id = 1 --> Code = 10 (Экспорт) 
 const isExport = ref(true)
@@ -209,10 +229,51 @@ async function onSubmit(values, actions = {}) {
         if (!isComponentMounted.value) return
         // If upload returns Reference object with id, call update
         if (result && typeof result.id === 'number') {
-          await registersStore.update(result.id, values)
-          if (!isComponentMounted.value) return
+          try {
+            await registersStore.update(result.id, values)
+            if (!isComponentMounted.value) return
+          } catch (updateError) {
+            // Handle update failures after successful upload
+            if (isComponentMounted.value) {
+              hideActionDialog()
+              // Use setErrors if available (form submission), otherwise use store error
+              if (setErrors && typeof setErrors === 'function') {
+                setErrors({ apiError: updateError.message || String(updateError) })
+              } else {
+                // For ActionButton clicks, use store error
+                registersStore.error = updateError.message || String(updateError)
+              }
+            }
+            return // Exit early after handling update error
+          }
         }
         await router.push('/registers')
+      } catch (uploadError) {
+        // Handle upload failures with modal message box
+        if (isComponentMounted.value) {
+          hideActionDialog()
+          
+          // Show custom error dialog
+          const errorMessage = uploadError?.response?.data?.message || 
+                              uploadError?.message || 
+                              'Ошибка при загрузке файла реестра'
+          
+          showErrorDialog('Не удалось загрузить файл реестра', errorMessage)
+          
+          // Wait for user to close error dialog, then navigate
+          await new Promise(resolve => {
+            const unwatch = watch(() => errorDialogState.value.show, (newShow) => {
+              if (!newShow) {
+                unwatch()
+                resolve()
+              }
+            })
+          })
+          
+          // Close dialog and return to registers list
+          await router.push('/registers')
+        }
+        return // Exit early, don't continue with normal error handling
       } finally {
         hideActionDialog()
       }
@@ -437,6 +498,12 @@ function getCustomerName(customerId) {
       <div class="text-danger">Ошибка при загрузке реестра: {{ item.error }}</div>
     </div>
     <ActionDialog :action-dialog="actionDialogState" />
+    <ErrorDialog 
+      :show="errorDialogState.show"
+      :title="errorDialogState.title"
+      :message="errorDialogState.message"
+      @close="hideErrorDialog"
+    />
   </div>
 </template>
 

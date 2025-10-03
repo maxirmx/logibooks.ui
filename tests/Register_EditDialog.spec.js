@@ -12,6 +12,8 @@ import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
 
+// No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
+
 const mockItem = ref({
   id: 1,
   fileName: 'r.csv',

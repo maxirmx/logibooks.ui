@@ -29,8 +29,7 @@ const isCreate = computed(() => props.mode === 'create')
 let airport = ref({
   iata: '',
   icao: '',
-  name: '',
-  country: ''
+  name: ''
 })
 
 if (!isCreate.value) {
@@ -49,9 +48,7 @@ function getButtonText() {
 const schema = Yup.object({
   iata: Yup.string().required('IATA код обязателен'),
   icao: Yup.string(),
-  name: Yup.string().required('Название обязательно'),
-  country: Yup.string().required('Страна обязательна')
-})
+  name: Yup.string().required('Название обязательно')})
 
 function onSubmit(values, { setErrors }) {
   if (isCreate.value) {
@@ -62,7 +59,7 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Аэропорт с таким IATA кодом уже существует' })
+          setErrors({ apiError: 'Аэропорт с таким кодом ИАТА уже существует' })
         } else {
           setErrors({ apiError: error.message || 'Ошибка при регистрации аэропорта' })
         }
@@ -91,30 +88,6 @@ function onSubmit(values, { setErrors }) {
       v-slot="{ errors, isSubmitting }"
     >
       <div class="form-group">
-        <label for="iata" class="label">IATA:</label>
-        <Field
-          name="iata"
-          id="iata"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.iata }"
-          placeholder="IATA код"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="icao" class="label">ICAO:</label>
-        <Field
-          name="icao"
-          id="icao"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.icao }"
-          placeholder="ICAO код"
-        />
-      </div>
-
-      <div class="form-group">
         <label for="name" class="label">Название:</label>
         <Field
           name="name"
@@ -127,14 +100,26 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div class="form-group">
-        <label for="country" class="label">Страна:</label>
+        <label for="iata" class="label">Код ИАТА:</label>
         <Field
-          name="country"
-          id="country"
+          name="iata"
+          id="iata"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.country }"
-          placeholder="Страна"
+          :class="{ 'is-invalid': errors.iata }"
+          placeholder="Код ИАТА"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="icao" class="label">Код ИКАО:</label>
+        <Field
+          name="icao"
+          id="icao"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.icao }"
+          placeholder="Код ИКАО"
         />
       </div>
 

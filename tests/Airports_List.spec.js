@@ -165,6 +165,6 @@ describe('Airports_List.vue', () => {
 
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('Список аэропортов пуст')
+    expect(wrapper.text()).toContain('Список кодов аэропортов пуст')
   })
 })

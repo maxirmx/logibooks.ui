@@ -45,9 +45,8 @@ const headers = [
     ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
     : []),
   { title: 'Название', key: 'name', sortable: true },
-  { title: 'IATA', key: 'iata', sortable: true },
-  { title: 'ICAO', key: 'icao', sortable: true },
-  { title: 'Страна', key: 'country', sortable: true }
+  { title: 'Код ИАТА', key: 'iata', sortable: true },
+  { title: 'Код ИКАО', key: 'icao', sortable: true },
 ]
 
 function openEditDialog(airport) {
@@ -73,7 +72,7 @@ async function deleteAirport(airport) {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: `Удалить аэропорт "${airport.name}"?`
+      content: `Удалить код аэропорта "${airport.name}"?`
     })
 
     if (confirmed) {
@@ -81,9 +80,9 @@ async function deleteAirport(airport) {
         await airportsStore.remove(airport.id)
       } catch (error) {
         if (error.message?.includes('409')) {
-          alertStore.error('Нельзя удалить аэропорт, у которого есть связанные записи')
+          alertStore.error('Нельзя удалить код аэропорта, у которого есть связанные записи')
         } else {
-          alertStore.error('Ошибка при удалении аэропорта')
+          alertStore.error('Ошибка при удалении кода аэропорта')
         }
       }
     }
@@ -105,7 +104,7 @@ defineExpose({
 
 <template>
   <div class="settings table-2">
-    <h1 class="primary-heading">Аэропорты</h1>
+    <h1 class="primary-heading">Коды аэропортов</h1>
     <hr class="hr" />
 
     <div class="link-crt" v-if="authStore.isAdminOrSrLogist">
@@ -114,7 +113,7 @@ defineExpose({
           size="1x"
           icon="fa-solid fa-plane"
           class="link"
-        />&nbsp;&nbsp;&nbsp;Добавить аэропорт
+        />&nbsp;&nbsp;&nbsp;Добавить код аэропорта
       </router-link>
     </div>
 
@@ -132,7 +131,7 @@ defineExpose({
       <v-data-table
         v-if="airports?.length"
         v-model:items-per-page="authStore.airports_per_page"
-        items-per-page-text="Аэропортов на странице"
+        items-per-page-text="Кодов аэропортов на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
         v-model:page="authStore.airports_page"
@@ -151,14 +150,14 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать аэропорт"
+              tooltip-text="Редактировать код аэропорта"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить аэропорт"
+              tooltip-text="Удалить код аэропорта"
               @click="deleteAirport"
               :disabled="runningAction || loading"
             />
@@ -166,7 +165,7 @@ defineExpose({
         </template>
       </v-data-table>
 
-      <div v-if="!airports?.length" class="text-center m-5">Список аэропортов пуст</div>
+      <div v-if="!airports?.length" class="text-center m-5">Список кодов аэропортов пуст</div>
     </v-card>
 
     <div v-if="loading" class="text-center m-5">

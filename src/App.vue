@@ -140,7 +140,7 @@ function getUserName() {
           <RouterLink to="/companies" class="link">Компании</RouterLink>
         </v-list-item>
         <v-list-item>
-          <RouterLink to="/airports" class="link">Аэропорты</RouterLink>
+          <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
         </v-list-item>
         <v-list-item>
           <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>

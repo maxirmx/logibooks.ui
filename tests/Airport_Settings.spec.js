@@ -182,6 +182,6 @@ describe('Airport_Settings.vue', () => {
     await resolveAll()
 
     const alerts = wrapper.findAll('.alert-danger')
-    expect(alerts.at(-1)?.text()).toBe('Аэропорт с таким IATA кодом уже существует')
+    expect(alerts.at(-1)?.text()).toBe('Аэропорт с таким кодом ИАТА уже существует')
   })
 })

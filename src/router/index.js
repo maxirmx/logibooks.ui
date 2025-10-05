@@ -57,7 +57,7 @@ const router = createRouter({
     },
     {
       path: '/airports',
-      name: 'Аэропорты',
+      name: 'Коды аэропортов',
       component: () => import('@/views/Airports_View.vue'),
       meta: { reqAnyRole: true }
     },
@@ -78,13 +78,13 @@ const router = createRouter({
     },
     {
       path: '/airport/create',
-      name: 'Регистрация аэропорта',
+      name: 'Регистрация кода аэропорта',
       component: () => import('@/views/Airport_CreateView.vue'),
       meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/airport/edit/:id',
-      name: 'Изменить информацию об аэропорте',
+      name: 'Изменить информацию о коде аэропорта',
       component: () => import('@/views/Airport_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)

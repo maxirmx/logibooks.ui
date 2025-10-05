@@ -201,7 +201,7 @@ describe('Register_EditDialog', () => {
   })
   
   it('handles create mode with upload result object', async () => {
-  upload.mockResolvedValueOnce({ success: true, Success: true, RegisterId: 42, registerId: 42, ErrMsg: '' })
+  upload.mockResolvedValueOnce({ success: true, registerId: 42, ErrMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
     const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
@@ -285,8 +285,6 @@ describe('Register_EditDialog', () => {
     // Verify upload was called
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
     
-    // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed
     // Verify navigation occurred (error dialog closes then navigation)

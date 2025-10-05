@@ -91,6 +91,8 @@ function requestFile(method) {
             }
         }
 
+        // Status 422 (Unprocessable Entity) is handled differently because the API uses it to return
+        // validation errors in a structured format that the client is expected to process, not throw as a generic error.
         if (!response.ok && response.status !== 422) {
             const errorText = await response.text();
             let errorMessage;
@@ -213,6 +215,9 @@ function handleResponse(response) {
       if (enableLog) {
         console.log(response.status, response.statusText, data)
       }
+      // Special handling: Do not treat HTTP 422 (Unprocessable Entity) as a generic error.
+      // This allows the API to return validation errors in the response body, which the client can process and display to the user.
+      // All other non-OK statuses (except 422) are treated as errors and will reject the promise.
       if (!response.ok && response.status !== 422) {
         const { user, logout } = useAuthStore()
         if ([401].includes(response.status)) {

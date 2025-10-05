@@ -25,14 +25,12 @@ const mockAirports = [
   {
     id: 1,
     codeIata: 'SVO',
-    codeIcao: 'UUEE',
     name: 'Sheremetyevo International Airport',
     country: 'Russia'
   },
   {
     id: 2,
     codeIata: 'DME',
-    codeIcao: 'UUDD',
     name: 'Domodedovo International Airport',
     country: 'Russia'
   }

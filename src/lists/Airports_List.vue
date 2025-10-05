@@ -35,7 +35,7 @@ function filterAirports(value, query, item) {
 
   const q = query.toLocaleUpperCase()
 
-  return [airport.name, airport.codeIata, airport.codeIcao]
+  return [airport.name, airport.codeIata]
     .filter(Boolean)
     .some((field) => field.toLocaleUpperCase().includes(q))
 }
@@ -46,7 +46,6 @@ const headers = [
     : []),
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Код ИАТА', key: 'codeIata', sortable: true },
-  { title: 'Код ИКАО', key: 'codeIcao', sortable: true },
 ]
 
 function openEditDialog(airport) {

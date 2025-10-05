@@ -28,7 +28,6 @@ const isCreate = computed(() => props.mode === 'create')
 
 let airport = ref({
   codeIata: '',
-  codeIcao: '',
   name: ''
 })
 
@@ -47,7 +46,6 @@ function getButtonText() {
 
 const schema = Yup.object({
   codeIata: Yup.string().required('Код IATA обязателен'),
-  codeIcao: Yup.string(),
   name: Yup.string().required('Название аэропорта обязательно')
 })
 
@@ -112,18 +110,6 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
-      <div class="form-group">
-        <label for="codeIcao" class="label">Код ИКАО:</label>
-        <Field
-          name="codeIcao"
-          id="codeIcao"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.codeIcao }"
-          placeholder="Код ИКАО"
-        />
-      </div>
-
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
@@ -141,7 +127,6 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div v-if="errors.codeIata" class="alert alert-danger mt-3 mb-0">{{ errors.codeIata }}</div>
-      <div v-if="errors.codeIcao" class="alert alert-danger mt-3 mb-0">{{ errors.codeIcao }}</div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>

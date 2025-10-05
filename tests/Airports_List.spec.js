@@ -10,8 +10,8 @@ import AirportsList from '@/lists/Airports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const mockAirports = ref([
-  { id: 1, name: 'Sheremetyevo', codeIata: 'SVO', codeIcao: 'UUEE', country: 'Russia' },
-  { id: 2, name: 'Domodedovo', codeIata: 'DME', codeIcao: 'UUDD', country: 'Russia' }
+  { id: 1, name: 'Sheremetyevo', codeIata: 'SVO' },
+  { id: 2, name: 'Domodedovo', codeIata: 'DME' }
 ])
 
 const getAllAirports = vi.hoisted(() => vi.fn().mockResolvedValue())
@@ -104,8 +104,8 @@ const testStubs = {
 
 beforeEach(() => {
   mockAirports.value = [
-    { id: 1, name: 'Sheremetyevo', codeIata: 'SVO', codeIcao: 'UUEE', country: 'Russia' },
-    { id: 2, name: 'Domodedovo', codeIata: 'DME', codeIcao: 'UUDD', country: 'Russia' }
+    { id: 1, name: 'Sheremetyevo', codeIata: 'SVO' },
+    { id: 2, name: 'Domodedovo', codeIata: 'DME' }
   ]
   alertRef.value = null
   loadingRef.value = false

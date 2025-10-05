@@ -12,7 +12,6 @@ import { defaultGlobalStubs, createMockStore, resolveAll } from './helpers/test-
 const mockAirportData = {
   id: 1,
   codeIata: 'SVO',
-  codeIcao: 'UUEE',
   name: 'Sheremetyevo International Airport',
   country: 'Russia'
 }

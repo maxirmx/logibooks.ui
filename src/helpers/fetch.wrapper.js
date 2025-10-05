@@ -91,7 +91,7 @@ function requestFile(method) {
             }
         }
 
-        if (!response.ok) {
+        if (!response.ok && response.status !== 422) {
             const errorText = await response.text();
             let errorMessage;
             let errorObj;
@@ -213,7 +213,7 @@ function handleResponse(response) {
       if (enableLog) {
         console.log(response.status, response.statusText, data)
       }
-      if (!response.ok) {
+      if (!response.ok && response.status !== 422) {
         const { user, logout } = useAuthStore()
         if ([401].includes(response.status)) {
           // auto logout if 401 Unauthorized response returned from api

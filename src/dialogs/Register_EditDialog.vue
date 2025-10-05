@@ -209,14 +209,11 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
-async function onSubmit(values, actions = {}) {
+async function onSubmit(values) {
   if (!isComponentMounted.value) return
   
   // Guard against multiple submissions
   if (isSubmitting.value) return
-  
-  // Handle both form submission and direct calls
-  const { setErrors } = actions || {}
   
   // Set submitting state
   isSubmitting.value = true
@@ -227,76 +224,78 @@ async function onSubmit(values, actions = {}) {
       try {
         const result = await registersStore.upload(uploadFile.value, item.value.companyId)
         if (!isComponentMounted.value) return
-        // If upload returns Reference object with id, call update
-        if (result && typeof result.id === 'number') {
+        if (result?.success) {
           try {
-            await registersStore.update(result.id, values)
-            if (!isComponentMounted.value) return
+            await registersStore.update(result.registerId, values)
           } catch (updateError) {
-            // Handle update failures after successful upload
             if (isComponentMounted.value) {
               hideActionDialog()
-              // Use setErrors if available (form submission), otherwise use store error
-              if (setErrors && typeof setErrors === 'function') {
-                setErrors({ apiError: updateError.message || String(updateError) })
-              } else {
-                // For ActionButton clicks, use store error
-                registersStore.error = updateError.message || String(updateError)
-              }
+              await showErrorAndAwaitClose(
+                'Не удалось сохранить информацию о реестре',
+                updateError?.message || 'Ошибка при сохранении информации о реестре'
+              )
             }
-            return // Exit early after handling update error
+          }
+        } else {
+          if (isComponentMounted.value) {
+            await showErrorAndAwaitClose(
+              'Не удалось загрузить файл реестра',
+              result?.errMsg || 'Ошибка при загрузке файла реестра'
+            )
           }
         }
-        await router.push('/registers')
+        return 
       } catch (uploadError) {
         // Handle upload failures with modal message box
         if (isComponentMounted.value) {
-          hideActionDialog()
-          
-          // Show custom error dialog
-          const errorMessage = uploadError?.response?.data?.message || 
-                              uploadError?.message || 
-                              'Ошибка при загрузке файла реестра'
-          
-          showErrorDialog('Не удалось загрузить файл реестра', errorMessage)
-          
-          // Wait for user to close error dialog, then navigate
-          await new Promise(resolve => {
-            const unwatch = watch(() => errorDialogState.value.show, (newShow) => {
-              if (!newShow) {
-                unwatch()
-                resolve()
-              }
-            })
-          })
-          
-          // Close dialog and return to registers list
-          await router.push('/registers')
+          await showErrorAndAwaitClose(
+            'Не удалось загрузить файл реестра',
+            uploadError?.message || 'Ошибка при загрузке файла реестра'
+          )
         }
         return // Exit early, don't continue with normal error handling
-      } finally {
-        hideActionDialog()
       }
     } else {
       await registersStore.update(props.id, values)
-      if (!isComponentMounted.value) return
-      await router.push('/registers')
     }
-  } catch (error) {
+  } catch (updateError) {
     if (isComponentMounted.value) {
-      // Use setErrors if available (form submission), otherwise use store error
-      if (setErrors && typeof setErrors === 'function') {
-        setErrors({ apiError: error.message || String(error) })
-      } else {
-        // For ActionButton clicks, use store error
-        registersStore.error = error.message || String(error)
-      }
+      await showErrorAndAwaitClose(
+        'Не удалось сохранить информацию о реестре',
+        updateError?.message || 'Ошибка при сохранении информации о реестре'
+      )
     }
   } finally {
+    hideActionDialog()
     // Always reset submitting state
     isSubmitting.value = false
+    await router.push('/registers')
   }
 }
+
+
+// Helper: show the error dialog and wait until it's closed by the user
+async function showErrorAndAwaitClose(title, message) {
+  // Ensure any action dialog is hidden first
+  try {
+    hideActionDialog()
+  } catch {
+    // ignore if not available or already hidden
+  }
+
+  showErrorDialog(title, message)
+
+  // Wait until dialog is closed (watch for show -> false)
+  await new Promise((resolve) => {
+    const unwatch = watch(() => errorDialogState.value.show, (newShow) => {
+      if (!newShow) {
+        unwatch()
+        resolve()
+      }
+    })
+  })
+}
+
 
 function getCustomerName(customerId) {
   if (!customerId || !companies.value) return 'Неизвестно'

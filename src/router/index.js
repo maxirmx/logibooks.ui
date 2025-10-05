@@ -56,6 +56,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/airports',
+      name: 'Аэропорты',
+      component: () => import('@/views/Airports_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/company/create',
       name: 'Регистрация компании',
       component: () => import('@/views/Company_CreateView.vue'),
@@ -65,6 +71,21 @@ const router = createRouter({
       path: '/company/edit/:id',
       name: 'Изменить информацию о компании',
       component: () => import('@/views/Company_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/airport/create',
+      name: 'Регистрация аэропорта',
+      component: () => import('@/views/Airport_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/airport/edit/:id',
+      name: 'Изменить информацию об аэропорте',
+      component: () => import('@/views/Airport_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

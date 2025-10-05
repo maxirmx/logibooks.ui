@@ -45,14 +45,22 @@ function getButtonText() {
 }
 
 const schema = Yup.object({
-  codeIata: Yup.string().required('Код IATA обязателен'),
+  codeIata: Yup.string()
+    .required('Код ИАТА обязателен')
+    .matches(/^[A-Za-z]{3}$/, 'Код ИАТА должен содержать ровно 3 буквы'),
   name: Yup.string().required('Название аэропорта обязательно')
 })
 
 function onSubmit(values, { setErrors }) {
+  // Convert IATA code to uppercase
+  const processedValues = {
+    ...values,
+    codeIata: values.codeIata.toUpperCase()
+  }
+
   if (isCreate.value) {
     return airportsStore
-      .create(values)
+      .create(processedValues)
       .then(() => {
         router.push('/airports')
       })
@@ -66,7 +74,7 @@ function onSubmit(values, { setErrors }) {
   }
 
   return airportsStore
-    .update(props.airportId, values)
+    .update(props.airportId, processedValues)
     .then(() => {
       router.push('/airports')
     })
@@ -104,9 +112,10 @@ function onSubmit(values, { setErrors }) {
           name="codeIata"
           id="codeIata"
           type="text"
-          class="form-control input"
+          class="form-control input iata-code-field"
           :class="{ 'is-invalid': errors.codeIata }"
-          placeholder="Код ИАТА"
+          placeholder="Код ИАТА (3 буквы)"
+          maxlength="3"
         />
       </div>
 
@@ -132,3 +141,14 @@ function onSubmit(values, { setErrors }) {
     </Form>
   </div>
 </template>
+
+<style scoped>
+.iata-code-field {
+  text-transform: uppercase !important;
+  width: 60px !important;
+  max-width: 60px !important;
+  min-width: 60px !important;
+  flex: none !important;
+  display: inline-block !important;
+}
+</style>

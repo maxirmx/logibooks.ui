@@ -86,6 +86,8 @@ function onSubmit(values, { setErrors }) {
       .catch((error) => {
         setErrors({ apiError: error.message || 'Ошибка при создании нотификации' })
       })
+  } else {
+    payload.id = props.notificationId
   }
 
   return notificationsStore

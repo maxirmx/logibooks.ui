@@ -140,7 +140,7 @@ defineExpose({
       <router-link to="/notification/create" class="link">
         <font-awesome-icon
           size="1x"
-          icon="fa-solid fa-bell"
+          icon="fa-solid fa-file-circle-plus"
           class="link"
         />&nbsp;&nbsp;&nbsp;Создать нотификацию
       </router-link>

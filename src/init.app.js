@@ -47,7 +47,8 @@ import {
   faCommentDots,
   faCommentNodes,
   faEllipsisVertical,
-  faTruckPlane
+  faTruckPlane,
+  faFileCirclePlus
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -88,7 +89,8 @@ library.add(
   faCommentDots,
   faCommentNodes,
   faEllipsisVertical,
-  faTruckPlane
+  faTruckPlane,
+  faFileCirclePlus
 )
 
 import 'vuetify/styles'

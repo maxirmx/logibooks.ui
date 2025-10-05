@@ -143,6 +143,9 @@ function getUserName() {
           <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
         </v-list-item>
         <v-list-item>
+          <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
+        </v-list-item>
+        <v-list-item>
           <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
         </v-list-item>
           <v-list-item>

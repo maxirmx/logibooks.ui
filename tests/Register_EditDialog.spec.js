@@ -261,7 +261,7 @@ describe('Register_EditDialog', () => {
   })
   it('handles errors in create mode with Reference object', async () => {
     // Mock upload success but update failure
-  upload.mockResolvedValueOnce({ success: true, Success: true, RegisterId: 42, registerId: 42, ErrMsg: '' })
+  upload.mockResolvedValueOnce({ success: true, Success: true, registerId: 42, ErrMsg: '' })
     update.mockRejectedValueOnce(new Error('Update failed'))
     
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')

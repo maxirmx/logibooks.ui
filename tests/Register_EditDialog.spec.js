@@ -201,7 +201,7 @@ describe('Register_EditDialog', () => {
   })
   
   it('handles create mode with upload result object', async () => {
-  upload.mockResolvedValueOnce({ success: true, Success: true, RegisterId: 42, registerId: 42, ErrMsg: '' })
+  upload.mockResolvedValueOnce({ success: true, registerId: 42, ErrMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
     const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }

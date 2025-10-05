@@ -635,6 +635,42 @@ describe('registers store', () => {
       expect(formData.get('file')).toBe(file)
     })
 
+    it('uploads file via postFile with sourceRegisterId', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
+      const sourceRegisterId = 777
+      fetchWrapper.postFile.mockResolvedValue({ id: 2 })
+
+      const store = useRegistersStore()
+      await store.upload(file, customerId, sourceRegisterId)
+
+      expect(fetchWrapper.postFile).toHaveBeenCalled()
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload/${customerId}/${sourceRegisterId}`
+      )
+      const formData = fetchWrapper.postFile.mock.calls[0][1]
+      expect(formData instanceof FormData).toBe(true)
+      expect(formData.get('file')).toBe(file)
+    })
+
+    it('uploads file via postFile ignoring sourceRegisterId when zero', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
+      const sourceRegisterId = 0
+      fetchWrapper.postFile.mockResolvedValue({ id: 3 })
+
+      const store = useRegistersStore()
+      await store.upload(file, customerId, sourceRegisterId)
+
+      expect(fetchWrapper.postFile).toHaveBeenCalled()
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload/${customerId}`
+      )
+      const formData = fetchWrapper.postFile.mock.calls[0][1]
+      expect(formData instanceof FormData).toBe(true)
+      expect(formData.get('file')).toBe(file)
+    })
+
     it('sets error on failure', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123

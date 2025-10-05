@@ -56,6 +56,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/notifications',
+      name: 'Нотификации',
+      component: () => import('@/views/Notifications_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/airports',
       name: 'Коды аэропортов',
       component: () => import('@/views/Airports_View.vue'),
@@ -71,6 +77,21 @@ const router = createRouter({
       path: '/company/edit/:id',
       name: 'Изменить информацию о компании',
       component: () => import('@/views/Company_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/notification/create',
+      name: 'Создание нотификации',
+      component: () => import('@/views/Notification_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/notification/edit/:id',
+      name: 'Редактирование нотификации',
+      component: () => import('@/views/Notification_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

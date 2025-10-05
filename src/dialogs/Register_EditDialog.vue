@@ -42,16 +42,10 @@ const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialo
 const errorDialogState = ref({
   show: false,
   title: '',
-  message: ''
+  message: '',
+  missingHeaders: [],
+  missingColumns: []
 })
-
-function showErrorDialog(title, message) {
-  errorDialogState.value = {
-    show: true,
-    title,
-    message
-  }
-}
 
 function hideErrorDialog() {
   errorDialogState.value.show = false
@@ -230,17 +224,16 @@ async function onSubmit(values) {
           } catch (updateError) {
             if (isComponentMounted.value) {
               hideActionDialog()
-              await showErrorAndAwaitClose(
-                'Не удалось сохранить информацию о реестре',
-                updateError?.message || 'Ошибка при сохранении информации о реестре'
-              )
+              await showErrorAndAwaitClose('Ошибка при сохранении информации о реестре', updateError?.message )
             }
           }
         } else {
           if (isComponentMounted.value) {
             await showErrorAndAwaitClose(
-              'Не удалось загрузить файл реестра',
-              result?.errMsg || 'Ошибка при загрузке файла реестра'
+              'Ошибка загрузки файла реестра',  
+              result?.errMsg,
+              result?.missingHeaders || [],
+              result?.missingColumns || []
             )
           }
         }
@@ -248,10 +241,7 @@ async function onSubmit(values) {
       } catch (uploadError) {
         // Handle upload failures with modal message box
         if (isComponentMounted.value) {
-          await showErrorAndAwaitClose(
-            'Не удалось загрузить файл реестра',
-            uploadError?.message || 'Ошибка при загрузке файла реестра'
-          )
+          await showErrorAndAwaitClose('Ошибка загрузки файла реестра',  uploadError?.message )
         }
         return // Exit early, don't continue with normal error handling
       }
@@ -260,10 +250,7 @@ async function onSubmit(values) {
     }
   } catch (updateError) {
     if (isComponentMounted.value) {
-      await showErrorAndAwaitClose(
-        'Не удалось сохранить информацию о реестре',
-        updateError?.message || 'Ошибка при сохранении информации о реестре'
-      )
+       await showErrorAndAwaitClose('Ошибка при сохранении информации о реестре', updateError?.message )
     }
   } finally {
     hideActionDialog()
@@ -275,7 +262,7 @@ async function onSubmit(values) {
 
 
 // Helper: show the error dialog and wait until it's closed by the user
-async function showErrorAndAwaitClose(title, message) {
+async function showErrorAndAwaitClose(title, message, missingHeaders = [], missingColumns = []) {
   // Ensure any action dialog is hidden first
   try {
     hideActionDialog()
@@ -283,7 +270,13 @@ async function showErrorAndAwaitClose(title, message) {
     // ignore if not available or already hidden
   }
 
-  showErrorDialog(title, message)
+  errorDialogState.value = {
+    show: true,
+    title,
+    message: message || 'Неизвестная ошибка',
+    missingHeaders: missingHeaders,
+    missingColumns: missingColumns
+  }
 
   // Wait until dialog is closed (watch for show -> false)
   await new Promise((resolve) => {
@@ -501,6 +494,8 @@ function getCustomerName(customerId) {
       :show="errorDialogState.show"
       :title="errorDialogState.title"
       :message="errorDialogState.message"
+      :missing-headers="errorDialogState.missingHeaders"
+      :missing-columns="errorDialogState.missingColumns"
       @close="hideErrorDialog"
     />
   </div>

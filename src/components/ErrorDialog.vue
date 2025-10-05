@@ -1,11 +1,13 @@
 <script setup>
-/* eslint-disable vue/no-v-text-v-html-on-component */
+ 
 import { computed, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
   title: { type: String, default: 'Ошибка' },
-  message: { type: String, default: '' }
+  message: { type: String, default: '' },
+  missingHeaders: { type: Array, default: () => [] },
+  missingColumns: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['close'])
@@ -44,7 +46,10 @@ onUnmounted(() => {
       <v-card-title class="primary-heading">
         {{ title }}
       </v-card-title>
-      <v-card-text class="text-left" style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.4;" v-html="message">
+      <v-card-text class="text-left"  >
+        {{ missingHeaders.length == 0 && missingColumns.length == 0 ? message : '' }}
+        {{ missingHeaders.length > 0 ? 'Не найдены параметры посылок для столбцов реестра: ' + missingHeaders.join(', ') : '' }}
+        {{ missingColumns.length > 0 ? 'Не найдены столбцы реестра для параметров посылок: ' + missingColumns.join(', ') : '' }}
       </v-card-text>
       <v-card-actions class="justify-center">
         <v-btn color="primary" @click="closeDialog">

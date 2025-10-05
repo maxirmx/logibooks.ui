@@ -134,14 +134,17 @@ function getUserName() {
             <RouterLink to="/keywords" class="link">Подбор ТН ВЭД</RouterLink>
           </v-list-item>
           <v-list-item>
-            <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
-          </v-list-item>
-          <v-list-item>
-            <RouterLink to="/companies" class="link">Компании</RouterLink>
-          </v-list-item>
-          <v-list-item>
-            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
-          </v-list-item>
+          <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
+        </v-list-item>
+        <v-list-item>
+          <RouterLink to="/companies" class="link">Компании</RouterLink>
+        </v-list-item>
+        <v-list-item>
+          <RouterLink to="/airports" class="link">Аэропорты</RouterLink>
+        </v-list-item>
+        <v-list-item>
+          <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
+        </v-list-item>
           <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
           </v-list-item>

@@ -42,6 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
   const companies_search = ref('')
   const companies_sort_by = ref(['id'])
   const companies_page = ref(1)
+  const notifications_per_page = ref(10)
+  const notifications_search = ref('')
+  const notifications_sort_by = ref(['id'])
+  const notifications_page = ref(1)
   const airports_per_page = ref(10)
   const airports_search = ref('')
   const airports_sort_by = ref(['id'])
@@ -180,6 +184,10 @@ export const useAuthStore = defineStore('auth', () => {
     companies_search,
     companies_sort_by,
     companies_page,
+    notifications_per_page,
+    notifications_search,
+    notifications_sort_by,
+    notifications_page,
     airports_per_page,
     airports_search,
     airports_sort_by,

@@ -91,6 +91,8 @@ function requestFile(method) {
             }
         }
 
+        // Status 422 (Unprocessable Entity) is handled differently because the API uses it to return
+        // validation errors in a structured format that the client is expected to process, not throw as a generic error.
         if (!response.ok && response.status !== 422) {
             const errorText = await response.text();
             let errorMessage;

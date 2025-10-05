@@ -76,7 +76,11 @@ const registerOptions = computed(() => {
     if (!props.create) {
       await registersStore.getById(props.id)
     } else {
-      await registersStore.getAll()
+      try {
+        await registersStore.getAll()
+      } catch (error) {
+        console.error('Failed to load registers for transfer selector:', error)
+      }
       // Set default values for new records
       if (!item.value.customsProcedureId) {
         item.value.customsProcedureId = 1

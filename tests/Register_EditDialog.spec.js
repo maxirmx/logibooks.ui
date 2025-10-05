@@ -219,6 +219,32 @@ describe('Register_EditDialog', () => {
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
 
+  it('still renders create dialog when register list fetch fails', async () => {
+    const loadError = new Error('load failed')
+    getAll.mockRejectedValueOnce(loadError)
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const Parent = {
+        template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+        components: { RegisterEditDialog }
+      }
+      const wrapper = mount(Parent, {
+        global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      })
+
+      await resolveAll()
+
+      expect(getAll).toHaveBeenCalled()
+      expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
+      const selector = wrapper.find('select#transferRegisterId')
+      expect(selector.exists()).toBe(true)
+      expect(selector.findAll('option')).toHaveLength(1)
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
   it('renders transfer register selector with generated names', async () => {
     registerItems.value = [
       { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx' },

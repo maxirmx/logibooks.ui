@@ -55,7 +55,7 @@ onUnmounted(() => {
           <div class="error-dialog__lists">
             <div v-if="missingHeaders.length" class="error-dialog__list">
               <p class="error-dialog__list-title">
-                Не найдены параметры посылок для столбцов реестра:
+                Неизвестные столбцы реестра:
               </p>
               <ul>
                 <li v-for="header in missingHeaders" :key="`header-${header}`">
@@ -65,7 +65,7 @@ onUnmounted(() => {
             </div>
             <div v-if="missingColumns.length" class="error-dialog__list">
               <p class="error-dialog__list-title">
-                Не найдены столбцы реестра для параметров посылок:
+                Не найдены столбцы реестра:
               </p>
               <ul>
                 <li v-for="column in missingColumns" :key="`column-${column}`">

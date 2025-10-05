@@ -17,6 +17,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
+import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -24,7 +25,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
-const { item, uploadFile } = storeToRefs(registersStore)
+const { item, uploadFile, items } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
 const { countries } = storeToRefs(countriesStore)
@@ -57,10 +58,25 @@ const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 const isSubmitting = ref(false)
+const transferRegisterId = ref('')
+
+const registerOptions = computed(() => {
+  if (!Array.isArray(items.value)) {
+    return []
+  }
+
+  return items.value
+    .filter((register) => register && typeof register === 'object')
+    .map((register) => ({
+      id: register.id,
+      name: generateRegisterName(register.dealNumber, register.fileName)
+    }))
+})
 
     if (!props.create) {
       await registersStore.getById(props.id)
     } else {
+      await registersStore.getAll()
       // Set default values for new records
       if (!item.value.customsProcedureId) {
         item.value.customsProcedureId = 1
@@ -216,7 +232,14 @@ async function onSubmit(values) {
     if (props.create) {
       showActionDialog('upload-register')
       try {
-        const result = await registersStore.upload(uploadFile.value, item.value.companyId)
+        const sourceRegisterId = transferRegisterId.value === ''
+          ? null
+          : parseInt(transferRegisterId.value, 10)
+        const result = await registersStore.upload(
+          uploadFile.value,
+          item.value.companyId,
+          Number.isNaN(sourceRegisterId) ? null : sourceRegisterId
+        )
         if (!isComponentMounted.value) return
         if (result?.success) {
           try {
@@ -465,6 +488,26 @@ function getCustomerName(customerId) {
           <div class="form-group">
             <label class="label">Дата загрузки:</label>
             <div class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
+          </div>
+        </div>
+
+        <div class="form-row" v-if="props.create">
+          <div class="form-group">
+            <label for="transferRegisterId" class="label">Перенести статусы из реестра:</label>
+            <select
+              id="transferRegisterId"
+              class="form-control input"
+              v-model="transferRegisterId"
+            >
+              <option value="">Не выбрано</option>
+              <option
+                v-for="register in registerOptions"
+                :key="register.id"
+                :value="register.id"
+              >
+                {{ register.name }}
+              </option>
+            </select>
           </div>
         </div>
       </div>

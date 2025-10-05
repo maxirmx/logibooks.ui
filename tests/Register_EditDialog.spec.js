@@ -27,8 +27,18 @@ const mockItem = ref({
 const getById = vi.fn(() => Promise.resolve())
 const update = vi.fn(() => Promise.resolve())
 const upload = vi.fn(() => Promise.resolve())
+const getAll = vi.fn(() => Promise.resolve())
+const registerItems = ref([])
 
-const registersStore = createMockStore({ item: mockItem, getById, update, upload, uploadFile: ref(null) })
+const registersStore = createMockStore({
+  item: mockItem,
+  items: registerItems,
+  getById,
+  getAll,
+  update,
+  upload,
+  uploadFile: ref(null)
+})
 const countriesStore = createMockStore({
   countries: ref([
     { id: 1, isoNumeric: 840, nameRuOfficial: 'США' },
@@ -60,7 +70,13 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: (store) => {
-      if (store === registersStore) return { item: mockItem, uploadFile: registersStore.uploadFile }
+      if (store === registersStore) {
+        return {
+          item: mockItem,
+          uploadFile: registersStore.uploadFile,
+          items: registersStore.items
+        }
+      }
       if (store === countriesStore) return { countries: countriesStore.countries }
       if (store === companiesStore) return { companies: companiesStore.companies }
       return {}
@@ -131,6 +147,7 @@ describe('Register_EditDialog', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    registerItems.value = []
   })
 
   it('loads data and renders fields', async () => {
@@ -179,6 +196,7 @@ describe('Register_EditDialog', () => {
   it('handles create mode with upload', async () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
+    registerItems.value = []
 
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
@@ -190,20 +208,74 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(getById).not.toHaveBeenCalled()
+    expect(getAll).toHaveBeenCalled()
     expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Загрузить')
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, null)
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
-  
+
+  it('renders transfer register selector with generated names', async () => {
+    registerItems.value = [
+      { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx' },
+      { id: 11, dealNumber: '', fileName: 'reg-empty.xlsx' }
+    ]
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const selector = wrapper.find('select#transferRegisterId')
+    expect(selector.exists()).toBe(true)
+
+    const optionTexts = selector.findAll('option').map((option) => option.text())
+    expect(optionTexts).toContain('Не выбрано')
+    expect(optionTexts).toContain('Реестр для сделки D-100')
+    expect(optionTexts).toContain('Реестр для сделки без номера (файл: reg-empty.xlsx)')
+  })
+
+  it('passes selected register id to upload when provided', async () => {
+    registerItems.value = [
+      { id: 20, dealNumber: 'D-200', fileName: 'reg-200.xlsx' }
+    ]
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    mockItem.value = { fileName: 'test.xlsx', companyId: 3 }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const selector = wrapper.find('select#transferRegisterId')
+    await selector.setValue('20')
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: () => {} })
+    await resolveAll()
+
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 20)
+  })
+
   it('handles create mode with upload result object', async () => {
   upload.mockResolvedValueOnce({ success: true, registerId: 42, ErrMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
+    registerItems.value = []
     const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
 
     const Parent = {
@@ -220,7 +292,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, null)
     
     // Verify update was called with the Id from the Reference object and the form values
     expect(update).toHaveBeenCalledWith(42, formValues)
@@ -263,7 +335,7 @@ describe('Register_EditDialog', () => {
     // Mock upload success but update failure
   upload.mockResolvedValueOnce({ success: true, Success: true, registerId: 42, ErrMsg: '' })
     update.mockRejectedValueOnce(new Error('Update failed'))
-    
+
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { fileName: 'test.xlsx', companyId: 2 }
     const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
@@ -283,7 +355,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, null)
     
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed

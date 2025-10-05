@@ -215,6 +215,9 @@ function handleResponse(response) {
       if (enableLog) {
         console.log(response.status, response.statusText, data)
       }
+      // Special handling: Do not treat HTTP 422 (Unprocessable Entity) as a generic error.
+      // This allows the API to return validation errors in the response body, which the client can process and display to the user.
+      // All other non-OK statuses (except 422) are treated as errors and will reject the promise.
       if (!response.ok && response.status !== 422) {
         const { user, logout } = useAuthStore()
         if ([401].includes(response.status)) {

@@ -35,7 +35,7 @@ function filterAirports(value, query, item) {
 
   const q = query.toLocaleUpperCase()
 
-  return [airport.name, airport.iata, airport.icao, airport.country]
+  return [airport.name, airport.codeIata, airport.codeIcao]
     .filter(Boolean)
     .some((field) => field.toLocaleUpperCase().includes(q))
 }
@@ -45,8 +45,8 @@ const headers = [
     ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
     : []),
   { title: 'Название', key: 'name', sortable: true },
-  { title: 'Код ИАТА', key: 'iata', sortable: true },
-  { title: 'Код ИКАО', key: 'icao', sortable: true },
+  { title: 'Код ИАТА', key: 'codeIata', sortable: true },
+  { title: 'Код ИКАО', key: 'codeIcao', sortable: true },
 ]
 
 function openEditDialog(airport) {
@@ -111,7 +111,7 @@ defineExpose({
       <router-link to="/airport/create" class="link">
         <font-awesome-icon
           size="1x"
-          icon="fa-solid fa-plane"
+          icon="fa-solid fa-truck-plane"
           class="link"
         />&nbsp;&nbsp;&nbsp;Добавить код аэропорта
       </router-link>

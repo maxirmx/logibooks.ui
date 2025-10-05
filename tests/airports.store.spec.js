@@ -24,15 +24,15 @@ vi.mock('@/helpers/config.js', () => ({
 const mockAirports = [
   {
     id: 1,
-    iata: 'SVO',
-    icao: 'UUEE',
+    codeIata: 'SVO',
+    codeIcao: 'UUEE',
     name: 'Sheremetyevo International Airport',
     country: 'Russia'
   },
   {
     id: 2,
-    iata: 'DME',
-    icao: 'UUDD',
+    codeIata: 'DME',
+    codeIcao: 'UUDD',
     name: 'Domodedovo International Airport',
     country: 'Russia'
   }

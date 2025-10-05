@@ -27,8 +27,8 @@ const airportsStore = useAirportsStore()
 const isCreate = computed(() => props.mode === 'create')
 
 let airport = ref({
-  iata: '',
-  icao: '',
+  codeIata: '',
+  codeIcao: '',
   name: ''
 })
 
@@ -38,7 +38,7 @@ if (!isCreate.value) {
 }
 
 function getTitle() {
-  return isCreate.value ? 'Регистрация аэропорта' : 'Изменить информацию об аэропорте'
+  return isCreate.value ? 'Регистрация кода аэропорта' : 'Изменить информацию о коде аэропорта'
 }
 
 function getButtonText() {
@@ -46,9 +46,10 @@ function getButtonText() {
 }
 
 const schema = Yup.object({
-  iata: Yup.string().required('IATA код обязателен'),
-  icao: Yup.string(),
-  name: Yup.string().required('Название обязательно')})
+  codeIata: Yup.string().required('Код IATA обязателен'),
+  codeIcao: Yup.string(),
+  name: Yup.string().required('Название аэропорта обязательно')
+})
 
 function onSubmit(values, { setErrors }) {
   if (isCreate.value) {
@@ -100,25 +101,25 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div class="form-group">
-        <label for="iata" class="label">Код ИАТА:</label>
+        <label for="codeIata" class="label">Код ИАТА:</label>
         <Field
-          name="iata"
-          id="iata"
+          name="codeIata"
+          id="codeIata"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.iata }"
+          :class="{ 'is-invalid': errors.codeIata }"
           placeholder="Код ИАТА"
         />
       </div>
 
       <div class="form-group">
-        <label for="icao" class="label">Код ИКАО:</label>
+        <label for="codeIcao" class="label">Код ИКАО:</label>
         <Field
-          name="icao"
-          id="icao"
+          name="codeIcao"
+          id="codeIcao"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.icao }"
+          :class="{ 'is-invalid': errors.codeIcao }"
           placeholder="Код ИКАО"
         />
       </div>
@@ -139,10 +140,9 @@ function onSubmit(values, { setErrors }) {
         </button>
       </div>
 
-      <div v-if="errors.iata" class="alert alert-danger mt-3 mb-0">{{ errors.iata }}</div>
-      <div v-if="errors.icao" class="alert alert-danger mt-3 mb-0">{{ errors.icao }}</div>
+      <div v-if="errors.codeIata" class="alert alert-danger mt-3 mb-0">{{ errors.codeIata }}</div>
+      <div v-if="errors.codeIcao" class="alert alert-danger mt-3 mb-0">{{ errors.codeIcao }}</div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
-      <div v-if="errors.country" class="alert alert-danger mt-3 mb-0">{{ errors.country }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>

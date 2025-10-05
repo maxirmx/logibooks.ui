@@ -11,8 +11,8 @@ import { defaultGlobalStubs, createMockStore, resolveAll } from './helpers/test-
 
 const mockAirportData = {
   id: 1,
-  iata: 'SVO',
-  icao: 'UUEE',
+  codeIata: 'SVO',
+  codeIcao: 'UUEE',
   name: 'Sheremetyevo International Airport',
   country: 'Russia'
 }
@@ -112,7 +112,7 @@ describe('Airport_Settings.vue', () => {
 
     await resolveAll()
 
-    expect(wrapper.find('h1').text()).toBe('Регистрация аэропорта')
+    expect(wrapper.find('h1').text()).toBe('Регистрация кода аэропорта')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     expect(mockAirportsStore.getById).not.toHaveBeenCalled()
   })
@@ -128,7 +128,7 @@ describe('Airport_Settings.vue', () => {
     await resolveAll()
 
     expect(mockAirportsStore.getById).toHaveBeenCalledWith(1)
-    expect(wrapper.find('h1').text()).toBe('Изменить информацию об аэропорте')
+    expect(wrapper.find('h1').text()).toBe('Изменить информацию о коде аэропорта')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
   })
 

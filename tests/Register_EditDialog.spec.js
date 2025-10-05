@@ -285,8 +285,6 @@ describe('Register_EditDialog', () => {
     // Verify upload was called
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
     
-    // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId)
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed
     // Verify navigation occurred (error dialog closes then navigation)

@@ -28,7 +28,7 @@ function filterNotifications(value, query, item) {
     return false
   }
 
-  const notification = item.raw
+  const notification = getRow(item)
   if (!notification) {
     return false
   }
@@ -73,8 +73,13 @@ function formatTerminationDate(value) {
   return ''
 }
 
+function getRow(item) {
+  return item && typeof item === 'object' && 'raw' in item ? item.raw : item
+}
+
 function openEditDialog(notification) {
-  router.push(`/notification/edit/${notification.id}`)
+  const row = getRow(notification)
+  router.push(`/notification/edit/${row.id}`)
 }
 
 function openCreateDialog() {
@@ -86,6 +91,7 @@ async function deleteNotification(notification) {
   runningAction.value = true
 
   try {
+    const row = getRow(notification)
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -97,12 +103,12 @@ async function deleteNotification(notification) {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: `Удалить нотификацию "${notification.model}"?`
+      content: `Удалить нотификацию "${row.model}"?`
     })
 
     if (confirmed) {
       try {
-        await notificationsStore.remove(notification.id)
+        await notificationsStore.remove(row.id)
       } catch (error) {
         alertStore.error(error.message || 'Ошибка при удалении нотификации')
       }
@@ -120,7 +126,8 @@ defineExpose({
   openCreateDialog,
   openEditDialog,
   deleteNotification,
-  formatTerminationDate
+  formatTerminationDate,
+  getRow
 })
 </script>
 
@@ -167,21 +174,21 @@ defineExpose({
         density="compact"
         class="elevation-1 interlaced-table"
       >
-        <template #item.terminationDate="{ item }">
-          {{ formatTerminationDate(item.terminationDate) }}
+        <template v-slot:[`item.terminationDate`]="{ item }">
+          {{ formatTerminationDate(getRow(item)?.terminationDate) }}
         </template>
 
-        <template #item.actions="{ item }">
+        <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
             <ActionButton
-              :item="item"
+              :item="getRow(item)"
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать нотификацию"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
-              :item="item"
+              :item="getRow(item)"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить нотификацию"
               @click="deleteNotification"

@@ -175,6 +175,21 @@ describe('Notifications_List.vue', () => {
     expect(wrapper.vm.formatTerminationDate({ year: 2025, month: 2, day: 15 })).toBe('15.02.2025')
   })
 
+  it('renders formatted termination date in the table', async () => {
+    authStoreMock.isAdminOrSrLogist = false
+
+    const wrapper = mount(NotificationsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    const cells = wrapper.findAll('.v-data-table-cell')
+    expect(cells[cells.length - 1].text()).toBe('31.01.2025')
+  })
+
   it('shows empty state message when there are no notifications', async () => {
     notificationsRef.value = []
 

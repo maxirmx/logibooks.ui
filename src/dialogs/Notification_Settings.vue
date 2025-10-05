@@ -31,19 +31,6 @@ const notificationForm = ref({
   terminationDate: ''
 })
 
-if (!isCreate.value) {
-  const loaded = await notificationsStore.getById(props.notificationId)
-  if (loaded) {
-    notificationForm.value = {
-      model: loaded.model || '',
-      number: loaded.number || '',
-      terminationDate: formatDateForInput(loaded.terminationDate)
-    }
-  } else {
-    router.push('/notifications')
-  }
-}
-
 function formatDateForInput(value) {
   if (!value) {
     return ''
@@ -117,6 +104,19 @@ defineExpose({
   getButtonText,
   onSubmit
 })
+
+if (!isCreate.value) {
+  const loaded = await notificationsStore.getById(props.notificationId)
+  if (loaded) {
+    notificationForm.value = {
+      model: loaded.model || '',
+      number: loaded.number || '',
+      terminationDate: formatDateForInput(loaded.terminationDate)
+    }
+  } else {
+    router.push('/notifications')
+  }
+}
 
 </script>
 

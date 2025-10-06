@@ -1,0 +1,213 @@
+<script setup>
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
+import { onMounted, ref } from 'vue'
+import router from '@/router'
+import { storeToRefs } from 'pinia'
+import { useNotificationsStore } from '@/stores/notifications.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { useConfirm } from 'vuetify-use-dialog'
+import ActionButton from '@/components/ActionButton.vue'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { mdiMagnify } from '@mdi/js'
+
+const notificationsStore = useNotificationsStore()
+const authStore = useAuthStore()
+const alertStore = useAlertStore()
+const confirm = useConfirm()
+
+const { notifications, loading } = storeToRefs(notificationsStore)
+const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
+
+function filterNotifications(value, query, item) {
+  if (query === null || item === null) {
+    return false
+  }
+
+  const notification = getRow(item)
+  if (!notification) {
+    return false
+  }
+
+  const q = query.toLocaleUpperCase()
+
+  return [notification.model, notification.number, formatTerminationDate(notification.terminationDate)]
+    .some((field) => (field || '').toLocaleUpperCase().includes(q))
+}
+
+const headers = [
+  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  { title: 'Модель', key: 'model', sortable: true },
+  { title: 'Номер', key: 'number', sortable: true },
+  { title: 'Дата окончания', key: 'terminationDate', sortable: true }
+]
+
+function formatTerminationDate(value) {
+  if (!value) {
+    return ''
+  }
+
+  if (value instanceof Date) {
+    return value.toLocaleDateString('ru-RU')
+  }
+
+  if (typeof value === 'string') {
+    const date = new Date(value)
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('ru-RU')
+    }
+    return value
+  }
+
+  if (typeof value === 'object' && value.year && value.month && value.day) {
+    const date = new Date(value.year, value.month - 1, value.day)
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('ru-RU')
+    }
+  }
+
+  return ''
+}
+
+function getRow(item) {
+  return item && typeof item === 'object' && 'raw' in item ? item.raw : item
+}
+
+function openEditDialog(notification) {
+  const row = getRow(notification)
+  router.push(`/notification/edit/${row.id}`)
+}
+
+function openCreateDialog() {
+  router.push('/notification/create')
+}
+
+async function deleteNotification(notification) {
+  if (runningAction.value) return
+  runningAction.value = true
+
+  try {
+    const row = getRow(notification)
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: `Удалить нотификацию "${row.model}"?`
+    })
+
+    if (confirmed) {
+      try {
+        await notificationsStore.remove(row.id)
+      } catch (error) {
+        alertStore.error(error.message || 'Ошибка при удалении нотификации')
+      }
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+onMounted(async () => {
+  await notificationsStore.getAll()
+})
+
+defineExpose({
+  openCreateDialog,
+  openEditDialog,
+  deleteNotification,
+  formatTerminationDate,
+  getRow
+})
+</script>
+
+<template>
+  <div class="settings table-2">
+    <h1 class="primary-heading">Нотификации</h1>
+    <hr class="hr" />
+
+    <div class="link-crt" v-if="authStore.isAdminOrSrLogist">
+      <router-link to="/notification/create" class="link">
+        <font-awesome-icon
+          size="1x"
+          icon="fa-solid fa-file-circle-plus"
+          class="link"
+        />&nbsp;&nbsp;&nbsp;Создать нотификацию
+      </router-link>
+    </div>
+
+    <div v-if="notifications?.length">
+      <v-text-field
+        v-model="authStore.notifications_search"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по информации о нотификациях"
+        variant="solo"
+        hide-details
+      />
+    </div>
+
+    <v-card>
+      <v-data-table
+        v-if="notifications?.length"
+        v-model:items-per-page="authStore.notifications_per_page"
+        items-per-page-text="Нотификаций на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="authStore.notifications_page"
+        :headers="headers"
+        :items="notifications"
+        :search="authStore.notifications_search"
+        v-model:sort-by="authStore.notifications_sort_by"
+        :custom-filter="filterNotifications"
+        :loading="loading"
+        item-value="id"
+        density="compact"
+        class="elevation-1 interlaced-table"
+      >
+        <template v-slot:[`item.terminationDate`]="{ item }">
+          {{ formatTerminationDate(getRow(item)?.terminationDate) }}
+        </template>
+
+        <template v-slot:[`item.actions`]="{ item }">
+          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
+            <ActionButton
+              :item="getRow(item)"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать нотификацию"
+              @click="openEditDialog"
+              :disabled="runningAction || loading"
+            />
+            <ActionButton
+              :item="getRow(item)"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить нотификацию"
+              @click="deleteNotification"
+              :disabled="runningAction || loading"
+            />
+          </div>
+        </template>
+      </v-data-table>
+
+      <div v-if="!notifications?.length" class="text-center m-5">Список нотификаций пуст</div>
+    </v-card>
+
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
+
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+  </div>
+</template>

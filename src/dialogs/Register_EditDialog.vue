@@ -17,6 +17,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
+import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -24,7 +25,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
-const { item, uploadFile } = storeToRefs(registersStore)
+const { item, uploadFile, items } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
 const { countries } = storeToRefs(countriesStore)
@@ -42,16 +43,10 @@ const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialo
 const errorDialogState = ref({
   show: false,
   title: '',
-  message: ''
+  message: '',
+  missingHeaders: [],
+  missingColumns: []
 })
-
-function showErrorDialog(title, message) {
-  errorDialogState.value = {
-    show: true,
-    title,
-    message
-  }
-}
 
 function hideErrorDialog() {
   errorDialogState.value.show = false
@@ -63,10 +58,29 @@ const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 const isSubmitting = ref(false)
+const transferRegisterId = ref('')
+
+const registerOptions = computed(() => {
+  if (!Array.isArray(items.value)) {
+    return []
+  }
+
+  return items.value
+    .filter((register) => register && typeof register === 'object')
+    .map((register) => ({
+      id: register.id,
+      name: generateRegisterName(register.dealNumber, register.fileName)
+    }))
+})
 
     if (!props.create) {
       await registersStore.getById(props.id)
     } else {
+      try {
+        await registersStore.getAll()
+      } catch (error) {
+        console.error('Failed to load registers for transfer selector:', error)
+      }
       // Set default values for new records
       if (!item.value.customsProcedureId) {
         item.value.customsProcedureId = 1
@@ -209,14 +223,11 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
-async function onSubmit(values, actions = {}) {
+async function onSubmit(values) {
   if (!isComponentMounted.value) return
   
   // Guard against multiple submissions
   if (isSubmitting.value) return
-  
-  // Handle both form submission and direct calls
-  const { setErrors } = actions || {}
   
   // Set submitting state
   isSubmitting.value = true
@@ -225,78 +236,86 @@ async function onSubmit(values, actions = {}) {
     if (props.create) {
       showActionDialog('upload-register')
       try {
-        const result = await registersStore.upload(uploadFile.value, item.value.companyId)
+        const sourceRegisterId = transferRegisterId.value === ''
+          ? null
+          : parseInt(transferRegisterId.value, 10)
+        const result = await registersStore.upload(
+          uploadFile.value,
+          item.value.companyId,
+          Number.isNaN(sourceRegisterId) ? null : sourceRegisterId
+        )
         if (!isComponentMounted.value) return
-        // If upload returns Reference object with id, call update
-        if (result && typeof result.id === 'number') {
+        if (result?.success) {
           try {
-            await registersStore.update(result.id, values)
-            if (!isComponentMounted.value) return
+            await registersStore.update(result.registerId, values)
           } catch (updateError) {
-            // Handle update failures after successful upload
             if (isComponentMounted.value) {
               hideActionDialog()
-              // Use setErrors if available (form submission), otherwise use store error
-              if (setErrors && typeof setErrors === 'function') {
-                setErrors({ apiError: updateError.message || String(updateError) })
-              } else {
-                // For ActionButton clicks, use store error
-                registersStore.error = updateError.message || String(updateError)
-              }
+              await showErrorAndAwaitClose('Ошибка при сохранении информации о реестре', updateError?.message )
             }
-            return // Exit early after handling update error
+          }
+        } else {
+          if (isComponentMounted.value) {
+            await showErrorAndAwaitClose(
+              'Ошибка загрузки файла реестра',  
+              result?.errMsg,
+              result?.missingHeaders || [],
+              result?.missingColumns || []
+            )
           }
         }
-        await router.push('/registers')
+        return 
       } catch (uploadError) {
         // Handle upload failures with modal message box
         if (isComponentMounted.value) {
-          hideActionDialog()
-          
-          // Show custom error dialog
-          const errorMessage = uploadError?.response?.data?.message || 
-                              uploadError?.message || 
-                              'Ошибка при загрузке файла реестра'
-          
-          showErrorDialog('Не удалось загрузить файл реестра', errorMessage)
-          
-          // Wait for user to close error dialog, then navigate
-          await new Promise(resolve => {
-            const unwatch = watch(() => errorDialogState.value.show, (newShow) => {
-              if (!newShow) {
-                unwatch()
-                resolve()
-              }
-            })
-          })
-          
-          // Close dialog and return to registers list
-          await router.push('/registers')
+          await showErrorAndAwaitClose('Ошибка загрузки файла реестра',  uploadError?.message )
         }
         return // Exit early, don't continue with normal error handling
-      } finally {
-        hideActionDialog()
       }
     } else {
       await registersStore.update(props.id, values)
-      if (!isComponentMounted.value) return
-      await router.push('/registers')
     }
-  } catch (error) {
+  } catch (updateError) {
     if (isComponentMounted.value) {
-      // Use setErrors if available (form submission), otherwise use store error
-      if (setErrors && typeof setErrors === 'function') {
-        setErrors({ apiError: error.message || String(error) })
-      } else {
-        // For ActionButton clicks, use store error
-        registersStore.error = error.message || String(error)
-      }
+       await showErrorAndAwaitClose('Ошибка при сохранении информации о реестре', updateError?.message )
     }
   } finally {
+    hideActionDialog()
     // Always reset submitting state
     isSubmitting.value = false
+    await router.push('/registers')
   }
 }
+
+
+// Helper: show the error dialog and wait until it's closed by the user
+async function showErrorAndAwaitClose(title, message, missingHeaders = [], missingColumns = []) {
+  // Ensure any action dialog is hidden first
+  try {
+    hideActionDialog()
+  } catch {
+    // ignore if not available or already hidden
+  }
+
+  errorDialogState.value = {
+    show: true,
+    title,
+    message: message || 'Неизвестная ошибка',
+    missingHeaders: missingHeaders,
+    missingColumns: missingColumns
+  }
+
+  // Wait until dialog is closed (watch for show -> false)
+  await new Promise((resolve) => {
+    const unwatch = watch(() => errorDialogState.value.show, (newShow) => {
+      if (!newShow) {
+        unwatch()
+        resolve()
+      }
+    })
+  })
+}
+
 
 function getCustomerName(customerId) {
   if (!customerId || !companies.value) return 'Неизвестно'
@@ -475,6 +494,26 @@ function getCustomerName(customerId) {
             <div class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
           </div>
         </div>
+
+        <div class="form-row" v-if="props.create">
+          <div class="form-group">
+            <label for="transferRegisterId" class="label">Перенести статусы из реестра:</label>
+            <select
+              id="transferRegisterId"
+              class="form-control input"
+              v-model="transferRegisterId"
+            >
+              <option value="">Не выбрано</option>
+              <option
+                v-for="register in registerOptions"
+                :key="register.id"
+                :value="register.id"
+              >
+                {{ register.name }}
+              </option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- actions moved to header -->
@@ -502,6 +541,8 @@ function getCustomerName(customerId) {
       :show="errorDialogState.show"
       :title="errorDialogState.title"
       :message="errorDialogState.message"
+      :missing-headers="errorDialogState.missingHeaders"
+      :missing-columns="errorDialogState.missingColumns"
       @close="hideErrorDialog"
     />
   </div>

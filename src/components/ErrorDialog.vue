@@ -1,16 +1,22 @@
 <script setup>
-/* eslint-disable vue/no-v-text-v-html-on-component */
+ 
 import { computed, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
   title: { type: String, default: 'Ошибка' },
-  message: { type: String, default: '' }
+  message: { type: String, default: '' },
+  missingHeaders: { type: Array, default: () => [] },
+  missingColumns: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['close'])
 
 const dialogVisible = computed(() => props.show)
+
+const hasMissingItems = computed(
+  () => props.missingHeaders.length > 0 || props.missingColumns.length > 0
+)
 
 function closeDialog() {
   emit('close')
@@ -44,7 +50,34 @@ onUnmounted(() => {
       <v-card-title class="primary-heading">
         {{ title }}
       </v-card-title>
-      <v-card-text class="text-left" style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.4;" v-html="message">
+      <v-card-text class="text-left">
+        <template v-if="hasMissingItems">
+          <div class="error-dialog__lists">
+            <div v-if="missingHeaders.length" class="error-dialog__list">
+              <p class="error-dialog__list-title">
+                Неизвестные столбцы реестра:
+              </p>
+              <ul>
+                <li v-for="header in missingHeaders" :key="`header-${header}`">
+                  {{ header }}
+                </li>
+              </ul>
+            </div>
+            <div v-if="missingColumns.length" class="error-dialog__list">
+              <p class="error-dialog__list-title">
+                Не найдены столбцы реестра:
+              </p>
+              <ul>
+                <li v-for="column in missingColumns" :key="`column-${column}`">
+                  {{ column }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          {{ message }}
+        </template>
       </v-card-text>
       <v-card-actions class="justify-center">
         <v-btn color="primary" @click="closeDialog">
@@ -54,3 +87,30 @@ onUnmounted(() => {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.error-dialog__lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.error-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-dialog__list-title {
+  font-weight: 600;
+}
+
+.error-dialog__list ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.error-dialog__list li + li {
+  margin-top: 4px;
+}
+</style>

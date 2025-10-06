@@ -61,12 +61,14 @@ const isSubmitting = ref(false)
 const transferRegisterId = ref('')
 
 const registerOptions = computed(() => {
-  if (!Array.isArray(items.value)) {
-    return []
-  }
+  if (!Array.isArray(items.value)) return []
+
+  // Only include registers that belong to the same company as the one we are editing/creating for
+  const companyId = item.value?.companyId ?? null
+  if (!companyId) return []
 
   return items.value
-    .filter((register) => register && typeof register === 'object')
+    .filter((register) => register && typeof register === 'object' && (register.companyId == companyId))
     .map((register) => ({
       id: register.id,
       name: generateRegisterName(register.dealNumber, register.fileName)

@@ -247,8 +247,8 @@ describe('Register_EditDialog', () => {
 
   it('renders transfer register selector with generated names', async () => {
     registerItems.value = [
-      { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx' },
-      { id: 11, dealNumber: '', fileName: 'reg-empty.xlsx' }
+      { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx', companyId: 2 },
+      { id: 11, dealNumber: '', fileName: 'reg-empty.xlsx', companyId: 2 }
     ]
 
     const Parent = {
@@ -272,7 +272,7 @@ describe('Register_EditDialog', () => {
 
   it('passes selected register id to upload when provided', async () => {
     registerItems.value = [
-      { id: 20, dealNumber: 'D-200', fileName: 'reg-200.xlsx' }
+      { id: 20, dealNumber: 'D-200', fileName: 'reg-200.xlsx', companyId: 3 }
     ]
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { fileName: 'test.xlsx', companyId: 3 }

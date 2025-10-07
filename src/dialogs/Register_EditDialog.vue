@@ -13,11 +13,13 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useAirportsStore } from '@/stores/airports.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
+import AirportSelectField from '@/components/AirportSelectField.vue'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -36,6 +38,9 @@ const customsProceduresStore = useCustomsProceduresStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
+
+const airportsStore = useAirportsStore()
+const { airports } = storeToRefs(airportsStore)
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
@@ -75,6 +80,69 @@ const registerOptions = computed(() => {
     }))
 })
 
+const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
+
+const AVIA_TRANSPORT_CODE = 0
+
+function getTransportationTypeById(typeId) {
+  const numericId = typeof typeId === 'string' ? parseInt(typeId, 10) : typeId
+  if (numericId === null || numericId === undefined || Number.isNaN(numericId)) {
+    return null
+  }
+  return transportationTypesStore.types?.find((type) => type.id === numericId) || null
+}
+
+const isAviaTransportation = computed(() => {
+  if (!item.value) return false
+  const type = getTransportationTypeById(item.value.transportationTypeId)
+  return type?.code === AVIA_TRANSPORT_CODE
+})
+
+function normalizeAirportField(fieldName) {
+  watch(
+    () => item.value?.[fieldName],
+    (newVal) => {
+      if (!item.value) return
+      if (typeof newVal === 'string') {
+        const parsed = parseInt(newVal, 10)
+        item.value[fieldName] = Number.isNaN(parsed) ? 0 : parsed
+        return
+      }
+      if (newVal === null || newVal === undefined) {
+        item.value[fieldName] = 0
+      }
+    },
+    { immediate: true }
+  )
+}
+
+normalizeAirportField('departureAirportId')
+normalizeAirportField('arrivalAirportId')
+
+watch(
+  () => item.value?.transportationTypeId,
+  (newVal) => {
+    if (!item.value) return
+    if (typeof newVal === 'string') {
+      const parsed = parseInt(newVal, 10)
+      item.value.transportationTypeId = Number.isNaN(parsed) ? null : parsed
+      return
+    }
+    if (newVal === null || newVal === undefined) {
+      item.value.departureAirportId = 0
+      item.value.arrivalAirportId = 0
+      return
+    }
+    const type = getTransportationTypeById(newVal)
+    if (!type) return
+    if (type.code !== AVIA_TRANSPORT_CODE) {
+      item.value.departureAirportId = 0
+      item.value.arrivalAirportId = 0
+    }
+  },
+  { immediate: true }
+)
+
     if (!props.create) {
       await registersStore.getById(props.id)
     } else {
@@ -90,6 +158,12 @@ const registerOptions = computed(() => {
       if (!item.value.transportationTypeId) {
         item.value.transportationTypeId = 1
       }
+      if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
+        item.value.departureAirportId = 0
+      }
+      if (item.value.arrivalAirportId === undefined || item.value.arrivalAirportId === null) {
+        item.value.arrivalAirportId = 0
+      }
     }
 
 
@@ -102,11 +176,14 @@ onMounted(async () => {
     
     await transportationTypesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await companiesStore.getAll()
+    if (!isComponentMounted.value) return
+
+    await airportsStore.getAll()
     if (!isComponentMounted.value) return
 
     if (isComponentMounted.value) {
@@ -128,6 +205,20 @@ onUnmounted(() => {
   isComponentMounted.value = false
 })
 
+function transformToNumberOrZero(value, originalValue) {
+  if (originalValue === '' || originalValue === null || originalValue === undefined) {
+    return 0
+  }
+  if (typeof originalValue === 'string' && originalValue.trim() === '') {
+    return 0
+  }
+  if (Number.isNaN(value)) {
+    const parsed = parseInt(originalValue, 10)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+  return value
+}
+
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   invoiceDate: Yup.date().nullable(),
@@ -135,7 +226,9 @@ const schema = Yup.object().shape({
   transportationTypeId: Yup.number().nullable(),
   customsProcedureId: Yup.number().nullable(),
   theOtherCompanyId: Yup.number().nullable(),
-  theOtherCountryCode: Yup.number().nullable()
+  theOtherCountryCode: Yup.number().nullable(),
+  departureAirportId: Yup.number().transform(transformToNumberOrZero).min(0).nullable(),
+  arrivalAirportId: Yup.number().transform(transformToNumberOrZero).min(0).nullable()
 })
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
@@ -225,15 +318,65 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
+function parseNullableNumber(value) {
+  if (value === '' || value === null || value === undefined) {
+    return null
+  }
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? null : value
+  }
+  const parsed = parseInt(value, 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function parseNumberOrZero(value) {
+  if (value === '' || value === null || value === undefined) {
+    return 0
+  }
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? 0 : value
+  }
+  const parsed = parseInt(value, 10)
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+function prepareRegisterPayload(formValues) {
+  const payload = { ...formValues }
+
+  const selectedTransportationTypeId = parseNullableNumber(
+    formValues.transportationTypeId ?? item.value?.transportationTypeId
+  )
+  payload.transportationTypeId = selectedTransportationTypeId
+
+  payload.theOtherCompanyId = parseNullableNumber(formValues.theOtherCompanyId)
+  payload.theOtherCountryCode = parseNullableNumber(formValues.theOtherCountryCode)
+  payload.customsProcedureId = parseNullableNumber(formValues.customsProcedureId)
+
+  const isAviaSelected =
+    selectedTransportationTypeId !== null &&
+    getTransportationTypeById(selectedTransportationTypeId)?.code === AVIA_TRANSPORT_CODE
+
+  payload.departureAirportId = isAviaSelected
+    ? parseNumberOrZero(formValues.departureAirportId ?? item.value?.departureAirportId)
+    : 0
+  payload.arrivalAirportId = isAviaSelected
+    ? parseNumberOrZero(formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
+    : 0
+
+  return payload
+}
+
 async function onSubmit(values) {
   if (!isComponentMounted.value) return
-  
+
   // Guard against multiple submissions
   if (isSubmitting.value) return
-  
+
   // Set submitting state
   isSubmitting.value = true
-  
+
+  const payload = prepareRegisterPayload(values)
+
   try {
     if (props.create) {
       showActionDialog('upload-register')
@@ -249,7 +392,7 @@ async function onSubmit(values) {
         if (!isComponentMounted.value) return
         if (result?.success) {
           try {
-            await registersStore.update(result.registerId, values)
+            await registersStore.update(result.registerId, payload)
           } catch (updateError) {
             if (isComponentMounted.value) {
               hideActionDialog()
@@ -275,7 +418,7 @@ async function onSubmit(values) {
         return // Exit early, don't continue with normal error handling
       }
     } else {
-      await registersStore.update(props.id, values)
+      await registersStore.update(props.id, payload)
     }
   } catch (updateError) {
     if (isComponentMounted.value) {
@@ -450,6 +593,21 @@ function getCustomerName(customerId) {
             </template>
             <div v-else class="readonly-field">Россия</div>
           </div>
+        </div>
+
+        <div class="form-row">
+          <AirportSelectField
+            label="Аэропорт отправления:"
+            name="departureAirportId"
+            :airports="airportOptions"
+            :disabled="!isAviaTransportation"
+          />
+          <AirportSelectField
+            label="Аэропорт назначения:"
+            name="arrivalAirportId"
+            :airports="airportOptions"
+            :disabled="!isAviaTransportation"
+          />
         </div>
 
         <div class="form-row">

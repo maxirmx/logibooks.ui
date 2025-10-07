@@ -13,11 +13,13 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useAirportsStore } from '@/stores/airports.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
+import AirportSelectField from '@/components/AirportSelectField.vue'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -36,6 +38,9 @@ const customsProceduresStore = useCustomsProceduresStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
+
+const airportsStore = useAirportsStore()
+const { airports } = storeToRefs(airportsStore)
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
@@ -75,6 +80,102 @@ const registerOptions = computed(() => {
     }))
 })
 
+const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
+
+const AVIA_TRANSPORT_CODE = 0
+
+function getTransportationTypeById(typeId) {
+  const numericId = typeof typeId === 'string' ? parseInt(typeId, 10) : typeId
+  if (numericId === null || numericId === undefined || Number.isNaN(numericId)) {
+    return null
+  }
+  return transportationTypesStore.types?.find((type) => type.id === numericId) || null
+}
+
+// Track current form transportation type for reactive UI updates
+const currentTransportationTypeId = ref(null)
+
+const isAviaTransportation = computed(() => {
+  // Use current form value if available, otherwise fall back to item value
+  const typeId = currentTransportationTypeId.value ?? item.value?.transportationTypeId
+  if (!typeId) return false
+  const type = getTransportationTypeById(typeId)
+  return type?.code === AVIA_TRANSPORT_CODE
+})
+
+// Watch for form field changes to update UI reactively
+function handleTransportationTypeChange(e, setFieldValue) {
+  const newValue = e.target.value
+  currentTransportationTypeId.value = newValue ? parseInt(newValue, 10) : null
+  
+  // Handle airport field updates based on transportation type
+  const type = getTransportationTypeById(currentTransportationTypeId.value)
+  
+  if (!type || type.code !== AVIA_TRANSPORT_CODE) {
+    // Clear form fields only (not item.value) when switching to non-aviation transport
+    if (setFieldValue && typeof setFieldValue === 'function') {
+      setFieldValue('departureAirportId', 0)
+      setFieldValue('arrivalAirportId', 0)
+    }
+  } else {
+    // If switching back to aviation, restore airport codes from item.value if they exist
+    if (item.value) {
+      const departureId = item.value.departureAirportId || 0
+      const arrivalId = item.value.arrivalAirportId || 0
+      // Update form fields if setFieldValue is available (real form, not test stub)
+      if (setFieldValue && typeof setFieldValue === 'function') {
+        setFieldValue('departureAirportId', departureId)
+        setFieldValue('arrivalAirportId', arrivalId)
+      }
+    }
+  }
+}
+
+function normalizeAirportField(fieldName) {
+  watch(
+    () => item.value?.[fieldName],
+    (newVal) => {
+      if (!item.value) return
+      if (typeof newVal === 'string') {
+        const parsed = parseInt(newVal, 10)
+        item.value[fieldName] = Number.isNaN(parsed) ? 0 : parsed
+        return
+      }
+      if (newVal === null || newVal === undefined) {
+        item.value[fieldName] = 0
+      }
+    },
+    { immediate: true }
+  )
+}
+
+normalizeAirportField('departureAirportId')
+normalizeAirportField('arrivalAirportId')
+
+watch(
+  () => item.value?.transportationTypeId,
+  (newVal) => {
+    if (!item.value) return
+    if (typeof newVal === 'string') {
+      const parsed = parseInt(newVal, 10)
+      item.value.transportationTypeId = Number.isNaN(parsed) ? null : parsed
+      return
+    }
+    if (newVal === null || newVal === undefined) {
+      item.value.departureAirportId = 0
+      item.value.arrivalAirportId = 0
+      return
+    }
+    const type = getTransportationTypeById(newVal)
+    if (!type) return
+    if (type.code !== AVIA_TRANSPORT_CODE) {
+      item.value.departureAirportId = 0
+      item.value.arrivalAirportId = 0
+    }
+  },
+  { immediate: true }
+)
+
     if (!props.create) {
       await registersStore.getById(props.id)
     } else {
@@ -90,6 +191,12 @@ const registerOptions = computed(() => {
       if (!item.value.transportationTypeId) {
         item.value.transportationTypeId = 1
       }
+      if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
+        item.value.departureAirportId = 0
+      }
+      if (item.value.arrivalAirportId === undefined || item.value.arrivalAirportId === null) {
+        item.value.arrivalAirportId = 0
+      }
     }
 
 
@@ -102,11 +209,14 @@ onMounted(async () => {
     
     await transportationTypesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await companiesStore.getAll()
+    if (!isComponentMounted.value) return
+
+    await airportsStore.getAll()
     if (!isComponentMounted.value) return
 
     if (isComponentMounted.value) {
@@ -135,7 +245,9 @@ const schema = Yup.object().shape({
   transportationTypeId: Yup.number().nullable(),
   customsProcedureId: Yup.number().nullable(),
   theOtherCompanyId: Yup.number().nullable(),
-  theOtherCountryCode: Yup.number().nullable()
+  theOtherCountryCode: Yup.number().nullable(),
+  departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable()
 })
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
@@ -225,15 +337,56 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
+function parseNumberOrZero(_, value) {
+  return parseNumber(value, 0)
+}
+
+// Generic parsing helper used by the two wrappers above.
+function parseNumber(value, defaultValue) {
+  if (value === '' || value === null || value === undefined) {
+    return defaultValue
+  }
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? defaultValue : value
+  }
+  const parsed = parseInt(value, 10)
+  return Number.isNaN(parsed) ? defaultValue : parsed
+}
+
+function prepareRegisterPayload(formValues) {
+  const payload = { ...formValues }
+
+  const selectedTransportationTypeId = parseNumber(formValues.transportationTypeId ?? item.value?.transportationTypeId, null)
+  payload.transportationTypeId = selectedTransportationTypeId
+  payload.theOtherCompanyId = parseNumber(formValues.theOtherCompanyId, null)
+  payload.theOtherCountryCode = parseNumber(formValues.theOtherCountryCode, null)
+  payload.customsProcedureId = parseNumber(formValues.customsProcedureId, null)
+
+  const isAviaSelected =
+    selectedTransportationTypeId !== null &&
+    getTransportationTypeById(selectedTransportationTypeId)?.code === AVIA_TRANSPORT_CODE
+
+  payload.departureAirportId = isAviaSelected
+    ? parseNumberOrZero(null, formValues.departureAirportId ?? item.value?.departureAirportId)
+    : 0
+  payload.arrivalAirportId = isAviaSelected
+    ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
+    : 0
+
+  return payload
+}
+
 async function onSubmit(values) {
   if (!isComponentMounted.value) return
-  
+
   // Guard against multiple submissions
   if (isSubmitting.value) return
-  
+
   // Set submitting state
   isSubmitting.value = true
-  
+
+  const payload = prepareRegisterPayload(values)
+
   try {
     if (props.create) {
       showActionDialog('upload-register')
@@ -249,7 +402,7 @@ async function onSubmit(values) {
         if (!isComponentMounted.value) return
         if (result?.success) {
           try {
-            await registersStore.update(result.registerId, values)
+            await registersStore.update(result.registerId, payload)
           } catch (updateError) {
             if (isComponentMounted.value) {
               hideActionDialog()
@@ -275,7 +428,7 @@ async function onSubmit(values) {
         return // Exit early, don't continue with normal error handling
       }
     } else {
-      await registersStore.update(props.id, values)
+      await registersStore.update(props.id, payload)
     }
   } catch (updateError) {
     if (isComponentMounted.value) {
@@ -335,7 +488,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, values }"
+      v-slot="{ errors, values, setFieldValue }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">
@@ -453,6 +606,21 @@ function getCustomerName(customerId) {
         </div>
 
         <div class="form-row">
+          <AirportSelectField
+            label="Аэропорт отправления:"
+            name="departureAirportId"
+            :airports="airportOptions"
+            :disabled="!isAviaTransportation"
+          />
+          <AirportSelectField
+            label="Аэропорт назначения:"
+            name="arrivalAirportId"
+            :airports="airportOptions"
+            :disabled="!isAviaTransportation"
+          />
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label for="transportationTypeId" class="label">Транспорт:</label>
             <Field
@@ -461,6 +629,7 @@ function getCustomerName(customerId) {
               id="transportationTypeId"
               class="form-control input"
               :disabled="!typesLoaded"
+              @change="(e) => handleTransportationTypeChange(e, setFieldValue)"
             >
               <option value="">Выберите тип</option>
               <option v-for="t in transportationTypesStore.types" :key="t.id" :value="t.id">

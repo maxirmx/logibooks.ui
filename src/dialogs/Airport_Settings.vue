@@ -114,7 +114,7 @@ function onSubmit(values, { setErrors }) {
           type="text"
           class="form-control input iata-code-field"
           :class="{ 'is-invalid': errors.codeIata }"
-          placeholder="Код ИАТА (3 буквы)"
+          placeholder="Код"
           maxlength="3"
         />
       </div>
@@ -145,9 +145,9 @@ function onSubmit(values, { setErrors }) {
 <style scoped>
 .iata-code-field {
   text-transform: uppercase !important;
-  width: 60px !important;
-  max-width: 60px !important;
-  min-width: 60px !important;
+  width: 80px !important;
+  max-width: 80px !important;
+  min-width: 80px !important;
   flex: none !important;
   display: inline-block !important;
 }

@@ -115,7 +115,13 @@ vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }
 // Simple stubs for vee-validate components
 const FormStub = {
   name: 'Form',
-  template: '<form><slot :errors="{}" :isSubmitting="false" :values="{}" /></form>'
+  template: '<form><slot :errors="{}" :isSubmitting="false" :values="{}" :setFieldValue="mockSetFieldValue" /></form>',
+  setup() {
+    const mockSetFieldValue = () => {
+      // Mock implementation for tests
+    }
+    return { mockSetFieldValue }
+  }
 }
 const FieldStub = {
   name: 'Field',
@@ -164,7 +170,8 @@ describe('Register_EditDialog', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    mockItem.value = { ...baseRegisterItem }
+    // Create a fresh copy of baseRegisterItem to avoid reference issues
+    mockItem.value = JSON.parse(JSON.stringify(baseRegisterItem))
     registerItems.value = []
     airportsStore.airports.value = [...baseAirports]
   })
@@ -244,6 +251,66 @@ describe('Register_EditDialog', () => {
 
     recipientGroup = getGroupByLabel(wrapper, 'Получатель')
     expect(recipientGroup.find('select#theOtherCompanyId').exists()).toBe(true)
+  })
+
+  it('dynamically enables/disables airport selectors when transportation type changes', async () => {
+    // Start with non-aviation transport (disabled airports)
+    mockItem.value = {
+      ...baseRegisterItem,
+      transportationTypeId: 1, // Non-aviation transport
+      departureAirportId: 0,
+      arrivalAirportId: 0
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    // Initially, airport selectors should be disabled for non-aviation transport
+    let departureSelect = wrapper.find('select#departureAirportId')
+    let arrivalSelect = wrapper.find('select#arrivalAirportId')
+    expect(departureSelect.element.disabled).toBe(true)
+    expect(arrivalSelect.element.disabled).toBe(true)
+
+    // Change to aviation transport type (id: 2, code: 0)
+    const transportSelect = wrapper.find('#transportationTypeId')
+    await transportSelect.setValue('2')
+    await transportSelect.trigger('change')
+    await nextTick()
+
+    // Airport selectors should now be enabled
+    departureSelect = wrapper.find('select#departureAirportId')
+    arrivalSelect = wrapper.find('select#arrivalAirportId')
+    expect(departureSelect.element.disabled).toBe(false)
+    expect(arrivalSelect.element.disabled).toBe(false)
+
+    // Set some airport values while aviation transport is selected
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    dialog.vm.item.departureAirportId = 5
+    dialog.vm.item.arrivalAirportId = 10
+    await nextTick()
+
+    // Change back to non-aviation transport
+    await transportSelect.setValue('1')
+    await transportSelect.trigger('change')
+    await nextTick()
+
+    // Airport selectors should be disabled again
+    departureSelect = wrapper.find('select#departureAirportId')
+    arrivalSelect = wrapper.find('select#arrivalAirportId')
+    expect(departureSelect.element.disabled).toBe(true)
+    expect(arrivalSelect.element.disabled).toBe(true)
+
+    // Airport values should be preserved in item.value (not cleared)
+    expect(dialog.vm.item.departureAirportId).toBe(5)
+    expect(dialog.vm.item.arrivalAirportId).toBe(10)
   })
 
   it('submits airport ids when aviation transport is chosen', async () => {

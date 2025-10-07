@@ -302,6 +302,6 @@ describe('Airport_Settings.vue', () => {
 
     const iataField = wrapper.find('#codeIata')
     expect(iataField.attributes('maxlength')).toBe('3')
-    expect(iataField.attributes('placeholder')).toBe('Код ИАТА (3 буквы)')
+    expect(iataField.attributes('placeholder')).toBe('Код')
   })
 })

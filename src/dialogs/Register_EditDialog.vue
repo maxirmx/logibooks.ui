@@ -92,11 +92,44 @@ function getTransportationTypeById(typeId) {
   return transportationTypesStore.types?.find((type) => type.id === numericId) || null
 }
 
+// Track current form transportation type for reactive UI updates
+const currentTransportationTypeId = ref(null)
+
 const isAviaTransportation = computed(() => {
-  if (!item.value) return false
-  const type = getTransportationTypeById(item.value.transportationTypeId)
+  // Use current form value if available, otherwise fall back to item value
+  const typeId = currentTransportationTypeId.value ?? item.value?.transportationTypeId
+  if (!typeId) return false
+  const type = getTransportationTypeById(typeId)
   return type?.code === AVIA_TRANSPORT_CODE
 })
+
+// Watch for form field changes to update UI reactively
+function handleTransportationTypeChange(e, setFieldValue) {
+  const newValue = e.target.value
+  currentTransportationTypeId.value = newValue ? parseInt(newValue, 10) : null
+  
+  // Handle airport field updates based on transportation type
+  const type = getTransportationTypeById(currentTransportationTypeId.value)
+  
+  if (!type || type.code !== AVIA_TRANSPORT_CODE) {
+    // Clear form fields only (not item.value) when switching to non-aviation transport
+    if (setFieldValue && typeof setFieldValue === 'function') {
+      setFieldValue('departureAirportId', 0)
+      setFieldValue('arrivalAirportId', 0)
+    }
+  } else {
+    // If switching back to aviation, restore airport codes from item.value if they exist
+    if (item.value) {
+      const departureId = item.value.departureAirportId || 0
+      const arrivalId = item.value.arrivalAirportId || 0
+      // Update form fields if setFieldValue is available (real form, not test stub)
+      if (setFieldValue && typeof setFieldValue === 'function') {
+        setFieldValue('departureAirportId', departureId)
+        setFieldValue('arrivalAirportId', arrivalId)
+      }
+    }
+  }
+}
 
 function normalizeAirportField(fieldName) {
   watch(
@@ -455,7 +488,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, values }"
+      v-slot="{ errors, values, setFieldValue }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">
@@ -596,6 +629,7 @@ function getCustomerName(customerId) {
               id="transportationTypeId"
               class="form-control input"
               :disabled="!typesLoaded"
+              @change="(e) => handleTransportationTypeChange(e, setFieldValue)"
             >
               <option value="">Выберите тип</option>
               <option v-for="t in transportationTypesStore.types" :key="t.id" :value="t.id">

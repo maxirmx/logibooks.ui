@@ -205,20 +205,6 @@ onUnmounted(() => {
   isComponentMounted.value = false
 })
 
-function transformToNumberOrZero(value, originalValue) {
-  if (originalValue === '' || originalValue === null || originalValue === undefined) {
-    return 0
-  }
-  if (typeof originalValue === 'string' && originalValue.trim() === '') {
-    return 0
-  }
-  if (Number.isNaN(value)) {
-    const parsed = parseInt(originalValue, 10)
-    return Number.isNaN(parsed) ? 0 : parsed
-  }
-  return value
-}
-
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   invoiceDate: Yup.date().nullable(),
@@ -227,8 +213,8 @@ const schema = Yup.object().shape({
   customsProcedureId: Yup.number().nullable(),
   theOtherCompanyId: Yup.number().nullable(),
   theOtherCountryCode: Yup.number().nullable(),
-  departureAirportId: Yup.number().transform(transformToNumberOrZero).min(0).nullable(),
-  arrivalAirportId: Yup.number().transform(transformToNumberOrZero).min(0).nullable()
+  departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable()
 })
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
@@ -318,49 +304,40 @@ function getButton() {
   return props.create ? 'Загрузить' : 'Сохранить'
 }
 
-function parseNullableNumber(value) {
-  if (value === '' || value === null || value === undefined) {
-    return null
-  }
-  if (typeof value === 'number') {
-    return Number.isNaN(value) ? null : value
-  }
-  const parsed = parseInt(value, 10)
-  return Number.isNaN(parsed) ? null : parsed
+function parseNumberOrZero(_, value) {
+  return parseNumber(value, 0)
 }
 
-function parseNumberOrZero(value) {
+// Generic parsing helper used by the two wrappers above.
+function parseNumber(value, defaultValue) {
   if (value === '' || value === null || value === undefined) {
-    return 0
+    return defaultValue
   }
   if (typeof value === 'number') {
-    return Number.isNaN(value) ? 0 : value
+    return Number.isNaN(value) ? defaultValue : value
   }
   const parsed = parseInt(value, 10)
-  return Number.isNaN(parsed) ? 0 : parsed
+  return Number.isNaN(parsed) ? defaultValue : parsed
 }
 
 function prepareRegisterPayload(formValues) {
   const payload = { ...formValues }
 
-  const selectedTransportationTypeId = parseNullableNumber(
-    formValues.transportationTypeId ?? item.value?.transportationTypeId
-  )
+  const selectedTransportationTypeId = parseNumber(formValues.transportationTypeId ?? item.value?.transportationTypeId, null)
   payload.transportationTypeId = selectedTransportationTypeId
-
-  payload.theOtherCompanyId = parseNullableNumber(formValues.theOtherCompanyId)
-  payload.theOtherCountryCode = parseNullableNumber(formValues.theOtherCountryCode)
-  payload.customsProcedureId = parseNullableNumber(formValues.customsProcedureId)
+  payload.theOtherCompanyId = parseNumber(formValues.theOtherCompanyId, null)
+  payload.theOtherCountryCode = parseNumber(formValues.theOtherCountryCode, null)
+  payload.customsProcedureId = parseNumber(formValues.customsProcedureId, null)
 
   const isAviaSelected =
     selectedTransportationTypeId !== null &&
     getTransportationTypeById(selectedTransportationTypeId)?.code === AVIA_TRANSPORT_CODE
 
   payload.departureAirportId = isAviaSelected
-    ? parseNumberOrZero(formValues.departureAirportId ?? item.value?.departureAirportId)
+    ? parseNumberOrZero(null, formValues.departureAirportId ?? item.value?.departureAirportId)
     : 0
   payload.arrivalAirportId = isAviaSelected
-    ? parseNumberOrZero(formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
+    ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
 
   return payload

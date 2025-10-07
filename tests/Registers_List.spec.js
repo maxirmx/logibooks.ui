@@ -32,6 +32,7 @@ const mockOrderStatuses = ref([])
 const mockCountries = ref([])
 const mockTransportationTypes = ref([])
 const mockCustomsProcedures = ref([])
+const mockAirports = ref([])
 const getAll = vi.fn()
 const uploadFn = vi.fn()
 const setOrderStatusesFn = vi.fn()
@@ -78,6 +79,9 @@ vi.mock('pinia', async () => {
       } else if (store.procedures && store.getName) {
         // customs procedures store
         return { procedures: mockCustomsProcedures }
+      } else if (store.airports !== undefined && store.ensureLoaded) {
+        // airports store
+        return { airports: mockAirports }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -146,11 +150,13 @@ vi.mock('@/stores/countries.store.js', () => ({
   })
 }))
 
+const transportationEnsureLoadedFn = vi.fn()
+
 vi.mock('@/stores/transportation.types.store.js', () => ({
   useTransportationTypesStore: () => ({
     types: mockTransportationTypes,
     getAll: getTransportationTypesAll,
-    ensureLoaded: vi.fn(),
+    ensureLoaded: transportationEnsureLoadedFn,
     getName: vi.fn(id => `Type ${id}`),
     getDocument: vi.fn(id => `Doc ${id}`)
   })
@@ -162,6 +168,15 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
     getAll: getCustomsProceduresAll,
     ensureLoaded: vi.fn(),
     getName: vi.fn(id => `Proc ${id}`)
+  })
+}))
+
+const airportsEnsureLoadedFn = vi.fn()
+
+vi.mock('@/stores/airports.store.js', () => ({
+  useAirportsStore: () => ({
+    airports: mockAirports,
+    ensureLoaded: airportsEnsureLoadedFn
   })
 }))
 
@@ -199,6 +214,11 @@ describe('Registers_List.vue', () => {
     mockItems.value = []
     mockCompanies.value = []
     mockOrderStatuses.value = []
+    mockCountries.value = []
+    mockAirports.value = []
+    mockTransportationTypes.value = []
+    airportsEnsureLoadedFn.mockClear()
+    transportationEnsureLoadedFn.mockClear()
   })
 
   it('calls getAll on mount for both registers and companies', async () => {
@@ -211,10 +231,10 @@ describe('Registers_List.vue', () => {
     // Wait for onMounted to complete
     await vi.waitFor(() => {
       expect(getCompaniesAll).toHaveBeenCalled()
-      // expect(getOrderStatusesAll).toHaveBeenCalled()
     })
     expect(getAll).toHaveBeenCalled()
     expect(countriesEnsureLoadedFn).toHaveBeenCalled()
+    expect(airportsEnsureLoadedFn).toHaveBeenCalled()
   })
 
   describe('getCustomerName function', () => {
@@ -269,6 +289,65 @@ describe('Registers_List.vue', () => {
       mockCompanies.value = []
       const customerName = wrapper.vm.getCustomerName(1)
       expect(customerName).toBe('Неизвестно')
+    })
+  })
+
+  describe('getCountryDisplayName', () => {
+    it('appends airport code for aviation transportation', () => {
+      mockCountries.value = [
+        { isoNumeric: 643, nameRuShort: 'Россия' },
+        { isoNumeric: 840, nameRuShort: 'США' }
+      ]
+      mockTransportationTypes.value = [
+        { id: 5, code: 0 }
+      ]
+      mockAirports.value = [
+        { id: 10, codeIata: 'SVO' },
+        { id: 20, codeIata: 'JFK' }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const item = {
+        transportationTypeId: 5,
+        origCountryCode: '643',
+        destCountryCode: '840',
+        departureAirportId: 10,
+        arrivalAirportId: 20
+      }
+
+      expect(wrapper.vm.getCountryDisplayName(item, item.origCountryCode, item.departureAirportId)).toBe('Россия (SVO)')
+      expect(wrapper.vm.getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId)).toBe('США (JFK)')
+    })
+
+    it('returns country name without code when not aviation or missing airport', () => {
+      mockCountries.value = [
+        { isoNumeric: 36, nameRuShort: 'Австралия' }
+      ]
+      mockTransportationTypes.value = [
+        { id: 8, code: 1 }
+      ]
+      mockAirports.value = [
+        { id: 30, codeIata: 'SYD' }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const item = {
+        transportationTypeId: 8,
+        origCountryCode: '036',
+        departureAirportId: 30
+      }
+
+      expect(wrapper.vm.getCountryDisplayName(item, item.origCountryCode, item.departureAirportId)).toBe('Австралия')
     })
   })
 

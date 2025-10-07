@@ -153,7 +153,7 @@ const AVIA_TRANSPORT_CODE = 0
 
 function isAviaTransportation(item) {
   const typeId = Number(item?.transportationTypeId)
-  if (!typeId) return false
+  if (typeId == null || isNaN(typeId)) return false
   const type = transportationTypesById.value.get(typeId)
   return type?.code === AVIA_TRANSPORT_CODE
 }

@@ -21,6 +21,7 @@ import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.j
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { useAirportsStore } from '@/stores/airports.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -50,6 +51,9 @@ const { countries } = storeToRefs(countriesStore)
 
 const transportationTypesStore = useTransportationTypesStore()
 const { types: transportationTypes } = storeToRefs(transportationTypesStore)
+
+const airportsStore = useAirportsStore()
+const { airports } = storeToRefs(airportsStore)
 
 const customsProceduresStore = useCustomsProceduresStore()
 
@@ -135,6 +139,46 @@ function getParcelsByCheckStatusTooltip(item) {
     .join('\n')
 }
 
+const transportationTypesById = computed(() => {
+  if (!Array.isArray(transportationTypes.value)) return new Map()
+  return new Map(transportationTypes.value.map(type => [type.id, type]))
+})
+
+const airportsById = computed(() => {
+  if (!Array.isArray(airports.value)) return new Map()
+  return new Map(airports.value.map(airport => [airport.id, airport]))
+})
+
+const AVIA_TRANSPORT_CODE = 0
+
+function isAviaTransportation(item) {
+  const typeId = Number(item?.transportationTypeId)
+  if (!typeId) return false
+  const type = transportationTypesById.value.get(typeId)
+  return type?.code === AVIA_TRANSPORT_CODE
+}
+
+function getAirportIata(airportId) {
+  const id = Number(airportId)
+  if (!id) return null
+  const airport = airportsById.value.get(id)
+  return airport?.codeIata || null
+}
+
+function getCountryDisplayName(item, countryCode, airportId) {
+  const countryName = getCountryShortName(countryCode)
+  if (!isAviaTransportation(item)) {
+    return countryName
+  }
+
+  const airportCode = getAirportIata(airportId)
+  if (!airportCode) {
+    return countryName
+  }
+
+  return `${countryName} (${airportCode})`
+}
+
 // Load companies and parcel statuses on component mount
 onMounted(async () => {
   try {
@@ -154,8 +198,11 @@ onMounted(async () => {
     
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await companiesStore.getAll()
+    if (!isComponentMounted.value) return
+
+    await airportsStore.getAll()
   } catch (error) {
     if (isComponentMounted.value) {
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
@@ -388,9 +435,9 @@ defineExpose({
           >
             <template #default>
               <span>{{ customsProceduresStore.getName(item.customsProcedureId) }}: </span>
-              <span>{{ getCountryShortName(item.origCountryCode) }}</span>
+              <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
               <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-              <span>{{ getCountryShortName(item.destCountryCode) }}</span>
+              <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
             </template>
           </ClickableCell>
         </template>

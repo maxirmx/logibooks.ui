@@ -34,6 +34,7 @@ const mockTransportationTypes = ref([])
 const mockCustomsProcedures = ref([])
 const mockAirports = ref([])
 const getAll = vi.fn()
+const getAirportsAll = vi.fn()
 const uploadFn = vi.fn()
 const setOrderStatusesFn = vi.fn()
 const getCompaniesAll = vi.fn()
@@ -79,7 +80,7 @@ vi.mock('pinia', async () => {
       } else if (store.procedures && store.getName) {
         // customs procedures store
         return { procedures: mockCustomsProcedures }
-      } else if (store.airports !== undefined && store.ensureLoaded) {
+      } else if (store.airports !== undefined && store.getAll === getAirportsAll) {
         // airports store
         return { airports: mockAirports }
       } else {
@@ -171,12 +172,10 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
   })
 }))
 
-const airportsEnsureLoadedFn = vi.fn()
-
 vi.mock('@/stores/airports.store.js', () => ({
   useAirportsStore: () => ({
     airports: mockAirports,
-    ensureLoaded: airportsEnsureLoadedFn
+    getAll: getAirportsAll
   })
 }))
 
@@ -217,7 +216,7 @@ describe('Registers_List.vue', () => {
     mockCountries.value = []
     mockAirports.value = []
     mockTransportationTypes.value = []
-    airportsEnsureLoadedFn.mockClear()
+    getAirportsAll.mockClear()
     transportationEnsureLoadedFn.mockClear()
   })
 
@@ -234,7 +233,7 @@ describe('Registers_List.vue', () => {
     })
     expect(getAll).toHaveBeenCalled()
     expect(countriesEnsureLoadedFn).toHaveBeenCalled()
-    expect(airportsEnsureLoadedFn).toHaveBeenCalled()
+    expect(getAirportsAll).toHaveBeenCalled()
   })
 
   describe('getCustomerName function', () => {

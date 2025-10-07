@@ -14,33 +14,17 @@ export const useAirportsStore = defineStore('airports', () => {
   const airport = ref(null)
   const loading = ref(false)
   const error = ref(null)
-  let initialized = false
 
   async function getAll() {
     loading.value = true
     error.value = null
     try {
-      const result = await fetchWrapper.get(baseUrl)
-      airports.value = Array.isArray(result) ? result : []
-      initialized = true
+      airports.value = await fetchWrapper.get(baseUrl)
     } catch (err) {
       error.value = err
-      initialized = false
     } finally {
       loading.value = false
     }
-  }
-
-  async function ensureLoaded() {
-    if (initialized && airports.value.length > 0) {
-      return
-    }
-
-    if (loading.value) {
-      return
-    }
-
-    await getAll()
   }
 
   async function getById(id) {
@@ -65,7 +49,6 @@ export const useAirportsStore = defineStore('airports', () => {
     try {
       const result = await fetchWrapper.post(baseUrl, airportData)
       airports.value.push(result)
-      initialized = true
       return result
     } catch (err) {
       error.value = err
@@ -114,7 +97,6 @@ export const useAirportsStore = defineStore('airports', () => {
     loading,
     error,
     getAll,
-    ensureLoaded,
     getById,
     create,
     update,

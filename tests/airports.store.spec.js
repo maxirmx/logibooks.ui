@@ -78,20 +78,6 @@ describe('airports store', () => {
     })
   })
 
-  describe('ensureLoaded', () => {
-    it('loads airports only once when called multiple times', async () => {
-      fetchWrapper.get.mockResolvedValue(mockAirports)
-      const store = useAirportsStore()
-
-      await store.ensureLoaded()
-      await store.ensureLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-      expect(store.airports).toEqual(mockAirports)
-    })
-
-  })
-
   describe('getById', () => {
     it('fetches airport by id successfully', async () => {
       fetchWrapper.get.mockResolvedValue(mockAirport)

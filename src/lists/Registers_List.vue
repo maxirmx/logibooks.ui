@@ -202,7 +202,7 @@ onMounted(async () => {
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
-    await airportsStore.ensureLoaded()
+    await airportsStore.getAll()
   } catch (error) {
     if (isComponentMounted.value) {
       registersStore.error = error?.message || 'Ошибка при загрузке данных'

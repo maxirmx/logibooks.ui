@@ -36,10 +36,6 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({ ensureLoaded: ensureLoadedMock })
 }))
 
-vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
-  useParcelCheckStatusStore: () => ({ ensureLoaded: ensureLoadedMock })
-}))
-
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({ ensureLoaded: ensureLoadedMock })
 }))

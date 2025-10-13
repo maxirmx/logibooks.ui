@@ -152,10 +152,6 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => stores.parcelStatuses
 }))
 
-vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
-  useParcelCheckStatusStore: () => stores.parcelCheckStatuses
-}))
-
 vi.mock('@/stores/key.words.store.js', () => ({
   useKeyWordsStore: () => stores.keyWords
 }))

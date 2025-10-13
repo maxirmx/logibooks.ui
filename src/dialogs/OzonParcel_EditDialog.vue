@@ -8,7 +8,6 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
-import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
@@ -20,7 +19,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { ref, watch, computed, onMounted } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
@@ -47,7 +47,6 @@ const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
 const statusStore = useParcelStatusesStore()
-const parcelCheckStatusStore = useParcelCheckStatusStore()
 const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
@@ -56,7 +55,6 @@ const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
 
 await statusStore.ensureLoaded()
-await parcelCheckStatusStore.ensureLoaded()
 await stopWordsStore.ensureLoaded()
 await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
@@ -322,7 +320,7 @@ function handleFellows() {
           icon="fa-solid fa-upload" 
           :iconSize="'2x'"
           tooltip-text="Выгрузить XML накладную"
-          :disabled="isSubmitting || runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem"
+          :disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
           @click="generateXml(values)"
         />
       </div>
@@ -340,7 +338,7 @@ function handleFellows() {
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatusId" class="label">{{ ozonRegisterColumnTitles.checkStatusId }}:</label>
+            <label for="checkStatusId" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatusId)">
               {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
             </div>
@@ -389,7 +387,7 @@ function handleFellows() {
             </div>
           </div>          
           <!-- Stopwords information when there are issues -->
-          <div v-if="HasIssues(item?.checkStatusId) && getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" class="form-group stopwords-info">
+          <div v-if="CheckStatusCode.hasIssues(item?.checkStatus) && getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" class="form-group stopwords-info">
             <div class="stopwords-text">
               {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
             </div>

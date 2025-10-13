@@ -48,7 +48,7 @@ export const wbrRegisterColumnTitles = {
   dutyPayment: 'Оплата пошлины',
   otherReason: 'Другая причина',
   statusId: 'Статус',
-  checkStatusId: 'Проверка'
+  checkStatus: 'Проверка'
 }
 
 export const wbrRegisterColumnTooltips = {

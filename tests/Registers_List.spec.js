@@ -128,13 +128,6 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
-  useParcelCheckStatusStore: () => ({
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getStatusTitle: vi.fn((id) => `Status ${id}`)
-  })
-}))
-
 vi.mock('@/stores/companies.store.js', () => ({
   useCompaniesStore: () => ({
     getAll: getCompaniesAll,
@@ -747,12 +740,6 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
     getAll: getOrderStatusesAll,
     ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: mockOrderStatuses
-  })
-}))
-vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
-  useParcelCheckStatusStore: () => ({
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
 

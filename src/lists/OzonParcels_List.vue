@@ -7,7 +7,6 @@ import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
-import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
@@ -18,7 +17,8 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
+import { getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -49,7 +49,6 @@ const props = defineProps({
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
-const parcelCheckStatusStore = useParcelCheckStatusStore()
 const keyWordsStore = useKeyWordsStore()
 const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
@@ -232,9 +231,6 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await parcelStatusStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-    
-    await parcelCheckStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
     await feacnOrdersStore.ensureLoaded()
@@ -623,7 +619,7 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-upload" 
               tooltip-text="Выгрузить XML накладную для посылки" 
               @click="exportParcelXml" 
-              :disabled="runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem" 
+              :disabled="runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem" 
             />
             <ActionButton 
               :item="item" 

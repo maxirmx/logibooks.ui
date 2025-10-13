@@ -205,7 +205,7 @@ describe('CheckStatusCode', () => {
 
     it('should handle zero/not checked values', () => {
       const notChecked = CheckStatusCode.NotChecked
-      expect(notChecked.toString()).toBe('')
+      expect(notChecked.toString()).toBe('Не проверено')
 
       const onlyFC = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NotChecked)
       expect(onlyFC.toString()).toBe('Ok ТН ВЭД')

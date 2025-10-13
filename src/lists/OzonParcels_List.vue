@@ -17,8 +17,8 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
-import { getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -64,7 +64,8 @@ const {
   parcels_sort_by,
   parcels_page,
   parcels_status,
-  parcels_check_status,
+  parcels_check_status_sw,
+  parcels_check_status_fc,
   parcels_tnved,
   parcels_number,
   selectedParcelId,
@@ -221,7 +222,7 @@ const {
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved, parcels_number],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_tnved, parcels_number],
   loadOrdersWrapper,
   { immediate: true }
 )
@@ -280,14 +281,20 @@ const statusOptions = computed(() => [
   }))
 ])
 
-const checkStatusOptions = computed(() => [
+const checkStatusOptionsSw = computed(() => [
   { value: null, title: 'Все' },
-  ...parcelCheckStatusStore.statuses
-    .filter(isSelectableCheckStatus)
-    .map(status => ({
-      value: status.id,
-      title: status.title
-    }))
+  ...Object.entries(SWCheckStatusNames).map(([value, title]) => ({
+    value: parseInt(value),
+    title
+  }))
+])
+
+const checkStatusOptionsFc = computed(() => [
+  { value: null, title: 'Все' },
+  ...Object.entries(FCCheckStatusNames).map(([value, title]) => ({
+    value: parseInt(value),
+    title
+  }))
 ])
 
 const headers = computed(() => {
@@ -462,9 +469,16 @@ function getGenericTemplateHeaders() {
           style="min-width: 250px"
         />
         <v-select
-          v-model="parcels_check_status"
-          :items="checkStatusOptions"
-          label="Статус проверки"
+          v-model="parcels_check_status_sw"
+          :items="checkStatusOptionsSw"
+          label="Статус проверки по стоп-словам"
+          density="compact"
+          style="min-width: 250px"
+        />
+        <v-select
+          v-model="parcels_check_status_fc"
+          :items="checkStatusOptionsFc"
+          label="Статус проверки по ТН ВЭД"
           density="compact"
           style="min-width: 250px"
         />
@@ -540,8 +554,8 @@ function getGenericTemplateHeaders() {
         <template #[`item.checkStatusId`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" 
-            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatusId)}`" 
+            :display-value="CheckStatusCode.toString(item.checkStatus)" 
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`" 
             @click="editParcel" 
           />
         </template>

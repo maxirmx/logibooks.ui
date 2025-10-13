@@ -25,8 +25,12 @@ vi.mock('@/stores/parcels.store.js', () => ({
       params.append('statusId', authStore.parcels_status.toString())
     }
     
-    if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
-      params.append('checkStatusId', authStore.parcels_check_status.toString())
+    if (authStore.parcels_check_status_sw !== null && authStore.parcels_check_status_sw !== undefined) {
+      params.append('checkStatusSw', authStore.parcels_check_status_sw.toString())
+    }
+    
+    if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
+      params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
     }
     
     if (authStore.parcels_tnved) {
@@ -73,7 +77,8 @@ describe('registers store', () => {
     registers_search: '',
     parcels_sort_by: [{ key: 'id', order: 'asc' }],
     parcels_status: null,
-    parcels_check_status: null,
+    parcels_check_status_sw: null,
+    parcels_check_status_fc: null,
     parcels_tnved: ''
   }
 
@@ -1074,7 +1079,8 @@ describe('registers store', () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_status: 1,
-        parcels_check_status: 100,
+        parcels_check_status_sw: 100,
+        parcels_check_status_fc: 200,
         parcels_tnved: '12345678'
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
@@ -1084,7 +1090,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const result = await store.nextParcel(8)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusId=100&tnVed=12345678`
+        `${apiUrl}/registers/nextparcel/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusSw=100&checkStatusFc=200&tnVed=12345678`
       )
       expect(result).toEqual(parcel)
     })
@@ -1093,7 +1099,8 @@ describe('registers store', () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_status: 2,
-        parcels_check_status: null,
+        parcels_check_status_sw: null,
+        parcels_check_status_fc: null,
         parcels_tnved: ''
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
@@ -1125,8 +1132,7 @@ describe('registers store', () => {
         id: 2, 
         registerId: 1, 
         tnVed: '12345678', 
-        statusId: 1,
-        checkStatusId: 100
+        statusId: 1
       }
       fetchWrapper.get.mockResolvedValue(parcel)
       const store = useRegistersStore()
@@ -1196,7 +1202,8 @@ describe('registers store', () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_status: 3,
-        parcels_check_status: 200,
+        parcels_check_status_sw: 200,
+        parcels_check_status_fc: 300,
         parcels_tnved: '87654321'
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
@@ -1206,7 +1213,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const result = await store.theNextParcel(11)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/11?sortBy=id&sortOrder=asc&statusId=3&checkStatusId=200&tnVed=87654321`
+        `${apiUrl}/registers/the-nextparcel/11?sortBy=id&sortOrder=asc&statusId=3&checkStatusSw=200&checkStatusFc=300&tnVed=87654321`
       )
       expect(result).toEqual(parcel)
     })
@@ -1215,7 +1222,8 @@ describe('registers store', () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_status: null,
-        parcels_check_status: 150,
+        parcels_check_status_sw: null,
+        parcels_check_status_fc: 150,
         parcels_tnved: ''
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
@@ -1225,7 +1233,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const result = await store.theNextParcel(12)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/12?sortBy=id&sortOrder=asc&checkStatusId=150`
+        `${apiUrl}/registers/the-nextparcel/12?sortBy=id&sortOrder=asc&checkStatusFc=150`
       )
       expect(result).toEqual(parcel)
     })
@@ -1249,7 +1257,6 @@ describe('registers store', () => {
         registerId: 2, 
         tnVed: '12345678', 
         statusId: 1,
-        checkStatusId: 100,
         shk: 'SHK123456',
         postingNumber: 'POST789',
         keyWordIds: [1, 2, 3]

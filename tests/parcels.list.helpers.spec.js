@@ -16,9 +16,11 @@ vi.mock('../src/helpers/config.js', () => ({
   apiUrl: 'http://test-api'
 }))
 
-// Mock helper functions
-vi.mock('../src/helpers/parcels.check.helpers.js', () => ({
-  HasIssues: vi.fn(() => false)
+// Mock CheckStatusCode
+vi.mock('../src/helpers/check.status.code.js', () => ({
+  CheckStatusCode: {
+    hasIssues: vi.fn(() => false)
+  }
 }))
 
 // Mock Pinia stores
@@ -368,31 +370,31 @@ describe('Parcels List Helpers', () => {
 
   describe('getRowPropsForParcel', () => {
     it('should return class for parcel with issues', async () => {
-      const { HasIssues } = await vi.importMock('../src/helpers/parcels.check.helpers.js')
-      HasIssues.mockReturnValue(true)
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(true)
 
       const data = {
-        item: { checkStatusId: 2 }
+        item: { checkStatus: 0x00010002 }
       }
 
       const result = getRowPropsForParcel(data)
 
       expect(result).toEqual({ class: 'order-has-issues' })
-      expect(HasIssues).toHaveBeenCalledWith(2)
+      expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(0x00010002)
     })
 
     it('should return empty class for parcel without issues', async () => {
-      const { HasIssues } = await vi.importMock('../src/helpers/parcels.check.helpers.js')
-      HasIssues.mockReturnValue(false)
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(false)
 
       const data = {
-        item: { checkStatusId: 1 }
+        item: { checkStatus: 0x00010001 }
       }
 
       const result = getRowPropsForParcel(data)
 
       expect(result).toEqual({ class: '' })
-      expect(HasIssues).toHaveBeenCalledWith(1)
+      expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(0x00010001)
     })
   })
 
@@ -402,7 +404,7 @@ describe('Parcels List Helpers', () => {
         { key: 'actions', title: 'Actions' },
         { key: 'productLink', title: 'Product Link' },
         { key: 'statusId', title: 'Status' },
-        { key: 'checkStatusId', title: 'Check Status' },
+        { key: 'checkStatus', title: 'Check Status' },
         { key: 'countryCode', title: 'Country' },
         { key: 'feacnLookup', title: 'FEACN Lookup' },
         { key: 'tnVed', title: 'TN VED' },

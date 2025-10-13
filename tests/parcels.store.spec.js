@@ -28,7 +28,8 @@ const mockAuthStore = {
   parcels_per_page: 100,
   parcels_sort_by: [{ key: 'id', order: 'asc' }],
   parcels_status: null,
-  parcels_check_status: null,
+  parcels_check_status_sw: null,
+  parcels_check_status_fc: null,
   parcels_tnved: '',
   parcels_number: ''
 }
@@ -46,7 +47,8 @@ describe('parcels store', () => {
     mockAuthStore.parcels_per_page = 100
     mockAuthStore.parcels_sort_by = [{ key: 'id', order: 'asc' }]
     mockAuthStore.parcels_status = null
-    mockAuthStore.parcels_check_status = null
+    mockAuthStore.parcels_check_status_sw = null
+    mockAuthStore.parcels_check_status_fc = null
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
   })
@@ -79,26 +81,26 @@ describe('parcels store', () => {
   })
 
   it('fetches data with check status filtering', async () => {
-    mockAuthStore.parcels_check_status = 5
+    mockAuthStore.parcels_check_status_sw = 5
     
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(1)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&checkStatusId=5`
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&checkStatusSw=5`
     )
   })
 
   it('fetches data with both status and check status filtering', async () => {
     mockAuthStore.parcels_status = 2
-    mockAuthStore.parcels_check_status = 4
+    mockAuthStore.parcels_check_status_fc = 4
     mockAuthStore.parcels_tnved = 'BB'
     
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(3)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=3&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=2&checkStatusId=4&tnVed=BB`
+      `${apiUrl}/parcels?registerId=3&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=2&checkStatusFc=4&tnVed=BB`
     )
   })
 

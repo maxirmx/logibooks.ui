@@ -281,7 +281,7 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatusId', align: 'start', width: '170px' },
+    { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' },
 
@@ -522,7 +522,7 @@ function getGenericTemplateHeaders() {
         </template>
 
         <!-- Special template for checkStatus to display check status title -->
-        <template #[`item.checkStatusId`]="{ item }">
+        <template #[`item.checkStatus`]="{ item }">
           <ClickableCell 
             :item="item" 
             :display-value="new CheckStatusCode(item.checkStatus).toString()" 

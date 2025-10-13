@@ -248,7 +248,7 @@ describe('ActionButton', () => {
 
     it('works as approve button', () => {
       const wrapper = createWrapper({
-        item: { id: 1, checkStatusId: 3 },
+        item: { id: 1 },
         icon: 'fa-solid fa-check-circle',
         tooltipText: 'Согласовать'
       })

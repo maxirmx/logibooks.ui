@@ -49,8 +49,12 @@ describe('Parcel Number Filter Integration', () => {
           params.append('statusId', authStore.parcels_status.toString())
         }
         
-        if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
-          params.append('checkStatusId', authStore.parcels_check_status.toString())
+        if (authStore.parcels_check_status_sw !== null && authStore.parcels_check_status_sw !== undefined) {
+          params.append('checkStatusSw', authStore.parcels_check_status_sw.toString())
+        }
+        
+        if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
+          params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
         }
         
         if (authStore.parcels_tnved) {
@@ -67,7 +71,8 @@ describe('Parcel Number Filter Integration', () => {
       // Test with only parcel number
       let mockAuthStore = {
         parcels_status: null,
-        parcels_check_status: null,
+        parcels_check_status_sw: null,
+        parcels_check_status_fc: null,
         parcels_tnved: '',
         parcels_number: 'TEST123'
       }
@@ -76,20 +81,54 @@ describe('Parcel Number Filter Integration', () => {
       expect(params.get('number')).toBe('TEST123')
       expect(params.has('tnVed')).toBe(false)
       expect(params.has('statusId')).toBe(false)
+      expect(params.has('checkStatusSw')).toBe(false)
+      expect(params.has('checkStatusFc')).toBe(false)
 
-      // Test with combined filters
+      // Test with combined filters including dual check statuses
       mockAuthStore = {
         parcels_status: 1,
-        parcels_check_status: 2,
+        parcels_check_status_sw: 2,
+        parcels_check_status_fc: 3,
         parcels_tnved: 'AA123',
         parcels_number: 'OZON456'
       }
       
       params = buildQueryParams(mockAuthStore)
       expect(params.get('statusId')).toBe('1')
-      expect(params.get('checkStatusId')).toBe('2')
+      expect(params.get('checkStatusSw')).toBe('2')
+      expect(params.get('checkStatusFc')).toBe('3')
       expect(params.get('tnVed')).toBe('AA123')
       expect(params.get('number')).toBe('OZON456')
+
+      // Test with only SW check status
+      mockAuthStore = {
+        parcels_status: null,
+        parcels_check_status_sw: 5,
+        parcels_check_status_fc: null,
+        parcels_tnved: '',
+        parcels_number: 'WB789'
+      }
+      
+      params = buildQueryParams(mockAuthStore)
+      expect(params.get('number')).toBe('WB789')
+      expect(params.get('checkStatusSw')).toBe('5')
+      expect(params.has('checkStatusFc')).toBe(false)
+      expect(params.has('statusId')).toBe(false)
+
+      // Test with only FC check status
+      mockAuthStore = {
+        parcels_status: null,
+        parcels_check_status_sw: null,
+        parcels_check_status_fc: 4,
+        parcels_tnved: '',
+        parcels_number: 'FC001'
+      }
+      
+      params = buildQueryParams(mockAuthStore)
+      expect(params.get('number')).toBe('FC001')
+      expect(params.get('checkStatusFc')).toBe('4')
+      expect(params.has('checkStatusSw')).toBe(false)
+      expect(params.has('statusId')).toBe(false)
     })
 
     it('should not include number parameter when empty', () => {

@@ -5,21 +5,6 @@
 import { CheckStatusCode, SWCheckStatus } from './check.status.code.js'
 
 /**
- * Check status IDs that should be filtered out from UI selectors
- * These statuses are for internal use only and should not be user-selectable
- */
-export const HIDDEN_CHECK_STATUS_IDS = [102, 103, 200]
-
-/**
- * Filter function to exclude hidden check status IDs from UI options
- * @param {Object} status - The check status object with id and title
- * @returns {boolean} True if the status should be shown in the UI
- */
-export function isSelectableCheckStatus(status) {
-  return !HIDDEN_CHECK_STATUS_IDS.includes(status.id)
-}
-
-/**
  * Generates stopwords text for display
  * @param {Object} item - The parcel item containing stopWordIds
  * @param {Array} stopWordsCollection - Collection of all stopwords
@@ -135,7 +120,7 @@ export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollect
 
 /**
  * Get CSS class name for check status styling
- * @param {number} checkStatusId - The check status identifier
+ * @param {number} checkStatus - The check status identifier
  * @returns {string} CSS class name for styling the status cell
  */
 export function getCheckStatusClass(checkStatus) {
@@ -148,7 +133,7 @@ export function getCheckStatusClass(checkStatus) {
   }
 
   if (checkStatus === CheckStatusCode.ApprovedWithExcise.value) {
-    return 'approved-with-excise'
+    return 'is-approved-with-excise'
   }
 
   if (CheckStatusCode.hasIssues(checkStatus)) {

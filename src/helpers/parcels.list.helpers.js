@@ -93,7 +93,7 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     !h.key.startsWith('actions') && 
     h.key !== 'productLink' && 
     h.key !== 'statusId' && 
-    h.key !== 'checkStatusId' && 
+    h.key !== 'checkStatus' && 
     h.key !== 'countryCode' &&
     h.key !== 'feacnLookup' &&
     h.key !== 'tnVed' &&

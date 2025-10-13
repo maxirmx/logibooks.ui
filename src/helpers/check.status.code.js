@@ -6,7 +6,7 @@
  * Common status values used across enums
  */
 export const WStatusValues = Object.freeze({
-  ApprovedWithExcise: 0x0030,
+  ApprovedWithExcise: 0x0230,
   MarkedByPartner: 0x01FF
 })
 

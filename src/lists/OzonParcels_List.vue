@@ -305,7 +305,7 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatusId', align: 'start', width: '170px' },
+    { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
@@ -551,7 +551,7 @@ function getGenericTemplateHeaders() {
         </template>
 
         <!-- Special template for checkStatus to display check status title -->
-        <template #[`item.checkStatusId`]="{ item }">
+        <template #[`item.checkStatus`]="{ item }">
           <ClickableCell 
             :item="item" 
             :display-value="new CheckStatusCode(item.checkStatus).toString()" 

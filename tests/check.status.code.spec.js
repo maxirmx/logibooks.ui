@@ -12,7 +12,7 @@ import CheckStatusCode, {
 
 describe('WStatusValues', () => {
   it('should have correct common values', () => {
-    expect(WStatusValues.ApprovedWithExcise).toBe(0x0030)
+    expect(WStatusValues.ApprovedWithExcise).toBe(0x0230)
     expect(WStatusValues.MarkedByPartner).toBe(0x01FF)
   })
 
@@ -27,7 +27,7 @@ describe('FCCheckStatus', () => {
   it('should have correct enum values', () => {
     expect(FCCheckStatus.NotChecked).toBe(0)
     expect(FCCheckStatus.NoIssues).toBe(0x0010)
-    expect(FCCheckStatus.ApprovedWithExcise).toBe(0x0030)
+    expect(FCCheckStatus.ApprovedWithExcise).toBe(0x0230)
     expect(FCCheckStatus.IssueFeacnCode).toBe(0x0100)
     expect(FCCheckStatus.IssueNonexistingFeacn).toBe(0x0101)
     expect(FCCheckStatus.IssueInvalidFeacnFormat).toBe(0x0102)
@@ -46,7 +46,7 @@ describe('SWCheckStatus', () => {
     expect(SWCheckStatus.NotChecked).toBe(0x0000)
     expect(SWCheckStatus.NoIssues).toBe(0x0010)
     expect(SWCheckStatus.Approved).toBe(0x0020)
-    expect(SWCheckStatus.ApprovedWithExcise).toBe(0x0030)
+    expect(SWCheckStatus.ApprovedWithExcise).toBe(0x0230)
     expect(SWCheckStatus.IssueStopWord).toBe(0x0100)
     expect(SWCheckStatus.MarkedByPartner).toBe(0x01FF)
   })
@@ -88,36 +88,36 @@ describe('CheckStatusCode', () => {
 
   describe('Static methods for component extraction', () => {
     it('should extract FC component correctly', () => {
-      expect(CheckStatusCode.getFC(0x00300010)).toBe(0x0030)
+      expect(CheckStatusCode.getFC(0x02300010)).toBe(0x0230)
       expect(CheckStatusCode.getFC(0x01FF0000)).toBe(0x01FF)
       expect(CheckStatusCode.getFC(0x00000010)).toBe(0)
     })
 
     it('should extract FC as enum value', () => {
-      expect(CheckStatusCode.getFCe(0x00300010)).toBe(FCCheckStatus.ApprovedWithExcise)
+      expect(CheckStatusCode.getFCe(0x02300010)).toBe(FCCheckStatus.ApprovedWithExcise)
       expect(CheckStatusCode.getFCe(0x01FF0000)).toBe(FCCheckStatus.MarkedByPartner)
     })
 
     it('should extract SW component correctly', () => {
-      expect(CheckStatusCode.getSW(0x00300010)).toBe(0x0010)
+      expect(CheckStatusCode.getSW(0x02300010)).toBe(0x0010)
       expect(CheckStatusCode.getSW(0x000001FF)).toBe(0x01FF)
-      expect(CheckStatusCode.getSW(0x00300000)).toBe(0)
+      expect(CheckStatusCode.getSW(0x02300000)).toBe(0)
     })
 
     it('should extract SW as enum value', () => {
-      expect(CheckStatusCode.getSWe(0x00300010)).toBe(SWCheckStatus.NoIssues)
+      expect(CheckStatusCode.getSWe(0x02300010)).toBe(SWCheckStatus.NoIssues)
       expect(CheckStatusCode.getSWe(0x000001FF)).toBe(SWCheckStatus.MarkedByPartner)
     })
   })
 
   describe('Instance properties', () => {
     it('should return correct FC component', () => {
-      const code = new CheckStatusCode(0x00300010)
-      expect(code.fc).toBe(0x0030)
+      const code = new CheckStatusCode(0x02300010)
+      expect(code.fc).toBe(0x0230)
     })
 
     it('should return correct SW component', () => {
-      const code = new CheckStatusCode(0x00300010)
+      const code = new CheckStatusCode(0x02300010)
       expect(code.sw).toBe(0x0010)
     })
   })
@@ -141,7 +141,7 @@ describe('CheckStatusCode', () => {
 
   describe('compose method', () => {
     it('should compose FC and SW correctly', () => {
-      expect(CheckStatusCode.compose(0x0030, 0x0010)).toBe(0x00300010)
+      expect(CheckStatusCode.compose(0x0230, 0x0010)).toBe(0x02300010)
       expect(CheckStatusCode.compose(0x01FF, 0)).toBe(0x01FF0000)
       expect(CheckStatusCode.compose(0, 0x01FF)).toBe(0x000001FF)
     })
@@ -163,15 +163,15 @@ describe('CheckStatusCode', () => {
     })
 
     it('should create from integer', () => {
-      const code = CheckStatusCode.fromInt(0x00300010)
-      expect(code.value).toBe(0x00300010)
+      const code = CheckStatusCode.fromInt(0x02300010)
+      expect(code.value).toBe(0x02300010)
     })
   })
 
   describe('toInt method', () => {
     it('should return integer value', () => {
-      const code = new CheckStatusCode(0x00300010)
-      expect(code.toInt()).toBe(0x00300010)
+      const code = new CheckStatusCode(0x02300010)
+      expect(code.toInt()).toBe(0x02300010)
     })
   })
 
@@ -222,20 +222,20 @@ describe('CheckStatusCode', () => {
 
   describe('equals method', () => {
     it('should return true for equal values', () => {
-      const code1 = new CheckStatusCode(0x00300010)
-      const code2 = new CheckStatusCode(0x00300010)
+      const code1 = new CheckStatusCode(0x02300010)
+      const code2 = new CheckStatusCode(0x02300010)
       expect(code1.equals(code2)).toBe(true)
     })
 
     it('should return false for different values', () => {
-      const code1 = new CheckStatusCode(0x00300010)
+      const code1 = new CheckStatusCode(0x02300010)
       const code2 = new CheckStatusCode(0x01FF0010)
       expect(code1.equals(code2)).toBe(false)
     })
 
     it('should return false for non-CheckStatusCode objects', () => {
-      const code = new CheckStatusCode(0x00300010)
-      expect(code.equals(0x00300010)).toBe(false)
+      const code = new CheckStatusCode(0x02300010)
+      expect(code.equals(0x02300010)).toBe(false)
       expect(code.equals({})).toBe(false)
       expect(code.equals(null)).toBe(false)
     })
@@ -243,14 +243,14 @@ describe('CheckStatusCode', () => {
 
   describe('withFC method', () => {
     it('should replace FC component and preserve SW', () => {
-      const original = new CheckStatusCode(0x00300010)
+      const original = new CheckStatusCode(0x02300010)
       const modified = CheckStatusCode.withFC(original, FCCheckStatus.MarkedByPartner)
       expect(modified.fc).toBe(FCCheckStatus.MarkedByPartner)
       expect(modified.sw).toBe(0x0010)
     })
 
     it('should work with integer input', () => {
-      const modified = CheckStatusCode.withFC(0x00300010, FCCheckStatus.MarkedByPartner)
+      const modified = CheckStatusCode.withFC(0x02300010, FCCheckStatus.MarkedByPartner)
       expect(modified.fc).toBe(FCCheckStatus.MarkedByPartner)
       expect(modified.sw).toBe(0x0010)
     })
@@ -258,15 +258,15 @@ describe('CheckStatusCode', () => {
 
   describe('withSW method', () => {
     it('should replace SW component and preserve FC', () => {
-      const original = new CheckStatusCode(0x00300010)
+      const original = new CheckStatusCode(0x02300010)
       const modified = CheckStatusCode.withSW(original, SWCheckStatus.MarkedByPartner)
-      expect(modified.fc).toBe(0x0030)
+      expect(modified.fc).toBe(0x0230)
       expect(modified.sw).toBe(SWCheckStatus.MarkedByPartner)
     })
 
     it('should work with integer input', () => {
-      const modified = CheckStatusCode.withSW(0x00300010, SWCheckStatus.MarkedByPartner)
-      expect(modified.fc).toBe(0x0030)
+      const modified = CheckStatusCode.withSW(0x02300010, SWCheckStatus.MarkedByPartner)
+      expect(modified.fc).toBe(0x0230)
       expect(modified.sw).toBe(SWCheckStatus.MarkedByPartner)
     })
   })
@@ -301,15 +301,15 @@ describe('CheckStatusCode', () => {
 describe('CheckStatusHelper', () => {
   describe('compose method', () => {
     it('should compose FC and SW correctly', () => {
-      expect(CheckStatusHelper.compose(0x0030, 0x0010)).toBe(0x00300010)
+      expect(CheckStatusHelper.compose(0x0230, 0x0010)).toBe(0x02300010)
       expect(CheckStatusHelper.compose(0x01FF, 0)).toBe(0x01FF0000)
     })
   })
 
   describe('decompose method', () => {
     it('should decompose combined value correctly', () => {
-      const result = CheckStatusHelper.decompose(0x00300010)
-      expect(result.fc).toBe(0x0030)
+      const result = CheckStatusHelper.decompose(0x02300010)
+      expect(result.fc).toBe(0x0230)
       expect(result.sw).toBe(0x0010)
     })
 
@@ -324,7 +324,7 @@ describe('CheckStatusHelper', () => {
     it('should detect issues correctly', () => {
       expect(CheckStatusHelper.hasIssues(0x01000000)).toBe(true)
       expect(CheckStatusHelper.hasIssues(0x00000100)).toBe(true)
-      expect(CheckStatusHelper.hasIssues(0x00300010)).toBe(false)
+      expect(CheckStatusHelper.hasIssues(0x02300010)).toBe(false)
     })
   })
 
@@ -339,9 +339,9 @@ describe('CheckStatusHelper', () => {
 
   describe('fromInt method', () => {
     it('should create CheckStatusCode from integer', () => {
-      const code = CheckStatusHelper.fromInt(0x00300010)
+      const code = CheckStatusHelper.fromInt(0x02300010)
       expect(code).toBeInstanceOf(CheckStatusCode)
-      expect(code.value).toBe(0x00300010)
+      expect(code.value).toBe(0x02300010)
     })
   })
 })
@@ -390,8 +390,8 @@ describe('Integration tests', () => {
   it('should work with real enum values', () => {
     // Test common status combinations
     const approved = CheckStatusCode.fromParts(FCCheckStatus.ApprovedWithExcise, SWCheckStatus.ApprovedWithExcise)
-    expect(approved.fc).toBe(0x0030)
-    expect(approved.sw).toBe(0x0030)
+    expect(approved.fc).toBe(0x0230)
+    expect(approved.sw).toBe(0x0230)
     expect(CheckStatusCode.hasIssues(approved.value)).toBe(false)
 
     const hasIssues = CheckStatusCode.fromParts(FCCheckStatus.IssueNonexistingFeacn, SWCheckStatus.IssueStopWord)

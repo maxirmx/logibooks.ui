@@ -21,8 +21,12 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
     params.append('statusId', authStore.parcels_status.toString())
   }
   
-  if (authStore.parcels_check_status !== null && authStore.parcels_check_status !== undefined) {
-    params.append('checkStatusId', authStore.parcels_check_status.toString())
+  if (authStore.parcels_check_status_sw !== null && authStore.parcels_check_status_sw !== undefined) {
+    params.append('checkStatusSw', authStore.parcels_check_status_sw.toString())
+  }
+  
+  if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
+    params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
   }
   
   if (authStore.parcels_tnved) {

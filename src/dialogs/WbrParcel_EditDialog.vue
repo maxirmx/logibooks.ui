@@ -7,7 +7,7 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useParcelsStore } from '@/stores/parcels.store.js'
-import { useParcelStatusesStore } from '@/stores/parcels.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
@@ -344,9 +344,9 @@ function handleFellows() {
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatusId" class="label">{{ wbrRegisterColumnTitles.checkStatusId }}:</label>
-            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatusId)">
-              {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
+            <label for="checkStatus" class="label">{{ wbrRegisterColumnTitles.checkStatus }}:</label>
+            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
+              {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
             <div class="action-buttons">
               <ActionButton

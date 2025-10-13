@@ -2,6 +2,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
+import { CheckStatusCode, SWCheckStatus } from './check.status.code.js'
+
 /**
  * Check status IDs that should be filtered out from UI selectors
  * These statuses are for internal use only and should not be user-selectable
@@ -132,54 +134,31 @@ export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollect
 }
 
 /**
- * Determine if a check status id indicates issues
- * @param {number} checkStatusId - The check status identifier
- * @returns {boolean} True if the id is > 100 and <= 200
- */
-export function HasIssues(checkStatusId) {
-  return checkStatusId > 100 && checkStatusId <= 200
-}
-
-export function IsNotChecked(checkStatusId) {
-  return checkStatusId <= 100 
-}
-
-export function HasNoIssues(checkStatusId) {
-  return checkStatusId > 200 && checkStatusId <= 300
-}
-
-export function IsApproved(checkStatusId) {
-  return checkStatusId > 300 && checkStatusId < 399
-}
-
-export function IsApprovedWithExcise(checkStatusId) {
-  return checkStatusId === 399
-}
-
-/**
  * Get CSS class name for check status styling
  * @param {number} checkStatusId - The check status identifier
  * @returns {string} CSS class name for styling the status cell
  */
-export function getCheckStatusClass(checkStatusId) {
-  if (checkStatusId === undefined || checkStatusId === null) {
+export function getCheckStatusClass(checkStatus) {
+  if (checkStatus === undefined || checkStatus === null) {
     return ''
   }
-  if (HasIssues(checkStatusId)) {
-    return 'has-issues'
-  }
-  if (IsNotChecked(checkStatusId)) {
+
+  if (checkStatus === CheckStatusCode.NotChecked.value) {
     return 'not-checked'
   }
-  if (HasNoIssues(checkStatusId)) {
-    return 'no-issues'
+
+  if (checkStatus === CheckStatusCode.ApprovedWithExcise.value) {
+    return 'approved-with-excise'
   }
-  if (IsApproved(checkStatusId)) {
+
+  if (CheckStatusCode.hasIssues(checkStatus)) {
+    return 'has-issues'
+  }
+
+  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.Approved) {
     return 'is-approved'
   }
-  if (IsApprovedWithExcise(checkStatusId)) {
-    return 'is-approved-with-excise'
-  }
-  return ''
+
+  return 'no-issues'
 }
 

@@ -46,7 +46,7 @@ export const FCCheckStatus = Object.freeze({
  */
 export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.NotChecked]: "Не проверено",
-  [SWCheckStatus.NoIssues]: "Ok стоп-слова",
+  [SWCheckStatus.NoIssues]: "Ок стоп-слова",
   [SWCheckStatus.Approved]: "Согласовано",
   [SWCheckStatus.ApprovedWithExcise]: "Согласовано с акцизом",
   [SWCheckStatus.IssueStopWord]: "Стоп слово"
@@ -57,7 +57,7 @@ export const SWCheckStatusNames = Object.freeze({
  */
 export const FCCheckStatusNames = Object.freeze({
   [FCCheckStatus.NotChecked]: "Не проверено",
-  [FCCheckStatus.NoIssues]: "Ok ТН ВЭД",
+  [FCCheckStatus.NoIssues]: "Ок ТН ВЭД",
   [FCCheckStatus.ApprovedWithExcise]: "Согласовано с акцизом",
   [FCCheckStatus.IssueFeacnCode]: "Стоп ТН ВЭД",
   [FCCheckStatus.IssueNonexistingFeacn]: "Нет ТН ВЭД",

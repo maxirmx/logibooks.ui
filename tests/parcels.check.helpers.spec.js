@@ -10,11 +10,6 @@ import {
   getFeacnOrdersInfo, 
   getFeacnPrefixesInfo,
   getCheckStatusInfo,
-  HasIssues,
-  IsNotChecked,
-  HasNoIssues,
-  IsApproved,
-  IsApprovedWithExcise,
   getCheckStatusClass,
   HIDDEN_CHECK_STATUS_IDS,
   isSelectableCheckStatus
@@ -299,75 +294,6 @@ describe('parcels.check.helpers', () => {
   })
 
   describe('Status Check Functions', () => {
-    describe('HasIssues', () => {
-      it('returns true for status IDs between 100 and 200', () => {
-        expect(HasIssues(101)).toBe(true)
-        expect(HasIssues(150)).toBe(true)
-        expect(HasIssues(200)).toBe(true)
-      })
-
-      it('returns false for status IDs <= 100', () => {
-        expect(HasIssues(50)).toBe(false)
-        expect(HasIssues(100)).toBe(false)
-      })
-
-      it('returns false for status IDs > 200', () => {
-        expect(HasIssues(201)).toBe(false)
-        expect(HasIssues(300)).toBe(false)
-      })
-    })
-
-    describe('IsNotChecked', () => {
-      it('returns true for status IDs <= 100', () => {
-        expect(IsNotChecked(50)).toBe(true)
-        expect(IsNotChecked(100)).toBe(true)
-      })
-
-      it('returns false for status IDs > 100', () => {
-        expect(IsNotChecked(101)).toBe(false)
-        expect(IsNotChecked(200)).toBe(false)
-      })
-    })
-
-    describe('HasNoIssues', () => {
-      it('returns true for status IDs between 200 and 300', () => {
-        expect(HasNoIssues(201)).toBe(true)
-        expect(HasNoIssues(250)).toBe(true)
-        expect(HasNoIssues(300)).toBe(true)
-      })
-
-      it('returns false for status IDs <= 200', () => {
-        expect(HasNoIssues(150)).toBe(false)
-        expect(HasNoIssues(200)).toBe(false)
-      })
-
-      it('returns false for status IDs > 300', () => {
-        expect(HasNoIssues(301)).toBe(false)
-        expect(HasNoIssues(400)).toBe(false)
-      })
-    })
-
-    describe('IsApproved', () => {
-      it('returns true for status IDs > 300 && < 399', () => {
-        expect(IsApproved(301)).toBe(true)
-        expect(IsApproved(398)).toBe(true)
-      })
-
-      it('returns false for status IDs <= 300', () => {
-        expect(IsApproved(250)).toBe(false)
-        expect(IsApproved(300)).toBe(false)
-      })
-    })
-
-    describe('IsApprovedWithExcise', () => {
-      it('returns true for status IDs = 399', () => {
-        expect(IsApprovedWithExcise(301)).toBe(false)
-        expect(IsApprovedWithExcise(399)).toBe(true)
-        expect(IsApprovedWithExcise(400)).toBe(false)
-      })
-
-    })
-
     describe('getCheckStatusClass', () => {
       it('returns "has-issues" for status IDs indicating issues', () => {
         expect(getCheckStatusClass(101)).toBe('has-issues')

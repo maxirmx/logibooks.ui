@@ -338,9 +338,9 @@ function handleFellows() {
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatusId" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
-            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatusId)">
-              {{ parcelCheckStatusStore.getStatusTitle(item?.checkStatusId) }}
+            <label for="checkStatus" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
+            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
+              {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
             <div class="action-buttons">
               <ActionButton

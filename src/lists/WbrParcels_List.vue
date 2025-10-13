@@ -281,7 +281,7 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatusId', align: 'start', width: '170px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' },
 
@@ -521,11 +521,11 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <!-- Special template for checkStatusId to display check status title -->
+        <!-- Special template for checkStatus to display check status title -->
         <template #[`item.checkStatusId`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="CheckStatusCode.toString(item.checkStatus)" 
+            :display-value="new CheckStatusCode(item.checkStatus).toString()" 
             :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`" 
             @click="editParcel" 
           />

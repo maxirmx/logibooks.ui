@@ -134,7 +134,7 @@ function getCountryShortName(countryCode) {
 function getParcelsByCheckStatusTooltip(item) {
   if (!item?.parcelsByCheckStatus) return ''
   return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${CheckStatusCode.toString(Number(statusId)) ?? 'Неизвестно'}: ${count}`)
+    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${count}`)
     .join('\n')
 }
 

@@ -79,7 +79,7 @@ console.log(mixedIssues.toString()) // "Стоп слово, Формат ТН �
 ## Status Enumerations
 
 ### WStatusValues (Common Status Values)
-- `ApprovedWithExcise: 0x0030` (48)
+- `ApprovedWithExcise: 0x0230` (560)
 - `MarkedByPartner: 0x01FF` (511)
 
 ### FCCheckStatus (FEACN Code Check Status)

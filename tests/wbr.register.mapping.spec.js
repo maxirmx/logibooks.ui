@@ -3,21 +3,21 @@
 // This file is a part of Logibooks ui application 
 
 import { describe, it, expect } from 'vitest'
-import { HasIssues } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-describe('parcels.check.helpers.js HasIssues', () => {
+describe('check.status.code.js hasIssues', () => {
 
-  describe('HasIssues', () => {
-    it('returns true when checkStatusId is between 101 and 200', () => {
-      expect(HasIssues(101)).toBe(true)
-      expect(HasIssues(150)).toBe(true)
-      expect(HasIssues(200)).toBe(true)
+  describe('hasIssues', () => {
+    it('returns true for status codes with issues', () => {
+      expect(CheckStatusCode.hasIssues(0x01000000)).toBe(true) // FC has issues
+      expect(CheckStatusCode.hasIssues(0x00000100)).toBe(true) // SW has issues
+      expect(CheckStatusCode.hasIssues(0x01000100)).toBe(true) // Both have issues
     })
 
-    it('returns false when checkStatusId is outside the range', () => {
-      expect(HasIssues(100)).toBe(false)
-      expect(HasIssues(201)).toBe(false)
-      expect(HasIssues(undefined)).toBe(false)
+    it('returns false for status codes without issues', () => {
+      expect(CheckStatusCode.hasIssues(0x00000000)).toBe(false) // No issues
+      expect(CheckStatusCode.hasIssues(0x00200010)).toBe(false) // No issues
+      expect(CheckStatusCode.hasIssues(0)).toBe(false) // Undefined equivalent
     })
   })
 })

@@ -7,7 +7,6 @@ import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
-import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
@@ -18,7 +17,8 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
-import { HasIssues, getCheckStatusClass, isSelectableCheckStatus } from '@/helpers/parcels.check.helpers.js'
+import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -49,7 +49,6 @@ const props = defineProps({
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
-const parcelCheckStatusStore = useParcelCheckStatusStore()
 const keyWordsStore = useKeyWordsStore()
 const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
@@ -65,7 +64,8 @@ const {
   parcels_sort_by,
   parcels_page,
   parcels_status,
-  parcels_check_status,
+  parcels_check_status_sw,
+  parcels_check_status_fc,
   parcels_tnved,
   parcels_number,
   selectedParcelId,
@@ -222,7 +222,7 @@ const {
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status, parcels_tnved, parcels_number],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_tnved, parcels_number],
   loadOrdersWrapper,
   { immediate: true }
 )
@@ -232,9 +232,6 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await parcelStatusStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-    
-    await parcelCheckStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
     await feacnOrdersStore.ensureLoaded()
@@ -284,14 +281,20 @@ const statusOptions = computed(() => [
   }))
 ])
 
-const checkStatusOptions = computed(() => [
+const checkStatusOptionsSw = computed(() => [
   { value: null, title: 'Все' },
-  ...parcelCheckStatusStore.statuses
-    .filter(isSelectableCheckStatus)
-    .map(status => ({
-      value: status.id,
-      title: status.title
-    }))
+  ...Object.entries(SWCheckStatusNames).map(([value, title]) => ({
+    value: parseInt(value),
+    title
+  }))
+])
+
+const checkStatusOptionsFc = computed(() => [
+  { value: null, title: 'Все' },
+  ...Object.entries(FCCheckStatusNames).map(([value, title]) => ({
+    value: parseInt(value),
+    title
+  }))
 ])
 
 const headers = computed(() => {
@@ -302,7 +305,7 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.checkStatusId, key: 'checkStatusId', align: 'start', width: '120px' },
+    { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
@@ -466,9 +469,16 @@ function getGenericTemplateHeaders() {
           style="min-width: 250px"
         />
         <v-select
-          v-model="parcels_check_status"
-          :items="checkStatusOptions"
-          label="Статус проверки"
+          v-model="parcels_check_status_sw"
+          :items="checkStatusOptionsSw"
+          label="Статус проверки по стоп-словам"
+          density="compact"
+          style="min-width: 250px"
+        />
+        <v-select
+          v-model="parcels_check_status_fc"
+          :items="checkStatusOptionsFc"
+          label="Статус проверки по ТН ВЭД"
           density="compact"
           style="min-width: 250px"
         />
@@ -540,12 +550,12 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <!-- Special template for checkStatusId to display check status title -->
-        <template #[`item.checkStatusId`]="{ item }">
+        <!-- Special template for checkStatus to display check status title -->
+        <template #[`item.checkStatus`]="{ item }">
           <ClickableCell 
             :item="item" 
-            :display-value="parcelCheckStatusStore.getStatusTitle(item.checkStatusId)" 
-            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatusId)}`" 
+            :display-value="new CheckStatusCode(item.checkStatus).toString()" 
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`" 
             @click="editParcel" 
           />
         </template>
@@ -623,7 +633,7 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-upload" 
               tooltip-text="Выгрузить XML накладную для посылки" 
               @click="exportParcelXml" 
-              :disabled="runningAction || loading || HasIssues(item?.checkStatusId) || item?.blockedByFellowItem" 
+              :disabled="runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem" 
             />
             <ActionButton 
               :item="item" 

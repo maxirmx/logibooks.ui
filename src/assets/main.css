@@ -889,7 +889,7 @@ a,
   text-align: center;
 }
 
-/* Row background colors based on checkStatusId */
+/* Row background colors based on checkStatus */
 :deep(.v-data-table__tbody tr.order-has-issues) {
   background-color: rgba(244, 67, 54, 0.08) !important;
 }
@@ -1254,7 +1254,7 @@ a,
 
 /* Stopwords information styling */
 .stopwords-info {
-  grid-column: 2; /* Only span the second column to align with checkStatusId field */
+  grid-column: 2; /* Only span the second column to align with checkStatus field */
   padding: 4px 8px;
   background-color: rgba(244, 67, 54, 0.05);
   border: 1px solid rgba(244, 67, 54, 0.2);

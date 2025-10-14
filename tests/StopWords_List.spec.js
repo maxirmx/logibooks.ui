@@ -292,7 +292,7 @@ describe('StopWords_List.vue', () => {
       await wrapper.vm.deleteStopWord(testStopWord)
 
       expect(removeStopWord).toHaveBeenCalledWith(testStopWord.id)
-      expect(wrapper.vm.alertStore.error).toHaveBeenCalledWith('Ошибка при удалении стоп-слова')
+      expect(wrapper.vm.alertStore.error).toHaveBeenCalledWith('Ошибка при удалении стоп слова')
     })
   })
 

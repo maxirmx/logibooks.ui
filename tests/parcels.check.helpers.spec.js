@@ -10,15 +10,9 @@ import {
   getFeacnOrdersInfo, 
   getFeacnPrefixesInfo,
   getCheckStatusInfo,
-  HasIssues,
-  IsNotChecked,
-  HasNoIssues,
-  IsApproved,
-  IsApprovedWithExcise,
-  getCheckStatusClass,
-  HIDDEN_CHECK_STATUS_IDS,
-  isSelectableCheckStatus
+  getCheckStatusClass
 } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode, SWCheckStatus, FCCheckStatus } from '@/helpers/check.status.code.js'
 
 describe('parcels.check.helpers', () => {
   const mockStopWords = [
@@ -299,129 +293,41 @@ describe('parcels.check.helpers', () => {
   })
 
   describe('Status Check Functions', () => {
-    describe('HasIssues', () => {
-      it('returns true for status IDs between 100 and 200', () => {
-        expect(HasIssues(101)).toBe(true)
-        expect(HasIssues(150)).toBe(true)
-        expect(HasIssues(200)).toBe(true)
-      })
-
-      it('returns false for status IDs <= 100', () => {
-        expect(HasIssues(50)).toBe(false)
-        expect(HasIssues(100)).toBe(false)
-      })
-
-      it('returns false for status IDs > 200', () => {
-        expect(HasIssues(201)).toBe(false)
-        expect(HasIssues(300)).toBe(false)
-      })
-    })
-
-    describe('IsNotChecked', () => {
-      it('returns true for status IDs <= 100', () => {
-        expect(IsNotChecked(50)).toBe(true)
-        expect(IsNotChecked(100)).toBe(true)
-      })
-
-      it('returns false for status IDs > 100', () => {
-        expect(IsNotChecked(101)).toBe(false)
-        expect(IsNotChecked(200)).toBe(false)
-      })
-    })
-
-    describe('HasNoIssues', () => {
-      it('returns true for status IDs between 200 and 300', () => {
-        expect(HasNoIssues(201)).toBe(true)
-        expect(HasNoIssues(250)).toBe(true)
-        expect(HasNoIssues(300)).toBe(true)
-      })
-
-      it('returns false for status IDs <= 200', () => {
-        expect(HasNoIssues(150)).toBe(false)
-        expect(HasNoIssues(200)).toBe(false)
-      })
-
-      it('returns false for status IDs > 300', () => {
-        expect(HasNoIssues(301)).toBe(false)
-        expect(HasNoIssues(400)).toBe(false)
-      })
-    })
-
-    describe('IsApproved', () => {
-      it('returns true for status IDs > 300 && < 399', () => {
-        expect(IsApproved(301)).toBe(true)
-        expect(IsApproved(398)).toBe(true)
-      })
-
-      it('returns false for status IDs <= 300', () => {
-        expect(IsApproved(250)).toBe(false)
-        expect(IsApproved(300)).toBe(false)
-      })
-    })
-
-    describe('IsApprovedWithExcise', () => {
-      it('returns true for status IDs = 399', () => {
-        expect(IsApprovedWithExcise(301)).toBe(false)
-        expect(IsApprovedWithExcise(399)).toBe(true)
-        expect(IsApprovedWithExcise(400)).toBe(false)
-      })
-
-    })
-
     describe('getCheckStatusClass', () => {
-      it('returns "has-issues" for status IDs indicating issues', () => {
-        expect(getCheckStatusClass(101)).toBe('has-issues')
-        expect(getCheckStatusClass(150)).toBe('has-issues')
-        expect(getCheckStatusClass(200)).toBe('has-issues')
+      it('returns "has-issues" for status codes with issues', () => {
+        const swIssue = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.IssueStopWord)
+        const fcIssue = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.NotChecked)
+        const bothIssues = CheckStatusCode.fromParts(FCCheckStatus.IssueNonexistingFeacn, SWCheckStatus.IssueStopWord)
+        
+        expect(getCheckStatusClass(swIssue.value)).toBe('has-issues')
+        expect(getCheckStatusClass(fcIssue.value)).toBe('has-issues')
+        expect(getCheckStatusClass(bothIssues.value)).toBe('has-issues')
       })
 
-      it('returns "not-checked" for status IDs indicating not checked', () => {
-        expect(getCheckStatusClass(50)).toBe('not-checked')
-        expect(getCheckStatusClass(100)).toBe('not-checked')
+      it('returns "not-checked" for not checked status', () => {
+        expect(getCheckStatusClass(CheckStatusCode.NotChecked.value)).toBe('not-checked')
       })
 
-      it('returns "no-issues" for status IDs indicating no issues', () => {
-        expect(getCheckStatusClass(201)).toBe('no-issues')
-        expect(getCheckStatusClass(250)).toBe('no-issues')
-        expect(getCheckStatusClass(300)).toBe('no-issues')
+      it('returns "is-approved-with-excise" for approved with excise status', () => {
+        expect(getCheckStatusClass(CheckStatusCode.ApprovedWithExcise.value)).toBe('is-approved-with-excise')
       })
 
-      it('returns "is-approved" for status IDs indicating approved', () => {
-        expect(getCheckStatusClass(301)).toBe('is-approved')
-        expect(getCheckStatusClass(398)).toBe('is-approved')
+      it('returns "is-approved" for SW approved status', () => {
+        const swApproved = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.Approved)
+        expect(getCheckStatusClass(swApproved.value)).toBe('is-approved')
       })
 
-      it('returns "is-approved-with-excise" for status IDs indicating approved with excise', () => {
-        expect(getCheckStatusClass(399)).toBe('is-approved-with-excise')
+      it('returns "no-issues" as default for other status codes', () => {
+        const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
+        const swNoIssues = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)
+        
+        expect(getCheckStatusClass(noIssues.value)).toBe('no-issues')
+        expect(getCheckStatusClass(swNoIssues.value)).toBe('no-issues')
       })
 
-      it('returns empty string for undefined or null status IDs', () => {
+      it('returns empty string for undefined or null status codes', () => {
         expect(getCheckStatusClass(undefined)).toBe('')
         expect(getCheckStatusClass(null)).toBe('')
-      })
-    })
-
-    describe('HIDDEN_CHECK_STATUS_IDS', () => {
-      it('contains the expected hidden check status IDs', () => {
-        expect(HIDDEN_CHECK_STATUS_IDS).toEqual([102, 103, 200])
-      })
-    })
-
-    describe('isSelectableCheckStatus', () => {
-      it('returns false for hidden check status IDs', () => {
-        expect(isSelectableCheckStatus({ id: 102, title: 'Hidden 1' })).toBe(false)
-        expect(isSelectableCheckStatus({ id: 103, title: 'Hidden 2' })).toBe(false)
-        expect(isSelectableCheckStatus({ id: 200, title: 'Hidden 3' })).toBe(false)
-      })
-
-      it('returns true for selectable check status IDs', () => {
-        expect(isSelectableCheckStatus({ id: 1, title: 'Visible 1' })).toBe(true)
-        expect(isSelectableCheckStatus({ id: 50, title: 'Visible 2' })).toBe(true)
-        expect(isSelectableCheckStatus({ id: 101, title: 'Visible 3' })).toBe(true)
-        expect(isSelectableCheckStatus({ id: 104, title: 'Visible 4' })).toBe(true)
-        expect(isSelectableCheckStatus({ id: 199, title: 'Visible 5' })).toBe(true)
-        expect(isSelectableCheckStatus({ id: 201, title: 'Visible 6' })).toBe(true)
-        expect(isSelectableCheckStatus({ id: 300, title: 'Visible 7' })).toBe(true)
       })
     })
   })

@@ -17,7 +17,6 @@ import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
-import { useParcelCheckStatusStore } from '@/stores/parcel.checkstatuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
@@ -26,6 +25,7 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -37,7 +37,6 @@ const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
-const parcelCheckStatusStore = useParcelCheckStatusStore()
 
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
@@ -135,7 +134,7 @@ function getCountryShortName(countryCode) {
 function getParcelsByCheckStatusTooltip(item) {
   if (!item?.parcelsByCheckStatus) return ''
   return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${parcelCheckStatusStore.getStatusTitle(Number(statusId)) ?? 'Неизвестно'}: ${count}`)
+    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${count}`)
     .join('\n')
 }
 
@@ -186,10 +185,7 @@ onMounted(async () => {
     
     await parcelStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
-    await parcelCheckStatusStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-    
+     
     await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
     

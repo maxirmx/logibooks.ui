@@ -90,7 +90,8 @@ function setupStores() {
     parcels_sort_by: ref([]),
     parcels_page: ref(1),
     parcels_status: ref(null),
-    parcels_check_status: ref(null),
+    parcels_check_status_sw: ref(null),
+    parcels_check_status_fc: ref(null),
     parcels_tnved: ref(''),
     parcels_number: ref(''),
     selectedParcelId: ref(null),
@@ -125,7 +126,8 @@ vi.mock('pinia', async () => {
             parcels_sort_by: stores.auth.parcels_sort_by,
             parcels_page: stores.auth.parcels_page,
             parcels_status: stores.auth.parcels_status,
-            parcels_check_status: stores.auth.parcels_check_status,
+            parcels_check_status_sw: stores.auth.parcels_check_status_sw,
+            parcels_check_status_fc: stores.auth.parcels_check_status_fc,
             parcels_tnved: stores.auth.parcels_tnved,
             parcels_number: stores.auth.parcels_number,
             selectedParcelId: stores.auth.selectedParcelId,
@@ -150,10 +152,6 @@ vi.mock('@/stores/registers.store.js', () => ({
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => stores.parcelStatuses
-}))
-
-vi.mock('@/stores/parcel.checkstatuses.store.js', () => ({
-  useParcelCheckStatusStore: () => stores.parcelCheckStatuses
 }))
 
 vi.mock('@/stores/key.words.store.js', () => ({

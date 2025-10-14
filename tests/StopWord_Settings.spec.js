@@ -95,7 +95,7 @@ describe('StopWord_Settings.vue', () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      expect(wrapper.find('h1').text()).toBe('Регистрация стоп-слова или фразы')
+      expect(wrapper.find('h1').text()).toBe('Регистрация стоп слова или фразы')
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
       expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
@@ -330,7 +330,7 @@ describe('StopWord_Settings.vue', () => {
       mountComponent({ id: 1 })
       await resolveAll()
 
-      expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных стоп-слова')
+      expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных стоп слова')
       expect(routerPush).toHaveBeenCalledWith('/stopwords')
     })
   })

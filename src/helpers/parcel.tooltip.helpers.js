@@ -2,7 +2,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { HasIssues, getCheckStatusInfo } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { getCheckStatusInfo } from '@/helpers/parcels.check.helpers.js'
 
 /**
  * Get tooltip for form fields combining title and tooltip information
@@ -22,17 +23,17 @@ export function getFieldTooltip(key, columnTitles, columnTooltips) {
 }
 
 /**
- * Get tooltip for checkStatusId with combined status info including issues details
- * @param {Object} item - The parcel item with checkStatusId and other properties
- * @param {Function} getStatusTitle - Function to get status title by ID
+ * Get tooltip for checkStatus with combined status info including issues details
+ * @param {Object} item - The parcel item with checkStatus and other properties
+ * @param {Function} getStatusTitle - Function to get status title by ID (deprecated parameter)
  * @param {Array} feacnOrders - Array of FEACN orders for issue checking
  * @param {Array} stopWords - Array of stop words for issue checking
  * @returns {string} Tooltip text with status and optional issue details
  */
 export function getCheckStatusTooltip(item, getStatusTitle, feacnOrders, stopWords) {
-  const baseTitle = getStatusTitle(item.checkStatusId)
+  const baseTitle = new CheckStatusCode(item.checkStatus).toString()
 
-  if (HasIssues(item.checkStatusId)) {
+  if (CheckStatusCode.hasIssues(item.checkStatus)) {
     const checkInfo = getCheckStatusInfo(item, feacnOrders, stopWords)
     if (checkInfo) {
       return `${baseTitle}\n${checkInfo}`

@@ -40,7 +40,7 @@ export const ozonRegisterColumnTitles = {
   imei2: 'IMEI 2',
   comment: 'Комментарий',
   statusId: 'Статус',
-  checkStatusId: 'Проверка'
+  checkStatus: 'Проверка'
 }
 
 export const ozonRegisterColumnTooltips = {

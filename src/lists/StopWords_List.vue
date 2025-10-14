@@ -87,7 +87,7 @@ async function deleteStopWord(stopWord) {
         if (error.message?.includes('409')) {
           alertStore.error('Нельзя удалить стоп-слово, у которого есть связанные записи')
         } else {
-          alertStore.error('Ошибка при удалении стоп-слова')
+          alertStore.error('Ошибка при удалении стоп слова')
         }
       }
     }
@@ -130,7 +130,7 @@ defineExpose({
       <v-text-field
         v-model="authStore.stopwords_search"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по стоп-словам и фразам"
+        label="Поиск по стоп словам и фразам"
         variant="solo"
         hide-details
       />

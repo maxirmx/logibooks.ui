@@ -6,7 +6,7 @@
  * Helper functions for parcels list functionality shared between WBR and Ozon components
  */
 
-import { HasIssues } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -80,7 +80,7 @@ export async function approveParcelData(item, parcelsStore, loadOrdersFn, withEx
  * @returns {Object} Props object with CSS class
  */
 export function getRowPropsForParcel(data) {
-  return { class: '' + (HasIssues(data.item.checkStatusId) ? 'order-has-issues' : '') }
+  return { class: '' + (CheckStatusCode.hasIssues(data.item.checkStatus) ? 'order-has-issues' : '') }
 }
 
 /**
@@ -93,7 +93,7 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     !h.key.startsWith('actions') && 
     h.key !== 'productLink' && 
     h.key !== 'statusId' && 
-    h.key !== 'checkStatusId' && 
+    h.key !== 'checkStatus' && 
     h.key !== 'countryCode' &&
     h.key !== 'feacnLookup' &&
     h.key !== 'tnVed' &&

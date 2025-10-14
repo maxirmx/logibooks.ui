@@ -22,7 +22,7 @@ import CheckStatusCode, {
 
 // Create from parts
 const status = CheckStatusCode.fromParts(FCCheckStatus.ApprovedWithExcise, SWCheckStatus.NoIssues)
-console.log(status.toString()) // "Ok стоп-слова, Согласовано с акцизом"
+console.log(status.toString()) // "Ok стоп слова, Согласовано с акцизом"
 
 // Special combined statuses
 const approved = CheckStatusCode.ApprovedWithExcise
@@ -116,7 +116,7 @@ The `toString()` method provides localized Russian descriptions of check statuse
 
 ### SW (Stop Word) Status Strings
 - `NotChecked` → "" (empty)
-- `NoIssues` → "Ok стоп-слова"
+- `NoIssues` → "Ok стоп слова"
 - `Approved` → "Согласовано"
 - `IssueStopWord` → "Стоп слово"
 

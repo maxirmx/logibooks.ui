@@ -186,7 +186,7 @@ describe('CheckStatusCode', () => {
 
     it('should format individual statuses correctly', () => {
       const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
-      expect(noIssues.toString()).toBe('Ok стоп-слова, Ok ТН ВЭД')
+      expect(noIssues.toString()).toBe('Ok стоп слова, Ok ТН ВЭД')
 
       const swApproved = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.Approved)
       expect(swApproved.toString()).toBe('Согласовано')
@@ -200,7 +200,7 @@ describe('CheckStatusCode', () => {
       expect(mixed.toString()).toBe('Стоп слово, Нет ТН ВЭД')
 
       const partialIssue = CheckStatusCode.fromParts(FCCheckStatus.IssueInvalidFeacnFormat, SWCheckStatus.NoIssues)
-      expect(partialIssue.toString()).toBe('Ok стоп-слова, Формат ТН ВЭД')
+      expect(partialIssue.toString()).toBe('Ok стоп слова, Формат ТН ВЭД')
     })
 
     it('should handle zero/not checked values', () => {

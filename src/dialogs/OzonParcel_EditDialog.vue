@@ -346,7 +346,7 @@ function handleFellows() {
               <ActionButton
                 :item="item"
                 icon="fa-solid fa-spell-check"
-                tooltip-text="Сохранить и проверить стоп-слова"
+                tooltip-text="Сохранить и проверить стоп слова"
                 :disabled="isSubmitting || runningAction || loading"
                 @click="() => validateParcel(values, true)"
                 :iconSize="'1x'"

@@ -162,13 +162,13 @@ const router = createRouter({
     },
     {
       path: '/stopword/create',
-      name: 'Регистрация стоп-слова или фразы',
+      name: 'Регистрация стоп слова или фразы',
       component: () => import('@/views/StopWord_CreateView.vue'),
       meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/stopword/edit/:id',
-      name: 'Редактирование стоп-слова или фразы',
+      name: 'Редактирование стоп слова или фразы',
       component: () => import('@/views/StopWord_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)

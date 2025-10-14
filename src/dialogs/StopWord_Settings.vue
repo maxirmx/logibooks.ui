@@ -86,7 +86,7 @@ onMounted(async () => {
         await nextTick()
       }
     } catch {
-      alertStore.error('Ошибка при загрузке данных стоп-слова')
+      alertStore.error('Ошибка при загрузке данных стоп слова')
       router.push('/stopwords')
     } finally {
       loading.value = false
@@ -146,7 +146,7 @@ defineExpose({
 
 <template>
   <div class="settings form-2">
-    <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп-слова или фразы' }}</h1>
+    <h1 class="primary-heading">{{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп слова или фразы' }}</h1>
     <hr class="hr" />
     
     <div v-if="loading" class="text-center m-5">

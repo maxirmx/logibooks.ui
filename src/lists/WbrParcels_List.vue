@@ -630,7 +630,7 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-check-circle" 
               tooltip-text="Согласовать" 
               @click="approveParcel" 
-              :disabled="runningAction || loading" 
+              :disabled="isParcelValidationDisabled(item)" 
             />
           </div>
         </template>

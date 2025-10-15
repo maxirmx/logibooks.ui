@@ -271,6 +271,13 @@ function getApprovalButtons(wrapper) {
   return { approveButton, approveWithExciseButton }
 }
 
+function getValidationButtons(wrapper) {
+  const buttons = wrapper.findAll('button.action-button-stub')
+  const validateStopWordsButton = buttons.find((btn) => btn.attributes('data-tooltip') === 'Сохранить и проверить стоп слова')
+  const validateFeacnButton = buttons.find((btn) => btn.attributes('data-tooltip') === 'Сохранить и проверить коды ТН ВЭД')
+  return { validateStopWordsButton, validateFeacnButton }
+}
+
 describe('Parcel edit dialogs approval state', () => {
   beforeEach(() => {
     currentParcelData = { ...baseParcelData }
@@ -317,6 +324,28 @@ describe('Parcel edit dialogs approval state', () => {
     expect(approveWithExciseButton.element.disabled).toBe(true)
   })
 
+  it('disables validation actions in Ozon dialog when status is ApprovedWithExcise', async () => {
+    currentParcelData = { ...currentParcelData, checkStatus: CheckStatusCode.ApprovedWithExcise.value }
+
+    const dialog = await mountOzonDialog()
+    const { validateStopWordsButton, validateFeacnButton } = getValidationButtons(dialog)
+
+    expect(validateStopWordsButton).toBeTruthy()
+    expect(validateFeacnButton).toBeTruthy()
+    expect(validateStopWordsButton.element.disabled).toBe(true)
+    expect(validateFeacnButton.element.disabled).toBe(true)
+  })
+
+  it('keeps validation actions enabled in Ozon dialog when status is not ApprovedWithExcise', async () => {
+    const dialog = await mountOzonDialog()
+    const { validateStopWordsButton, validateFeacnButton } = getValidationButtons(dialog)
+
+    expect(validateStopWordsButton).toBeTruthy()
+    expect(validateFeacnButton).toBeTruthy()
+    expect(validateStopWordsButton.element.disabled).toBe(false)
+    expect(validateFeacnButton.element.disabled).toBe(false)
+  })
+
   it('keeps approval actions enabled in Ozon dialog when status is not ApprovedWithExcise', async () => {
     const dialog = await mountOzonDialog()
     const { approveButton, approveWithExciseButton } = getApprovalButtons(dialog)
@@ -337,6 +366,28 @@ describe('Parcel edit dialogs approval state', () => {
     expect(approveWithExciseButton).toBeTruthy()
     expect(approveButton.element.disabled).toBe(true)
     expect(approveWithExciseButton.element.disabled).toBe(true)
+  })
+
+  it('disables validation actions in WBR dialog when status is ApprovedWithExcise', async () => {
+    currentParcelData = { ...currentParcelData, checkStatus: CheckStatusCode.ApprovedWithExcise.value }
+
+    const dialog = await mountWbrDialog()
+    const { validateStopWordsButton, validateFeacnButton } = getValidationButtons(dialog)
+
+    expect(validateStopWordsButton).toBeTruthy()
+    expect(validateFeacnButton).toBeTruthy()
+    expect(validateStopWordsButton.element.disabled).toBe(true)
+    expect(validateFeacnButton.element.disabled).toBe(true)
+  })
+
+  it('keeps validation actions enabled in WBR dialog when status is not ApprovedWithExcise', async () => {
+    const dialog = await mountWbrDialog()
+    const { validateStopWordsButton, validateFeacnButton } = getValidationButtons(dialog)
+
+    expect(validateStopWordsButton).toBeTruthy()
+    expect(validateFeacnButton).toBeTruthy()
+    expect(validateStopWordsButton.element.disabled).toBe(false)
+    expect(validateFeacnButton.element.disabled).toBe(false)
   })
 
   it('keeps approval actions enabled in WBR dialog when status is not ApprovedWithExcise', async () => {

@@ -139,6 +139,27 @@ describe('CheckStatusCode', () => {
     })
   })
 
+  describe('isApprovedWithExcise method', () => {
+    it('should detect ApprovedWithExcise combined value', () => {
+      const approved = CheckStatusCode.ApprovedWithExcise
+      expect(CheckStatusCode.isApprovedWithExcise(approved.value)).toBe(true)
+    })
+
+    it('should detect ApprovedWithExcise instance', () => {
+      const approved = CheckStatusCode.ApprovedWithExcise
+      expect(CheckStatusCode.isApprovedWithExcise(approved)).toBe(true)
+    })
+
+    it('should return false for non-approved statuses', () => {
+      const noIssues = CheckStatusCode.NoIssues
+      const withIssues = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.IssueStopWord)
+
+      expect(CheckStatusCode.isApprovedWithExcise(noIssues.value)).toBe(false)
+      expect(CheckStatusCode.isApprovedWithExcise(withIssues.value)).toBe(false)
+      expect(CheckStatusCode.isApprovedWithExcise(null)).toBe(false)
+    })
+  })
+
   describe('compose method', () => {
     it('should compose FC and SW correctly', () => {
       expect(CheckStatusCode.compose(0x0230, 0x0010)).toBe(0x02300010)
@@ -325,6 +346,23 @@ describe('CheckStatusHelper', () => {
       expect(CheckStatusHelper.hasIssues(0x01000000)).toBe(true)
       expect(CheckStatusHelper.hasIssues(0x00000100)).toBe(true)
       expect(CheckStatusHelper.hasIssues(0x02300010)).toBe(false)
+    })
+  })
+
+  describe('isApprovedWithExcise method', () => {
+    it('should detect approved with excise states', () => {
+      const approved = CheckStatusCode.ApprovedWithExcise
+      expect(CheckStatusHelper.isApprovedWithExcise(approved.value)).toBe(true)
+      expect(CheckStatusHelper.isApprovedWithExcise(approved)).toBe(true)
+    })
+
+    it('should return false for non-approved states', () => {
+      expect(CheckStatusHelper.isApprovedWithExcise(CheckStatusCode.NoIssues.value)).toBe(false)
+      expect(
+        CheckStatusHelper.isApprovedWithExcise(
+          CheckStatusCode.fromParts(FCCheckStatus.IssueInvalidFeacnFormat, SWCheckStatus.NoIssues).value
+        )
+      ).toBe(false)
     })
   })
 

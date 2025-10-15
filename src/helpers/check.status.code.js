@@ -133,8 +133,29 @@ export class CheckStatusCode {
    * Check if the combined status has issues
    */
   static hasIssues(value) {
-    return (CheckStatusCode.getFC(value) & 0x0100) !== 0 || 
+    return (CheckStatusCode.getFC(value) & 0x0100) !== 0 ||
            (CheckStatusCode.getSW(value) & 0x0100) !== 0
+  }
+
+  /**
+   * Determine if the combined status represents an ApprovedWithExcise state
+   */
+  static isApprovedWithExcise(value) {
+    if (value instanceof CheckStatusCode) {
+      return (
+        value.fc === FCCheckStatus.ApprovedWithExcise &&
+        value.sw === SWCheckStatus.ApprovedWithExcise
+      )
+    }
+
+    if (value == null) {
+      return false
+    }
+
+    const fc = CheckStatusCode.getFC(Number(value))
+    const sw = CheckStatusCode.getSW(Number(value))
+
+    return fc === FCCheckStatus.ApprovedWithExcise && sw === SWCheckStatus.ApprovedWithExcise
   }
 
   /**
@@ -283,6 +304,13 @@ export class CheckStatusHelper {
    */
   static hasIssues(combined) {
     return CheckStatusCode.hasIssues(combined)
+  }
+
+  /**
+   * Determine if the combined status represents an ApprovedWithExcise state
+   */
+  static isApprovedWithExcise(combined) {
+    return CheckStatusCode.isApprovedWithExcise(combined)
   }
 
   /**

@@ -109,6 +109,9 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
+const isApprovedWithExciseStatus = computed(() =>
+  CheckStatusCode.isApprovedWithExcise(item.value?.checkStatus)
+)
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
@@ -363,7 +366,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-check-circle"
                 tooltip-text="Сохранить и согласовать"
-                :disabled="isSubmitting || runningAction || loading"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => approveParcel(values)"
                 variant="green"
                 :iconSize="'1x'"
@@ -372,7 +375,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-check-circle"
                 tooltip-text="Сохранить и согласовать c акцизом"
-                :disabled="isSubmitting || runningAction || loading"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => approveParcelWithExcise(values)"
                 variant="orange"
                 :iconSize="'1x'"

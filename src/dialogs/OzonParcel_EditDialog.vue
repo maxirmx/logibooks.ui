@@ -382,7 +382,7 @@ function handleFellows() {
           <!-- Last view -->
           <div class="form-group">
             <label for="lastView" class="label">Последний просмотр:</label>
-            <div class="readonly-field">
+            <div class="readonly-field" name="lastView" id="lastView">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
             </div>
           </div>          

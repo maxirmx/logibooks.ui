@@ -34,7 +34,6 @@ import {
   approveParcelWithExcise as approveParcelWithExciseHelper,
   generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
-import { useParcelActionGuards } from '@/composables/useParcelActionGuards.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -110,7 +109,9 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
-const { isApprovedWithExciseStatus, areValidationActionsDisabled } = useParcelActionGuards(item)
+const isApprovedWithExciseStatus = computed(() =>
+  CheckStatusCode.isApprovedWithExcise(item.value?.checkStatus)
+)
 
 const isDescriptionVisible = ref(false)
 
@@ -355,7 +356,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-spell-check"
                 tooltip-text="Сохранить и проверить стоп слова"
-                :disabled="isSubmitting || runningAction || loading || areValidationActionsDisabled"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => validateParcel(values, true)"
                 :iconSize="'1x'"
               />
@@ -363,7 +364,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-anchor-circle-check"
                 tooltip-text="Сохранить и проверить коды ТН ВЭД"
-                :disabled="isSubmitting || runningAction || loading || areValidationActionsDisabled"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => validateParcel(values, false)"
                 :iconSize="'1x'"
               />

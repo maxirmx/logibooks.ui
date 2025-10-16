@@ -347,6 +347,14 @@ async function exportParcelXml(item) {
   }
 }
 
+function isParcelValidationDisabled(item) {
+  if (runningAction.value || loading.value) {
+    return true
+  }
+
+  return CheckStatusCode.isApprovedWithExcise(item?.checkStatus)
+}
+
 async function validateParcelSw(item) {
   if (runningAction.value) return
   runningAction.value = true
@@ -609,23 +617,24 @@ function getGenericTemplateHeaders() {
               @click="editParcel" 
               :disabled="runningAction || loading" 
             />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-spell-check" 
-              tooltip-text="Проверить по стоп-словам" 
-              @click="validateParcelSw" 
-              :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-spell-check"
+              tooltip-text="Проверить по стоп-словам"
+              @click="validateParcelSw"
+              :disabled="isParcelValidationDisabled(item)"
             />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-anchor-circle-check" 
-              tooltip-text="Проверить по кодам ТН ВЭД" 
-              @click="validateParcelFc" :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-anchor-circle-check"
+              tooltip-text="Проверить по кодам ТН ВЭД"
+              @click="validateParcelFc"
+              :disabled="isParcelValidationDisabled(item)"
             />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-magnifying-glass" 
-              tooltip-text="Подобрать код ТН ВЭД" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-magnifying-glass"
+              tooltip-text="Подобрать код ТН ВЭД"
               @click="lookupFeacnCodes" :disabled="runningAction || loading"
             />
             <ActionButton 
@@ -640,7 +649,7 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-check-circle" 
               tooltip-text="Согласовать" 
               @click="approveParcel" 
-              :disabled="runningAction || loading" 
+              :disabled="isParcelValidationDisabled(item)" 
             />
           </div>
         </template>

@@ -28,11 +28,11 @@ import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
-import { 
-  validateParcelData, 
-  approveParcel as approveParcelHelper, 
-  approveParcelWithExcise as approveParcelWithExciseHelper, 
-  generateXml as generateXmlHelper 
+import {
+  validateParcelData,
+  approveParcel as approveParcelHelper,
+  approveParcelWithExcise as approveParcelWithExciseHelper,
+  generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
 
 const props = defineProps({
@@ -109,6 +109,9 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
+const isApprovedWithExciseStatus = computed(() =>
+  CheckStatusCode.isApprovedWithExcise(item.value?.checkStatus)
+)
 
 const isDescriptionVisible = ref(false)
 
@@ -353,7 +356,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-spell-check"
                 tooltip-text="Сохранить и проверить стоп слова"
-                :disabled="isSubmitting || runningAction || loading"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => validateParcel(values, true)"
                 :iconSize="'1x'"
               />
@@ -361,7 +364,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-anchor-circle-check"
                 tooltip-text="Сохранить и проверить коды ТН ВЭД"
-                :disabled="isSubmitting || runningAction || loading"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => validateParcel(values, false)"
                 :iconSize="'1x'"
               />
@@ -369,7 +372,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-check-circle"
                 tooltip-text="Сохранить и согласовать"
-                :disabled="isSubmitting || runningAction || loading"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => approveParcel(values)"
                 variant="green"
                 :iconSize="'1x'"
@@ -378,7 +381,7 @@ function handleFellows() {
                 :item="item"
                 icon="fa-solid fa-check-circle"
                 tooltip-text="Сохранить и согласовать c акцизом"
-                :disabled="isSubmitting || runningAction || loading"
+                :disabled="isSubmitting || runningAction || loading || isApprovedWithExciseStatus"
                 @click="() => approveParcelWithExcise(values)"
                 variant="orange"
                 :iconSize="'1x'"

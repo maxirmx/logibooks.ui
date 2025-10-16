@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref, reactive } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 const stores = {}
@@ -55,7 +56,8 @@ function setupStores() {
 
   stores.parcelStatuses = {
     ensureLoaded: vi.fn().mockResolvedValue(),
-    parcelStatuses: []
+    parcelStatuses: [],
+    getStatusTitle: vi.fn(() => 'Status')
   }
 
   stores.parcelCheckStatuses = {
@@ -304,5 +306,30 @@ describe.each([
 
     wrapper.unmount()
     expect(registerHeaderActionsMock.stop).toHaveBeenCalled()
+  })
+
+  it('disables validation buttons when parcel is approved with excise', async () => {
+    stores.parcels.items.value = [{
+      id: 42,
+      postingNumber: 'PN-42',
+      shk: '1234567890',
+      checkStatus: CheckStatusCode.ApprovedWithExcise.value,
+      keyWordIds: [],
+      blockedByFellowItem: false
+    }]
+    stores.parcels.totalCount.value = 1
+
+    const wrapper = mount(Component, {
+      props: { registerId: 4 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const rowButtons = wrapper.findAll('.actions-container .action-button-stub')
+    expect(rowButtons).toHaveLength(6)
+    expect(rowButtons[1].attributes('disabled')).toBeDefined()
+    expect(rowButtons[2].attributes('disabled')).toBeDefined()
+    expect(rowButtons[3].attributes('disabled')).toBeUndefined()
   })
 })

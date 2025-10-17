@@ -25,7 +25,8 @@ const baseRegisterItem = {
   theOtherCountryCode: null,
   departureAirportId: 0,
   arrivalAirportId: 0,
-  date: '2024-01-01'
+  date: '2024-01-01',
+  lookupByArticle: false
 }
 const mockItem = ref({ ...baseRegisterItem })
 const getById = vi.fn(() => Promise.resolve())
@@ -127,7 +128,7 @@ const FieldStub = {
   name: 'Field',
   props: ['name', 'id', 'type', 'as', 'readonly', 'disabled', 'valueAsNumber'],
   template: `
-    <input :id="id || name" :type="type" :readonly="readonly" :disabled="disabled" v-if="as !== 'select'" />
+    <input :id="id || name" :type="type" :readonly="readonly" :disabled="disabled" :class="$attrs.class" v-if="as !== 'select'" />
     <select :id="id || name" :disabled="disabled" v-else><slot /></select>
   `
 }
@@ -520,6 +521,77 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.actionDialogState.show).toBe(false)
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
+
+  it('renders lookupByArticle checkbox with correct properties', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const lookupCheckbox = wrapper.find('#lookupByArticle')
+    expect(lookupCheckbox.exists()).toBe(true)
+    expect(lookupCheckbox.attributes('type')).toBe('checkbox')
+    expect(lookupCheckbox.classes()).toContain('custom-checkbox-input')
+
+    const label = wrapper.find('.custom-checkbox')
+    expect(label.exists()).toBe(true)
+    const labelText = wrapper.find('.custom-checkbox-label')
+    expect(labelText.text()).toBe('Использовать данные этого реестра для подбора кода ТН ВЭД по артикулам')
+  })
+
+  it('sets default value for lookupByArticle in create mode', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.lookupByArticle).toBe(false)
+  })
+
+  it('submits lookupByArticle value in form data', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      lookupByArticle: true
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit(
+      {
+        lookupByArticle: true,
+        dealNumber: 'D123'
+      },
+      { setErrors: vi.fn() }
+    )
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      lookupByArticle: true,
+      dealNumber: 'D123'
+    }))
+  })
+
   it('handles errors in create mode with Reference object', async () => {
     // Mock upload success but update failure
   upload.mockResolvedValueOnce({ success: true, Success: true, registerId: 42, ErrMsg: '' })

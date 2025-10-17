@@ -178,6 +178,10 @@ watch(
 
     if (!props.create) {
       await registersStore.getById(props.id)
+      // Ensure lookupByArticle has a default value if not set
+      if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
+        item.value.lookupByArticle = false
+      }
     } else {
       try {
         await registersStore.getAll()
@@ -196,6 +200,9 @@ watch(
       }
       if (item.value.arrivalAirportId === undefined || item.value.arrivalAirportId === null) {
         item.value.arrivalAirportId = 0
+      }
+      if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
+        item.value.lookupByArticle = false
       }
     }
 
@@ -247,7 +254,8 @@ const schema = Yup.object().shape({
   theOtherCompanyId: Yup.number().nullable(),
   theOtherCountryCode: Yup.number().nullable(),
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
-  arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable()
+  arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  lookupByArticle: Yup.boolean().default(false)
 })
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
@@ -361,6 +369,9 @@ function prepareRegisterPayload(formValues) {
   payload.theOtherCompanyId = parseNumber(formValues.theOtherCompanyId, null)
   payload.theOtherCountryCode = parseNumber(formValues.theOtherCountryCode, null)
   payload.customsProcedureId = parseNumber(formValues.customsProcedureId, null)
+
+  // Handle boolean checkbox value
+  payload.lookupByArticle = Boolean(formValues.lookupByArticle ?? item.value?.lookupByArticle ?? false)
 
   const isAviaSelected =
     selectedTransportationTypeId !== null &&
@@ -685,6 +696,24 @@ function getCustomerName(customerId) {
             </select>
           </div>
         </div>
+
+        <div class="form-row-1" v-else>
+          <div class="form-group lookup-by-article-group">
+            <label class="custom-checkbox">
+              <Field
+                id="lookupByArticle"
+                type="checkbox"
+                name="lookupByArticle"
+                :value="true"
+                :unchecked-value="false"
+                class="custom-checkbox-input"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="label custom-checkbox-label">Использовать данные этого реестра для подбора кода ТН ВЭД по артикулам</span>
+            </label>
+          </div>
+        </div>
+
       </div>
 
       <!-- actions moved to header -->
@@ -813,5 +842,69 @@ function getCustomerName(customerId) {
 .form-disabled .feacn-search-wrapper {
   pointer-events: auto;
   opacity: 1;
+}
+
+/* Lookup by article checkbox styling */
+.lookup-by-article-group {
+  width: 100% !important;
+  flex: 1 1 100%;
+  max-width: none !important;
+  margin-bottom: 1rem;
+}
+
+.custom-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  width: 100%;
+  line-height: 1.4;
+}
+
+.custom-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.custom-checkbox-box {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background-color: #1976d2;
+  border-radius: 3px;
+  position: relative;
+  margin-top: 0.2rem;
+}
+
+.custom-checkbox-box:after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  background-image: url('@/assets/check-solid.svg');
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  transform: translateY(-2px);
+}
+
+.custom-checkbox-input:checked ~ .custom-checkbox-box:after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.custom-checkbox-label {
+  flex: 1;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.custom-checkbox:hover .custom-checkbox-box {
+  background-color: #1565c0;
 }
 </style>

@@ -403,12 +403,16 @@ defineExpose({
         class="elevation-1 interlaced-table"
       >
         <template #[`item.dealNumber`]="{ item }">
+          
           <ClickableCell 
             :item="item" 
             :display-value="item.dealNumber" 
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
           />
+
+  <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
+
         </template>
         <template #[`item.senderRecepient`]="{ item }">
           <ClickableCell 
@@ -641,6 +645,18 @@ defineExpose({
 
 .customer-select :deep(.v-list-item__content) {
   color: var(--primary-color, #333333) !important;
+}
+
+/* Bookmark icon placed in table cell: green and aligned to right */
+.bookmark-icon {
+  color: #28a745; /* green */
+  margin-left: 8px;
+  margin-top: 2px;
+  opacity: 0.95;
+}
+
+.bookmark-icon:hover {
+  color: #218838;
 }
 </style>
 

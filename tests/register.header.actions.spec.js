@@ -42,7 +42,7 @@ describe('useRegisterHeaderActions', () => {
       lookupFeacnCodes: vi.fn(),
       // The store method with extended flag will reuse lookupFeacnCodes with second param true
       getLookupFeacnCodesProgress: vi.fn(),
-      cancelLookupFeacnCodes: vi.fn(),
+  cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
       generate: vi.fn().mockResolvedValue(),
       generateWithoutExcise: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
@@ -78,7 +78,7 @@ describe('useRegisterHeaderActions', () => {
 
     // Should call store method with second param true
     expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(1, true)
-    expect(validationState.operation).toBe('lookup-feacn-codes-ex')
+    expect(validationState.operation).toBe('lookup-feacn-codes')
     // After initial poll, progress total should reflect mocked value
     expect(validationState.total).toBe(10)
     expect(progressPercent.value).toBe(0)
@@ -137,5 +137,31 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('cancels extended FEACN lookup via cancelLookupFeacnCodes', async () => {
+    // Arrange: simulate active extended lookup
+    registersStore.lookupFeacnCodes.mockResolvedValueOnce({ id: 'handle-ex' })
+    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({ total: 5, processed: 0, finished: false })
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadOrders,
+      isComponentMounted
+    })
+
+    await actions.lookupFeacnCodesEx()
+    expect(actions.validationState.operation).toBe('lookup-feacn-codes')
+    // Act: invoke cancel
+    await actions.cancelValidation()
+
+    // Assert: correct cancel path used
+    expect(registersStore.cancelLookupFeacnCodes).toHaveBeenCalledWith('handle-ex')
+    expect(registersStore.cancelValidation).not.toHaveBeenCalled()
+    expect(actions.validationState.show).toBe(false)
   })
 })

@@ -165,7 +165,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
 
   async function performFeacnLookup(item, { extended = false } = {}) {
     try {
-      validationState.operation = extended ? 'lookup-feacn-codes-ex' : 'lookup-feacn-codes'
+      validationState.operation = 'lookup-feacn-codes'
       pollingTimer.stop()
       pollingFunction = pollFeacnLookup
       const res = await registersStore.lookupFeacnCodes(item.id, extended)
@@ -201,17 +201,20 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
   }
 
   function cancelValidationWrapper() {
-    if (validationState.operation === 'lookup-feacn-codes') {
+    const isFeacnLookup =
+      validationState.operation === 'lookup-feacn-codes' ||
+      validationState.operation === 'lookup-feacn-codes-ex'
+
+    if (isFeacnLookup) {
       if (validationState.handleId) {
-        registersStore
-          .cancelLookupFeacnCodes(validationState.handleId)
-          .catch(() => {})
+        registersStore.cancelLookupFeacnCodes(validationState.handleId).catch(() => {})
       }
       validationState.show = false
       pollingTimer.stop()
-    } else {
-      cancelValidation(validationState, registersStore, () => pollingTimer.stop())
+      return
     }
+    // Fallback to regular validation cancellation
+    cancelValidation(validationState, registersStore, () => pollingTimer.stop())
   }
 
   function stopPolling() {

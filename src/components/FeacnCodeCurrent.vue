@@ -22,9 +22,9 @@ const cellClass = computed(() => {
 })
 
 // Watch for changes and update class asynchronously
-watch([() => componentProps.item.tnVed, () => componentProps.feacnCodes], async () => {
+watch([() => componentProps.item.tnVed, () => componentProps.feacnCodes, () => componentProps.item.matchingFC], async () => {
   try {
-    tnvedClass.value = await getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes)
+    tnvedClass.value = await getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes, componentProps.item.matchingFC)
   } catch (error) {
     console.error('Error getting TN VED cell class:', error)
     tnvedClass.value = 'feacn-code-tooltip'

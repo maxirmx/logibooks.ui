@@ -28,12 +28,14 @@ vi.mock('@/stores/parcels.store.js', () => ({
 // Mock helper functions - use individually named mocks for better control
 const mockGetFeacnCodesForKeywords = vi.fn()
 const mockGetFeacnCodeItemClass = vi.fn()
+const mockGetMatchingFeacnCodeItemClass = vi.fn()
 const mockUpdateParcelTnVed = vi.fn().mockResolvedValue({ success: true })
 const mockGetMatchType = vi.fn()
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getFeacnCodesForKeywords: (keyWordIds) => mockGetFeacnCodesForKeywords(keyWordIds),
   getFeacnCodeItemClass: (code, selectedCode, codes) => mockGetFeacnCodeItemClass(code, selectedCode, codes),
+  getMatchingFeacnCodeItemClass: (code, selectedCode, codes) => mockGetMatchingFeacnCodeItemClass(code, selectedCode, codes),
   updateParcelTnVed: (...args) => mockUpdateParcelTnVed(...args),
   getMatchType: (code, tnVed) => mockGetMatchType(code, tnVed)
 }))
@@ -88,6 +90,11 @@ describe('FeacnCodeSelector', () => {
     // Set up mock implementation for getFeacnCodeItemClass
     mockGetFeacnCodeItemClass.mockImplementation((code, selectedCode) => {
       return code === selectedCode ? 'selected-code' : 'unselected-code'
+    })
+    // Matching FC inherits selected/unselected logic plus border class
+    mockGetMatchingFeacnCodeItemClass.mockImplementation((code, selectedCode) => {
+      const base = code === selectedCode ? 'selected-code' : 'unselected-code'
+      return base + ' matching-feacn-code-item'
     })
     
     // Set up mock implementation for getMatchType
@@ -187,6 +194,26 @@ describe('FeacnCodeSelector', () => {
       // Should render a fallback dash
       expect(wrapper.text()).toBe('-')
     })
+
+    it('renders matchingFC above regular codes when provided (without comment)', () => {
+      const wrapper = createWrapper({
+        item: { id: 3, keyWordIds: [1], tnVed: '1234567890', matchingFC: '5555555555', matchingFCComment: 'Лучшее совпадение' }
+      })
+      const lookupColumn = wrapper.find('.feacn-lookup-column')
+      expect(lookupColumn.exists()).toBe(true)
+      const firstItemText = lookupColumn.find('.matching-feacn-code-item').text()
+      expect(firstItemText).toContain('5555555555')
+      expect(firstItemText).not.toContain('Лучшее совпадение')
+    })
+
+    it('applies matching special class to matchingFC', () => {
+      const wrapper = createWrapper({
+        item: { id: 4, keyWordIds: [1], tnVed: '1234567890', matchingFC: '5555555555', matchingFCComment: 'Комментарий' }
+      })
+      const matchingDiv = wrapper.find('.matching-feacn-code-item')
+      expect(matchingDiv.exists()).toBe(true)
+      expect(matchingDiv.classes()).toContain('matching-feacn-code-item')
+    })
   })
 
   describe('interactions', () => {
@@ -215,6 +242,26 @@ describe('FeacnCodeSelector', () => {
       await selectedCodeDiv.trigger('click')
       
       // Verify that updateParcelTnVed was not called
+      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
+    })
+
+    it('calls updateParcelTnVed when clicking matchingFC if not selected', async () => {
+      const wrapper = createWrapper({
+        item: { id: 5, keyWordIds: [1], tnVed: '1234567890', matchingFC: '8888888888', matchingFCComment: 'Особый' }
+      })
+      const matchingDiv = wrapper.find('.matching-feacn-code-item')
+      expect(matchingDiv.exists()).toBe(true)
+      await matchingDiv.trigger('click')
+      expect(mockUpdateParcelTnVed).toHaveBeenCalled()
+    })
+
+    it('does not call updateParcelTnVed when clicking matchingFC if it equals tnVed', async () => {
+      const wrapper = createWrapper({
+        item: { id: 6, keyWordIds: [1], tnVed: '7777777777', matchingFC: '7777777777', matchingFCComment: 'Точный' }
+      })
+      const matchingDiv = wrapper.find('.matching-feacn-code-item')
+      expect(matchingDiv.exists()).toBe(true)
+      await matchingDiv.trigger('click')
       expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
     })
   })

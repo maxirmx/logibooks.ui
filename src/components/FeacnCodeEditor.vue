@@ -9,6 +9,7 @@ import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
+import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
@@ -46,6 +47,7 @@ const formValues = useFormValues()
 
 const searchActive = ref(false)
 const tnVedClassValue = ref('')
+const feacnTooltips = useFeacnTooltips()
 
 // Computed properties for disabled states to ensure reactivity
 const isSearchButtonDisabled = computed(() => {
@@ -62,11 +64,11 @@ const tnVedClass = computed(() => {
 })
 
 // Watch for changes and update class asynchronously
-watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.keyWordIds], async () => {
+watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.keyWordIds, () => props.item?.matchingFC], async () => {
   try {
     const currentTnVed = formValues.value.tnVed || props.item?.tnVed
     const feacnCodes = getFeacnCodesForKeywords(props.item?.keyWordIds, keyWordsStore)
-    tnVedClassValue.value = await getTnVedCellClass(currentTnVed, feacnCodes)
+    tnVedClassValue.value = await getTnVedCellClass(currentTnVed, feacnCodes, props.item?.matchingFC)
   } catch {
     tnVedClassValue.value = ''
   }
@@ -149,6 +151,13 @@ async function handleCodeSelect(code) {
   searchActive.value = false
 }
 
+function handleTnVedMouseEnter() {
+  const code = formValues.value.tnVed || props.item?.tnVed
+  if (code) {
+    loadFeacnTooltipOnHover(code)
+  }
+}
+
 </script>
 
 <template>
@@ -156,15 +165,30 @@ async function handleCodeSelect(code) {
   <div class="form-section">
     <div class="form-row">
         <div class="form-group feacn-search-wrapper">
-          <label for="tnVed" class="label" :title="getFieldTooltip('tnVed', props.columnTitles, props.columnTooltips)" @dblclick="toggleSearch">{{ props.columnTitles.tnVed }}:</label>
-          <Field name="tnVed" id="tnVed" class="form-control input"
-                 :readonly="searchActive"
-                 :class="{
-                   'is-invalid': props.errors && props.errors.tnVed,
-                   [tnVedClass]: true
-                 }"
-                 @dblclick="toggleSearch"
-          />
+          <label for="tnVed" class="label" 
+                 :title="getFieldTooltip('tnVed', props.columnTitles, props.columnTooltips)" 
+                 @dblclick="toggleSearch">{{ props.columnTitles.tnVed }}:
+          </label>
+          <v-tooltip content-class="feacn-tooltip" location="top" data-testid="tnved-editor-decode-tooltip">
+            <template #activator="{ props: tooltipProps }">
+              <Field name="tnVed" id="tnVed" class="form-control input"
+                     v-bind="tooltipProps"
+                     :readonly="searchActive"
+                     :class="{
+                       'is-invalid': props.errors && props.errors.tnVed,
+                       [tnVedClass]: true
+                     }"
+                     @dblclick="toggleSearch"
+                     @mouseenter="handleTnVedMouseEnter"
+              />
+            </template>
+            <template #default>
+              <div class="d-flex align-center">
+                <font-awesome-icon icon="fa-solid fa-eye" class="mr-3" />
+                {{ feacnTooltips[formValues.tnVed || props.item?.tnVed]?.name || 'Наведите для загрузки...' }}
+              </div>
+            </template>
+          </v-tooltip>
           <div class="action-buttons">
             <ActionButton
               :item="props.item"

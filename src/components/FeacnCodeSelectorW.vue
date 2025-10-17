@@ -5,7 +5,7 @@
 
 import { computed } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs } from '@/helpers/parcels.list.helpers.js'
+import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 
@@ -19,10 +19,23 @@ const keyWordsStore = useKeyWordsStore()
 // Use the shared tooltip cache
 const feacnTooltips = useFeacnTooltips()
 
-// Computed property for keyword/FEACN pairs
-const keywordsWithFeacn = computed(() =>
-  getKeywordFeacnPairs(props.item?.keyWordIds, keyWordsStore)
-)
+// Keyword/FEACN pairs
+const keywordsWithFeacn = computed(() => getKeywordFeacnPairs(props.item?.keyWordIds, keyWordsStore))
+
+// Unified list: optional matchingFC first, then keyword pairs
+const combinedCodes = computed(() => {
+  const out = []
+  if (props.item.matchingFC && props.item.matchingFC !== '') {
+    out.push({
+      id: 'matchingFC',
+      feacnCode: props.item.matchingFC,
+      word: props.item.matchingFCComment || 'Комментарий отсутствует',
+      isMatching: true
+    })
+  }
+  keywordsWithFeacn.value.forEach(k => out.push({ ...k, isMatching: false }))
+  return out
+})
 
 function handleCodeSelect(feacnCode) {
   if (typeof props.onSelect === 'function') {
@@ -38,41 +51,48 @@ function handleMouseEnter(code) {
 <template>
   <div class="form-group">
     <label class="label">Подбор ТН ВЭД:</label>
-    <div v-if="keywordsWithFeacn.length > 0" class="form-control feacn-lookup-column">
-      <div 
-        v-for="keyword in keywordsWithFeacn" 
-        :key="keyword.id"
+    <div v-if="combinedCodes.length > 0" class="form-control feacn-lookup-column">
+      <div
+        v-for="entry in combinedCodes"
+        :key="entry.id"
         class="keyword-item"
       >
         <v-tooltip content-class="feacn-tooltip" location="top">
           <template #activator="{ props: tooltipProps }">
-            <div 
+            <div
               v-bind="tooltipProps"
               :class="[
-                getFeacnCodeItemClass(keyword.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
-                'feacn-edit-dialog-item'
+                entry.isMatching
+                  ? getMatchingFeacnCodeItemClass(entry.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore))
+                  : getFeacnCodeItemClass(entry.feacnCode, item.tnVed, getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)),
+                'feacn-edit-dialog-item',
+                'keyword-code'
               ]"
-              class="keyword-code"
-              @click="() => handleCodeSelect(keyword.feacnCode)"
-              @mouseenter="() => handleMouseEnter(keyword.feacnCode)"
+              @click="() => handleCodeSelect(entry.feacnCode)"
+              @mouseenter="() => handleMouseEnter(entry.feacnCode)"
             >
-              {{ keyword.feacnCode }} - "{{ keyword.word }}"
+              <template v-if="entry.isMatching">
+                {{ entry.feacnCode }} - {{ entry.word }}
+              </template>
+              <template v-else>
+                {{ entry.feacnCode }} - "{{ entry.word }}"
+              </template>
             </div>
           </template>
           <template #default>
             <div class="d-flex align-center">
               <font-awesome-icon icon="fa-solid fa-eye" class="mr-3" />
-              {{ feacnTooltips[keyword.feacnCode]?.name || 'Наведите для загрузки...' }}
+              {{ feacnTooltips[entry.feacnCode]?.name || 'Наведите для загрузки...' }}
             </div>
           </template>
         </v-tooltip>
         <div class="action-buttons">
           <ActionButton
-            :item="keyword"
-            :icon="keyword.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
-            :tooltip-text="keyword.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
-            :disabled="keyword.feacnCode === item.tnVed"
-            @click="() => handleCodeSelect(keyword.feacnCode)"
+            :item="entry"
+            :icon="entry.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
+            :tooltip-text="entry.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
+            :disabled="entry.feacnCode === item.tnVed"
+            @click="() => handleCodeSelect(entry.feacnCode)"
           />
         </div>
       </div>

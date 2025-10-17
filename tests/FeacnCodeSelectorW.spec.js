@@ -13,7 +13,8 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getFeacnCodesForKeywords: vi.fn(() => []),
   getFeacnCodeItemClass: vi.fn(() => 'test-class'),
-  getKeywordFeacnPairs: vi.fn(() => [])
+  getKeywordFeacnPairs: vi.fn(() => []),
+  getMatchingFeacnCodeItemClass: vi.fn(() => 'test-class matching-feacn-code-item')
 }))
 
 // Mock the tooltip helper
@@ -36,19 +37,21 @@ describe('FeacnCodeSelectorW', () => {
     mockOnSelect = vi.fn()
     
     // Import the mocked functions
-    const { getKeywordFeacnPairs, getFeacnCodeItemClass, getFeacnCodesForKeywords } = await import('@/helpers/parcels.list.helpers.js')
+  const { getKeywordFeacnPairs, getFeacnCodeItemClass, getFeacnCodesForKeywords, getMatchingFeacnCodeItemClass } = await import('@/helpers/parcels.list.helpers.js')
     const { useFeacnTooltips, loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
     
     // Reset mocks
     vi.mocked(getKeywordFeacnPairs).mockClear()
-    vi.mocked(getFeacnCodeItemClass).mockClear()
+  vi.mocked(getFeacnCodeItemClass).mockClear()
+  vi.mocked(getMatchingFeacnCodeItemClass).mockClear()
     vi.mocked(getFeacnCodesForKeywords).mockClear()
     vi.mocked(useFeacnTooltips).mockClear()
     vi.mocked(loadFeacnTooltipOnHover).mockClear()
     
     // Default mock implementations
     vi.mocked(getFeacnCodesForKeywords).mockReturnValue([])
-    vi.mocked(getFeacnCodeItemClass).mockReturnValue('test-class')
+  vi.mocked(getFeacnCodeItemClass).mockReturnValue('test-class')
+  vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue('test-class matching-feacn-code-item')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
     vi.mocked(useFeacnTooltips).mockReturnValue({ value: {} })
     vi.mocked(loadFeacnTooltipOnHover).mockResolvedValue('Test tooltip')
@@ -208,5 +211,88 @@ describe('FeacnCodeSelectorW', () => {
     
     // Check that v-tooltip component is rendered
     expect(wrapper.find('[data-testid="v-tooltip"]').exists()).toBe(true)
+  })
+
+  it('renders matchingFC above keywords when provided', async () => {
+    const mockKeywords = [
+      { id: 1, word: 'keyword one', feacnCode: '11111111' }
+    ]
+    const { getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
+    vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue('feacn-code-item clickable matched matching-feacn-code-item')
+
+    wrapper = createWrapper({
+      item: {
+        keyWordIds: [1],
+        tnVed: '22222222',
+        matchingFC: '33333333',
+        matchingFCComment: 'Лучшее совпадение'
+      }
+    })
+
+    const allItems = wrapper.findAll('.keyword-item')
+    expect(allItems.length).toBeGreaterThan(0)
+    // First item should contain matchingFC pattern
+    const firstText = allItems[0].text()
+    expect(firstText).toContain('33333333 - Лучшее совпадение')
+    // Ensure matching class applied
+    const firstCodeDiv = allItems[0].find('.keyword-code')
+    expect(firstCodeDiv.classes()).toContain('matching-feacn-code-item')
+  })
+
+  it('applies disabled state when matchingFC equals tnVed', async () => {
+    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
+
+    wrapper = createWrapper({
+      item: {
+        keyWordIds: [],
+        tnVed: '55555555',
+        matchingFC: '55555555',
+        matchingFCComment: 'Точный код'
+      }
+    })
+
+    const actionBtn = wrapper.findComponent(ActionButton)
+    expect(actionBtn.exists()).toBe(true)
+    // When disabled, prop disabled should be true
+    expect(actionBtn.props('disabled')).toBe(true)
+  })
+
+  it('calls onSelect when matchingFC clicked', async () => {
+    const mockKeywords = []
+    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
+
+    wrapper = createWrapper({
+      item: {
+        keyWordIds: [],
+        tnVed: '99999999',
+        matchingFC: '88888888',
+        matchingFCComment: 'Особый код'
+      }
+    })
+
+    // After refactor, matchingFC is rendered as the first keyword-item without a wrapper class
+    const firstCodeDiv = wrapper.find('.keyword-item .keyword-code')
+    expect(firstCodeDiv.exists()).toBe(true)
+    await firstCodeDiv.trigger('click')
+    expect(mockOnSelect).toHaveBeenCalledWith('88888888')
+  })
+
+  it('loads tooltip for matchingFC on mouseenter', async () => {
+    const { loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
+    wrapper = createWrapper({
+      item: {
+        keyWordIds: [],
+        tnVed: '10101010',
+        matchingFC: '20202020',
+        matchingFCComment: 'Tooltip код'
+      }
+    })
+    const firstCodeDiv = wrapper.find('.keyword-item .keyword-code')
+    await firstCodeDiv.trigger('mouseenter')
+    await wrapper.vm.$nextTick()
+    expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('20202020')
   })
 })

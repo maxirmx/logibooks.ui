@@ -411,7 +411,7 @@ defineExpose({
             @click="openParcels" 
           />
 
-  <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
+          <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
 
         </template>
         <template #[`item.senderRecepient`]="{ item }">

@@ -707,6 +707,15 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('tnved-cell matched')
     })
 
+    it('should use matchingFC as exact match when it equals tnVed even if not in feacnCodes', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      // tnVed not in feacnCodes but matchingFC equals tnVed
+      const result = await getTnVedCellClass('7777777777', ['1234561111', '9876543210'], '7777777777')
+      expect(result).toBe('tnved-cell matched')
+    })
+
     it('should handle codes shorter than 6 characters for weak match', async () => {
       getCachedFeacnInfo.mockReturnValue({ found: true })
       preloadFeacnInfo.mockResolvedValue()

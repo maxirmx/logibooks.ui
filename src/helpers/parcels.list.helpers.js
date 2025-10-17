@@ -255,6 +255,11 @@ export function getMatchingFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
  * @returns {Promise<string>} CSS class name
  */
 export async function getTnVedCellClass(tnVed, feacnCodes, matchingFC) {
+  // Treat matchingFC as part of the feacnCodes set if provided (avoid duplicates)
+  const allCodes = Array.isArray(feacnCodes) ? [...feacnCodes] : []
+  if (matchingFC && !allCodes.includes(matchingFC)) {
+    allCodes.push(matchingFC)
+  }
   // Check if tnVed code was not found in globalFeacnInfo
   if (tnVed) {
     let cachedInfo = getCachedFeacnInfo(tnVed)
@@ -270,17 +275,17 @@ export async function getTnVedCellClass(tnVed, feacnCodes, matchingFC) {
     }
   }
  
-  if (!feacnCodes || feacnCodes.length === 0) {
+  if (!allCodes || allCodes.length === 0) {
     return 'tnved-cell orphan'
   }
   
   // Check for exact match first (include matchingFC override)
-  if (tnVed && (feacnCodes.includes(tnVed) || (matchingFC && matchingFC === tnVed))) {
+  if (tnVed && allCodes.includes(tnVed)) {
     return 'tnved-cell matched'
   }
 
   // Check for weak match using getMatchType helper
-  const hasWeakMatch = tnVed && feacnCodes.some(code => getMatchType(code, tnVed) === 'weak')
+  const hasWeakMatch = tnVed && allCodes.some(code => getMatchType(code, tnVed) === 'weak')
 
   return hasWeakMatch ? 'tnved-cell matched-weak' : 'tnved-cell unmatched'
 }

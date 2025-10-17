@@ -49,7 +49,8 @@ import {
   faEllipsisVertical,
   faTruckPlane,
   faFileCirclePlus,
-  faBookmark
+  faBookmark,
+  faBookSkull
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -92,7 +93,8 @@ library.add(
   faEllipsisVertical,
   faTruckPlane,
   faFileCirclePlus,
-  faBookmark
+  faBookmark,
+  faBookSkull
 )
 
 import 'vuetify/styles'

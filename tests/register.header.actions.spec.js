@@ -40,6 +40,7 @@ describe('useRegisterHeaderActions', () => {
       getValidationProgress: vi.fn(),
       cancelValidation: vi.fn(),
       lookupFeacnCodes: vi.fn(),
+      // The store method with extended flag will reuse lookupFeacnCodes with second param true
       getLookupFeacnCodesProgress: vi.fn(),
       cancelLookupFeacnCodes: vi.fn(),
       generate: vi.fn().mockResolvedValue(),
@@ -55,6 +56,32 @@ describe('useRegisterHeaderActions', () => {
     registerLoading = ref(false)
     loadOrders = vi.fn().mockResolvedValue()
     isComponentMounted = ref(true)
+  })
+
+  it('initiates extended FEACN lookup with withFCMatch=true', async () => {
+    // Simulate API handle response
+    registersStore.lookupFeacnCodes.mockResolvedValueOnce({ id: 'handle-ex' })
+    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({ total: 10, processed: 0, finished: false })
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadOrders,
+      isComponentMounted
+    })
+
+    const { lookupFeacnCodesEx, validationState, progressPercent } = actions
+    await lookupFeacnCodesEx()
+
+    // Should call store method with second param true
+    expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(1, true)
+    expect(validationState.operation).toBe('lookup-feacn-codes-ex')
+    // After initial poll, progress total should reflect mocked value
+    expect(validationState.total).toBe(10)
+    expect(progressPercent.value).toBe(0)
   })
 
   it('shows action dialog while export without excise runs', async () => {

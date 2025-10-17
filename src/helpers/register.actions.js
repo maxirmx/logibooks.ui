@@ -163,12 +163,12 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await runValidation(item, false)
   }
 
-  async function lookupFeacnCodes(item) {
+  async function performFeacnLookup(item, { extended = false } = {}) {
     try {
-      validationState.operation = 'lookup-feacn-codes'
+      validationState.operation = extended ? 'lookup-feacn-codes-ex' : 'lookup-feacn-codes'
       pollingTimer.stop()
       pollingFunction = pollFeacnLookup
-      const res = await registersStore.lookupFeacnCodes(item.id)
+      const res = await registersStore.lookupFeacnCodes(item.id, extended)
       validationState.handleId = res.id
       validationState.total = 0
       validationState.processed = 0
@@ -178,6 +178,14 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     } catch (err) {
       alertStore.error(err?.message || String(err))
     }
+  }
+
+  async function lookupFeacnCodes(item) {
+    await performFeacnLookup(item, { extended: false })
+  }
+
+  async function lookupFeacnCodesEx(item) {
+    await performFeacnLookup(item, { extended: true })
   }
 
   async function exportAllXmlWithoutExcise(item) {
@@ -216,6 +224,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     validateRegisterSw,
     validateRegisterFc,
     lookupFeacnCodes,
+    lookupFeacnCodesEx,
     exportAllXmlWithoutExcise,
     exportAllXmlExcise,
     downloadRegister,
@@ -239,6 +248,7 @@ export function useRegisterHeaderActions({
     validateRegisterSw,
     validateRegisterFc,
     lookupFeacnCodes,
+    lookupFeacnCodesEx,
     exportAllXmlWithoutExcise,
     exportAllXmlExcise,
     downloadRegister,
@@ -301,6 +311,10 @@ export function useRegisterHeaderActions({
     await runWithLock(lookupFeacnCodes)
   }
 
+  const runLookupFeacnCodesEx = async () => {
+    await runWithLock(lookupFeacnCodesEx)
+  }
+
   const runActionWithDialog = async (action, operation) => {
     if (generalActionsDisabled.value) return
     showActionDialog(operation)
@@ -354,6 +368,7 @@ export function useRegisterHeaderActions({
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
+    lookupFeacnCodesEx: runLookupFeacnCodesEx,
     exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,

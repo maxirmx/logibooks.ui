@@ -176,9 +176,11 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function lookupFeacnCodes(registerId) {
+  async function lookupFeacnCodes(registerId, withFCMatch = false) {
     try {
-      const result = await fetchWrapper.post(`${baseUrl}/${registerId}/lookup-feacn-codes`)
+      // Backend expects boolean parameter; pass as query param
+      const url = `${baseUrl}/${registerId}/lookup-feacn-codes?withFCMatch=${withFCMatch}`
+      const result = await fetchWrapper.post(url)
       return result
     } catch (err) {
       error.value = err

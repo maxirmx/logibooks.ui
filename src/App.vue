@@ -20,39 +20,44 @@ onMounted(() => {
   statusStore.fetchStatus().catch(() => {})
 })
 
-const ruDateFormatter = new Intl.DateTimeFormat('ru-RU')
+const ruDateFormatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
 const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
   minimumFractionDigits: 4,
   maximumFractionDigits: 4,
 })
 
-function formatExchangeRate(currency) {
-  const rate = statusStore.exchangeRates?.find((item) => {
-    const code = item?.alphabeticCode
-    return code?.toUpperCase() === currency
-  })
-
-  if (!rate) {
-    return ''
-  }
-
-  const parsedDate = (new Date(rate.date)).getTime()
-  if (Number.isNaN(parsedDate)) {
-    return ''
-  }
-  const formattedDate = ruDateFormatter.format(parsedDate)
-
-  if (typeof rate.rate !== 'number') {
-    return ''
-  }
-  const formattedRate = rateNumberFormatter.format(rate.rate)
-
-  const datePrefix = formattedDate ? `${formattedDate} ` : ''
-  return `${currency} ${datePrefix}${formattedRate}`
+function findRate(code) {
+  return statusStore.exchangeRates?.find(r => r?.alphabeticCode?.toUpperCase() === code) || null
 }
 
-const usdExchangeRate = computed(() => formatExchangeRate('USD'))
-const eurExchangeRate = computed(() => formatExchangeRate('EUR'))
+function isSameDay(dateA, dateB) {
+  return dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate()
+}
+
+const exchangeRatesLine = computed(() => {
+  const today = new Date()
+  const todayStr = ruDateFormatter.format(today)
+
+  const usd = findRate('USD')
+  const eur = findRate('EUR')
+
+  const FAIL_MSG = 'не удалось получить курс'
+  function formatEntry(rateObj) {
+    if (!rateObj) return FAIL_MSG
+    const d = new Date(rateObj.date)
+    if (Number.isNaN(d.getTime())) return FAIL_MSG
+    if (!isSameDay(d, today)) return FAIL_MSG
+    if (typeof rateObj.rate !== 'number') return FAIL_MSG
+    return rateNumberFormatter.format(rateObj.rate)
+  }
+
+  const usdText = formatEntry(usd)
+  const eurText = formatEntry(eur)
+
+  return `${todayStr} USD ${usdText} EUR ${eurText}`
+})
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 
@@ -91,10 +96,7 @@ function getUserName() {
       </template>
       <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
-      <div class="primary-heading exchange-rates" v-if="usdExchangeRate || eurExchangeRate">
-        <span v-if="usdExchangeRate">{{ usdExchangeRate }}</span>
-        <span v-if="eurExchangeRate">{{ eurExchangeRate }}</span>
-      </div>
+      <div class="primary-heading exchange-rates">{{ exchangeRatesLine }}</div>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
       <template v-slot:prepend>

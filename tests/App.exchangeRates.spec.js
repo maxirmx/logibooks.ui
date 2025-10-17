@@ -81,32 +81,34 @@ describe('App exchange rates display', () => {
     })
   }
 
-  it('displays USD and EUR exchange rates when available', async () => {
+  it('shows current date with both rates when they are for today', async () => {
+    const today = new Date()
+    const isoToday = today.toISOString()
+  const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
     statusStore.exchangeRates = [
-      { alphabeticCode: 'USD', rate: 92.1234, date: '2024-06-29T00:00:00.000Z' },
-      { alphabeticCode: 'EUR', rate: 101.9876, date: '2024-06-30T00:00:00.000Z' },
+      { alphabeticCode: 'USD', rate: 92.1234, date: isoToday },
+      { alphabeticCode: 'EUR', rate: 101.9876, date: isoToday },
     ]
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const rateItems = wrapper.findAll('.exchange-rates span')
-    expect(rateItems).toHaveLength(2)
-    expect(rateItems[0].text()).toBe('USD 29.06.2024 92,1234')
-    expect(rateItems[1].text()).toBe('EUR 30.06.2024 101,9876')
+    const line = wrapper.find('.exchange-rates').text()
+    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876`)
   })
 
-  it('renders only available exchange rates', async () => {
+  it('shows failure text when rate date is stale', async () => {
+    const today = new Date()
+  const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const yesterday = new Date(today.getTime() - 24*60*60*1000).toISOString()
     statusStore.exchangeRates = [
-      { alphabeticCode: 'USD', rate: 95.5, date: '2024-07-01' },
+      { alphabeticCode: 'USD', rate: 95.5, date: yesterday },
     ]
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const rateItems = wrapper.findAll('.exchange-rates span')
-    expect(rateItems).toHaveLength(1)
-    expect(rateItems[0].text()).toBe('USD 01.07.2024 95,5000')
-    expect(wrapper.text()).not.toContain('EUR')
+    const line = wrapper.find('.exchange-rates').text()
+    expect(line).toBe(`${ruDate} USD не удалось получить курс EUR не удалось получить курс`)
   })
 })

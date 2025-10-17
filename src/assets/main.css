@@ -1634,6 +1634,19 @@ a,
   border-color: #e17055;
 }
 
+/* Special highlighted FEACN code (matchingFC) */
+.matching-feacn-code-item {
+  border: 3px solid #065f0c; /* dark green border */
+  padding: 1px 4px; /* keep same padding, border increases total size */
+  background-color: #d4edda; /* same as matched to reinforce correctness */
+  box-shadow: 0 0 0 1px rgba(6,95,12,0.15);
+}
+
+.matching-feacn-code-item:hover {
+  background-color: #c3e6cb;
+  border-color: #054d0a;
+}
+
 /* FEACN code tooltip styles */
 .feacn-code-tooltip {
   cursor: help;

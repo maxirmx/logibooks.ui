@@ -9,7 +9,8 @@ import {
   getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
   updateParcelTnVed,
-  getMatchType
+  getMatchType,
+  getMatchingFeacnCodeItemClass
 } from '@/helpers/parcels.list.helpers.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
@@ -27,8 +28,17 @@ const loadOrders = inject('loadOrders')
 // Local tooltip cache for this component
 const tooltipCache = ref({})
 
-const feacnCodes = computed(() => {
-  return getFeacnCodesForKeywords(props.item.keyWordIds, keyWordsStore)
+const feacnCodes = computed(() => getFeacnCodesForKeywords(props.item.keyWordIds, keyWordsStore))
+
+// Unified list: optional matchingFC first, then regular codes
+const combinedCodes = computed(() => {
+  const codes = feacnCodes.value || []
+  const out = []
+  if (props.item.matchingFC && props.item.matchingFC !== '') {
+    out.push({ code: props.item.matchingFC, comment: props.item.matchingFCComment || 'Комментарий отсутствует', isMatching: true })
+  }
+  codes.forEach(c => out.push({ code: c, isMatching: false }))
+  return out
 })
 
 const tooltipMaxWidth = computed(() => {
@@ -61,42 +71,44 @@ function getTooltipText(code) {
 </script>
 
 <template>
-  <div v-if="feacnCodes.length > 0" class="feacn-lookup-column">
-    <v-tooltip 
-      v-for="code in feacnCodes" 
-      :key="code" 
+  <div v-if="combinedCodes.length > 0" class="feacn-lookup-column">
+    <v-tooltip
+      v-for="entry in combinedCodes"
+      :key="entry.isMatching ? 'matchingFC' : entry.code"
       location="top"
       content-class="feacn-tooltip"
       :max-width="tooltipMaxWidth"
     >
       <template #activator="{ props }">
-        <div 
+        <div
           v-bind="props"
-          :class="getFeacnCodeItemClass(code, item.tnVed, feacnCodes)"
-          @click="selectCode(code)"
-          @mouseenter="loadTooltip(code)"
+          :class="entry.isMatching
+            ? getMatchingFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
+            : getFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)"
+          @click="selectCode(entry.code)"
+          @mouseenter="loadTooltip(entry.code)"
         >
           <span class="d-inline-flex align-center">
-            <font-awesome-icon 
-              v-if="getMatchType(code, item.tnVed) === 'exact'" 
-              icon="fa-solid fa-check-double" 
-              class="mr-1" 
+            <font-awesome-icon
+              v-if="getMatchType(entry.code, item.tnVed) === 'exact'"
+              icon="fa-solid fa-check-double"
+              class="mr-1"
             />
-            <font-awesome-icon 
-              v-else-if="getMatchType(code, item.tnVed) === 'weak'" 
+            <font-awesome-icon
+              v-else-if="getMatchType(entry.code, item.tnVed) === 'weak'"
               icon="fa-solid fa-ellipsis-vertical"
               class="mr-1"
             />
-            {{ code }}
+            {{ entry.code }}
           </span>
         </div>
       </template>
-      <div v-if="code === item.tnVed">
+      <div v-if="entry.code === item.tnVed">
         <div>
           <font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано
         </div>
         <div>
-          {{ getTooltipText(code) }}
+          {{ getTooltipText(entry.code) }}
         </div>
       </div>
       <div v-else>
@@ -104,7 +116,7 @@ function getTooltipText(code) {
           <font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Выбрать
         </div>
         <div>
-          {{ getTooltipText(code) }}
+          {{ getTooltipText(entry.code) }}
         </div>
       </div>
     </v-tooltip>

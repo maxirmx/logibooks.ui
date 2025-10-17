@@ -235,12 +235,26 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
 }
 
 /**
+ * Helper to build class for a specially highlighted matching FEACN code (matchingFC)
+ * Adds global highlight class while preserving original match classification.
+ * @param {string} feacnCode - FEACN code value
+ * @param {string} tnVed - Current TN VED code
+ * @param {Array<string>} allFeacnCodes - All FEACN codes for the item
+ * @returns {string} CSS class list
+ */
+export function getMatchingFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
+  const base = getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes)
+  // Ensure clickable remains if present; add distinctive matching-feacn-code-item class
+  return base + ' matching-feacn-code-item'
+}
+
+/**
  * Helper function to get CSS class for TN VED cell based on FEACN codes
  * @param {string} tnVed - The current TN VED code
  * @param {Array<string>} feacnCodes - Array of FEACN codes
  * @returns {Promise<string>} CSS class name
  */
-export async function getTnVedCellClass(tnVed, feacnCodes) {
+export async function getTnVedCellClass(tnVed, feacnCodes, matchingFC) {
   // Check if tnVed code was not found in globalFeacnInfo
   if (tnVed) {
     let cachedInfo = getCachedFeacnInfo(tnVed)
@@ -260,8 +274,8 @@ export async function getTnVedCellClass(tnVed, feacnCodes) {
     return 'tnved-cell orphan'
   }
   
-  // Check for exact match first
-  if (tnVed && feacnCodes.includes(tnVed)) {
+  // Check for exact match first (include matchingFC override)
+  if (tnVed && (feacnCodes.includes(tnVed) || (matchingFC && matchingFC === tnVed))) {
     return 'tnved-cell matched'
   }
 

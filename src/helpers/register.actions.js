@@ -202,8 +202,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
 
   function cancelValidationWrapper() {
     const isFeacnLookup =
-      validationState.operation === 'lookup-feacn-codes' ||
-      validationState.operation === 'lookup-feacn-codes-ex'
+      validationState.operation === 'lookup-feacn-codes'
 
     if (isFeacnLookup) {
       if (validationState.handleId) {

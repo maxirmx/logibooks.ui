@@ -759,7 +759,7 @@ describe('registers.list.helpers', () => {
       it('looks up FEACN codes and tracks handle id', async () => {
         await handlers.lookupFeacnCodes({ id: 5 })
 
-        expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5)
+        expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5, false)
         expect(handlers.validationState.operation).toBe('lookup-feacn-codes')
         expect(handlers.validationState.handleId).toBe(2)
       })

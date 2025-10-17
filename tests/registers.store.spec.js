@@ -835,14 +835,25 @@ describe('registers store', () => {
   })
 
   describe('FEACN lookup API', () => {
-    it('starts FEACN lookup and returns handle', async () => {
+    it('starts FEACN lookup with default (withFCMatch=false) and returns handle', async () => {
       const handle = { id: '1234' }
       fetchWrapper.post.mockResolvedValue(handle)
 
       const store = useRegistersStore()
       const result = await store.lookupFeacnCodes(1)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/lookup-feacn-codes`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/lookup-feacn-codes?withFCMatch=false`)
+      expect(result).toEqual(handle)
+    })
+
+    it('starts FEACN lookup with withFCMatch=true', async () => {
+      const handle = { id: '5555' }
+      fetchWrapper.post.mockResolvedValue(handle)
+
+      const store = useRegistersStore()
+      const result = await store.lookupFeacnCodes(42, true)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/42/lookup-feacn-codes?withFCMatch=true`)
       expect(result).toEqual(handle)
     })
 
@@ -852,7 +863,7 @@ describe('registers store', () => {
 
       const store = useRegistersStore()
 
-      await expect(store.lookupFeacnCodes(1)).rejects.toThrow('Lookup failed')
+  await expect(store.lookupFeacnCodes(1)).rejects.toThrow('Lookup failed')
       expect(store.error).toBe(error)
     })
 

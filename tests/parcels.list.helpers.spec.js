@@ -716,6 +716,25 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('tnved-cell matched')
     })
 
+    it('should not be orphan when only matchingFC is provided', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const result = await getTnVedCellClass('8888888888', [], '1234560000')
+      // No exact match; matchingFC added to list prevents orphan and may produce weak/unmatched
+      expect(result).not.toBe('tnved-cell orphan')
+    })
+
+    it('should produce matched-weak when only matchingFC shares first 6 chars', async () => {
+      getCachedFeacnInfo.mockReturnValue({ found: true })
+      preloadFeacnInfo.mockResolvedValue()
+
+      const tnVed = '1234567890'
+      const matchingFC = '1234560000' // shares first 6 characters
+      const result = await getTnVedCellClass(tnVed, [], matchingFC)
+      expect(result).toBe('tnved-cell matched-weak')
+    })
+
     it('should handle codes shorter than 6 characters for weak match', async () => {
       getCachedFeacnInfo.mockReturnValue({ found: true })
       preloadFeacnInfo.mockResolvedValue()

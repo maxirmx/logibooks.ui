@@ -181,6 +181,7 @@ const {
   validateRegisterSw: validateRegisterSwHeader,
   validateRegisterFc: validateRegisterFcHeader,
   lookupFeacnCodes: lookupRegisterFeacnCodes,
+  lookupFeacnCodesEx: lookupRegisterFeacnCodesEx,
   exportAllXmlWithoutExcise: exportRegisterXmlWithoutExcise,
   exportAllXmlExcise: exportRegisterXmlExcise,
   downloadRegister: downloadRegisterFile,
@@ -407,6 +408,14 @@ function getGenericTemplateHeaders() {
           tooltip-text="Подбор кодов ТН ВЭД"
           :iconSize="'2x'"
           @click="lookupRegisterFeacnCodes"
+          :disabled="generalActionsDisabled"
+        />
+        <ActionButton
+          :item="registersStore.item"
+          icon="fa-solid fa-book-skull"
+          tooltip-text="Расширенный подбор кодов ТН ВЭД"
+          :iconSize="'2x'"
+          @click="lookupRegisterFeacnCodesEx"
           :disabled="generalActionsDisabled"
         />
         <ActionButton

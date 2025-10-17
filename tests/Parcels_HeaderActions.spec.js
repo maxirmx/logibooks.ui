@@ -23,6 +23,7 @@ function createRegisterHeaderActionsMock() {
     validateRegisterSw: vi.fn(),
     validateRegisterFc: vi.fn(),
     lookupFeacnCodes: vi.fn(),
+    lookupFeacnCodesEx: vi.fn(),
     exportAllXmlWithoutExcise: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     downloadRegister: vi.fn(),
@@ -260,7 +261,7 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    expect(buttons).toHaveLength(6)
+  expect(buttons).toHaveLength(7)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -271,14 +272,17 @@ describe.each([
     await buttons[2].trigger('click')
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
-    await buttons[3].trigger('click')
-    expect(registerHeaderActionsMock.exportAllXmlWithoutExcise).toHaveBeenCalled()
+  await buttons[3].trigger('click')
+  expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
 
-    await buttons[4].trigger('click')
-    expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
+  await buttons[4].trigger('click')
+  expect(registerHeaderActionsMock.exportAllXmlWithoutExcise).toHaveBeenCalled()
 
-    await buttons[5].trigger('click')
-    expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
+  await buttons[5].trigger('click')
+  expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
+
+  await buttons[6].trigger('click')
+  expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
   })
 
   it('hides header actions when user lacks permissions', async () => {

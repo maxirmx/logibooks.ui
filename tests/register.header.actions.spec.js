@@ -42,7 +42,7 @@ describe('useRegisterHeaderActions', () => {
       lookupFeacnCodes: vi.fn(),
       // The store method with extended flag will reuse lookupFeacnCodes with second param true
       getLookupFeacnCodesProgress: vi.fn(),
-  cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
+      cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
       generate: vi.fn().mockResolvedValue(),
       generateWithoutExcise: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),

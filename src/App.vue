@@ -47,7 +47,7 @@ const exchangeRatesLine = computed(() => {
   function formatEntry(rateObj) {
     if (!rateObj) return FAIL_MSG
     const d = new Date(rateObj.date)
-    if (isNaN(d.getTime())) return FAIL_MSG
+    if (Number.isNaN(d.getTime())) return FAIL_MSG
     if (!isSameDay(d, today)) return FAIL_MSG
     if (typeof rateObj.rate !== 'number') return FAIL_MSG
     return rateNumberFormatter.format(rateObj.rate)

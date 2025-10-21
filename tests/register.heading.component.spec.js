@@ -62,8 +62,8 @@ describe('RegisterHeadingWithStats', () => {
 
     expect(getByIdSpy).toHaveBeenCalled()
     // Updated stats
-  expect(wrapper.text()).toContain('Всего товаров: 12')
-  expect(wrapper.text()).toContain('Всего посылок: 25')
-  expect(wrapper.text()).toContain('STAT:{"1":2,"2":5}')
+    expect(wrapper.text()).toContain('Всего товаров: 12')
+    expect(wrapper.text()).toContain('Всего посылок: 25')
+    expect(wrapper.text()).toContain('STAT:{"1":2,"2":5}')
   })
 })

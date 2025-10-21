@@ -36,6 +36,7 @@ import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
@@ -385,66 +386,18 @@ function getGenericTemplateHeaders() {
       <h1 class="primary-heading">
         {{ registerName }}
       </h1>
-      <div v-if="isAdminOrSrLogist" class="header-actions">
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-spell-check"
-          tooltip-text="Проверить по стоп-словам"
-          :iconSize="'2x'"
-          @click="validateRegisterSwHeader"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-anchor-circle-check"
-          tooltip-text="Проверить по кодам ТН ВЭД"
-          :iconSize="'2x'"
-          @click="validateRegisterFcHeader"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-magnifying-glass"
-          tooltip-text="Подбор кодов ТН ВЭД"
-          :iconSize="'2x'"
-          @click="lookupRegisterFeacnCodes"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-book-skull"
-          tooltip-text="Расширенный подбор кодов ТН ВЭД"
-          :iconSize="'2x'"
-          @click="lookupRegisterFeacnCodesEx"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-upload"
-          tooltip-text="Выгрузить XML накладные для реестра (без акциза)"
-          :iconSize="'2x'"
-          variant="green"
-          @click="exportRegisterXmlWithoutExcise"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-upload"
-          tooltip-text="Выгрузить XML накладные для реестра (акциз)"
-          :iconSize="'2x'"
-          variant="orange"
-          @click="exportRegisterXmlExcise"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-file-export"
-          tooltip-text="Экспортировать реестр"
-          :iconSize="'2x'"
-          @click="downloadRegisterFile"
-          :disabled="generalActionsDisabled"
-        />
-      </div>
+      <RegisterHeaderActionsBar
+        v-if="isAdminOrSrLogist"
+        :item="registersStore.item"
+        :disabled="generalActionsDisabled"
+        @validate-sw="validateRegisterSwHeader"
+        @validate-fc="validateRegisterFcHeader"
+        @lookup="lookupRegisterFeacnCodes"
+        @lookup-ex="lookupRegisterFeacnCodesEx"
+        @export-noexcise="exportRegisterXmlWithoutExcise"
+        @export-excise="exportRegisterXmlExcise"
+        @download="downloadRegisterFile"
+      />
     </div>
     <hr class="hr" />
 
@@ -675,6 +628,12 @@ function getGenericTemplateHeaders() {
 <style scoped>
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
+}
+
+.header-actions-group + .header-actions-group {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid #d0d7de;
 }
 </style>
 

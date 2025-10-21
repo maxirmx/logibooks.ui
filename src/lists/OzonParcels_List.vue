@@ -15,6 +15,9 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
+import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
@@ -26,7 +29,6 @@ import {
   approveParcelData,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
-  generateRegisterName,
   exportParcelXmlData,
   lookupFeacn,
   getFeacnCodesForKeywords,
@@ -36,6 +38,7 @@ import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
@@ -54,6 +57,7 @@ const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
+const transportationTypesStore = useTransportationTypesStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
@@ -168,11 +172,9 @@ const registerLoading = ref(true)
 const runningAction = ref(false)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
-const registerName = computed(() => {
-  if (registerLoading.value) {
-    return 'Загрузка реестра...'
-  }
-  return generateRegisterName(registerDealNumber.value, registerFileName.value)
+const registerHeading = computed(() => {
+  if (registerLoading.value) return 'Загрузка реестра...'
+  return buildParcelListHeading(registersStore.item, transportationTypesStore.getDocument)
 })
 
 async function fetchRegister() {
@@ -235,12 +237,15 @@ onMounted(async () => {
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await feacnOrdersStore.ensureLoaded()
+  await feacnOrdersStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await countriesStore.ensureLoaded()
+  await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
+  await transportationTypesStore.ensureLoaded()
+  if (!isComponentMounted.value) return
+
     await stopWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
@@ -401,69 +406,23 @@ function getGenericTemplateHeaders() {
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">
-        {{ registerName }}
-      </h1>
-      <div v-if="isAdminOrSrLogist" class="header-actions">
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-spell-check"
-          tooltip-text="Проверить по стоп-словам"
-          :iconSize="'2x'"
-          @click="validateRegisterSwHeader"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-anchor-circle-check"
-          tooltip-text="Проверить по кодам ТН ВЭД"
-          :iconSize="'2x'"
-          @click="validateRegisterFcHeader"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-magnifying-glass"
-          tooltip-text="Подбор кодов ТН ВЭД"
-          :iconSize="'2x'"
-          @click="lookupRegisterFeacnCodes"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-book-skull"
-          tooltip-text="Расширенный подбор кодов ТН ВЭД"
-          :iconSize="'2x'"
-          @click="lookupRegisterFeacnCodesEx"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-upload"
-          tooltip-text="Выгрузить XML накладные для реестра (без акциза)"
-          :iconSize="'2x'"
-          variant="green"
-          @click="exportRegisterXmlWithoutExcise"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-upload"
-          tooltip-text="Выгрузить XML накладные для реестра (акциз)"
-          :iconSize="'2x'"
-          variant="orange"
-          @click="exportRegisterXmlExcise"
-          :disabled="generalActionsDisabled"
-        />
-        <ActionButton
-          :item="registersStore.item"
-          icon="fa-solid fa-file-export"
-          tooltip-text="Экспортировать реестр"
-          :iconSize="'2x'"
-          @click="downloadRegisterFile"
-          :disabled="generalActionsDisabled"
-        />
-      </div>
+      <RegisterHeadingWithStats
+        :register-id="props.registerId"
+        :register="registersStore.item"
+        :heading="registerHeading"
+      />
+      <RegisterHeaderActionsBar
+        v-if="isAdminOrSrLogist"
+        :item="registersStore.item"
+        :disabled="generalActionsDisabled"
+        @validate-sw="validateRegisterSwHeader"
+        @validate-fc="validateRegisterFcHeader"
+        @lookup="lookupRegisterFeacnCodes"
+        @lookup-ex="lookupRegisterFeacnCodesEx"
+        @export-noexcise="exportRegisterXmlWithoutExcise"
+        @export-excise="exportRegisterXmlExcise"
+        @download="downloadRegisterFile"
+      />
     </div>
     <hr class="hr" />
 
@@ -692,6 +651,12 @@ function getGenericTemplateHeaders() {
 <style scoped>
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
+}
+
+.header-actions-group + .header-actions-group {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid #d0d7de;
 }
 
 </style>

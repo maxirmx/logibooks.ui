@@ -171,6 +171,13 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => stores.countries
 }))
 
+vi.mock('@/stores/transportation.types.store.js', () => ({
+  useTransportationTypesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getDocument: vi.fn(() => 'Документ')
+  })
+}))
+
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => stores.auth
 }))

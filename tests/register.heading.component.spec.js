@@ -50,11 +50,11 @@ describe('RegisterHeadingWithStats', () => {
 
     // Initial tooltip content
     expect(wrapper.text()).toContain('Heading Text')
-  expect(wrapper.text()).toContain('Всего товаров: 10')
-  expect(wrapper.text()).toContain('Всего посылок: 20')
-  // No separator yet until stats appended on initial display (stats present so separator should appear)
-  expect(wrapper.text()).toContain('----------------')
-  expect(wrapper.text()).toContain('STAT:{"1":2}')
+    expect(wrapper.text()).toContain('Всего товаров: 10')
+    expect(wrapper.text()).toContain('Всего посылок: 20')
+    // No separator yet until stats appended on initial display (stats present so separator should appear)
+    expect(wrapper.text()).toContain('----------------')
+    expect(wrapper.text()).toContain('STAT:{"1":2}')
 
     // Wait microtasks for refresh
     await Promise.resolve()

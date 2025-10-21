@@ -15,6 +15,9 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
+import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
@@ -26,7 +29,6 @@ import {
   approveParcelData,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
-  generateRegisterName,
   exportParcelXmlData,
   lookupFeacn,
   getFeacnCodesForKeywords,
@@ -55,6 +57,7 @@ const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
+const transportationTypesStore = useTransportationTypesStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
@@ -169,11 +172,9 @@ const registerLoading = ref(true)
 const runningAction = ref(false)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
-const registerName = computed(() => {
-  if (registerLoading.value) {
-    return 'Загрузка реестра...'
-  }
-  return generateRegisterName(registerDealNumber.value, registerFileName.value)
+const registerHeading = computed(() => {
+  if (registerLoading.value) return 'Загрузка реестра...'
+  return buildParcelListHeading(registersStore.item, transportationTypesStore.getDocument)
 })
 
 async function fetchRegister() {
@@ -236,12 +237,15 @@ onMounted(async () => {
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await feacnOrdersStore.ensureLoaded()
+  await feacnOrdersStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await countriesStore.ensureLoaded()
+  await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
+  await transportationTypesStore.ensureLoaded()
+  if (!isComponentMounted.value) return
+
     await stopWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
@@ -402,9 +406,11 @@ function getGenericTemplateHeaders() {
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">
-        {{ registerName }}
-      </h1>
+      <RegisterHeadingWithStats
+        :register-id="props.registerId"
+        :register="registersStore.item"
+        :heading="registerHeading"
+      />
       <RegisterHeaderActionsBar
         v-if="isAdminOrSrLogist"
         :item="registersStore.item"

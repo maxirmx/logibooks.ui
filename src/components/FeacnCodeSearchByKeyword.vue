@@ -70,8 +70,6 @@ function handleKeydown(e) {
   }
 }
 
-
-
 function handleRowKeydown(e, row) { if (e.key === 'Enter') { e.preventDefault(); selectRow(row) } }
 
 watch(filteredRows, ensureHighlightedIndex)

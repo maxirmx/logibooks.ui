@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import { buildParcelListHeading, formatRegisterInvoice, formatGoodsParcelsCounts } from '@/helpers/register.heading.helpers.js'
+import { buildParcelListHeading, formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 
 function mockGetTransportationDocument( ) {
   return `Документ`
@@ -54,13 +54,4 @@ describe('register.heading.helpers', () => {
     expect(heading).toBe('Загрузка реестра...')
   })
 
-  it('formatGoodsParcelsCounts returns empty when missing both', () => {
-    const register = { dealNumber: 'X' }
-    expect(formatGoodsParcelsCounts(register)).toBe('')
-  })
-
-  it('formatGoodsParcelsCounts normalizes numbers and missing values to 0', () => {
-    const register = { parcelsTotal: '12', placesTotal: null }
-    expect(formatGoodsParcelsCounts(register)).toBe('Товаров/Посылок: 12/0')
-  })
 })

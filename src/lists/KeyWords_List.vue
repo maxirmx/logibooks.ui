@@ -14,6 +14,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { keywordMatchesSearch } from '@/helpers/keywords.filter.js'
 import { 
   loadFeacnTooltipOnHover, 
   useFeacnTooltips, 
@@ -53,12 +54,8 @@ function filterKeyWords(value, query, item) {
   if (i === null) {
     return false
   }
-  const q = query.toLocaleUpperCase()
 
-  return (
-    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
-    (i.feacnCodes?.some(code => code.toLocaleUpperCase().includes(q)) ?? false)
-  )
+  return keywordMatchesSearch(query, { word: i.word, feacnCodes: i.feacnCodes })
 }
 
 // Table headers

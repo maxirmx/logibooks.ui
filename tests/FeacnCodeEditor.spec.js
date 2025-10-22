@@ -8,6 +8,15 @@ import { createPinia, setActivePinia } from 'pinia'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
+vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({
+  default: {
+    name: 'FeacnCodeSearchByKeyword',
+    props: ['modelValue'],
+    emits: ['update:modelValue', 'select'],
+    template: '<div class="feacn-keyword-lookup-stub" :data-open="modelValue"></div>'
+  }
+}))
+
 vi.mock('vee-validate', () => ({
   Field: {
     name: 'Field',

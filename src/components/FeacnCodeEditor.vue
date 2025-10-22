@@ -75,7 +75,15 @@ watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.
 }, { immediate: true })
 
 function toggleSearch() {
-  searchActive.value = !searchActive.value
+  // open/close main search; if opening main search, ensure keyword panel is closed by emitting overlay state
+  const next = !searchActive.value
+  searchActive.value = next
+  if (next) {
+    // notify parent/consumers that main search opened
+    emit('overlay-state-changed', { mainOpen: true })
+  } else {
+    emit('overlay-state-changed', { mainOpen: false })
+  }
 }
 
 function handleEscape(event) {
@@ -199,6 +207,7 @@ function handleTnVedMouseEnter() {
               @click="toggleSearch"
               :iconSize="'1x'"
             />
+            <!-- keyword toggle moved into FeacnCodeSelectorW to sit next to the label -->
             <ActionButton
               :item="props.item"
               icon="fa-solid fa-magnifying-glass"
@@ -212,12 +221,15 @@ function handleTnVedMouseEnter() {
             v-if="searchActive"
             class="feacn-overlay"
             @select="handleCodeSelect"
+            @overlay-state-changed="(val) => { searchActive = val }"
           />
         </div>
-      <FeacnCodeSelectorW
-        :item="props.item"
-        :onSelect="selectFeacnCode"
-      />
+        <FeacnCodeSelectorW
+          :item="props.item"
+          :onSelect="selectFeacnCode"
+          :externalSearchOpen="searchActive"
+          @overlay-state-changed="(val) => { if (val) { searchActive = false } }"
+        />
     </div>
   </div>
 </template>

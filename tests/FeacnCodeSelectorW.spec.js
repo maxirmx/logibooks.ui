@@ -9,6 +9,15 @@ import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
+vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({
+  default: {
+    name: 'FeacnCodeSearchByKeyword',
+    props: ['modelValue'],
+    emits: ['update:modelValue', 'select'],
+    template: '<div class="feacn-keyword-lookup-stub" :data-open="modelValue"></div>'
+  }
+}))
+
 // Mock the helper functions before importing
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getFeacnCodesForKeywords: vi.fn(() => []),
@@ -93,7 +102,7 @@ describe('FeacnCodeSelectorW', () => {
     wrapper = createWrapper()
     
     expect(wrapper.find('.form-group').exists()).toBe(true)
-    expect(wrapper.find('label').text()).toBe('Подбор ТН ВЭД:')
+    expect(wrapper.find('label').text()).toBe('Подбор ТН ВЭД')
     expect(wrapper.text()).toContain('-')
   })
 
@@ -155,8 +164,10 @@ describe('FeacnCodeSelectorW', () => {
     
     wrapper = createWrapper()
     
-    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    expect(actionButtons).toHaveLength(2)
+  // Count only ActionButton components that appear inside keyword items (exclude label toggle)
+  const keywordActionButtons = wrapper.findAll('.keyword-item').map(item => item.findComponent({ name: 'ActionButton' }))
+  const present = keywordActionButtons.filter(btn => btn.exists()).length
+  expect(present).toBe(2)
   })
 
   it('has correct structure when keywords are present', async () => {
@@ -253,10 +264,10 @@ describe('FeacnCodeSelectorW', () => {
       }
     })
 
-    const actionBtn = wrapper.findComponent(ActionButton)
-    expect(actionBtn.exists()).toBe(true)
-    // When disabled, prop disabled should be true
-    expect(actionBtn.props('disabled')).toBe(true)
+  // Find ActionButton inside the first keyword-item (matchingFC should be the first item)
+  const firstKeywordActionBtn = wrapper.find('.keyword-item').findComponent({ name: 'ActionButton' })
+  expect(firstKeywordActionBtn.exists()).toBe(true)
+  expect(firstKeywordActionBtn.props('disabled')).toBe(true)
   })
 
   it('calls onSelect when matchingFC clicked', async () => {
@@ -294,5 +305,30 @@ describe('FeacnCodeSelectorW', () => {
     await firstCodeDiv.trigger('mouseenter')
     await wrapper.vm.$nextTick()
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('20202020')
+  })
+
+  it('opens keyword lookup on label click', async () => {
+    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
+
+    wrapper = createWrapper()
+
+    const label = wrapper.find('label')
+    await label.trigger('click')
+
+    const lookup = wrapper.find('.feacn-keyword-lookup-stub')
+    expect(lookup.exists()).toBe(true)
+    expect(lookup.attributes('data-open')).toBe('true')
+  })
+
+  it('handles code selection from keyword lookup', async () => {
+    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
+
+    wrapper = createWrapper()
+
+  await wrapper.findComponent({ name: 'FeacnCodeSearchByKeyword' }).vm.$emit('select', '5555')
+  await wrapper.vm.$nextTick()
+    expect(mockOnSelect).toHaveBeenCalledWith('5555')
   })
 })

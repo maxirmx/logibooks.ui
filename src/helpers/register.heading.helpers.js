@@ -15,31 +15,15 @@
  */
 export function formatRegisterInvoice(register, getTransportationDocument) {
   if (!register) return ''
-  const { invoiceNumber, invoiceDate, transportationTypeId } = register
+  const { invoiceNumber, transportationTypeId } = register
   const transportationDocument = transportationTypeId != null && typeof getTransportationDocument === 'function'
     ? getTransportationDocument(transportationTypeId)
     : ''
 
-  const formattedDate = formatDate(invoiceDate)
-  const numberPart = invoiceNumber ? ` ${invoiceNumber}${formattedDate ? ` от ${formattedDate}` : ''}` : ''
+  const numberPart = invoiceNumber ? ` ${invoiceNumber}` : ''
   const docPart = transportationDocument || ''
   const result = `${docPart}${numberPart}`.trim()
   return result
-}
-
-/**
- * Formats a date string (YYYY-MM-DD or ISO) into DD.MM.YYYY.
- * @param {string} dateStr
- * @returns {string}
- */
-export function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d)) return ''
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  return `${dd}.${mm}.${yyyy}`
 }
 
 /**
@@ -59,25 +43,4 @@ export function buildParcelListHeading(register, getTransportationDocument) {
   const tsdPart = `${invoiceInfo || 'ТСД отсутствует'}`
   // Counts removed from heading; will be shown in tooltip instead.
   return `${dealPart} (${tsdPart})`
-}
-
-/**
- * Formats goods/parcels counts as shown in Registers_List (Товаров/Посылок column).
- * Relies on API provided fields parcelsTotal and placesTotal.
- * @param {Object} register
- * @returns {string} e.g. "15/20" or empty string if both missing
- */
-export function formatGoodsParcelsCounts(register) {
-  if (!register) return ''
-  let { parcelsTotal, placesTotal } = register
-  const norm = (v) => {
-    if (v === null || v === undefined) return null
-    const num = Number(v)
-    return isNaN(num) ? null : num
-  }
-  parcelsTotal = norm(parcelsTotal)
-  placesTotal = norm(placesTotal)
-  if (parcelsTotal === null && placesTotal === null) return ''
-  // If one side is missing, show 0 for clarity
-  return `Товаров/Посылок: ${parcelsTotal ?? 0}/${placesTotal ?? 0}`
 }

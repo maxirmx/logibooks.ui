@@ -479,24 +479,6 @@ function handleFellows() {
   margin-bottom: 0.5rem;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  white-space: nowrap;
-  
-  /* Control panel styling */
-  background: #ffffff;
-  border: 1px solid #74777c;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-  
-  /* Ensure it flows below heading on narrow screens */
-  min-width: min-content;
-}
-
 /* Primary heading with ellipsis */
 .primary-heading {
   margin: 0;
@@ -528,10 +510,6 @@ function handleFellows() {
   .primary-heading {
     max-width: 100%;
     margin-bottom: 0.5rem;
-  }
-  
-  .header-actions {
-    align-self: flex-end;
   }
 }
 

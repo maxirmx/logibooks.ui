@@ -3,18 +3,39 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
 import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 
 const props = defineProps({
   item: { type: Object, required: true },
-  onSelect: { type: Function, required: true }
+  onSelect: { type: Function, required: true },
+  // Parent's main search panel state; when true, this keyword panel should close
+  externalSearchOpen: { type: Boolean, default: false },
+  // Parent-provided keyword panel state (external toggle)
+  externalKeywordOpen: { type: Boolean, default: false }
 })
 
+const emit = defineEmits(['overlay-state-changed'])
+
 const keyWordsStore = useKeyWordsStore()
+
+const isKeywordLookupOpen = ref(false)
+
+// Keep internal state in sync with external prop
+watch(() => props.externalKeywordOpen, (val) => {
+  if (typeof val === 'boolean') {
+    isKeywordLookupOpen.value = val
+  }
+})
+
+// Emit overlay-state-changed when internal keyword open state changes
+watch(isKeywordLookupOpen, (val) => {
+  emit('overlay-state-changed', val)
+})
 
 // Use the shared tooltip cache
 const feacnTooltips = useFeacnTooltips()
@@ -43,14 +64,43 @@ function handleCodeSelect(feacnCode) {
   }
 }
 
+function openKeywordLookup() {
+  isKeywordLookupOpen.value = !isKeywordLookupOpen.value
+  emit('overlay-state-changed', isKeywordLookupOpen.value)
+}
+
+function handleKeywordLookupSelect(code) {
+  handleCodeSelect(code)
+  isKeywordLookupOpen.value = false
+  emit('overlay-state-changed', false)
+}
+
+// Close this overlay when the external main search panel opens
+watch(() => props.externalSearchOpen, (val) => {
+  if (val) {
+    isKeywordLookupOpen.value = false
+  }
+})
+
 function handleMouseEnter(code) {
   loadFeacnTooltipOnHover(code)
 }
 </script>
 
 <template>
-  <div class="form-group">
-    <label class="label">Подбор ТН ВЭД:</label>
+  <div class="form-group keyword-selector-wrapper">
+    <div class="keyword-label-row">
+      <label class="label keyword-label" @click="openKeywordLookup">Подбор ТН ВЭД</label>
+      <ActionButton
+        :item="item"
+        :icon="isKeywordLookupOpen ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+        :tooltip-text="isKeywordLookupOpen ? 'Скрыть подбор' : 'Открыть подбор'"
+        class="keyword-toggle"
+        :disabled="false"
+        @click="openKeywordLookup"
+        :iconSize="'1x'"
+      />
+    </div>
     <div v-if="combinedCodes.length > 0" class="form-control feacn-lookup-column">
       <div
         v-for="entry in combinedCodes"
@@ -98,6 +148,13 @@ function handleMouseEnter(code) {
       </div>
     </div>
     <div v-else class="form-control">-</div>
+    <div class="keyword-search-overlay">
+      <FeacnCodeSearchByKeyword
+        v-model="isKeywordLookupOpen"
+        v-show="isKeywordLookupOpen"
+        @select="handleKeywordLookupSelect"
+      />
+    </div>
   </div>
 </template>
 
@@ -116,5 +173,43 @@ function handleMouseEnter(code) {
 
 .keyword-code:hover {
   opacity: 0.8;
+}
+
+/* Keyword selector wrapper positioning */
+.keyword-selector-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+/* Keyword search overlay positioning */
+.keyword-search-overlay {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  width: 420px;
+  max-width: 600px;
+  min-width: 420px;
+}
+
+.keyword-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.keyword-label { cursor: pointer; }
+.keyword-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9rem;
+}
+.keyword-toggle:focus { outline: 2px solid rgba(0,0,0,0.1); }
+
+/* Ensure parent containers allow overflow for the overlay */
+.form-group {
+  overflow: visible !important;
 }
 </style>

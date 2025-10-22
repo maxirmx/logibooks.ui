@@ -327,8 +327,8 @@ describe('FeacnCodeSelectorW', () => {
 
     wrapper = createWrapper()
 
-  wrapper.findComponent({ name: 'FeacnCodeSearchByKeyword' }).vm.$emit('select', '5555')
-
+  await wrapper.findComponent({ name: 'FeacnCodeSearchByKeyword' }).vm.$emit('select', '5555')
+  await wrapper.vm.$nextTick()
     expect(mockOnSelect).toHaveBeenCalledWith('5555')
   })
 })

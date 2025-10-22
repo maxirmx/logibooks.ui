@@ -253,8 +253,9 @@ async function generateXml(values) {
   runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before calling helper
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
-    
+    const updatePromise = parcelsStore.update(currentParcelId.value, values)
+    await Promise.all([theNextParcelPromise, nextParcelPromise, updatePromise])
+
     await generateXmlHelper(values, item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
   } finally {
     runningAction.value = false
@@ -264,6 +265,29 @@ async function generateXml(values) {
 // Handle fellows click - redirect to parcels list with filter
 function handleFellows() {
   handleFellowsClick(item.value.registerId, item.value.postingNumber)
+}
+
+// Lookup FEACN codes triggered from header actions
+async function onLookup(values) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    // Wait for neighbor promises if present
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+
+    // Update the parcel first
+    await parcelsStore.update(currentParcelId.value, values)
+
+    // Then call lookup - parcelsStore.lookupFeacnCode returns { keyWordIds }
+    const result = await parcelsStore.lookupFeacnCode(currentParcelId.value)
+    if (result && result.keyWordIds) {
+      item.value = { ...item.value, keyWordIds: result.keyWordIds }
+    }
+  } catch (err) {
+    parcelsStore.error = err?.message || String(err)
+  } finally {
+    runningAction.value = false
+  }
 }
 </script>
 
@@ -282,6 +306,7 @@ function handleFellows() {
         @next-problem="onSubmit(values, false)"
         @back="onBack(values)"
         @save="onSave(values)"
+        @lookup="onLookup(values)"
         @cancel="router.push(`/registers/${props.registerId}/parcels`)"
         @download="generateXml(values)"
       />

@@ -89,11 +89,3 @@ function run(evt) {
     </div>
   </div>
 </template>
-
-<style scoped>
-.header-actions-group + .header-actions-group {
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 1px solid #d0d7de;
-}
-</style>

@@ -9,7 +9,7 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 
 const actionButtonStub = {
   inheritAttrs: false,
-  template: '<button v-bind="$attrs" :disabled="disabled"><slot /></button>',
+  template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
   props: {
     disabled: { type: Boolean, default: false },
     item: { type: Object, default: () => ({}) },
@@ -27,9 +27,22 @@ describe('ParcelHeaderActionsBar', () => {
     })
 
     const buttons = wrapper.findAll('button')
-    const events = ['next-parcel', 'next-problem', 'back', 'save', 'cancel', 'download']
+    // New groups and template order:
+    // group1: next-parcel(0), next-problem(1), back(2)
+    // group2: lookup(3)
+    // group3: download(4)
+    // group4: save(5), cancel(6)
+    const eventsByIndex = [
+      'next-parcel', // 0
+      'next-problem', // 1
+      'back', // 2
+      'lookup', // 3
+      'download', // 4
+      'save', // 5
+      'cancel' // 6
+    ]
 
-    for (const [index, eventName] of events.entries()) {
+    for (const [index, eventName] of eventsByIndex.entries()) {
       const before = wrapper.emitted()[eventName]?.length ?? 0
       await buttons[index].trigger('click')
       const after = wrapper.emitted()[eventName]?.length ?? 0
@@ -59,17 +72,23 @@ describe('ParcelHeaderActionsBar', () => {
     })
 
     const buttons = wrapper.findAll('button')
-    const regularEvents = ['next-parcel', 'next-problem', 'back', 'save', 'cancel']
+    // indices in template: 0..6 -> next-parcel, next-problem, back, lookup, download, save, cancel
+    // test non-download events: indices [0,1,2,3,5,6]
+    const eventNames = ['next-parcel', 'next-problem', 'back', 'lookup', 'save', 'cancel']
+    const eventIndexes = [0, 1, 2, 3, 5, 6]
 
-    for (const [index, eventName] of regularEvents.entries()) {
+    for (let i = 0; i < eventIndexes.length; i++) {
+      const idx = eventIndexes[i]
+      const eventName = eventNames[i]
       const before = wrapper.emitted()[eventName]?.length ?? 0
-      await buttons[index].trigger('click')
+      await buttons[idx].trigger('click')
       const after = wrapper.emitted()[eventName]?.length ?? 0
       expect(after).toBe(before + 1)
     }
 
     const downloadBefore = wrapper.emitted()['download']?.length ?? 0
-    await buttons[5].trigger('click')
+    // attempt to click download button (index 4) - should not emit because downloadDisabled true
+    await buttons[4].trigger('click')
     const downloadAfter = wrapper.emitted()['download']?.length ?? 0
     expect(downloadAfter).toBe(downloadBefore)
   })

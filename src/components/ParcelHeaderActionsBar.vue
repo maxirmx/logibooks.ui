@@ -61,7 +61,7 @@ function emitDownload() {
         :item="{}"
         icon="fa-solid fa-magnifying-glass"
         :iconSize="iconSize"
-        tooltip-text="Сохранить и подобрать код"
+        tooltip-text="Сохранить и подобрать код ТН ВЭД"
         :disabled="disabled"
         @click="emitEvent('lookup')"
       />

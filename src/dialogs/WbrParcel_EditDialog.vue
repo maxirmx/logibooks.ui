@@ -25,6 +25,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import WbrFormField from '@/components/WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -279,56 +280,16 @@ function handleFellows() {
         {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.shk ? item.shk : '[без номера]' }}
       </h1>
       <!-- Action buttons moved inside Form scope -->
-      <div class="header-actions">
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-arrow-right" 
-          :iconSize="'2x'"
-          tooltip-text="Следующая посылка"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onSubmit(values, true)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-play" 
-          :iconSize="'2x'"
-          tooltip-text="Следующая проблема"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onSubmit(values, false)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-arrow-left" 
-          :iconSize="'2x'"
-          tooltip-text="Назад"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onBack(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-check-double" 
-          :iconSize="'2x'"
-          tooltip-text="Сохранить"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onSave(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-xmark" 
-          :iconSize="'2x'"
-          tooltip-text="Отменить"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="router.push(`/registers/${props.registerId}/parcels`)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-upload" 
-          :iconSize="'2x'"
-          tooltip-text="Выгрузить XML накладную"
-          :disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
-          @click="generateXml(values)"
-        />
-      </div>
+      <ParcelHeaderActionsBar
+        :disabled="isSubmitting || runningAction || loading"
+        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
+        @next-parcel="onSubmit(values, true)"
+        @next-problem="onSubmit(values, false)"
+        @back="onBack(values)"
+        @save="onSave(values)"
+        @cancel="router.push(`/registers/${props.registerId}/parcels`)"
+        @download="generateXml(values)"
+      />
     </div>
     
     <hr class="hr" />

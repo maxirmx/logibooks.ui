@@ -102,7 +102,7 @@ describe('FeacnCodeSelectorW', () => {
     wrapper = createWrapper()
     
     expect(wrapper.find('.form-group').exists()).toBe(true)
-    expect(wrapper.find('label').text()).toBe('Подбор ТН ВЭД:')
+    expect(wrapper.find('label').text()).toBe('Подбор ТН ВЭД')
     expect(wrapper.text()).toContain('-')
   })
 
@@ -307,14 +307,14 @@ describe('FeacnCodeSelectorW', () => {
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('20202020')
   })
 
-  it('opens keyword lookup on label double click', async () => {
+  it('opens keyword lookup on label click', async () => {
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
 
     wrapper = createWrapper()
 
     const label = wrapper.find('label')
-    await label.trigger('dblclick')
+    await label.trigger('click')
 
     const lookup = wrapper.find('.feacn-keyword-lookup-stub')
     expect(lookup.exists()).toBe(true)

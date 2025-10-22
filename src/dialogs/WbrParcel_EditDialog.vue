@@ -260,7 +260,7 @@ async function generateXml(values) {
     const updatePromise = parcelsStore.update(currentParcelId.value, values)
     await Promise.all([theNextParcelPromise, nextParcelPromise, updatePromise])
     
-    await generateXmlHelper(values, item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
+    await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
   } finally {
     runningAction.value = false
   }

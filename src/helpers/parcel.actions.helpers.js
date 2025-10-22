@@ -63,10 +63,8 @@ export async function approveParcel(values, item, parcelsStore, withExcise = fal
  * @param {string|Function} params.filenameOrGenerator - Either a filename string or a function that returns filename
  * @returns {Promise<void>}
  */
-export async function generateXml(values, item, parcelsStore, filenameOrGenerator) {
+export async function generateXml(item, parcelsStore, filenameOrGenerator) {
   try {
-    // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
     
     // Determine filename
     let filename

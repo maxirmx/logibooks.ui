@@ -145,9 +145,8 @@ describe('parcel actions helpers', () => {
     it('should generate XML with string filename', async () => {
       const filename = 'test-filename'
 
-      await generateXml(mockValues, mockItem, mockParcelsStore, filename)
+      await generateXml(mockItem, mockParcelsStore, filename)
 
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
       expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, filename)
       expect(mockParcelsStore.error).toBeNull()
     })
@@ -155,10 +154,9 @@ describe('parcel actions helpers', () => {
     it('should generate XML with filename generator function', async () => {
       const filenameGenerator = vi.fn().mockReturnValue('generated-filename')
 
-      await generateXml(mockValues, mockItem, mockParcelsStore, filenameGenerator)
+      await generateXml(mockItem, mockParcelsStore, filenameGenerator)
 
       expect(filenameGenerator).toHaveBeenCalledWith(mockItem.value)
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
       expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'generated-filename')
     })
 
@@ -172,7 +170,7 @@ describe('parcel actions helpers', () => {
       }
       mockParcelsStore.generate.mockRejectedValue(error)
 
-      await generateXml(mockValues, mockItem, mockParcelsStore, 'test-file')
+      await generateXml(mockItem, mockParcelsStore, 'test-file')
 
       expect(mockParcelsStore.error).toBe('XML generation failed')
     })
@@ -180,7 +178,7 @@ describe('parcel actions helpers', () => {
     it('should handle generate XML errors with default message', async () => {
       mockParcelsStore.generate.mockRejectedValue(new Error('Network error'))
 
-      await generateXml(mockValues, mockItem, mockParcelsStore, 'test-file')
+      await generateXml(mockItem, mockParcelsStore, 'test-file')
 
       expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
     })

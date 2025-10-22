@@ -25,6 +25,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -252,9 +253,10 @@ async function generateXml(values) {
   runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before calling helper
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
-    
-    await generateXmlHelper(values, item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
+    const updatePromise = parcelsStore.update(currentParcelId.value, values)
+    await Promise.all([theNextParcelPromise, nextParcelPromise, updatePromise])
+
+    await generateXmlHelper(item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
   } finally {
     runningAction.value = false
   }
@@ -263,6 +265,29 @@ async function generateXml(values) {
 // Handle fellows click - redirect to parcels list with filter
 function handleFellows() {
   handleFellowsClick(item.value.registerId, item.value.postingNumber)
+}
+
+// Lookup FEACN codes triggered from header actions
+async function onLookup(values) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    // Wait for neighbor promises if present
+    await Promise.all([theNextParcelPromise, nextParcelPromise])
+
+    // Update the parcel first
+    await parcelsStore.update(currentParcelId.value, values)
+
+    // Then call lookup - parcelsStore.lookupFeacnCode returns { keyWordIds }
+    const result = await parcelsStore.lookupFeacnCode(currentParcelId.value)
+    if (result && result.keyWordIds) {
+      item.value = { ...item.value, keyWordIds: result.keyWordIds }
+    }
+  } catch (err) {
+    parcelsStore.error = err?.message || String(err)
+  } finally {
+    runningAction.value = false
+  }
 }
 </script>
 
@@ -274,56 +299,17 @@ function handleFellows() {
         {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }} 
       </h1>
       <!-- Action buttons moved inside Form scope -->
-      <div class="header-actions">        
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-arrow-right" 
-          :iconSize="'2x'"
-          tooltip-text="Следующая посылка"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onSubmit(values, true)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-play" 
-          :iconSize="'2x'"
-          tooltip-text="Следующая проблема"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onSubmit(values, false)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-arrow-left" 
-          :iconSize="'2x'"
-          tooltip-text="Назад"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onBack(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-check-double" 
-          :iconSize="'2x'"
-          tooltip-text="Сохранить"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="onSave(values)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-xmark" 
-          :iconSize="'2x'"
-          tooltip-text="Отменить"
-          :disabled="isSubmitting || runningAction || loading"
-          @click="router.push(`/registers/${props.registerId}/parcels`)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-upload" 
-          :iconSize="'2x'"
-          tooltip-text="Выгрузить XML накладную"
-          :disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
-          @click="generateXml(values)"
-        />
-      </div>
+      <ParcelHeaderActionsBar
+        :disabled="isSubmitting || runningAction || loading"
+        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
+        @next-parcel="onSubmit(values, true)"
+        @next-problem="onSubmit(values, false)"
+        @back="onBack(values)"
+        @save="onSave(values)"
+        @lookup="onLookup(values)"
+        @cancel="router.push(`/registers/${props.registerId}/parcels`)"
+        @download="generateXml(values)"
+      />
     </div>
     <hr class="hr" />
 
@@ -495,24 +481,6 @@ function handleFellows() {
   margin-bottom: 0.5rem;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  white-space: nowrap;
-  
-  /* Control panel styling */
-  background: #ffffff;
-  border: 1px solid #74777c;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-  
-  /* Ensure it flows below heading on narrow screens */
-  min-width: min-content;
-}
-
 /* Primary heading with ellipsis */
 .primary-heading {
   margin: 0;
@@ -545,10 +513,6 @@ function handleFellows() {
   .primary-heading {
     max-width: 100%;
     margin-bottom: 0.5rem;
-  }
-  
-  .header-actions {
-    align-self: flex-end;
   }
 }
 

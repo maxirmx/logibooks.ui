@@ -54,9 +54,6 @@ const isSearchButtonDisabled = computed(() => {
   return props.isSubmitting || props.runningAction
 })
 
-const isLookupButtonDisabled = computed(() => {
-  return props.isSubmitting || props.runningAction || searchActive.value 
-})
 
 // Computed property that reacts to current form values
 const tnVedClass = computed(() => {
@@ -113,32 +110,7 @@ onUnmounted(() => {
 })
 
 // Lookup FEACN codes for this parcel
-async function lookupFeacnCodes() {
-  if (props.runningAction) return
-  emit('set-running-action', true)
-  try {
-    // Wait for next parcel promises if they exist
-    if (props.nextParcelPromises.theNext && props.nextParcelPromises.next) {
-      await Promise.all([props.nextParcelPromises.theNext, props.nextParcelPromises.next])
-    }
-    
-    // First update the parcel with current form values
-    await parcelsStore.update(props.item.id, props.values)
-    
-    // Then lookup FEACN codes and get the keyWordIds response
-    const result = await parcelsStore.lookupFeacnCode(props.item.id)
-    
-    // Update only the keyWordIds to trigger a re-render of keywordsWithFeacn computed property
-    if (result && result.keyWordIds) {
-      const updatedItem = { ...props.item, keyWordIds: result.keyWordIds }
-      emit('update:item', updatedItem)
-    }
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-  } finally {
-    emit('set-running-action', false)
-  }
-}
+// lookup handled from header actions now; keep this file focused on selection/search UI
 
 // Select a FEACN code and update TN VED
 async function selectFeacnCode(feacnCode) {
@@ -205,15 +177,6 @@ function handleTnVedMouseEnter() {
               class="button-o-c"
               :disabled="isSearchButtonDisabled"
               @click="toggleSearch"
-              :iconSize="'1x'"
-            />
-            <!-- keyword toggle moved into FeacnCodeSelectorW to sit next to the label -->
-            <ActionButton
-              :item="props.item"
-              icon="fa-solid fa-magnifying-glass"
-              tooltip-text="Сохранить и подобрать код"
-              :disabled="isLookupButtonDisabled"
-              @click="lookupFeacnCodes"
               :iconSize="'1x'"
             />
           </div>

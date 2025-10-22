@@ -9,6 +9,15 @@ import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
+vi.mock('@/components/FeacnKeywordLookup.vue', () => ({
+  default: {
+    name: 'FeacnKeywordLookup',
+    props: ['modelValue'],
+    emits: ['update:modelValue', 'select'],
+    template: '<div class="feacn-keyword-lookup-stub" :data-open="modelValue"></div>'
+  }
+}))
+
 // Mock the helper functions before importing
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getFeacnCodesForKeywords: vi.fn(() => []),
@@ -294,5 +303,30 @@ describe('FeacnCodeSelectorW', () => {
     await firstCodeDiv.trigger('mouseenter')
     await wrapper.vm.$nextTick()
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('20202020')
+  })
+
+  it('opens keyword lookup on label double click', async () => {
+    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
+
+    wrapper = createWrapper()
+
+    const label = wrapper.find('label')
+    await label.trigger('dblclick')
+
+    const lookup = wrapper.find('.feacn-keyword-lookup-stub')
+    expect(lookup.exists()).toBe(true)
+    expect(lookup.attributes('data-open')).toBe('true')
+  })
+
+  it('handles code selection from keyword lookup', async () => {
+    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
+    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
+
+    wrapper = createWrapper()
+
+    wrapper.findComponent({ name: 'FeacnKeywordLookup' }).vm.$emit('select', '5555')
+
+    expect(mockOnSelect).toHaveBeenCalledWith('5555')
   })
 })

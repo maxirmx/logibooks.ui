@@ -3,8 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import FeacnKeywordLookup from '@/components/FeacnKeywordLookup.vue'
 import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -15,6 +16,8 @@ const props = defineProps({
 })
 
 const keyWordsStore = useKeyWordsStore()
+
+const isKeywordLookupOpen = ref(false)
 
 // Use the shared tooltip cache
 const feacnTooltips = useFeacnTooltips()
@@ -43,6 +46,15 @@ function handleCodeSelect(feacnCode) {
   }
 }
 
+function openKeywordLookup() {
+  isKeywordLookupOpen.value = true
+}
+
+function handleKeywordLookupSelect(code) {
+  handleCodeSelect(code)
+  isKeywordLookupOpen.value = false
+}
+
 function handleMouseEnter(code) {
   loadFeacnTooltipOnHover(code)
 }
@@ -50,7 +62,7 @@ function handleMouseEnter(code) {
 
 <template>
   <div class="form-group">
-    <label class="label">Подбор ТН ВЭД:</label>
+    <label class="label" @dblclick="openKeywordLookup">Подбор ТН ВЭД:</label>
     <div v-if="combinedCodes.length > 0" class="form-control feacn-lookup-column">
       <div
         v-for="entry in combinedCodes"
@@ -98,6 +110,10 @@ function handleMouseEnter(code) {
       </div>
     </div>
     <div v-else class="form-control">-</div>
+    <FeacnKeywordLookup
+      v-model="isKeywordLookupOpen"
+      @select="handleKeywordLookupSelect"
+    />
   </div>
 </template>
 

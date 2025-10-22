@@ -1,5 +1,5 @@
 export function keywordMatchesSearch(query, keyword) {
-  if (query === null || keyword == null) {
+  if (query == null || keyword == null) {
     return false
   }
 

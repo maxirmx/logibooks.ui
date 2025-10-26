@@ -176,9 +176,8 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function lookupFeacnCodes(registerId, withFCMatch = false) {
+  async function lookupFeacnCodes(registerId, withFCMatch = 1) {
     try {
-      // Backend expects boolean parameter; pass as query param
       const url = `${baseUrl}/${registerId}/lookup-feacn-codes?withFCMatch=${withFCMatch}`
       const result = await fetchWrapper.post(url)
       return result

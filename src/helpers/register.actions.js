@@ -168,7 +168,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
       validationState.operation = 'lookup-feacn-codes'
       pollingTimer.stop()
       pollingFunction = pollFeacnLookup
-      const res = await registersStore.lookupFeacnCodes(item.id, extended)
+      const res = await registersStore.lookupFeacnCodes(item.id, extended ? 2 : 1)
       validationState.handleId = res.id
       validationState.total = 0
       validationState.processed = 0

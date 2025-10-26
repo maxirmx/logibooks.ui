@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
@@ -835,25 +836,25 @@ describe('registers store', () => {
   })
 
   describe('FEACN lookup API', () => {
-    it('starts FEACN lookup with default (withFCMatch=false) and returns handle', async () => {
+    it('starts FEACN lookup with default (withFCMatch=1) and returns handle', async () => {
       const handle = { id: '1234' }
       fetchWrapper.post.mockResolvedValue(handle)
 
       const store = useRegistersStore()
       const result = await store.lookupFeacnCodes(1)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/lookup-feacn-codes?withFCMatch=false`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/lookup-feacn-codes?withFCMatch=1`)
       expect(result).toEqual(handle)
     })
 
-    it('starts FEACN lookup with withFCMatch=true', async () => {
+    it('starts FEACN lookup with withFCMatch=2', async () => {
       const handle = { id: '5555' }
       fetchWrapper.post.mockResolvedValue(handle)
 
       const store = useRegistersStore()
-      const result = await store.lookupFeacnCodes(42, true)
+  const result = await store.lookupFeacnCodes(42, FeacnMatchMode.FCMatchAndAssign)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/42/lookup-feacn-codes?withFCMatch=true`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/42/lookup-feacn-codes?withFCMatch=2`)
       expect(result).toEqual(handle)
     })
 
@@ -863,7 +864,7 @@ describe('registers store', () => {
 
       const store = useRegistersStore()
 
-  await expect(store.lookupFeacnCodes(1)).rejects.toThrow('Lookup failed')
+      await expect(store.lookupFeacnCodes(1)).rejects.toThrow('Lookup failed')
       expect(store.error).toBe(error)
     })
 

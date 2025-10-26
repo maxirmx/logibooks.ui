@@ -77,7 +77,7 @@ describe('useRegisterHeaderActions', () => {
     await lookupFeacnCodesEx()
 
     // Should call store method with second param true
-    expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(1, true)
+    expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(1, 2)
     expect(validationState.operation).toBe('lookup-feacn-codes')
     // After initial poll, progress total should reflect mocked value
     expect(validationState.total).toBe(10)

@@ -4,6 +4,7 @@
 
 import { computed, watch, ref, unref, reactive } from 'vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
+import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
@@ -168,7 +169,10 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
       validationState.operation = 'lookup-feacn-codes'
       pollingTimer.stop()
       pollingFunction = pollFeacnLookup
-      const res = await registersStore.lookupFeacnCodes(item.id, extended)
+      const res = await registersStore.lookupFeacnCodes(
+        item.id,
+        extended ? FeacnMatchMode.FCMatchAndAssign : FeacnMatchMode.FCMatch
+      )
       validationState.handleId = res.id
       validationState.total = 0
       validationState.processed = 0

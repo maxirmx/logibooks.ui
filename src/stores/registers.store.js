@@ -9,6 +9,7 @@ import { apiUrl } from '@/helpers/config.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
+import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -176,7 +177,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function lookupFeacnCodes(registerId, withFCMatch = 1) {
+  async function lookupFeacnCodes(registerId, withFCMatch = FeacnMatchMode.FCMatch) {
     try {
       const url = `${baseUrl}/${registerId}/lookup-feacn-codes?withFCMatch=${withFCMatch}`
       const result = await fetchWrapper.post(url)

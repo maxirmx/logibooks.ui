@@ -272,8 +272,8 @@ defineExpose({
   cursor: pointer;
 }
 
-.action-button-2l__menu-item:hover,
-.action-button-2l__menu-item:focus {
+.action-button-2l__menu-item:not([disabled]):not([aria-disabled="true"]):hover,
+.action-button-2l__menu-item:not([disabled]):not([aria-disabled="true"]):focus {
   background-color: rgba(25, 118, 210, 0.1);
   outline: none;
 }

@@ -117,7 +117,8 @@ onMounted(() => {
 })
 
 const schema = Yup.object().shape({
-  statusId: Yup.number().required('Необходимо выбрать статус'),
+  statusId: Yup.number(),
+  checkStatus: Yup.number(),
   tnVed: Yup.string().required('Необходимо указать ТН ВЭД'),
   countryCode: Yup.number().required('Необходимо выбрать страну'),
   invoiceDate: Yup.date().nullable(),
@@ -258,6 +259,7 @@ async function generateXml(values) {
 
     await generateXmlHelper(item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
   } finally {
+    await parcelsStore.getById(currentParcelId.value)
     runningAction.value = false
   }
 }
@@ -275,17 +277,12 @@ async function onLookup(values) {
     // Wait for neighbor promises if present
     await Promise.all([theNextParcelPromise, nextParcelPromise])
 
-    // Update the parcel first
     await parcelsStore.update(currentParcelId.value, values)
-
-    // Then call lookup - parcelsStore.lookupFeacnCode returns { keyWordIds }
-    const result = await parcelsStore.lookupFeacnCode(currentParcelId.value)
-    if (result && result.keyWordIds) {
-      item.value = { ...item.value, keyWordIds: result.keyWordIds }
-    }
+    await parcelsStore.lookupFeacnCode(currentParcelId.value)
   } catch (err) {
     parcelsStore.error = err?.message || String(err)
   } finally {
+    await parcelsStore.getById(currentParcelId.value)
     runningAction.value = false
   }
 }
@@ -392,7 +389,7 @@ async function onLookup(values) {
         :setFieldValue="setFieldValue"
         :nextParcelPromises="{ theNext: theNextParcelPromise, next: nextParcelPromise }"
         :runningAction="runningAction"
-        @update:item="(updatedItem) => item = updatedItem"
+        @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"
         @set-running-action="runningAction = $event"
       />

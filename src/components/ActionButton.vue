@@ -12,7 +12,9 @@ const attrs = useAttrs()
 
 const buttonClasses = computed(() => buildActionButtonClasses(props, attrs))
 const forwardedAttrs = computed(() => {
-  const { class: _class, ...rest } = attrs
+  const rest = { ...attrs }
+  // remove 'class' from forwarded attrs to avoid duplicating class binding
+  delete rest.class
   return rest
 })
 </script>

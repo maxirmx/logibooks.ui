@@ -11,6 +11,10 @@ const emit = defineEmits(['click'])
 const attrs = useAttrs()
 
 const buttonClasses = computed(() => buildActionButtonClasses(props, attrs))
+const forwardedAttrs = computed(() => {
+  const { class: _class, ...rest } = attrs
+  return rest
+})
 </script>
 <template>
   <v-tooltip :text="props.tooltipText" :disabled="props.disabled">
@@ -19,7 +23,7 @@ const buttonClasses = computed(() => buildActionButtonClasses(props, attrs))
         type="button"
         @click="emit('click', props.item)"
         :class="buttonClasses"
-        v-bind="activatorProps"
+        v-bind="{ ...activatorProps, ...forwardedAttrs }"
         :disabled="props.disabled"
       >
         <font-awesome-icon :size="props.iconSize" :icon="props.icon"  class="button-o-c"/>

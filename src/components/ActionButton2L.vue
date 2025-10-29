@@ -5,6 +5,8 @@ import { actionButtonProps } from './actionButtonShared'
 
 defineOptions({ inheritAttrs: false })
 
+const menuId = `action-button-2l-menu-${Math.random().toString(36).slice(2, 10)}`
+
 const props = defineProps({
   ...actionButtonProps,
   options: {
@@ -208,6 +210,9 @@ defineExpose({
       :icon-size="props.iconSize"
       :variant="props.variant"
       :disabled="effectiveDisabled"
+      aria-haspopup="menu"
+      :aria-expanded="isMenuOpen"
+      :aria-controls="menuId"
       @click="handleButtonClick"
       v-bind="$attrs"
     />
@@ -216,6 +221,7 @@ defineExpose({
         v-if="isMenuOpen"
         class="action-button-2l__menu"
         role="menu"
+        :id="menuId"
       >
         <li
           v-for="(option, index) in props.options"
@@ -274,7 +280,7 @@ defineExpose({
 
 .action-button-2l__menu-item:not([disabled]):not([aria-disabled="true"]):hover,
 .action-button-2l__menu-item:not([disabled]):not([aria-disabled="true"]):focus {
-  background-color: rgba(25, 118, 210, 0.1);
+  background-color: rgba(var(--primary-color-rgb), 0.1);
   outline: none;
 }
 

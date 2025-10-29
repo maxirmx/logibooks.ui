@@ -3,35 +3,26 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-defineProps({
-  item: { required: true },
-  icon: { type: String, required: true },
-  tooltipText: { type: String, required: true },
-  iconSize: { type: String, default: '1x' },
-  disabled: { type: Boolean, default: false },
-  variant: { type: String, default: 'default' }
-})
+import { computed, useAttrs } from 'vue'
+import { actionButtonProps, buildActionButtonClasses } from './actionButtonShared'
 
-defineEmits(['click'])
+const props = defineProps(actionButtonProps)
+const emit = defineEmits(['click'])
+const attrs = useAttrs()
+
+const buttonClasses = computed(() => buildActionButtonClasses(props, attrs))
 </script>
 <template>
-  <v-tooltip :text="tooltipText" :disabled="disabled">
-    <template v-slot:activator="{ props }">
-      <button 
-        type="button" 
-        @click="$emit('click', item)" 
-        :class="['anti-btn', { 
-          'disabled-btn': disabled, 
-          'anti-btn-orange': variant === 'orange', 
-          'anti-btn-green': variant === 'green', 
-          'anti-btn-red': variant === 'red', 
-          'anti-btn-blue': variant === 'blue' 
-          }, 
-          $attrs.class]"
-        v-bind="props"
-        :disabled="disabled"
+  <v-tooltip :text="props.tooltipText" :disabled="props.disabled">
+    <template #activator="{ props: activatorProps }">
+      <button
+        type="button"
+        @click="emit('click', props.item)"
+        :class="buttonClasses"
+        v-bind="activatorProps"
+        :disabled="props.disabled"
       >
-        <font-awesome-icon :size="iconSize" :icon="icon"  class="button-o-c"/>
+        <font-awesome-icon :size="props.iconSize" :icon="props.icon"  class="button-o-c"/>
       </button>
     </template>
   </v-tooltip>

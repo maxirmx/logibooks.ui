@@ -275,7 +275,7 @@ export const useRegistersStore = defineStore('registers', () => {
   function buildInvoiceFilename(id, invoiceNumber, suffix = '') {
     const hasInvoiceNumber = invoiceNumber !== null && invoiceNumber !== undefined
     const baseName = hasInvoiceNumber ? invoiceNumber : id
-    const suffixPart = suffix ? `${suffix}` : ''
+    const suffixPart = suffix || ''
     return `Invoice_${baseName}${suffixPart}.xlsx`
   }
 

@@ -272,6 +272,64 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  function buildInvoiceFilename(id, invoiceNumber, suffix = '') {
+    const hasInvoiceNumber = invoiceNumber !== null && invoiceNumber !== undefined
+    const baseName = hasInvoiceNumber ? invoiceNumber : id
+    const suffixPart = suffix ? `${suffix}` : ''
+    return `Invoice_${baseName}${suffixPart}.xlsx`
+  }
+
+  async function downloadInvoice(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      const filename = buildInvoiceFilename(id, invoiceNumber)
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download-invoice`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function downloadInvoiceExcise(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      const filename = buildInvoiceFilename(id, invoiceNumber, '-акциз')
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download-invoice-excise`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function downloadInvoiceWithoutExcise(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      const filename = buildInvoiceFilename(id, invoiceNumber, '-без-акциза')
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download-invoice-without-excise`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function download(id, filename) {
     if (!filename) {
       filename = `register_${id}.xlsx`
@@ -366,6 +424,9 @@ export const useRegistersStore = defineStore('registers', () => {
     generate,
     generateExcise,
     generateWithoutExcise,
+    downloadInvoice,
+    downloadInvoiceExcise,
+    downloadInvoiceWithoutExcise,
     download,
     nextParcel,
     theNextParcel,

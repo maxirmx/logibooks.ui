@@ -1058,6 +1058,57 @@ describe('registers store', () => {
     })
   })
 
+  describe('downloadInvoice methods', () => {
+    it('downloadInvoice uses id when invoiceNumber is missing', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const result = await store.downloadInvoice(7)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/7/download-invoice`,
+        'Invoice_7.xlsx'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('downloadInvoice uses invoiceNumber when provided', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.downloadInvoice(7, 'INV-7')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/7/download-invoice`,
+        'Invoice_INV-7.xlsx'
+      )
+    })
+
+    it('downloadInvoiceExcise appends excise suffix', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.downloadInvoiceExcise(8, 'INV-8')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/8/download-invoice-excise`,
+        'Invoice_INV-8-акциз.xlsx'
+      )
+    })
+
+    it('downloadInvoiceWithoutExcise appends без-акциза suffix and uses id fallback', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.downloadInvoiceWithoutExcise(9)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/9/download-invoice-without-excise`,
+        'Invoice_9-без-акциза.xlsx'
+      )
+    })
+
+    it('downloadInvoiceExcise stores and rethrows errors', async () => {
+      const store = useRegistersStore()
+      const error = new Error('fail')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+      await expect(store.downloadInvoiceExcise(10)).rejects.toThrow(error)
+      expect(store.error).toBe(error)
+    })
+  })
+
   describe('nextParcel method', () => {
     it('requests next parcel with correct id and default parameters', async () => {
       const parcel = { id: 2 }

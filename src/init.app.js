@@ -50,7 +50,8 @@ import {
   faTruckPlane,
   faFileCirclePlus,
   faBookmark,
-  faBookSkull
+  faBookSkull,
+  faFileInvoice
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -94,7 +95,8 @@ library.add(
   faTruckPlane,
   faFileCirclePlus,
   faBookmark,
-  faBookSkull
+  faBookSkull,
+  faFileInvoice
 )
 
 import 'vuetify/styles'

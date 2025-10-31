@@ -256,7 +256,7 @@ defineExpose({
 .action-button-2l__menu {
   position: absolute;
   right: 0;
-  margin-top: 4px;
+  margin-top: 20px;
   padding: 4px 0;
   list-style: none;
   background-color: #fff;

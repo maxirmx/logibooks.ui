@@ -27,6 +27,9 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlWithoutExcise: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     downloadRegister: vi.fn(),
+    downloadInvoice: vi.fn(),
+    downloadInvoiceExcise: vi.fn(),
+    downloadInvoiceWithoutExcise: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
   }
@@ -268,7 +271,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-  expect(buttons).toHaveLength(7)
+  // We added an invoice action (ActionButton2L) which renders an extra button
+  expect(buttons).toHaveLength(8)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()

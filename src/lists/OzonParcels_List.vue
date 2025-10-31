@@ -212,6 +212,9 @@ const {
   exportAllXmlWithoutExcise: exportRegisterXmlWithoutExcise,
   exportAllXmlExcise: exportRegisterXmlExcise,
   downloadRegister: downloadRegisterFile,
+  downloadInvoice,
+  downloadInvoiceExcise,
+  downloadInvoiceWithoutExcise,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -422,6 +425,9 @@ function getGenericTemplateHeaders() {
         @export-noexcise="exportRegisterXmlWithoutExcise"
         @export-excise="exportRegisterXmlExcise"
         @download="downloadRegisterFile"
+        @download-invoice="downloadInvoice"
+        @download-invoice-excise="downloadInvoiceExcise"
+        @download-invoice-without-excise="downloadInvoiceWithoutExcise"
       />
     </div>
     <hr class="hr" />

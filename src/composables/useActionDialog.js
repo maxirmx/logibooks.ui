@@ -4,7 +4,8 @@ export const ACTION_DIALOG_TITLES = {
   'export-all-xml-without-excise': 'Подготовка файлов',
   'export-all-xml-excise': 'Подготовка файлов',
   'download-register': 'Подготовка файла реестра',
-  'upload-register': 'Загрузка реестра'
+  'upload-register': 'Загрузка реестра',
+  'download-invoice': 'Подготовка файла инвойса',
 }
 
 const DEFAULT_TITLE = 'Пожалуйста, подождите'

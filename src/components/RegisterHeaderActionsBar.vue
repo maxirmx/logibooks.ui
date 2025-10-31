@@ -1,5 +1,6 @@
 <script setup>
 import ActionButton from '@/components/ActionButton.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -14,7 +15,10 @@ const emit = defineEmits([
   'lookup-ex',
   'export-noexcise',
   'export-excise',
-  'download'
+  'download',
+  'download-invoice',
+  'download-invoice-excise',
+  'download-invoice-without-excise'
 ])
 
 function run(evt) {
@@ -85,6 +89,19 @@ function run(evt) {
         :iconSize="iconSize"
         :disabled="disabled"
         @click="run('download')"
+      />
+      <!-- Invoice / manifest generation menu -->
+      <ActionButton2L
+        :item="item"
+        icon="fa-solid fa-file-invoice"
+        tooltip-text="Сформировать инвойс-манифест"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        :options="[
+          { label: 'Все', action: (it) => emit('download-invoice', it) },
+          { label: 'С акцизом', action: (it) => emit('download-invoice-excise', it) },
+          { label: 'Без акциза', action: (it) => emit('download-invoice-without-excise', it) }
+        ]"
       />
     </div>
   </div>

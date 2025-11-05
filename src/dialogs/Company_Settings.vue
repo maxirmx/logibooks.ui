@@ -148,9 +148,9 @@ function onStampSelected(event) {
         return
       }
     }
-    // fallback: store as raw base64 and use file.type as mime
-    signatureStampBase64.value = result
-    signatureStampMime.value = file.type || null
+    // If the data URI is malformed, inform the user and do not set the values
+    alertStore.error('Не удалось обработать изображение. Пожалуйста, выберите другой файл.')
+    event.target.value = ''
   }
   reader.readAsDataURL(file)
 }

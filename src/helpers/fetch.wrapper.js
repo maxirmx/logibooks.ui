@@ -49,7 +49,7 @@ function request(method) {
       let bodyCopy = body
       try {
         // Only copy if it's an object; otherwise pass through
-        if (body && typeof body === 'object' && !Array.isArray(body)) {
+        if (typeof body === 'object' && !Array.isArray(body)) {
           bodyCopy = { ...body }
 
           // Determine which fields to treat as data-URI fields for this request.

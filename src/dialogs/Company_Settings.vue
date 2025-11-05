@@ -60,7 +60,10 @@ function parseStampValue(value) {
     if (m) return { base64: m[2], mime: m[1] }
   }
   // assume raw base64 without mime
-  return { base64: typeof value === 'string' ? value : String(value), mime: null }
+  if (typeof value === 'string') {
+    return { base64: value, mime: null }
+  }
+  return { base64: null, mime: null }
 }
 
 // expose a computed data URI for template/preview use

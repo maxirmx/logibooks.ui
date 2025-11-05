@@ -383,7 +383,7 @@ function onSubmit(values, { setErrors }) {
           Отменить
         </button>
       </div>
-  <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
+      <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
       <div v-if="errors.kpp" class="alert alert-danger mt-3 mb-0">{{ errors.kpp }}</div>
       <div v-if="errors.ogrn" class="alert alert-danger mt-3 mb-0">{{ errors.ogrn }}</div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>

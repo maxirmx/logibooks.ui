@@ -362,7 +362,7 @@ function onSubmit(values, { setErrors }) {
               @click="removeStamp"
             >
               <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="mr-1" />
-              Удалить
+              Удалить изображение
             </button>
           </div>
         </div>

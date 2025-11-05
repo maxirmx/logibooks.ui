@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
@@ -40,12 +40,25 @@ let company = ref({
   countryIsoNumeric: null,
   postalCode: '',
   city: '',
-  street: ''
+  street: '',
+  titleSignatureStamp: null
 })
+
+const signatureStamp = ref(null)
+const fileInputRef = ref(null)
 
 if (!isCreate.value) {
   ;({ company } = storeToRefs(companiesStore))
   await companiesStore.getById(props.companyId)
+  signatureStamp.value = company.value?.titleSignatureStamp || null
+  watch(
+    () => company.value?.titleSignatureStamp,
+    (newValue) => {
+      signatureStamp.value = newValue || null
+    }
+  )
+} else {
+  signatureStamp.value = company.value.titleSignatureStamp
 }
 
 // Get page title
@@ -68,14 +81,65 @@ const schema = Yup.object({
   countryIsoNumeric: Yup.number().required('Страна обязательна'),
   postalCode: Yup.string(),
   city: Yup.string(),
-  street: Yup.string()
+  street: Yup.string(),
+  titleSignatureStamp: Yup.string().nullable()
 })
+
+function normalizeValues(values) {
+  if (values && typeof values === 'object' && values.value && typeof values.value === 'object') {
+    return values.value
+  }
+  return values
+}
+
+function getStampPreview(value) {
+  if (!value) {
+    return null
+  }
+  if (typeof value === 'string' && value.startsWith('data:')) {
+    return value
+  }
+  return `data:image/png;base64,${value}`
+}
+
+function openFileDialog() {
+  fileInputRef.value?.click()
+}
+
+function onStampSelected(event) {
+  const file = event.target?.files?.[0]
+  if (!file) {
+    return
+  }
+  if (!file.type.startsWith('image/')) {
+    event.target.value = ''
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = () => {
+    signatureStamp.value = reader.result
+  }
+  reader.readAsDataURL(file)
+}
+
+function removeStamp() {
+  signatureStamp.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
 
 // Form submission
 function onSubmit(values, { setErrors }) {
+  const normalizedValues = normalizeValues(values) || {}
+  const payload = {
+    ...normalizedValues,
+    titleSignatureStamp: signatureStamp.value || null
+  }
+
   if (isCreate.value) {
     return companiesStore
-      .create(values)
+      .create(payload)
       .then(() => {
         router.push('/companies')
       })
@@ -88,7 +152,7 @@ function onSubmit(values, { setErrors }) {
       })
   } else {
     return companiesStore
-      .update(props.companyId, values)
+      .update(props.companyId, payload)
       .then(() => {
         router.push('/companies')
       })
@@ -225,6 +289,43 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
+      <div class="form-group">
+        <label class="label">Подпись / печать:</label>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept="image/*"
+          class="sr-only"
+          data-testid="signature-stamp-input"
+          @change="onStampSelected"
+        />
+        <div class="signature-stamp">
+          <div v-if="signatureStamp" class="signature-preview">
+            <img
+              :src="getStampPreview(signatureStamp)"
+              alt="Подпись или печать"
+              data-testid="signature-stamp-preview"
+            />
+          </div>
+          <div class="signature-actions">
+            <button class="button secondary" type="button" @click="openFileDialog">
+              <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="mr-1" />
+              {{ signatureStamp ? 'Заменить изображение' : 'Загрузить изображение' }}
+            </button>
+            <button
+              v-if="signatureStamp"
+              class="button danger"
+              type="button"
+              data-testid="remove-signature-stamp"
+              @click="removeStamp"
+            >
+              <font-awesome-icon size="1x" icon="fa-solid fa-trash" class="mr-1" />
+              Удалить
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
@@ -234,6 +335,7 @@ function onSubmit(values, { setErrors }) {
         <button
           class="button secondary"
           type="button"
+          data-testid="cancel-button"
           @click="$router.push('/companies')"
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
@@ -253,3 +355,41 @@ function onSubmit(values, { setErrors }) {
     </Form>
   </div>
 </template>
+
+<style scoped>
+.signature-stamp {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.signature-preview {
+  max-width: 200px;
+  max-height: 120px;
+}
+
+.signature-preview img {
+  max-width: 100%;
+  max-height: 120px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.signature-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+</style>

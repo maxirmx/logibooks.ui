@@ -31,7 +31,8 @@ const mockCompanies = [
     countryIsoNumeric: 643,
     postalCode: '123456',
     city: 'Москва',
-    street: 'ул. Тестовая, д. 1'
+    street: 'ул. Тестовая, д. 1',
+    titleSignatureStamp: 'data:image/png;base64,EXISTING'
   },
   {
     id: 2,
@@ -42,7 +43,8 @@ const mockCompanies = [
     countryIsoNumeric: 643,
     postalCode: '654321',
     city: 'Санкт-Петербург',
-    street: 'пр. Тестовый, д. 2'
+    street: 'пр. Тестовый, д. 2',
+    titleSignatureStamp: null
   }
 ]
 
@@ -149,12 +151,14 @@ describe('companies store', () => {
       fetchWrapper.put.mockResolvedValue({})
       const store = useCompaniesStore()
       store.companies = [...mockCompanies]
+      store.company = { ...mockCompany }
 
-      const updateData = { name: 'Updated Company' }
+      const updateData = { name: 'Updated Company', titleSignatureStamp: null }
       const result = await store.update(1, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/companies/1`, updateData)
       expect(store.companies[0]).toEqual({ ...mockCompanies[0], ...updateData })
+      expect(store.company).toEqual({ ...mockCompany, ...updateData })
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()

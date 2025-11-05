@@ -27,7 +27,7 @@ function request(method) {
                 let bodyCopy = body
                 try {
                   // Only copy if it's an object; otherwise pass through
-                  if (body && typeof body === 'object' && !Array.isArray(body)) {
+                  if (typeof body === 'object' && !Array.isArray(body)) {
                     bodyCopy = { ...body }
                     if (typeof bodyCopy.titleSignatureStamp === 'string' && bodyCopy.titleSignatureStamp.startsWith('data:')) {
                       const m = bodyCopy.titleSignatureStamp.match(/^data:[^;]+;base64,(.*)$/)

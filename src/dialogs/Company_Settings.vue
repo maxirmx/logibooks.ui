@@ -138,6 +138,7 @@ function onStampSelected(event) {
     return
   }
   const reader = new FileReader()
+  const inputEl = event.target
   reader.onload = () => {
     const result = String(reader.result || '')
     if (result.startsWith('data:')) {
@@ -150,7 +151,12 @@ function onStampSelected(event) {
     }
     // If the data URI is malformed, inform the user and do not set the values
     alertStore.error('Не удалось обработать изображение. Пожалуйста, выберите другой файл.')
-    event.target.value = ''
+    if (inputEl) inputEl.value = ''
+  }
+  reader.onerror = () => {
+    // FileReader failed (e.g., file read error). Inform user and clear input.
+    alertStore.error('Ошибка при чтении файла. Пожалуйста, попробуйте ещё раз.')
+    if (inputEl) inputEl.value = ''
   }
   reader.readAsDataURL(file)
 }

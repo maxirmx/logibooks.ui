@@ -22,8 +22,23 @@ function request(method) {
             headers: authHeader(url)
         };
         if (body) {
-            requestOptions.headers['Content-Type'] = 'application/json';
-            requestOptions.body = JSON.stringify(body);
+                requestOptions.headers['Content-Type'] = 'application/json';
+                // Prepare a safe copy so we don't mutate caller's object (tests expect original unchanged)
+                let bodyCopy = body
+                try {
+                  // Only copy if it's an object; otherwise pass through
+                  if (body && typeof body === 'object' && !Array.isArray(body)) {
+                    bodyCopy = { ...body }
+                    if (typeof bodyCopy.titleSignatureStamp === 'string' && bodyCopy.titleSignatureStamp.startsWith('data:')) {
+                      const m = bodyCopy.titleSignatureStamp.match(/^data:[^;]+;base64,(.*)$/)
+                      if (m) bodyCopy.titleSignatureStamp = m[1]
+                    }
+                  }
+                } catch {
+                  // if something goes wrong, fall back to original body
+                  bodyCopy = body
+                }
+                requestOptions.body = JSON.stringify(bodyCopy);
         }
         
         let response;

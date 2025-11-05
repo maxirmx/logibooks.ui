@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 
 const props = defineProps({
@@ -45,21 +46,47 @@ let company = ref({
   titleSignatureStamp: null
 })
 
-const signatureStamp = ref(null)
+// store base64 and mime separately. backend expects raw base64 for byte[] binding.
+const signatureStampBase64 = ref(null)
+const signatureStampMime = ref(null)
 const fileInputRef = ref(null)
+const alertStore = useAlertStore()
+
+function parseStampValue(value) {
+  if (!value) return { base64: null, mime: null }
+  if (typeof value === 'string' && value.startsWith('data:')) {
+    const m = value.match(/^data:([^;]+);base64,(.*)$/)
+    if (m) return { base64: m[2], mime: m[1] }
+  }
+  // assume raw base64 without mime
+  return { base64: value, mime: null }
+}
+
+// expose a computed data URI for template/preview use
+const signatureStamp = computed(() => {
+  if (!signatureStampBase64.value) return null
+  const mime = signatureStampMime.value || 'image/png'
+  return `data:${mime};base64,${signatureStampBase64.value}`
+})
 
 if (!isCreate.value) {
   ;({ company } = storeToRefs(companiesStore))
   await companiesStore.getById(props.companyId)
-  signatureStamp.value = company.value?.titleSignatureStamp || null
+  const parsed = parseStampValue(company.value?.titleSignatureStamp)
+  signatureStampBase64.value = parsed.base64
+  signatureStampMime.value = parsed.mime
   watch(
     () => company.value?.titleSignatureStamp,
     (newValue) => {
-      signatureStamp.value = newValue || null
+      const p = parseStampValue(newValue)
+      signatureStampBase64.value = p.base64
+      signatureStampMime.value = p.mime
     }
   )
 } else {
-  signatureStamp.value = company.value.titleSignatureStamp
+  const p = parseStampValue(company.value.titleSignatureStamp)
+  signatureStampBase64.value = p.base64
+  signatureStampMime.value = p.mime
 }
 
 // Get page title
@@ -94,12 +121,9 @@ function normalizeValues(values) {
 }
 
 function getStampPreview(value) {
-  if (!value) {
-    return null
-  }
-  if (typeof value === 'string' && value.startsWith('data:')) {
-    return value
-  }
+  if (!value) return null
+  if (typeof value === 'string' && value.startsWith('data:')) return value
+  // value here can be raw base64; assume png if mime missing
   return `data:image/png;base64,${value}`
 }
 
@@ -113,18 +137,32 @@ function onStampSelected(event) {
     return
   }
   if (!file.type.startsWith('image/')) {
+    // inform the user why the file was rejected via the global alert store
+    alertStore.error('Выбранный файл не является изображением.')
     event.target.value = ''
     return
   }
   const reader = new FileReader()
   reader.onload = () => {
-    signatureStamp.value = reader.result
+    const result = String(reader.result || '')
+    if (result.startsWith('data:')) {
+      const m = result.match(/^data:([^;]+);base64,(.*)$/)
+      if (m) {
+        signatureStampMime.value = m[1]
+        signatureStampBase64.value = m[2]
+        return
+      }
+    }
+    // fallback: store as raw base64 and use file.type as mime
+    signatureStampBase64.value = result
+    signatureStampMime.value = file.type || null
   }
   reader.readAsDataURL(file)
 }
 
 function removeStamp() {
-  signatureStamp.value = null
+  signatureStampBase64.value = null
+  signatureStampMime.value = null
   if (fileInputRef.value) {
     fileInputRef.value.value = ''
   }
@@ -135,6 +173,8 @@ function onSubmit(values, { setErrors }) {
   const normalizedValues = normalizeValues(values) || {}
   const payload = {
     ...normalizedValues,
+    // send full data URI here; fetch.wrapper will strip the prefix before sending over network
+    // keeping data URI preserves MIME for tests and local state
     titleSignatureStamp: signatureStamp.value || null
   }
 
@@ -320,7 +360,7 @@ function onSubmit(values, { setErrors }) {
               data-testid="remove-signature-stamp"
               @click="removeStamp"
             >
-              <font-awesome-icon size="1x" icon="fa-solid fa-trash" class="mr-1" />
+              <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="mr-1" />
               Удалить
             </button>
           </div>
@@ -343,7 +383,7 @@ function onSubmit(values, { setErrors }) {
           Отменить
         </button>
       </div>
-      <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
+  <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
       <div v-if="errors.kpp" class="alert alert-danger mt-3 mb-0">{{ errors.kpp }}</div>
       <div v-if="errors.ogrn" class="alert alert-danger mt-3 mb-0">{{ errors.ogrn }}</div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
@@ -353,6 +393,10 @@ function onSubmit(values, { setErrors }) {
       <div v-if="errors.city" class="alert alert-danger mt-3 mb-0">{{ errors.city }}</div>
       <div v-if="errors.street" class="alert alert-danger mt-3 mb-0">{{ errors.street }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+      <!-- Global alert display (uses alert store) -->
+      <div v-if="alertStore.alert" class="mt-3">
+        <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
+      </div>
     </Form>
   </div>
 </template>

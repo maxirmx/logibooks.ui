@@ -12,6 +12,7 @@ import * as Yup from 'yup'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   mode: {
@@ -331,7 +332,7 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
-      <div class="form-group">
+      <div class="form-group signature-stamp-group">
         <label class="label">Подпись / печать:</label>
         <input
           ref="fileInputRef"
@@ -350,20 +351,23 @@ function onSubmit(values, { setErrors }) {
             />
           </div>
           <div class="signature-actions">
-            <button class="button secondary" type="button" @click="openFileDialog">
-              <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="mr-1" />
-              {{ signatureStamp ? 'Заменить изображение' : 'Загрузить изображение' }}
-            </button>
-            <button
+            <ActionButton
+              :item="company"
+              icon="fa-solid fa-file-import"
+              :tooltip-text="signatureStamp ? 'Заменить изображение' : 'Загрузить изображение'"
+              icon-size="2x"
+              @click="openFileDialog"
+              data-testid="signature-stamp-upload"
+            />
+            <ActionButton
               v-if="signatureStamp"
-              class="button danger"
-              type="button"
-              data-testid="remove-signature-stamp"
+              :item="company"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить изображение"
+              icon-size="2x"
               @click="removeStamp"
-            >
-              <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="mr-1" />
-              Удалить изображение
-            </button>
+              data-testid="remove-signature-stamp"
+            />
           </div>
         </div>
       </div>
@@ -410,13 +414,13 @@ function onSubmit(values, { setErrors }) {
 }
 
 .signature-preview {
-  max-width: 200px;
-  max-height: 120px;
+  max-width: 400px;
+  max-height: 240px;
 }
 
 .signature-preview img {
   max-width: 100%;
-  max-height: 120px;
+  max-height: 240px;
   border: 1px solid var(--border-color, #ccc);
   border-radius: 4px;
   object-fit: contain;
@@ -426,6 +430,13 @@ function onSubmit(values, { setErrors }) {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* Ensure hover scaling of ActionButton icons is not clipped */
+.signature-stamp-group {
+  /* Provide enough vertical space and allow overflow */
+  min-height: 70px; /* accommodates 2x icon scaled to 1.2 */
+  overflow: visible;
 }
 
 .sr-only {

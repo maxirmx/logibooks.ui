@@ -538,6 +538,24 @@ describe('Company_Settings.vue', () => {
       expect(preview.attributes('src')).toBe(mockCompany.titleSignatureStamp)
     })
 
+    it('uses action buttons without inline label text', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const uploadBtn = wrapper.find('[data-testid="signature-stamp-upload"]')
+      expect(uploadBtn.exists()).toBe(true)
+      // Button should not contain the label text directly (icon-only)
+      expect(uploadBtn.text()).toBe('')
+      // Original inline label text should not appear inside the button element
+      expect(uploadBtn.html()).not.toMatch(/Загрузить изображение/)
+    })
+
     it('allows selecting a new signature stamp image', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },

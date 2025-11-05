@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { Suspense } from 'vue'
 import CompanySettings from '@/dialogs/Company_Settings.vue'
@@ -20,7 +20,8 @@ const mockCompany = {
   countryIsoNumeric: 643,
   postalCode: '123456',
   city: 'Moscow',
-  street: 'Test Street'
+  street: 'Test Street',
+  titleSignatureStamp: 'data:image/png;base64,EXISTING'
 }
 
 const mockCountries = [
@@ -45,6 +46,17 @@ const mockCountriesStore = createMockStore({
 const mockAlertStore = createMockStore({
   success: vi.fn()
 })
+
+const originalFileReader = global.FileReader
+let fileReaderResult = 'data:image/png;base64,NEW_STAMP'
+const mockFileReaderInstance = {
+  readAsDataURL: vi.fn(function () {
+    this.result = fileReaderResult
+    if (typeof this.onload === 'function') {
+      this.onload({ target: { result: fileReaderResult } })
+    }
+  })
+}
 
 // Mock all external dependencies
 vi.mock('@/stores/companies.store.js', () => ({
@@ -155,6 +167,9 @@ beforeEach(async () => {
   const router = await import('@/router')
   mockRouter = router.default
   vi.clearAllMocks()
+  fileReaderResult = 'data:image/png;base64,NEW_STAMP'
+  mockFileReaderInstance.readAsDataURL.mockClear()
+  global.FileReader = vi.fn(() => mockFileReaderInstance)
   // Reset store states
   mockCompaniesStore.loading = false
   mockCompaniesStore.error = null
@@ -164,6 +179,14 @@ beforeEach(async () => {
   mockAlertStore.error = null
   // Reset countries state for each test
   mockCountriesStore.countries = mockCountries
+})
+
+afterEach(() => {
+  if (originalFileReader) {
+    global.FileReader = originalFileReader
+  } else {
+    delete global.FileReader
+  }
 })
 
 describe('Company_Settings.vue', () => {
@@ -216,6 +239,7 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.find('#postalCode').exists()).toBe(true)
       expect(wrapper.find('#city').exists()).toBe(true)
       expect(wrapper.find('#street').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="signature-stamp-input"]').exists()).toBe(true)
     })
 
     it('renders form labels correctly', async () => {
@@ -236,6 +260,7 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.text()).toContain('Почтовый индекс:')
       expect(wrapper.text()).toContain('Город:')
       expect(wrapper.text()).toContain('Улица:')
+      expect(wrapper.text()).toContain('Подпись / печать:')
     })
 
     it('renders country options', async () => {
@@ -422,7 +447,13 @@ describe('Company_Settings.vue', () => {
       await form.trigger('submit')
 
       // The form passes the company data wrapped in a value object due to storeToRefs
-      expect(mockCompaniesStore.update).toHaveBeenCalledWith(1, { value: mockCompany })
+      expect(mockCompaniesStore.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          titleSignatureStamp: mockCompany.titleSignatureStamp,
+          inn: mockCompany.inn
+        })
+      )
     })
 
     it('shows success message and redirects after successful update', async () => {
@@ -491,6 +522,105 @@ describe('Company_Settings.vue', () => {
     })
   })
 
+  describe('Signature Stamp Handling', () => {
+    it('shows existing signature stamp preview in edit mode', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', companyId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const preview = wrapper.find('[data-testid="signature-stamp-preview"]')
+      expect(preview.exists()).toBe(true)
+      expect(preview.attributes('src')).toBe(mockCompany.titleSignatureStamp)
+    })
+
+    it('uses action buttons without inline label text', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const uploadBtn = wrapper.find('[data-testid="signature-stamp-upload"]')
+      expect(uploadBtn.exists()).toBe(true)
+      // Button should not contain the label text directly (icon-only)
+      expect(uploadBtn.text()).toBe('')
+      // Original inline label text should not appear inside the button element
+      expect(uploadBtn.html()).not.toMatch(/Загрузить изображение/)
+    })
+
+    it('allows selecting a new signature stamp image', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const input = wrapper.find('[data-testid="signature-stamp-input"]')
+      expect(input.exists()).toBe(true)
+
+      fileReaderResult = 'data:image/png;base64,NEW_IMAGE'
+      const file = new File(['dummy'], 'stamp.png', { type: 'image/png' })
+      Object.defineProperty(input.element, 'files', {
+        value: [file],
+        configurable: true
+      })
+      await input.trigger('change')
+
+      await resolveAll()
+
+      const preview = wrapper.find('[data-testid="signature-stamp-preview"]')
+      expect(preview.exists()).toBe(true)
+      expect(preview.attributes('src')).toBe(fileReaderResult)
+
+      const form = wrapper.find('form')
+      await form.trigger('submit')
+      await resolveAll()
+
+      expect(mockCompaniesStore.create).toHaveBeenCalledWith(
+        expect.objectContaining({ titleSignatureStamp: fileReaderResult })
+      )
+    })
+
+    it('allows removing existing signature stamp', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', companyId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const removeButton = wrapper.find('[data-testid="remove-signature-stamp"]')
+      expect(removeButton.exists()).toBe(true)
+
+      await removeButton.trigger('click')
+      await resolveAll()
+
+      expect(wrapper.find('[data-testid="signature-stamp-preview"]').exists()).toBe(false)
+
+      const form = wrapper.find('form')
+      await form.trigger('submit')
+      await resolveAll()
+
+      expect(mockCompaniesStore.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ titleSignatureStamp: null })
+      )
+    })
+  })
+
   describe('Navigation', () => {
     it('navigates to companies list on cancel button click', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -505,7 +635,7 @@ describe('Company_Settings.vue', () => {
 
       await resolveAll()
 
-      const cancelButton = wrapper.find('button.secondary')
+      const cancelButton = wrapper.find('[data-testid="cancel-button"]')
       expect(cancelButton.exists()).toBe(true)
       expect(cancelButton.text()).toBe('Отменить')
 

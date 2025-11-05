@@ -5,6 +5,27 @@
 import { useAuthStore } from '@/stores/auth.store.js'
 import { apiUrl, enableLog } from '@/helpers/config.js'
 
+// Fields that should be treated as data-URI and stripped to raw base64 before sending.
+// Default includes the existing field used by the app.
+let globalDataUriFields = ['titleSignatureStamp']
+
+/**
+ * Configure which fields the fetch wrapper will treat as data-URI fields.
+ * Pass an array of field names (strings). To reset to defaults, pass null/undefined.
+ * This is useful if other parts of the app need the same automatic data-uri => base64
+ * conversion without editing the wrapper source.
+ * Per-request override is also supported via the `options.dataUriFields` argument
+ * when calling the fetch wrapper methods.
+ */
+export function configureDataUriFields(fields) {
+  if (!fields) {
+    globalDataUriFields = ['titleSignatureStamp']
+    return
+  }
+  if (!Array.isArray(fields)) throw new Error('configureDataUriFields expects an array of field names')
+  globalDataUriFields = fields.slice()
+}
+
 export const fetchWrapper = {
   get: request('GET'),
   post: request('POST'),
@@ -16,15 +37,41 @@ export const fetchWrapper = {
 }
 
 function request(method) {
-    return async (url, body) => {
-        const requestOptions = {
-            method,
-            headers: authHeader(url)
-        };
-        if (body) {
-            requestOptions.headers['Content-Type'] = 'application/json';
-            requestOptions.body = JSON.stringify(body);
+  // Backwards compatible: callers may call (url, body) or (url, body, options)
+  return async (url, body, options = {}) => {
+    const requestOptions = {
+      method,
+      headers: authHeader(url)
+    };
+    if (body) {
+      requestOptions.headers['Content-Type'] = 'application/json';
+      // Prepare a safe copy so we don't mutate caller's object (tests expect original unchanged)
+      let bodyCopy = body
+      try {
+        // Only copy if it's an object; otherwise pass through
+        if (typeof body === 'object' && !Array.isArray(body)) {
+          bodyCopy = { ...body }
+
+          // Determine which fields to treat as data-URI fields for this request.
+          // Order of precedence: options.dataUriFields -> globalDataUriFields
+          const dataUriFields = Array.isArray(options.dataUriFields)
+            ? options.dataUriFields
+            : globalDataUriFields
+
+          // For each configured field, if present and appears to be a data URI, strip prefix
+          for (const f of dataUriFields) {
+            if (typeof bodyCopy[f] === 'string' && bodyCopy[f].startsWith('data:')) {
+              const m = bodyCopy[f].match(/^data:[^;]+;base64,(.*)$/)
+              if (m) bodyCopy[f] = m[1]
+            }
+          }
         }
+      } catch {
+        // if something goes wrong, fall back to original body
+        bodyCopy = body
+      }
+      requestOptions.body = JSON.stringify(bodyCopy);
+    }
         
         let response;
         try {

@@ -407,10 +407,10 @@ export function useRegisterHeaderActions({
     lookupFeacnCodesEx: runLookupFeacnCodesEx,
     exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
-  downloadRegister: runDownloadRegister,
-  downloadInvoice: runDownloadInvoice,
-  downloadInvoiceExcise: runDownloadInvoiceExcise,
-  downloadInvoiceWithoutExcise: runDownloadInvoiceWithoutExcise,
+    downloadRegister: runDownloadRegister,
+    downloadInvoice: runDownloadInvoice,
+    downloadInvoiceExcise: runDownloadInvoiceExcise,
+    downloadInvoiceWithoutExcise: runDownloadInvoiceWithoutExcise,
     cancelValidation,
     stop
   }

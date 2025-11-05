@@ -289,8 +289,8 @@ export const useRegistersStore = defineStore('registers', () => {
       params.set('optionalColumns', columnsValue.toString())
     }
 
-    const queryString = params.toString()
-    return `${baseUrl}/${id}/${endpoint}${queryString ? `?${queryString}` : ''}`
+    const query = params.toString()
+    return query ? `${baseUrl}/${id}/${endpoint}?${query}` : `${baseUrl}/${id}/${endpoint}`
   }
 
   async function downloadInvoice(

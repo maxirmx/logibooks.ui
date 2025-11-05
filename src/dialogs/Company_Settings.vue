@@ -120,12 +120,7 @@ function normalizeValues(values) {
   return values
 }
 
-function getStampPreview(value) {
-  if (!value) return null
-  if (typeof value === 'string' && value.startsWith('data:')) return value
-  // value here can be raw base64; assume png if mime missing
-  return `data:image/png;base64,${value}`
-}
+// getStampPreview removed — `signatureStamp` computed already returns a proper data URI or null
 
 function openFileDialog() {
   fileInputRef.value?.click()
@@ -343,7 +338,7 @@ function onSubmit(values, { setErrors }) {
         <div class="signature-stamp">
           <div v-if="signatureStamp" class="signature-preview">
             <img
-              :src="getStampPreview(signatureStamp)"
+              :src="signatureStamp"
               alt="Подпись или печать"
               data-testid="signature-stamp-preview"
             />

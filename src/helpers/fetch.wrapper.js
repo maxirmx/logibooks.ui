@@ -61,8 +61,8 @@ function request(method) {
           // For each configured field, if present and appears to be a data URI, strip prefix
           for (const f of dataUriFields) {
             if (typeof bodyCopy[f] === 'string' && bodyCopy[f].startsWith('data:')) {
-            const m = bodyCopy[f].match(/^data:[^;]+;base64,(.*)$/)
-            if (m) bodyCopy[f] = m[1]
+              const m = bodyCopy[f].match(/^data:[^;]+;base64,(.*)$/)
+              if (m) bodyCopy[f] = m[1]
             }
           }
         }

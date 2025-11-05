@@ -1,14 +1,16 @@
 <script setup>
+/* global FileReader */
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 
 const props = defineProps({
@@ -40,12 +42,51 @@ let company = ref({
   countryIsoNumeric: null,
   postalCode: '',
   city: '',
-  street: ''
+  street: '',
+  titleSignatureStamp: null
+})
+
+// store base64 and mime separately. backend expects raw base64 for byte[] binding.
+const signatureStampBase64 = ref(null)
+const signatureStampMime = ref(null)
+const fileInputRef = ref(null)
+const alertStore = useAlertStore()
+
+function parseStampValue(value) {
+  if (!value) return { base64: null, mime: null }
+  if (typeof value === 'string' && value.startsWith('data:')) {
+    const m = value.match(/^data:([^;]+);base64,(.*)$/)
+    if (m) return { base64: m[2], mime: m[1] }
+  }
+  // assume raw base64 without mime
+  return { base64: typeof value === 'string' ? value : String(value), mime: null }
+}
+
+// expose a computed data URI for template/preview use
+const signatureStamp = computed(() => {
+  if (!signatureStampBase64.value) return null
+  const mime = signatureStampMime.value || 'image/png'
+  return `data:${mime};base64,${signatureStampBase64.value}`
 })
 
 if (!isCreate.value) {
   ;({ company } = storeToRefs(companiesStore))
   await companiesStore.getById(props.companyId)
+  const parsed = parseStampValue(company.value?.titleSignatureStamp)
+  signatureStampBase64.value = parsed.base64
+  signatureStampMime.value = parsed.mime
+  watch(
+    () => company.value?.titleSignatureStamp,
+    (newValue) => {
+      const p = parseStampValue(newValue)
+      signatureStampBase64.value = p.base64
+      signatureStampMime.value = p.mime
+    }
+  )
+} else {
+  const p = parseStampValue(company.value.titleSignatureStamp)
+  signatureStampBase64.value = p.base64
+  signatureStampMime.value = p.mime
 }
 
 // Get page title
@@ -68,14 +109,79 @@ const schema = Yup.object({
   countryIsoNumeric: Yup.number().required('Страна обязательна'),
   postalCode: Yup.string(),
   city: Yup.string(),
-  street: Yup.string()
+  street: Yup.string(),
+  titleSignatureStamp: Yup.string().nullable()
 })
+
+function normalizeValues(values) {
+  if (values && typeof values === 'object' && values.value && typeof values.value === 'object') {
+    return values.value
+  }
+  return values
+}
+
+// getStampPreview removed — `signatureStamp` computed already returns a proper data URI or null
+
+function openFileDialog() {
+  fileInputRef.value?.click()
+}
+
+function onStampSelected(event) {
+  const file = event.target?.files?.[0]
+  if (!file) {
+    return
+  }
+  if (!file.type.startsWith('image/')) {
+    // inform the user why the file was rejected via the global alert store
+    alertStore.error('Выбранный файл не является изображением.')
+    event.target.value = ''
+    return
+  }
+  const reader = new FileReader()
+  const inputEl = event.target
+  reader.onload = () => {
+    const result = String(reader.result || '')
+    if (result.startsWith('data:')) {
+      const m = result.match(/^data:([^;]+);base64,(.*)$/)
+      if (m) {
+        signatureStampMime.value = m[1]
+        signatureStampBase64.value = m[2]
+        return
+      }
+    }
+    // If the data URI is malformed, inform the user and do not set the values
+    alertStore.error('Не удалось обработать изображение. Пожалуйста, выберите другой файл.')
+    if (inputEl) inputEl.value = ''
+  }
+  reader.onerror = () => {
+    // FileReader failed (e.g., file read error). Inform user and clear input.
+    alertStore.error('Ошибка при чтении файла. Пожалуйста, попробуйте ещё раз.')
+    if (inputEl) inputEl.value = ''
+  }
+  reader.readAsDataURL(file)
+}
+
+function removeStamp() {
+  signatureStampBase64.value = null
+  signatureStampMime.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
 
 // Form submission
 function onSubmit(values, { setErrors }) {
+  const normalizedValues = normalizeValues(values) || {}
+  const payload = {
+    ...normalizedValues,
+    // send full data URI here; fetch.wrapper will strip the prefix before sending over network
+    // keeping data URI preserves MIME for tests and local state
+    titleSignatureStamp: signatureStamp.value || null
+  }
+
   if (isCreate.value) {
     return companiesStore
-      .create(values)
+      .create(payload)
       .then(() => {
         router.push('/companies')
       })
@@ -88,7 +194,7 @@ function onSubmit(values, { setErrors }) {
       })
   } else {
     return companiesStore
-      .update(props.companyId, values)
+      .update(props.companyId, payload)
       .then(() => {
         router.push('/companies')
       })
@@ -225,6 +331,43 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
+      <div class="form-group">
+        <label class="label">Подпись / печать:</label>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept="image/*"
+          class="sr-only"
+          data-testid="signature-stamp-input"
+          @change="onStampSelected"
+        />
+        <div class="signature-stamp">
+          <div v-if="signatureStamp" class="signature-preview">
+            <img
+              :src="signatureStamp"
+              alt="Подпись или печать"
+              data-testid="signature-stamp-preview"
+            />
+          </div>
+          <div class="signature-actions">
+            <button class="button secondary" type="button" @click="openFileDialog">
+              <font-awesome-icon size="1x" icon="fa-solid fa-upload" class="mr-1" />
+              {{ signatureStamp ? 'Заменить изображение' : 'Загрузить изображение' }}
+            </button>
+            <button
+              v-if="signatureStamp"
+              class="button danger"
+              type="button"
+              data-testid="remove-signature-stamp"
+              @click="removeStamp"
+            >
+              <font-awesome-icon size="1x" icon="fa-solid fa-trash-can" class="mr-1" />
+              Удалить
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
@@ -234,6 +377,7 @@ function onSubmit(values, { setErrors }) {
         <button
           class="button secondary"
           type="button"
+          data-testid="cancel-button"
           @click="$router.push('/companies')"
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
@@ -250,6 +394,48 @@ function onSubmit(values, { setErrors }) {
       <div v-if="errors.city" class="alert alert-danger mt-3 mb-0">{{ errors.city }}</div>
       <div v-if="errors.street" class="alert alert-danger mt-3 mb-0">{{ errors.street }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+      <!-- Global alert display (uses alert store) -->
+      <div v-if="alertStore.alert" class="mt-3">
+        <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
+      </div>
     </Form>
   </div>
 </template>
+
+<style scoped>
+.signature-stamp {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.signature-preview {
+  max-width: 200px;
+  max-height: 120px;
+}
+
+.signature-preview img {
+  max-width: 100%;
+  max-height: 120px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.signature-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+</style>

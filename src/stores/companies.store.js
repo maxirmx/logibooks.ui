@@ -68,6 +68,9 @@ export const useCompaniesStore = defineStore('companies', () => {
       if (index !== -1) {
         companies.value[index] = { ...companies.value[index], ...companyData }
       }
+      if (company.value?.id === id) {
+        company.value = { ...company.value, ...companyData }
+      }
       return true
     } catch (err) {
       error.value = err

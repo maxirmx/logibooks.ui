@@ -10,6 +10,7 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
+import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -279,13 +280,30 @@ export const useRegistersStore = defineStore('registers', () => {
     return `Invoice_${baseName}${suffixPart}.xlsx`
   }
 
-  async function downloadInvoice(id, invoiceNumber) {
+  function buildInvoiceRequestUrl(id, endpoint, optionalColumns) {
+    const params = new URLSearchParams()
+    const columnsValue =
+      typeof optionalColumns === 'number' ? optionalColumns : InvoiceOptionalColumns.None
+
+    if (columnsValue !== InvoiceOptionalColumns.None) {
+      params.set('optionalColumns', columnsValue.toString())
+    }
+
+    const queryString = params.toString()
+    return `${baseUrl}/${id}/${endpoint}${queryString ? `?${queryString}` : ''}`
+  }
+
+  async function downloadInvoice(
+    id,
+    invoiceNumber,
+    optionalColumns = InvoiceOptionalColumns.None
+  ) {
     loading.value = true
     error.value = null
     try {
       const filename = buildInvoiceFilename(id, invoiceNumber)
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-invoice`,
+        buildInvoiceRequestUrl(id, 'download-invoice', optionalColumns),
         filename
       )
     } catch (err) {
@@ -296,13 +314,17 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function downloadInvoiceExcise(id, invoiceNumber) {
+  async function downloadInvoiceExcise(
+    id,
+    invoiceNumber,
+    optionalColumns = InvoiceOptionalColumns.None
+  ) {
     loading.value = true
     error.value = null
     try {
       const filename = buildInvoiceFilename(id, invoiceNumber, '-акциз')
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-invoice-excise`,
+        buildInvoiceRequestUrl(id, 'download-invoice-excise', optionalColumns),
         filename
       )
     } catch (err) {
@@ -313,13 +335,17 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function downloadInvoiceWithoutExcise(id, invoiceNumber) {
+  async function downloadInvoiceWithoutExcise(
+    id,
+    invoiceNumber,
+    optionalColumns = InvoiceOptionalColumns.None
+  ) {
     loading.value = true
     error.value = null
     try {
       const filename = buildInvoiceFilename(id, invoiceNumber, '-без-акциза')
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-invoice-without-excise`,
+        buildInvoiceRequestUrl(id, 'download-invoice-without-excise', optionalColumns),
         filename
       )
     } catch (err) {

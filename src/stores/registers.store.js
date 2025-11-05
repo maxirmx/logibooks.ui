@@ -280,10 +280,16 @@ export const useRegistersStore = defineStore('registers', () => {
     return `Invoice_${baseName}${suffixPart}.xlsx`
   }
 
+  /**
+   * Builds the request URL for invoice operations.
+   * @param {string|number} id
+   * @param {string} endpoint
+   * @param {number} optionalColumns
+   * @returns {string}
+   */
   function buildInvoiceRequestUrl(id, endpoint, optionalColumns) {
     const params = new URLSearchParams()
-    const columnsValue =
-      typeof optionalColumns === 'number' ? optionalColumns : InvoiceOptionalColumns.None
+    const columnsValue = optionalColumns
 
     if (columnsValue !== InvoiceOptionalColumns.None) {
       params.set('optionalColumns', columnsValue.toString())

@@ -32,6 +32,7 @@ import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -70,7 +71,7 @@ const authStore = useAuthStore()
 const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
 
 const fileInput = ref(null)
-const selectedCustomerId = ref(OZON_COMPANY_ID)
+const selectedCustomerId = ref(null)
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -85,6 +86,15 @@ const uploadCustomers = computed(() => {
       name: getCustomerName(company.id)
     }))
 })
+
+const uploadMenuOptions = computed(() =>
+  uploadCustomers.value.map((customer) => ({
+    label: customer.name,
+    action: () => startRegisterUpload(customer.id)
+  }))
+)
+
+const isUploadDisabled = computed(() => uploadMenuOptions.value.length === 0)
 
 // Bulk status change functions - using helpers
 function bulkChangeStatus(registerId) {
@@ -218,14 +228,6 @@ onUnmounted(() => {
   stopPolling()
 })
 
-function openFileDialog() {
-  if (!selectedCustomerId.value) {
-    alertStore.error('Пожалуйста, выберите клиента')
-    return
-  }
-  fileInput.value?.click()
-}
-
 async function fileSelected(files) {
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
@@ -244,6 +246,19 @@ async function fileSelected(files) {
 
   if (fileInput.value) {
     fileInput.value.value = null
+  }
+}
+
+function startRegisterUpload(customerId) {
+  if (!customerId) {
+    alertStore.error('Не выбран клиент для загрузки реестра')
+    return
+  }
+
+  selectedCustomerId.value = customerId
+  const input = fileInput.value
+  if (input && typeof input.click === 'function') {
+    input.click()
   }
 }
 
@@ -341,40 +356,28 @@ defineExpose({
 
 <template>
   <div class="settings table-3">
-    <h1 class="primary-heading">Реестры</h1>
-    <hr class="hr" />
-
-    <div class="link-crt d-flex upload-links" v-if="isAdminOrSrLogist">
-      <a @click="openFileDialog" class="link" tabindex="0">
-        <font-awesome-icon
-          size="1x"
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Реестры</h1>
+      <div class="header-actions" v-if="isAdminOrSrLogist">
+        <ActionButton2L
+          :item="{}"
           icon="fa-solid fa-file-import"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Загрузить реестр
-      </a>
-
-      <v-select
-        v-model="selectedCustomerId"
-        :items="uploadCustomers"
-        item-title="name"
-        item-value="id"
-        placeholder="Выберите клиента"
-        variant="outlined"
-        density="compact"
-        hide-details
-        hide-no-data
-        class="customer-select"
-        style="max-width: 280px; min-width: 150px; margin-left: 16px"
-      />
-
-      <v-file-input
-        ref="fileInput"
-        style="display: none"
-        accept=".xls,.xlsx,.zip,.rar"
-        loading-text="Идёт загрузка реестра..."
-        @update:model-value="fileSelected"
-      />
+          tooltip-text="Загрузить реестр"
+          :iconSize="'2x'"
+          :disabled="isUploadDisabled"
+          :options="uploadMenuOptions"
+        />
+        <v-file-input
+          ref="fileInput"
+          style="display: none"
+          accept=".xls,.xlsx,.zip,.rar"
+          loading-text="Идёт загрузка реестра..."
+          @update:model-value="fileSelected"
+        />
+      </div>
     </div>
+
+    <hr class="hr" />
 
     <div v-if="items?.length || loading || registers_search">
       <v-text-field
@@ -577,74 +580,8 @@ defineExpose({
   font-size: 0.875rem;
 }
 
-.action-btn {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .arrow-icon {
   opacity: 0.8;
-}
-
-.upload-links {
-  align-items: center;
-  gap: 16px;
-}
-
-.customer-select {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--primary-color, #333333);
-}
-
-.customer-select :deep(.v-field__input) {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--primary-color, #333333);
-}
-
-.customer-select :deep(.v-field__field) {
-  border-color: var(--primary-color, #333333);
-}
-
-.customer-select :deep(.v-field__outline) {
-  border-color: var(--primary-color, #333333);
-}
-
-.customer-select :deep(.v-select__selection) {
-  color: var(--primary-color, #333333);
-}
-
-.customer-select :deep(.v-field__append-inner) {
-  color: var(--primary-color, #333333);
-}
-
-.customer-select :deep(.v-list-item) {
-  color: var(--primary-color, #333333) !important;
-}
-
-.customer-select :deep(.v-list-item-title) {
-  color: var(--primary-color, #333333) !important;
-}
-
-.customer-select :deep(.v-list-item__title) {
-  color: var(--primary-color, #333333) !important;
-}
-
-.customer-select :deep(.v-list-item__content) {
-  color: var(--primary-color, #333333) !important;
 }
 
 /* Bookmark icon placed in table cell: green and aligned to right */
@@ -657,20 +594,5 @@ defineExpose({
 
 .bookmark-icon:hover {
   color: #218838;
-}
-</style>
-
-<style>
-/* Global styles for customer select dropdown */
-.v-overlay .v-list .v-list-item {
-  color: var(--primary-color, #333333) !important;
-}
-
-.v-overlay .v-list .v-list-item .v-list-item__title {
-  color: var(--primary-color, #333333) !important;
-}
-
-.v-overlay .v-list .v-list-item .v-list-item__content {
-  color: var(--primary-color, #333333) !important;
 }
 </style>

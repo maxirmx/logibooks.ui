@@ -469,20 +469,20 @@ describe('Registers_List.vue', () => {
         ]
       })
 
-      it('opens file dialog when customer is selected', () => {
+      it('starts upload when customer is selected through menu', async () => {
         const mockClick = vi.fn()
         wrapper.vm.fileInput = { click: mockClick }
-        wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
 
-        wrapper.vm.openFileDialog()
+        await wrapper.vm.startRegisterUpload(OZON_COMPANY_ID)
+
+        expect(wrapper.vm.selectedCustomerId).toBe(OZON_COMPANY_ID)
         expect(mockClick).toHaveBeenCalled()
       })
 
-      it('shows error when trying to open file dialog without selected customer', () => {
-        wrapper.vm.selectedCustomerId = null
-        wrapper.vm.openFileDialog()
-        
-        expect(alertErrorFn).toHaveBeenCalledWith('Пожалуйста, выберите клиента')
+      it('shows error when trying to start upload without customer', async () => {
+        await wrapper.vm.startRegisterUpload(null)
+
+        expect(alertErrorFn).toHaveBeenCalledWith('Не выбран клиент для загрузки реестра')
       })
 
       it('handles file selection with array input for OZON', async () => {
@@ -568,6 +568,37 @@ describe('Registers_List.vue', () => {
         mockCompanies.value = null
         const uploadCustomers = wrapper.vm.uploadCustomers
         expect(uploadCustomers).toEqual([])
+      })
+
+      it('provides menu options that trigger upload', async () => {
+        const mockClick = vi.fn()
+        wrapper.vm.fileInput = { click: mockClick }
+
+        mockCompanies.value = [
+          { id: OZON_COMPANY_ID, name: 'ООО "Интернет решения"', shortName: 'Озон' },
+          { id: WBR_COMPANY_ID, name: 'ООО "РВБ"', shortName: 'РВБ' },
+          { id: 3, name: 'Other Company', shortName: 'Other' }
+        ]
+
+        await wrapper.vm.$nextTick()
+
+        const options = wrapper.vm.uploadMenuOptions
+        expect(options).toHaveLength(2)
+
+        const [firstOption] = options
+        expect(firstOption.label).toBe('Озон')
+
+        await firstOption.action()
+
+        expect(wrapper.vm.selectedCustomerId).toBe(OZON_COMPANY_ID)
+        expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('disables upload when there are no available customers', async () => {
+        mockCompanies.value = []
+        await wrapper.vm.$nextTick()
+
+        expect(wrapper.vm.isUploadDisabled).toBe(true)
       })
     })
   })

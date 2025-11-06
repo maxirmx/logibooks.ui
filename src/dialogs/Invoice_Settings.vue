@@ -22,9 +22,10 @@ const registersStore = useRegistersStore()
 const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
-  if (value === InvoiceParcelSelection.WithExcise) return InvoiceParcelSelection.WithExcise
-  if (value === InvoiceParcelSelection.WithoutExcise) return InvoiceParcelSelection.WithoutExcise
-  return InvoiceParcelSelection.All
+  // Validate and default to All if not WithExcise or WithoutExcise
+  return [InvoiceParcelSelection.WithExcise, InvoiceParcelSelection.WithoutExcise].includes(value)
+    ? value
+    : InvoiceParcelSelection.All;
 }
 
 // State mirrors register dialog style (item used as initial values provider)

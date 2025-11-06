@@ -115,7 +115,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings form-3 form-compact invoice-settings-dialog">
+  <div class="settings form-2 form-compact invoice-settings-dialog">
     <Form :initial-values="{}" :validation-schema="schema" @submit="onSubmit" v-slot="{ }">
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ heading }}</h1>
@@ -146,7 +146,7 @@ onMounted(() => {
       </div>
 
       <div class="form-section">
-        <div class="form-row">
+        <div class="form-row-1">
           <div class="form-group">
             <label class="label" for="parcelSelection">Выбор посылок:</label>
             <select
@@ -163,22 +163,24 @@ onMounted(() => {
         <div class="form-row-1 optional-columns-row">
           <div class="form-group optional-columns-group">
             <label class="label">Дополнительные колонки:</label>
-            <div class="checkbox-grid">
-              <label
-                v-for="c in optionalColumnOptions"
-                :key="c.id"
-                class="custom-checkbox"
-              >
-                <input
-                  type="checkbox"
-                  class="custom-checkbox-input"
-                  :disabled="isFormDisabled"
-                  :checked="isColumnSelected(c.value)"
-                  @change="toggleColumn(c.value)"
-                />
-                <span class="custom-checkbox-box"></span>
-                <span class="custom-checkbox-label">{{ c.label }}</span>
-              </label>
+            <div class="checkbox-wrapper">
+              <div class="checkbox-grid">
+                <label
+                  v-for="c in optionalColumnOptions"
+                  :key="c.id"
+                  class="custom-checkbox"
+                >
+                  <input
+                    type="checkbox"
+                    class="custom-checkbox-input"
+                    :disabled="isFormDisabled"
+                    :checked="isColumnSelected(c.value)"
+                    @change="toggleColumn(c.value)"
+                  />
+                  <span class="custom-checkbox-box"></span>
+                  <span class="custom-checkbox-label">{{ c.label }}</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -193,11 +195,37 @@ onMounted(() => {
 .invoice-settings-dialog .form-group { overflow: visible; }
 
 .optional-columns-row { margin-top: 0.5rem; }
+
+.input-wrapper {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 0.5rem;
+  background-color: #fff;
+}
+
+.input-wrapper .form-control {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.input-wrapper .form-control:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.checkbox-wrapper {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 0.75rem;
+  width: 100%;
+  background-color: #fff;
+}
+
 .checkbox-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* force two columns */
   gap: 0.5rem 1rem;
-  margin-top: 0.5rem;
 }
 
 @media (max-width: 640px) {

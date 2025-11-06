@@ -2,7 +2,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
-import InvoiceSettings from '@/dialogs/Invoice_Settings.vue'
+// Import component after mocks are registered (see below)
+let InvoiceSettings
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import router from '@/router'
@@ -42,6 +43,18 @@ vi.mock('@/stores/registers.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => {
+    const alert = ref(null)
+    return {
+      alert,
+      error: (msg) => { alert.value = { message: msg, type: 'alert-danger' } },
+      success: (msg) => { alert.value = { message: msg, type: 'alert-success' } },
+      clear: () => { alert.value = null }
+    }
+  }
+}))
+
 vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Stub vee-validate Form used in component
@@ -62,7 +75,14 @@ function mountDialog(props = { id: 77 }) {
   })
 }
 
-describe('Invoice_Settings.vue (refactored)', () => {
+// Now import the component so it picks up the mocks above
+beforeEach(async () => {
+  if (!InvoiceSettings) {
+    InvoiceSettings = (await import('@/dialogs/Invoice_Settings.vue')).default
+  }
+})
+
+describe('Invoice_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     itemRef.value = { id: 77, invoiceNumber: 'INV-77' }
@@ -80,9 +100,9 @@ describe('Invoice_Settings.vue (refactored)', () => {
   it('renders selection dropdown and optional columns checkboxes', async () => {
     const wrapper = mountDialog()
     await resolveAll()
-    const select = wrapper.find('#parcelSelection')
-    expect(select.exists()).toBe(true)
-  const labels = wrapper.findAll('.option-checkbox .checkbox-label').map(l => l.text())
+      const select = wrapper.find('#parcelSelection')
+      expect(select.exists()).toBe(true)
+      const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
   })
@@ -119,8 +139,11 @@ describe('Invoice_Settings.vue (refactored)', () => {
     await resolveAll()
     const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
     await comp.onSubmit()
+    // wait for any pending promises and DOM updates (action dialog hide, alert store update)
+    await resolveAll()
     await nextTick()
-    expect(wrapper.html()).toContain('Ошибка')
+    // assert alert store received the error message
+    expect(comp.alertStore.alert.value.message).toBe('Ошибка')
   })
 
   it('cancel navigates back to registers', async () => {

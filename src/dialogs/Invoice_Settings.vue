@@ -19,7 +19,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
-const { item, loading, error } = storeToRefs(registersStore)
+const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
   if (value === InvoiceParcelSelection.WithExcise) return InvoiceParcelSelection.WithExcise

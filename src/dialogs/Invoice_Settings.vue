@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -7,14 +7,22 @@ import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
 const props = defineProps({
-  id: { type: Number, required: true }
+  id: { type: Number, required: true },
+  selection: { type: String, default: undefined }
 })
 
 const router = useRouter()
 const registersStore = useRegistersStore()
 const { item, loading, error } = storeToRefs(registersStore)
 
-const parcelSelection = ref(InvoiceParcelSelection.All)
+function resolveParcelSelection(value) {
+  if (value === InvoiceParcelSelection.All) return InvoiceParcelSelection.All
+  if (value === InvoiceParcelSelection.WithExcise) return InvoiceParcelSelection.WithExcise
+  if (value === InvoiceParcelSelection.WithoutExcise) return InvoiceParcelSelection.WithoutExcise
+  return InvoiceParcelSelection.All
+}
+
+const parcelSelection = ref(resolveParcelSelection(props.selection))
 const selectedOptionalColumns = ref(InvoiceOptionalColumns.None)
 const submissionError = ref('')
 const isSubmitting = ref(false)
@@ -103,6 +111,13 @@ function handleCancel() {
 onMounted(() => {
   registersStore.getById(props.id)
 })
+
+watch(
+  () => props.selection,
+  (value) => {
+    parcelSelection.value = resolveParcelSelection(value)
+  }
+)
 </script>
 
 <template>

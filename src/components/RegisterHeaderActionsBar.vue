@@ -1,6 +1,8 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
+import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -25,11 +27,15 @@ function run(evt) {
   emit(evt)
 }
 
-function openInvoiceSettings() {
+function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
   if (props.disabled) return
   const registerId = props.item?.id
   if (!registerId) return
-  router.push({ name: 'Настройки инвойса', params: { id: registerId } })
+  router.push({
+    name: 'Настройки инвойса',
+    params: { id: registerId },
+    query: { selection }
+  })
 }
 </script>
 
@@ -96,13 +102,26 @@ function openInvoiceSettings() {
         :disabled="disabled"
         @click="run('download')"
       />
-      <ActionButton
+      <ActionButton2L
         :item="item"
         icon="fa-solid fa-file-invoice"
         tooltip-text="Сформировать инвойс-манифест"
         :iconSize="iconSize"
         :disabled="disabled"
-        @click="openInvoiceSettings"
+        :options="[
+          {
+            label: 'Все',
+            action: () => openInvoiceSettings(InvoiceParcelSelection.All)
+          },
+          {
+            label: 'С акцизом',
+            action: () => openInvoiceSettings(InvoiceParcelSelection.WithExcise)
+          },
+          {
+            label: 'Без акциза',
+            action: () => openInvoiceSettings(InvoiceParcelSelection.WithoutExcise)
+          }
+        ]"
       />
     </div>
   </div>

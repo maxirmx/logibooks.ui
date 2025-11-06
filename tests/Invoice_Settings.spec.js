@@ -64,4 +64,28 @@ describe('Invoice_Settings dialog', () => {
     )
     expect(backMock).toHaveBeenCalled()
   })
+
+  it('initializes parcel selection from provided prop', async () => {
+    const wrapper = mount(InvoiceSettings, {
+      props: { id: 2, selection: InvoiceParcelSelection.WithoutExcise },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const state = wrapper.vm.$.setupState
+    expect(state.parcelSelection).toBe(InvoiceParcelSelection.WithoutExcise)
+
+    await wrapper.setProps({ selection: InvoiceParcelSelection.WithExcise })
+    await nextTick()
+    expect(state.parcelSelection).toBe(InvoiceParcelSelection.WithExcise)
+  })
+
+  it('falls back to default parcel selection when prop is invalid', () => {
+    const wrapper = mount(InvoiceSettings, {
+      props: { id: 3, selection: 'invalid-option' },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const state = wrapper.vm.$.setupState
+    expect(state.parcelSelection).toBe(InvoiceParcelSelection.All)
+  })
 })

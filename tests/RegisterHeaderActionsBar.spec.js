@@ -2,6 +2,8 @@ import { mount } from '@vue/test-utils'
 import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
+import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
@@ -23,7 +25,7 @@ describe('RegisterHeaderActionsBar', () => {
     pushMock.mockClear()
   })
 
-  it('navigates to invoice settings when invoice action button is clicked', async () => {
+  it('navigates to invoice settings with selected scope when invoice action option is used', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
       global: { stubs: vuetifyStubs }
@@ -32,19 +34,34 @@ describe('RegisterHeaderActionsBar', () => {
     const actionButtons = wrapper.findAllComponents(ActionButton)
     expect(actionButtons.length).toBeGreaterThan(0)
 
-    const invoiceButton = actionButtons.find(
-      (btn) => btn.props('icon') === 'fa-solid fa-file-invoice'
-    )
-    expect(invoiceButton).toBeTruthy()
+    const invoiceMenu = wrapper.findComponent(ActionButton2L)
+    expect(invoiceMenu.exists()).toBe(true)
 
-    const invoiceButtonElement = invoiceButton.find('button')
-    expect(invoiceButtonElement.exists()).toBe(true)
+    const [allOption, withExciseOption, withoutExciseOption] = invoiceMenu.props('options')
 
-    await invoiceButtonElement.trigger('click')
-
+    await allOption.action(baseProps.item)
     expect(pushMock).toHaveBeenCalledWith({
       name: 'Настройки инвойса',
-      params: { id: baseProps.item.id }
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.All }
+    })
+
+    pushMock.mockClear()
+
+    await withExciseOption.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.WithExcise }
+    })
+
+    pushMock.mockClear()
+
+    await withoutExciseOption.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.WithoutExcise }
     })
   })
 
@@ -54,16 +71,12 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
 
-    const invoiceButton = wrapper
-      .findAllComponents(ActionButton)
-      .find((btn) => btn.props('icon') === 'fa-solid fa-file-invoice')
+    const invoiceMenu = wrapper.findComponent(ActionButton2L)
+    expect(invoiceMenu.exists()).toBe(true)
 
-    expect(invoiceButton).toBeTruthy()
+    const [allOption] = invoiceMenu.props('options')
 
-    const invoiceButtonElement = invoiceButton.find('button')
-    expect(invoiceButtonElement.exists()).toBe(true)
-
-    await invoiceButtonElement.trigger('click')
+    await allOption.action(baseProps.item)
 
     expect(pushMock).not.toHaveBeenCalled()
   })

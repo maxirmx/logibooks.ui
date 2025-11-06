@@ -277,7 +277,10 @@ const router = createRouter({
       path: '/register/:id/invoice-settings',
       name: 'Настройки инвойса',
       component: () => import('@/views/Register_InvoiceSettingsView.vue'),
-      props: (route) => ({ id: Number(route.params.id) }),
+      props: (route) => ({
+        id: Number(route.params.id),
+        selection: typeof route.query.selection === 'string' ? route.query.selection : undefined
+      }),
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {

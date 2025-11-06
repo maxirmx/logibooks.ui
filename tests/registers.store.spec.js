@@ -1124,7 +1124,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       await expect(
         store.downloadInvoiceFile(11, 'INV-11', 'invalid-selection')
-      ).rejects.toThrow('Неизвестный тип выбора посылок для инвойса')
+      ).rejects.toThrow('Неизвестный фильтр посылок для инвойса')
       expect(fetchWrapper.downloadFile).not.toHaveBeenCalled()
     })
   })

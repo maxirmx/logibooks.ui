@@ -6,9 +6,12 @@ import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
 import { ref, computed, watch, onMounted } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionDialog from '@/components/ActionDialog.vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
+import { useActionDialog } from '@/composables/useActionDialog.js'
 
 const props = defineProps({
   id: { type: Number, required: true },
@@ -28,7 +31,9 @@ function resolveParcelSelection(value) {
 const parcelSelection = ref(resolveParcelSelection(props.selection))
 const optionalColumns = ref(InvoiceOptionalColumns.None)
 const isSubmitting = ref(false)
-const submissionError = ref('')
+
+const alertStore = useAlertStore()
+const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
 const parcelSelectionOptions = [
   { id: 1, label: 'Все', value: InvoiceParcelSelection.All },
@@ -56,7 +61,6 @@ const heading = computed(() => {
 })
 
 const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value)
-const displayError = computed(() => submissionError.value || normalizeError(error.value || item.value?.error))
 
 function normalizeError(e) {
   if (!e) return ''
@@ -81,9 +85,10 @@ const schema = Yup.object().shape({}) // no form-bound fields; using external st
 
 async function onSubmit() {
   if (!currentRegister.value || isSubmitting.value) return
-  submissionError.value = ''
   isSubmitting.value = true
+  // show global action dialog while preparing invoice
   try {
+    showActionDialog('download-invoice')
     await registersStore.downloadInvoiceFile(
       currentRegister.value.id,
       currentRegister.value.invoiceNumber,
@@ -92,8 +97,11 @@ async function onSubmit() {
     )
     router.push('/registers')
   } catch (err) {
-    submissionError.value = normalizeError(err) || 'Не удалось сформировать инвойс'
+    // report error via alert store and keep dialog hidden
+    const msg = normalizeError(err) || 'Не удалось сформировать инвойс'
+    alertStore.error(msg)
   } finally {
+    hideActionDialog()
     isSubmitting.value = false
   }
 }
@@ -140,10 +148,7 @@ onMounted(() => {
       </div>
       <hr class="hr" />
 
-      <div v-if="displayError" class="alert alert-danger mb-3">{{ displayError }}</div>
-      <div v-if="loading || item?.loading" class="text-center m-3">
-        <span class="spinner-border spinner-border-sm"></span>
-      </div>
+      <!-- action dialog shown during invoice preparation -->
 
       <div class="form-section">
         <div class="form-row-1">
@@ -186,6 +191,11 @@ onMounted(() => {
         </div>
       </div>
     </Form>
+    <!-- global alert store message placed at the bottom -->
+    <div v-if="alertStore.alert" class="mt-3">
+      <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
+    </div>
+    <ActionDialog :action-dialog="actionDialogState" />
   </div>
 </template>
 

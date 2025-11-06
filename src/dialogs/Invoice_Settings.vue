@@ -243,11 +243,50 @@ onMounted(() => {
   .checkbox-grid { grid-template-columns: 1fr; } /* stack on narrow screens */
 }
 
-.custom-checkbox { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; }
-.custom-checkbox-input { position: absolute; opacity: 0; width: 0; height: 0; }
-.custom-checkbox-box { width: 16px; height: 16px; background-color: #1976d2; border-radius: 3px; position: relative; margin-top: 0.1rem; }
-.custom-checkbox-box:after { content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; background-image: url('@/assets/check-solid.svg'); background-size: cover; opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(-2px); }
-.custom-checkbox-input:checked ~ .custom-checkbox-box:after { opacity: 1; transform: translateY(0); }
-.custom-checkbox-label { flex: 1; white-space: normal; }
-.custom-checkbox:hover .custom-checkbox-box { background-color: #1565c0; }
+.custom-checkbox { 
+  display: flex; 
+  align-items: flex-start; 
+  gap: 0.5rem; 
+  cursor: pointer; 
+}
+.custom-checkbox-input { 
+  position: absolute; 
+  opacity: 0; 
+  width: 0; 
+  height: 0; 
+}
+.custom-checkbox-box { 
+  width: 16px; 
+  height: 16px; 
+  background-color: #1976d2; 
+  border-radius: 3px; 
+  position: relative; 
+  margin-top: 0.1rem; 
+}
+.custom-checkbox-box:after { 
+  content: ''; 
+  position: absolute; 
+  left: 2px; 
+  top: 2px;
+  width: 12px; 
+  height: 12px; 
+  background-image: url('@/assets/check-solid.svg'); 
+  background-size: cover; 
+  opacity: 0; 
+  transition: opacity 0.3s, 
+  transform 0.3s; 
+  transform: translateY(-2px); 
+}
+.custom-checkbox-input:checked ~ .custom-checkbox-box:after { 
+  opacity: 1; 
+  transform: translateY(0); 
+}
+.custom-checkbox-label { 
+  flex: 1; 
+  white-space: normal; 
+}
+.custom-checkbox:hover .custom-checkbox-box { 
+  background-color: #1565c0; 
+}
+
 </style>

@@ -323,7 +323,7 @@ export const useRegistersStore = defineStore('registers', () => {
   ) {
     const config = invoiceSelectionConfig[selection]
     if (!config) {
-      throw new Error('Неизвестный тип выбора посылок для инвойса')
+      throw new Error(`Неизвестный тип выбора посылок для инвойса: ${selection}`)
     }
 
     loading.value = true

@@ -82,7 +82,7 @@ describe('Invoice_Settings.vue (refactored)', () => {
     await resolveAll()
     const select = wrapper.find('#parcelSelection')
     expect(select.exists()).toBe(true)
-    const labels = wrapper.findAll('.custom-checkbox-label').map(l => l.text())
+  const labels = wrapper.findAll('.option-checkbox .checkbox-label').map(l => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
   })

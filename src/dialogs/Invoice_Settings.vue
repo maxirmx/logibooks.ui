@@ -115,7 +115,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings form-2 form-compact invoice-settings-dialog">
+  <div class="settings form-3 form-compact invoice-settings-dialog">
     <Form :initial-values="{}" :validation-schema="schema" @submit="onSubmit" v-slot="{ }">
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ heading }}</h1>

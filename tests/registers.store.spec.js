@@ -7,6 +7,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
+import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
@@ -1059,11 +1060,11 @@ describe('registers store', () => {
     })
   })
 
-  describe('downloadInvoice methods', () => {
-    it('downloadInvoice uses id when invoiceNumber is missing', async () => {
+  describe('downloadInvoiceFile method', () => {
+    it('uses id when invoiceNumber is missing and defaults to all parcels', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
-      const result = await store.downloadInvoice(7)
+      const result = await store.downloadInvoiceFile(7)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/7/download-invoice`,
         'Invoice_7.xlsx'
@@ -1071,76 +1072,60 @@ describe('registers store', () => {
       expect(result).toBe(true)
     })
 
-    it('downloadInvoice uses invoiceNumber when provided', async () => {
+    it('uses invoiceNumber when provided and applies selection specific suffixes', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.downloadInvoice(7, 'INV-7')
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/7/download-invoice`,
-        'Invoice_INV-7.xlsx'
-      )
-    })
-
-    it('downloadInvoice appends optionalColumns query when provided', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const optionalColumns =
-        InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.FullName
-      await store.downloadInvoice(7, 'INV-7', optionalColumns)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/7/download-invoice?optionalColumns=${optionalColumns}`,
-        'Invoice_INV-7.xlsx'
-      )
-    })
-
-    it('downloadInvoiceExcise appends excise suffix', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.downloadInvoiceExcise(8, 'INV-8')
+      await store.downloadInvoiceFile(8, 'INV-8', InvoiceParcelSelection.WithExcise)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/download-invoice-excise`,
         'Invoice_INV-8-акциз.xlsx'
       )
     })
 
-    it('downloadInvoiceExcise supports optional columns flag', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const optionalColumns = InvoiceOptionalColumns.Uin
-      await store.downloadInvoiceExcise(8, 'INV-8', optionalColumns)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/8/download-invoice-excise?optionalColumns=${optionalColumns}`,
-        'Invoice_INV-8-акциз.xlsx'
-      )
-    })
-
-    it('downloadInvoiceWithoutExcise appends без-акциза suffix and uses id fallback', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.downloadInvoiceWithoutExcise(9)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/9/download-invoice-without-excise`,
-        'Invoice_9-без-акциза.xlsx'
-      )
-    })
-
-    it('downloadInvoiceWithoutExcise supports optional columns flag', async () => {
+    it('supports optional columns flag and without excise selection', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
       const optionalColumns = InvoiceOptionalColumns.Url
-      await store.downloadInvoiceWithoutExcise(9, undefined, optionalColumns)
+      await store.downloadInvoiceFile(
+        9,
+        undefined,
+        InvoiceParcelSelection.WithoutExcise,
+        optionalColumns
+      )
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/9/download-invoice-without-excise?optionalColumns=${optionalColumns}`,
         'Invoice_9-без-акциза.xlsx'
       )
     })
 
-    it('downloadInvoiceExcise stores and rethrows errors', async () => {
+    it('appends optional columns query for all selection when provided', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const optionalColumns =
+        InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.FullName
+      await store.downloadInvoiceFile(7, 'INV-7', InvoiceParcelSelection.All, optionalColumns)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/7/download-invoice?optionalColumns=${optionalColumns}`,
+        'Invoice_INV-7.xlsx'
+      )
+    })
+
+    it('stores and rethrows errors from fetch wrapper', async () => {
       const store = useRegistersStore()
       const error = new Error('fail')
       fetchWrapper.downloadFile.mockRejectedValue(error)
-      await expect(store.downloadInvoiceExcise(10)).rejects.toThrow(error)
+      await expect(
+        store.downloadInvoiceFile(10, 'INV-10', InvoiceParcelSelection.All)
+      ).rejects.toThrow(error)
       expect(store.error).toBe(error)
+    })
+
+    it('throws when selection type is unknown', async () => {
+      const store = useRegistersStore()
+      await expect(
+        store.downloadInvoiceFile(11, 'INV-11', 'invalid-selection')
+      ).rejects.toThrow('Неизвестный тип выбора посылок для инвойса')
+      expect(fetchWrapper.downloadFile).not.toHaveBeenCalled()
     })
   })
 

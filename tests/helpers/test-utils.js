@@ -198,6 +198,21 @@ export const vuetifyStubs = {
     props: ['label', 'value', 'disabled', 'style'],
     inheritAttrs: false
   },
+  'v-checkbox': {
+    template: `
+      <label class="v-checkbox-stub" data-testid="v-checkbox">
+        <input
+          type="checkbox"
+          :checked="modelValue"
+          @change="$emit('update:modelValue', $event.target.checked)"
+        />
+        <span>{{ label }}</span>
+      </label>
+    `,
+    props: ['modelValue', 'label', 'disabled', 'style'],
+    inheritAttrs: false,
+    emits: ['update:modelValue']
+  },
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
     props: ['icon', 'size', 'color', 'style'],

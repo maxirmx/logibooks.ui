@@ -10,6 +10,13 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    back: vi.fn()
+  })
+}))
+
 const stores = {}
 let registerHeaderActionsMock
 const loadOrdersMock = vi.fn()
@@ -27,9 +34,6 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlWithoutExcise: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     downloadRegister: vi.fn(),
-    downloadInvoice: vi.fn(),
-    downloadInvoiceExcise: vi.fn(),
-    downloadInvoiceWithoutExcise: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
   }

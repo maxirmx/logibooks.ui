@@ -52,7 +52,7 @@ const optionalColumnOptions = [
 
 const currentRegister = computed(() => {
   const r = item.value
-  if (!r || r.loading || r.error) return null
+  if (!r) return null
   return r
 })
 

@@ -1,102 +1,96 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+// Invoice settings dialog implemented to follow Register_EditDialog style & approach
+import router from '@/router'
+import { Form } from 'vee-validate'
+import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
+import { ref, computed, watch, onMounted } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
 const props = defineProps({
   id: { type: Number, required: true },
-  selection: { type: String, default: undefined }
+  selection: { type: String, required: false }
 })
 
-const router = useRouter()
 const registersStore = useRegistersStore()
 const { item, loading, error } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
-  if (value === InvoiceParcelSelection.All) return InvoiceParcelSelection.All
   if (value === InvoiceParcelSelection.WithExcise) return InvoiceParcelSelection.WithExcise
   if (value === InvoiceParcelSelection.WithoutExcise) return InvoiceParcelSelection.WithoutExcise
   return InvoiceParcelSelection.All
 }
 
+// State mirrors register dialog style (item used as initial values provider)
 const parcelSelection = ref(resolveParcelSelection(props.selection))
-const selectedOptionalColumns = ref(InvoiceOptionalColumns.None)
-const submissionError = ref('')
+const optionalColumns = ref(InvoiceOptionalColumns.None)
 const isSubmitting = ref(false)
+const submissionError = ref('')
 
 const parcelSelectionOptions = [
-  { title: 'Все', value: InvoiceParcelSelection.All },
-  { title: 'С акцизом', value: InvoiceParcelSelection.WithExcise },
-  { title: 'Без акциза', value: InvoiceParcelSelection.WithoutExcise }
+  { id: 1, label: 'Все', value: InvoiceParcelSelection.All },
+  { id: 2, label: 'С акцизом', value: InvoiceParcelSelection.WithExcise },
+  { id: 3, label: 'Без акциза', value: InvoiceParcelSelection.WithoutExcise }
 ]
 
 const optionalColumnOptions = [
-  { label: 'Номер мешка', value: InvoiceOptionalColumns.BagNumber },
-  { label: 'ФИО', value: InvoiceOptionalColumns.FullName },
-  { label: 'Предшествующий ДТЭГ', value: InvoiceOptionalColumns.PreviousDteg },
-  { label: 'УИН', value: InvoiceOptionalColumns.Uin },
-  { label: 'Ссылка', value: InvoiceOptionalColumns.Url }
+  { id: 1, label: 'Номер мешка', value: InvoiceOptionalColumns.BagNumber },
+  { id: 2, label: 'ФИО', value: InvoiceOptionalColumns.FullName },
+  { id: 3, label: 'Предшествующий ДТЭГ', value: InvoiceOptionalColumns.PreviousDteg },
+  { id: 4, label: 'УИН', value: InvoiceOptionalColumns.Uin },
+  { id: 5, label: 'Ссылка', value: InvoiceOptionalColumns.Url }
 ]
 
 const currentRegister = computed(() => {
-  const value = item.value
-  if (!value || value.loading || value.error) {
-    return null
-  }
-  return value
+  const r = item.value
+  if (!r || r.loading || r.error) return null
+  return r
 })
-
-const isFetching = computed(() => loading.value || item.value?.loading)
-const storeErrorMessage = computed(() => normalizeError(error.value ?? item.value?.error))
-const displayError = computed(() => submissionError.value || storeErrorMessage.value)
-const isFormDisabled = computed(() => isFetching.value || isSubmitting.value || !currentRegister.value)
 
 const heading = computed(() => {
   const number = currentRegister.value?.invoiceNumber
-  if (number) {
-    return `Сформировать инвойс/манифест (${number})`
-  }
-  return 'Сформировать инвойс/манифест'
+  return number ? `Настройки инвойса (${number})` : 'Настройки инвойса'
 })
 
-function normalizeError(err) {
-  if (!err) return ''
-  if (typeof err === 'string') return err
-  if (err?.message) return err.message
-  return String(err)
+const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value)
+const displayError = computed(() => submissionError.value || normalizeError(error.value || item.value?.error))
+
+function normalizeError(e) {
+  if (!e) return ''
+  if (typeof e === 'string') return e
+  if (e?.message) return e.message
+  return String(e)
 }
 
 function isColumnSelected(column) {
-  return (selectedOptionalColumns.value & column) === column
+  return (optionalColumns.value & column) === column
 }
 
-function setColumn(column, checked) {
-  if (checked) {
-    selectedOptionalColumns.value |= column
+function toggleColumn(column) {
+  if (isColumnSelected(column)) {
+    optionalColumns.value &= ~column
   } else {
-    selectedOptionalColumns.value &= ~column
+    optionalColumns.value |= column
   }
 }
 
-async function handleSubmit() {
-  submissionError.value = ''
-  if (!currentRegister.value) {
-    submissionError.value = 'Не удалось получить данные реестра'
-    return
-  }
+const schema = Yup.object().shape({}) // no form-bound fields; using external state
 
+async function onSubmit() {
+  if (!currentRegister.value || isSubmitting.value) return
+  submissionError.value = ''
   isSubmitting.value = true
   try {
     await registersStore.downloadInvoiceFile(
       currentRegister.value.id,
       currentRegister.value.invoiceNumber,
       parcelSelection.value,
-      selectedOptionalColumns.value
+      optionalColumns.value
     )
-    router.back()
+    router.push('/registers')
   } catch (err) {
     submissionError.value = normalizeError(err) || 'Не удалось сформировать инвойс'
   } finally {
@@ -104,13 +98,9 @@ async function handleSubmit() {
   }
 }
 
-function handleCancel() {
-  router.back()
+function onCancel() {
+  router.push('/registers')
 }
-
-onMounted(() => {
-  registersStore.getById(props.id)
-})
 
 watch(
   () => props.selection,
@@ -118,102 +108,107 @@ watch(
     parcelSelection.value = resolveParcelSelection(value)
   }
 )
+
+onMounted(() => {
+  registersStore.getById(props.id)
+})
 </script>
 
 <template>
-  <div class="invoice-settings">
-    <header class="invoice-settings__header">
-      <h1 class="invoice-settings__title">{{ heading }}</h1>
-      <div class="invoice-settings__actions">
-        <v-btn
-          color="primary"
-          @click="handleSubmit"
-          :disabled="isFormDisabled"
-          :loading="isSubmitting"
-        >
-          Сформировать
-        </v-btn>
-        <v-btn color="secondary" variant="outlined" @click="handleCancel">
-          Отменить
-        </v-btn>
+  <div class="settings form-2 form-compact invoice-settings-dialog">
+    <Form :initial-values="{}" :validation-schema="schema" @submit="onSubmit" v-slot="{ }">
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ heading }}</h1>
+        <div class="header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            icon-size="2x"
+            tooltip-text="Сформировать"
+            :disabled="isFormDisabled"
+            @click="onSubmit()"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            @click="onCancel()"
+          />
+        </div>
       </div>
-    </header>
+      <hr class="hr" />
 
-    <v-divider class="mb-4" />
+      <div v-if="displayError" class="alert alert-danger mb-3">{{ displayError }}</div>
+      <div v-if="loading || item?.loading" class="text-center m-3">
+        <span class="spinner-border spinner-border-sm"></span>
+      </div>
 
-    <v-alert v-if="displayError" type="error" variant="tonal" class="mb-4">
-      {{ displayError }}
-    </v-alert>
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label" for="parcelSelection">Выбор посылок:</label>
+            <select
+              id="parcelSelection"
+              class="form-control input"
+              v-model="parcelSelection"
+              :disabled="isFormDisabled"
+            >
+              <option v-for="o in parcelSelectionOptions" :key="o.id" :value="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+        </div>
 
-    <v-progress-linear
-      v-if="isFetching"
-      indeterminate
-      color="primary"
-      class="mb-4"
-    />
-
-    <v-card variant="outlined" class="pa-6">
-      <v-row dense>
-        <v-col cols="12" md="6">
-          <v-select
-            v-model="parcelSelection"
-            :items="parcelSelectionOptions"
-            item-title="title"
-            item-value="value"
-            label="Выбор посылок"
-            density="comfortable"
-            :disabled="isFormDisabled"
-          />
-        </v-col>
-      </v-row>
-
-      <v-divider class="my-4" />
-
-      <h2 class="invoice-settings__section-title">Дополнительные колонки</h2>
-
-      <v-row>
-        <v-col v-for="option in optionalColumnOptions" :key="option.value" cols="12" sm="6">
-          <v-checkbox
-            :label="option.label"
-            :model-value="isColumnSelected(option.value)"
-            @update:model-value="(value) => setColumn(option.value, value)"
-            :disabled="isFormDisabled"
-          />
-        </v-col>
-      </v-row>
-    </v-card>
+        <div class="form-row-1 optional-columns-row">
+          <div class="form-group optional-columns-group">
+            <label class="label">Дополнительные колонки:</label>
+            <div class="checkbox-grid">
+              <label
+                v-for="c in optionalColumnOptions"
+                :key="c.id"
+                class="custom-checkbox"
+              >
+                <input
+                  type="checkbox"
+                  class="custom-checkbox-input"
+                  :disabled="isFormDisabled"
+                  :checked="isColumnSelected(c.value)"
+                  @change="toggleColumn(c.value)"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="custom-checkbox-label">{{ c.label }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Form>
   </div>
 </template>
 
 <style scoped>
-.invoice-settings {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 24px 16px 48px;
+.invoice-settings-dialog .form-section,
+.invoice-settings-dialog .form-row,
+.invoice-settings-dialog .form-group { overflow: visible; }
+
+.optional-columns-row { margin-top: 0.5rem; }
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* force two columns */
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
 }
 
-.invoice-settings__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+@media (max-width: 640px) {
+  .checkbox-grid { grid-template-columns: 1fr; } /* stack on narrow screens */
 }
 
-.invoice-settings__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.invoice-settings__actions {
-  display: flex;
-  gap: 12px;
-}
-
-.invoice-settings__section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
+.custom-checkbox { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; }
+.custom-checkbox-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.custom-checkbox-box { width: 16px; height: 16px; background-color: #1976d2; border-radius: 3px; position: relative; margin-top: 0.1rem; }
+.custom-checkbox-box:after { content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; background-image: url('@/assets/check-solid.svg'); background-size: cover; opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(-2px); }
+.custom-checkbox-input:checked ~ .custom-checkbox-box:after { opacity: 1; transform: translateY(0); }
+.custom-checkbox-label { flex: 1; white-space: normal; }
+.custom-checkbox:hover .custom-checkbox-box { background-color: #1565c0; }
 </style>

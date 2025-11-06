@@ -274,6 +274,13 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/register/:id/invoice-settings',
+      name: 'Настройки инвойса',
+      component: () => import('@/views/Register_InvoiceSettingsView.vue'),
+      props: (route) => ({ id: Number(route.params.id) }),
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),

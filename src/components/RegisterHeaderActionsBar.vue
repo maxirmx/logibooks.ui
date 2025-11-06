@@ -1,6 +1,6 @@
 <script setup>
+import { useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
-import ActionButton2L from '@/components/ActionButton2L.vue'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -15,15 +15,21 @@ const emit = defineEmits([
   'lookup-ex',
   'export-noexcise',
   'export-excise',
-  'download',
-  'download-invoice',
-  'download-invoice-excise',
-  'download-invoice-without-excise'
+  'download'
 ])
+
+const router = useRouter()
 
 function run(evt) {
   if (props.disabled) return
   emit(evt)
+}
+
+function openInvoiceSettings() {
+  if (props.disabled) return
+  const registerId = props.item?.id
+  if (!registerId) return
+  router.push({ name: 'Настройки инвойса', params: { id: registerId } })
 }
 </script>
 
@@ -90,18 +96,13 @@ function run(evt) {
         :disabled="disabled"
         @click="run('download')"
       />
-      <!-- Invoice / manifest generation menu -->
-      <ActionButton2L
+      <ActionButton
         :item="item"
         icon="fa-solid fa-file-invoice"
         tooltip-text="Сформировать инвойс-манифест"
         :iconSize="iconSize"
         :disabled="disabled"
-        :options="[
-          { label: 'Все', action: (it) => emit('download-invoice', it) },
-          { label: 'С акцизом', action: (it) => emit('download-invoice-excise', it) },
-          { label: 'Без акциза', action: (it) => emit('download-invoice-without-excise', it) }
-        ]"
+        @click="openInvoiceSettings"
       />
     </div>
   </div>

@@ -1,7 +1,16 @@
 import { mount } from '@vue/test-utils'
+import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
-import ActionButton2L from '@/components/ActionButton2L.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
+
+const pushMock = vi.fn()
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: pushMock
+  })
+}))
 
 describe('RegisterHeaderActionsBar', () => {
   const baseProps = {
@@ -10,47 +19,52 @@ describe('RegisterHeaderActionsBar', () => {
     iconSize: '1x'
   }
 
-  it('renders ActionButton2L and emits download-invoice events when options selected', async () => {
+  beforeEach(() => {
+    pushMock.mockClear()
+  })
+
+  it('navigates to invoice settings when invoice action button is clicked', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
       global: { stubs: vuetifyStubs }
     })
 
-    // Find ActionButton2L
-    const ab2l = wrapper.findComponent(ActionButton2L)
-    expect(ab2l.exists()).toBe(true)
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    expect(actionButtons.length).toBeGreaterThan(0)
 
-    // Click the main button to open menu
-    const button = ab2l.find('button')
-    await button.trigger('click')
+    const invoiceButton = actionButtons.find(
+      (btn) => btn.props('icon') === 'fa-solid fa-file-invoice'
+    )
+    expect(invoiceButton).toBeTruthy()
 
-    // Menu should be present
-    const menu = ab2l.find('ul.action-button-2l__menu')
-    expect(menu.exists()).toBe(true)
+    const invoiceButtonElement = invoiceButton.find('button')
+    expect(invoiceButtonElement.exists()).toBe(true)
 
-    const items = menu.findAll('button.action-button-2l__menu-item')
-    expect(items.length).toBeGreaterThanOrEqual(3)
+    await invoiceButtonElement.trigger('click')
 
-    // Click first option: 'Все'
-    await items[0].trigger('click')
-    expect(wrapper.emitted('download-invoice')).toBeTruthy()
-    const arg0 = wrapper.emitted('download-invoice')[0][0]
-    expect(arg0).toEqual(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id }
+    })
+  })
 
-    // Open again and click second option: 'С акцизом'
-    await button.trigger('click')
-    const items2 = ab2l.findAll('button.action-button-2l__menu-item')
-    await items2[1].trigger('click')
-    expect(wrapper.emitted('download-invoice-excise')).toBeTruthy()
-    const arg1 = wrapper.emitted('download-invoice-excise')[0][0]
-    expect(arg1).toEqual(baseProps.item)
+  it('does not navigate when disabled', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, disabled: true },
+      global: { stubs: vuetifyStubs }
+    })
 
-    // Open again and click third option: 'Без акциза'
-    await button.trigger('click')
-    const items3 = ab2l.findAll('button.action-button-2l__menu-item')
-    await items3[2].trigger('click')
-    expect(wrapper.emitted('download-invoice-without-excise')).toBeTruthy()
-    const arg2 = wrapper.emitted('download-invoice-without-excise')[0][0]
-    expect(arg2).toEqual(baseProps.item)
+    const invoiceButton = wrapper
+      .findAllComponents(ActionButton)
+      .find((btn) => btn.props('icon') === 'fa-solid fa-file-invoice')
+
+    expect(invoiceButton).toBeTruthy()
+
+    const invoiceButtonElement = invoiceButton.find('button')
+    expect(invoiceButtonElement.exists()).toBe(true)
+
+    await invoiceButtonElement.trigger('click')
+
+    expect(pushMock).not.toHaveBeenCalled()
   })
 })

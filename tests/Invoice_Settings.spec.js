@@ -100,9 +100,9 @@ describe('Invoice_Settings.vue', () => {
   it('renders selection dropdown and optional columns checkboxes', async () => {
     const wrapper = mountDialog()
     await resolveAll()
-      const select = wrapper.find('#parcelSelection')
-      expect(select.exists()).toBe(true)
-      const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
+    const select = wrapper.find('#parcelSelection')
+    expect(select.exists()).toBe(true)
+    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
   })

@@ -290,10 +290,9 @@ export const useRegistersStore = defineStore('registers', () => {
    */
   function buildInvoiceRequestUrl(id, endpoint, optionalColumns) {
     const params = new URLSearchParams()
-    const columnsValue = optionalColumns
 
-    if (columnsValue !== InvoiceOptionalColumns.None) {
-      params.set('optionalColumns', columnsValue.toString())
+    if (optionalColumns !== InvoiceOptionalColumns.None) {
+      params.set('optionalColumns', optionalColumns.toString())
     }
 
     const query = params.toString()

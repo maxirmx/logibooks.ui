@@ -363,7 +363,7 @@ defineExpose({
           :item="{}"
           icon="fa-solid fa-file-import"
           tooltip-text="Загрузить реестр"
-          :iconSize="'2x'"
+          iconSize="2x"
           :disabled="isUploadDisabled"
           :options="uploadMenuOptions"
         />

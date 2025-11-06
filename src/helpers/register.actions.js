@@ -204,18 +204,6 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await registersStore.download(item.id, item.fileName)
   }
 
-  async function downloadInvoice(item) {
-    await registersStore.downloadInvoice(item.id, item.invoiceNumber)
-  }
-
-  async function downloadInvoiceExcise(item) {
-    await registersStore.downloadInvoiceExcise(item.id, item.invoiceNumber)
-  }
-
-  async function downloadInvoiceWithoutExcise(item) {
-    await registersStore.downloadInvoiceWithoutExcise(item.id, item.invoiceNumber)
-  }
-
   function cancelValidationWrapper() {
     const isFeacnLookup =
       validationState.operation === 'lookup-feacn-codes'
@@ -246,9 +234,6 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     exportAllXmlWithoutExcise,
     exportAllXmlExcise,
     downloadRegister,
-    downloadInvoice,
-    downloadInvoiceExcise,
-    downloadInvoiceWithoutExcise,
     cancelValidation: cancelValidationWrapper,
     stopPolling
   }
@@ -273,9 +258,6 @@ export function useRegisterHeaderActions({
     exportAllXmlWithoutExcise,
     exportAllXmlExcise,
     downloadRegister,
-    downloadInvoice,
-    downloadInvoiceExcise,
-    downloadInvoiceWithoutExcise,
     cancelValidation,
     stopPolling
   } = createRegisterActionHandlers(registersStore, alertStore)
@@ -361,18 +343,6 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(downloadRegister, 'download-register')
   }
 
-  const runDownloadInvoice = async () => {
-    await runActionWithDialog(downloadInvoice, 'download-invoice')
-  }
-
-  const runDownloadInvoiceExcise = async () => {
-    await runActionWithDialog(downloadInvoiceExcise, 'download-invoice')
-  }
-
-  const runDownloadInvoiceWithoutExcise = async () => {
-    await runActionWithDialog(downloadInvoiceWithoutExcise, 'download-invoice')
-  }
-
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
@@ -408,9 +378,6 @@ export function useRegisterHeaderActions({
     exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,
-    downloadInvoice: runDownloadInvoice,
-    downloadInvoiceExcise: runDownloadInvoiceExcise,
-    downloadInvoiceWithoutExcise: runDownloadInvoiceWithoutExcise,
     cancelValidation,
     stop
   }

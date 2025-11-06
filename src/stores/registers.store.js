@@ -10,6 +10,8 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
+import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
+import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -279,47 +281,56 @@ export const useRegistersStore = defineStore('registers', () => {
     return `Invoice_${baseName}${suffixPart}.xlsx`
   }
 
-  async function downloadInvoice(id, invoiceNumber) {
-    loading.value = true
-    error.value = null
-    try {
-      const filename = buildInvoiceFilename(id, invoiceNumber)
-      return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-invoice`,
-        filename
-      )
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
+  /**
+   * Builds the request URL for invoice operations.
+   * @param {string|number} id
+   * @param {string} endpoint
+   * @param {number} optionalColumns
+   * @returns {string}
+   */
+  function buildInvoiceRequestUrl(id, endpoint, optionalColumns) {
+    const params = new URLSearchParams()
+
+    if (optionalColumns !== InvoiceOptionalColumns.None) {
+      params.set('optionalColumns', optionalColumns.toString())
+    }
+
+    const query = params.toString()
+    return query ? `${baseUrl}/${id}/${endpoint}?${query}` : `${baseUrl}/${id}/${endpoint}`
+  }
+
+  const invoiceSelectionConfig = {
+    [InvoiceParcelSelection.All]: {
+      endpoint: 'download-invoice',
+      suffix: ''
+    },
+    [InvoiceParcelSelection.WithExcise]: {
+      endpoint: 'download-invoice-excise',
+      suffix: '-акциз'
+    },
+    [InvoiceParcelSelection.WithoutExcise]: {
+      endpoint: 'download-invoice-without-excise',
+      suffix: '-без-акциза'
     }
   }
 
-  async function downloadInvoiceExcise(id, invoiceNumber) {
-    loading.value = true
-    error.value = null
-    try {
-      const filename = buildInvoiceFilename(id, invoiceNumber, '-акциз')
-      return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-invoice-excise`,
-        filename
-      )
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
+  async function downloadInvoiceFile(
+    id,
+    invoiceNumber,
+    selection = InvoiceParcelSelection.All,
+    optionalColumns = InvoiceOptionalColumns.None
+  ) {
+    const config = invoiceSelectionConfig[selection]
+    if (!config) {
+      throw new Error('Неизвестный фильтр посылок для инвойса')
     }
-  }
 
-  async function downloadInvoiceWithoutExcise(id, invoiceNumber) {
     loading.value = true
     error.value = null
     try {
-      const filename = buildInvoiceFilename(id, invoiceNumber, '-без-акциза')
+      const filename = buildInvoiceFilename(id, invoiceNumber, config.suffix)
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-invoice-without-excise`,
+        buildInvoiceRequestUrl(id, config.endpoint, optionalColumns),
         filename
       )
     } catch (err) {
@@ -424,9 +435,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generate,
     generateExcise,
     generateWithoutExcise,
-    downloadInvoice,
-    downloadInvoiceExcise,
-    downloadInvoiceWithoutExcise,
+    downloadInvoiceFile,
     download,
     nextParcel,
     theNextParcel,

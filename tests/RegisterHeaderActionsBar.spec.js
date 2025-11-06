@@ -1,7 +1,18 @@
 import { mount } from '@vue/test-utils'
+import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
+
+const pushMock = vi.fn()
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: pushMock
+  })
+}))
 
 describe('RegisterHeaderActionsBar', () => {
   const baseProps = {
@@ -10,47 +21,63 @@ describe('RegisterHeaderActionsBar', () => {
     iconSize: '1x'
   }
 
-  it('renders ActionButton2L and emits download-invoice events when options selected', async () => {
+  beforeEach(() => {
+    pushMock.mockClear()
+  })
+
+  it('navigates to invoice settings with selected scope when invoice action option is used', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
       global: { stubs: vuetifyStubs }
     })
 
-    // Find ActionButton2L
-    const ab2l = wrapper.findComponent(ActionButton2L)
-    expect(ab2l.exists()).toBe(true)
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    expect(actionButtons.length).toBeGreaterThan(0)
 
-    // Click the main button to open menu
-    const button = ab2l.find('button')
-    await button.trigger('click')
+    const invoiceMenu = wrapper.findComponent(ActionButton2L)
+    expect(invoiceMenu.exists()).toBe(true)
 
-    // Menu should be present
-    const menu = ab2l.find('ul.action-button-2l__menu')
-    expect(menu.exists()).toBe(true)
+    const [allOption, withExciseOption, withoutExciseOption] = invoiceMenu.props('options')
 
-    const items = menu.findAll('button.action-button-2l__menu-item')
-    expect(items.length).toBeGreaterThanOrEqual(3)
+    await allOption.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.All }
+    })
 
-    // Click first option: 'Все'
-    await items[0].trigger('click')
-    expect(wrapper.emitted('download-invoice')).toBeTruthy()
-    const arg0 = wrapper.emitted('download-invoice')[0][0]
-    expect(arg0).toEqual(baseProps.item)
+    pushMock.mockClear()
 
-    // Open again and click second option: 'С акцизом'
-    await button.trigger('click')
-    const items2 = ab2l.findAll('button.action-button-2l__menu-item')
-    await items2[1].trigger('click')
-    expect(wrapper.emitted('download-invoice-excise')).toBeTruthy()
-    const arg1 = wrapper.emitted('download-invoice-excise')[0][0]
-    expect(arg1).toEqual(baseProps.item)
+    await withExciseOption.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.WithExcise }
+    })
 
-    // Open again and click third option: 'Без акциза'
-    await button.trigger('click')
-    const items3 = ab2l.findAll('button.action-button-2l__menu-item')
-    await items3[2].trigger('click')
-    expect(wrapper.emitted('download-invoice-without-excise')).toBeTruthy()
-    const arg2 = wrapper.emitted('download-invoice-without-excise')[0][0]
-    expect(arg2).toEqual(baseProps.item)
+    pushMock.mockClear()
+
+    await withoutExciseOption.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.WithoutExcise }
+    })
+  })
+
+  it('does not navigate when disabled', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, disabled: true },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const invoiceMenu = wrapper.findComponent(ActionButton2L)
+    expect(invoiceMenu.exists()).toBe(true)
+
+    const [allOption] = invoiceMenu.props('options')
+
+    await allOption.action(baseProps.item)
+
+    expect(pushMock).not.toHaveBeenCalled()
   })
 })

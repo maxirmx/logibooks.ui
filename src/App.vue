@@ -115,6 +115,13 @@ function getUserName() {
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
         </v-list-item>
 
+        <!-- Отчёты -->
+        <v-list-group  v-if="authStore.hasAnyRole">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Отчёты"></v-list-item>
+          </template>
+        </v-list-group>
+
         <!-- Справочники -->
         <v-list-group  v-if="authStore.hasAnyRole">
           <template v-slot:activator="{ props }">

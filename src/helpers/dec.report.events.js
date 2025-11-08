@@ -5,6 +5,6 @@
 export const DEC_REPORT_UPLOADED_EVENT = 'dec-report-uploaded'
 
 export function dispatchDecReportUploadedEvent(detail = undefined) {
-  const event = new CustomEvent(DEC_REPORT_UPLOADED_EVENT, { detail })
+  const event = new globalThis.CustomEvent(DEC_REPORT_UPLOADED_EVENT, { detail })
   window.dispatchEvent(event)
 }

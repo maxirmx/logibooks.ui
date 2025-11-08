@@ -185,7 +185,7 @@ describe('App reports upload menu', () => {
     resolveUpload()
     await flushPromises()
 
-    const dispatchedEvent = dispatchSpy.mock.calls.find((call) => call[0] instanceof CustomEvent)
+    const dispatchedEvent = dispatchSpy.mock.calls.find((call) => call[0] instanceof globalThis.CustomEvent)
     expect(dispatchedEvent?.[0].type).toBe(DEC_REPORT_UPLOADED_EVENT)
     expect(dispatchedEvent?.[0].detail).toEqual({ fileName: 'report.csv' })
 

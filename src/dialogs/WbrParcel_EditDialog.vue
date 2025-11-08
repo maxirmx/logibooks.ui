@@ -18,7 +18,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
@@ -29,12 +29,13 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
-import { 
-  validateParcelData, 
-  approveParcel as approveParcelHelper, 
-  approveParcelWithExcise as approveParcelWithExciseHelper, 
-  generateXml as generateXmlHelper 
+import {
+  validateParcelData,
+  approveParcel as approveParcelHelper,
+  approveParcelWithExcise as approveParcelWithExciseHelper,
+  generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
+import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -43,6 +44,7 @@ const props = defineProps({
 
 // track current parcel id so we can swap inline without changing route
 const currentParcelId = ref(props.id)
+const isComponentMounted = ref(true)
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -115,7 +117,13 @@ const isDescriptionVisible = ref(false)
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
+  window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
   initNeighborPromises(currentParcelId.value)
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
 })
 
 const schema = Yup.object().shape({
@@ -163,10 +171,27 @@ async function approveParcelWithExcise(values) {
   try {
     // Wait for both next parcel promises to complete before calling helper
     await Promise.all([theNextParcelPromise, nextParcelPromise])
-    
+
     await approveParcelWithExciseHelper(values, item, parcelsStore)
   } finally {
     runningAction.value = false
+  }
+}
+
+async function refreshParcelAfterReportUpload() {
+  if (!isComponentMounted.value) return
+
+  try {
+    loading.value = true
+    await parcelsStore.getById(currentParcelId.value)
+  } catch (error) {
+    if (!isComponentMounted.value) return
+    const message = error?.response?.data?.message || error?.message || 'Не удалось обновить данные посылки после загрузки отчёта'
+    alertStore.error(message)
+  } finally {
+    if (isComponentMounted.value) {
+      loading.value = false
+    }
   }
 }
 

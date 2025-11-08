@@ -44,6 +44,7 @@ import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -175,6 +176,25 @@ async function loadOrdersWrapper() {
 // Provide the loadOrders function for child components
 provide('loadOrders', loadOrdersWrapper)
 
+async function refreshAfterReportUpload() {
+  if (!isComponentMounted.value) return
+
+  registerLoading.value = true
+  loading.value = true
+
+  try {
+    await fetchRegister()
+    await loadOrdersWrapper()
+  } catch (error) {
+    if (!isComponentMounted.value) return
+    const message = error?.response?.data?.message || error?.message || 'Не удалось обновить данные после загрузки отчёта'
+    alertStore.error(message)
+    parcelsStore.error = message
+    loading.value = false
+    registerLoading.value = false
+  }
+}
+
 const {
   validationState,
   progressPercent,
@@ -208,7 +228,9 @@ const watcherStop = watch(
 onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
-    
+
+    window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshAfterReportUpload)
+
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
@@ -253,6 +275,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshAfterReportUpload)
 })
 
 const statusOptions = computed(() => [

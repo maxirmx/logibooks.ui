@@ -76,6 +76,10 @@ describe('App exchange rates display', () => {
           'v-list-item': { template: '<li><slot /></li>' },
           'v-list-group': { template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>' },
           'v-main': { template: '<main><slot /></main>' },
+          ActionDialog: {
+            props: ['actionDialog'],
+            template: '<div class="action-dialog-stub" :data-show="actionDialog?.show"></div>'
+          }
         },
       },
     })

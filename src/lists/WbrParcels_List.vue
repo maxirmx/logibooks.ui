@@ -190,8 +190,11 @@ async function refreshAfterReportUpload() {
     const message = error?.response?.data?.message || error?.message || 'Не удалось обновить данные после загрузки отчёта'
     alertStore.error(message)
     parcelsStore.error = message
-    loading.value = false
-    registerLoading.value = false
+  } finally {
+    if (isComponentMounted.value) {
+      loading.value = false
+      registerLoading.value = false
+    }
   }
 }
 

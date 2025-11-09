@@ -394,8 +394,8 @@ async function onLookup(values) {
           </div>
           <!-- Last view -->
           <div class="form-group">
-            <label for="last-view" class="label">Последний просмотр:</label>
-            <div class="readonly-field" id="last-view">
+            <label for="lastView" class="label">Последний просмотр:</label>
+            <div class="readonly-field" id="lastView" name="lastView">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
             </div>
           </div>          
@@ -500,6 +500,15 @@ async function onLookup(values) {
         <div class="form-row">
           <WbrFormField name="recipientName" :errors="errors" :fullWidth="false" />
           <WbrFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+        </div>
+      </div>
+      <!-- DTag -->
+      <div class="form-section">
+        <div class="form-row-1 product-name-row">
+          <label for="dtag" class="label-1 product-name-label">ДТЭГ/ПТДЭГ:</label>
+          <div class="form-control input-1 readonly-field" id="dtag" name="dtag">
+            {{ item?.dTag ? item.dTag : '-' }}
+          </div>
         </div>
       </div>
 

@@ -390,7 +390,7 @@ async function onLookup(values) {
           <!-- Last view -->
           <div class="form-group">
             <label for="lastView" class="label">Последний просмотр:</label>
-            <div class="readonly-field">
+            <div class="readonly-field" name="lastView" id="lastView">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
             </div>
           </div>          
@@ -477,6 +477,13 @@ async function onLookup(values) {
           <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+        </div>
+      </div>
+      <!-- DTag (use same layout as product description) -->
+      <div class="form-section">
+        <div class="form-row-1 product-name-row">
+          <label for="dtag" class="label-1 product-name-label">ДТЭГ/ПТДЭГ:</label>
+          <div id="dtag" name="dtag" class="form-control input-1 readonly-field">{{ item?.dTag ? item.dTag : '-' }}</div>
         </div>
       </div>
 

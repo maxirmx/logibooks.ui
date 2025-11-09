@@ -7,9 +7,9 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/dec`
+const baseUrl = `${apiUrl}/decs`
 
-export const useDecStore = defineStore('dec', () => {
+export const useDecsStore = defineStore('decs', () => {
   const loading = ref(false)
   const error = ref(null)
 
@@ -19,7 +19,7 @@ export const useDecStore = defineStore('dec', () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const response = await fetchWrapper.postFile(`${baseUrl}/upload`, formData)
+      const response = await fetchWrapper.postFile(`${baseUrl}/upload-report`, formData)
       return response
     } catch (err) {
       error.value = err

@@ -12,13 +12,13 @@ import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
 
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useDecStore } from '@/stores/dec.store.js'
+import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import ActionDialog from '@/components/ActionDialog.vue'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 const authStore = useAuthStore()
-const decStore = useDecStore()
+const decStore = useDecsStore()
 const alertStore = useAlertStore()
 
 const statusStore = useStatusStore()
@@ -153,7 +153,7 @@ async function onReportFileSelected(event) {
         </v-list-item>
 
         <!-- Отчёты -->
-        <v-list-group  v-if="authStore.hasAnyRole">
+        <v-list-group  v-if="authStore.isLogist || authStore.isSrLogist">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Отчёты"></v-list-item>
           </template>
@@ -234,6 +234,7 @@ async function onReportFileSelected(event) {
       <input
         type="file"
         ref="reportFileInput"
+        accept=".xls,.xlsx,.zip,.rar"
         data-testid="reports-upload-input"
         style="display: none"
         @change="onReportFileSelected"

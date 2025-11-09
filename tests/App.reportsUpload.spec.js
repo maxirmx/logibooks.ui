@@ -13,7 +13,7 @@ import * as directives from 'vuetify/directives'
 
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useDecStore } from '@/stores/dec.store.js'
+import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useStatusStore } from '@/stores/status.store.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
@@ -91,7 +91,7 @@ describe('App reports upload menu', () => {
     setActivePinia(createPinia())
 
     authStore = useAuthStore()
-    decStore = useDecStore()
+    decStore = useDecsStore()
     alertStore = useAlertStore()
     statusStore = useStatusStore()
 

@@ -17,7 +17,7 @@ import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
@@ -29,12 +29,13 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
-import { 
-  validateParcelData, 
-  approveParcel as approveParcelHelper, 
+import {
+  validateParcelData,
+  approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
-  generateXml as generateXmlHelper 
+  generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
+import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -43,6 +44,7 @@ const props = defineProps({
 
 // track current parcel id so we can swap inline without changing route
 const currentParcelId = ref(props.id)
+const isComponentMounted = ref(true)
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -113,7 +115,13 @@ const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLi
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
+  window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
   initNeighborPromises(currentParcelId.value)
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
 })
 
 const schema = Yup.object().shape({
@@ -160,10 +168,27 @@ async function approveParcelWithExcise(values) {
   try {
     // Wait for both next parcel promises to complete before calling helper
     await Promise.all([theNextParcelPromise, nextParcelPromise])
-    
+
     await approveParcelWithExciseHelper(values, item, parcelsStore)
   } finally {
     runningAction.value = false
+  }
+}
+
+async function refreshParcelAfterReportUpload() {
+  if (!isComponentMounted.value) return
+
+  try {
+    loading.value = true
+    await parcelsStore.getById(currentParcelId.value)
+  } catch (error) {
+    if (!isComponentMounted.value) return
+    const message = error?.response?.data?.message || error?.message || 'Не удалось обновить данные посылки после загрузки отчёта'
+    alertStore.error(message)
+  } finally {
+    if (isComponentMounted.value) {
+      loading.value = false
+    }
   }
 }
 
@@ -365,7 +390,7 @@ async function onLookup(values) {
           <!-- Last view -->
           <div class="form-group">
             <label for="lastView" class="label">Последний просмотр:</label>
-            <div class="readonly-field">
+            <div class="readonly-field" name="lastView" id="lastView">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
             </div>
           </div>          
@@ -452,6 +477,13 @@ async function onLookup(values) {
           <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+        </div>
+      </div>
+      <!-- DTag (use same layout as product description) -->
+      <div class="form-section">
+        <div class="form-row-1 product-name-row">
+          <label for="dtag" class="label-1 product-name-label">ДТЭГ/ПТДЭГ:</label>
+          <div id="dtag" name="dtag" class="form-control input-1 readonly-field">{{ item?.dTag ? item.dTag : '-' }}</div>
         </div>
       </div>
 

@@ -44,6 +44,7 @@ import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+// Removed DEC_REPORT_UPLOADED_EVENT import
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -175,6 +176,7 @@ async function loadOrdersWrapper() {
 // Provide the loadOrders function for child components
 provide('loadOrders', loadOrdersWrapper)
 
+
 const {
   validationState,
   progressPercent,
@@ -208,7 +210,9 @@ const watcherStop = watch(
 onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
-    
+
+  // DEC_REPORT_UPLOADED_EVENT listener removed per request
+
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
@@ -253,6 +257,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  // DEC_REPORT_UPLOADED_EVENT listener removed
 })
 
 const statusOptions = computed(() => [

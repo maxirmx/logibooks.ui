@@ -11,11 +11,14 @@ const props = defineProps({
   ...actionButtonProps,
   options: {
     type: Array,
-    required: true,
+    required: false,
+    default: () => [],
     validator(options) {
-      return Array.isArray(options) && options.length > 0 && options.every(option => {
-        return option && typeof option.label === 'string' && typeof option.action === 'function'
-      })
+      // Accept missing/empty arrays. If provided, ensure it's an array and items have expected shape.
+      if (options == null) return true
+      if (!Array.isArray(options)) return false
+      if (options.length === 0) return true
+      return options.every(option => option && typeof option.label === 'string' && typeof option.action === 'function')
     }
   }
 })

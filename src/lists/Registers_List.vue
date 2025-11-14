@@ -283,6 +283,9 @@ const watcherStop = watch(
       clearTimeout(loadRegistersTimeout)
     }
     
+    // Sync local search with store immediately
+    registers_search.value = localSearch.value
+    
     // Set a debounced timeout to avoid multiple rapid calls
     loadRegistersTimeout = setTimeout(() => {
       if (isComponentMounted.value) {
@@ -293,31 +296,10 @@ const watcherStop = watch(
           hasPendingExecution.value = true
         }
       }
-    }, 300)
+    }, 200)
   },
   { immediate: true, deep: true }
 )
-
-// Watch for local search changes and sync with store
-watch(localSearch, (newValue) => {
-  // Debounce search input changes
-  if (loadRegistersTimeout) {
-    clearTimeout(loadRegistersTimeout)
-  }
-  
-  loadRegistersTimeout = setTimeout(() => {
-    if (isComponentMounted.value) {
-      if (!isLoadingRegisters.value) {
-        // Assign local search to store variable just before the call
-        registers_search.value = newValue
-        loadRegisters()
-      } else {
-        // If already loading, mark that we have a pending execution
-        hasPendingExecution.value = true
-      }
-    }
-  }, 200) // Longer debounce for search to avoid too many API calls while typing
-}, { immediate: false })
 
 async function loadRegisters() {
   if (!isComponentMounted.value || isLoadingRegisters.value) {
@@ -329,8 +311,7 @@ async function loadRegisters() {
     // Clear pending execution flag since we're about to execute
     hasPendingExecution.value = false
     
-    // Assign local search to store variable just before the call
-    registers_search.value = localSearch.value
+    // registers_search.value is already synced in the watcher
     await registersStore.getAll()
   } finally {
     if (isComponentMounted.value) {
@@ -404,7 +385,7 @@ const headers = [
   { title: 'Номер сделки', key: 'dealNumber' },
   { title: 'ТСД', key: 'invoice' },
   { title: 'Страны', key: 'countries' },
-  { title: 'Отправитель/Получатель', key: 'senderRecepient' },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient' },
   { title: 'Товаров/Посылок', key: 'parcelsTotal' },
   { title: 'Дата загрузки', key: 'date' }
 ]
@@ -512,7 +493,7 @@ defineExpose({
           </ClickableCell>
         </template>
 
-        <template #[`item.senderRecepient`]="{ item }">
+        <template #[`item.senderRecipient`]="{ item }">
           <ClickableCell 
             :item="item" 
             cell-class="truncated-cell clickable-cell edit-register-link sender-recipient-panel" 
@@ -552,7 +533,7 @@ defineExpose({
           </div>
         </template>
 
-        <template #[`header.senderRecepient`]>
+        <template #[`header.senderRecipient`]>
           <div class="multiline-header">
             <div>Отправитель</div>
             <div>Получатель</div>

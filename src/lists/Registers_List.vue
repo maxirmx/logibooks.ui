@@ -507,14 +507,18 @@ defineExpose({
         <template #[`item.countries`]="{ item }">
           <ClickableCell 
             :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
+            cell-class="truncated-cell clickable-cell edit-register-link countries-panel" 
             @click="editRegister" 
           >
             <template #default>
-              <span>{{ customsProceduresStore.getName(item.customsProcedureId) }}: </span>
-              <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
-              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-              <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
+              <div class="countries-box">
+                <div class="customs-procedure">{{ customsProceduresStore.getName(item.customsProcedureId) }}</div>
+                <div class="country-route">
+                  <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
+                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
+                  <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
+                </div>
+              </div>
             </template>
           </ClickableCell>
         </template>
@@ -732,6 +736,30 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 4px;
+}
+
+/* Countries panel styling */
+.countries-panel .countries-box {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.countries-panel .customs-procedure {
+  font-size: 0.85rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.countries-panel .country-route {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Multiline header styling */

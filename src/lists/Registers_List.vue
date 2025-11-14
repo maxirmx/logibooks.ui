@@ -412,12 +412,12 @@ function formatDate(dateStr) {
 
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber', align: 'center' },
-  { title: 'ТСД', key: 'invoice', align: 'center' },
-  { title: 'Страны', key: 'countries', align: 'center' },
-  { title: 'Отправитель/Получатель', key: 'senderRecepient', align: 'center' },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal', align: 'center' },
-  { title: 'Дата загрузки', key: 'date', align: 'center' }
+  { title: 'Номер сделки', key: 'dealNumber' },
+  { title: 'ТСД', key: 'invoice' },
+  { title: 'Страны', key: 'countries' },
+  { title: 'Отправитель/Получатель', key: 'senderRecepient' },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal' },
+  { title: 'Дата загрузки', key: 'date' }
 ]
 
 defineExpose({
@@ -486,23 +486,24 @@ defineExpose({
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
           />
-
           <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
-
         </template>
-        <template #[`item.senderRecepient`]="{ item }">
+
+        <template #[`item.invoice`]="{ item }">
           <ClickableCell 
             :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
+            cell-class="truncated-cell clickable-cell open-parcels-link invoice-panel" 
+            @click="openParcels" 
           >
             <template #default>
-              <span>{{ getCustomerName(item.senderId) }}</span>
-              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-              <span>{{ getCustomerName(item.recipientId) }}</span>
+              <div class="invoice-box">
+                <div class="invoice-number">{{ item.invoiceNumber || '' }}</div>
+                <div v-if="item.invoiceDate" class="invoice-date">от {{ formatDate(item.invoiceDate) }}</div>
+              </div>
             </template>
           </ClickableCell>
         </template>
+
         <template #[`item.countries`]="{ item }">
           <ClickableCell 
             :item="item" 
@@ -517,20 +518,27 @@ defineExpose({
             </template>
           </ClickableCell>
         </template>
+
+        <template #[`item.senderRecepient`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            cell-class="truncated-cell clickable-cell edit-register-link sender-recipient-panel" 
+            @click="editRegister" 
+          >
+            <template #default>
+              <div class="sr-box">
+                <div>{{ getCustomerName(item.senderId) }}</div>
+                <div>{{ getCustomerName(item.recipientId) }}</div>
+              </div>
+            </template>
+          </ClickableCell>
+        </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 
             :item="item" 
             :display-value="formatDate(item.date)" 
             cell-class="truncated-cell clickable-cell edit-register-link" 
             @click="editRegister" 
-          />
-        </template>
-        <template #[`item.invoice`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="formatInvoiceInfo(item)" 
-            cell-class="truncated-cell clickable-cell open-parcels-link" 
-            @click="openParcels" 
           />
         </template>
         <template #[`item.parcelsTotal`]="{ item }">
@@ -542,6 +550,34 @@ defineExpose({
               <div style="white-space: pre-line">{{ getParcelsByCheckStatusTooltip(item) }}</div>
             </template>
           </v-tooltip>
+        </template>
+
+        <template #[`header.dealNumber`]>
+          <div class="multiline-header">
+            <div>Номер</div>
+            <div>сделки</div>
+          </div>
+        </template>
+
+        <template #[`header.senderRecepient`]>
+          <div class="multiline-header">
+            <div>Отправитель</div>
+            <div>Получатель</div>
+          </div>
+        </template>
+
+        <template #[`header.parcelsTotal`]>
+          <div class="multiline-header">
+            <div>Товаров</div>
+            <div>Посылок</div>
+          </div>
+        </template>
+
+        <template #[`header.date`]>
+          <div class="multiline-header">
+            <div>Дата</div>
+            <div>загрузки</div>
+          </div>
         </template>
 
         <template #[`item.actions`]="{ item }">
@@ -667,5 +703,48 @@ defineExpose({
 
 .bookmark-icon:hover {
   color: #218838;
+}
+
+/* Invoice panel: fixed width, two lines with smaller date font */
+.invoice-panel .invoice-box {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.invoice-panel .invoice-number {
+  font-size: 0.95rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.invoice-panel .invoice-date {
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+/* Sender/Recipient panel styling (matches invoice panel) */
+.sender-recipient-panel .sr-box {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 4px;
+}
+
+/* Multiline header styling */
+.multiline-header {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  color: white;
+}
+
+.multiline-header div {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: white;
 }
 </style>

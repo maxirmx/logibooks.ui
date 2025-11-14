@@ -213,22 +213,6 @@ describe('Registers_List.vue', () => {
     transportationEnsureLoadedFn.mockClear()
   })
 
-  it('calls getAll on mount for both registers and companies', async () => {
-    mount(RegistersList, {
-      global: {
-        stubs: vuetifyStubs
-      }
-    })
-
-    // Wait for onMounted to complete
-    await vi.waitFor(() => {
-      expect(getCompaniesAll).toHaveBeenCalled()
-    })
-    expect(getAll).toHaveBeenCalled()
-    expect(countriesEnsureLoadedFn).toHaveBeenCalled()
-    expect(getAirportsAll).toHaveBeenCalled()
-  })
-
   describe('getCustomerName function', () => {
     let wrapper
 

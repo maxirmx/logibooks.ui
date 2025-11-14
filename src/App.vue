@@ -320,6 +320,15 @@ nav a:first-of-type {
     background-color: var(--primary-color);
 }
 
+/* Ensure links inside list items also change color on hover */
+:deep(.v-list-item:hover .link) {
+    color: #eeeeee !important;
+}
+
+:deep(.v-list-item:hover a) {
+    color: #eeeeee !important;
+}
+
 /* Style for nested menu items */
 :deep(.v-list-group .v-list-item) {
   padding-left: 2rem;
@@ -329,13 +338,20 @@ nav a:first-of-type {
   font-size: 1rem;
 }
 
-
-
 /* Ensure menu group activator text matches list items */
 :deep(.v-list-group__header .v-list-item-title) {
   font-size: 1.2rem !important;
   font-family: inherit !important;
   font-weight: normal !important;
   color: var(--primary-color) !important;
+}
+
+/* Make list group headers have the same hover color as list items */
+:deep(.v-list-group__header:hover .v-list-item-title) {
+  color: #eeeeee !important;
+}
+
+:deep(.v-list-group__header .v-list-item:hover .v-list-item-title) {
+  color: #eeeeee !important;
 }
 </style>

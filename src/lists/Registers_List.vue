@@ -76,6 +76,14 @@ const selectedCustomerId = ref(null)
 // State for bulk status change
 const bulkStatusState = reactive({})
 
+// Local search variable and loading state for debounced calls
+const localSearch = ref('')
+localSearch.value = registers_search.value || ''
+const isLoadingRegisters = ref(false)
+const hasPendingExecution = ref(false)
+let loadRegistersTimeout = null
+let pendingDebounceDelay = 0
+
 // Available customers for register upload
 const uploadCustomers = computed(() => {
   if (!companies.value) return []
@@ -222,8 +230,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
-  if (watcherStop) {
-    watcherStop()
+  watcherStops.forEach((stop) => stop())
+  if (loadRegistersTimeout) {
+    clearTimeout(loadRegistersTimeout)
   }
   stopPolling()
 })
@@ -262,18 +271,85 @@ function startRegisterUpload(customerId) {
   }
 }
 
-// Watch for changes in pagination, sorting, or search
-const watcherStop = watch(
-  [registers_page, registers_per_page, registers_sort_by, registers_search],
-  () => {
-    loadRegisters()
-  },
-  { immediate: true, deep: true }
+const watcherStops = []
+
+function triggerLoadRegisters({ debounceMs = 0, syncSearch = false } = {}) {
+  if (!isComponentMounted.value) return
+
+  if (syncSearch) {
+    registers_search.value = localSearch.value
+  }
+
+  if (loadRegistersTimeout) {
+    clearTimeout(loadRegistersTimeout)
+    loadRegistersTimeout = null
+  }
+
+  if (isLoadingRegisters.value) {
+    hasPendingExecution.value = true
+    pendingDebounceDelay = debounceMs
+    return
+  }
+
+  if (debounceMs > 0) {
+    pendingDebounceDelay = 0
+    loadRegistersTimeout = setTimeout(() => {
+      loadRegistersTimeout = null
+      triggerLoadRegisters({ debounceMs: 0 })
+    }, debounceMs)
+    return
+  }
+
+  pendingDebounceDelay = 0
+  loadRegisters()
+}
+
+let isSearchWatcherInitialized = false
+watcherStops.push(
+  watch(
+    localSearch,
+    (newValue, oldValue) => {
+      if (isSearchWatcherInitialized && newValue === oldValue) {
+        return
+      }
+
+      const debounceMs = isSearchWatcherInitialized ? 300 : 0
+      triggerLoadRegisters({ debounceMs, syncSearch: true })
+      isSearchWatcherInitialized = true
+    },
+    { immediate: true }
+  )
 )
 
-function loadRegisters() {
-  if (isComponentMounted.value) {
-    registersStore.getAll()
+watcherStops.push(
+  watch([registers_page, registers_per_page, registers_sort_by], () => {
+    triggerLoadRegisters()
+  })
+)
+
+async function loadRegisters() {
+  if (!isComponentMounted.value || isLoadingRegisters.value) {
+    return
+  }
+  
+  isLoadingRegisters.value = true
+  try {
+    // Clear pending execution flag since we're about to execute
+    hasPendingExecution.value = false
+    
+    await registersStore.getAll()
+  } finally {
+    if (isComponentMounted.value) {
+      isLoadingRegisters.value = false
+
+      // Check if there's a pending execution that was requested while we were loading
+      if (hasPendingExecution.value) {
+        hasPendingExecution.value = false
+        const delay = pendingDebounceDelay
+        pendingDebounceDelay = 0
+        triggerLoadRegisters({ debounceMs: delay })
+      }
+    }
   }
 }
 
@@ -316,17 +392,6 @@ async function deleteRegister(item) {
   }
 }
 
-function formatInvoiceInfo(item) {
-  const { invoiceNumber, invoiceDate, transportationTypeId } = item
-  // Access the reactive transportation types to ensure reactivity
-  const transportationDocument = transportationTypes?.value ? 
-    transportationTypesStore.getDocument(transportationTypeId) : 
-    `[Тип ${transportationTypeId}]`
-  const formattedDate = invoiceDate ? ` от ${formatDate(invoiceDate)}` : ''
-  const invN = invoiceNumber ? ` ${invoiceNumber}${formattedDate}` : ''
-  return `${transportationDocument}${invN}`
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -339,12 +404,12 @@ function formatDate(dateStr) {
 
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber', align: 'center' },
-  { title: 'ТСД', key: 'invoice', align: 'center' },
-  { title: 'Страны', key: 'countries', align: 'center' },
-  { title: 'Отправитель/Получатель', key: 'senderRecepient', align: 'center' },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal', align: 'center' },
-  { title: 'Дата загрузки', key: 'date', align: 'center' }
+  { title: 'Номер сделки', key: 'dealNumber' },
+  { title: 'ТСД', key: 'invoice' },
+  { title: 'Страны', key: 'countries' },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient' },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal' },
+  { title: 'Дата загрузки', key: 'date' }
 ]
 
 defineExpose({
@@ -379,9 +444,9 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div v-if="items?.length || loading || registers_search">
+    <div v-if="items?.length || loading || localSearch">
       <v-text-field
-        v-model="registers_search"
+        v-model="localSearch"
         :append-inner-icon="mdiMagnify"
         label="Поиск по любой информации о реестре"
         variant="solo"
@@ -413,34 +478,54 @@ defineExpose({
             cell-class="truncated-cell clickable-cell open-parcels-link" 
             @click="openParcels" 
           />
-
           <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
-
         </template>
-        <template #[`item.senderRecepient`]="{ item }">
+
+        <template #[`item.invoice`]="{ item }">
           <ClickableCell 
             :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
+            cell-class="truncated-cell clickable-cell open-parcels-link invoice-panel" 
+            @click="openParcels" 
           >
             <template #default>
-              <span>{{ getCustomerName(item.senderId) }}</span>
-              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-              <span>{{ getCustomerName(item.recipientId) }}</span>
+              <div class="invoice-box">
+                <div class="invoice-number">{{ item.invoiceNumber || '' }}</div>
+                <div v-if="item.invoiceDate" class="invoice-date">от {{ formatDate(item.invoiceDate) }}</div>
+              </div>
             </template>
           </ClickableCell>
         </template>
+
         <template #[`item.countries`]="{ item }">
           <ClickableCell 
             :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
+            cell-class="truncated-cell clickable-cell edit-register-link countries-panel" 
             @click="editRegister" 
           >
             <template #default>
-              <span>{{ customsProceduresStore.getName(item.customsProcedureId) }}: </span>
-              <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
-              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-              <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
+              <div class="countries-box">
+                <div class="customs-procedure">{{ customsProceduresStore.getName(item.customsProcedureId) }}</div>
+                <div class="country-route">
+                  <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
+                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
+                  <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
+                </div>
+              </div>
+            </template>
+          </ClickableCell>
+        </template>
+
+        <template #[`item.senderRecipient`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            cell-class="truncated-cell clickable-cell edit-register-link sender-recipient-panel" 
+            @click="editRegister" 
+          >
+            <template #default>
+              <div class="sr-box">
+                <div>{{ getCustomerName(item.senderId) }}</div>
+                <div>{{ getCustomerName(item.recipientId) }}</div>
+              </div>
             </template>
           </ClickableCell>
         </template>
@@ -452,14 +537,6 @@ defineExpose({
             @click="editRegister" 
           />
         </template>
-        <template #[`item.invoice`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="formatInvoiceInfo(item)" 
-            cell-class="truncated-cell clickable-cell open-parcels-link" 
-            @click="openParcels" 
-          />
-        </template>
         <template #[`item.parcelsTotal`]="{ item }">
           <v-tooltip>
             <template #activator="{ props }">
@@ -469,6 +546,34 @@ defineExpose({
               <div style="white-space: pre-line">{{ getParcelsByCheckStatusTooltip(item) }}</div>
             </template>
           </v-tooltip>
+        </template>
+
+        <template #[`header.dealNumber`]>
+          <div class="multiline-header">
+            <div>Номер</div>
+            <div>сделки</div>
+          </div>
+        </template>
+
+        <template #[`header.senderRecipient`]>
+          <div class="multiline-header">
+            <div>Отправитель</div>
+            <div>Получатель</div>
+          </div>
+        </template>
+
+        <template #[`header.parcelsTotal`]>
+          <div class="multiline-header">
+            <div>Товаров</div>
+            <div>Посылок</div>
+          </div>
+        </template>
+
+        <template #[`header.date`]>
+          <div class="multiline-header">
+            <div>Дата</div>
+            <div>загрузки</div>
+          </div>
         </template>
 
         <template #[`item.actions`]="{ item }">
@@ -594,5 +699,74 @@ defineExpose({
 
 .bookmark-icon:hover {
   color: #218838;
+}
+
+/* Invoice panel: fixed width, two lines with smaller date font */
+.invoice-panel .invoice-box {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.invoice-panel .invoice-number {
+  font-size: 0.95rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.invoice-panel .invoice-date {
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+/* Sender/Recipient panel styling (matches invoice panel) */
+.sender-recipient-panel .sr-box {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.sender-recipient-panel .sr-box > div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Countries panel styling */
+.countries-panel .countries-box {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.countries-panel .customs-procedure {
+  font-size: 0.9rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.countries-panel .country-route {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Multiline header styling */
+.multiline-header {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  color: white;
+}
+
+.multiline-header div {
+  font-size: 1.1rem;
+  font-weight: bold;
 }
 </style>

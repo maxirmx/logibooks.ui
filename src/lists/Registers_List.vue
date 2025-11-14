@@ -78,9 +78,11 @@ const bulkStatusState = reactive({})
 
 // Local search variable and loading state for debounced calls
 const localSearch = ref('')
+localSearch.value = registers_search.value || ''
 const isLoadingRegisters = ref(false)
 const hasPendingExecution = ref(false)
 let loadRegistersTimeout = null
+let pendingDebounceDelay = 0
 
 // Available customers for register upload
 const uploadCustomers = computed(() => {
@@ -199,9 +201,6 @@ onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
     
-    // Initialize local search with current store value
-    localSearch.value = registers_search.value || ''
-    
     await parcelStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
      
@@ -231,9 +230,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
-  if (watcherStop) {
-    watcherStop()
-  }
+  watcherStops.forEach((stop) => stop())
   if (loadRegistersTimeout) {
     clearTimeout(loadRegistersTimeout)
   }
@@ -274,31 +271,60 @@ function startRegisterUpload(customerId) {
   }
 }
 
-// Watch for changes in pagination, sorting, or search with debouncing
-const watcherStop = watch(
-  [registers_page, registers_per_page, registers_sort_by, localSearch],
-  () => {
-    // Clear any pending timeout
-    if (loadRegistersTimeout) {
-      clearTimeout(loadRegistersTimeout)
-    }
-    
-    // Sync local search with store immediately
+const watcherStops = []
+
+function triggerLoadRegisters({ debounceMs = 0, syncSearch = false } = {}) {
+  if (!isComponentMounted.value) return
+
+  if (syncSearch) {
     registers_search.value = localSearch.value
-    
-    // Set a debounced timeout to avoid multiple rapid calls
+  }
+
+  if (loadRegistersTimeout) {
+    clearTimeout(loadRegistersTimeout)
+    loadRegistersTimeout = null
+  }
+
+  if (isLoadingRegisters.value) {
+    hasPendingExecution.value = true
+    pendingDebounceDelay = debounceMs
+    return
+  }
+
+  if (debounceMs > 0) {
+    pendingDebounceDelay = 0
     loadRegistersTimeout = setTimeout(() => {
-      if (isComponentMounted.value) {
-        if (!isLoadingRegisters.value) {
-          loadRegisters()
-        } else {
-          // If already loading, mark that we have a pending execution
-          hasPendingExecution.value = true
-        }
+      loadRegistersTimeout = null
+      triggerLoadRegisters({ debounceMs: 0 })
+    }, debounceMs)
+    return
+  }
+
+  pendingDebounceDelay = 0
+  loadRegisters()
+}
+
+let isSearchWatcherInitialized = false
+watcherStops.push(
+  watch(
+    localSearch,
+    (newValue, oldValue) => {
+      if (isSearchWatcherInitialized && newValue === oldValue) {
+        return
       }
-    }, 200)
-  },
-  { immediate: true, deep: true }
+
+      const debounceMs = isSearchWatcherInitialized ? 300 : 0
+      triggerLoadRegisters({ debounceMs, syncSearch: true })
+      isSearchWatcherInitialized = true
+    },
+    { immediate: true }
+  )
+)
+
+watcherStops.push(
+  watch([registers_page, registers_per_page, registers_sort_by], () => {
+    triggerLoadRegisters()
+  })
 )
 
 async function loadRegisters() {
@@ -311,21 +337,17 @@ async function loadRegisters() {
     // Clear pending execution flag since we're about to execute
     hasPendingExecution.value = false
     
-    // registers_search.value is already synced in the watcher
     await registersStore.getAll()
   } finally {
     if (isComponentMounted.value) {
       isLoadingRegisters.value = false
-      
+
       // Check if there's a pending execution that was requested while we were loading
       if (hasPendingExecution.value) {
         hasPendingExecution.value = false
-        // Execute the pending call on next tick to avoid immediate recursion
-        setTimeout(() => {
-          if (isComponentMounted.value && !isLoadingRegisters.value) {
-            loadRegisters()
-          }
-        }, 0)
+        const delay = pendingDebounceDelay
+        pendingDebounceDelay = 0
+        triggerLoadRegisters({ debounceMs: delay })
       }
     }
   }
@@ -702,10 +724,13 @@ defineExpose({
   display: flex;
   flex-direction: column;
   font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.sender-recipient-panel .sr-box > div {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 4px;
 }
 
 /* Countries panel styling */
@@ -743,6 +768,5 @@ defineExpose({
 .multiline-header div {
   font-size: 1.1rem;
   font-weight: bold;
-  color: white;
 }
 </style>

@@ -389,17 +389,6 @@ async function deleteRegister(item) {
   }
 }
 
-function formatInvoiceInfo(item) {
-  const { invoiceNumber, invoiceDate, transportationTypeId } = item
-  // Access the reactive transportation types to ensure reactivity
-  const transportationDocument = transportationTypes?.value ? 
-    transportationTypesStore.getDocument(transportationTypeId) : 
-    `[Тип ${transportationTypeId}]`
-  const formattedDate = invoiceDate ? ` от ${formatDate(invoiceDate)}` : ''
-  const invN = invoiceNumber ? ` ${invoiceNumber}${formattedDate}` : ''
-  return `${transportationDocument}${invN}`
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -747,7 +736,7 @@ defineExpose({
 }
 
 .countries-panel .customs-procedure {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;

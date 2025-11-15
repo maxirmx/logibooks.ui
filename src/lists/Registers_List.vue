@@ -402,6 +402,15 @@ function formatDate(dateStr) {
   return `${dd}.${mm}.${yyyy}`
 }
 
+function formatInvoiceInfo(item) {
+  const { invoiceNumber, transportationTypeId } = item
+  // Access the reactive transportation types to ensure reactivity
+  const transportationDocument = transportationTypes?.value ? 
+    transportationTypesStore.getDocument(transportationTypeId) : 
+    `[Тип ${transportationTypeId}]`
+  return `${transportationDocument} ${invoiceNumber || ''}`
+}
+
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
@@ -489,7 +498,7 @@ defineExpose({
           >
             <template #default>
               <div class="invoice-box">
-                <div class="invoice-number">{{ item.invoiceNumber || '' }}</div>
+                <div class="invoice-number">{{ formatInvoiceInfo(item) }}</div>
                 <div v-if="item.invoiceDate" class="invoice-date">от {{ formatDate(item.invoiceDate) }}</div>
               </div>
             </template>

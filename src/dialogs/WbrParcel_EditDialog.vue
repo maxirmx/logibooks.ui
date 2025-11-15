@@ -138,68 +138,70 @@ const schema = Yup.object().shape({
 
 
 async function validateParcel(values, sw) {
-  if (runningAction.value) return
+  if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before calling helper
     await Promise.all([theNextParcelPromise, nextParcelPromise])
     
     await validateParcelData(values, item, parcelsStore, sw)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
   } finally {
-    runningAction.value = false
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
 // Approve the parcel
 async function approveParcel(values) {
-  if (runningAction.value) return
+  if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before calling helper
     await Promise.all([theNextParcelPromise, nextParcelPromise])
     
     await approveParcelHelper(values, item, parcelsStore)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
   } finally {
-    runningAction.value = false
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values) {
-  if (runningAction.value) return
+  if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before calling helper
     await Promise.all([theNextParcelPromise, nextParcelPromise])
 
     await approveParcelWithExciseHelper(values, item, parcelsStore)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
   } finally {
-    runningAction.value = false
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
 async function refreshParcelAfterReportUpload() {
-  if (!isComponentMounted.value) return
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
 
   try {
-    loading.value = true
     await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
-    if (!isComponentMounted.value) return
-    const message = error?.response?.data?.message || error?.message || 'Не удалось обновить данные посылки после загрузки отчёта'
-    alertStore.error(message)
+    alertStore.error(error?.message || String(error))
   } finally {
-    if (isComponentMounted.value) {
-      loading.value = false
-    }
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
 // Handle saving and moving to the next parcel
 async function onSubmit(values, useTheNext = false) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
   try {
-    loading.value = true
-    // use currentParcelId so inline swaps work
     await parcelsStore.update(currentParcelId.value, values)
 
     // Wait for the appropriate next parcel promise to resolve
@@ -221,16 +223,16 @@ async function onSubmit(values, useTheNext = false) {
       const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
       router.replace(newUrl)
 
-      // fetch full parcel data in background (keeps UI responsive)
-      parcelsStore.getById(nextParcel.id).catch(() => {/* ignore, store handles errors */})
+      // fetch full parcel data 
+      // await parcelsStore.getById(nextParcel.id)
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`
       router.push(fallbackUrl)
     }
   } catch (error) {
-    parcelsStore.error = error?.message || String(error)
+    alertStore.error(error?.message || String(error))
   } finally {
-    loading.value = false
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
@@ -241,12 +243,14 @@ function onSave(values) {
       router.push(`/registers/${props.registerId}/parcels`)
     })
     .catch((error) => {
-      parcelsStore.error = error?.message || String(error)
+      alertStore.error(error?.message || String(error))
     })
 }
 
 // Save current parcel and navigate to the previous one if available
 async function onBack(values) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before processing
     await Promise.all([theNextParcelPromise, nextParcelPromise])
@@ -262,23 +266,25 @@ async function onBack(values) {
       // re-init neighbor promises for the newly active parcel
       initNeighborPromises(currentParcelId.value)
 
-  // update URL without remount
-  const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
-  router.replace(prevUrl)
+      // fetch full parcel data in background
+      // update URL without remount
+      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
+      router.replace(prevUrl)
 
-  parcelsStore.getById(prevParcel.id).catch(() => {/* ignore, store handles errors */})
     } else {
       const fallbackUrl = `/registers/${props.registerId}/parcels`
       router.push(fallbackUrl)
     }
   } catch (error) {
-    parcelsStore.error = error?.message || String(error)
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
 // Generate XML for this parcel
 async function generateXml(values) {
-  if (runningAction.value) return
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
     // Wait for both next parcel promises to complete before calling helper
@@ -286,20 +292,22 @@ async function generateXml(values) {
     await Promise.all([theNextParcelPromise, nextParcelPromise, updatePromise])
     
     await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
   } finally {
-    await parcelsStore.getById(currentParcelId.value)
-    runningAction.value = false
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 
 // Handle fellows click - redirect to parcels list with filter
 function handleFellows() {
+  if (!isComponentMounted.value) return
   handleFellowsClick(item.value.registerId, item.value.shk)
 }
 
 // Lookup FEACN codes triggered from header actions
 async function onLookup(values) {
-  if (runningAction.value) return
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
     // Wait for neighbor promises if present
@@ -307,11 +315,13 @@ async function onLookup(values) {
 
     await parcelsStore.update(currentParcelId.value, values)
     await parcelsStore.lookupFeacnCode(currentParcelId.value)
-  } catch (err) {
-    parcelsStore.error = err?.message || String(err)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
   } finally {
-    await parcelsStore.getById(currentParcelId.value)
-    runningAction.value = false
+    if (isComponentMounted.value) {
+      await parcelsStore.getById(currentParcelId.value)
+      runningAction.value = false
+    }
   }
 }
 
@@ -319,7 +329,14 @@ async function onLookup(values) {
 
 <template>
   <div class="settings form-4 form-compact">
-    <Form @submit="onSubmit" :initial-values="item" :validation-schema="schema" v-slot="{ errors, values, isSubmitting, setFieldValue }" :class="{ 'form-disabled': overlayActive }">
+    <Form
+      :key="currentParcelId" 
+      @submit="onSubmit" 
+      :initial-values="item" 
+      :validation-schema="schema" 
+      v-slot="{ errors, values, isSubmitting, setFieldValue }" 
+      :class="{ 'form-disabled': overlayActive }"
+    >
     <div class="header-with-actions">
       <h1 class="primary-heading">
         {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.shk ? item.shk : '[без номера]' }}

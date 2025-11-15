@@ -13,6 +13,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
  * @returns {Promise<boolean>}
  */
 export async function validateParcelData(values, item, parcelsStore, sw) {
+  if (item.value.id != values.id) return Promise.resolve(false)
   try {
     await parcelsStore.update(item.value.id, values)
     await parcelsStore.validate(item.value.id, sw)
@@ -35,6 +36,7 @@ export async function validateParcelData(values, item, parcelsStore, sw) {
  * @returns {Promise<void>}
  */
 export async function approveParcel(values, item, parcelsStore, withExcise = false ) {
+  if (item.value.id != values.id) return Promise.resolve()
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)

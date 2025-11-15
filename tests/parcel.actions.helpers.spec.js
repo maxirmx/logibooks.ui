@@ -35,6 +35,7 @@ describe('parcel actions helpers', () => {
     }
     
     mockValues = {
+      id: parcelId,
       statusId: 1,
       productName: 'Test Product'
     }

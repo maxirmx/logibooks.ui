@@ -6,7 +6,7 @@
 import { ref, watch, computed, onUnmounted } from 'vue'
 import { Field, useFormValues } from 'vee-validate'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
-import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
@@ -40,7 +40,7 @@ const props = defineProps({
 const emit = defineEmits(['update:item', 'overlay-state-changed', 'set-running-action'])
 
 const keyWordsStore = useKeyWordsStore()
-const parcelsStore = useParcelsStore()
+const alertStore = useAlertStore()
 
 // Get current form values
 const formValues = useFormValues()
@@ -48,6 +48,15 @@ const formValues = useFormValues()
 const searchActive = ref(false)
 const tnVedClassValue = ref('')
 const feacnTooltips = useFeacnTooltips()
+
+// Local reactive copy of the incoming item prop so we can safely update and
+// pass it down to child components without mutating the prop directly.
+const localItem = ref(props.item ? { ...props.item } : null)
+
+// Keep localItem in sync when parent updates the prop
+watch(() => props.item, (v) => {
+  localItem.value = v ? { ...v } : v
+}, { immediate: true })
 
 // Computed properties for disabled states to ensure reactivity
 const isSearchButtonDisabled = computed(() => {
@@ -118,11 +127,12 @@ async function selectFeacnCode(feacnCode) {
     // Update the form field immediately
     props.setFieldValue('tnVed', feacnCode)
     
-    // Update the item's tnVed to trigger reactivity in computed properties
-    const updatedItem = { ...props.item, tnVed: feacnCode }
+    // Update the local item and notify parent
+    const updatedItem = { ...(localItem.value || props.item || {}), tnVed: feacnCode }
+    localItem.value = updatedItem
     emit('update:item', updatedItem)
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
+    alertStore.error(error?.message || String(error))
   }
 }
 
@@ -188,7 +198,7 @@ function handleTnVedMouseEnter() {
           />
         </div>
         <FeacnCodeSelectorW
-          :item="props.item"
+          :item="localItem"
           :onSelect="selectFeacnCode"
           :externalSearchOpen="searchActive"
           @overlay-state-changed="(val) => { if (val) { searchActive = false } }"

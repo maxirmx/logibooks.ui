@@ -252,7 +252,6 @@ function onSave(values) {
 
 // Save current parcel and navigate to the previous one if available
 async function onBack(values) {
-  console.log('------- OzonParcel_EditDialog onBack, parcel id:', currentParcelId.value)
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {

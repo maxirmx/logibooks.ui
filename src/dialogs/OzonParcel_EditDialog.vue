@@ -90,6 +90,11 @@ let theNextParcelPromise = null
 let nextParcelPromise = null
 
 function initNeighborPromises(id) {
+  if (theNextParcelPromise != null || nextParcelPromise != null) {
+    // already initialized
+    return
+  }
+
   theNextParcelResult.value = null
   nextParcelResult.value = null
 

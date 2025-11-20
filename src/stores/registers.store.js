@@ -371,6 +371,9 @@ export const useRegistersStore = defineStore('registers', () => {
       const params = buildParcelsFilterParams(authStore)
 
       const result = await fetchWrapper.get(`${baseUrl}/nextparcels/${parcelId}?${params.toString()}`)
+      if (!result) {
+        return { withoutIssues: null, withIssues: null }
+      }
       return {
         withoutIssues: result?.withoutIssues ?? result?.WithoutIssues ?? null,
         withIssues: result?.withIssues ?? result?.WithIssues ?? null

@@ -1148,14 +1148,14 @@ describe('registers store', () => {
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
 
-      const response = { withoutIssues: { id: 3 }, withIssues: { id: 4 } }
+      const response = { WithoutIssues: { id: 3 }, WithIssues: { id: 4 } }
       fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
       const result = await store.nextParcels(7)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
         `${apiUrl}/registers/nextparcels/7?sortBy=tnVed&sortOrder=desc`
       )
-      expect(result).toEqual(response)
+      expect(result).toEqual({ withoutIssues: response.WithoutIssues, withIssues: response.WithIssues })
     })
 
     it('requests next parcels with filtering parameters', async () => {

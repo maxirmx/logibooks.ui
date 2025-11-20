@@ -457,7 +457,6 @@ async function onLookup(values) {
         :columnTitles="wbrRegisterColumnTitles"
         :columnTooltips="wbrRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
-        :nextParcelsPromise="nextParcelsPromise"
         :runningAction="runningAction"
         @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"

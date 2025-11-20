@@ -58,7 +58,6 @@ describe('FeacnCodeEditor', () => {
         columnTitles: { tnVed: 'ТН ВЭД' },
         columnTooltips: { tnVed: 'Код ТН ВЭД' },
         setFieldValue: vi.fn(),
-        nextParcelsPromise: null,
         runningAction: false
       },
       global: {

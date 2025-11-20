@@ -88,13 +88,6 @@ const nextParcelsResult = ref({ withoutIssues: null, withIssues: null })
 let nextParcelsPromise = null
 let nextParcelsParcelId = null
 
-function normalizeNextParcels(result) {
-  return {
-    withoutIssues: result?.withoutIssues ?? result?.WithoutIssues ?? null,
-    withIssues: result?.withIssues ?? result?.WithIssues ?? null
-  }
-}
-
 function initNextParcelsPromise(id) {
   if (nextParcelsPromise != null && nextParcelsParcelId === id) {
     // already initialized for this parcel
@@ -107,9 +100,8 @@ function initNextParcelsPromise(id) {
   nextParcelsPromise = registersStore
     .nextParcels(id)
     .then(result => {
-      const normalized = normalizeNextParcels(result)
-      nextParcelsResult.value = normalized
-      return normalized
+      nextParcelsResult.value = result
+      return result
     })
 }
 

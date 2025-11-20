@@ -84,25 +84,32 @@ const { loading } = storeToRefs(parcelsStore)
 const runningAction = ref(false)
 
 // Pre-fetch next parcels - will be populated in onMounted
-const theNextParcelResult = ref(null)
-const nextParcelResult = ref(null)
-let theNextParcelPromise = null
-let nextParcelPromise = null
+const nextParcelsResult = ref({ withoutIssues: null, withIssues: null })
+let nextParcelsPromise = null
+let nextParcelsParcelId = null
 
-function initNeighborPromises(id) {
-  if (theNextParcelPromise != null || nextParcelPromise != null) {
-    // already initialized
+function initNextParcelsPromise(id) {
+  if (nextParcelsPromise != null && nextParcelsParcelId === id) {
+    // already initialized for this parcel
     return
   }
 
-  theNextParcelResult.value = null
-  nextParcelResult.value = null
+  nextParcelsParcelId = id
+  nextParcelsResult.value = { withoutIssues: null, withIssues: null }
 
-  theNextParcelPromise = registersStore.theNextParcel(id)
-  nextParcelPromise = registersStore.nextParcel(id)
+  nextParcelsPromise = registersStore
+    .nextParcels(id)
+    .then(result => {
+      nextParcelsResult.value = result
+      return result
+    })
+}
 
-  theNextParcelPromise.then(result => theNextParcelResult.value = result)
-  nextParcelPromise.then(result => nextParcelResult.value = result)
+function ensureNextParcelsPromise() {
+  if (!nextParcelsPromise) {
+    initNextParcelsPromise(currentParcelId.value)
+  }
+  return nextParcelsPromise
 }
 
 // Reactive reference to track current statusId for color updates
@@ -123,7 +130,7 @@ const isDescriptionVisible = ref(false)
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
   window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
-  initNeighborPromises(currentParcelId.value)
+  initNextParcelsPromise(currentParcelId.value)
 })
 
 onUnmounted(() => {
@@ -146,8 +153,8 @@ async function validateParcel(values, sw) {
   if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
-    // Wait for both next parcel promises to complete before calling helper
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
     
     await validateParcelData(values, item, parcelsStore, sw)
   } catch (error) {
@@ -162,8 +169,8 @@ async function approveParcel(values) {
   if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
-    // Wait for both next parcel promises to complete before calling helper
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
     
     await approveParcelHelper(values, item, parcelsStore)
   } catch (error) {
@@ -178,8 +185,8 @@ async function approveParcelWithExcise(values) {
   if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
-    // Wait for both next parcel promises to complete before calling helper
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
 
     await approveParcelWithExciseHelper(values, item, parcelsStore)
   } catch (error) {
@@ -210,19 +217,20 @@ async function onSubmit(values, useTheNext = false) {
     await parcelsStore.update(currentParcelId.value, values)
 
     // Wait for the appropriate next parcel promise to resolve
+    const nextParcels = await ensureNextParcelsPromise()
     const nextParcel = useTheNext
-      ? await theNextParcelPromise
-      : await nextParcelPromise
+      ? nextParcels?.withoutIssues
+      : nextParcels?.withIssues
 
     if (nextParcel) {
-      // Inline swap: set item to preview, update current id and authStore,
-      // re-init neighbor promises and load full details in background.
+      // Inline swap: set item, update current id and authStore,
+      // re-init neighbor promises.
       item.value = nextParcel
       currentParcelId.value = nextParcel.id
       authStore.selectedParcelId = nextParcel.id
 
       // re-init neighbor promises for the newly active parcel
-      initNeighborPromises(currentParcelId.value)
+      initNextParcelsPromise(currentParcelId.value)
 
       // update URL without remount
       const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
@@ -257,8 +265,8 @@ async function onBack(values) {
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
-    // Wait for both next parcel promises to complete before processing
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    // Wait for next parcels info to complete before processing
+    await ensureNextParcelsPromise()
     await parcelsStore.update(currentParcelId.value, values)
     const prevParcel = await parcelViewsStore.back()
 
@@ -268,8 +276,8 @@ async function onBack(values) {
       currentParcelId.value = prevParcel.id
       authStore.selectedParcelId = prevParcel.id
 
-      // re-init neighbor promises for the newly active parcel
-      initNeighborPromises(currentParcelId.value)
+      // re-init next parcels promise for the newly active parcel
+      initNextParcelsPromise(currentParcelId.value)
 
       // fetch full parcel data in background
       // update URL without remount
@@ -292,9 +300,9 @@ async function generateXml(values) {
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
-    // Wait for both next parcel promises to complete before calling helper
+    // Wait for next parcels info to complete before calling helper
     const updatePromise = parcelsStore.update(currentParcelId.value, values)
-    await Promise.all([theNextParcelPromise, nextParcelPromise, updatePromise])
+    await Promise.all([ensureNextParcelsPromise(), updatePromise])
     
     await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
   } catch (error) {
@@ -316,7 +324,7 @@ async function onLookup(values) {
   runningAction.value = true
   try {
     // Wait for neighbor promises if present
-    await Promise.all([theNextParcelPromise, nextParcelPromise])
+    await ensureNextParcelsPromise()
 
     await parcelsStore.update(currentParcelId.value, values)
     await parcelsStore.lookupFeacnCode(currentParcelId.value)
@@ -330,12 +338,14 @@ async function onLookup(values) {
   }
 }
 
+//       :key="currentParcelId" 
+
+
 </script>
 
 <template>
   <div class="settings form-4 form-compact">
     <Form
-      :key="currentParcelId" 
       @submit="onSubmit" 
       :initial-values="item" 
       :validation-schema="schema" 
@@ -439,7 +449,6 @@ async function onLookup(values) {
         :columnTitles="wbrRegisterColumnTitles"
         :columnTooltips="wbrRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
-        :nextParcelPromises="{ theNext: theNextParcelPromise, next: nextParcelPromise }"
         :runningAction="runningAction"
         @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"

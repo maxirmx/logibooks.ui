@@ -1129,36 +1129,36 @@ describe('registers store', () => {
     })
   })
 
-  describe('nextParcel method', () => {
-    it('requests next parcel with correct id and default parameters', async () => {
-      const parcel = { id: 2 }
-      fetchWrapper.get.mockResolvedValue(parcel)
+  describe('nextParcels method', () => {
+    it('requests next parcels with correct id and default parameters', async () => {
+      const response = { WithoutIssues: { id: 2 }, WithIssues: { id: 3 } }
+      fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
-      const result = await store.nextParcel(5)
+      const result = await store.nextParcels(5)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/5?sortBy=id&sortOrder=asc`
+        `${apiUrl}/registers/nextparcels/5?sortBy=id&sortOrder=asc`
       )
-      expect(result).toEqual(parcel)
+      expect(result).toEqual({ withoutIssues: response.WithoutIssues, withIssues: response.WithIssues })
     })
 
-    it('requests next parcel with custom sorting parameters', async () => {
+    it('requests next parcels with custom sorting parameters', async () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_sort_by: [{ key: 'tnVed', order: 'desc' }]
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
-      
-      const parcel = { id: 3 }
-      fetchWrapper.get.mockResolvedValue(parcel)
+
+      const response = { WithoutIssues: { id: 3 }, WithIssues: { id: 4 } }
+      fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
-      const result = await store.nextParcel(7)
+      const result = await store.nextParcels(7)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/7?sortBy=tnVed&sortOrder=desc`
+        `${apiUrl}/registers/nextparcels/7?sortBy=tnVed&sortOrder=desc`
       )
-      expect(result).toEqual(parcel)
+      expect(result).toEqual({ withoutIssues: response.WithoutIssues, withIssues: response.WithIssues })
     })
 
-    it('requests next parcel with filtering parameters', async () => {
+    it('requests next parcels with filtering parameters', async () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_status: 1,
@@ -1167,18 +1167,18 @@ describe('registers store', () => {
         parcels_tnved: '12345678'
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
-      
-      const parcel = { id: 4 }
-      fetchWrapper.get.mockResolvedValue(parcel)
+
+      const response = { WithoutIssues: { id: 4 }, WithIssues: { id: 5 } }
+      fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
-      const result = await store.nextParcel(8)
+      const result = await store.nextParcels(8)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusSw=100&checkStatusFc=200&tnVed=12345678`
+        `${apiUrl}/registers/nextparcels/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusSw=100&checkStatusFc=200&tnVed=12345678`
       )
-      expect(result).toEqual(parcel)
+      expect(result).toEqual({ withoutIssues: response.WithoutIssues, withIssues: response.WithIssues })
     })
 
-    it('requests next parcel with partial filtering parameters', async () => {
+    it('requests next parcels with partial filtering parameters', async () => {
       const customAuthStore = {
         ...defaultAuthStore,
         parcels_status: 2,
@@ -1187,281 +1187,58 @@ describe('registers store', () => {
         parcels_tnved: ''
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
-      
-      const parcel = { id: 5 }
-      fetchWrapper.get.mockResolvedValue(parcel)
+
+      const response = { WithoutIssues: null, WithIssues: { id: 6 } }
+      fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
-      const result = await store.nextParcel(9)
+      const result = await store.nextParcels(9)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/9?sortBy=id&sortOrder=asc&statusId=2`
+        `${apiUrl}/registers/nextparcels/9?sortBy=id&sortOrder=asc&statusId=2`
       )
-      expect(result).toEqual(parcel)
+      expect(result).toEqual({ withoutIssues: null, withIssues: response.WithIssues })
     })
 
-    it('returns null when nextParcel fails', async () => {
+    it('returns null parcels when API call fails', async () => {
       const error = new Error('fail')
       fetchWrapper.get.mockRejectedValue(error)
       const store = useRegistersStore()
-      const result = await store.nextParcel(5)
+      const result = await store.nextParcels(5)
       expect(result).toBeNull()
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcel/5?sortBy=id&sortOrder=asc`
+        `${apiUrl}/registers/nextparcels/5?sortBy=id&sortOrder=asc`
       )
     })
-    
-    it('returns a parcel with complete information', async () => {
-      const parcel = { 
-        id: 2, 
-        registerId: 1, 
-        tnVed: '12345678', 
-        statusId: 1
-      }
-      fetchWrapper.get.mockResolvedValue(parcel)
+
+    it('normalizes response casing when provided in PascalCase', async () => {
+      const response = { WithoutIssues: { id: 10 }, WithIssues: { id: 11 } }
+      fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
-      const result = await store.nextParcel(1)
-      expect(result).toEqual(parcel)
+      const result = await store.nextParcels(1)
+
+      expect(result).toEqual({ withoutIssues: { id: 10 }, withIssues: { id: 11 } })
     })
-    
-    it('handles the case when there is no next parcel', async () => {
-      // API returns null when there's no next parcel
+
+    it('handles the case when there are no next parcels available', async () => {
       fetchWrapper.get.mockResolvedValue(null)
       const store = useRegistersStore()
-      const result = await store.nextParcel(99)
-      expect(result).toBeNull()
+      const result = await store.nextParcels(99)
+
+      expect(result).toEqual({ withoutIssues: null, withIssues: null })
+      expect(store.error).toBeNull()
     })
-    
-    it('properly sets loading state during execution', async () => {
-      const parcel = { id: 2 }
-      fetchWrapper.get.mockResolvedValue(parcel)
+
+    it('ensures loading state is reset after request', async () => {
+      const response = { withoutIssues: { id: 7 }, withIssues: { id: 8 } }
+      fetchWrapper.get.mockResolvedValue(response)
       const store = useRegistersStore()
-      
-      // Before call
+
       expect(store.loading).toBe(false)
-      
-      // Start the call but don't await it yet
-      const promise = store.nextParcel(5)
-      
-      // During the call
+      const promise = store.nextParcels(5)
       expect(store.loading).toBe(true)
-      
-      // After the call completes
+
       await promise
       expect(store.loading).toBe(false)
     })
   })
-
-  describe('theNextParcel method', () => {
-    it('requests the next parcel with correct id and default parameters', async () => {
-      const parcel = { id: 3, registerId: 1, tnVed: '87654321' }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(5)
-      
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/5?sortBy=id&sortOrder=asc`
-      )
-      expect(result).toEqual(parcel)
-    })
-
-    it('requests the next parcel with custom sorting parameters', async () => {
-      const customAuthStore = {
-        ...defaultAuthStore,
-        parcels_sort_by: [{ key: 'tnVed', order: 'desc' }]
-      }
-      useAuthStore.mockReturnValueOnce(customAuthStore)
-      
-      const parcel = { id: 6 }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(10)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/10?sortBy=tnVed&sortOrder=desc`
-      )
-      expect(result).toEqual(parcel)
-    })
-
-    it('requests the next parcel with filtering parameters', async () => {
-      const customAuthStore = {
-        ...defaultAuthStore,
-        parcels_status: 3,
-        parcels_check_status_sw: 200,
-        parcels_check_status_fc: 300,
-        parcels_tnved: '87654321'
-      }
-      useAuthStore.mockReturnValueOnce(customAuthStore)
-      
-      const parcel = { id: 7 }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(11)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/11?sortBy=id&sortOrder=asc&statusId=3&checkStatusSw=200&checkStatusFc=300&tnVed=87654321`
-      )
-      expect(result).toEqual(parcel)
-    })
-
-    it('requests the next parcel with partial filtering parameters', async () => {
-      const customAuthStore = {
-        ...defaultAuthStore,
-        parcels_status: null,
-        parcels_check_status_sw: null,
-        parcels_check_status_fc: 150,
-        parcels_tnved: ''
-      }
-      useAuthStore.mockReturnValueOnce(customAuthStore)
-      
-      const parcel = { id: 8 }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(12)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/12?sortBy=id&sortOrder=asc&checkStatusFc=150`
-      )
-      expect(result).toEqual(parcel)
-    })
-
-    it('returns null when theNextParcel API call fails', async () => {
-      const error = new Error('Network error')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(5)
-      
-      expect(result).toBeNull()
-      expect(store.error).toEqual(error)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/5?sortBy=id&sortOrder=asc`
-      )
-    })
-    
-    it('returns a parcel with complete information structure', async () => {
-      const expectedParcel = { 
-        id: 10, 
-        registerId: 2, 
-        tnVed: '12345678', 
-        statusId: 1,
-        shk: 'SHK123456',
-        postingNumber: 'POST789',
-        keyWordIds: [1, 2, 3]
-      }
-      fetchWrapper.get.mockResolvedValue(expectedParcel)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(1)
-      
-      expect(result).toEqual(expectedParcel)
-      expect(result.id).toBe(10)
-      expect(result.registerId).toBe(2)
-    })
-    
-    it('handles the case when there is no next parcel available', async () => {
-      // API returns null when there's no next parcel
-      fetchWrapper.get.mockResolvedValue(null)
-      const store = useRegistersStore()
-      const result = await store.theNextParcel(99)
-      
-      expect(result).toBeNull()
-      expect(store.error).toBeNull()
-    })
-    
-    it('properly manages loading state during execution', async () => {
-      const parcel = { id: 7, registerId: 3 }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      const store = useRegistersStore()
-      
-      // Before call
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-      
-      // Start the call but don't await it yet
-      const promise = store.theNextParcel(5)
-      
-      // During the call
-      expect(store.loading).toBe(true)
-      
-      // After the call completes
-      await promise
-      expect(store.loading).toBe(false)
-    })
-
-    it('clears previous error state before making request', async () => {
-      const store = useRegistersStore()
-      store.error = 'Previous error'
-      
-      const parcel = { id: 15 }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      
-      await store.theNextParcel(10)
-      
-      expect(store.error).toBeNull()
-    })
-
-    it('handles different parcel ID types correctly', async () => {
-      const parcel = { id: 42 }
-      fetchWrapper.get.mockResolvedValue(parcel)
-      const store = useRegistersStore()
-      
-      // Test with number
-      await store.theNextParcel(123)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/123?sortBy=id&sortOrder=asc`
-      )
-      
-      // Test with string number
-      await store.theNextParcel('456')
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/the-nextparcel/456?sortBy=id&sortOrder=asc`
-      )
-    })
-
-    it('maintains error state when API call fails', async () => {
-      const networkError = new Error('Connection timeout')
-      fetchWrapper.get.mockRejectedValue(networkError)
-      const store = useRegistersStore()
-      
-      const result = await store.theNextParcel(5)
-      
-      expect(result).toBeNull()
-      expect(store.error).toBe(networkError)
-      expect(store.loading).toBe(false)
-    })
-
-    it('handles server errors gracefully', async () => {
-      const serverError = new Error('Internal Server Error')
-      serverError.status = 500
-      fetchWrapper.get.mockRejectedValue(serverError)
-      const store = useRegistersStore()
-      
-      const result = await store.theNextParcel(5)
-      
-      expect(result).toBeNull()
-      expect(store.error).toBe(serverError)
-      expect(store.loading).toBe(false)
-    })
-
-    it('handles not found errors appropriately', async () => {
-      const notFoundError = new Error('Parcel not found')
-      notFoundError.status = 404
-      fetchWrapper.get.mockRejectedValue(notFoundError)
-      const store = useRegistersStore()
-      
-      const result = await store.theNextParcel(999)
-      
-      expect(result).toBeNull()
-      expect(store.error).toBe(notFoundError)
-    })
-
-    it('ensures loading state is always reset even if error occurs', async () => {
-      const error = new Error('Unexpected error')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useRegistersStore()
-      
-      expect(store.loading).toBe(false)
-      
-      const promise = store.theNextParcel(5)
-      expect(store.loading).toBe(true)
-      
-      await promise
-      expect(store.loading).toBe(false)
-    })
   })
-})

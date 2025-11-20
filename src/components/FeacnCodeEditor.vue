@@ -28,11 +28,6 @@ const props = defineProps({
   columnTooltips: { type: Object, required: true },
   // Function to set field value in parent form
   setFieldValue: { type: Function, required: true },
-  // Next parcel promises from parent
-  nextParcelPromises: { 
-    type: Object, 
-    default: () => ({ theNext: null, next: null }) 
-  },
   // Running action flag from parent
   runningAction: { type: [Boolean, Object], default: false }
 })

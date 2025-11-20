@@ -284,8 +284,8 @@ async function onBack(values) {
       currentParcelId.value = prevParcel.id
       authStore.selectedParcelId = prevParcel.id
 
-      // re-init neighbor promises for the newly active parcel
-      initNeighborPromises(currentParcelId.value)
+      // re-init next parcels promise for the newly active parcel
+      initNextParcelsPromise(currentParcelId.value)
 
       // fetch full parcel data in background
       // update URL without remount

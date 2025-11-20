@@ -328,12 +328,13 @@ async function onLookup(values) {
     }
   }
 }
+//      :key="currentParcelId" 
+
 </script>
 
 <template>
   <div class="settings form-4 form-compact">
     <Form
-      :key="currentParcelId" 
       @submit="onSubmit" 
       :initial-values="item" 
       :validation-schema="schema" 

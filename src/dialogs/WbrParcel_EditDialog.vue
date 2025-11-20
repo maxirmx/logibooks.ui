@@ -215,8 +215,8 @@ async function onSubmit(values, useTheNext = false) {
       : await nextParcelPromise
 
     if (nextParcel) {
-      // Inline swap: set item to preview, update current id and authStore,
-      // re-init neighbor promises and load full details in background.
+      // Inline swap: set item, update current id and authStore,
+      // re-init neighbor promises.
       item.value = nextParcel
       currentParcelId.value = nextParcel.id
       authStore.selectedParcelId = nextParcel.id
@@ -330,12 +330,14 @@ async function onLookup(values) {
   }
 }
 
+//       :key="currentParcelId" 
+
+
 </script>
 
 <template>
   <div class="settings form-4 form-compact">
     <Form
-      :key="currentParcelId" 
       @submit="onSubmit" 
       :initial-values="item" 
       :validation-schema="schema" 

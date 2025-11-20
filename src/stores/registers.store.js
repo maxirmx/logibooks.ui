@@ -362,7 +362,7 @@ export const useRegistersStore = defineStore('registers', () => {
     return null
   }
 
-  async function nextParcel(parcelId) {
+  async function nextParcels(parcelId) {
     const authStore = useAuthStore()
     
     loading.value = true
@@ -370,25 +370,11 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       const params = buildParcelsFilterParams(authStore)
 
-      return await fetchWrapper.get(`${baseUrl}/nextparcel/${parcelId}?${params.toString()}`)
-    } catch (err) {
-      error.value = err
-    }
-    finally {
-      loading.value = false
-    }
-    return null
-  }
-
-  async function theNextParcel(parcelId) {
-    const authStore = useAuthStore()
-    
-    loading.value = true
-    error.value = null
-    try {
-      const params = buildParcelsFilterParams(authStore)
-
-      return await fetchWrapper.get(`${baseUrl}/the-nextparcel/${parcelId}?${params.toString()}`)
+      const result = await fetchWrapper.get(`${baseUrl}/nextparcels/${parcelId}?${params.toString()}`)
+      return {
+        withoutIssues: result?.withoutIssues ?? result?.WithoutIssues ?? null,
+        withIssues: result?.withIssues ?? result?.WithIssues ?? null
+      }
     } catch (err) {
       error.value = err
     }
@@ -437,8 +423,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateWithoutExcise,
     downloadInvoiceFile,
     download,
-    nextParcel,
-    theNextParcel,
+    nextParcels,
     remove,
     uploadFile
   }

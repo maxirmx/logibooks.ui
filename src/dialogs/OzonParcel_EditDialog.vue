@@ -437,7 +437,6 @@ async function onLookup(values) {
         :columnTitles="ozonRegisterColumnTitles"
         :columnTooltips="ozonRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
-        :nextParcelPromises="{ theNext: theNextParcelPromise, next: nextParcelPromise }"
         :runningAction="runningAction"
         @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"

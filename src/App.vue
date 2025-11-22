@@ -204,6 +204,9 @@ async function onReportFileSelected(event) {
         <v-list-item>
           <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
         </v-list-item>
+        <v-list-item v-if="authStore.isAdminOrSrLogist">
+          <RouterLink to="/parceleventprocessing" class="link">Обработка событий посылок</RouterLink>
+        </v-list-item>
           <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
           </v-list-item>

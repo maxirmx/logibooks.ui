@@ -102,7 +102,7 @@ describe('App reports upload menu', () => {
       firstName: 'John',
       lastName: 'Doe',
       patronymic: 'Smith',
-      roles: ['logist']
+      roles: ['sr-logist']
     }
 
     decStore.upload = vi.fn().mockResolvedValue({ success: true })

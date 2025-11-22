@@ -153,7 +153,7 @@ async function onReportFileSelected(event) {
         </v-list-item>
 
         <!-- Отчёты -->
-        <v-list-group  v-if="authStore.isLogist || authStore.isSrLogist">
+        <v-list-group  v-if="authStore.isAdminOrSrLogist">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Отчёты"></v-list-item>
           </template>
@@ -191,21 +191,31 @@ async function onReportFileSelected(event) {
           </v-list-item>
           <v-list-item>
           <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/companies" class="link">Компании</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
-        </v-list-item>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/companies" class="link">Компании</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
+          </v-list-item>
           <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
+          </v-list-item>
+        </v-list-group>
+
+        <!-- Meta -->
+        <v-list-group  v-if="authStore.isAdmin">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Настройки"></v-list-item>
+          </template>
+          <v-list-item v-if="authStore.isAdmin">
+            <RouterLink to="/parceleventprocessing" class="link">События ЖЦ</RouterLink>
           </v-list-item>
         </v-list-group>
 

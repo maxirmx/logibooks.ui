@@ -46,7 +46,7 @@ export const useParcelProcessingEventsStore = defineStore('parcelProcessingEvent
   }
 
   async function updateMany(items) {
-    const payload = items.map((item) => ({ ...item }))
+    const payload = items
     const response = await fetchWrapper.put(baseUrl, payload)
     await getAll()
     return response

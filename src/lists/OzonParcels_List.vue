@@ -334,7 +334,8 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' },
     // Status Information - Current state of the order
-    { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' }
+    { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: 'ДТЭГ/ПТДЭГ', sortable: false, key: 'dTag', align: 'start', width: '120px' }
   ]
 })
 
@@ -514,12 +515,20 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <!-- Special template for statusId to display status title with color -->
+        <!-- Special template for statusId -->
         <template #[`item.statusId`]="{ item }">
           <ClickableCell 
             :item="item" 
             :display-value="parcelStatusStore.getStatusTitle(item.statusId)" 
-            cell-class="truncated-cell status-cell clickable-cell" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.dTag`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            cell-class="truncated-cell clickable-cell" 
             @click="editParcel" 
           />
         </template>

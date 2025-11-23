@@ -315,7 +315,7 @@ const headers = computed(() => {
 
     // Status Information - Current state of the order
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
-    { title: 'ДТЭГ/ПТДЭГ', sortable: false, key: 'dTag', align: 'start', width: '120px' }
+    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' }
   ]
 })
 

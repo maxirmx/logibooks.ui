@@ -77,12 +77,15 @@ describe('decs.store', () => {
     expect(store.error).toBeNull()
   })
 
-  it('stores error and rethrows when getReports fails', async () => {
+  it('stores error when getReports fails', async () => {
     const store = useDecsStore()
     const error = new Error('fetch failed')
     fetchWrapper.get.mockRejectedValue(error)
 
-    await expect(store.getReports()).rejects.toThrow('fetch failed')
+    const promise = store.getReports()
+    expect(store.loading).toBe(true)
+    await expect(promise).resolves.toBeUndefined()
+
     expect(store.error).toBe(error)
     expect(store.reports).toEqual([])
     expect(store.loading).toBe(false)

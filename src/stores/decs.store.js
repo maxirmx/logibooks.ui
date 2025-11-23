@@ -10,6 +10,7 @@ import { apiUrl } from '@/helpers/config.js'
 const baseUrl = `${apiUrl}/decs`
 
 export const useDecsStore = defineStore('decs', () => {
+  const reports = ref([])
   const loading = ref(false)
   const error = ref(null)
 
@@ -29,9 +30,24 @@ export const useDecsStore = defineStore('decs', () => {
     }
   }
 
+  async function getReports() {
+    loading.value = true
+    error.value = null
+    try {
+      reports.value = await fetchWrapper.get(`${baseUrl}/reports`)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
+    reports,
     loading,
     error,
-    upload
+    upload,
+    getReports
   }
 })

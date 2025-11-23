@@ -37,7 +37,6 @@ export const useDecsStore = defineStore('decs', () => {
       reports.value = await fetchWrapper.get(`${baseUrl}/reports`)
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }

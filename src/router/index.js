@@ -122,7 +122,7 @@ const router = createRouter({
       path: '/parceleventprocessing',
       name: 'Обработка событий посылок',
       component: () => import('@/views/ParcelEventProcessing_View.vue'),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { reqAdmin: true }
     },
     {
       path: '/parcelstatus/create',

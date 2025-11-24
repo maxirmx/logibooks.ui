@@ -119,6 +119,7 @@ const tableItems = computed(() =>
               tooltip-text="Загрузить отчёт"
               iconSize="2x"
               icon="fa-solid fa-file-import"
+              :item="null"
               :disabled="loading"
               data-testid="reports-upload-header-button"
               @click="openReportUploadDialog"

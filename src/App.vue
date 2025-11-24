@@ -196,7 +196,6 @@ function getUserName() {
     <v-main class="d-flex align-center justify-center vvv">
       <RouterView />
     </v-main>
-    <ActionDialog :action-dialog="actionDialogState" />
   </v-app>
 </template>
 

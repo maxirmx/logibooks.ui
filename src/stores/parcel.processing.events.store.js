@@ -28,6 +28,8 @@ export const useParcelProcessingEventsStore = defineStore('parcelProcessingEvent
     if (refresh) {
       event.value = { loading: true }
     }
+    
+    loading.value = true
 
     try {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)

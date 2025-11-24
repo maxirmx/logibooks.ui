@@ -511,11 +511,23 @@ async function onLookup(values) {
           <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
-      <!-- DTag (use same layout as product description) -->
+      
+      <!-- DTag -->
       <div class="form-section">
-        <div class="form-row-1 product-name-row">
-          <label for="dtag" class="label-1 product-name-label">ДТЭГ/ПТДЭГ:</label>
-          <div id="dtag" name="dtag" class="form-control input-1 readonly-field">{{ item?.dTag ? item.dTag : '-' }}</div>
+        <div class="form-row">
+          <div class="form-group">
+
+            <label for="dtag" class="label">ДТЭГ/ПТДЭГ:</label>
+            <div class="form-control input readonly-field" id="dtag" name="dtag">
+              {{ item?.dTag ? item.dTag : '-' }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dtagComment" class="label">Комментарий:</label>
+            <div class="form-control input readonly-field" id="dtagComment" name="dtagComment">
+              {{ item?.dTagComment ? item.dTagComment : '' }}
+            </div>
+          </div>
         </div>
       </div>
 

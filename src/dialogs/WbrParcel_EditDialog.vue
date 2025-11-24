@@ -538,16 +538,16 @@ async function onLookup(values) {
         <div class="form-row">
           <div class="form-group">
 
-          <label for="dtag" class="label">ДТЭГ/ПТДЭГ:</label>
-          <div class="form-control input readonly-field" id="dtag" name="dtag">
-            {{ item?.dTag ? item.dTag : '-' }}
-          </div>
+            <label for="dtag" class="label">ДТЭГ/ПТДЭГ:</label>
+            <div class="form-control input readonly-field" id="dtag" name="dtag">
+              {{ item?.dTag ? item.dTag : '-' }}
+            </div>
           </div>
           <div class="form-group">
-          <label for="dtagComment" class="label">Комментарий:</label>
-          <div class="form-control input readonly-field" id="dtagComment" name="dtagComment">
-            {{ item?.dTagComment ? item.dTagComment : '' }}
-          </div>
+            <label for="dtagComment" class="label">Комментарий:</label>
+            <div class="form-control input readonly-field" id="dtagComment" name="dtagComment">
+              {{ item?.dTagComment ? item.dTagComment : '' }}
+            </div>
           </div>
         </div>
       </div>

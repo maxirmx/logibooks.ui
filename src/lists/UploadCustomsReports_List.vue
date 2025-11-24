@@ -78,40 +78,57 @@ const tableItems = computed(() =>
     <hr class="hr" />
 
     <v-card>
-    <v-data-table
-      v-if="tableItems?.length"
-      :headers="headers"
-      :items="tableItems"
-      :loading="loading"
-      density="compact"
-      class="elevation-1 interlaced-table"
-      item-value="id"
-    >
-      <template #item.fileName="{ value }">
-        <TruncateTooltipCell :text="value" />
-      </template>
-      <template #item.errorCount="{ item, value }">
-        <v-tooltip v-if="value" location="top" open-delay="150">
-          <template #activator="{ props }">
-            <span v-bind="props" class="error-count error-positive">{{ value }}</span>
-          </template>
-          <div class="tooltip-errors">
-            <div v-for="e in item.errorsBreakdown" :key="e.key" class="tooltip-line">
-              <span class="tooltip-label">{{ e.label }}:</span> <span class="tooltip-number">{{ e.count }}</span>
-            </div>
-          </div>
-        </v-tooltip>
-        <span v-else class="error-count">0</span>
-      </template>
-      <template #item.masterInvoice="{ value }">
-        <TruncateTooltipCell :text="value" />
-      </template>
-      <template #item.errMsg="{ value }">
-        <TruncateTooltipCell :text="value" />
-      </template>
-    </v-data-table>      
-  
-    <div v-else-if="!loading" class="text-center m-5">
+      <v-data-table
+        v-if="tableItems?.length"
+        :headers="headers"
+        :items="tableItems"
+        :loading="loading"
+        density="compact"
+        class="elevation-1 interlaced-table"
+        item-value="id"
+      >
+        <!-- Row-level slot to avoid dotted slot names -->
+        <template #item="{ item, columns }">
+          <tr>
+            <td
+              v-for="col in columns"
+              :key="col.key"
+              :class="[
+                col.class,
+                col.align === 'center' ? 'text-center' : col.align === 'end' ? 'text-right' : 'text-start'
+              ]"
+            >
+              <!-- File / text columns with conditional truncation tooltip -->
+              <TruncateTooltipCell
+                v-if="['fileName','masterInvoice','errMsg'].includes(col.key)"
+                :text="item[col.key]"
+              />
+
+              <!-- Error count with breakdown tooltip -->
+              <template v-else-if="col.key === 'errorCount'">
+                <v-tooltip v-if="item.errorCount" location="top" open-delay="150">
+                  <template #activator="{ props }">
+                    <span v-bind="props">{{ item.errorCount }}</span>
+                  </template>
+                  <div>
+                    <div v-for="e in item.errorsBreakdown" :key="e.key">
+                      {{ e.label }}: {{ e.count }}
+                    </div>
+                  </div>
+                </v-tooltip>
+                <span v-else>0</span>
+              </template>
+
+              <!-- Fallback for all other columns -->
+              <template v-else>
+                {{ item[col.key] }}
+              </template>
+            </td>
+          </tr>
+        </template>
+      </v-data-table>
+
+      <div v-else-if="!loading" class="text-center m-5">
         Список отчетов пуст
       </div>
     </v-card>
@@ -130,15 +147,10 @@ const tableItems = computed(() =>
 </template>
 
 <style scoped>
+/* Minimal width for truncation columns */
 .col-text {
-  min-width: 140px;        /* minimal width */
+  min-width: 140px;
 }
 
-.file-text {
-  min-width: 180px;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* Removed custom styling for error cells and tooltip */
 </style>

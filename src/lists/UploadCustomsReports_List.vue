@@ -3,11 +3,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import ActionDialog from '@/components/ActionDialog.vue'
+import { useActionDialog } from '@/composables/useActionDialog.js'
+import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 
 const decsStore = useDecsStore()
 const alertStore = useAlertStore()
@@ -15,9 +18,40 @@ const alertStore = useAlertStore()
 const { reports, loading, error } = storeToRefs(decsStore)
 const { alert } = storeToRefs(alertStore)
 
+const fileInput = ref(null)
+const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
+
 onMounted(async () => {
   await decsStore.getReports()
 })
+
+function openReportUploadDialog() {
+  fileInput.value?.click()
+}
+
+async function onReportFileSelected(event) {
+  const input = event?.target
+  const file = input?.files?.[0]
+
+  if (!file) {
+    return
+  }
+
+  try {
+    showActionDialog('upload-report')
+    await decsStore.upload(file)
+    dispatchDecReportUploadedEvent({ fileName: file.name })
+    await decsStore.getReports()
+  } catch (error) {
+    const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
+    alertStore.error(message)
+  } finally {
+    hideActionDialog()
+    if (input) {
+      input.value = ''
+    }
+  }
+}
 
 const headers = [
   { title: '№', key: 'id', align: 'center', width: '70px' },
@@ -74,7 +108,28 @@ const tableItems = computed(() =>
 
 <template>
   <div class="settings table-3">
-    <h1 class="primary-heading">Отчеты по загрузке ДТ</h1>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Отчеты по загрузке ДТ</h1>
+      <div class="header-actions">
+        <v-btn
+          color="primary"
+          variant="tonal"
+          prepend-icon="fa-solid fa-file-import"
+          data-testid="reports-upload-header-button"
+          @click="openReportUploadDialog"
+        >
+          Загрузить
+        </v-btn>
+        <input
+          type="file"
+          ref="fileInput"
+          accept=".xls,.xlsx,.zip,.rar"
+          data-testid="reports-upload-input"
+          style="display: none"
+          @change="onReportFileSelected"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <v-card>
@@ -143,6 +198,7 @@ const tableItems = computed(() =>
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
     </div>
+    <ActionDialog :action-dialog="actionDialogState" />
   </div>
 </template>
 

@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -63,6 +64,10 @@ describe('decs.store', () => {
 
   it('fetches reports using fetchWrapper.get', async () => {
     const store = useDecsStore()
+    const authStore = useAuthStore()
+    authStore.uploadcustomsreports_page = 2
+    authStore.uploadcustomsreports_per_page = 25
+    authStore.uploadcustomsreports_sort_by = [{ key: 'id', order: 'asc' }]
     const reports = [{ id: 2 }, { id: 1 }]
     fetchWrapper.get.mockResolvedValue(reports)
 
@@ -71,7 +76,9 @@ describe('decs.store', () => {
     await expect(promise).resolves.toBeUndefined()
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs')
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      'http://localhost:8080/api/decs?page=2&pageSize=25&sortBy=id&sortOrder=asc'
+    )
     expect(store.reports).toEqual(reports)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()

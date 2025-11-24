@@ -8,12 +8,16 @@ import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
 const decsStore = useDecsStore()
 const alertStore = useAlertStore()
+const authStore = useAuthStore()
 
 const { reports, loading, error } = storeToRefs(decsStore)
 const { alert } = storeToRefs(alertStore)
+const { uploadcustomsreports_per_page, uploadcustomsreports_sort_by, uploadcustomsreports_page } = storeToRefs(authStore)
 
 onMounted(async () => {
   await decsStore.getReports()
@@ -80,6 +84,11 @@ const tableItems = computed(() =>
     <v-card>
       <v-data-table
         v-if="tableItems?.length"
+        v-model:items-per-page="uploadcustomsreports_per_page"
+        items-per-page-text="Отчетов на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        v-model:page="uploadcustomsreports_page"
+        v-model:sort-by="uploadcustomsreports_sort_by"
         :headers="headers"
         :items="tableItems"
         :loading="loading"

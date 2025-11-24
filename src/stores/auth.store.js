@@ -94,6 +94,9 @@ export const useAuthStore = defineStore('auth', () => {
   const feacninsertitems_search = ref('')
   const feacninsertitems_sort_by = ref([])
   const feacninsertitems_page = ref(1)
+  const uploadcustomsreports_per_page = ref(10)
+  const uploadcustomsreports_sort_by = ref([{ key: 'id', order: 'desc' }])
+  const uploadcustomsreports_page = ref(1)
   const selectedOrderId = ref(null)
   const selectedParcelId = ref(null)
   const returnUrl = ref(null)
@@ -237,6 +240,9 @@ export const useAuthStore = defineStore('auth', () => {
     feacninsertitems_search,
     feacninsertitems_sort_by,
     feacninsertitems_page,
+    uploadcustomsreports_per_page,
+    uploadcustomsreports_sort_by,
+    uploadcustomsreports_page,
     selectedOrderId,
     selectedParcelId,
     returnUrl,

@@ -13,12 +13,16 @@ const reportsRef = ref([])
 const loadingRef = ref(false)
 const errorRef = ref(null)
 const alertRef = ref(null)
+const perPageRef = ref(10)
+const sortByRef = ref([{ key: 'id', order: 'desc' }])
+const pageRef = ref(1)
 
 const getReportsMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 
 let decsStoreMock
 let alertStoreMock
+let authStoreMock
 
 const testStubs = {
   ...defaultGlobalStubs,
@@ -50,6 +54,10 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => alertStoreMock
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => authStoreMock
+}))
+
 describe('UploadCustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -57,6 +65,9 @@ describe('UploadCustomsReports_List.vue', () => {
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
+    perPageRef.value = 10
+    sortByRef.value = [{ key: 'id', order: 'desc' }]
+    pageRef.value = 1
 
     decsStoreMock = {
       reports: reportsRef,
@@ -68,6 +79,12 @@ describe('UploadCustomsReports_List.vue', () => {
     alertStoreMock = {
       alert: alertRef,
       clear: clearMock
+    }
+
+    authStoreMock = {
+      uploadcustomsreports_per_page: perPageRef,
+      uploadcustomsreports_sort_by: sortByRef,
+      uploadcustomsreports_page: pageRef
     }
   })
 

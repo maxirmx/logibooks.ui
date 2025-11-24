@@ -6,6 +6,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/decs`
 
@@ -31,10 +32,23 @@ export const useDecsStore = defineStore('decs', () => {
   }
 
   async function getReports() {
+    const authStore = useAuthStore()
     loading.value = true
     error.value = null
     try {
-      reports.value = await fetchWrapper.get(`${baseUrl}`)
+      const queryParams = new URLSearchParams({
+        page: authStore.uploadcustomsreports_page.toString(),
+        pageSize: authStore.uploadcustomsreports_per_page.toString()
+      })
+
+      const sortBy = authStore.uploadcustomsreports_sort_by?.[0]
+      if (sortBy?.key) {
+        queryParams.append('sortBy', sortBy.key)
+        queryParams.append('sortOrder', sortBy.order || 'asc')
+      }
+
+      const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
+      reports.value = Array.isArray(response) ? response : response?.items || []
     } catch (err) {
       error.value = err
     } finally {

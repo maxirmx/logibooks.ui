@@ -30,6 +30,11 @@ const testStubs = {
     emits: ['click'],
     template: '<button class="v-btn-stub" data-testid="v-btn" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
   },
+    ActionButton: {
+      inheritAttrs: false,
+      emits: ['click'],
+      template: '<button class="action-button-stub" data-testid="action-button" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
+    },
   ActionDialog: {
     props: ['actionDialog'],
     template: '<div class="action-dialog-stub" :data-show="actionDialog?.show" :data-title="actionDialog?.title"></div>'
@@ -163,7 +168,7 @@ describe('UploadCustomsReports_List.vue', () => {
 
     await wrapper.vm.$nextTick()
 
-    const headerActions = wrapper.find('.header-actions .v-btn-stub')
+    const headerActions = wrapper.find('.header-actions .action-button-stub')
     expect(headerActions.exists()).toBe(true)
 
     const input = wrapper.find('[data-testid="reports-upload-input"]')

@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionDialog from '@/components/ActionDialog.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 
@@ -109,17 +110,18 @@ const tableItems = computed(() =>
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Отчеты по загрузке ДТ</h1>
+      <h1 class="primary-heading">Отчеты о выпуске</h1>
       <div class="header-actions">
-        <v-btn
-          color="primary"
-          variant="tonal"
-          prepend-icon="fa-solid fa-file-import"
-          data-testid="reports-upload-header-button"
-          @click="openReportUploadDialog"
-        >
-          Загрузить
-        </v-btn>
+            <ActionButton
+              tooltip-text="Загрузить отчёт"
+              iconSize="2x"
+              icon="fa-solid fa-file-import"
+              :disabled="loading"
+              data-testid="reports-upload-header-button"
+              @click="openReportUploadDialog"
+            >
+              Загрузить
+            </ActionButton>
         <input
           type="file"
           ref="fileInput"
@@ -188,9 +190,6 @@ const tableItems = computed(() =>
       </div>
     </v-card>
 
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
     </div>

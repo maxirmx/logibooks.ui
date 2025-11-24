@@ -115,17 +115,17 @@ const tableItems = computed(() =>
     <div class="header-with-actions">
       <h1 class="primary-heading">Отчеты о выпуске</h1>
       <div class="header-actions">
-            <ActionButton
-              tooltip-text="Загрузить отчёт"
-              iconSize="2x"
-              icon="fa-solid fa-file-import"
-              :item="null"
-              :disabled="loading"
-              data-testid="reports-upload-header-button"
-              @click="openReportUploadDialog"
-            >
-              Загрузить
-            </ActionButton>
+          <ActionButton
+            tooltip-text="Загрузить отчёт"
+            iconSize="2x"
+            icon="fa-solid fa-file-import"
+            :item="null"
+            :disabled="loading"
+            data-testid="reports-upload-header-button"
+            @click="openReportUploadDialog"
+          >
+            Загрузить
+          </ActionButton>
         <input
           type="file"
           ref="fileInput"

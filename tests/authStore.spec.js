@@ -68,6 +68,9 @@ describe('auth store', () => {
       expect(store.registers_search).toBe('')
       expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'desc' }])
       expect(store.registers_page).toBe(1)
+      expect(store.uploadcustomsreports_per_page).toBe(10)
+      expect(store.uploadcustomsreports_sort_by).toEqual([{ key: 'id', order: 'desc' }])
+      expect(store.uploadcustomsreports_page).toBe(1)
       expect(store.returnUrl).toBeNull()
       expect(store.re_jwt).toBeNull()
       expect(store.re_tgt).toBeNull()
@@ -454,6 +457,18 @@ describe('auth store', () => {
       // Test null values
       store.registers_search = null
       expect(store.registers_search).toBeNull()
+    })
+
+    it('allows updating upload customs reports parameters', () => {
+      const store = useAuthStore()
+
+      store.uploadcustomsreports_per_page = 30
+      store.uploadcustomsreports_page = 4
+      store.uploadcustomsreports_sort_by = [{ key: 'processedRows', order: 'desc' }]
+
+      expect(store.uploadcustomsreports_per_page).toBe(30)
+      expect(store.uploadcustomsreports_page).toBe(4)
+      expect(store.uploadcustomsreports_sort_by).toEqual([{ key: 'processedRows', order: 'desc' }])
     })
 
     it('initializes selectedParcelId fields with null values', () => {

@@ -13,15 +13,37 @@ const reportsRef = ref([])
 const loadingRef = ref(false)
 const errorRef = ref(null)
 const alertRef = ref(null)
+const perPageRef = ref(10)
+const sortByRef = ref([{ key: 'id', order: 'desc' }])
+const pageRef = ref(1)
 
 const getReportsMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 
 let decsStoreMock
 let alertStoreMock
+let authStoreMock
 
 const testStubs = {
   ...defaultGlobalStubs,
+  'v-data-table': {
+    name: 'v-data-table',
+    template: `
+      <div class="v-data-table-stub" data-testid="v-data-table">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+            <slot :name="'item.' + header.key" :item="item">
+              {{ item[header.key] }}
+            </slot>
+          </div>
+        </div>
+        <slot></slot>
+      </div>
+    `,
+    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density', 'style'],
+    emits: ['update:items-per-page', 'update:page', 'update:sort-by'],
+    inheritAttrs: false
+  },
   'font-awesome-icon': { template: '<i class="fa-icon-stub" />' }
 }
 
@@ -50,6 +72,10 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => alertStoreMock
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => authStoreMock
+}))
+
 describe('UploadCustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -57,6 +83,9 @@ describe('UploadCustomsReports_List.vue', () => {
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
+    perPageRef.value = 10
+    sortByRef.value = [{ key: 'id', order: 'desc' }]
+    pageRef.value = 1
 
     decsStoreMock = {
       reports: reportsRef,
@@ -68,6 +97,12 @@ describe('UploadCustomsReports_List.vue', () => {
     alertStoreMock = {
       alert: alertRef,
       clear: clearMock
+    }
+
+    authStoreMock = {
+      uploadcustomsreports_per_page: perPageRef,
+      uploadcustomsreports_sort_by: sortByRef,
+      uploadcustomsreports_page: pageRef
     }
   })
 
@@ -139,5 +174,38 @@ describe('UploadCustomsReports_List.vue', () => {
     })
 
     expect(wrapper.text()).toContain('Список отчетов пуст')
+  })
+
+  it('binds pagination and sorting state to auth store', async () => {
+    perPageRef.value = 25
+    pageRef.value = 2
+    sortByRef.value = [{ key: 'result', order: 'asc' }]
+    reportsRef.value = [
+      {
+        id: 10,
+        success: true
+      }
+    ]
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    const table = wrapper.findComponent({ name: 'v-data-table' })
+    expect(table.props('itemsPerPage')).toBe(25)
+    expect(table.props('page')).toBe(2)
+    expect(table.props('sortBy')).toEqual([{ key: 'result', order: 'asc' }])
+
+    table.vm.$emit('update:items-per-page', 50)
+    table.vm.$emit('update:page', 3)
+    table.vm.$emit('update:sort-by', [{ key: 'processedRows', order: 'desc' }])
+
+    await wrapper.vm.$nextTick()
+
+    expect(perPageRef.value).toBe(50)
+    expect(pageRef.value).toBe(3)
+    expect(sortByRef.value).toEqual([{ key: 'processedRows', order: 'desc' }])
   })
 })

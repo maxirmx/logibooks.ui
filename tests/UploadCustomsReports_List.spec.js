@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { ref } from 'vue'
+import { ref, unref } from 'vue'
 import UploadCustomsReportsList from '@/lists/UploadCustomsReports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
@@ -13,6 +13,9 @@ const reportsRef = ref([])
 const loadingRef = ref(false)
 const errorRef = ref(null)
 const alertRef = ref(null)
+const perPageRef = ref(10)
+const sortByRef = ref([{ key: 'id', order: 'desc' }])
+const pageRef = ref(1)
 
 const getReportsMock = vi.hoisted(() => vi.fn())
 const uploadMock = vi.hoisted(() => vi.fn())
@@ -21,6 +24,7 @@ const alertErrorMock = vi.hoisted(() => vi.fn())
 
 let decsStoreMock
 let alertStoreMock
+let authStoreMock
 
 const testStubs = {
   ...defaultGlobalStubs,
@@ -29,6 +33,23 @@ const testStubs = {
     inheritAttrs: false,
     emits: ['click'],
     template: '<button class="v-btn-stub" data-testid="v-btn" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
+  },
+  'v-data-table': {
+    inheritAttrs: false,
+    emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
+    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue'],
+    template: `
+      <div class="v-data-table-stub" data-testid="v-data-table">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+            <slot :name="'item.' + header.key" :item="item">
+              {{ item[header.key] }}
+            </slot>
+          </div>
+        </div>
+        <slot></slot>
+      </div>
+    `
   },
     ActionButton: {
       inheritAttrs: false,
@@ -66,6 +87,10 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => alertStoreMock
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => authStoreMock
+}))
+
 describe('UploadCustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -87,6 +112,28 @@ describe('UploadCustomsReports_List.vue', () => {
       clear: clearMock,
       error: alertErrorMock
     }
+
+    authStoreMock = {}
+    Object.defineProperties(authStoreMock, {
+      uploadcustomsreports_per_page: {
+        get: () => perPageRef.value,
+        set: (val) => {
+          perPageRef.value = val
+        }
+      },
+      uploadcustomsreports_sort_by: {
+        get: () => sortByRef.value,
+        set: (val) => {
+          sortByRef.value = val
+        }
+      },
+      uploadcustomsreports_page: {
+        get: () => pageRef.value,
+        set: (val) => {
+          pageRef.value = val
+        }
+      }
+    })
   })
 
   it('loads reports on mount', async () => {
@@ -130,7 +177,7 @@ describe('UploadCustomsReports_List.vue', () => {
       }
     })
 
-    await wrapper.vm.$nextTick()
+    await flushPromises()
 
     const cells = wrapper.findAll('.v-data-table-cell')
     expect(cells.map((cell) => cell.text())).toEqual([
@@ -147,6 +194,46 @@ describe('UploadCustomsReports_List.vue', () => {
       '21',
       'Some error'
     ])
+  })
+
+  it('binds pagination and sorting to authStore', async () => {
+    reportsRef.value = [
+      {
+        id: 5,
+        success: true,
+        fileName: 'report.xlsx'
+      }
+    ]
+    perPageRef.value = 50
+    pageRef.value = 2
+    sortByRef.value = [{ key: 'fileName', order: 'asc' }]
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const dataTable = wrapper.findComponent('[data-testid="v-data-table"]')
+
+    expect(unref(dataTable.props('itemsPerPage'))).toBe(50)
+    expect(unref(dataTable.props('page'))).toBe(2)
+    expect(unref(dataTable.props('sortBy'))).toEqual([{ key: 'fileName', order: 'asc' }])
+
+    const updatedSort = [{ key: 'masterInvoice', order: 'desc' }]
+    dataTable.vm.$emit('update:items-per-page', 25)
+    dataTable.vm.$emit('update:itemsPerPage', 25)
+    dataTable.vm.$emit('update:page', 3)
+    dataTable.vm.$emit('update:sort-by', updatedSort)
+    dataTable.vm.$emit('update:sortBy', updatedSort)
+
+    await wrapper.vm.$nextTick()
+
+    expect(perPageRef.value).toBe(25)
+    expect(pageRef.value).toBe(3)
+    expect(sortByRef.value).toEqual(updatedSort)
   })
 
   it('shows empty state when there are no reports', () => {

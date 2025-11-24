@@ -12,9 +12,12 @@ import ActionDialog from '@/components/ActionDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
 const decsStore = useDecsStore()
 const alertStore = useAlertStore()
+const authStore = useAuthStore()
 
 const { reports, loading, error } = storeToRefs(decsStore)
 const { alert } = storeToRefs(alertStore)
@@ -137,6 +140,10 @@ const tableItems = computed(() =>
     <v-card>
       <v-data-table
         v-if="tableItems?.length"
+        v-model:items-per-page="authStore.uploadcustomsreports_per_page"
+        :items-per-page-options="itemsPerPageOptions"
+        v-model:page="authStore.uploadcustomsreports_page"
+        v-model:sort-by="authStore.uploadcustomsreports_sort_by"
         :headers="headers"
         :items="tableItems"
         :loading="loading"

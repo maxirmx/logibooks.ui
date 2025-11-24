@@ -158,7 +158,7 @@ async function onReportFileSelected(event) {
             <v-list-item v-bind="props" title="Отчёты"></v-list-item>
           </template>
           <v-list-item>
-            <RouterLink to="/customs-reports" class="link">Реестр загрузок ДТ</RouterLink>
+            <RouterLink to="/customs-reports" class="link">Реестр отчётов</RouterLink>
           </v-list-item>
           <v-list-item>
             <a

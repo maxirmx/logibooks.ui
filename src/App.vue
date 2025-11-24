@@ -191,14 +191,6 @@ function getUserName() {
           </span>
         </div>
       </template>
-      <input
-        type="file"
-        ref="reportFileInput"
-        accept=".xls,.xlsx,.zip,.rar"
-        data-testid="reports-upload-input"
-        style="display: none"
-        @change="onReportFileSelected"
-      />
     </v-navigation-drawer>
 
     <v-main class="d-flex align-center justify-center vvv">

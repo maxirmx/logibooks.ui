@@ -314,7 +314,8 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
 
     // Status Information - Current state of the order
-    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' }
+    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' }
   ]
 })
 
@@ -484,12 +485,21 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <!-- Special template for statusId to display status title with color -->
+        <!-- Special template for statusId -->
         <template #[`item.statusId`]="{ item }">
           <ClickableCell 
             :item="item" 
             :display-value="parcelStatusStore.getStatusTitle(item.statusId)" 
-            cell-class="truncated-cell status-cell clickable-cell" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.dTag`]="{ item }">
+          <ClickableCell 
+            :item="item"
+            :display-value="item.dTag || ''" 
+            cell-class="truncated-cell clickable-cell" 
             @click="editParcel" 
           />
         </template>

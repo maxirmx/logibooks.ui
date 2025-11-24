@@ -119,6 +119,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/parceleventprocessing',
+      name: 'Обработка событий посылок',
+      component: () => import('@/views/ParcelEventProcessing_View.vue'),
+      meta: { reqAdmin: true }
+    },
+    {
       path: '/parcelstatus/create',
       name: 'Регистрация статуса посылки',
       component: () => import('@/views/ParcelStatus_CreateView.vue'),
@@ -192,6 +198,12 @@ const router = createRouter({
       name: 'Запреты по ТН ВЭД',
       component: () => import('@/views/FeacnLocalPrefixes_View.vue'),
       meta: { reqAnyRole: true }
+    },
+    {
+      path: '/customs-reports',
+      name: 'Отчеты о выпуске',
+      component: () => import('@/views/UploadCustomsReports_View.vue'),
+      meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/feacn/prefix/create',

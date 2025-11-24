@@ -9,7 +9,8 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
-    postFile: vi.fn()
+    postFile: vi.fn(),
+    get: vi.fn()
   }
 }))
 
@@ -25,6 +26,7 @@ describe('decs.store', () => {
 
   it('initializes with default state', () => {
     const store = useDecsStore()
+    expect(store.reports).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -56,6 +58,36 @@ describe('decs.store', () => {
 
     await expect(store.upload(file)).rejects.toThrow('upload failed')
     expect(store.error).toBe(error)
+    expect(store.loading).toBe(false)
+  })
+
+  it('fetches reports using fetchWrapper.get', async () => {
+    const store = useDecsStore()
+    const reports = [{ id: 2 }, { id: 1 }]
+    fetchWrapper.get.mockResolvedValue(reports)
+
+    const promise = store.getReports()
+    expect(store.loading).toBe(true)
+    await expect(promise).resolves.toBeUndefined()
+
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs')
+    expect(store.reports).toEqual(reports)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+  })
+
+  it('stores error when getReports fails', async () => {
+    const store = useDecsStore()
+    const error = new Error('fetch failed')
+    fetchWrapper.get.mockRejectedValue(error)
+
+    const promise = store.getReports()
+    expect(store.loading).toBe(true)
+    await expect(promise).resolves.toBeUndefined()
+
+    expect(store.error).toBe(error)
+    expect(store.reports).toEqual([])
     expect(store.loading).toBe(false)
   })
 })

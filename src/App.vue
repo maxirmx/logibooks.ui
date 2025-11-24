@@ -5,21 +5,14 @@
 
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useStatusStore } from '@/stores/status.store.js'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
 
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useDecsStore } from '@/stores/decs.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
-import { useActionDialog } from '@/composables/useActionDialog.js'
-import ActionDialog from '@/components/ActionDialog.vue'
-import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 const authStore = useAuthStore()
-const decStore = useDecsStore()
-const alertStore = useAlertStore()
 
 const statusStore = useStatusStore()
 
@@ -83,37 +76,6 @@ function getUserName() {
     : ''
 }
 
-const reportFileInput = ref(null)
-const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
-
-function openReportUploadDialog() {
-  reportFileInput.value?.click()
-}
-
-async function onReportFileSelected(event) {
-  const input = event?.target
-  const file = input?.files?.[0]
-
-  if (!file) {
-    return
-  }
-
-  try {
-    showActionDialog('upload-report')
-    await decStore.upload(file)
-    dispatchDecReportUploadedEvent({ fileName: file.name })
-  } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
-    alertStore.error(message)
-  } finally {
-    hideActionDialog()
-    if (input) {
-      input.value = ''
-    }
-  }
-}
-
-
 /*
 <v-list-item>
           <RouterLink to="/register" class="link">Регистрация</RouterLink>
@@ -153,21 +115,9 @@ async function onReportFileSelected(event) {
         </v-list-item>
 
         <!-- Отчёты -->
-        <v-list-group  v-if="authStore.isLogist || authStore.isSrLogist">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" title="Отчёты"></v-list-item>
-          </template>
-          <v-list-item>
-            <a
-              href="#"
-              class="link"
-              data-testid="reports-upload-trigger"
-              @click.prevent="openReportUploadDialog"
-            >
-              Загрузить
-            </a>
-          </v-list-item>
-        </v-list-group>
+        <v-list-item v-if="authStore.isAdminOrSrLogist">
+          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
+        </v-list-item>
 
         <!-- Справочники -->
         <v-list-group  v-if="authStore.hasAnyRole">
@@ -191,21 +141,31 @@ async function onReportFileSelected(event) {
           </v-list-item>
           <v-list-item>
           <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/companies" class="link">Компании</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
-        </v-list-item>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/companies" class="link">Компании</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
+          </v-list-item>
           <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
+          </v-list-item>
+        </v-list-group>
+
+        <!-- Meta -->
+        <v-list-group  v-if="authStore.isAdmin">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Настройки"></v-list-item>
+          </template>
+          <v-list-item>
+            <RouterLink to="/parceleventprocessing" class="link">События</RouterLink>
           </v-list-item>
         </v-list-group>
 
@@ -231,20 +191,11 @@ async function onReportFileSelected(event) {
           </span>
         </div>
       </template>
-      <input
-        type="file"
-        ref="reportFileInput"
-        accept=".xls,.xlsx,.zip,.rar"
-        data-testid="reports-upload-input"
-        style="display: none"
-        @change="onReportFileSelected"
-      />
     </v-navigation-drawer>
 
     <v-main class="d-flex align-center justify-center vvv">
       <RouterView />
     </v-main>
-    <ActionDialog :action-dialog="actionDialogState" />
   </v-app>
 </template>
 

@@ -200,6 +200,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/customs-reports',
+      name: 'Отчеты по загрузке ДТ',
+      component: () => import('@/views/UploadCustomsReports_View.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
       path: '/feacn/prefix/create',
       name: 'Создание префикса ТН ВЭД',
       component: () => import('@/views/FeacnLocalPrefix_CreateView.vue'),

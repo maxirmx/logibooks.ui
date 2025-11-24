@@ -64,6 +64,7 @@ const router = createRouter({
     { path: '/feacn/orders', component: { template: '<div>Feacn Orders</div>' } },
     { path: '/feacn/prefixes', component: { template: '<div>Feacn Prefixes</div>' } },
     { path: '/feacn/insertitems', component: { template: '<div>Feacn Insert Items</div>' } },
+    { path: '/customs-reports', component: { template: '<div>Customs Reports</div>' } },
     { path: '/airports', component: { template: '<div>Airports</div>' } },
     { path: '/notifications', component: { template: '<div>Notifications</div>' } }
   ]

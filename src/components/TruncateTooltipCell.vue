@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   text: {
@@ -32,14 +32,14 @@ onMounted(() => {
   window.addEventListener('resize', measure)
 })
 
+onUnmounted(() => {
+  window.removeEventListener('resize', measure)
+})
+
 watch(() => props.text, () => {
   nextTick(() => measure())
 })
 
-// Clean up listener
-onMounted(() => {
-  // Using onMounted for add, we can use try/finally for remove on unmount
-})
 </script>
 
 <template>

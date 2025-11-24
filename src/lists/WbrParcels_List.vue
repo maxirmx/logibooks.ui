@@ -497,7 +497,8 @@ function getGenericTemplateHeaders() {
 
         <template #[`item.dTag`]="{ item }">
           <ClickableCell 
-            :item="item" 
+            :item="item"
+            :display-value="item.dTag || ''" 
             cell-class="truncated-cell clickable-cell" 
             @click="editParcel" 
           />

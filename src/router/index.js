@@ -201,7 +201,7 @@ const router = createRouter({
     },
     {
       path: '/customs-reports',
-      name: 'Отчеты по загрузке ДТ',
+      name: 'Отчеты о выпуске',
       component: () => import('@/views/UploadCustomsReports_View.vue'),
       meta: { reqAdminOrSrLogist: true }
     },

@@ -214,7 +214,7 @@ async function onReportFileSelected(event) {
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Настройки"></v-list-item>
           </template>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/parceleventprocessing" class="link">События ЖЦ</RouterLink>
           </v-list-item>
         </v-list-group>

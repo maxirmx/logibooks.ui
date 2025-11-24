@@ -5,21 +5,14 @@
 
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useStatusStore } from '@/stores/status.store.js'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
 
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useDecsStore } from '@/stores/decs.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
-import { useActionDialog } from '@/composables/useActionDialog.js'
-import ActionDialog from '@/components/ActionDialog.vue'
-import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 const authStore = useAuthStore()
-const decStore = useDecsStore()
-const alertStore = useAlertStore()
 
 const statusStore = useStatusStore()
 
@@ -83,37 +76,6 @@ function getUserName() {
     : ''
 }
 
-const reportFileInput = ref(null)
-const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
-
-function openReportUploadDialog() {
-  reportFileInput.value?.click()
-}
-
-async function onReportFileSelected(event) {
-  const input = event?.target
-  const file = input?.files?.[0]
-
-  if (!file) {
-    return
-  }
-
-  try {
-    showActionDialog('upload-report')
-    await decStore.upload(file)
-    dispatchDecReportUploadedEvent({ fileName: file.name })
-  } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
-    alertStore.error(message)
-  } finally {
-    hideActionDialog()
-    if (input) {
-      input.value = ''
-    }
-  }
-}
-
-
 /*
 <v-list-item>
           <RouterLink to="/register" class="link">Регистрация</RouterLink>
@@ -153,24 +115,9 @@ async function onReportFileSelected(event) {
         </v-list-item>
 
         <!-- Отчёты -->
-        <v-list-group  v-if="authStore.isAdminOrSrLogist">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" title="Отчёты"></v-list-item>
-          </template>
-          <v-list-item>
-            <RouterLink to="/customs-reports" class="link">Отчёты о выпуске</RouterLink>
-          </v-list-item>
-          <v-list-item>
-            <a
-              href="#"
-              class="link"
-              data-testid="reports-upload-trigger"
-              @click.prevent="openReportUploadDialog"
-            >
-              Загрузить
-            </a>
-          </v-list-item>
-        </v-list-group>
+        <v-list-item v-if="authStore.isAdminOrSrLogist">
+          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
+        </v-list-item>
 
         <!-- Справочники -->
         <v-list-group  v-if="authStore.hasAnyRole">

@@ -152,5 +152,4 @@ const tableItems = computed(() =>
   min-width: 140px;
 }
 
-/* Removed custom styling for error cells and tooltip */
 </style>

@@ -51,7 +51,8 @@ import {
   faFileCirclePlus,
   faBookmark,
   faBookSkull,
-  faFileInvoice
+  faFileInvoice,
+  faBookJournalWhills
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -96,7 +97,8 @@ library.add(
   faFileCirclePlus,
   faBookmark,
   faBookSkull,
-  faFileInvoice
+  faFileInvoice,
+  faBookJournalWhills
 )
 
 import 'vuetify/styles'

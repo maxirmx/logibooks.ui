@@ -351,6 +351,40 @@ describe('Register_EditDialog', () => {
     }))
   })
 
+  it('validates invoice number format only for aviation transport', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      transportationTypeId: 2
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    await expect(
+      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '123-12345678' })
+    ).resolves.toBeDefined()
+
+    await expect(
+      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC' })
+    ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате ddd-dddddddd')
+
+    await expect(
+      dialog.vm.schema.validate({ transportationTypeId: 1, invoiceNumber: 'INVALID-FORMAT' })
+    ).resolves.toBeDefined()
+  })
+
   it('handles create mode with upload', async () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 2 }

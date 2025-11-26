@@ -96,10 +96,7 @@ function getTransportationTypeById(typeId) {
 const currentTransportationTypeId = ref(null)
 
 function isAviaTransportationId(typeId) {
-  if (typeId === null || typeId === undefined) return false
-  const parsedId = typeof typeId === 'string' ? parseInt(typeId, 10) : typeId
-  if (Number.isNaN(parsedId)) return false
-  return getTransportationTypeById(parsedId)?.code === AVIA_TRANSPORT_CODE
+  return getTransportationTypeById(typeId)?.code === AVIA_TRANSPORT_CODE
 }
 
 const isAviaTransportation = computed(() => {
@@ -258,7 +255,7 @@ const schema = Yup.object().shape({
     .nullable()
     .test(
       'avia-invoice-format',
-      'Номер накладной для авиаперевозки должен быть в формате ddd-dddddddd',
+      'Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>',
       function (value) {
         const typeId = this?.parent?.transportationTypeId ?? item.value?.transportationTypeId
         if (!isAviaTransportationId(typeId)) return true
@@ -516,7 +513,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, values, setFieldValue }"
+      v-slot="{ errors, setFieldValue, handleSubmit }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">
@@ -530,7 +527,7 @@ function getCustomerName(customerId) {
           :iconSize="'2x'"
           tooltip-text="Сохранить"
           :disabled="isSubmitting"
-          @click="onSubmit(values)"
+          @click="handleSubmit(onSubmit)"
         />
         <ActionButton 
           :item="{}" 
@@ -555,11 +552,23 @@ function getCustomerName(customerId) {
         <div class="form-row">
           <div class="form-group">
             <label for="invoiceNumber" class="label">Номер накладной:</label>
-            <Field name="invoiceNumber" id="invoiceNumber" type="text" class="form-control input" />
+            <Field 
+              name="invoiceNumber" 
+              id="invoiceNumber" 
+              type="text" 
+              class="form-control input" 
+              :class="{ 'is-invalid': errors.invoiceNumber }"
+            />
           </div>
           <div class="form-group">
             <label for="invoiceDate" class="label">Дата накладной:</label>
-            <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" />
+            <Field 
+              name="invoiceDate" 
+              id="invoiceDate" 
+              type="date" 
+              class="form-control input" 
+              :class="{ 'is-invalid': errors.invoiceDate }"
+            />
           </div>
         </div>
 
@@ -685,12 +694,12 @@ function getCustomerName(customerId) {
 
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Файл:</label>
-            <div class="readonly-field">{{ item.fileName }}</div>
+            <label for="fileName" class="label">Файл:</label>
+            <div id="fileName" class="readonly-field">{{ item.fileName }}</div>
           </div>
           <div class="form-group">
-            <label class="label">Дата загрузки:</label>
-            <div class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
+            <label for="uploadDate" class="label">Дата загрузки:</label>
+            <div id="uploadDate" class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
           </div>
         </div>
 
@@ -746,6 +755,8 @@ function getCustomerName(customerId) {
         </button>
       </div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+      <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">  {{ errors.invoiceNumber }}  </div>          
+      <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">  {{ errors.invoiceDate }}  </div>          
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
@@ -753,6 +764,7 @@ function getCustomerName(customerId) {
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ item.error }}</div>
     </div>
+
     <ActionDialog :action-dialog="actionDialogState" />
     <ErrorDialog 
       :show="errorDialogState.show"
@@ -923,5 +935,13 @@ function getCustomerName(customerId) {
 
 .custom-checkbox:hover .custom-checkbox-box {
   background-color: #1565c0;
+}
+
+#fileName.readonly-field { 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
+  display: block; 
+  max-width: 100%; 
 }
 </style>

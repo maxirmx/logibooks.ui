@@ -378,7 +378,7 @@ describe('Register_EditDialog', () => {
 
     await expect(
       dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC' })
-    ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате ddd-dddddddd')
+    ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>')
 
     await expect(
       dialog.vm.schema.validate({ transportationTypeId: 1, invoiceNumber: 'INVALID-FORMAT' })

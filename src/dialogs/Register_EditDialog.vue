@@ -95,12 +95,18 @@ function getTransportationTypeById(typeId) {
 // Track current form transportation type for reactive UI updates
 const currentTransportationTypeId = ref(null)
 
+function isAviaTransportationId(typeId) {
+  if (typeId === null || typeId === undefined) return false
+  const parsedId = typeof typeId === 'string' ? parseInt(typeId, 10) : typeId
+  if (Number.isNaN(parsedId)) return false
+  return getTransportationTypeById(parsedId)?.code === AVIA_TRANSPORT_CODE
+}
+
 const isAviaTransportation = computed(() => {
   // Use current form value if available, otherwise fall back to item value
   const typeId = currentTransportationTypeId.value ?? item.value?.transportationTypeId
   if (!typeId) return false
-  const type = getTransportationTypeById(typeId)
-  return type?.code === AVIA_TRANSPORT_CODE
+  return isAviaTransportationId(typeId)
 })
 
 // Watch for form field changes to update UI reactively
@@ -248,7 +254,18 @@ onUnmounted(() => {
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   invoiceDate: Yup.date().nullable(),
-  invoiceNumber: Yup.string().nullable(),
+  invoiceNumber: Yup.string()
+    .nullable()
+    .test(
+      'avia-invoice-format',
+      'Номер накладной для авиаперевозки должен быть в формате ddd-dddddddd',
+      function (value) {
+        const typeId = this?.parent?.transportationTypeId ?? item.value?.transportationTypeId
+        if (!isAviaTransportationId(typeId)) return true
+        if (value === null || value === undefined || value === '') return true
+        return /^\d{3}-\d{8}$/.test(value)
+      }
+    ),
   transportationTypeId: Yup.number().nullable(),
   customsProcedureId: Yup.number().nullable(),
   theOtherCompanyId: Yup.number().nullable(),

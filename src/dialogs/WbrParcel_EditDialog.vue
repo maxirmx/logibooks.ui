@@ -140,7 +140,9 @@ onUnmounted(() => {
 
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
-  tnVed: Yup.string().required('Необходимо указать ТН ВЭД'),
+  tnVed: Yup.string()
+    .required('Необходимо указать ТН ВЭД')
+    .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
   countryCode: Yup.number().required('Необходимо выбрать страну'),
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),

@@ -422,7 +422,8 @@ async function onSubmit(values) {
         const result = await registersStore.upload(
           uploadFile.value,
           item.value.companyId,
-          Number.isNaN(sourceRegisterId) ? null : sourceRegisterId
+          Number.isNaN(sourceRegisterId) ? 0 : sourceRegisterId,
+          Boolean(values.lookupForReimport)
         )
         if (!isComponentMounted.value) return
         if (result?.success) {

@@ -124,12 +124,44 @@ const FormStub = {
     return { mockSetFieldValue }
   }
 }
+// Shared value map so multiple Field instances with same name stay in sync (checkbox + slot consumer)
+const __fieldValueMap = {}
 const FieldStub = {
   name: 'Field',
-  props: ['name', 'id', 'type', 'as', 'readonly', 'disabled', 'valueAsNumber'],
+  props: ['name', 'id', 'type', 'as', 'readonly', 'disabled', 'value'],
+  setup(props, { slots }) {
+    const key = props.name || '__anon__'
+    if (!__fieldValueMap[key]) {
+      __fieldValueMap[key] = ref(props.type === 'checkbox' ? false : '')
+    }
+    const val = __fieldValueMap[key]
+
+    function handleInput(e) {
+      if (props.type === 'checkbox') {
+        val.value = e.target.checked
+      } else {
+        val.value = e.target.value
+      }
+    }
+
+    return { val, handleInput, slots }
+  },
   template: `
-    <input :id="id || name" :type="type" :readonly="readonly" :disabled="disabled" :class="$attrs.class" v-if="as !== 'select'" />
-    <select :id="id || name" :disabled="disabled" v-else><slot /></select>
+    <div>
+      <template v-if="as === 'select'">
+        <select :id="id || name" :disabled="disabled" @change="handleInput" :class="$attrs.class">
+          <slot />
+        </select>
+      </template>
+      <template v-else-if="$slots.default">
+        <!-- Custom root provided (e.g. v-slot pattern); just expose value -->
+        <slot :value="val.value" />
+      </template>
+      <template v-else>
+        <input v-if="type === 'checkbox'" type="checkbox" :id="id || name" :checked="val.value" :readonly="readonly" :disabled="disabled" :class="$attrs.class" @change="handleInput" />
+        <input v-else :id="id || name" :type="type || 'text'" :value="val.value" :readonly="readonly" :disabled="disabled" :class="$attrs.class" @input="handleInput" />
+      </template>
+    </div>
   `
 }
 

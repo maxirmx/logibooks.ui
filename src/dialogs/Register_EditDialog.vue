@@ -349,6 +349,14 @@ function handleProcedureChange(e) {
   updateDirection()
 }
 
+function onLookupForReimportChange(e) {
+  // Field may emit a boolean or a DOM event
+  const checked = typeof e === 'boolean' ? e : (e?.target?.checked ?? false)
+  if (checked) {
+    transferRegisterId.value = ''
+  }
+}
+
 function getTitle() {
   return props.create
     ? 'Загрузка реестра'
@@ -736,9 +744,10 @@ function getCustomerName(customerId) {
                 :unchecked-value="false"
                 class="custom-checkbox-input"
                 :disabled="isExport"
+                @change="onLookupForReimportChange"
               />
               <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Использовать предшествующие данные</span>
+              <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>
             </label>
           </div>
        </div>

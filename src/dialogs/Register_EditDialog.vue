@@ -784,8 +784,8 @@ function getCustomerName(customerId) {
         </button>
       </div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
-      <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">  {{ errors.invoiceNumber }}  </div>          
-      <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">  {{ errors.invoiceDate }}  </div>          
+      <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceNumber }}</div>
+      <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceDate }}</div>
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>

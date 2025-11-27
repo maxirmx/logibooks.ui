@@ -704,26 +704,45 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
-        <div class="form-row" v-if="props.create">
+       <div class="form-row" v-if="props.create">
           <div class="form-group">
             <label for="transferRegisterId" class="label">Перенести статусы из реестра:</label>
-            <select
-              id="transferRegisterId"
-              class="form-control input"
-              v-model="transferRegisterId"
-            >
-              <option value="">Не выбрано</option>
-              <option
-                v-for="register in registerOptions"
-                :key="register.id"
-                :value="register.id"
+            <Field name="lookupForReimport" v-slot="{ value }">
+              <select
+                id="transferRegisterId"
+                class="form-control input"
+                v-model="transferRegisterId"
+                :disabled="value"
               >
-                {{ register.name }}
-              </option>
-            </select>
+                <option value="">Не выбрано</option>
+                <option
+                  v-for="register in registerOptions"
+                  :key="register.id"
+                  :value="register.id"
+                >
+                  {{ register.name }}
+                </option>
+              </select>
+            </Field>
           </div>
-        </div>
 
+          <div class="form-group">
+            <label for="lookupForReimport" class="custom-checkbox" :class="{ 'disabled': isExport }">
+              <Field
+                id="lookupForReimport"
+                type="checkbox"
+                name="lookupForReimport"
+                :value="true"
+                :unchecked-value="false"
+                class="custom-checkbox-input"
+                :disabled="isExport"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="label custom-checkbox-label">Использовать предшествующие данные</span>
+            </label>
+          </div>
+       </div>
+       
         <div class="form-row-1" v-else>
           <div class="form-group lookup-by-article-group">
             <label class="custom-checkbox">
@@ -936,6 +955,16 @@ function getCustomerName(customerId) {
 
 .custom-checkbox:hover .custom-checkbox-box {
   background-color: #1565c0;
+}
+
+.custom-checkbox.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.custom-checkbox.disabled .custom-checkbox-box {
+  background-color: #ccc;
 }
 
 #fileName.readonly-field { 

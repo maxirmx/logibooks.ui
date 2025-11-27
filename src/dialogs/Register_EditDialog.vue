@@ -417,7 +417,7 @@ async function onSubmit(values) {
       showActionDialog('upload-register')
       try {
         const sourceRegisterId = transferRegisterId.value === ''
-          ? null
+          ? 0
           : parseInt(transferRegisterId.value, 10)
         const result = await registersStore.upload(
           uploadFile.value,

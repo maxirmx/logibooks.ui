@@ -139,7 +139,9 @@ onUnmounted(() => {
 const schema = Yup.object().shape({
   statusId: Yup.number(),
   checkStatus: Yup.number(),
-  tnVed: Yup.string().required('Необходимо указать ТН ВЭД'),
+  tnVed: Yup.string()
+    .required('Необходимо указать ТН ВЭД')
+    .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
   countryCode: Yup.number().required('Необходимо выбрать страну'),
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
@@ -522,10 +524,16 @@ async function onLookup(values) {
               {{ item?.dTag ? item.dTag : '-' }}
             </div>
           </div>
-          <div class="form-group">
-            <label for="dtagComment" class="label">Комментарий:</label>
+          <div class="form-group" v-if="item?.dTagComment != null">
             <div class="form-control input readonly-field" id="dtagComment" name="dtagComment">
               {{ item?.dTagComment ? item.dTagComment : '' }}
+            </div>
+          </div>
+        </div>
+        <div class="form-row"  v-if="item?.previousDTagComment != null">
+          <div class="form-group">
+            <div class="form-control input readonly-field" id="previousDDtagComment" name="previousDDtagComment">
+              {{ item?.previousDTagComment ? item.previousDTagComment : '' }}
             </div>
           </div>
         </div>

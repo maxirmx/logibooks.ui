@@ -124,12 +124,44 @@ const FormStub = {
     return { mockSetFieldValue }
   }
 }
+// Shared value map so multiple Field instances with same name stay in sync (checkbox + slot consumer)
+const __fieldValueMap = {}
 const FieldStub = {
   name: 'Field',
-  props: ['name', 'id', 'type', 'as', 'readonly', 'disabled', 'valueAsNumber'],
+  props: ['name', 'id', 'type', 'as', 'readonly', 'disabled', 'value'],
+  setup(props, { slots }) {
+    const key = props.name || '__anon__'
+    if (!__fieldValueMap[key]) {
+      __fieldValueMap[key] = ref(props.type === 'checkbox' ? false : '')
+    }
+    const val = __fieldValueMap[key]
+
+    function handleInput(e) {
+      if (props.type === 'checkbox') {
+        val.value = e.target.checked
+      } else {
+        val.value = e.target.value
+      }
+    }
+
+    return { val, handleInput, slots }
+  },
   template: `
-    <input :id="id || name" :type="type" :readonly="readonly" :disabled="disabled" :class="$attrs.class" v-if="as !== 'select'" />
-    <select :id="id || name" :disabled="disabled" v-else><slot /></select>
+    <div>
+      <template v-if="as === 'select'">
+        <select :id="id || name" :disabled="disabled" @change="handleInput" :class="$attrs.class">
+          <slot />
+        </select>
+      </template>
+      <template v-else-if="$slots.default">
+        <!-- Custom root provided (e.g. v-slot pattern); just expose value -->
+        <slot :value="val.value" />
+      </template>
+      <template v-else>
+        <input v-if="type === 'checkbox'" type="checkbox" :id="id || name" :checked="val.value" :readonly="readonly" :disabled="disabled" :class="$attrs.class" @change="handleInput" />
+        <input v-else :id="id || name" :type="type || 'text'" :value="val.value" :readonly="readonly" :disabled="disabled" :class="$attrs.class" @input="handleInput" />
+      </template>
+    </div>
   `
 }
 
@@ -351,6 +383,40 @@ describe('Register_EditDialog', () => {
     }))
   })
 
+  it('validates invoice number format only for aviation transport', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      transportationTypeId: 2
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    await expect(
+      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '123-12345678' })
+    ).resolves.toBeDefined()
+
+    await expect(
+      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC' })
+    ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>')
+
+    await expect(
+      dialog.vm.schema.validate({ transportationTypeId: 1, invoiceNumber: 'INVALID-FORMAT' })
+    ).resolves.toBeDefined()
+  })
+
   it('handles create mode with upload', async () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 2 }
@@ -373,7 +439,7 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, null)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
     expect(router.push).toHaveBeenCalledWith('/registers')
   })
 
@@ -452,7 +518,7 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
 
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 20)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 20, false)
   })
 
   it('handles create mode with upload result object', async () => {
@@ -476,7 +542,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, null)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
     
     // Verify update was called with the Id from the Reference object and the sanitized form values
     expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
@@ -616,7 +682,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, null)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
     
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed

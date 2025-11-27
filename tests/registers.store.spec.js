@@ -626,7 +626,7 @@ describe('registers store', () => {
   })
 
   describe('upload method', () => {
-    it('uploads file via postFile', async () => {
+    it('uploads file via postFile with required parameters', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       fetchWrapper.postFile.mockResolvedValue({ id: 1 })
@@ -636,14 +636,14 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload/${customerId}`
+        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=0&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
     })
 
-    it('uploads file via postFile with sourceRegisterId', async () => {
+    it('uploads file with sourceRegisterId parameter', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       const sourceRegisterId = 777
@@ -654,14 +654,14 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload/${customerId}/${sourceRegisterId}`
+        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=777&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
     })
 
-    it('uploads file via postFile ignoring sourceRegisterId when zero', async () => {
+    it('uploads file with sourceRegisterId zero explicitly set', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       const sourceRegisterId = 0
@@ -672,7 +672,42 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload/${customerId}`
+        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=0&transfer2Reimport=false`
+      )
+      const formData = fetchWrapper.postFile.mock.calls[0][1]
+      expect(formData instanceof FormData).toBe(true)
+      expect(formData.get('file')).toBe(file)
+    })
+
+    it('uploads file with transfer2Reimport flag', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
+      fetchWrapper.postFile.mockResolvedValue({ id: 4 })
+
+      const store = useRegistersStore()
+      await store.upload(file, customerId, 0, true)
+
+      expect(fetchWrapper.postFile).toHaveBeenCalled()
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=0&transfer2Reimport=true`
+      )
+      const formData = fetchWrapper.postFile.mock.calls[0][1]
+      expect(formData instanceof FormData).toBe(true)
+      expect(formData.get('file')).toBe(file)
+    })
+
+    it('uploads file with all parameters', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const customerId = 123
+      const sourceRegisterId = 777
+      fetchWrapper.postFile.mockResolvedValue({ id: 5 })
+
+      const store = useRegistersStore()
+      await store.upload(file, customerId, sourceRegisterId, true)
+
+      expect(fetchWrapper.postFile).toHaveBeenCalled()
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=777&transfer2Reimport=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)

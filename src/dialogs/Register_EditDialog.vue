@@ -95,12 +95,15 @@ function getTransportationTypeById(typeId) {
 // Track current form transportation type for reactive UI updates
 const currentTransportationTypeId = ref(null)
 
+function isAviaTransportationId(typeId) {
+  return getTransportationTypeById(typeId)?.code === AVIA_TRANSPORT_CODE
+}
+
 const isAviaTransportation = computed(() => {
   // Use current form value if available, otherwise fall back to item value
   const typeId = currentTransportationTypeId.value ?? item.value?.transportationTypeId
   if (!typeId) return false
-  const type = getTransportationTypeById(typeId)
-  return type?.code === AVIA_TRANSPORT_CODE
+  return isAviaTransportationId(typeId)
 })
 
 // Watch for form field changes to update UI reactively
@@ -248,7 +251,18 @@ onUnmounted(() => {
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   invoiceDate: Yup.date().nullable(),
-  invoiceNumber: Yup.string().nullable(),
+  invoiceNumber: Yup.string()
+    .nullable()
+    .test(
+      'avia-invoice-format',
+      'Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>',
+      function (value) {
+        const typeId = this?.parent?.transportationTypeId ?? item.value?.transportationTypeId
+        if (!isAviaTransportationId(typeId)) return true
+        if (value === null || value === undefined || value === '') return true
+        return /^\d{3}-\d{8}$/.test(value)
+      }
+    ),
   transportationTypeId: Yup.number().nullable(),
   customsProcedureId: Yup.number().nullable(),
   theOtherCompanyId: Yup.number().nullable(),
@@ -335,6 +349,14 @@ function handleProcedureChange(e) {
   updateDirection()
 }
 
+function onLookupForReimportChange(e) {
+  // Field may emit a boolean or a DOM event
+  const checked = typeof e === 'boolean' ? e : (e?.target?.checked ?? false)
+  if (checked) {
+    transferRegisterId.value = ''
+  }
+}
+
 function getTitle() {
   return props.create
     ? 'Загрузка реестра'
@@ -403,12 +425,13 @@ async function onSubmit(values) {
       showActionDialog('upload-register')
       try {
         const sourceRegisterId = transferRegisterId.value === ''
-          ? null
+          ? 0
           : parseInt(transferRegisterId.value, 10)
         const result = await registersStore.upload(
           uploadFile.value,
           item.value.companyId,
-          Number.isNaN(sourceRegisterId) ? null : sourceRegisterId
+          Number.isNaN(sourceRegisterId) ? 0 : sourceRegisterId,
+          Boolean(values.lookupForReimport)
         )
         if (!isComponentMounted.value) return
         if (result?.success) {
@@ -499,7 +522,7 @@ function getCustomerName(customerId) {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, values, setFieldValue }"
+      v-slot="{ errors, setFieldValue, handleSubmit }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">
@@ -513,7 +536,7 @@ function getCustomerName(customerId) {
           :iconSize="'2x'"
           tooltip-text="Сохранить"
           :disabled="isSubmitting"
-          @click="onSubmit(values)"
+          @click="handleSubmit(onSubmit)"
         />
         <ActionButton 
           :item="{}" 
@@ -538,11 +561,23 @@ function getCustomerName(customerId) {
         <div class="form-row">
           <div class="form-group">
             <label for="invoiceNumber" class="label">Номер накладной:</label>
-            <Field name="invoiceNumber" id="invoiceNumber" type="text" class="form-control input" />
+            <Field 
+              name="invoiceNumber" 
+              id="invoiceNumber" 
+              type="text" 
+              class="form-control input" 
+              :class="{ 'is-invalid': errors.invoiceNumber }"
+            />
           </div>
           <div class="form-group">
             <label for="invoiceDate" class="label">Дата накладной:</label>
-            <Field name="invoiceDate" id="invoiceDate" type="date" class="form-control input" />
+            <Field 
+              name="invoiceDate" 
+              id="invoiceDate" 
+              type="date" 
+              class="form-control input" 
+              :class="{ 'is-invalid': errors.invoiceDate }"
+            />
           </div>
         </div>
 
@@ -668,35 +703,55 @@ function getCustomerName(customerId) {
 
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Файл:</label>
-            <div class="readonly-field">{{ item.fileName }}</div>
+            <label for="fileName" class="label">Файл:</label>
+            <div id="fileName" class="readonly-field">{{ item.fileName }}</div>
           </div>
           <div class="form-group">
-            <label class="label">Дата загрузки:</label>
-            <div class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
+            <label for="uploadDate" class="label">Дата загрузки:</label>
+            <div id="uploadDate" class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
           </div>
         </div>
 
         <div class="form-row" v-if="props.create">
           <div class="form-group">
             <label for="transferRegisterId" class="label">Перенести статусы из реестра:</label>
-            <select
-              id="transferRegisterId"
-              class="form-control input"
-              v-model="transferRegisterId"
-            >
-              <option value="">Не выбрано</option>
-              <option
-                v-for="register in registerOptions"
-                :key="register.id"
-                :value="register.id"
+            <Field name="lookupForReimport" v-slot="{ value }">
+              <select
+                id="transferRegisterId"
+                class="form-control input"
+                v-model="transferRegisterId"
+                :disabled="value"
               >
-                {{ register.name }}
-              </option>
-            </select>
+                <option value="">Не выбрано</option>
+                <option
+                  v-for="register in registerOptions"
+                  :key="register.id"
+                  :value="register.id"
+                >
+                  {{ register.name }}
+                </option>
+              </select>
+            </Field>
           </div>
-        </div>
 
+          <div class="form-group">
+            <label for="lookupForReimport" class="custom-checkbox" :class="{ 'disabled': isExport }">
+              <Field
+                id="lookupForReimport"
+                type="checkbox"
+                name="lookupForReimport"
+                :value="true"
+                :unchecked-value="false"
+                class="custom-checkbox-input"
+                :disabled="isExport"
+                @change="onLookupForReimportChange"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>
+            </label>
+          </div>
+      </div>
+       
         <div class="form-row-1" v-else>
           <div class="form-group lookup-by-article-group">
             <label class="custom-checkbox">
@@ -729,6 +784,8 @@ function getCustomerName(customerId) {
         </button>
       </div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+      <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceNumber }}</div>
+      <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceDate }}</div>
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
@@ -736,6 +793,7 @@ function getCustomerName(customerId) {
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ item.error }}</div>
     </div>
+
     <ActionDialog :action-dialog="actionDialogState" />
     <ErrorDialog 
       :show="errorDialogState.show"
@@ -906,5 +964,23 @@ function getCustomerName(customerId) {
 
 .custom-checkbox:hover .custom-checkbox-box {
   background-color: #1565c0;
+}
+
+.custom-checkbox.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.custom-checkbox.disabled .custom-checkbox-box {
+  background-color: #ccc;
+}
+
+#fileName.readonly-field { 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
+  display: block; 
+  max-width: 100%; 
 }
 </style>

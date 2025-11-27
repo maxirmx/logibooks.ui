@@ -90,17 +90,22 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function upload(file, companyId, sourceRegisterId = null) {
+  async function upload(file, companyId, sourceRegisterId = 0, transfer2Reimport = false) {
     loading.value = true
     error.value = null
     try {
       const formData = new FormData()
       formData.append('file', file)
-      // If sourceRegisterId is provided (not null and not 0) call the upload endpoint with it
-      if (sourceRegisterId != null && sourceRegisterId !== 0) {
-        return await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}/${sourceRegisterId}`, formData)
-      }
-      return await fetchWrapper.postFile(`${baseUrl}/upload/${companyId}`, formData)
+      
+      // Build query parameters - always send all parameters
+      const params = new URLSearchParams()
+      params.append('companyId', companyId)
+      params.append('sourceRegisterId', sourceRegisterId)
+      params.append('transfer2Reimport', transfer2Reimport ? 'true' : 'false')
+      
+      const url = `${baseUrl}/upload?${params.toString()}`
+      
+      return await fetchWrapper.postFile(url, formData)
     } catch (err) {
       error.value = err
       throw err

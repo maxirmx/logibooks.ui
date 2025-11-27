@@ -750,7 +750,7 @@ function getCustomerName(customerId) {
               <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>
             </label>
           </div>
-       </div>
+      </div>
        
         <div class="form-row-1" v-else>
           <div class="form-group lookup-by-article-group">

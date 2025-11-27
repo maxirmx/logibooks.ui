@@ -712,7 +712,7 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
-       <div class="form-row" v-if="props.create">
+        <div class="form-row" v-if="props.create">
           <div class="form-group">
             <label for="transferRegisterId" class="label">Перенести статусы из реестра:</label>
             <Field name="lookupForReimport" v-slot="{ value }">

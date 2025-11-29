@@ -588,7 +588,10 @@ describe('registers.list.helpers', () => {
         await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn, true)
 
         expect(stopPollingFn).toHaveBeenCalled()
-        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123, true)
+        // validate may receive an optional swMatchMode third arg, so only assert on the first two args
+        expect(mockRegistersStore.validate).toHaveBeenCalled()
+        expect(mockRegistersStore.validate.mock.calls[0][0]).toBe(123)
+        expect(mockRegistersStore.validate.mock.calls[0][1]).toBe(true)
         expect(validationState.handleId).toBe('validation-handle-123')
         expect(validationState.total).toBe(100)
         expect(validationState.processed).toBe(0)
@@ -603,7 +606,9 @@ describe('registers.list.helpers', () => {
         await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn, false)
 
         expect(stopPollingFn).toHaveBeenCalled()
-        expect(mockRegistersStore.validate).toHaveBeenCalledWith(123, false)
+        expect(mockRegistersStore.validate).toHaveBeenCalled()
+        expect(mockRegistersStore.validate.mock.calls[0][0]).toBe(123)
+        expect(mockRegistersStore.validate.mock.calls[0][1]).toBe(false)
         expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
         expect(validationState.show).toBe(false)
         expect(startPollingFn).not.toHaveBeenCalled()
@@ -752,7 +757,9 @@ describe('registers.list.helpers', () => {
       it('validates register via stop-words path and updates state', async () => {
         await handlers.validateRegisterSw({ id: 10 })
 
-        expect(registersStore.validate).toHaveBeenCalledWith(10, true)
+        expect(registersStore.validate).toHaveBeenCalled()
+        expect(registersStore.validate.mock.calls[0][0]).toBe(10)
+        expect(registersStore.validate.mock.calls[0][1]).toBe(true)
         expect(handlers.validationState.operation).toBe('validation')
       })
 

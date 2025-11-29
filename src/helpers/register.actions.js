@@ -5,6 +5,7 @@
 import { computed, watch, ref, unref, reactive } from 'vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
+import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
@@ -50,11 +51,12 @@ export async function validateRegister(
   alertStore,
   stopPollingFn,
   startPollingFn,
-  sw
+  sw,
+  swMatchMode
 ) {
   try {
     stopPollingFn()
-    const res = await registersStore.validate(item.id, sw)
+    const res = await registersStore.validate(item.id, sw, swMatchMode)
     validationState.handleId = res.id
     validationState.total = 0
     validationState.processed = 0
@@ -136,7 +138,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     }
   }
 
-  async function runValidation(item, sw) {
+  async function runValidation(item, sw, { extended = false } = {}) {
     try {
       validationState.operation = 'validation'
       pollingFunction = () =>
@@ -149,7 +151,8 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
         alertStore,
         () => pollingTimer.stop(),
         () => pollingTimer.start(),
-        sw
+        sw,
+        extended ? SwValidationMatchMode.SwMatch : SwValidationMatchMode.NoSwMatch
       )
     } catch (err) {
       alertStore.error(err?.message || String(err))
@@ -157,7 +160,11 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
   }
 
   async function validateRegisterSw(item) {
-    await runValidation(item, true)
+    await runValidation(item, true, { extended: false })
+  }
+
+  async function validateRegisterSwEx(item) {
+    await runValidation(item, true, { extended: true })
   }
 
   async function validateRegisterFc(item) {
@@ -228,6 +235,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     validationState,
     progressPercent,
     validateRegisterSw,
+    validateRegisterSwEx,
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
@@ -252,6 +260,7 @@ export function useRegisterHeaderActions({
     validationState,
     progressPercent,
     validateRegisterSw,
+    validateRegisterSwEx,
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
@@ -307,6 +316,10 @@ export function useRegisterHeaderActions({
 
   const runValidateRegisterSw = async () => {
     await runWithLock(validateRegisterSw)
+  }
+
+  const runValidateRegisterSwEx = async () => {
+    await runWithLock(validateRegisterSwEx)
   }
 
   const runValidateRegisterFc = async () => {
@@ -372,6 +385,7 @@ export function useRegisterHeaderActions({
     actionDialog: actionDialogState,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
+    validateRegisterSwEx: runValidateRegisterSwEx,
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
     lookupFeacnCodesEx: runLookupFeacnCodesEx,

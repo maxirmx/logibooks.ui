@@ -209,6 +209,7 @@ const {
   actionDialog: actionDialogState,
   generalActionsDisabled,
   validateRegisterSw: validateRegisterSwHeader,
+  validateRegisterSwEx: validateRegisterSwHeaderEx,
   validateRegisterFc: validateRegisterFcHeader,
   lookupFeacnCodes: lookupRegisterFeacnCodes,
   lookupFeacnCodesEx: lookupRegisterFeacnCodesEx,
@@ -423,6 +424,7 @@ function getGenericTemplateHeaders() {
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         @validate-sw="validateRegisterSwHeader"
+        @validate-sw-ex="validateRegisterSwHeaderEx"
         @validate-fc="validateRegisterFcHeader"
         @lookup="lookupRegisterFeacnCodes"
         @lookup-ex="lookupRegisterFeacnCodesEx"

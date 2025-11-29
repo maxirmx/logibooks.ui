@@ -28,6 +28,7 @@ function createRegisterHeaderActionsMock() {
     actionDialog: reactive({ show: false, title: '' }),
     generalActionsDisabled: ref(false),
     validateRegisterSw: vi.fn(),
+    validateRegisterSwEx: vi.fn(),
     validateRegisterFc: vi.fn(),
     lookupFeacnCodes: vi.fn(),
     lookupFeacnCodesEx: vi.fn(),
@@ -276,27 +277,30 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
   // We added an invoice action (ActionButton2L) which renders an extra button
-  expect(buttons).toHaveLength(8)
+  expect(buttons).toHaveLength(9)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
 
     await buttons[1].trigger('click')
-    expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
+    expect(registerHeaderActionsMock.validateRegisterSwEx).toHaveBeenCalled()
 
     await buttons[2].trigger('click')
+    expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
+
+    await buttons[3].trigger('click')
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
-  await buttons[3].trigger('click')
+  await buttons[4].trigger('click')
   expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
 
-  await buttons[4].trigger('click')
+  await buttons[5].trigger('click')
   expect(registerHeaderActionsMock.exportAllXmlWithoutExcise).toHaveBeenCalled()
 
-  await buttons[5].trigger('click')
+  await buttons[6].trigger('click')
   expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
 
-  await buttons[6].trigger('click')
+  await buttons[7].trigger('click')
   expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
   })
 

@@ -816,7 +816,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const result = await store.validate(1, true)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/validate-sw`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/1/validate-sw?withSwMatch=0`)
       expect(result).toEqual(handle)
     })
 

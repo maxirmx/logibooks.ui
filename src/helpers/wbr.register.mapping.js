@@ -32,7 +32,7 @@ export const wbrRegisterColumnTitles = {
   barcode: 'Баркод',
   declaration: 'ГТД',
   productLink: 'Ссылка на товар',
-  recipientName: 'ФИО получателя физ. лица',
+  recipientName: 'ФИО',
   recipientInn: 'ИНН получателя физ. лица',
   passportNumber: 'Номер паспорта',
   pinfl: 'Пинфл',

@@ -102,7 +102,7 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
 
 /**
  * Generates combined check information text with both feacn orders and stopwords
- * @param {Object} item - The parcel item containing feacnOrderIds and stopWordIds
+ * @param {Object} item - The parcel item containing feacnOrderIds, stopWordIds, and optionally matchingFCComment
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @param {Array} feacnPrefixesCollection - Collection of all manually set feacn prefixes
@@ -114,6 +114,11 @@ export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollect
   const feacnPrefixesInfo = getFeacnPrefixesInfo(item, feacnPrefixesCollection)
   
   const allInfo = [feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
+  
+  // Add matchingFCComment if present
+  if (item?.matchingFCComment) {
+    allInfo.push(item.matchingFCComment)
+  }
   
   return allInfo.length > 0 ? allInfo.join('; ') : null
 }
@@ -133,7 +138,7 @@ export function getCheckStatusClass(checkStatus) {
   }
 
   if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedWithExciseInherited) {
-    return 'is-approved-with-excise is-inherited'
+    return 'is-approved-with-excise-and-inheritance'
   }
 
   if (checkStatus === CheckStatusCode.ApprovedWithExcise.value) {
@@ -141,19 +146,19 @@ export function getCheckStatusClass(checkStatus) {
   }
 
   if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.IssueStopWordInherited) {
-    return 'has-issues is-inherited'
+    return 'has-issues-with-inheritance'
   }
 
   if (CheckStatusCode.hasIssues(checkStatus)) {
     return 'has-issues'
   }
 
-  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.Approved) {
-    return 'is-approved'
+  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedInherited) {
+    return 'is-approved-with-inheritance'
   }
 
-  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedInherited) {
-    return 'is-approved is-inherited'
+  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.Approved) {
+    return 'is-approved'
   }
 
   return 'no-issues'

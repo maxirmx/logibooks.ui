@@ -14,7 +14,12 @@ describe('ClickableCell', () => {
 
   function createWrapper(props = {}) {
     return mount(ClickableCell, {
-      props: { ...defaultProps, ...props }
+      props: { ...defaultProps, ...props },
+      global: {
+        stubs: {
+          'font-awesome-icon': true
+        }
+      }
     })
   }
 
@@ -39,6 +44,11 @@ describe('ClickableCell', () => {
         props: defaultProps,
         slots: {
           default: '<strong>Custom Content</strong>'
+        },
+        global: {
+          stubs: {
+            'font-awesome-icon': true
+          }
         }
       })
       expect(wrapper.html()).toContain('<strong>Custom Content</strong>')
@@ -55,6 +65,36 @@ describe('ClickableCell', () => {
       expect(span.classes()).toContain('truncated-cell')
       expect(span.classes()).toContain('status-cell')
       expect(span.classes()).toContain('custom-class')
+    })
+
+    it('does not render bookmark icon by default', () => {
+      const wrapper = createWrapper()
+      const icon = wrapper.find('.bookmark-icon')
+      expect(icon.exists()).toBe(false)
+    })
+
+    it('renders bookmark icon when showBookmark is true', () => {
+      const wrapper = createWrapper({ showBookmark: true })
+      const icon = wrapper.find('.bookmark-icon')
+      expect(icon.exists()).toBe(true)
+    })
+
+    it('does not render bookmark icon when showBookmark is false', () => {
+      const wrapper = createWrapper({ showBookmark: false })
+      const icon = wrapper.find('.bookmark-icon')
+      expect(icon.exists()).toBe(false)
+    })
+
+    it('renders bookmark icon before display value', () => {
+      const wrapper = createWrapper({ 
+        showBookmark: true,
+        displayValue: 'Test Value'
+      })
+      const span = wrapper.find('span')
+      const html = span.html()
+      const iconIndex = html.indexOf('bookmark-icon')
+      const textIndex = html.indexOf('Test Value')
+      expect(iconIndex).toBeLessThan(textIndex)
     })
   })
 
@@ -107,6 +147,11 @@ describe('ClickableCell', () => {
         props: defaultProps,
         slots: {
           default: ({ item, value }) => `Item: ${item.name}, Value: ${value}`
+        },
+        global: {
+          stubs: {
+            'font-awesome-icon': true
+          }
         }
       })
 
@@ -119,6 +164,11 @@ describe('ClickableCell', () => {
         props: { item, displayValue: 'Company Display' },
         slots: {
           default: ({ item }) => `Company: ${item.companyName}`
+        },
+        global: {
+          stubs: {
+            'font-awesome-icon': true
+          }
         }
       })
 

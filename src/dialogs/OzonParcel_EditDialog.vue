@@ -383,13 +383,13 @@ async function onLookup(values) {
           <div class="form-group">
             <label for="checkStatus" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
+              <font-awesome-icon
+                class="bookmark-icon"
+                icon="fa-solid fa-bookmark"
+                v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
+              />
               {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
-            <font-awesome-icon
-              class="bookmark-icon"
-              icon="fa-solid fa-bookmark"
-              v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
-            />
             <div class="action-buttons">
               <ActionButton
                 :item="item"
@@ -435,8 +435,9 @@ async function onLookup(values) {
             </div>
           </div>          
           <!-- Stopwords information when there are issues -->
-          <div v-if="CheckStatusCode.hasIssues(item?.checkStatus) && getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" class="form-group stopwords-info">
-            <div class="stopwords-text">
+          <div v-if="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" 
+              :class="['form-group',  CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-info' : 'stopwords-info-approved']">
+            <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved'">
               {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
             </div>
           </div>
@@ -627,7 +628,7 @@ async function onLookup(values) {
 
 .bookmark-icon {
   font-size: 0.9em;
-  color: #a89508;
+  margin-right: 6px;
 }
 
 </style>

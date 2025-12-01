@@ -14,7 +14,12 @@ describe('ClickableCell', () => {
 
   function createWrapper(props = {}) {
     return mount(ClickableCell, {
-      props: { ...defaultProps, ...props }
+      props: { ...defaultProps, ...props },
+      global: {
+        stubs: {
+          'font-awesome-icon': true
+        }
+      }
     })
   }
 
@@ -39,6 +44,11 @@ describe('ClickableCell', () => {
         props: defaultProps,
         slots: {
           default: '<strong>Custom Content</strong>'
+        },
+        global: {
+          stubs: {
+            'font-awesome-icon': true
+          }
         }
       })
       expect(wrapper.html()).toContain('<strong>Custom Content</strong>')
@@ -137,6 +147,11 @@ describe('ClickableCell', () => {
         props: defaultProps,
         slots: {
           default: ({ item, value }) => `Item: ${item.name}, Value: ${value}`
+        },
+        global: {
+          stubs: {
+            'font-awesome-icon': true
+          }
         }
       })
 
@@ -149,6 +164,11 @@ describe('ClickableCell', () => {
         props: { item, displayValue: 'Company Display' },
         slots: {
           default: ({ item }) => `Company: ${item.companyName}`
+        },
+        global: {
+          stubs: {
+            'font-awesome-icon': true
+          }
         }
       })
 

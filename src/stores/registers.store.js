@@ -10,6 +10,7 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
+import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
@@ -153,10 +154,10 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function validate(registerId, sw) {
+  async function validate(registerId, sw, swMatchMode = SwValidationMatchMode.NoSwMatch) {
     try {
       const url = sw
-        ? `${baseUrl}/${registerId}/validate-sw`
+        ? `${baseUrl}/${registerId}/validate-sw?withSwMatch=${swMatchMode}`
         : `${baseUrl}/${registerId}/validate-fc`
       const result = await fetchWrapper.post(url)
       return result

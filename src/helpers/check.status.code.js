@@ -2,6 +2,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+export const SwInheritanceFlag = 0x0400
+
 /**
  * Common status values used across enums
  */
@@ -19,9 +21,12 @@ export const SWCheckStatus = Object.freeze({
   
   NoIssues: 0x0010,
   Approved: 0x0020,
+  ApprovedInherited: 0x0020 | SwInheritanceFlag,
   ApprovedWithExcise: WStatusValues.ApprovedWithExcise,
+  ApprovedWithExciseInherited: WStatusValues.ApprovedWithExcise | SwInheritanceFlag,
   
   IssueStopWord: 0x0100,
+  IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -48,8 +53,11 @@ export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.NotChecked]: "Не проверено",
   [SWCheckStatus.NoIssues]: "Ок стоп слова",
   [SWCheckStatus.Approved]: "Согласовано",
+  [SWCheckStatus.ApprovedInherited]: "Согласовано",
   [SWCheckStatus.ApprovedWithExcise]: "Согласовано с акцизом",
-  [SWCheckStatus.IssueStopWord]: "Стоп слово"
+  [SWCheckStatus.ApprovedWithExciseInherited]: "Согласовано с акцизом",
+  [SWCheckStatus.IssueStopWord]: "Стоп слово",
+  [SWCheckStatus.IssueStopWordInherited]: "Стоп слово"
 })
 
 /**
@@ -137,6 +145,10 @@ export class CheckStatusCode {
            (CheckStatusCode.getSW(value) & 0x0100) !== 0
   }
 
+  static isInheritedSw(value) {
+    return (CheckStatusCode.getSW(value) & SwInheritanceFlag) !== 0
+  }
+  
   /**
    * Compose FC and SW components into a single integer
    */
@@ -185,8 +197,11 @@ export class CheckStatusCode {
       [SWCheckStatus.NotChecked]: "",
       [SWCheckStatus.NoIssues]: "Ok стоп слова",
       [SWCheckStatus.Approved]: "Согласовано",
+      [SWCheckStatus.ApprovedInherited]: "Согласовано",
       [SWCheckStatus.ApprovedWithExcise]: "Согласовано с акцизом",
+      [SWCheckStatus.ApprovedWithExciseInherited]: "Согласовано с акцизом",
       [SWCheckStatus.IssueStopWord]: "Стоп слово",
+      [SWCheckStatus.IssueStopWordInherited]: "Стоп слово",
       [SWCheckStatus.MarkedByPartner]: "Исключено партнёром"
     }
 

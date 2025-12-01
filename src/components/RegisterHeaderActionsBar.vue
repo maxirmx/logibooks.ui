@@ -52,6 +52,14 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
       <ActionButton
         :item="item"
+        icon="fa-solid fa-book-journal-whills"
+        tooltip-text="Проверить по стоп-словам с учётом исторических данных"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('validate-sw-ex')"
+      />
+      <ActionButton
+        :item="item"
         icon="fa-solid fa-anchor-circle-check"
         tooltip-text="Проверить по кодам ТН ВЭД"
         :iconSize="iconSize"
@@ -69,7 +77,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       <ActionButton
         :item="item"
         icon="fa-solid fa-book-skull"
-        tooltip-text="Расширенный подбор кодов ТН ВЭД"
+        tooltip-text="Подбор кодов ТН ВЭД с учётом исторических данных"
         :iconSize="iconSize"
         :disabled="disabled"
         @click="run('lookup-ex')"

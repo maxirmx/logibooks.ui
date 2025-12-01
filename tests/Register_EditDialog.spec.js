@@ -608,7 +608,7 @@ describe('Register_EditDialog', () => {
     const label = wrapper.find('.custom-checkbox')
     expect(label.exists()).toBe(true)
     const labelText = wrapper.find('.custom-checkbox-label')
-    expect(labelText.text()).toBe('Использовать данные этого реестра для подбора кода ТН ВЭД по артикулам')
+    expect(labelText.text()).toBe('Использовать для подбора кода ТН ВЭД и анализа стоп-слов')
   })
 
   it('sets default value for lookupByArticle in create mode', async () => {

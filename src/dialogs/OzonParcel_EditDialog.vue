@@ -385,6 +385,11 @@ async function onLookup(values) {
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
               {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
+            <font-awesome-icon
+              class="bookmark-icon"
+              icon="fa-solid fa-bookmark"
+              v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
+            />
             <div class="action-buttons">
               <ActionButton
                 :item="item"
@@ -619,4 +624,10 @@ async function onLookup(values) {
   pointer-events: auto;
   opacity: 1;
 }
+
+.bookmark-icon {
+  font-size: 0.9em;
+  color: #a89508;
+}
+
 </style>

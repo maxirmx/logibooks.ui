@@ -651,7 +651,7 @@ async function onLookup(values) {
 
 .bookmark-icon {
   font-size: 0.9em;
-  color: #a89508;
+  margin-right: 6px;
 }
 
 </style>

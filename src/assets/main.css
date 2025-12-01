@@ -1222,21 +1222,28 @@ a,
 
 /* Highlight status when there are issues */
 .status-cell.has-issues {
-  background-color: rgba(244, 67, 54, 0.15);
+  background-color: rgba(244, 67, 54, 0.25);
   color: #d32f2f;
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  border: 1px solid rgba(201, 17, 4, 0.3);
 }
+
+.status-cell.has-issues-with-inheritance {
+  background-color: rgba(244, 67, 54, 0.25);
+  color: #d32f2f;
+  border: 3px solid rgba(201, 17, 4, 0.765);
+}
+
 
 /* Status cell styling for different check statuses */
 .status-cell.not-checked {
-  background-color: rgba(33, 150, 243, 0.15);
+  background-color: rgba(33, 150, 243, 0.25);
   color: #1976d2;
   border: 1px solid rgba(33, 150, 243, 0.3);
   overflow: ellipsis;
 }
 
 .status-cell.no-issues {
-  background-color: rgba(76, 175, 80, 0.15);
+  background-color: rgba(76, 175, 80, 0.25);
   color: #388e3c;
   border: 1px solid rgba(76, 175, 80, 0.3);
   overflow: ellipsis;
@@ -1250,6 +1257,14 @@ a,
   overflow: ellipsis;
 }
 
+.status-cell.is-approved-with-excise {
+  background-color: rgba(255, 107, 53, 0.25);
+  color: #d84315;
+  border: 3px solid rgba(255, 107, 53, 0.765);
+  font-weight: 600;
+  overflow: ellipsis;
+}
+
 .status-cell.is-approved {
   background-color: rgba(76, 175, 80, 0.25);
   color: #2e7d32;
@@ -1258,8 +1273,12 @@ a,
   overflow: ellipsis;
 }
 
-.status-cell.is-inherited {
-  border: 3px solid rgb(244, 225, 18);
+.status-cell.status-cell.is-approved-with-inheritance {
+  background-color: rgba(76, 175, 80, 0.25);
+  color: #2e7d32;
+  border: 3px solid #065f0c;
+  font-weight: 600;
+  overflow: ellipsis;
 }
 
 /* Stopwords information styling */

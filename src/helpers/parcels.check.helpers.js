@@ -133,7 +133,7 @@ export function getCheckStatusClass(checkStatus) {
   }
 
   if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedWithExciseInherited) {
-    return 'is-approved-with-excise is-inherited'
+    return 'is-approved-with-excise-and-inheritance'
   }
 
   if (checkStatus === CheckStatusCode.ApprovedWithExcise.value) {
@@ -141,19 +141,19 @@ export function getCheckStatusClass(checkStatus) {
   }
 
   if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.IssueStopWordInherited) {
-    return 'has-issues is-inherited'
+    return 'has-issues-with-inheritance'
   }
 
   if (CheckStatusCode.hasIssues(checkStatus)) {
     return 'has-issues'
   }
 
-  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.Approved) {
-    return 'is-approved'
+  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedInherited) {
+    return 'is-approved-with-inheritance'
   }
 
-  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedInherited) {
-    return 'is-approved is-inherited'
+  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.Approved) {
+    return 'is-approved'
   }
 
   return 'no-issues'

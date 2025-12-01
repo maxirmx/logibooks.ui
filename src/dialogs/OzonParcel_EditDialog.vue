@@ -383,13 +383,13 @@ async function onLookup(values) {
           <div class="form-group">
             <label for="checkStatus" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
+              <font-awesome-icon
+                class="bookmark-icon"
+                icon="fa-solid fa-bookmark"
+                v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
+              />
               {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
-            <font-awesome-icon
-              class="bookmark-icon"
-              icon="fa-solid fa-bookmark"
-              v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
-            />
             <div class="action-buttons">
               <ActionButton
                 :item="item"
@@ -627,7 +627,7 @@ async function onLookup(values) {
 
 .bookmark-icon {
   font-size: 0.9em;
-  color: #a89508;
+  margin-right: 6px;
 }
 
 </style>

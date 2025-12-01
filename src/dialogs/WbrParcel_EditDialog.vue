@@ -441,7 +441,7 @@ async function onLookup(values) {
           <!-- Stopwords information when there are issues -->
           <div v-if="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" 
               :class="['form-group',  CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-info' : 'stopwords-info-approved']">
-            <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved '">
+            <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved'">
               {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
             </div>
           </div>

@@ -290,6 +290,51 @@ describe('parcels.check.helpers', () => {
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'")
     })
+
+    it('includes matchingFCComment when present with other info', () => {
+      const item = { 
+        feacnOrderIds: [1],
+        stopWordIds: [1],
+        matchingFCComment: 'Additional FC information'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional FC information")
+    })
+
+    it('returns only matchingFCComment when no other info present', () => {
+      const item = { 
+        matchingFCComment: 'FC information only'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe('FC information only')
+    })
+
+    it('ignores empty matchingFCComment', () => {
+      const item = { 
+        stopWordIds: [1],
+        matchingFCComment: ''
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('ignores null matchingFCComment', () => {
+      const item = { 
+        stopWordIds: [1],
+        matchingFCComment: null
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('includes matchingFCComment with prefixes', () => {
+      const item = { 
+        feacnPrefixIds: [1],
+        matchingFCComment: 'Prefix comment'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment")
+    })
   })
 
   describe('Status Check Functions', () => {
@@ -315,6 +360,21 @@ describe('parcels.check.helpers', () => {
       it('returns "is-approved" for SW approved status', () => {
         const swApproved = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.Approved)
         expect(getCheckStatusClass(swApproved.value)).toBe('is-approved')
+      })
+
+      it('returns "is-approved-with-excise-and-inheritance" for ApprovedWithExciseInherited status', () => {
+        const swApprovedWithExciseInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.ApprovedWithExciseInherited)
+        expect(getCheckStatusClass(swApprovedWithExciseInherited.value)).toBe('is-approved-with-excise-and-inheritance')
+      })
+
+      it('returns "has-issues-with-inheritance" for IssueStopWordInherited status', () => {
+        const swIssueInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.IssueStopWordInherited)
+        expect(getCheckStatusClass(swIssueInherited.value)).toBe('has-issues-with-inheritance')
+      })
+
+      it('returns "is-approved-with-inheritance" for ApprovedInherited status', () => {
+        const swApprovedInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.ApprovedInherited)
+        expect(getCheckStatusClass(swApprovedInherited.value)).toBe('is-approved-with-inheritance')
       })
 
       it('returns "no-issues" as default for other status codes', () => {

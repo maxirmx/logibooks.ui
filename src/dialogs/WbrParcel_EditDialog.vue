@@ -439,8 +439,9 @@ async function onLookup(values) {
             </div>
           </div>          
           <!-- Stopwords information when there are issues -->
-          <div v-if="CheckStatusCode.hasIssues(item?.checkStatus) && getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" class="form-group stopwords-info">
-            <div class="stopwords-text">
+          <div v-if="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" 
+              :class="['form-group',  CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-info' : 'stopwords-info-approved']">
+            <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved'">
               {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
             </div>
           </div>
@@ -651,7 +652,7 @@ async function onLookup(values) {
 
 .bookmark-icon {
   font-size: 0.9em;
-  color: #a89508;
+  margin-right: 6px;
 }
 
 </style>

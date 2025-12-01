@@ -9,6 +9,7 @@ export const SwInheritanceFlag = 0x0400
  */
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
+  ApprovedWithExciseInherited: 0x0230 | SwInheritanceFlag,
   MarkedByPartner: 0x01FF
 })
 
@@ -23,7 +24,7 @@ export const SWCheckStatus = Object.freeze({
   Approved: 0x0020,
   ApprovedInherited: 0x0020 | SwInheritanceFlag,
   ApprovedWithExcise: WStatusValues.ApprovedWithExcise,
-  ApprovedWithExciseInherited: WStatusValues.ApprovedWithExcise | SwInheritanceFlag,
+  ApprovedWithExciseInherited: WStatusValues.ApprovedWithExciseInherited,
   
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
@@ -39,6 +40,7 @@ export const FCCheckStatus = Object.freeze({
   
   NoIssues: 0x0010,
   ApprovedWithExcise: WStatusValues.ApprovedWithExcise,
+  ApprovedWithExciseInherited: WStatusValues.ApprovedWithExciseInherited,
   
   IssueFeacnCode: 0x0100,
   IssueNonexistingFeacn: 0x0101,
@@ -53,11 +55,11 @@ export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.NotChecked]: "Не проверено",
   [SWCheckStatus.NoIssues]: "Ок стоп слова",
   [SWCheckStatus.Approved]: "Согласовано",
-  [SWCheckStatus.ApprovedInherited]: "Согласовано",
+  [SWCheckStatus.ApprovedInherited]: "🔖 Согласовано",
   [SWCheckStatus.ApprovedWithExcise]: "Согласовано с акцизом",
-  [SWCheckStatus.ApprovedWithExciseInherited]: "Согласовано с акцизом",
+  [SWCheckStatus.ApprovedWithExciseInherited]: "🔖 Согласовано с акцизом",
   [SWCheckStatus.IssueStopWord]: "Стоп слово",
-  [SWCheckStatus.IssueStopWordInherited]: "Стоп слово"
+  [SWCheckStatus.IssueStopWordInherited]: "🔖 Стоп слово"
 })
 
 /**
@@ -67,6 +69,7 @@ export const FCCheckStatusNames = Object.freeze({
   [FCCheckStatus.NotChecked]: "Не проверено",
   [FCCheckStatus.NoIssues]: "Ок ТН ВЭД",
   [FCCheckStatus.ApprovedWithExcise]: "Согласовано с акцизом",
+  [FCCheckStatus.ApprovedWithExciseInherited]: "🔖 Согласовано с акцизом",
   [FCCheckStatus.IssueFeacnCode]: "Стоп ТН ВЭД",
   [FCCheckStatus.IssueNonexistingFeacn]: "Нет ТН ВЭД",
   [FCCheckStatus.IssueInvalidFeacnFormat]: "Формат ТН ВЭД"
@@ -185,7 +188,8 @@ export class CheckStatusCode {
     if (this.fc === FCCheckStatus.NotChecked && this.sw === SWCheckStatus.NotChecked) {
       return "Не проверено"
     }
-    if (this.fc === FCCheckStatus.ApprovedWithExcise && this.sw === SWCheckStatus.ApprovedWithExcise) {
+    if (this.fc === FCCheckStatus.ApprovedWithExcise || this.sw === SWCheckStatus.ApprovedWithExcise || 
+        this.fc === FCCheckStatus.ApprovedWithExciseInherited || this.sw === SWCheckStatus.ApprovedWithExciseInherited) {
       return "Согласовано с акцизом"
     }
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {

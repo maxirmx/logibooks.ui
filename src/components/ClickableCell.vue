@@ -6,7 +6,8 @@
 defineProps({
   item: { type: Object, required: true },
   displayValue: { type: [String, Number, null, undefined], default: '' },
-  cellClass: { type: String, default: 'clickable-cell' }
+  cellClass: { type: String, default: 'clickable-cell' },
+  showBookmark: { type: Boolean, default: false }
 })
 
 defineEmits(['click'])
@@ -17,6 +18,11 @@ defineEmits(['click'])
     :class="cellClass"
     @click="$emit('click', item)"
   >
+    <font-awesome-icon
+      v-if="showBookmark"
+      class="bookmark-icon"
+      icon="fa-solid fa-bookmark"
+    />
     <slot :item="item" :value="displayValue">
       {{ displayValue }}
     </slot>
@@ -26,5 +32,10 @@ defineEmits(['click'])
 <style scoped>
 .clickable-cell {
   cursor: pointer;
+}
+
+.bookmark-icon {
+  font-size: 0.9em;
+  margin-right: 6px;
 }
 </style>

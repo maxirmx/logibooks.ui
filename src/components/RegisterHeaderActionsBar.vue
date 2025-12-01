@@ -12,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'validate-sw',
+  'validate-sw-ex',
   'validate-fc',
   'lookup',
   'lookup-ex',

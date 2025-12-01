@@ -538,19 +538,13 @@ function getGenericTemplateHeaders() {
 
         <!-- Special template for checkStatus to display check status title -->
         <template #[`item.checkStatus`]="{ item }">
-          <div class="check-status-with-bookmark">
-            <ClickableCell 
-              :item="item" 
-              :display-value="new CheckStatusCode(item.checkStatus).toString()" 
-              :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`" 
-              @click="editParcel" 
-            />
-            <font-awesome-icon
-              class="bookmark-icon"
-              icon="fa-solid fa-bookmark"
-              v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
-            />
-          </div>
+          <ClickableCell 
+            :item="item" 
+            :display-value="new CheckStatusCode(item.checkStatus).toString()" 
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`"
+            :show-bookmark="CheckStatusCode.isInheritedSw(item.checkStatus)"
+            @click="editParcel" 
+          />
         </template>
 
         <!-- Special template for tnVed to display with FEACN tooltip -->
@@ -682,19 +676,6 @@ function getGenericTemplateHeaders() {
   margin-left: 8px;
   padding-left: 8px;
   border-left: 1px solid #d0d7de;
-}
-
-/* Keep check status and bookmark on the same line */
-.check-status-with-bookmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.check-status-with-bookmark .bookmark-icon {
-  font-size: 0.9em;
-  color: #a89508;
 }
 
 </style>

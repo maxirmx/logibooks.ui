@@ -362,6 +362,21 @@ describe('parcels.check.helpers', () => {
         expect(getCheckStatusClass(swApproved.value)).toBe('is-approved')
       })
 
+      it('returns "is-approved-with-excise-and-inheritance" for ApprovedWithExciseInherited status', () => {
+        const swApprovedWithExciseInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.ApprovedWithExciseInherited)
+        expect(getCheckStatusClass(swApprovedWithExciseInherited.value)).toBe('is-approved-with-excise-and-inheritance')
+      })
+
+      it('returns "has-issues-with-inheritance" for IssueStopWordInherited status', () => {
+        const swIssueInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.IssueStopWordInherited)
+        expect(getCheckStatusClass(swIssueInherited.value)).toBe('has-issues-with-inheritance')
+      })
+
+      it('returns "is-approved-with-inheritance" for ApprovedInherited status', () => {
+        const swApprovedInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.ApprovedInherited)
+        expect(getCheckStatusClass(swApprovedInherited.value)).toBe('is-approved-with-inheritance')
+      })
+
       it('returns "no-issues" as default for other status codes', () => {
         const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
         const swNoIssues = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)

@@ -764,7 +764,7 @@ function getCustomerName(customerId) {
                 class="custom-checkbox-input"
               />
               <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Использовать данные этого реестра для подбора кода ТН ВЭД по артикулам</span>
+              <span class="label custom-checkbox-label">Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span>
             </label>
           </div>
         </div>

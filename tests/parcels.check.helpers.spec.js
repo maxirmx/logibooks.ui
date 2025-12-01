@@ -91,56 +91,6 @@ describe('parcels.check.helpers', () => {
       const result = getStopWordsInfo(item, mockStopWords)
       expect(result).toBeNull()
     })
-
-    it('includes matchingFCComment when present', () => {
-      const item = { 
-        stopWordIds: [1, 2],
-        matchingFCComment: 'Additional FC information'
-      }
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden', 'banned' - Additional FC information")
-    })
-
-    it('returns matchingFCComment when stopwords are empty', () => {
-      const item = { 
-        stopWordIds: [],
-        matchingFCComment: 'Additional FC information'
-      }
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBe('Additional FC information')
-    })
-
-    it('ignores empty matchingFCComment', () => {
-      const item = { 
-        stopWordIds: [1],
-        matchingFCComment: ''
-      }
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
-    })
-
-    it('ignores null matchingFCComment', () => {
-      const item = { 
-        stopWordIds: [1],
-        matchingFCComment: null
-      }
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
-    })
-
-    it('returns matchingFCComment when no stopWordIds property', () => {
-      const item = { 
-        matchingFCComment: 'FC information only'
-      }
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBe('FC information only')
-    })
-
-    it('returns null when neither stopwords nor matchingFCComment exist', () => {
-      const item = {}
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBeNull()
-    })
   })
 
   describe('getFeacnOrdersText', () => {
@@ -339,6 +289,69 @@ describe('parcels.check.helpers', () => {
       const item = { feacnOrderIds: [1], stopWordIds: [1], feacnPrefixIds: [999] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('includes matchingFCComment when present with other info', () => {
+      const item = { 
+        feacnOrderIds: [1],
+        stopWordIds: [1],
+        matchingFCComment: 'Additional FC information'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional FC information")
+    })
+
+    it('returns only matchingFCComment when no other info present', () => {
+      const item = { 
+        matchingFCComment: 'FC information only'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe('FC information only')
+    })
+
+    it('ignores empty matchingFCComment', () => {
+      const item = { 
+        stopWordIds: [1],
+        matchingFCComment: ''
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('ignores null matchingFCComment', () => {
+      const item = { 
+        stopWordIds: [1],
+        matchingFCComment: null
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('includes matchingFCComment when present with other info', () => {
+      const item = { 
+        feacnOrderIds: [1],
+        stopWordIds: [1],
+        matchingFCComment: 'Additional FC information'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional FC information")
+    })
+
+    it('returns only matchingFCComment when no other info present', () => {
+      const item = { 
+        matchingFCComment: 'FC information only'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe('FC information only')
+    })
+
+    it('includes matchingFCComment with prefixes', () => {
+      const item = { 
+        feacnPrefixIds: [1],
+        matchingFCComment: 'Prefix comment'
+      }
+      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
+      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment")
     })
   })
 

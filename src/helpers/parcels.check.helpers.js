@@ -46,7 +46,7 @@ export function getFeacnOrdersText(item, feacnOrdersCollection) {
 
 /**
  * Generates complete stopwords information text
- * @param {Object} item - The parcel item containing stopWordIds and optionally matchingFCComment
+ * @param {Object} item - The parcel item containing stopWordIds
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @returns {string|null} - Formatted complete stopwords information or null
  */
@@ -54,17 +54,7 @@ export function getStopWordsInfo(item, stopWordsCollection) {
   const stopWordsList = getStopWordsText(item, stopWordsCollection)
   
   if (stopWordsList) {
-    let result = `Стоп-слова и фразы: ${stopWordsList}`
-    
-    if (item?.matchingFCComment) {
-      result += ` - ${item.matchingFCComment}`
-    }
-    
-    return result
-  }
-  // Return matchingFCComment even without stopwords
-  if (item?.matchingFCComment) {
-    return item.matchingFCComment
+    return `Стоп-слова и фразы: ${stopWordsList}`
   }
   
   return null
@@ -112,7 +102,7 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
 
 /**
  * Generates combined check information text with both feacn orders and stopwords
- * @param {Object} item - The parcel item containing feacnOrderIds and stopWordIds
+ * @param {Object} item - The parcel item containing feacnOrderIds, stopWordIds, and optionally matchingFCComment
  * @param {Array} feacnOrdersCollection - Collection of all feacn orders
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @param {Array} feacnPrefixesCollection - Collection of all manually set feacn prefixes
@@ -124,6 +114,11 @@ export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollect
   const feacnPrefixesInfo = getFeacnPrefixesInfo(item, feacnPrefixesCollection)
   
   const allInfo = [feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
+  
+  // Add matchingFCComment if present
+  if (item?.matchingFCComment) {
+    allInfo.push(item.matchingFCComment)
+  }
   
   return allInfo.length > 0 ? allInfo.join('; ') : null
 }

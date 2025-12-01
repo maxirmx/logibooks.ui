@@ -1273,7 +1273,7 @@ a,
   overflow: ellipsis;
 }
 
-.status-cell.status-cell.is-approved-with-inheritance {
+.status-cell.is-approved-with-inheritance {
   background-color: rgba(76, 175, 80, 0.25);
   color: #2e7d32;
   border: 3px solid #065f0c;

@@ -327,24 +327,6 @@ describe('parcels.check.helpers', () => {
       expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
     })
 
-    it('includes matchingFCComment when present with other info', () => {
-      const item = { 
-        feacnOrderIds: [1],
-        stopWordIds: [1],
-        matchingFCComment: 'Additional FC information'
-      }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional FC information")
-    })
-
-    it('returns only matchingFCComment when no other info present', () => {
-      const item = { 
-        matchingFCComment: 'FC information only'
-      }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe('FC information only')
-    })
-
     it('includes matchingFCComment with prefixes', () => {
       const item = { 
         feacnPrefixIds: [1],

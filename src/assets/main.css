@@ -1294,6 +1294,19 @@ a,
   gap: 0.5rem;
 }
 
+.stopwords-info-approved {
+  grid-column: 2; /* Only span the second column to align with checkStatus field */
+  padding: 4px 8px;
+  background-color: rgba(76, 175, 80, 0.05);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+
 .stopwords-info .label {
   color: #d32f2f;
   font-weight: 600;
@@ -1307,6 +1320,15 @@ a,
 
 .stopwords-text {
   color: #d32f2f;
+  font-size: 0.9rem;
+  font-style: italic;
+  width: 60%;
+  flex-grow: 1;
+  word-wrap: break-word;
+}
+
+.stopwords-text-approved {
+  color: #2e7d32;
   font-size: 0.9rem;
   font-style: italic;
   width: 60%;

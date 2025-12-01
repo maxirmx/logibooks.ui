@@ -91,6 +91,56 @@ describe('parcels.check.helpers', () => {
       const result = getStopWordsInfo(item, mockStopWords)
       expect(result).toBeNull()
     })
+
+    it('includes matchingFCComment when present', () => {
+      const item = { 
+        stopWordIds: [1, 2],
+        matchingFCComment: 'Additional FC information'
+      }
+      const result = getStopWordsInfo(item, mockStopWords)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden', 'banned' - Additional FC information")
+    })
+
+    it('returns matchingFCComment when stopwords are empty', () => {
+      const item = { 
+        stopWordIds: [],
+        matchingFCComment: 'Additional FC information'
+      }
+      const result = getStopWordsInfo(item, mockStopWords)
+      expect(result).toBe('Additional FC information')
+    })
+
+    it('ignores empty matchingFCComment', () => {
+      const item = { 
+        stopWordIds: [1],
+        matchingFCComment: ''
+      }
+      const result = getStopWordsInfo(item, mockStopWords)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('ignores null matchingFCComment', () => {
+      const item = { 
+        stopWordIds: [1],
+        matchingFCComment: null
+      }
+      const result = getStopWordsInfo(item, mockStopWords)
+      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
+    })
+
+    it('returns matchingFCComment when no stopWordIds property', () => {
+      const item = { 
+        matchingFCComment: 'FC information only'
+      }
+      const result = getStopWordsInfo(item, mockStopWords)
+      expect(result).toBe('FC information only')
+    })
+
+    it('returns null when neither stopwords nor matchingFCComment exist', () => {
+      const item = {}
+      const result = getStopWordsInfo(item, mockStopWords)
+      expect(result).toBeNull()
+    })
   })
 
   describe('getFeacnOrdersText', () => {

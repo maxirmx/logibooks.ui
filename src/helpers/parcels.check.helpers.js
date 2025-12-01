@@ -46,7 +46,7 @@ export function getFeacnOrdersText(item, feacnOrdersCollection) {
 
 /**
  * Generates complete stopwords information text
- * @param {Object} item - The parcel item containing stopWordIds
+ * @param {Object} item - The parcel item containing stopWordIds and optionally matchingFCComment
  * @param {Array} stopWordsCollection - Collection of all stopwords
  * @returns {string|null} - Formatted complete stopwords information or null
  */
@@ -54,7 +54,17 @@ export function getStopWordsInfo(item, stopWordsCollection) {
   const stopWordsList = getStopWordsText(item, stopWordsCollection)
   
   if (stopWordsList) {
-    return `Стоп-слова и фразы: ${stopWordsList}`
+    let result = `Стоп-слова и фразы: ${stopWordsList}`
+    
+    if (item?.matchingFCComment) {
+      result += ` - ${item.matchingFCComment}`
+    }
+    
+    return result
+  }
+  // Return matchingFCComment even without stopwords
+  if (item?.matchingFCComment) {
+    return item.matchingFCComment
   }
   
   return null

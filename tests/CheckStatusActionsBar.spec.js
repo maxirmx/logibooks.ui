@@ -56,10 +56,10 @@ describe('CheckStatusActionsBar', () => {
       expect(wrapper.find('.action-buttons').exists()).toBe(true)
     })
 
-    it('renders four ActionButton components', () => {
+    it('renders five ActionButton components', () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
-      expect(buttons).toHaveLength(4)
+      expect(buttons).toHaveLength(5)
     })
 
     it('renders validate stopwords button with correct props', () => {
@@ -74,10 +74,22 @@ describe('CheckStatusActionsBar', () => {
       expect(validateSwButton.props('iconSize')).toBe('1x')
     })
 
+    it('renders validate stopwords extended button with correct props', () => {
+      const wrapper = createWrapper()
+      const buttons = wrapper.findAllComponents(ActionButton)
+      const validateSwExButton = buttons[1]
+      
+      expect(validateSwExButton.props('icon')).toBe('fa-solid fa-book-journal-whills')
+      expect(validateSwExButton.props('tooltipText')).toBe('Сохранить и проверить стоп слова с учётом исторических данных')
+      expect(validateSwExButton.props('item')).toEqual(defaultProps.item)
+      expect(validateSwExButton.props('disabled')).toBe(false)
+      expect(validateSwExButton.props('iconSize')).toBe('1x')
+    })
+
     it('renders validate feacn codes button with correct props', () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
-      const validateFcButton = buttons[1]
+      const validateFcButton = buttons[2]
       
       expect(validateFcButton.props('icon')).toBe('fa-solid fa-anchor-circle-check')
       expect(validateFcButton.props('tooltipText')).toBe('Сохранить и проверить коды ТН ВЭД')
@@ -89,7 +101,7 @@ describe('CheckStatusActionsBar', () => {
     it('renders approve button with correct props', () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
-      const approveButton = buttons[2]
+      const approveButton = buttons[3]
       
       expect(approveButton.props('icon')).toBe('fa-solid fa-check-circle')
       expect(approveButton.props('tooltipText')).toBe('Сохранить и согласовать')
@@ -102,7 +114,7 @@ describe('CheckStatusActionsBar', () => {
     it('renders approve with excise button with correct props', () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
-      const approveExciseButton = buttons[3]
+      const approveExciseButton = buttons[4]
       
       expect(approveExciseButton.props('icon')).toBe('fa-solid fa-check-circle')
       expect(approveExciseButton.props('tooltipText')).toBe('Сохранить и согласовать c акцизом')
@@ -144,11 +156,21 @@ describe('CheckStatusActionsBar', () => {
       expect(wrapper.emitted('validate-sw')?.[0]).toEqual([defaultProps.values])
     })
 
-    it('emits validate-fc event when validate feacn codes button is clicked', async () => {
+    it('emits validate-sw-ex event when validate stopwords extended button is clicked', async () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
       
       await buttons[1].vm.$emit('click')
+      
+      expect(wrapper.emitted('validate-sw-ex')).toBeTruthy()
+      expect(wrapper.emitted('validate-sw-ex')?.[0]).toEqual([defaultProps.values])
+    })
+
+    it('emits validate-fc event when validate feacn codes button is clicked', async () => {
+      const wrapper = createWrapper()
+      const buttons = wrapper.findAllComponents(ActionButton)
+      
+      await buttons[2].vm.$emit('click')
       
       expect(wrapper.emitted('validate-fc')).toBeTruthy()
       expect(wrapper.emitted('validate-fc')?.[0]).toEqual([defaultProps.values])
@@ -158,7 +180,7 @@ describe('CheckStatusActionsBar', () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
       
-      await buttons[2].vm.$emit('click')
+      await buttons[3].vm.$emit('click')
       
       expect(wrapper.emitted('approve')).toBeTruthy()
       expect(wrapper.emitted('approve')?.[0]).toEqual([defaultProps.values])
@@ -168,7 +190,7 @@ describe('CheckStatusActionsBar', () => {
       const wrapper = createWrapper()
       const buttons = wrapper.findAllComponents(ActionButton)
       
-      await buttons[3].vm.$emit('click')
+      await buttons[4].vm.$emit('click')
       
       expect(wrapper.emitted('approve-excise')).toBeTruthy()
       expect(wrapper.emitted('approve-excise')?.[0]).toEqual([defaultProps.values])
@@ -183,8 +205,10 @@ describe('CheckStatusActionsBar', () => {
       await buttons[1].vm.$emit('click')
       await buttons[2].vm.$emit('click')
       await buttons[3].vm.$emit('click')
+      await buttons[4].vm.$emit('click')
       
       expect(wrapper.emitted('validate-sw')?.[0]).toEqual([customValues])
+      expect(wrapper.emitted('validate-sw-ex')?.[0]).toEqual([customValues])
       expect(wrapper.emitted('validate-fc')?.[0]).toEqual([customValues])
       expect(wrapper.emitted('approve')?.[0]).toEqual([customValues])
       expect(wrapper.emitted('approve-excise')?.[0]).toEqual([customValues])

@@ -78,7 +78,7 @@ defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve
         :disabled="disabled"
         @click="$emit('approve-excise', values)"
         variant="orange"
-      :iconSize="'1x'"
+        :iconSize="'1x'"
     />
   </div>
 </template>

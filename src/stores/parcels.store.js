@@ -7,6 +7,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 
 const baseUrl = `${apiUrl}/parcels`
 
@@ -147,16 +148,15 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function validate(id, sw) {
+  async function validate(id, sw, swMatchMode = SwValidationMatchMode.NoSwMatch) {
     loading.value = true
     error.value = null
     try {
-      if (sw) {
-        await fetchWrapper.post(`${baseUrl}/${id}/validate-sw`)
-      }
-      else {
-        await fetchWrapper.post(`${baseUrl}/${id}/validate-fc`)
-      }
+
+      const url = sw
+        ? `${baseUrl}/${id}/validate-sw?withSwMatch=${swMatchMode}`
+        : `${baseUrl}/${id}/validate-fc`
+      await fetchWrapper.post(url)
       return true
     } catch (err) {
       error.value = err

@@ -1257,14 +1257,6 @@ a,
   overflow: ellipsis;
 }
 
-.status-cell.is-approved-with-excise-and-inheritance {
-  background-color: rgba(255, 107, 53, 0.25);
-  color: #d84315;
-  border: 3px solid rgba(255, 107, 53, 0.765);
-  font-weight: 600;
-  overflow: ellipsis;
-}
-
 .status-cell.is-approved {
   background-color: rgba(76, 175, 80, 0.25);
   color: #2e7d32;

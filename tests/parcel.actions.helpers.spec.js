@@ -9,6 +9,8 @@ import {
   generateXml,
   approveParcelWithExcise 
 } from '@/helpers/parcel.actions.helpers.js'
+import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+
 
 // Mock the alert store
 vi.mock('@/stores/alert.store.js', () => ({
@@ -52,10 +54,10 @@ describe('parcel actions helpers', () => {
 
   describe('validateParcelData', () => {
     it('should validate parcel successfully', async () => {
-      await validateParcelData(mockValues, mockItem, mockParcelsStore, true)
+      await validateParcelData(mockValues, mockItem, mockParcelsStore, true, SwValidationMatchMode.NoSwMatch)
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.validate).toHaveBeenCalledWith(123, true)
+      expect(mockParcelsStore.validate).toHaveBeenCalledWith(123, true, SwValidationMatchMode.NoSwMatch)
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })

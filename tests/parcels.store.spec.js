@@ -284,7 +284,7 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.validate(789, true)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw?withSwMatch=0`)
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(null)
@@ -297,7 +297,7 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.validate(789, true)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw?withSwMatch=0`)
       expect(result).toBe(false)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)

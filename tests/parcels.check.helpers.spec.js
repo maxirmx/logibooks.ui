@@ -291,28 +291,28 @@ describe('parcels.check.helpers', () => {
       expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'")
     })
 
-    it('includes matchingFCComment when present with other info', () => {
+    it('includes matchingSWComment when present with other info', () => {
       const item = { 
         feacnOrderIds: [1],
         stopWordIds: [1],
-        matchingFCComment: 'Additional FC information'
+        matchingSWComment: 'Additional SW information'
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional FC information")
+      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional SW information")
     })
 
-    it('returns only matchingFCComment when no other info present', () => {
+    it('returns only matchingSWComment when no other info present', () => {
       const item = { 
-        matchingFCComment: 'FC information only'
+        matchingSWComment: 'SW information only'
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe('FC information only')
+      expect(result).toBe('SW information only')
     })
 
-    it('ignores empty matchingFCComment', () => {
+    it('ignores empty matchingSWComment', () => {
       const item = { 
         stopWordIds: [1],
-        matchingFCComment: ''
+        matchingSWComment: ''
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
@@ -327,10 +327,10 @@ describe('parcels.check.helpers', () => {
       expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
     })
 
-    it('includes matchingFCComment with prefixes', () => {
+    it('includes matchingSWComment with prefixes', () => {
       const item = { 
         feacnPrefixIds: [1],
-        matchingFCComment: 'Prefix comment'
+        matchingSWComment: 'Prefix comment'
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment")
@@ -360,11 +360,6 @@ describe('parcels.check.helpers', () => {
       it('returns "is-approved" for SW approved status', () => {
         const swApproved = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.Approved)
         expect(getCheckStatusClass(swApproved.value)).toBe('is-approved')
-      })
-
-      it('returns "is-approved-with-excise-and-inheritance" for ApprovedWithExciseInherited status', () => {
-        const swApprovedWithExciseInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.ApprovedWithExciseInherited)
-        expect(getCheckStatusClass(swApprovedWithExciseInherited.value)).toBe('is-approved-with-excise-and-inheritance')
       })
 
       it('returns "has-issues-with-inheritance" for IssueStopWordInherited status', () => {

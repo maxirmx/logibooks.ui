@@ -37,6 +37,7 @@ import {
   generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
+import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -152,14 +153,14 @@ const schema = Yup.object().shape({
 })
 
 
-async function validateParcel(values, sw) {
+async function validateParcel(values, sw, matchMode) {
   if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
     
-    await validateParcelData(values, item, parcelsStore, sw)
+    await validateParcelData(values, item, parcelsStore, sw, matchMode)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -399,7 +400,8 @@ async function onLookup(values) {
               :item="item"
               :values="values"
               :disabled="isSubmitting || runningAction || loading"
-              @validate-sw="(vals) => validateParcel(vals, true)"
+              @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
+              @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
               @validate-fc="(vals) => validateParcel(vals, false)"
               @approve="approveParcel"
               @approve-excise="approveParcelWithExcise"

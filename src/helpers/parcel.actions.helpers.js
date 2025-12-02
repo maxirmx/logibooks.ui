@@ -10,13 +10,14 @@ import { useAlertStore } from '@/stores/alert.store.js'
  * @param {*} parcelsStore - Parcels store
  * @param {*} loadOrdersFn - Load orders function
  * @param {boolean} sw - Whether to validate against Stopwords (true) or FEACN (false)
+ * @param {SWMatchMode} matchMode - Whether to use match mode for validation
  * @returns {Promise<boolean>}
  */
-export async function validateParcelData(values, item, parcelsStore, sw) {
+export async function validateParcelData(values, item, parcelsStore, sw, matchMode) {
   if (item.value.id != values.id) return Promise.resolve(false)
   try {
     await parcelsStore.update(item.value.id, values)
-    await parcelsStore.validate(item.value.id, sw)
+    await parcelsStore.validate(item.value.id, sw, matchMode)
   } catch (error) {
     const alertStore = useAlertStore()
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'

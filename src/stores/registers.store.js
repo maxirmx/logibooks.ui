@@ -155,6 +155,8 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function validate(registerId, sw, swMatchMode = SwValidationMatchMode.NoSwMatch) {
+    loading.value = true
+    error.value = null
     try {
       const url = sw
         ? `${baseUrl}/${registerId}/validate-sw?withSwMatch=${swMatchMode}`
@@ -164,6 +166,8 @@ export const useRegistersStore = defineStore('registers', () => {
     } catch (err) {
       error.value = err
       throw err
+    } finally {
+      loading.value = false
     }
   }
 

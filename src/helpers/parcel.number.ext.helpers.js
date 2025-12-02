@@ -13,7 +13,6 @@ import { useAuthStore } from '@/stores/auth.store.js'
  * @param {string} fieldName - The field name to use for filtering ('postingNumber' or 'shk')
  */
 export function handleFellowsClick(registerId, parcelNumber) {
-  console.log('handleFellows', registerId, parcelNumber)
   if (!parcelNumber || !registerId) {
     return
   }

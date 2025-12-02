@@ -26,6 +26,7 @@ import OzonFormField from '@/components/OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -390,42 +391,15 @@ async function onLookup(values) {
               />
               {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
-            <div class="action-buttons">
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-spell-check"
-                tooltip-text="Сохранить и проверить стоп слова"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => validateParcel(values, true)"
-                :iconSize="'1x'"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-anchor-circle-check"
-                tooltip-text="Сохранить и проверить коды ТН ВЭД"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => validateParcel(values, false)"
-                :iconSize="'1x'"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-check-circle"
-                tooltip-text="Сохранить и согласовать"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => approveParcel(values)"
-                variant="green"
-                :iconSize="'1x'"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-check-circle"
-                tooltip-text="Сохранить и согласовать c акцизом"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => approveParcelWithExcise(values)"
-                variant="orange"
-                :iconSize="'1x'"
-              />
-            </div>
+            <CheckStatusActionsBar
+              :item="item"
+              :values="values"
+              :disabled="isSubmitting || runningAction || loading"
+              @validate-sw="(vals) => validateParcel(vals, true)"
+              @validate-fc="(vals) => validateParcel(vals, false)"
+              @approve="approveParcel"
+              @approve-excise="approveParcelWithExcise"
+            />
           </div>
           <!-- Last view -->
           <div class="form-group">

@@ -26,6 +26,7 @@ import WbrFormField from '@/components/WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -387,49 +388,22 @@ async function onLookup(values) {
           <div class="form-group">
             <label for="checkStatus" class="label">{{ wbrRegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
+              <font-awesome-icon
+                class="bookmark-icon"
+                icon="fa-solid fa-bookmark"
+                v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
+              />
               {{ new CheckStatusCode(item?.checkStatus).toString() }}
             </div>
-            <font-awesome-icon
-              class="bookmark-icon"
-              icon="fa-solid fa-bookmark"
-              v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
+            <CheckStatusActionsBar
+              :item="item"
+              :values="values"
+              :disabled="isSubmitting || runningAction || loading"
+              @validate-sw="(vals) => validateParcel(vals, true)"
+              @validate-fc="(vals) => validateParcel(vals, false)"
+              @approve="approveParcel"
+              @approve-excise="approveParcelWithExcise"
             />
-            <div class="action-buttons">
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-spell-check"
-                tooltip-text="Сохранить и проверить стоп слова"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => validateParcel(values, true)"
-                :iconSize="'1x'"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-anchor-circle-check"
-                tooltip-text="Сохранить и проверить коды ТН ВЭД"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => validateParcel(values, false)"
-                :iconSize="'1x'"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-check-circle"
-                tooltip-text="Сохранить и согласовать"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => approveParcel(values)"
-                variant="green"
-                :iconSize="'1x'"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-check-circle"
-                tooltip-text="Сохранить и согласовать c акцизом"
-                :disabled="isSubmitting || runningAction || loading"
-                @click="() => approveParcelWithExcise(values)"
-                variant="orange"
-                :iconSize="'1x'"
-              />
-            </div>
           </div>
           <!-- Last view -->
           <div class="form-group">

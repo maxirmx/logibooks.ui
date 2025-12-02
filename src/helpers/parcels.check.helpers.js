@@ -115,9 +115,9 @@ export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollect
   
   const allInfo = [feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
   
-  // Add matchingFCComment if present
-  if (item?.matchingFCComment) {
-    allInfo.push(item.matchingFCComment)
+  // Add matchingSWComment if present
+  if (item?.matchingSWComment) {
+    allInfo.push(item.matchingSWComment)
   }
   
   return allInfo.length > 0 ? allInfo.join('; ') : null
@@ -135,10 +135,6 @@ export function getCheckStatusClass(checkStatus) {
 
   if (checkStatus === CheckStatusCode.NotChecked.value) {
     return 'not-checked'
-  }
-
-  if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.ApprovedWithExciseInherited) {
-    return 'is-approved-with-excise-and-inheritance'
   }
 
   if (checkStatus === CheckStatusCode.ApprovedWithExcise.value) {

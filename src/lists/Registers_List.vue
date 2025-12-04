@@ -411,6 +411,18 @@ function formatInvoiceInfo(item) {
   return `${transportationDocument} ${invoiceNumber || ''}`
 }
 
+function formatWeight(value) {
+  const num = Number(value)
+  if (!isFinite(num)) return '0.000'
+  return num.toFixed(3)
+}
+
+function formatPrice(value) {
+  const num = Number(value)
+  if (!isFinite(num)) return '0.00'
+  return num.toFixed(2)
+}
+
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
@@ -418,6 +430,8 @@ const headers = [
   { title: 'Страны', key: 'countries' },
   { title: 'Отправитель/Получатель', key: 'senderRecipient' },
   { title: 'Товаров/Посылок', key: 'parcelsTotal' },
+  { title: 'Вес общий / К оформлению', key: 'weight', minWidth: '180px' },
+  { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '200px' },
   { title: 'Дата загрузки', key: 'date' }
 ]
 
@@ -557,6 +571,14 @@ defineExpose({
           </v-tooltip>
         </template>
 
+        <template #[`item.weight`]="{ item }">
+          <span class="truncated-cell">{{ formatWeight(item.weightKgTotal) }} / {{ formatWeight(item.weightKgTotalToRelease) }}</span>
+        </template>
+
+        <template #[`item.price`]="{ item }">
+          <span class="truncated-cell">{{ formatPrice(item.priceTotal) }} / {{ formatPrice(item.priceTotalToRelease) }}</span>
+        </template>
+
         <template #[`header.dealNumber`]>
           <div class="multiline-header">
             <div>Номер</div>
@@ -575,6 +597,20 @@ defineExpose({
           <div class="multiline-header">
             <div>Товаров</div>
             <div>Посылок</div>
+          </div>
+        </template>
+
+        <template #[`header.weight`]>
+          <div class="multiline-header">
+            <div>Вес общий</div>
+            <div>К оформлению</div>
+          </div>
+        </template>
+
+        <template #[`header.price`]>
+          <div class="multiline-header">
+            <div>Стоимость общая</div>
+            <div>К оформлению</div>
           </div>
         </template>
 

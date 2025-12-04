@@ -89,20 +89,21 @@ export function getRowPropsForParcel(data) {
  * @returns {Array} Filtered headers array
  */
 export function filterGenericTemplateHeadersForParcel(headers) {
-  return headers.filter(h => 
-    !h.key.startsWith('actions') && 
-    h.key !== 'productLink' && 
-    h.key !== 'statusId' && 
-    h.key !== 'checkStatus' && 
-    h.key !== 'countryCode' &&
-    h.key !== 'feacnLookup' &&
-    h.key !== 'tnVed' &&
-    h.key !== 'postingNumber' &&
-    h.key !== 'shk' &&
-    h.key !== 'weightKg' &&
-    h.key !== 'unitPrice' &&
-    h.key !== 'quantity'
-  ) 
+  const excluded = new Set([
+    'productLink',
+    'statusId',
+    'checkStatus',
+    'countryCode',
+    'feacnLookup',
+    'tnVed',
+    'postingNumber',
+    'shk',
+    'weightKg',
+    'unitPrice',
+    'quantity'
+  ])
+  
+  return headers.filter(h => !h.key.startsWith('actions') && !excluded.has(h.key))
 }
 
 /**

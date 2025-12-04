@@ -98,7 +98,10 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     h.key !== 'feacnLookup' &&
     h.key !== 'tnVed' &&
     h.key !== 'postingNumber' &&
-    h.key !== 'shk'
+    h.key !== 'shk' &&
+    h.key !== 'weightKg' &&
+    h.key !== 'unitPrice' &&
+    h.key !== 'quantity'
   ) 
 }
 

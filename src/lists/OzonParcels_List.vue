@@ -22,6 +22,7 @@ import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
+import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -324,7 +325,7 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
     { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+//    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
     { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
     { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
@@ -536,6 +537,33 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
+        <template #[`item.weightKg`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatWeight(item.weightKg)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.quantity`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item.quantity"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.unitPrice`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatPrice(item.unitPrice)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
         <!-- Special template for checkStatus to display check status title -->
         <template #[`item.checkStatus`]="{ item }">
           <ClickableCell 
@@ -676,6 +704,17 @@ function getGenericTemplateHeaders() {
   margin-left: 8px;
   padding-left: 8px;
   border-left: 1px solid #d0d7de;
+}
+
+/* Right-align numeric stacked panels (weight, price, etc.).
+   Use deep selector so styles apply to ClickableCell's internal DOM when
+   the component renders the slot or display-value text. */
+:deep(.numeric-panel) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  text-align: right;
 }
 
 </style>

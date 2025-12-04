@@ -22,6 +22,7 @@ import { storeToRefs } from 'pinia'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
+import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -556,6 +557,33 @@ function getGenericTemplateHeaders() {
             @click="editParcel" />
         </template>
 
+        <template #[`item.weightKg`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatWeight(item.weightKg)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.quantity`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item.quantity"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.unitPrice`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatPrice(item.unitPrice)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
         <template #[`item.shk`]="{ item }">
           <ParcelNumberExt 
             :item="item" 
@@ -658,6 +686,17 @@ function getGenericTemplateHeaders() {
   margin-left: 8px;
   padding-left: 8px;
   border-left: 1px solid #d0d7de;
+}
+
+/* Right-align numeric stacked panels (weight, price, etc.).
+   Use deep selector so styles apply to ClickableCell's internal DOM when
+   the component renders the slot or display-value text. */
+:deep(.numeric-panel) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  text-align: right;
 }
 
 </style>

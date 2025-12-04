@@ -38,6 +38,14 @@ export function formatPrice(value) {
   return formatWithSpaceThousands(num, 2)
 }
 
+// Format integer counts with non-breaking space thousands separator
+export function formatIntegerThousands(value) {
+  const num = parseNumberFlexible(value)
+  if (!isFinite(num)) return '0'
+  // No decimals for integer formatting
+  return formatWithSpaceThousands(Math.trunc(num), 0)
+}
+
 function formatWithSpaceThousands(num, decimals) {
   const fixed = Math.abs(num).toFixed(decimals)
   const [intPart, fracPart] = fixed.split('.')

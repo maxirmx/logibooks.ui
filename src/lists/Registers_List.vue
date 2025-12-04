@@ -26,7 +26,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
+import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -153,7 +153,7 @@ function getCountryShortName(countryCode) {
 function getParcelsByCheckStatusTooltip(item) {
   if (!item?.parcelsByCheckStatus) return ''
   return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${count}`)
+    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${formatIntegerThousands(count)}`)
     .join('\n')
 }
 
@@ -421,8 +421,8 @@ const headers = [
   { title: 'Страны', key: 'countries' },
   { title: 'Отправитель/Получатель', key: 'senderRecipient' },
   { title: 'Товаров/Посылок', key: 'parcelsTotal' },
-  { title: 'Вес, кг, общий / К оформлению', key: 'weight', minWidth: '180px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '200px' },
+  { title: 'Вес, кг, общий / К оформлению', key: 'weight', minWidth: '170px' },
+  { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '190px' },
   { title: 'Дата загрузки', key: 'date' }
 ]
 
@@ -562,8 +562,8 @@ defineExpose({
               >
                 <template #default>
                   <div class="data-box">
-                    <div>{{ item.parcelsTotal }}</div>
-                    <div>{{ item.placesTotal }}</div>
+                      <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
+                      <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
                   </div>
                 </template>
               </ClickableCell>

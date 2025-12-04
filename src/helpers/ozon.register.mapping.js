@@ -14,7 +14,7 @@ export const ozonRegisterColumnTitles = {
   countryCode: 'Страна',
   descriptionEn: 'Описание на английском',
   productName: 'Описание на русском',
-  weightKg: 'Вес',
+  weightKg: 'Вес, кг',
   currency: 'Валюта',
   unitPrice: 'Цена единицы',
   quantity: 'Количество',

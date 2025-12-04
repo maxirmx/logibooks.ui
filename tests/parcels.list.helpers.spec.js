@@ -415,8 +415,7 @@ describe('Parcels List Helpers', () => {
       const result = filterGenericTemplateHeadersForParcel(headers)
 
       expect(result).toEqual([
-        { key: 'productName', title: 'Product Name' },
-        { key: 'quantity', title: 'Quantity' }
+        { key: 'productName', title: 'Product Name' }
       ])
     })
 

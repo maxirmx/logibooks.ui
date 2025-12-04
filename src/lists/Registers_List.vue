@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -152,7 +153,7 @@ function getCountryShortName(countryCode) {
 function getParcelsByCheckStatusTooltip(item) {
   if (!item?.parcelsByCheckStatus) return ''
   return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${count}`)
+    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${formatIntegerThousands(count)}`)
     .join('\n')
 }
 
@@ -411,6 +412,8 @@ function formatInvoiceInfo(item) {
   return `${transportationDocument} ${invoiceNumber || ''}`
 }
 
+
+
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
@@ -418,6 +421,8 @@ const headers = [
   { title: 'Страны', key: 'countries' },
   { title: 'Отправитель/Получатель', key: 'senderRecipient' },
   { title: 'Товаров/Посылок', key: 'parcelsTotal' },
+  { title: 'Вес, кг, общий / К оформлению', key: 'weight', minWidth: '170px' },
+  { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '190px' },
   { title: 'Дата загрузки', key: 'date' }
 ]
 
@@ -527,11 +532,11 @@ defineExpose({
         <template #[`item.senderRecipient`]="{ item }">
           <ClickableCell 
             :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link sender-recipient-panel" 
+            cell-class="truncated-cell clickable-cell edit-register-link data-panel" 
             @click="editRegister" 
           >
             <template #default>
-              <div class="sr-box">
+              <div class="data-box">
                 <div>{{ getCustomerName(item.senderId) }}</div>
                 <div>{{ getCustomerName(item.recipientId) }}</div>
               </div>
@@ -549,12 +554,54 @@ defineExpose({
         <template #[`item.parcelsTotal`]="{ item }">
           <v-tooltip>
             <template #activator="{ props }">
-              <span class="truncated-cell" v-bind="props">{{ item.parcelsTotal }}/{{ item.placesTotal }}</span>
+              <ClickableCell
+                v-bind="props"
+                :item="item"
+                cell-class="truncated-cell clickable-cell data-panel numeric-panel"
+                @click="openParcels"
+              >
+                <template #default>
+                  <div class="data-box">
+                      <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
+                      <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
+                  </div>
+                </template>
+              </ClickableCell>
             </template>
             <template #default>
               <div style="white-space: pre-line">{{ getParcelsByCheckStatusTooltip(item) }}</div>
             </template>
           </v-tooltip>
+        </template>
+
+        <template #[`item.weight`]="{ item }">
+          <ClickableCell
+            :item="item"
+            cell-class="truncated-cell clickable-cell data-panel numeric-panel"
+            @click="editRegister"
+          >
+            <template #default>
+              <div class="data-box">
+                <div>{{ formatWeight(item.totalWeightKg) }}</div>
+                <div>{{ formatWeight(item.totalWeightKgToRelease) }}</div>
+              </div>
+            </template>
+          </ClickableCell>
+        </template>
+
+        <template #[`item.price`]="{ item }">
+          <ClickableCell
+            :item="item"
+            cell-class="truncated-cell clickable-cell data-panel numeric-panel"
+            @click="editRegister"
+          >
+            <template #default>
+              <div class="data-box">
+                <div>{{ formatPrice(item.totalPrice) }}</div>
+                <div>{{ formatPrice(item.totalPriceToRelease) }}</div>
+              </div>
+            </template>
+          </ClickableCell>
         </template>
 
         <template #[`header.dealNumber`]>
@@ -575,6 +622,20 @@ defineExpose({
           <div class="multiline-header">
             <div>Товаров</div>
             <div>Посылок</div>
+          </div>
+        </template>
+
+        <template #[`header.weight`]>
+          <div class="multiline-header">
+            <div>Вес, кг, общий</div>
+            <div>К оформлению</div>
+          </div>
+        </template>
+
+        <template #[`header.price`]>
+          <div class="multiline-header">
+            <div>Стоимость общая</div>
+            <div>К оформлению</div>
           </div>
         </template>
 
@@ -728,18 +789,24 @@ defineExpose({
   margin-top: 4px;
 }
 
-/* Sender/Recipient panel styling (matches invoice panel) */
-.sender-recipient-panel .sr-box {
+/* Data panel styling  */
+.data-panel .data-box {
   display: flex;
   flex-direction: column;
   font-size: 0.9rem;
   margin-top: 4px;
 }
 
-.sender-recipient-panel .sr-box > div {
+.data-panel .data-box > div {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Right-align numeric stacked panels */
+.numeric-panel .data-box {
+  align-items: flex-end;
+  text-align: right;
 }
 
 /* Countries panel styling */

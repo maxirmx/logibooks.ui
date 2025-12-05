@@ -6,7 +6,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import FeacnCodes_Tree from '@/components/FeacnCodes_Tree.vue'
+import FeacnCodesTree_Dialog from '@/dialogs/FeacnCodesTree_Dialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const uploadMock = vi.fn()
@@ -65,26 +65,31 @@ const globalStubs = {
         loadChildren: vi.fn()
       }
     }
+  },
+  ActionButton: {
+    template: '<button @click="$emit(\'click\')"><slot></slot></button>',
+    props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
   }
 }
 
-describe('FeacnCodes_Tree.vue', () => {
+describe('FeacnCodesTree_Dialog.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   function createWrapper() {
-    return mount(FeacnCodes_Tree, {
+    return mount(FeacnCodesTree_Dialog, {
       global: { stubs: globalStubs }
     })
   }
 
-  it('renders tree component and upload link', () => {
+  it('renders tree component and upload button', () => {
     const wrapper = createWrapper()
     
     expect(wrapper.find('.tree-stub').exists()).toBe(true)
-    expect(wrapper.find('a.link').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Загрузить коды ТН ВЭД')
+    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
+    const button = wrapper.find('button')
+    expect(button.exists()).toBe(true)
   })
 
   it('uploads file successfully', async () => {
@@ -128,8 +133,7 @@ describe('FeacnCodes_Tree.vue', () => {
 
     // Should be in loading state
     expect(wrapper.vm.uploading).toBe(true)
-    expect(wrapper.find('a.link').classes()).toContain('disabled')
-    expect(wrapper.text()).toContain('Загрузка...')
+    expect(wrapper.find('.spinner-border').exists()).toBe(true)
 
     // Complete upload
     resolveUpload()
@@ -138,18 +142,17 @@ describe('FeacnCodes_Tree.vue', () => {
 
     // Should be back to normal state
     expect(wrapper.vm.uploading).toBe(false)
-    expect(wrapper.find('a.link').classes()).not.toContain('disabled')
-    expect(wrapper.text()).toContain('Загрузить коды ТН ВЭД')
+    expect(wrapper.find('.spinner-border').exists()).toBe(false)
   })
 
-  it('opens file dialog when link is clicked', async () => {
+  it('opens file dialog when button is clicked', async () => {
     const wrapper = createWrapper()
     const fileInput = wrapper.find('input[type="file"]')
     
     // Mock the click method
     const clickSpy = vi.spyOn(fileInput.element, 'click')
     
-    await wrapper.find('a.link').trigger('click')
+    await wrapper.find('button').trigger('click')
     
     expect(clickSpy).toHaveBeenCalled()
   })

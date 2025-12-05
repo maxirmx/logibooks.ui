@@ -3,10 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import FeacnCodes_Tree from '@/components/FeacnCodes_Tree.vue'
+import FeacnCodesTree_Dialog from '@/dialogs/FeacnCodesTree_Dialog.vue'
 </script>
 
 <template>
-  <FeacnCodes_Tree />
+  <FeacnCodesTree_Dialog />
 </template>
 

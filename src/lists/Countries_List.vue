@@ -81,7 +81,7 @@ const headers = [
 
     <hr class="hr" />
 
-    <div v-if="countries?.length || countries_search">
+    <div>
       <v-text-field
         v-model="authStore.countries_search"
         :append-inner-icon="mdiMagnify"
@@ -93,7 +93,6 @@ const headers = [
 
     <v-card class="table-card">
       <v-data-table
-        v-if="countries?.length"
         v-model:items-per-page="countries_per_page"
         items-per-page-text="Стран на странице"
         :items-per-page-options="itemsPerPageOptions"

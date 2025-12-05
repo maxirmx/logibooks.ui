@@ -135,7 +135,7 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div v-if="insertItems?.length">
+    <div>
       <v-text-field
         v-model="authStore.feacninsertitems_search"
         :append-inner-icon="mdiMagnify"

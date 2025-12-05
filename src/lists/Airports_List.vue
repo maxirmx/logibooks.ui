@@ -122,7 +122,7 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div v-if="airports?.length">
+    <div>
       <v-text-field
         v-model="authStore.airports_search"
         :append-inner-icon="mdiMagnify"
@@ -134,7 +134,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-if="airports?.length"
         v-model:items-per-page="authStore.airports_per_page"
         items-per-page-text="Кодов аэропортов на странице"
         :items-per-page-options="itemsPerPageOptions"

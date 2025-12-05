@@ -138,7 +138,7 @@ const headers = [
 
     <hr class="hr" />
 
-    <div v-if="users?.length">
+    <div>
       <v-text-field
         v-model="authStore.users_search"
         :append-inner-icon="mdiMagnify"
@@ -150,7 +150,6 @@ const headers = [
 
     <v-card class="table-card">
       <v-data-table
-        v-if="users?.length"
         v-model:items-per-page="authStore.users_per_page"
         items-per-page-text="Пользователей на странице"
         :items-per-page-options="itemsPerPageOptions"

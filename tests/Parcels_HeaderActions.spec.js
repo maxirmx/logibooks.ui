@@ -314,7 +314,7 @@ describe.each([
 
     await resolveAll()
 
-    expect(wrapper.find('.header-actions').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'RegisterHeaderActionsBar' }).exists()).toBe(false)
   })
 
   it('calls stop handler on unmount', async () => {

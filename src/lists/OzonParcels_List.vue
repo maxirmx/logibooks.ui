@@ -420,19 +420,20 @@ function getGenericTemplateHeaders() {
         :register="registersStore.item"
         :heading="registerHeading"
       />
-      <RegisterHeaderActionsBar
-        v-if="isAdminOrSrLogist"
-        :item="registersStore.item"
-        :disabled="generalActionsDisabled"
-        @validate-sw="validateRegisterSwHeader"
-        @validate-sw-ex="validateRegisterSwHeaderEx"
-        @validate-fc="validateRegisterFcHeader"
-        @lookup="lookupRegisterFeacnCodes"
-        @lookup-ex="lookupRegisterFeacnCodesEx"
-        @export-noexcise="exportRegisterXmlWithoutExcise"
-        @export-excise="exportRegisterXmlExcise"
-        @download="downloadRegisterFile"
-      />
+        <RegisterHeaderActionsBar
+          v-if="isAdminOrSrLogist"
+          :item="registersStore.item"
+          :disabled="generalActionsDisabled"
+          :loading="runningAction || loading || isInitializing"
+          @validate-sw="validateRegisterSwHeader"
+          @validate-sw-ex="validateRegisterSwHeaderEx"
+          @validate-fc="validateRegisterFcHeader"
+          @lookup="lookupRegisterFeacnCodes"
+          @lookup-ex="lookupRegisterFeacnCodesEx"
+          @export-noexcise="exportRegisterXmlWithoutExcise"
+          @export-excise="exportRegisterXmlExcise"
+          @download="downloadRegisterFile"
+        />
     </div>
     <hr class="hr" />
 
@@ -445,6 +446,7 @@ function getGenericTemplateHeaders() {
           label="Статус"
           density="compact"
           style="min-width: 250px"
+          :disabled="runningAction || loading || isInitializing"
         />
         <v-select
           v-model="parcels_check_status_sw"
@@ -452,6 +454,7 @@ function getGenericTemplateHeaders() {
           label="Статус проверки по стоп-словам"
           density="compact"
           style="min-width: 250px"
+          :disabled="runningAction || loading || isInitializing"
         />
         <v-select
           v-model="parcels_check_status_fc"
@@ -459,45 +462,45 @@ function getGenericTemplateHeaders() {
           label="Статус проверки по ТН ВЭД"
           density="compact"
           style="min-width: 250px"
+          :disabled="runningAction || loading || isInitializing"
         />
         <v-text-field
           v-model="parcels_tnved"
           label="ТН ВЭД"
           density="compact"
           style="min-width: 200px;"
+          :disabled="runningAction || loading || isInitializing"
         />
         <v-text-field
           v-model="parcels_number"
           label="Номер посылки"
           density="compact"
           style="min-width: 200px;"
+          :disabled="runningAction || loading || isInitializing"
         />
       </div>
     </div>
 
-    <v-card>
-      <div style="overflow-x: auto;">
-        <v-data-table-server
-          ref="dataTableRef"
-          v-if="items?.length || loading"
-          v-model:items-per-page="parcels_per_page"
-          items-per-page-text="Посылок на странице"
-          :items-per-page-options="itemsPerPageOptions"
-          page-text="{0}-{1} из {2}"
-          v-model:page="parcels_page"
-          v-model:sort-by="parcels_sort_by"
-          :headers="headers"
-          :items="items"
-          :row-props="getRowPropsForOzonParcel"
-          @click:row="(event, { item }) => { selectedParcelId = item.id }"
-          :items-length="totalCount"
-          :loading="loading"
-          density="compact"
-          fixed-header
-          hide-default-footer
-          class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
-          style="min-width: fit-content;"
-        >
+    <v-card class="table-card">
+      <v-data-table-server
+        ref="dataTableRef"
+        v-model:items-per-page="parcels_per_page"
+        items-per-page-text="Посылок на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
+        v-model:page="parcels_page"
+        v-model:sort-by="parcels_sort_by"
+        :headers="headers"
+        :items="items"
+        :row-props="getRowPropsForOzonParcel"
+        @click:row="(event, { item }) => { selectedParcelId = item.id }"
+        :items-length="totalCount"
+        :loading="loading || isInitializing"
+        density="compact"
+        fixed-header
+        hide-default-footer
+        class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
+      >
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
           <ClickableCell 
@@ -660,23 +663,18 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
       </v-data-table-server>
-    </div>
 
-    <!-- Custom pagination controls outside the scrollable area -->
-    <div v-if="items?.length || loading" class="v-data-table-footer">
-      <PaginationFooter
-        v-model:items-per-page="parcels_per_page"
-        v-model:page="parcels_page"
-        :items-per-page-options="itemsPerPageOptions"
-        :page-options="pageOptions"
-        :total-count="totalCount"
-        :max-page="maxPage"
-        :loading="loading"
-        :initializing="isInitializing"
-      />
-    </div>
-
-    <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Реестр пуст</div>
+      <!-- Custom pagination controls outside the scrollable area -->
+      <div class="v-data-table-footer">
+        <PaginationFooter
+          v-model:items-per-page="parcels_per_page"
+          v-model:page="parcels_page"
+          :items-per-page-options="itemsPerPageOptions"
+          :page-options="pageOptions"
+          :total-count="totalCount"
+          :max-page="maxPage"
+        />
+      </div>
     </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
@@ -696,6 +694,8 @@ function getGenericTemplateHeaders() {
 </template>
 
 <style scoped>
+@import '@/assets/styles/scrollable-table.css';
+
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
 }

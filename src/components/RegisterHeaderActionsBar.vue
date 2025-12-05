@@ -7,7 +7,8 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 const props = defineProps({
   item: { type: Object, required: true },
   disabled: { type: Boolean, default: false },
-  iconSize: { type: String, default: '2x' }
+  iconSize: { type: String, default: '2x' },
+  loading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -42,6 +43,9 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
 
 <template>
   <div style="display:flex; align-items:center;">
+    <div  v-if="loading" class="header-actions header-actions-group">
+        <span class="spinner-border spinner-border-m"></span>
+    </div>
     <div class="header-actions header-actions-group">
       <ActionButton
         :item="item"

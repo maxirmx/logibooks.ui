@@ -153,7 +153,6 @@ const tableItems = computed(() =>
         density="compact"
         class="elevation-1 interlaced-table"
         item-value="id"
-        height="calc(100vh - 400px)"
         fixed-header
       >
         <!-- Row-level slot to avoid dotted slot names -->

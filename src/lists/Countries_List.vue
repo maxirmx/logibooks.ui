@@ -105,7 +105,6 @@ const headers = [
         :custom-filter="filterCodes"
         density="compact"
         class="elevation-1 interlaced-table"
-        height="calc(100vh - 400px)"
         fixed-header
       />
       <div v-if="!countries?.length && !loading" class="text-center m-5">

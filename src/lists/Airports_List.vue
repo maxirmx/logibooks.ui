@@ -105,18 +105,20 @@ defineExpose({
   <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коды аэропортов</h1>
-      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="loading">
+      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-plus"
-          tooltip-text="Добавить код аэропорта"
-          iconSize="2x"
-          :disabled="loading"
-          @click="openCreateDialog"
-        />
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-plus"
+            tooltip-text="Добавить код аэропорта"
+            iconSize="2x"
+            :disabled="loading"
+            @click="openCreateDialog"
+          />
+        </div>
       </div>
     </div>
 

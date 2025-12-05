@@ -143,19 +143,20 @@ async function handleToggleOrderEnabled(order) {
   <div class="settings table-3" data-testid="feacn-orders-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
-      <div class="header-actions">
-        <div v-if="runningAction || loading">
+      <div style="display:flex; align-items:center;">
+        <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          v-if="isAdminOrSrLogist"
-          :item="{}"
-          icon="fa-solid fa-file-import"
-          tooltip-text="Обновить информацию об ограничениях по кодам ТН ВЭД"
-          iconSize="2x"
-          :disabled="runningAction || loading"
-          @click="updateCodes"
-        />
+        <div class="header-actions header-actions-group" v-if="isAdminOrSrLogist">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-import"
+            tooltip-text="Обновить информацию об ограничениях по кодам ТН ВЭД"
+            iconSize="2x"
+            :disabled="runningAction || loading"
+            @click="updateCodes"
+          />
+        </div>
       </div>
     </div>
     <hr class="hr" />

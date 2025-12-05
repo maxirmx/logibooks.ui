@@ -51,19 +51,20 @@ async function fileSelected(file) {
   <div class="settings table-2 feacn-codes-tree-container">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коды ТН ВЭД</h1>
-      <div class="header-actions">
-        <div v-if="uploading">
+      <div style="display:flex; align-items:center;">
+        <div v-if="uploading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          v-if="isAdminOrSrLogist"
-          :item="{}"
-          icon="fa-solid fa-file-import"
-          tooltip-text="Загрузить коды ТН ВЭД"
-          iconSize="2x"
-          :disabled="uploading"
-          @click="openFileDialog"
-        />
+        <div class="header-actions header-actions-group" v-if="isAdminOrSrLogist">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-import"
+            tooltip-text="Загрузить коды ТН ВЭД"
+            iconSize="2x"
+            :disabled="uploading"
+            @click="openFileDialog"
+          />
+        </div>
       </div>
     </div>
     <hr class="hr" />

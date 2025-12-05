@@ -437,29 +437,30 @@ defineExpose({
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Реестры</h1>
-      <div class="header-actions">
-        <div v-if="runningAction || loading || isInitializing">
+      <div style="display:flex; align-items:center;">
+        <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton2L
-          v-if="isAdminOrSrLogist"
-          :item="{}"
-          icon="fa-solid fa-file-import"
-          tooltip-text="Загрузить реестр"
-          iconSize="2x"
-          :disabled="runningAction || loading || isInitializing ||isUploadDisabled"
-          :options="uploadMenuOptions"
-        />
-        <v-file-input
-          v-if="isAdminOrSrLogist"
-          ref="fileInput"
-          style="display: none"
-          accept=".xls,.xlsx,.zip,.rar"
-          loading-text="Идёт загрузка реестра..."
-          @update:model-value="fileSelected"
-        />
+        <div class="header-actions header-actions-group" v-if="isAdminOrSrLogist">
+          <ActionButton2L
+            :item="{}"
+            icon="fa-solid fa-file-import"
+            tooltip-text="Загрузить реестр"
+            iconSize="2x"
+            :disabled="runningAction || loading || isInitializing ||isUploadDisabled"
+            :options="uploadMenuOptions"
+          />
+        </div>
       </div>
     </div>
+    <v-file-input
+      v-if="isAdminOrSrLogist"
+      ref="fileInput"
+      style="display: none"
+      accept=".xls,.xlsx,.zip,.rar"
+      loading-text="Идёт загрузка реестра..."
+      @update:model-value="fileSelected"
+    />
 
     <hr class="hr" />
 

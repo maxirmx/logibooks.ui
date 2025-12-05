@@ -115,18 +115,20 @@ defineExpose({
   <div class="settings table-3" data-testid="stop-words-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Стоп-слова и фразы</h1>
-      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="runningAction || loading">
+      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-plus"
-          tooltip-text="Зарегистрировать стоп-слово или фразу"
-          iconSize="2x"
-          :disabled="runningAction || loading"
-          @click="openCreateDialog"
-        />
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-plus"
+            tooltip-text="Зарегистрировать стоп-слово или фразу"
+            iconSize="2x"
+            :disabled="runningAction || loading"
+            @click="openCreateDialog"
+          />
+        </div>
       </div>
     </div>
 

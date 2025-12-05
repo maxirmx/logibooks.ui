@@ -421,8 +421,8 @@ const headers = [
   { title: 'Страны', key: 'countries' },
   { title: 'Отправитель/Получатель', key: 'senderRecipient' },
   { title: 'Товаров/Посылок', key: 'parcelsTotal' },
-  { title: 'Вес, кг, общий / К оформлению', key: 'weight', width: '180px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', width: '200px' },
+  { title: 'Вес, кг, общий / К оформлению', key: 'weight', minWidth: '180px', width: '180px' },
+  { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '200px', width: '200px' },
   { title: 'Дата загрузки', key: 'date' }
 ]
 

@@ -64,7 +64,7 @@ describe('auth store', () => {
       expect(store.users_search).toBe('')
       expect(store.users_sort_by).toEqual(['id'])
       expect(store.users_page).toBe(1)
-      expect(store.registers_per_page).toBe(100)
+      expect(store.registers_per_page).toBe(50)
       expect(store.registers_search).toBe('')
       expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'desc' }])
       expect(store.registers_page).toBe(1)

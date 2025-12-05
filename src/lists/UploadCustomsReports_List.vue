@@ -143,7 +143,6 @@ const tableItems = computed(() =>
 
     <v-card class="table-card">
       <v-data-table
-        v-if="tableItems?.length"
         v-model:items-per-page="authStore.uploadcustomsreports_per_page"
         :items-per-page-options="itemsPerPageOptions"
         v-model:page="authStore.uploadcustomsreports_page"

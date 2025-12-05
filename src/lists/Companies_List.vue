@@ -147,7 +147,7 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div v-if="companies?.length">
+    <div>
       <v-text-field
         v-model="authStore.companies_search"
         :append-inner-icon="mdiMagnify"

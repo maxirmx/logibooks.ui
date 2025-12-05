@@ -1,4 +1,21 @@
-/* Shared styles for scrollable data tables with fixed headers */
+/**
+ * Styles for scrollable data tables with fixed headers.
+ *
+ * Usage:
+ *   - These styles are intended for use with the TableCard component (or any component using the `.table-card` class)
+ *     that renders a Vuetify v-data-table with a fixed header.
+ *
+ * Height Prop vs. CSS max-height:
+ *   - The component-level `height` prop (if provided) sets the height of the `.table-card` container.
+ *   - The CSS `max-height` on `.v-table__wrapper` ensures the table's scrollable area does not exceed a certain
+ *     portion of the viewport, even if the container is taller.
+ *   - Both are needed: the prop allows flexible layouts, while the CSS prevents the table from overflowing the viewport.
+ *
+ * :deep() Selector:
+ *   - The `:deep()` selector is a Vue SFC (Single File Component) feature for targeting child components in scoped CSS.
+ *   - It is not standard CSS and only works in build systems that support Vue's SFC syntax.
+ *   - If using outside of Vue SFCs, replace with a suitable deep selector or global style.
+ */
 .table-card {
   overflow: visible;
 }

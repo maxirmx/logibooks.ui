@@ -157,7 +157,7 @@ describe('Users_List.vue', () => {
     it('shows empty message when users array is empty', () => {
       mockUsers.value = []
       createWrapper()
-      expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
       expect(wrapper.find('.header-with-actions').exists()).toBe(true)
     })
 

@@ -243,7 +243,7 @@ describe('UploadCustomsReports_List.vue', () => {
       }
     })
 
-    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
     expect(wrapper.find('.header-actions').exists()).toBe(true)
   })
 

@@ -163,7 +163,7 @@ defineExpose({
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table
         v-if="prefixes?.length"
         v-model:items-per-page="authStore.feacnlocalprefixes_per_page"
@@ -179,6 +179,8 @@ defineExpose({
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
+        height="calc(100vh - 400px)"
+        fixed-header
       >
         <template v-slot:[`item.code`]="{ item }">
           <span>{{ item.code }}</span>
@@ -248,3 +250,6 @@ defineExpose({
   </div>
 </template>
 
+<style scoped>
+@import '@/assets/styles/scrollable-table.css';
+</style>

@@ -142,7 +142,7 @@ const headers = [
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table
         v-if="users?.length"
         v-model:items-per-page="authStore.users_per_page"
@@ -158,6 +158,8 @@ const headers = [
         item-value="name"
         density="compact"
         class="elevation-1 interlaced-table"
+        height="calc(100vh - 400px)"
+        fixed-header
       >
         <template v-slot:[`item.id`]="{ item }">
           {{ item['lastName'] }} {{ item['firstName'] }} {{ item['patronymic'] }}
@@ -188,3 +190,7 @@ const headers = [
     </div>
   </div>
 </template>
+
+<style scoped>
+@import '@/assets/styles/scrollable-table.css';
+</style>

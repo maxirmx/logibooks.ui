@@ -151,7 +151,7 @@ defineExpose({
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table
         v-if="companies?.length"
         v-model:items-per-page="authStore.companies_per_page"
@@ -168,6 +168,8 @@ defineExpose({
         item-value="name"
         density="compact"
         class="elevation-1 interlaced-table"
+        height="calc(100vh - 400px)"
+        fixed-header
       >
         <template v-slot:[`item.displayName`]="{ item }">
           {{ getDisplayName(item) }}
@@ -199,3 +201,7 @@ defineExpose({
 
   </div>
 </template>
+
+<style scoped>
+@import '@/assets/styles/scrollable-table.css';
+</style>

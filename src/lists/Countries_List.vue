@@ -81,7 +81,7 @@ const headers = [
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table
         v-if="countries?.length"
         v-model:items-per-page="countries_per_page"
@@ -96,6 +96,8 @@ const headers = [
         :custom-filter="filterCodes"
         density="compact"
         class="elevation-1 interlaced-table"
+        height="calc(100vh - 400px)"
+        fixed-header
       />
       <div v-if="!countries?.length && !loading" class="text-center m-5">
         Список стран пуст
@@ -113,3 +115,7 @@ const headers = [
     </div>
   </div>
 </template>
+
+<style scoped>
+@import '@/assets/styles/scrollable-table.css';
+</style>

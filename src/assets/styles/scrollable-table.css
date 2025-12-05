@@ -1,0 +1,13 @@
+/* Shared styles for scrollable data tables with fixed headers */
+.table-card {
+  overflow: visible;
+}
+
+.table-card :deep(.v-data-table) {
+  height: 100%;
+}
+
+.table-card :deep(.v-table__wrapper) {
+  max-height: calc(100vh - 500px);
+  overflow-y: auto;
+}

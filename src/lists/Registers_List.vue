@@ -447,7 +447,7 @@ defineExpose({
             icon="fa-solid fa-file-import"
             tooltip-text="Загрузить реестр"
             iconSize="2x"
-            :disabled="runningAction || loading || isInitializing ||isUploadDisabled"
+            :disabled="runningAction || loading || isInitializing || isUploadDisabled"
             :options="uploadMenuOptions"
           />
         </div>

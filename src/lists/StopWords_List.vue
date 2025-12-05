@@ -141,7 +141,7 @@ defineExpose({
         label="Поиск по стоп словам и фразам"
         variant="solo"
         hide-details
-        :disabled="runningAction ||loading"
+        :disabled="runningAction || loading"
       />
     </div>
 

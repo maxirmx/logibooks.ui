@@ -122,7 +122,7 @@ const headers = [
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
       <div style="display:flex; align-items:center;">
-        <div v-if="runningAction ||loading" class="header-actions header-actions-group">
+        <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">

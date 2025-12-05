@@ -41,8 +41,11 @@ function translate(param) {
 
 export const useUsersStore = defineStore('users', () => {
   // state
-  const users = ref({})
+  const users = ref([])
   const user = ref({})
+  const loading = ref(false)
+  const error = ref(null)
+  const isInitialized = ref(false)
   
   // getters
   const getUserById = (id) => {
@@ -54,22 +57,47 @@ export const useUsersStore = defineStore('users', () => {
     if (trnslt) {
       userParam = translate(userParam)
     }
-    await fetchWrapper.post(baseUrl, userParam)
-  }
-
-  async function getAll() {
-    users.value = { loading: true }
+    loading.value = true
     try {
-      users.value = await fetchWrapper.get(baseUrl)
-    } catch (error) {
-      users.value = { error }
+      await fetchWrapper.post(baseUrl, userParam)
+      // Refresh the list after creation
+      await getAll()
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
-  async function getById(id, trnslt = false) {
-    user.value = { loading: true }
+  async function getAll() {
+    loading.value = true
     try {
-      user.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      const response = await fetchWrapper.get(baseUrl)
+      users.value = response || []
+      isInitialized.value = true
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function ensureLoaded() {
+    if (!isInitialized.value && !loading.value) {
+      await getAll()
+    }
+  }
+
+  async function getById(id, trnslt = false, refresh = false) {
+    if (refresh) {
+      user.value = {}
+    }
+    loading.value = true
+    try {
+      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
+      user.value = response
       if (trnslt) {
         user.value.isAdmin =
           user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'NONE'
@@ -78,8 +106,12 @@ export const useUsersStore = defineStore('users', () => {
         user.value.isLogist =
           user.value.roles && user.value.roles.includes(roleLogist) ? 'LOGIST' : 'NONE'
       }
-    } catch (error) {
-      user.value = { error }
+      return response
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
@@ -87,32 +119,57 @@ export const useUsersStore = defineStore('users', () => {
     if (trnslt) {
       params = translate(params)
     }
-    await fetchWrapper.put(`${baseUrl}/${id}`, params)
+    loading.value = true
+    try {
+      const response = await fetchWrapper.put(`${baseUrl}/${id}`, params)
 
-    // update stored user if the logged in user updated their own record
-    const authStore = useAuthStore()
-    if (id === authStore.user.id) {
-      // update local storage
-      const updatedUser = { ...authStore.user, ...params }
-      localStorage.setItem('user', JSON.stringify(updatedUser))
+      // update stored user if the logged in user updated their own record
+      const authStore = useAuthStore()
+      if (id === authStore.user.id) {
+        // update local storage
+        const updatedUser = { ...authStore.user, ...params }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
 
-      // update auth user in pinia state
-      authStore.user = updatedUser
+        // update auth user in pinia state
+        authStore.user = updatedUser
+      }
+
+      // Refresh the list after update
+      await getAll()
+      return response
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
   async function deleteUser(id) {
-    const authStore = useAuthStore()
-    if (id === authStore.user.id) {
-      authStore.logout()
+    loading.value = true
+    try {
+      const authStore = useAuthStore()
+      if (id === authStore.user.id) {
+        authStore.logout()
+      }
+      await fetchWrapper.delete(`${baseUrl}/${id}`, {})
+      // Refresh the list after deletion
+      await getAll()
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
-    await fetchWrapper.delete(`${baseUrl}/${id}`, {})
   }
 
   return {
     // state
     users,
     user,
+    loading,
+    error,
+    isInitialized,
     // getters
     getUserById,
     // actions
@@ -120,6 +177,7 @@ export const useUsersStore = defineStore('users', () => {
     getAll,
     getById,
     update,
-    delete: deleteUser
+    delete: deleteUser,
+    ensureLoaded
   }
 })

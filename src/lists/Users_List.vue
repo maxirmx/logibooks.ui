@@ -16,9 +16,9 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
-const { users } = storeToRefs(usersStore)
+const { users, loading } = storeToRefs(usersStore)
 const runningAction = ref(false)
-usersStore.getAll()
+usersStore.ensureLoaded()
 
 import { useAlertStore } from '@/stores/alert.store.js'
 const alertStore = useAlertStore()

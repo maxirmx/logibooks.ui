@@ -1,12 +1,5 @@
 <template>
   <div class="pagination-footer">
-    <div class="pagination-footer__section pagination-footer__spinner">
-      <span 
-        v-if="loading || initializing" 
-        class="spinner-border spinner-border-sm align-center"
-      ></span>
-    </div>
-
     <div class="pagination-footer__section pagination-footer__items">
       <span class="pagination-footer__label">Записей на странице:</span>
       <v-select
@@ -73,21 +66,12 @@
           :disabled="controlsDisabled"
         />
       </div>
-
-      <v-btn
-        variant="text"
-        :icon="mdiChevronTripleUp"
-        size="small"
-        @click="scrollToTop"
-        class="pagination-footer__scroll-button"
-      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { mdiChevronTripleUp } from '@mdi/js'
 
 const props = defineProps({
   page: { type: Number, required: true },
@@ -96,11 +80,8 @@ const props = defineProps({
   totalCount: { type: Number, default: 0 },
   itemsPerPageOptions: { type: Array, default: () => [] },
   pageOptions: { type: Array, default: null },
-
   showRange: { type: Boolean, default: true },
-  disabled: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false },
-  initializing: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:itemsPerPage', 'update:page'])
@@ -108,7 +89,7 @@ const emit = defineEmits(['update:itemsPerPage', 'update:page'])
 const safeTotalCount = computed(() => props.totalCount ?? 0)
 const effectiveMaxPage = computed(() => Math.max(1, props.maxPage || 1))
 
-const controlsDisabled = computed(() => props.disabled || props.loading)
+const controlsDisabled = computed(() => props.disabled)
 
 const itemsPerPageModel = computed({
   get: () => props.itemsPerPage,
@@ -167,13 +148,6 @@ const isFirstDisabled = computed(() => controlsDisabled.value || props.page <= 1
 const isPrevDisabled = computed(() => controlsDisabled.value || props.page <= 1)
 const isNextDisabled = computed(() => controlsDisabled.value || props.page >= effectiveMaxPage.value)
 const isLastDisabled = computed(() => controlsDisabled.value || props.page >= effectiveMaxPage.value)
-
-function scrollToTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
-  })
-}
 </script>
 
 <style scoped>
@@ -191,11 +165,6 @@ function scrollToTop() {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-}
-
-.pagination-footer__spinner {
-  min-width: 30px; /* Reserve space for spinner */
-  justify-content: flex-start;
 }
 
 .pagination-footer__items {
@@ -228,10 +197,6 @@ function scrollToTop() {
 
 .pagination-footer__page-select {
   width: 60px;
-}
-
-.pagination-footer__scroll-button {
-  margin-left: 0.5rem;
 }
 
 .pagination-footer :deep(.v-field) {

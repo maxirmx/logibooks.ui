@@ -114,7 +114,7 @@ defineExpose({
           icon="fa-solid fa-plus"
           tooltip-text="Добавить код аэропорта"
           iconSize="2x"
-          :disabled="runningAction || loading"
+          :disabled="loading"
           @click="openCreateDialog"
         />
       </div>

@@ -83,7 +83,7 @@ const headers = [
 
     <div>
       <v-text-field
-        v-model="authStore.countries_search"
+        v-model="countries_search"
         :append-inner-icon="mdiMagnify"
         label="Поиск по любой информации о стране"
         variant="solo"

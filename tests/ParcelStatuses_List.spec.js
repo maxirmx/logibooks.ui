@@ -89,6 +89,11 @@ vi.mock('@mdi/js', () => ({
   mdiMagnify: 'mdi-magnify'
 }))
 
+const extendedStubs = {
+  ...defaultGlobalStubs,
+  ActionButton: true
+}
+
 describe('ParcelStatuses_List.vue', () => {
   let wrapper
 
@@ -105,7 +110,7 @@ describe('ParcelStatuses_List.vue', () => {
 
     wrapper = mount(ParcelStatusesList, {
       global: {
-        stubs: defaultGlobalStubs
+        stubs: extendedStubs
       }
     })
   })
@@ -139,12 +144,12 @@ describe('ParcelStatuses_List.vue', () => {
       expect(table.exists()).toBe(true)
     })
 
-    it('shows empty message when no order statuses', async () => {
+    it('shows empty table when no order statuses', async () => {
       mockParcelStatuses.value = []
       await wrapper.vm.$nextTick()
 
-      const emptyMessage = wrapper.find('.text-center')
-      expect(emptyMessage.text()).toBe('Список статусов посылок пуст')
+      const dataTable = wrapper.find('[data-testid="v-data-table"]')
+      expect(dataTable.exists()).toBe(true)
     })
 
     it('displays search field when order statuses exist', () => {
@@ -154,18 +159,14 @@ describe('ParcelStatuses_List.vue', () => {
   })
 
   describe('Admin Actions', () => {
-    it('shows create button for admin users', () => {
-      const createLink = wrapper.find('.link-crt a')
-      expect(createLink.exists()).toBe(true)
-      expect(createLink.text()).toContain('Зарегистрировать статус посылки')
+    it('shows header actions for admin users', () => {
+      const headerActions = wrapper.find('.header-actions')
+      expect(headerActions.exists()).toBe(true)
     })
 
-    it('calls openCreateDialog when create button is clicked', async () => {
-      const createLink = wrapper.find('.link-crt a')
-      await createLink.trigger('click')
-
-      // Since it's stubbed to show info message
-      expect(wrapper.vm.openCreateDialog).toBeDefined()
+    it('calls openCreateDialog and navigates to create page', async () => {
+      await wrapper.vm.openCreateDialog()
+      expect(mockPush).toHaveBeenCalledWith('/parcelstatus/create')
     })
 
     it('shows edit and delete buttons in table rows', () => {

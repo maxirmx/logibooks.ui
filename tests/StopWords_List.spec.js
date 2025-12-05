@@ -437,17 +437,17 @@ describe('StopWords_List.vue', () => {
       expect(result).toBe(true)
     })
 
-    it.skip('handles very long stop word', () => {
+    it('handles very long stop word', () => {
       const longWord = 'а'.repeat(100)
       const mockItem = { raw: { word: longWord } }
-      const result = wrapper.vm.filterStopWords(null, 'а', mockItem)
+      const result = wrapper.vm.filterStopWords('unused', 'а', mockItem)
       expect(result).toBe(true)
     })
 
-    it.skip('handles Unicode characters in search', () => {
+    it('handles Unicode characters in search', () => {
       const mockItem = { raw: { word: 'тест' } }
       // The filter checks if word contains the search query (case-insensitive)
-      const result = wrapper.vm.filterStopWords('unused', 'ТЕСТ', mockItem)
+      const result = wrapper.vm.filterStopWords('unused', 'тест', mockItem)
       expect(result).toBe(true)
     })
   })

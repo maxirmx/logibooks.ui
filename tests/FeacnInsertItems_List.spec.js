@@ -83,7 +83,10 @@ describe('FeacnInsertItems_List.vue', () => {
     mockConfirm.mockClear()
     wrapper = mount(FeacnInsertItemsList, {
       global: {
-        stubs: vuetifyStubs
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: true
+        }
       }
     })
   })
@@ -99,9 +102,13 @@ describe('FeacnInsertItems_List.vue', () => {
     expect(rows[0].text()).toContain('1234567890')
   })
 
-  it('navigates to create view on link click', async () => {
-    const link = wrapper.find('a.link')
-    await link.trigger('click')
+  it('has header with actions for admin users', () => {
+    const headerActions = wrapper.find('.header-actions')
+    expect(headerActions.exists()).toBe(true)
+  })
+
+  it('navigates to create view when action invoked', async () => {
+    await wrapper.vm.openCreateDialog()
     expect(mockPush).toHaveBeenCalledWith('/feacninsertitem/create')
   })
 

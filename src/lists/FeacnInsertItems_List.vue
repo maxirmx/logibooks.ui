@@ -116,18 +116,24 @@ defineExpose({
 
 <template>
   <div class="settings table-2" data-testid="feacn-insert-items-list">
-    <h1 class="primary-heading">Правила для формирования описания продукта</h1>
-    <hr class="hr" />
-
-    <div class="link-crt">
-      <a v-if="authStore.isAdminOrSrLogist" @click="openCreateDialog" class="link">
-        <font-awesome-icon
-          size="1x"
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Правила для формирования описания продукта</h1>
+      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          :item="{}"
           icon="fa-solid fa-plus"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Добавить правило
-      </a>
+          tooltip-text="Добавить правило"
+          iconSize="2x"
+          :disabled="loading"
+          @click="openCreateDialog"
+        />
+      </div>
     </div>
+
+    <hr class="hr" />
 
     <div v-if="insertItems?.length">
       <v-text-field
@@ -141,7 +147,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-if="insertItems?.length"
         v-model:items-per-page="authStore.feacninsertitems_per_page"
         items-per-page-text="Правил на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -195,13 +200,7 @@ defineExpose({
           </div>
         </template>
       </v-data-table>
-
-      <div v-if="!insertItems?.length" class="text-center m-5">Список фраз пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
 
     <!-- Alert -->
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">

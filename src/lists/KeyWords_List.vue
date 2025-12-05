@@ -155,39 +155,42 @@ defineExpose({
 
 <template>
   <div class="settings table-3" data-testid="key-words-list">
-    <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
+      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-file-import"
+          tooltip-text="Загрузить файл и добавить ключевые слова"
+          iconSize="2x"
+          :disabled="loading"
+          @click="openFileDialog"
+        />
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-plus"
+          tooltip-text="Зарегистрировать ключевое слово или фразу"
+          iconSize="2x"
+          :disabled="loading"
+          @click="openCreateDialog"
+        />
+      </div>
+    </div>
+
+    <v-file-input
+      ref="fileInput"
+      style="display: none"
+      accept=".xls,.xlsx,.csv,.txt"
+      loading-text="Идёт загрузка файла..."
+      @update:model-value="fileSelected"
+    />
+
     <hr class="hr" />
 
-    <div class="link-crt d-flex upload-links"  v-if="authStore.isAdminOrSrLogist">
-      <a @click="openFileDialog" class="link">
-        <font-awesome-icon
-          size="1x"
-          icon="fa-solid fa-file-import"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Загрузить файл и добавить ключевые слова
-      </a>
-
-      <v-file-input
-        ref="fileInput"
-        style="display: none"
-        accept=".xls,.xlsx,.csv,.txt"
-        loading-text="Идёт загрузка файла..."
-        @update:model-value="fileSelected"
-      />
-    </div>
-
-    <div class="link-crt d-flex upload-links" v-if="authStore.isAdminOrSrLogist">
-      <a @click="openCreateDialog" class="link">
-        <font-awesome-icon
-          size="1x"
-          icon="fa-solid fa-plus"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать ключевое слово или фразу
-      </a>
-    </div>
-      
-
-    <div v-if="keyWords?.length">
+    <div>
       <v-text-field
         v-model="authStore.keywords_search"
         :append-inner-icon="mdiMagnify"
@@ -199,7 +202,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-if="keyWords?.length"
         v-model:items-per-page="authStore.keywords_per_page"
         items-per-page-text="Ключевых слов на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -260,13 +262,7 @@ defineExpose({
           {{ getMatchTypeText(item.matchTypeId) }}
         </template>
       </v-data-table>
-
-      <div v-if="!keyWords?.length" class="text-center m-5">Список ключевых слов и фраз пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
 
     <!-- Alert -->
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">

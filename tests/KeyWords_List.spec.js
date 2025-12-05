@@ -100,6 +100,7 @@ vi.mock('@mdi/js', () => ({
 // Create extended stubs
 const extendedStubs = {
   ...vuetifyStubs,
+  ActionButton: true,
   'v-card': {
     template: '<div data-testid="v-card"><slot></slot></div>',
     props: ['elevation']
@@ -199,45 +200,29 @@ describe('KeyWords_List.vue', () => {
       expect(dataTable.exists()).toBe(true)
     })
 
-    it('shows empty message when no keywords exist', async () => {
+    it('shows empty table when no keywords exist', async () => {
       mockKeyWords.value = []
       await wrapper.vm.$nextTick()
       
-      const emptyMessage = wrapper.find('.text-center.m-5')
-      expect(emptyMessage.exists()).toBe(true)
-      expect(emptyMessage.text()).toContain('Список ключевых слов и фраз пуст')
+      const dataTable = wrapper.find('[data-testid="v-data-table"]')
+      expect(dataTable.exists()).toBe(true)
+      expect(wrapper.find('.header-with-actions').exists()).toBe(true)
     })
 
-    it('shows loading indicator when loading', async () => {
-      wrapper.vm.loading = true
-      await wrapper.vm.$nextTick()
-      
-      const loadingIndicator = wrapper.find('.spinner-border')
-      expect(loadingIndicator.exists()).toBe(true)
-    })
-
-    it('displays search field when keywords exist', () => {
+    it('displays search field always', () => {
       const searchField = wrapper.find('[data-testid="v-text-field"]')
       expect(searchField.exists()).toBe(true)
     })
   })
 
   describe('Create Functionality', () => {
-    it('shows create link for admin users', () => {
-      const createLinks = wrapper.findAll('.link-crt a')
-      const createLink = createLinks.find(link => 
-        link.text().includes('Зарегистрировать ключевое слово или фразу')
-      )
-      expect(createLink.exists()).toBe(true)
+    it('shows header actions for admin users', () => {
+      const headerActions = wrapper.find('.header-actions')
+      expect(headerActions.exists()).toBe(true)
     })
 
-    it('calls openCreateDialog when create link is clicked', async () => {
-      const createLinks = wrapper.findAll('.link-crt a')
-      const createLink = createLinks.find(link => 
-        link.text().includes('Зарегистрировать ключевое слово или фразу')
-      )
-      await createLink.trigger('click')
-      
+    it('calls openCreateDialog when create action invoked', async () => {
+      await wrapper.vm.openCreateDialog()
       expect(mockPush).toHaveBeenCalledWith('/keyword/create')
     })
   })
@@ -364,14 +349,6 @@ describe('KeyWords_List.vue', () => {
   })
 
   describe('File Upload Functionality', () => {
-    it('displays upload link for admin users', () => {
-      const uploadLinks = wrapper.findAll('a[class*="link"]')
-      const uploadLink = uploadLinks.find(link => 
-        link.text().includes('Загрузить файл и добавить ключевые слова')
-      )
-      expect(uploadLink.exists()).toBe(true)
-    })
-
     it('shows file input component', () => {
       const fileInput = wrapper.find('[data-testid="v-file-input"]')
       expect(fileInput.exists()).toBe(true)

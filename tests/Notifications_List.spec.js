@@ -25,13 +25,10 @@ let alertStoreMock
 
 const testStubs = {
   ...defaultGlobalStubs,
+  ActionButton: true,
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" />',
     props: ['size', 'icon', 'class']
-  },
-  'router-link': {
-    template: '<a class="router-link-stub"><slot></slot></a>',
-    props: ['to']
   }
 }
 
@@ -190,7 +187,7 @@ describe('Notifications_List.vue', () => {
     expect(cells[cells.length - 1].text()).toBe('31.01.2025')
   })
 
-  it('shows empty state message when there are no notifications', async () => {
+  it('shows empty table when there are no notifications', async () => {
     notificationsRef.value = []
 
     const wrapper = mount(NotificationsList, {
@@ -199,6 +196,7 @@ describe('Notifications_List.vue', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Список нотификаций пуст')
+    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
+    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
   })
 })

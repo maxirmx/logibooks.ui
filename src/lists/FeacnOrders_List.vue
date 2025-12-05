@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 
@@ -130,17 +131,26 @@ async function handleToggleOrderEnabled(order) {
 
 <template>
   <div class="settings table-3" data-testid="feacn-orders-list">
-    <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
+      <div class="header-actions">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          v-if="isAdminOrSrLogist"
+          :item="{}"
+          icon="fa-solid fa-file-import"
+          tooltip-text="Обновить информацию об ограничениях по кодам ТН ВЭД"
+          iconSize="2x"
+          :disabled="loading"
+          @click="updateCodes"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
-    <div class="link-crt" v-if="isAdminOrSrLogist">
-      <a @click="updateCodes" class="link">
-        <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
-        &nbsp;&nbsp;&nbsp;Обновить информацию об ограничениях по кодам ТН ВЭД
-      </a>
-    </div>
-
-    <div v-if="orders?.length || feacnorders_search">
+    <div>
       <v-text-field
         v-model="authStore.feacnorders_search"
         :append-inner-icon="mdiMagnify"
@@ -150,9 +160,8 @@ async function handleToggleOrderEnabled(order) {
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card orders-table">
       <v-data-table
-        v-if="orders?.length"
         :headers="orderHeaders"
         :items="orders"
         :search="authStore.feacnorders_search"
@@ -160,6 +169,7 @@ async function handleToggleOrderEnabled(order) {
         :custom-filter="filterOrders"
         density="compact"
         class="elevation-1 interlaced-table"
+        fixed-header
         hide-default-footer
         :row-props="(data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })"
         @click:row="(event, { item }) => { selectedOrderId = item.id }"
@@ -192,12 +202,11 @@ async function handleToggleOrderEnabled(order) {
           <span v-else>-</span>
         </template>
       </v-data-table>
-      <div v-if="!orders?.length && !loading" class="text-center m-5">Список документов пуст</div>
     </v-card>
 
     <div class="mt-8"></div>
 
-    <div v-if="prefixItems?.length || feacnprefixes_search">
+    <div>
       <v-text-field
         v-model="authStore.feacnprefixes_search"
         :append-inner-icon="mdiMagnify"
@@ -207,9 +216,8 @@ async function handleToggleOrderEnabled(order) {
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card prefixes-table">
       <v-data-table
-        v-if="prefixItems?.length"
         v-model:items-per-page="feacnprefixes_per_page"
         items-per-page-text="Кодов на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -222,20 +230,13 @@ async function handleToggleOrderEnabled(order) {
         :custom-filter="filterPrefixes"
         density="compact"
         class="elevation-1 interlaced-table"
+        fixed-header
       >
         <template v-for="h in prefixHeaders" :key="h.key" #[`item.${h.key}`]="{ item }">
           {{ item[h.key] || '-' }}
         </template>
       </v-data-table>
-      <div v-if="!prefixItems?.length && !loading" class="text-center m-5">Список кодов пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
@@ -244,8 +245,19 @@ async function handleToggleOrderEnabled(order) {
 </template>
 
 <style scoped>
+@import '@/assets/styles/scrollable-table.css';
+
 /* Visual emphasis for the selected order row */
 :deep(.selected-order-row) {
   border-left: 4px solid #1976d2 !important;
+}
+
+/* Adjust max-height for dual-table layout */
+.orders-table :deep(.v-table__wrapper) {
+  max-height: calc(100vh - 650px);
+}
+
+.prefixes-table :deep(.v-table__wrapper) {
+  max-height: calc(100vh - 750px);
 }
 </style>

@@ -107,6 +107,18 @@ vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
 
+const mountOptions = {
+  global: {
+    stubs: {
+      ...vuetifyStubs,
+      ActionButton: {
+        template: '<button @click="$emit(\'click\')"><slot></slot></button>',
+        props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
+      }
+    }
+  }
+}
+
 describe('FeacnOrders_List.vue', () => {
   beforeEach(() => {
     // Create and set a new pinia instance before each test
@@ -125,43 +137,43 @@ describe('FeacnOrders_List.vue', () => {
   })
 
   it('calls ensureLoaded on mount', () => {
-    mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
+    mount(FeacnOrdersList, mountOptions)
     expect(mockFeacnOrdersStore.ensureLoaded).toHaveBeenCalled()
   })
 
   it('updateCodes calls store update', async () => {
     mockFeacnOrdersStore.update.mockResolvedValue()
-    const wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
+    const wrapper = mount(FeacnOrdersList, mountOptions)
     await wrapper.vm.updateCodes()
     expect(mockFeacnOrdersStore.update).toHaveBeenCalled()
   })
 
-  it('shows empty message when no orders', () => {
+  it('always renders data tables even when empty', () => {
     mockFeacnOrdersStore.orders.value = []
-    const wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Список документов пуст')
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="v-data-table"]').length).toBe(2)
   })
 
   it('renders admin update button when user is admin', () => {
     mockAuthStore.isAdmin.value = true
     mockAuthStore.isAdminOrSrLogist.value = true
-    const wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Обновить информацию об ограничениях')
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+    const button = wrapper.find('button')
+    expect(button.exists()).toBe(true)
   })
 
-  it('shows spinner and error message', () => {
+  it('shows spinner in header when loading', () => {
     mockFeacnOrdersStore.loading.value = true
-    mockFeacnOrdersStore.error.value = 'bad'
-    const wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.html()).toContain('spinner-border')
-    expect(wrapper.html()).toContain('Ошибка при загрузке информации')
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+    expect(wrapper.find('.header-actions .spinner-border').exists()).toBe(true)
   })
 
   describe('filterOrders function', () => {
     let wrapper
 
     beforeEach(() => {
-      wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
+      wrapper = mount(FeacnOrdersList, mountOptions)
     })
 
     it('returns true when no query is provided', () => {
@@ -211,7 +223,7 @@ describe('FeacnOrders_List.vue', () => {
     let wrapper
 
     beforeEach(() => {
-      wrapper = mount(FeacnOrdersList, { global: { stubs: vuetifyStubs } })
+      wrapper = mount(FeacnOrdersList, mountOptions)
     })
 
     it('returns true when no query is provided', () => {

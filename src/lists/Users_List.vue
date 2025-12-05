@@ -16,7 +16,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
-const { users, loading } = storeToRefs(usersStore)
+const { users, loading, error } = storeToRefs(usersStore)
 const runningAction = ref(false)
 usersStore.ensureLoaded()
 
@@ -175,14 +175,14 @@ const headers = [
 
         <template v-slot:[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" :disabled="runningAction || users?.loading" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" :disabled="runningAction || users?.loading" />
+            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" :disabled="runningAction || loading" />
+            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" :disabled="runningAction || loading" />
           </div>
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="users?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке списка пользователей: {{ users.error }}</div>
+    <div v-if="error" class="text-center m-5">
+      <div class="text-danger">Ошибка при загрузке списка пользователей: {{ error }}</div>
     </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>

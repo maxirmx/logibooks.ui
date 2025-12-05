@@ -73,6 +73,7 @@ export const useUsersStore = defineStore('users', () => {
   async function getAll() {
     loading.value = true
     try {
+      error.value = null
       const response = await fetchWrapper.get(baseUrl)
       users.value = response || []
       isInitialized.value = true
@@ -121,6 +122,7 @@ export const useUsersStore = defineStore('users', () => {
     }
     loading.value = true
     try {
+      error.value = null
       const response = await fetchWrapper.put(`${baseUrl}/${id}`, params)
 
       // update stored user if the logged in user updated their own record
@@ -148,6 +150,7 @@ export const useUsersStore = defineStore('users', () => {
   async function deleteUser(id) {
     loading.value = true
     try {
+      error.value = null
       const authStore = useAuthStore()
       if (id === authStore.user.id) {
         authStore.logout()

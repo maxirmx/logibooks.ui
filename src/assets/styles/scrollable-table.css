@@ -1,4 +1,8 @@
 /**
+ * Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+ * All rights reserved.
+ * This file is a part of Logibooks ui application 
+ *
  * Styles for scrollable data tables with fixed headers.
  *
  * Usage:
@@ -16,6 +20,7 @@
  *   - It is not standard CSS and only works in build systems that support Vue's SFC syntax.
  *   - If using outside of Vue SFCs, replace with a suitable deep selector or global style.
  */
+ 
 .table-card {
   overflow: visible;
 }

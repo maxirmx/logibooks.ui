@@ -215,7 +215,6 @@ defineExpose({
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
-        height="calc(100vh - 400px)"
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">

@@ -90,7 +90,14 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     loadFeacnTooltipOnHover.mockClear()
     mockPush.mockClear()
     mockConfirm.mockClear()
-    wrapper = mount(FeacnLocalPrefixesList, { global: { stubs: vuetifyStubs } })
+    wrapper = mount(FeacnLocalPrefixesList, { 
+      global: { 
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: true
+        }
+      } 
+    })
   })
 
   it('fetches prefixes and preloads FEACN info on mount', () => {
@@ -123,9 +130,13 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('111')
   })
 
-  it('navigates to create view on link click', async () => {
-    const link = wrapper.find('a.link')
-    await link.trigger('click')
+  it('has header with actions for admin users', () => {
+    const headerActions = wrapper.find('.header-actions')
+    expect(headerActions.exists()).toBe(true)
+  })
+
+  it('navigates to create view when action invoked', async () => {
+    await wrapper.vm.openCreateDialog()
     expect(mockPush).toHaveBeenCalledWith('/feacn/prefix/create')
   })
 

@@ -140,20 +140,26 @@ defineExpose({
 
 <template>
   <div class="settings table-3" data-testid="feacn-prefixes-list">
-    <h1 class="primary-heading">Префиксы ТН ВЭД для формирования запретов</h1>
-    <hr class="hr" />
-
-    <div class="link-crt">
-      <a v-if="authStore.isAdminOrSrLogist" @click="openCreateDialog" class="link">
-        <font-awesome-icon
-          size="1x"
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Префиксы ТН ВЭД для формирования запретов</h1>
+      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          :item="{}"
           icon="fa-solid fa-plus"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Добавить префикс
-      </a>
+          tooltip-text="Добавить префикс"
+          iconSize="2x"
+          :disabled="loading"
+          @click="openCreateDialog"
+        />
+      </div>
     </div>
 
-    <div v-if="prefixes?.length">
+    <hr class="hr" />
+
+    <div>
       <v-text-field
         v-model="authStore.feacnlocalprefixes_search"
         :append-inner-icon="mdiMagnify"
@@ -165,7 +171,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-if="prefixes?.length"
         v-model:items-per-page="authStore.feacnlocalprefixes_per_page"
         items-per-page-text="Префиксов на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -234,13 +239,7 @@ defineExpose({
           </div>
         </template>
       </v-data-table>
-
-      <div v-if="!prefixes?.length" class="text-center m-5">Список префиксов пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
 
     <!-- Alert -->
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">

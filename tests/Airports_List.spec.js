@@ -88,18 +88,14 @@ vi.mock('@/helpers/items.per.page.js', () => ({
 vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     name: 'ActionButton',
-    props: ['item', 'icon', 'tooltipText', 'disabled'],
+    props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
     emits: ['click'],
     template: '<button data-testid="action-button" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
 const testStubs = {
-  ...defaultGlobalStubs,
-  'router-link': {
-    template: '<a data-testid="router-link"><slot></slot></a>',
-    props: ['to']
-  }
+  ...defaultGlobalStubs
 }
 
 beforeEach(() => {

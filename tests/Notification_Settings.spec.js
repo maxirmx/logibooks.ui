@@ -168,4 +168,26 @@ describe('Notification_Settings.vue', () => {
     expect(vm.formatDateForInput(new Date('2025-01-15'))).toBe('2025-01-15')
     expect(vm.formatDateForInput({ year: 2025, month: 1, day: 15 })).toBe('2025-01-15')
   })
+
+  it('cancel button navigates back to notifications list', async () => {
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: {
+        stubs: defaultGlobalStubs,
+        mocks: {
+          $router: mockRouter
+        }
+      }
+    })
+
+    await resolveAll()
+
+    const buttons = wrapper.findAll('button')
+    const cancelButton = buttons.find(btn => btn.text().includes('Отменить'))
+    
+    expect(cancelButton).toBeTruthy()
+    await cancelButton.trigger('click')
+    
+    expect(mockRouter.push).toHaveBeenCalledWith('/notifications')
+  })
 })

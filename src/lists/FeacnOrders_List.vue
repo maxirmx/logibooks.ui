@@ -16,7 +16,7 @@ const feacnStore = useFeacnOrdersStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { orders, prefixes, loading, error } = storeToRefs(feacnStore)
+const { orders, prefixes, loading } = storeToRefs(feacnStore)
 const { alert } = storeToRefs(alertStore)
 const {
   feacnorders_search,
@@ -164,7 +164,7 @@ async function handleToggleOrderEnabled(order) {
       <v-data-table
         :headers="orderHeaders"
         :items="orders"
-        :search="authStore.feacnorders_search"
+        :search="feacnorders_search"
         v-model:sort-by="feacnorders_sort_by"
         :custom-filter="filterOrders"
         density="compact"
@@ -225,7 +225,7 @@ async function handleToggleOrderEnabled(order) {
         v-model:page="feacnprefixes_page"
         :headers="prefixHeaders"
         :items="prefixItems"
-        :search="authStore.feacnprefixes_search"
+        :search="feacnprefixes_search"
         v-model:sort-by="feacnprefixes_sort_by"
         :custom-filter="filterPrefixes"
         density="compact"

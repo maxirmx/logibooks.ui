@@ -142,7 +142,6 @@ if (!isCreate.value) {
           :class="{ 'is-invalid': errors.model }"
           placeholder="Модель"
         />
-        <div v-if="errors.model" class="invalid-feedback">{{ errors.model }}</div>
       </div>
 
       <div class="form-group">
@@ -155,7 +154,6 @@ if (!isCreate.value) {
           :class="{ 'is-invalid': errors.number }"
           placeholder="Номер"
         />
-        <div v-if="errors.number" class="invalid-feedback">{{ errors.number }}</div>
       </div>
 
       <div class="form-group">
@@ -167,16 +165,28 @@ if (!isCreate.value) {
           class="form-control input"
           :class="{ 'is-invalid': errors.terminationDate }"
         />
-        <div v-if="errors.terminationDate" class="invalid-feedback">{{ errors.terminationDate }}</div>
       </div>
 
-      <div v-if="errors.apiError" class="alert alert-danger">{{ errors.apiError }}</div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+      <div class="form-group mt-8">
+        <button class="button primary" type="submit" :disabled="isSubmitting">
+          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
+        <button
+          class="button secondary"
+          type="button"
+          @click="$router.push('/notifications')"
+        >
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
+          Отменить
+        </button>
       </div>
+
+      <div v-if="errors.model" class="alert alert-danger mt-3 mb-0">{{ errors.model }}</div>
+      <div v-if="errors.number" class="alert alert-danger mt-3 mb-0">{{ errors.number }}</div>
+      <div v-if="errors.terminationDate" class="alert alert-danger mt-3 mb-0">{{ errors.terminationDate }}</div>
+      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>

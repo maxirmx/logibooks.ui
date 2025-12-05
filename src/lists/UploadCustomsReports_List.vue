@@ -115,6 +115,9 @@ const tableItems = computed(() =>
     <div class="header-with-actions">
       <h1 class="primary-heading">Отчеты о выпуске</h1>
       <div class="header-actions">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
           <ActionButton
             tooltip-text="Загрузить отчёт"
             iconSize="2x"
@@ -194,10 +197,6 @@ const tableItems = computed(() =>
           </tr>
         </template>
       </v-data-table>
-
-      <div v-else-if="!loading" class="text-center m-5">
-        Список отчетов пуст
-      </div>
     </v-card>
 
     <div v-if="error" class="text-center m-5">

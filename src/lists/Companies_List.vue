@@ -128,18 +128,24 @@ defineExpose({
 
 <template>
   <div class="settings table-2">
-    <h1 class="primary-heading">Компании</h1>
-    <hr class="hr" />
-
-    <div class="link-crt" v-if="authStore.isAdminOrSrLogist">
-      <router-link to="/company/create" class="link">
-        <font-awesome-icon
-          size="1x"
-          icon="fa-solid fa-building"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать компанию
-      </router-link>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Компании</h1>
+      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-plus"
+          tooltip-text="Зарегистрировать компанию"
+          iconSize="2x"
+          :disabled="loading"
+          @click="openCreateDialog"
+        />
+      </div>
     </div>
+
+    <hr class="hr" />
 
     <div v-if="companies?.length">
       <v-text-field
@@ -153,7 +159,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-if="companies?.length"
         v-model:items-per-page="authStore.companies_per_page"
         items-per-page-text="Компаний на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -186,13 +191,7 @@ defineExpose({
           </div>
         </template>
       </v-data-table>
-
-      <div v-if="!companies?.length" class="text-center m-5">Список компаний пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
 
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>

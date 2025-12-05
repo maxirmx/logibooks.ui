@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { onMounted } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 
 const countriesStore = useCountriesStore()
 const { countries, loading, error } = storeToRefs(countriesStore)
@@ -61,15 +62,24 @@ const headers = [
 
 <template>
   <div class="settings table-2">
-    <h1 class="primary-heading">Cтраны</h1>
-    <hr class="hr" />
-
-    <div class="link-crt" v-if="isAdminOrSrLogist">
-      <a @click="updateCodes" class="link">
-        <font-awesome-icon size="1x" icon="fa-solid fa-file-import" class="link" />
-        &nbsp;&nbsp;&nbsp;Обновить информацию о странах
-      </a>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Cтраны</h1>
+      <div class="header-actions" v-if="isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-file-import"
+          tooltip-text="Обновить информацию о странах"
+          iconSize="2x"
+          :disabled="loading"
+          @click="updateCodes"
+        />
+      </div>
     </div>
+
+    <hr class="hr" />
 
     <div v-if="countries?.length || countries_search">
       <v-text-field
@@ -103,9 +113,6 @@ const headers = [
         Список стран пуст
       </div>
     </v-card>
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
     </div>

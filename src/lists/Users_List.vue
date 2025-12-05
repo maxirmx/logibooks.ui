@@ -122,11 +122,15 @@ const headers = [
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
       <div class="header-actions">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
         <ActionButton
           :item="{}"
           icon="fa-solid fa-user-plus"
           tooltip-text="Зарегистрировать пользователя"
           iconSize="2x"
+          :disabled="runningAction"
           @click="() => router.push('/register')"
         />
       </div>
@@ -178,11 +182,7 @@ const headers = [
           </div>
         </template>
       </v-data-table>
-      <div v-if="!users?.length" class="text-center m-5">Список пользователей пуст</div>
     </v-card>
-    <div v-if="users?.loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
     <div v-if="users?.error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка пользователей: {{ users.error }}</div>
     </div>

@@ -161,6 +161,8 @@ describe('Airports_List.vue', () => {
 
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('Список кодов аэропортов пуст')
+    // after refactor the header remains, data table is not rendered when there are no items
+    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(false)
+    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
   })
 })

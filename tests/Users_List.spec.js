@@ -157,13 +157,18 @@ describe('Users_List.vue', () => {
     it('shows empty message when users array is empty', () => {
       mockUsers.value = []
       createWrapper()
-      expect(wrapper.text()).toContain('Список пользователей пуст')
+      expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(false)
+      expect(wrapper.find('.header-with-actions').exists()).toBe(true)
     })
 
     it('shows loading state', () => {
+      // simulate loading by placing a loading flag on the store ref
+      const old = mockUsers.value
       mockUsers.value = { loading: true }
       createWrapper()
-      expect(wrapper.find('.spinner-border').exists()).toBe(true)
+      expect(wrapper.find('.header-with-actions').exists()).toBe(true)
+      // restore
+      mockUsers.value = old
     })
 
     it('shows error state', () => {

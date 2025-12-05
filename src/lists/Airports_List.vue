@@ -103,18 +103,20 @@ defineExpose({
 
 <template>
   <div class="settings table-2">
-    <h1 class="primary-heading">Коды аэропортов</h1>
-    <hr class="hr" />
-
-    <div class="link-crt" v-if="authStore.isAdminOrSrLogist">
-      <router-link to="/airport/create" class="link">
-        <font-awesome-icon
-          size="1x"
-          icon="fa-solid fa-truck-plane"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Добавить код аэропорта
-      </router-link>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Коды аэропортов</h1>
+      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-plus"
+          tooltip-text="Добавить код аэропорта"
+          iconSize="2x"
+          @click="openCreateDialog"
+        />
+      </div>
     </div>
+
+    <hr class="hr" />
 
     <div v-if="airports?.length">
       <v-text-field

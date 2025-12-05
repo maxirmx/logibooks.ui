@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, watch, computed } from 'vue'
+import { onMounted, watch, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -18,6 +18,7 @@ const authStore = useAuthStore()
 
 const { orders, prefixes, loading } = storeToRefs(feacnStore)
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
 const {
   feacnorders_search,
   feacnorders_sort_by,
@@ -72,6 +73,8 @@ onMounted(async () => {
 })
 
 async function updateCodes() {
+  if (runningAction.value) return
+  runningAction.value = true
   try {
     await feacnStore.update()  // This already reloads orders automatically
     if (selectedOrderId.value) {
@@ -79,6 +82,8 @@ async function updateCodes() {
     }
   } catch (err) {
     alertStore.error(err)
+  } finally {
+    runningAction.value = false
   }
 }
 
@@ -124,8 +129,13 @@ const prefixHeaders = [
 ]
 
 async function handleToggleOrderEnabled(order) {
-  if (loading.value) return
-  await feacnStore.toggleEnabled(order.id, !order.enabled)
+  if (runningAction.value || loading.value) return
+  runningAction.value = true
+  try {
+    await feacnStore.toggleEnabled(order.id, !order.enabled)
+  } finally {
+    runningAction.value = false
+  }
 }
 </script>
 
@@ -134,7 +144,7 @@ async function handleToggleOrderEnabled(order) {
     <div class="header-with-actions">
       <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
       <div class="header-actions">
-        <div v-if="loading">
+        <div v-if="runningAction || loading">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <ActionButton
@@ -143,7 +153,7 @@ async function handleToggleOrderEnabled(order) {
           icon="fa-solid fa-file-import"
           tooltip-text="Обновить информацию об ограничениях по кодам ТН ВЭД"
           iconSize="2x"
-          :disabled="loading"
+          :disabled="runningAction || loading"
           @click="updateCodes"
         />
       </div>
@@ -157,6 +167,7 @@ async function handleToggleOrderEnabled(order) {
         label="Поиск по документам"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading"
       />
     </div>
 
@@ -180,10 +191,10 @@ async function handleToggleOrderEnabled(order) {
               <button
                 type="button"
                 class="action-btn"
-                :class="{ 'disabled-btn': loading || !isAdminOrSrLogist }"
+                :class="{ 'disabled-btn': runningAction || loading || !isAdminOrSrLogist }"
                 v-bind="props"
                 @click.stop="handleToggleOrderEnabled(item)"
-                :disabled="loading || !isAdminOrSrLogist"
+                :disabled="runningAction || loading || !isAdminOrSrLogist"
                 data-testid="toggle-order-enabled"
               >
                 <font-awesome-icon
@@ -213,6 +224,7 @@ async function handleToggleOrderEnabled(order) {
         label="Поиск по кодам"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading"
       />
     </div>
 

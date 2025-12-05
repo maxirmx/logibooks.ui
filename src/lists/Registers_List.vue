@@ -437,16 +437,21 @@ defineExpose({
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Реестры</h1>
-      <div class="header-actions" v-if="isAdminOrSrLogist">
+      <div class="header-actions">
+        <div v-if="runningAction || loading || isInitializing">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
         <ActionButton2L
+          v-if="isAdminOrSrLogist"
           :item="{}"
           icon="fa-solid fa-file-import"
           tooltip-text="Загрузить реестр"
           iconSize="2x"
-          :disabled="isUploadDisabled"
+          :disabled="runningAction || loading || isInitializing ||isUploadDisabled"
           :options="uploadMenuOptions"
         />
         <v-file-input
+          v-if="isAdminOrSrLogist"
           ref="fileInput"
           style="display: none"
           accept=".xls,.xlsx,.zip,.rar"
@@ -458,19 +463,19 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div v-if="items?.length || loading || localSearch">
+    <div>
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
         label="Поиск по любой информации о реестре"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading || isInitializing"
       />
     </div>
 
     <v-card class="table-card">
       <v-data-table-server
-        v-if="items?.length || loading"
         v-model:items-per-page="registers_per_page"
         items-per-page-text="Реестров на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -480,7 +485,7 @@ defineExpose({
         :headers="headers"
         :items="items"
         :items-length="totalCount"
-        :loading="loading"
+        :loading="loading || isInitializing"
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header
@@ -702,10 +707,6 @@ defineExpose({
           </div>
         </template>
       </v-data-table-server>
-      <div v-if="!items?.length && !loading && !isInitializing" class="text-center m-5">Список реестров пуст</div>
-      <div v-if="loading || isInitializing" class="text-center m-5">
-        <span class="spinner-border spinner-border-lg"></span>
-      </div>
     </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>

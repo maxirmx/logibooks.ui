@@ -131,7 +131,7 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Компании</h1>
       <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="loading">
+        <div v-if="runningAction || loading">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <ActionButton
@@ -139,7 +139,7 @@ defineExpose({
           icon="fa-solid fa-plus"
           tooltip-text="Зарегистрировать компанию"
           iconSize="2x"
-          :disabled="loading"
+          :disabled="runningAction || loading"
           @click="openCreateDialog"
         />
       </div>
@@ -154,6 +154,7 @@ defineExpose({
         label="Поиск по любой информации о компании"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading"
       />
     </div>
 
@@ -185,8 +186,20 @@ defineExpose({
 
         <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.isAdminOrSrLogist  " class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о компании" @click="openEditDialog" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о компании" @click="deleteCompany" :disabled="runningAction || loading" />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-pen" 
+              tooltip-text="Редактировать информацию о компании" 
+              @click="openEditDialog" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-trash-can" 
+              tooltip-text="Удалить информацию о компании" 
+              @click="deleteCompany" 
+              :disabled="runningAction || loading" 
+            />
           </div>
         </template>
       </v-data-table>

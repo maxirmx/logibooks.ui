@@ -122,7 +122,7 @@ const headers = [
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
       <div class="header-actions">
-        <div v-if="loading">
+        <div v-if="runningAction ||loading">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <ActionButton
@@ -130,7 +130,7 @@ const headers = [
           icon="fa-solid fa-user-plus"
           tooltip-text="Зарегистрировать пользователя"
           iconSize="2x"
-          :disabled="runningAction"
+          :disabled="runningAction || loading"
           @click="() => router.push('/register')"
         />
       </div>
@@ -145,6 +145,7 @@ const headers = [
         label="Поиск по любой информации о пользователе"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading"
       />
     </div>
 
@@ -175,8 +176,20 @@ const headers = [
 
         <template v-slot:[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать информацию о пользователе" @click="userSettings" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-trash-can" tooltip-text="Удалить информацию о пользователе" @click="deleteUser" :disabled="runningAction || loading" />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-pen" 
+              tooltip-text="Редактировать информацию о пользователе" 
+              @click="userSettings" 
+              :disabled="runningAction || loading" 
+            />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-trash-can" 
+              tooltip-text="Удалить информацию о пользователе" 
+              @click="deleteUser" 
+              :disabled="runningAction || loading" 
+            />
           </div>
         </template>
       </v-data-table>

@@ -119,7 +119,7 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Правила для формирования описания продукта</h1>
       <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="loading">
+        <div v-if="runningAction || loading">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <ActionButton
@@ -127,7 +127,7 @@ defineExpose({
           icon="fa-solid fa-plus"
           tooltip-text="Добавить правило"
           iconSize="2x"
-          :disabled="loading"
+          :disabled="runningAction || loading"
           @click="openCreateDialog"
         />
       </div>
@@ -142,6 +142,7 @@ defineExpose({
         label="Поиск по правилам"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading"
       />
     </div>
 

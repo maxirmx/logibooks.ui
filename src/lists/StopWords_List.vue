@@ -116,7 +116,7 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Стоп-слова и фразы</h1>
       <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="loading">
+        <div v-if="runningAction || loading">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <ActionButton
@@ -124,7 +124,7 @@ defineExpose({
           icon="fa-solid fa-plus"
           tooltip-text="Зарегистрировать стоп-слово или фразу"
           iconSize="2x"
-          :disabled="loading"
+          :disabled="runningAction || loading"
           @click="openCreateDialog"
         />
       </div>
@@ -139,6 +139,7 @@ defineExpose({
         label="Поиск по стоп словам и фразам"
         variant="solo"
         hide-details
+        :disabled="runningAction ||loading"
       />
     </div>
 

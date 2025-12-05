@@ -166,7 +166,7 @@ defineExpose({
           icon="fa-solid fa-file-import"
           tooltip-text="Загрузить файл и добавить ключевые слова"
           iconSize="2x"
-          :disabled="loading"
+          :disabled="runningAction || loading"
           @click="openFileDialog"
         />
         <ActionButton
@@ -174,7 +174,7 @@ defineExpose({
           icon="fa-solid fa-plus"
           tooltip-text="Зарегистрировать ключевое слово или фразу"
           iconSize="2x"
-          :disabled="loading"
+          :disabled="runningAction || loading"
           @click="openCreateDialog"
         />
       </div>
@@ -197,6 +197,7 @@ defineExpose({
         label="Поиск по ключевым словам и фразам"
         variant="solo"
         hide-details
+        :disabled="runningAction || loading"
       />
     </div>
 

@@ -88,6 +88,7 @@ const headers = [
         label="Поиск по любой информации о стране"
         variant="solo"
         hide-details
+        :disabled="loading"
       />
     </div>
 

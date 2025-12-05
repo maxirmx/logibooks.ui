@@ -243,7 +243,8 @@ describe('UploadCustomsReports_List.vue', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Список отчетов пуст')
+    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(false)
+    expect(wrapper.find('.header-actions').exists()).toBe(true)
   })
 
   it('shows header upload button and triggers file input', async () => {

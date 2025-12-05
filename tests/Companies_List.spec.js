@@ -26,10 +26,6 @@ const additionalStubs = {
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
     props: ['size', 'icon', 'class']
-  },
-  'router-link': {
-    template: '<a class="router-link-stub" data-testid="router-link"><slot></slot></a>',
-    props: ['to']
   }
 }
 

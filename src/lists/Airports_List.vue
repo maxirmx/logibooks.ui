@@ -106,11 +106,15 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Коды аэропортов</h1>
       <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
         <ActionButton
           :item="{}"
           icon="fa-solid fa-plus"
           tooltip-text="Добавить код аэропорта"
           iconSize="2x"
+          :disabled="loading"
           @click="openCreateDialog"
         />
       </div>
@@ -167,13 +171,7 @@ defineExpose({
           </div>
         </template>
       </v-data-table>
-
-      <div v-if="!airports?.length" class="text-center m-5">Список кодов аэропортов пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
 
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>

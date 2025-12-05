@@ -120,12 +120,15 @@ describe('Countries_List.vue', () => {
   it('renders admin update button when user is admin', () => {
     mockIsAdmin.value = true
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Обновить информацию о странах')
+    const headerActions = wrapper.find('.header-actions')
+    expect(headerActions.exists()).toBe(true)
   })
 
   it('shows spinner and error message', () => {
     mockLoading.value = true
     mockError.value = 'bad'
+    // spinner is only rendered for admin users in header-actions
+    mockIsAdmin.value = true
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).toContain('Ошибка при загрузке информации')

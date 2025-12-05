@@ -113,20 +113,26 @@ defineExpose({
 
 <template>
   <div class="settings table-3" data-testid="stop-words-list">
-    <h1 class="primary-heading">Стоп-слова и фразы</h1>
-    <hr class="hr" />
-
-    <div class="link-crt"  v-if="authStore.isAdminOrSrLogist">
-      <a @click="openCreateDialog" class="link">
-        <font-awesome-icon
-          size="1x"
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Стоп-слова и фразы</h1>
+      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading">
+          <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <ActionButton
+          :item="{}"
           icon="fa-solid fa-plus"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать стоп-слово или фразу
-      </a>
+          tooltip-text="Зарегистрировать стоп-слово или фразу"
+          iconSize="2x"
+          :disabled="loading"
+          @click="openCreateDialog"
+        />
+      </div>
     </div>
 
-    <div v-if="stopWords?.length">
+    <hr class="hr" />
+
+    <div>
       <v-text-field
         v-model="authStore.stopwords_search"
         :append-inner-icon="mdiMagnify"
@@ -138,7 +144,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-if="stopWords?.length"
         v-model:items-per-page="authStore.stopwords_per_page"
         items-per-page-text="Стоп-слов на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -178,13 +183,7 @@ defineExpose({
           {{ getMatchTypeText(item.matchTypeId) }}
         </template>
       </v-data-table>
-
-      <div v-if="!stopWords?.length" class="text-center m-5">Список стоп-слов и фраз пуст</div>
     </v-card>
-
-    <div v-if="loading" class="text-center m-5">
-      <span class="spinner-border spinner-border-lg align-center"></span>
-    </div>
 
     <!-- Alert -->
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">

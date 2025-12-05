@@ -114,10 +114,11 @@ const tableItems = computed(() =>
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Отчеты о выпуске</h1>
-      <div class="header-actions">
-        <div v-if="loading">
+      <div style="display:flex; align-items:center;">
+        <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
+        <div class="header-actions header-actions-group">
           <ActionButton
             tooltip-text="Загрузить отчёт"
             iconSize="2x"
@@ -129,6 +130,7 @@ const tableItems = computed(() =>
           >
             Загрузить
           </ActionButton>
+        </div>
         <input
           type="file"
           ref="fileInput"

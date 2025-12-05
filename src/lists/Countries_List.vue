@@ -64,18 +64,20 @@ const headers = [
   <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Cтраны</h1>
-      <div class="header-actions" v-if="isAdminOrSrLogist">
-        <div v-if="loading">
+      <div style="display:flex; align-items:center;" v-if="isAdminOrSrLogist">
+        <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-file-import"
-          tooltip-text="Обновить информацию о странах"
-          iconSize="2x"
-          :disabled="loading"
-          @click="updateCodes"
-        />
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-import"
+            tooltip-text="Обновить информацию о странах"
+            iconSize="2x"
+            :disabled="loading"
+            @click="updateCodes"
+          />
+        </div>
       </div>
     </div>
 

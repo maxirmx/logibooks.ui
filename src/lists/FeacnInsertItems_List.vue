@@ -118,18 +118,20 @@ defineExpose({
   <div class="settings table-2" data-testid="feacn-insert-items-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Правила для формирования описания продукта</h1>
-      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="runningAction || loading">
+      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-plus"
-          tooltip-text="Добавить правило"
-          iconSize="2x"
-          :disabled="runningAction || loading"
-          @click="openCreateDialog"
-        />
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-plus"
+            tooltip-text="Добавить правило"
+            iconSize="2x"
+            :disabled="runningAction || loading"
+            @click="openCreateDialog"
+          />
+        </div>
       </div>
     </div>
 

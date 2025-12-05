@@ -121,18 +121,20 @@ const headers = [
   <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
-      <div class="header-actions">
-        <div v-if="runningAction ||loading">
+      <div style="display:flex; align-items:center;">
+        <div v-if="runningAction ||loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-user-plus"
-          tooltip-text="Зарегистрировать пользователя"
-          iconSize="2x"
-          :disabled="runningAction || loading"
-          @click="() => router.push('/register')"
-        />
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-user-plus"
+            tooltip-text="Зарегистрировать пользователя"
+            iconSize="2x"
+            :disabled="runningAction || loading"
+            @click="() => router.push('/register')"
+          />
+        </div>
       </div>
     </div>
 

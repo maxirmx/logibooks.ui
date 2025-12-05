@@ -157,26 +157,28 @@ defineExpose({
   <div class="settings table-3" data-testid="key-words-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
-      <div class="header-actions" v-if="authStore.isAdminOrSrLogist">
-        <div v-if="loading">
+      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+        <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-file-import"
-          tooltip-text="Загрузить файл и добавить ключевые слова"
-          iconSize="2x"
-          :disabled="runningAction || loading"
-          @click="openFileDialog"
-        />
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-plus"
-          tooltip-text="Зарегистрировать ключевое слово или фразу"
-          iconSize="2x"
-          :disabled="runningAction || loading"
-          @click="openCreateDialog"
-        />
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-import"
+            tooltip-text="Загрузить файл и добавить ключевые слова"
+            iconSize="2x"
+            :disabled="runningAction || loading"
+            @click="openFileDialog"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-plus"
+            tooltip-text="Зарегистрировать ключевое слово или фразу"
+            iconSize="2x"
+            :disabled="runningAction || loading"
+            @click="openCreateDialog"
+          />
+        </div>
       </div>
     </div>
 

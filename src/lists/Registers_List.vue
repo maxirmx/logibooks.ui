@@ -468,7 +468,7 @@ defineExpose({
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table-server
         v-if="items?.length || loading"
         v-model:items-per-page="registers_per_page"
@@ -483,6 +483,8 @@ defineExpose({
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
+        height="calc(100vh - 400px)"
+        fixed-header
       >
         <template #[`item.dealNumber`]="{ item }">
           
@@ -717,6 +719,8 @@ defineExpose({
 </template>
 
 <style scoped>
+@import '@/assets/styles/scrollable-table.css';
+
 .bulk-status-container {
   min-width: 60px;
   padding: 2px;

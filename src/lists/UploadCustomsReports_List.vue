@@ -138,7 +138,7 @@ const tableItems = computed(() =>
     </div>
     <hr class="hr" />
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table
         v-if="tableItems?.length"
         v-model:items-per-page="authStore.uploadcustomsreports_per_page"
@@ -151,6 +151,8 @@ const tableItems = computed(() =>
         density="compact"
         class="elevation-1 interlaced-table"
         item-value="id"
+        height="calc(100vh - 400px)"
+        fixed-header
       >
         <!-- Row-level slot to avoid dotted slot names -->
         <template #item="{ item, columns }">
@@ -210,9 +212,10 @@ const tableItems = computed(() =>
 </template>
 
 <style scoped>
+@import '@/assets/styles/scrollable-table.css';
+
 /* Minimal width for truncation columns */
 .col-text {
   min-width: 140px;
 }
-
 </style>

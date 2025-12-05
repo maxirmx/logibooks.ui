@@ -132,7 +132,7 @@ defineExpose({
       />
     </div>
 
-    <v-card>
+    <v-card class="table-card">
       <v-data-table
         v-if="parcelStatuses?.length"
         v-model:items-per-page="authStore.parcelstatuses_per_page"
@@ -149,6 +149,8 @@ defineExpose({
         item-value="name"
         density="compact"
         class="elevation-1 interlaced-table"
+        height="calc(100vh - 400px)"
+        fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
@@ -178,3 +180,7 @@ defineExpose({
     </div>
   </div>
 </template>
+
+<style scoped>
+@import '@/assets/styles/scrollable-table.css';
+</style>

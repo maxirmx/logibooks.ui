@@ -19,10 +19,15 @@ const mockUsers = ref([
 
 // Mock alert store with reactive alert
 const mockAlert = ref(null)
+const mockLoading = ref(false)
+const mockError = ref(null)
 const mockUsersStore = {
   users: mockUsers,
+  loading: mockLoading,
+  error: mockError,
   getAll: vi.fn(),
-  delete: vi.fn()
+  delete: vi.fn(),
+  ensureLoaded: vi.fn()
 }
 
 const mockAlertStore = {
@@ -51,7 +56,7 @@ vi.mock('pinia', async () => {
     ...actual,
     storeToRefs: (store) => {
       if (store === mockUsersStore) {
-        return { users: mockUsers }
+        return { users: mockUsers, loading: mockLoading, error: mockError }
       }
       if (store === mockAlertStore) {
         return { alert: mockAlert }
@@ -140,9 +145,9 @@ describe('Users_List.vue', () => {
   }
 
   describe('Component Rendering', () => {
-    it('renders correctly and calls getAll on mount', () => {
+    it('renders correctly and calls ensureLoaded on mount', () => {
       createWrapper()
-      expect(mockUsersStore.getAll).toHaveBeenCalled()
+      expect(mockUsersStore.ensureLoaded).toHaveBeenCalled()
       expect(wrapper.exists()).toBe(true)
       expect(wrapper.find('h1').text()).toBe('Пользователи')
     })
@@ -172,9 +177,11 @@ describe('Users_List.vue', () => {
     })
 
     it('shows error state', () => {
-      mockUsers.value = { error: 'Failed to fetch users' }
+      mockError.value = 'Failed to fetch users'
       createWrapper()
       expect(wrapper.text()).toContain('Ошибка при загрузке списка пользователей: Failed to fetch users')
+      // restore
+      mockError.value = null
     })
 
     it('displays alert when alert store has alert', async () => {

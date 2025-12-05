@@ -128,9 +128,10 @@ describe('Users_List.vue', () => {
       global: {
         stubs: {
           ...vuetifyStubs,
-          'router-link': {
-            template: '<a class="router-link-stub" data-testid="router-link"><slot></slot></a>',
-            props: ['to']
+          'font-awesome-icon': true,
+          ActionButton: {
+            template: '<button><slot></slot></button>',
+            props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
           }
         }
       }
@@ -353,10 +354,12 @@ describe('Users_List.vue', () => {
       expect(wrapper.find('[data-testid="v-text-field"]').exists()).toBe(true)
     })
 
-    it('has register user link', () => {
-      const link = wrapper.find('[data-testid="router-link"]')
-      expect(link.exists()).toBe(true)
-      expect(link.text()).toContain('Зарегистрировать пользователя')
+    it('has register user button', () => {
+      const headerActions = wrapper.find('.header-actions')
+      expect(headerActions.exists()).toBe(true)
+      
+      const button = headerActions.find('button')
+      expect(button.exists()).toBe(true)
     })
 
     it('clears alert when alert close button is clicked', async () => {

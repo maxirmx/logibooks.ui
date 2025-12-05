@@ -119,18 +119,20 @@ const headers = [
 
 <template>
   <div class="settings table-2">
-    <h1 class="primary-heading">Пользователи</h1>
-    <hr class="hr" />
-
-    <div class="link-crt">
-      <router-link to="/register" class="link"
-        ><font-awesome-icon
-          size="1x"
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Пользователи</h1>
+      <div class="header-actions">
+        <ActionButton
+          :item="{}"
           icon="fa-solid fa-user-plus"
-          class="link"
-        />&nbsp;&nbsp;&nbsp;Зарегистрировать пользователя
-      </router-link>
+          tooltip-text="Зарегистрировать пользователя"
+          iconSize="2x"
+          @click="() => router.push('/register')"
+        />
+      </div>
     </div>
+
+    <hr class="hr" />
 
     <div v-if="users?.length">
       <v-text-field

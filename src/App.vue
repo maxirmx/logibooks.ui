@@ -201,8 +201,8 @@ function getUserName() {
 
 <style scoped>
 .vvv {
-  width: 90vw;
-  margin: 1rem;
+  width: 96.5vw;
+  margin: 1rem ;
   min-width: 480px;
 }
 

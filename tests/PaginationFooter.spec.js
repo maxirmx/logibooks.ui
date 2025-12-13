@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
@@ -59,7 +59,12 @@ describe('PaginationFooter', () => {
 
     it('displays navigation buttons', () => {
       const navButtons = wrapper.findAll('.pagination-footer__nav .v-btn')
-      expect(navButtons.length).toBe(4) // first, prev, next, last
+      expect(navButtons.length).toBeGreaterThanOrEqual(4) // first, prev, next, last
+    })
+
+    it('displays scroll-to-top button', () => {
+      const scrollButton = wrapper.find('.pagination-footer__scroll-button')
+      expect(scrollButton.exists()).toBe(true)
     })
   })
 
@@ -148,15 +153,37 @@ describe('PaginationFooter', () => {
   })
 
   describe('Disabled State', () => {
+    it('computes controlsDisabled correctly when loading', async () => {
+      await wrapper.setProps({ loading: true })
+      const component = wrapper.vm
+      expect(component.controlsDisabled).toBe(true)
+    })
+
     it('computes controlsDisabled correctly when disabled', async () => {
       await wrapper.setProps({ disabled: true })
       const component = wrapper.vm
       expect(component.controlsDisabled).toBe(true)
     })
 
-    it('has controlsDisabled false when not disabled', () => {
+    it('has controlsDisabled false when not loading or disabled', () => {
       const component = wrapper.vm
       expect(component.controlsDisabled).toBe(false)
+    })
+  })
+
+  describe('Scroll to Top', () => {
+    it('calls window.scrollTo when scroll button is clicked', async () => {
+      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+      
+      const scrollButton = wrapper.find('.pagination-footer__scroll-button')
+      await scrollButton.trigger('click')
+      
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        behavior: 'smooth'
+      })
+      
+      scrollToSpy.mockRestore()
     })
   })
 

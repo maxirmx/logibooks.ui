@@ -92,8 +92,7 @@ const props = defineProps({
 
   showRange: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false },
-  initializing: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:itemsPerPage', 'update:page'])

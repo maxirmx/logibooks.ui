@@ -59,7 +59,7 @@ describe('PaginationFooter', () => {
 
     it('displays navigation buttons', () => {
       const navButtons = wrapper.findAll('.pagination-footer__nav .v-btn')
-      expect(navButtons.length).toBeGreaterThanOrEqual(4) // first, prev, next, last
+      expect(navButtons.length).toBe(5) // first, prev, next, last, scroll-to-top
     })
 
     it('displays scroll-to-top button', () => {

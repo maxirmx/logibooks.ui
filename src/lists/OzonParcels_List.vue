@@ -694,8 +694,6 @@ function getGenericTemplateHeaders() {
 </template>
 
 <style scoped>
-@import '@/assets/styles/scrollable-table.css';
-
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
 }

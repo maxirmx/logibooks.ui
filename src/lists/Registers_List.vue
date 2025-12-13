@@ -25,7 +25,7 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+// CheckStatusCode not needed here; use shared helpers instead
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -34,6 +34,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -150,12 +151,6 @@ function getCountryShortName(countryCode) {
   return country.nameRuShort || country.nameRuOfficial || countryCode
 }
 
-function getParcelsByCheckStatusTooltip(item) {
-  if (!item?.parcelsByCheckStatus) return ''
-  return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${formatIntegerThousands(count)}`)
-    .join('\n')
-}
 
 const transportationTypesById = computed(() => {
   if (!Array.isArray(transportationTypes.value)) return new Map()
@@ -576,7 +571,7 @@ defineExpose({
               </ClickableCell>
             </template>
             <template #default>
-              <div style="white-space: pre-line">{{ getParcelsByCheckStatusTooltip(item) }}</div>
+              <div style="white-space: pre-line">{{ formatParcelsByCheckStatusTooltip(item) }}</div>
             </template>
           </v-tooltip>
         </template>

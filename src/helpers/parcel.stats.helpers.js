@@ -14,6 +14,6 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 export function formatParcelsByCheckStatusTooltip(item) {
   if (!item?.parcelsByCheckStatus) return ''
   return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString() ?? 'Неизвестно'}: ${count}`)
+    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString(true) ?? 'Неизвестно'}: ${count}`)
     .join('\n')
 }

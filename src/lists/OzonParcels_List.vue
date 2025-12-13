@@ -497,7 +497,6 @@ function getGenericTemplateHeaders() {
         :items-length="totalCount"
         :loading="loading || isInitializing"
         density="compact"
-        fixed-header
         hide-default-footer
         class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
       >
@@ -694,8 +693,6 @@ function getGenericTemplateHeaders() {
 </template>
 
 <style scoped>
-@import '@/assets/styles/scrollable-table.css';
-
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
 }

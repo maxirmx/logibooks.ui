@@ -178,7 +178,7 @@ export class CheckStatusCode {
   /**
    * String representation
    */
-  toString() {
+  toString(wFlags = false) {
     // Special cases for combined statuses
     if (this.fc === FCCheckStatus.NotChecked && this.sw === SWCheckStatus.NotChecked) {
       return "Не проверено"
@@ -213,8 +213,8 @@ export class CheckStatusCode {
       [FCCheckStatus.MarkedByPartner]: "Исключено партнёром"
     }
 
-    const swString = swStrings[this.sw] || ""
-    const fcString = fcStrings[this.fc] || ""
+    const swString = (wFlags ? SWCheckStatusNames[this.sw] : swStrings[this.sw]) || ""
+    const fcString = (wFlags ? FCCheckStatusNames[this.fc] : fcStrings[this.fc]) || ""
 
     // Combine non-empty strings with comma
     const parts = [swString, fcString].filter(str => str !== "")

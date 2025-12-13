@@ -73,6 +73,7 @@
         size="small"
         @click="scrollToTop"
         class="pagination-footer__scroll-button"
+        :disabled="controlsDisabled"
       />
     </div>
   </div>

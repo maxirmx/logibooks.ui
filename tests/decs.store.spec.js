@@ -92,28 +92,28 @@ describe('decs.store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('deleteReport calls API and refreshes reports on success', async () => {
+  it('remove calls API and refreshes reports on success', async () => {
     fetchWrapper.delete.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
     const store = useDecsStore()
 
-    await store.deleteReport(10)
+    await store.remove(10)
 
-    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/10', {})
+    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/10')
     expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs')
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
 
-  it('deleteReport propagates 404 error and sets error', async () => {
+  it('remove propagates 404 error and sets error', async () => {
     const err = { status: 404, message: 'Not found' }
     fetchWrapper.delete.mockRejectedValue(err)
 
     const store = useDecsStore()
 
-    await expect(store.deleteReport(999)).rejects.toEqual(err)
-    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/999', {})
+    await expect(store.remove(999)).rejects.toEqual(err)
+    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/999')
     expect(store.loading).toBe(false)
     expect(store.error).toEqual(err)
   })

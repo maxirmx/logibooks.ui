@@ -10,7 +10,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { getFieldTooltip } from '@/helpers/parcel.tooltip.helpers.js'
 import { getFeacnCodesForKeywords, getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 

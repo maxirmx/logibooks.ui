@@ -7,7 +7,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import ActionButton2L from '@/components/ActionButton2L.vue'
+import { ActionButton2L } from '@sw-consulting/tooling.ui.kit'
 
 vi.mock('@fortawesome/vue-fontawesome', () => ({
   FontAwesomeIcon: {

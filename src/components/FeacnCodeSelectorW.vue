@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { computed, ref, watch } from 'vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
 import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'

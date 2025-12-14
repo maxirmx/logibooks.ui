@@ -4,7 +4,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 defineProps({
   item: {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 // Mock the child components
 vi.mock('@/components/ClickableCell.vue', () => ({

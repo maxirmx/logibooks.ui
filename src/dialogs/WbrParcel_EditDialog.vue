@@ -24,7 +24,7 @@ import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import WbrFormField from '@/components/WbrFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'

@@ -12,7 +12,7 @@ import * as Yup from 'yup'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 const props = defineProps({
   mode: {

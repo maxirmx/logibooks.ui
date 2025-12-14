@@ -109,6 +109,9 @@ import VuetifyUseDialog from 'vuetify-use-dialog'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 import { ru } from 'vuetify/locale'
 
+// Import tooling UI kit styles
+import '@sw-consulting/tooling.ui.kit/dist/tooling-ui-kit.css'
+
 import App from '@/App.vue'
 import router from '@/router'
 

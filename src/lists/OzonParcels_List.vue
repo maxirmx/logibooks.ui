@@ -38,7 +38,7 @@ import {
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'

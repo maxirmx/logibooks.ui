@@ -11,7 +11,7 @@ import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 

@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
-import ActionButton from '@/components/ActionButton.vue'
-import ActionButton2L from '@/components/ActionButton2L.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
+import { ActionButton2L } from '@sw-consulting/tooling.ui.kit'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 

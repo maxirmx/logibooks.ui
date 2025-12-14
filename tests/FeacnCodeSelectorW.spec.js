@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({

@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { onMounted } from 'vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 const countriesStore = useCountriesStore()
 const { countries, loading, error } = storeToRefs(countriesStore)

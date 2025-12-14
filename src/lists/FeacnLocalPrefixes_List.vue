@@ -62,7 +62,7 @@ function filterLocalPrefixes(value, query, item) {
 }
 
 const headers = [
-  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false }] : []),
+  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false }] : []),
   { title: 'Префикс', key: 'code', align: 'start' },
   { title: 'Описание', key: 'description', align: 'start' },
   { title: 'Исключения', key: 'exceptions', align: 'start' },
@@ -142,7 +142,7 @@ defineExpose({
   <div class="settings table-3" data-testid="feacn-prefixes-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Префиксы ТН ВЭД для формирования запретов</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -223,7 +223,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
+          <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

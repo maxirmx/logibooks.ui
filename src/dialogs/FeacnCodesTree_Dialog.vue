@@ -19,7 +19,7 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
 const authStore = useAuthStore()
-const { isAdminOrSrLogist } = storeToRefs(authStore)
+const { isSrLogistPlus } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const treeRef = ref(null)
@@ -55,7 +55,7 @@ async function fileSelected(file) {
         <div v-if="uploading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isAdminOrSrLogist">
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
           <ActionButton
             :item="{}"
             icon="fa-solid fa-file-import"

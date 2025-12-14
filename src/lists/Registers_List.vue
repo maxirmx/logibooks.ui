@@ -70,7 +70,12 @@ const {
 } = createRegisterActionHandlers(registersStore, alertStore)
 
 const authStore = useAuthStore()
-const { registers_per_page, registers_search, registers_sort_by, registers_page, isAdmin, isAdminOrSrLogist } = storeToRefs(authStore)
+const { registers_per_page, 
+  registers_search, 
+  registers_sort_by, 
+  registers_page, 
+  isShiftLeadPlus, 
+  isSrLogistPlus } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedCustomerId = ref(null)
@@ -436,7 +441,7 @@ defineExpose({
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isAdminOrSrLogist">
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
           <ActionButton2L
             :item="{}"
             icon="fa-solid fa-file-import"
@@ -449,7 +454,7 @@ defineExpose({
       </div>
     </div>
     <v-file-input
-      v-if="isAdminOrSrLogist"
+      v-if="isSrLogistPlus"
       ref="fileInput"
       style="display: none"
       accept=".xls,.xlsx,.zip,.rar"
@@ -653,7 +658,7 @@ defineExpose({
             <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
             <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" :disabled="runningAction || loading" />
             
-            <div class="bulk-status-inline" v-if="isAdminOrSrLogist">
+            <div class="bulk-status-inline" v-if="isSrLogistPlus">
               <div v-if="isInEditMode(item.id)" class="status-selector-inline">
                 <v-select 
                   :model-value="getSelectedStatusId(item.id)" 
@@ -693,7 +698,7 @@ defineExpose({
               />
             </div>
             <ActionButton
-              v-if="isAdmin"
+              v-if="isShiftLeadPlus"
               :item="item" 
               icon="fa-solid fa-trash-can" 
               tooltip-text="Удалить реестр" 

@@ -27,7 +27,7 @@ const {
   feacnprefixes_sort_by,
   feacnprefixes_page,
   selectedOrderId,
-  isAdminOrSrLogist
+  isSrLogistPlus
 } = storeToRefs(authStore)
 
 // Always keep selectedOrderId in sync with visible orders
@@ -147,7 +147,7 @@ async function handleToggleOrderEnabled(order) {
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isAdminOrSrLogist">
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
           <ActionButton
             :item="{}"
             icon="fa-solid fa-file-import"
@@ -192,10 +192,10 @@ async function handleToggleOrderEnabled(order) {
               <button
                 type="button"
                 class="action-btn"
-                :class="{ 'disabled-btn': runningAction || loading || !isAdminOrSrLogist }"
+                :class="{ 'disabled-btn': runningAction || loading || !isSrLogistPlus }"
                 v-bind="props"
                 @click.stop="handleToggleOrderEnabled(item)"
-                :disabled="runningAction || loading || !isAdminOrSrLogist"
+                :disabled="runningAction || loading || !isSrLogistPlus"
                 data-testid="toggle-order-enabled"
               >
                 <font-awesome-icon

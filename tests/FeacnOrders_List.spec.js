@@ -38,7 +38,7 @@ vi.mock('pinia', async () => {
           feacnprefixes_page: store.feacnprefixes_page,
           selectedOrderId: store.selectedOrderId,
           isAdmin: store.isAdmin,
-          isAdminOrSrLogist: store.isAdminOrSrLogist
+          isSrLogistPlus: store.isSrLogistPlus
         }
       }
       if (store.alert) {
@@ -87,8 +87,8 @@ const mockAuthStore = createMockStore({
   isAdmin: ref(false),
   isSrLogist: ref(false),
   isLogist: ref(false),
-  isAdminOrSrLogist: ref(false),
-  isLogistOrSrLogist: ref(false)
+  isSrLogistPlus: ref(false),
+  hasLogistRole: ref(false)
 })
 
 vi.mock('@/stores/feacn.orders.store.js', () => ({
@@ -157,7 +157,7 @@ describe('FeacnOrders_List.vue', () => {
 
   it('renders admin update button when user is admin', () => {
     mockAuthStore.isAdmin.value = true
-    mockAuthStore.isAdminOrSrLogist.value = true
+    mockAuthStore.isSrLogistPlus.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)

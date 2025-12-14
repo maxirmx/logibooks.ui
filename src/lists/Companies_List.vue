@@ -58,7 +58,7 @@ function filterCompanies(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
   { title: 'Название', key: 'displayName', sortable: false },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
   { title: 'Город', key: 'city', sortable: true }
@@ -130,7 +130,7 @@ defineExpose({
   <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Компании</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -187,7 +187,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdminOrSrLogist  " class="actions-container">
+          <div v-if="authStore.isSrLogistPlus  " class="actions-container">
             <ActionButton 
               :item="item" 
               icon="fa-solid fa-pen" 

@@ -57,7 +57,7 @@ function filterInsertItems(value, query, item) {
 }
 
 const headers = [
-  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Код ТН ВЭД', key: 'code', sortable: true , width: '20%'},
   { title: 'Вставить перед', key: 'insBefore', sortable: true, width: '35%' },
   { title: 'Вставить после', key: 'insAfter', sortable: true, width: '35%' }
@@ -118,7 +118,7 @@ defineExpose({
   <div class="settings table-2" data-testid="feacn-insert-items-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Правила для формирования описания продукта</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -184,7 +184,7 @@ defineExpose({
           </v-tooltip>
         </template>
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
+          <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

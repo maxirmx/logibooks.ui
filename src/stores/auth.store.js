@@ -8,6 +8,13 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
 import { useStatusStore } from '@/stores/status.store.js'
+import {
+  roleShiftLead,
+  roleSrLogist,
+  roleLogist,
+  roleWhOperator,
+  roleAdmin
+} from '@/helpers/user.roles.js'
 
 const baseUrl = `${apiUrl}/auth`
 
@@ -15,23 +22,32 @@ export const useAuthStore = defineStore('auth', () => {
   // initialize state from local storage to enable user to stay logged in
   const user = ref(JSON.parse(localStorage.getItem('user')))
   const isAdmin = computed(() =>
-    user.value?.roles?.includes('administrator')
+    console.log('user roles', user.value?.roles) ||
+    user.value?.roles?.includes(roleAdmin)
   )
-  const isLogist = computed(() =>
-    user.value?.roles?.includes('logist')
+  const isShiftLead = computed(() =>
+    user.value?.roles?.includes(roleShiftLead)
   )
   const isSrLogist = computed(() =>
-    user.value?.roles?.includes('sr-logist')
+    user.value?.roles?.includes(roleSrLogist)
+  )
+  const isLogist = computed(() =>
+    user.value?.roles?.includes(roleLogist)
+  )
+  const isWhOperator = computed(() =>
+    user.value?.roles?.includes(roleWhOperator)
+  )
+  const isAdminOrShiftLead = computed(() =>
+    isAdmin.value || isShiftLead.value 
   )
   const isAdminOrSrLogist = computed(() =>
-    isAdmin.value || isSrLogist.value 
+    isAdmin.value || isShiftLead.value || isSrLogist.value 
   )
   const isLogistOrSrLogist = computed(() =>
-    isLogist.value || isSrLogist.value
+    isLogist.value || isSrLogist.value || isShiftLead.value
   )
-
   const hasAnyRole = computed(() =>
-    isAdmin.value || isSrLogist.value || isLogist.value
+    isAdmin.value || isShiftLead.value || isSrLogist.value || isLogist.value || isWhOperator.value
   )
 
   const users_per_page = ref(100)
@@ -249,10 +265,13 @@ export const useAuthStore = defineStore('auth', () => {
     re_jwt,
     re_tgt,
     isAdmin,
+    isShiftLead,
     isSrLogist,
+    isWhOperator,
+    isAdminOrShiftLead,
     isAdminOrSrLogist,
-    isLogist,
     isLogistOrSrLogist,
+    isLogist,
     hasAnyRole,
     // actions
     check,

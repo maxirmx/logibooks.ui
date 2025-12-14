@@ -13,6 +13,18 @@ import * as Yup from 'yup'
 import { useUsersStore } from '@/stores/users.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import {
+  roleAdmin,
+  roleShiftLead,
+  roleSrLogist,
+  roleLogist,
+  roleWhOperator,
+  keyAdmin,
+  keyShiftLead,
+  keySrLogist,
+  keyLogist,
+  keyWhOperator
+} from '@/helpers/user.roles.js'
 
 const props = defineProps({
   register: {
@@ -88,14 +100,20 @@ function showAndEditCredentials() {
 function getCredentials() {
   const crd = []
   if (user.value) {
-    if (user.value.roles && user.value.roles.includes('administrator')) {
+    if (user.value.roles && user.value.roles.includes(roleAdmin)) {
       crd.push('Администратор')
     }
-    if (user.value.roles && user.value.roles.includes('sr-logist')) {
+    if (user.value.roles && user.value.roles.includes(roleShiftLead)) {
+      crd.push('Старший смены')
+    }
+    if (user.value.roles && user.value.roles.includes(roleSrLogist)) {
       crd.push('Старший логист')
     }
-    if (user.value.roles && user.value.roles.includes('logist')) {
+    if (user.value.roles && user.value.roles.includes(roleLogist)) {
       crd.push('Логист')
+    }
+    if (user.value.roles && user.value.roles.includes(roleWhOperator)) {
+      crd.push('Оператор склада')
     }
   }
   return crd.join(', ')
@@ -111,7 +129,7 @@ function onSubmit(values, { setErrors }) {
         )
         .catch((error) => setErrors({ apiError: error.message || String(error) }))
     } else {
-      values.roles = ['logist']
+      values.roles = [roleLogist]
       values.host = window.location.href
       values.host = values.host.substring(0, values.host.lastIndexOf('/'))
       return authStore
@@ -282,30 +300,62 @@ function onSubmit(values, { setErrors }) {
 
       <div v-if="showAndEditCredentials()" class="form-group">
         <label class="label">Права:</label>
-        <Field
-          id="isAdmin"
-          type="checkbox"
-          name="isAdmin"
-          class="checkbox checkbox-styled"
-          value="ADMIN"
-        />
-        <label for="isAdmin">Администратор</label>
-        <Field
-          id="isSrLogist"
-          type="checkbox"
-          name="isSrLogist"
-          class="checkbox checkbox-styled"
-          value="SR_LOGIST"
-        />
-        <label for="isSrLogist">Старший логист</label>
-        <Field
-          id="isLogist"
-          type="checkbox"
-          name="isLogist"
-          class="checkbox checkbox-styled"
-          value="LOGIST"
-        />
-        <label for="isLogist">Логист</label>
+        <div class="roles-grid">
+          <div class="role-item">
+            <Field
+              id="isAdmin"
+              type="checkbox"
+              name="isAdmin"
+              class="checkbox checkbox-styled"
+              :value="keyAdmin"
+            />
+            <label for="isAdmin">Администратор</label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isShiftLead"
+              type="checkbox"
+              name="isShiftLead"
+              class="checkbox checkbox-styled"
+              :value="keyShiftLead"
+            />
+            <label for="isShiftLead">Старший смены</label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isSrLogist"
+              type="checkbox"
+              name="isSrLogist"
+              class="checkbox checkbox-styled"
+              :value="keySrLogist"
+            />
+            <label for="isSrLogist">Старший логист   </label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isLogist"
+              type="checkbox"
+              name="isLogist"
+              class="checkbox checkbox-styled"
+              :value="keyLogist"
+            />
+            <label for="isLogist">Логист</label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isWhOperator"
+              type="checkbox"
+              name="isWhOperator"
+              class="checkbox checkbox-styled"
+              :value="keyWhOperator"
+            />
+            <label for="isWhOperator">Оператор склада</label>
+          </div>
+        </div>
       </div>
 
       <div class="form-group mt-8">
@@ -344,3 +394,22 @@ function onSubmit(values, { setErrors }) {
     <div class="text-danger">Ошибка при загрузке информации о пользователе: {{ user.error }}</div>
   </div>
 </template>
+
+<style scoped>
+.roles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  align-items: center;
+}
+.role-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 850px) {
+  .roles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

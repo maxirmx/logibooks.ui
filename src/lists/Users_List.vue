@@ -11,6 +11,13 @@ import { useUsersStore } from '@/stores/users.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import {
+  roleAdmin,
+  roleShiftLead,
+  roleSrLogist,
+  roleLogist,
+  roleWhOperator
+} from '@/helpers/user.roles.js'
 
 import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
@@ -35,14 +42,20 @@ function userSettings(item) {
 function getCredentials(item) {
   const crd = []
   if (item) {
-    if (item.roles && item.roles.includes('administrator')) {
+    if (item.roles && item.roles.includes(roleAdmin)) {
       crd.push('Администратор')
     }
-    if (item.roles && item.roles.includes('sr-logist')) {
+    if (item.roles && item.roles.includes(roleShiftLead)) {
+      crd.push('Старший смены')
+    }
+    if (item.roles && item.roles.includes(roleSrLogist)) {
       crd.push('Старший логист')
     }
-    if (item.roles && item.roles.includes('logist')) {
+    if (item.roles && item.roles.includes(roleLogist)) {
       crd.push('Логист')
+    }
+    if (item.roles && item.roles.includes(roleWhOperator)) {
+      crd.push('Оператор склада')
     }
   }
   return crd.join(', ')

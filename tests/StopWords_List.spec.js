@@ -9,6 +9,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import StopWordsList from '@/lists/StopWords_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
+import { roleAdmin } from '@/helpers/user.roles.js'
 
 // Mock functions at top level to avoid hoisting issues
 const getAllStopWords = vi.hoisted(() => vi.fn())
@@ -62,7 +63,7 @@ vi.mock('@/stores/word.match.types.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    user: ref({ id: 1, roles: ['administrator'] }),
+    user: ref({ id: 1, roles: [roleAdmin] }),
     isAdmin: ref(true),
     isSrLogist: ref(false),
     isLogist: ref(false),

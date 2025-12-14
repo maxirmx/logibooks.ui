@@ -12,9 +12,11 @@ import { defaultGlobalStubs, createMockStore, resolveAll } from './helpers/test-
 const mockRouter = vi.hoisted(() => ({ push: vi.fn() }))
 const mockNotification = {
   id: 1,
-  model: 'Test Model',
+  article: 'Test Article',
   number: 'ABC-123',
-  terminationDate: '2025-12-31'
+  terminationDate: '2025-12-31',
+  publicationDate: '2025-11-30',
+  registrationDate: '2025-11-01'
 }
 
 let mockNotificationsStore
@@ -131,7 +133,13 @@ describe('Notification_Settings.vue', () => {
     await wrapper.find('form').trigger('submit')
     await resolveAll()
 
-    expect(mockNotificationsStore.create).toHaveBeenCalled()
+    expect(mockNotificationsStore.create).toHaveBeenCalledWith({
+      article: '',
+      number: '',
+      terminationDate: '',
+      publicationDate: '',
+      registrationDate: ''
+    })
     expect(mockRouter.push).toHaveBeenCalledWith('/notifications')
   })
 
@@ -148,7 +156,17 @@ describe('Notification_Settings.vue', () => {
     await wrapper.find('form').trigger('submit')
     await resolveAll()
 
-    expect(mockNotificationsStore.update).toHaveBeenCalledWith(1, expect.any(Object))
+    expect(mockNotificationsStore.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        id: 1,
+        article: mockNotification.article,
+        number: mockNotification.number,
+        terminationDate: mockNotification.terminationDate,
+        publicationDate: mockNotification.publicationDate,
+        registrationDate: mockNotification.registrationDate
+      })
+    )
     expect(mockRouter.push).toHaveBeenCalledWith('/notifications')
   })
 
@@ -167,6 +185,7 @@ describe('Notification_Settings.vue', () => {
     expect(vm.formatDateForInput('2025-01-15')).toBe('2025-01-15')
     expect(vm.formatDateForInput(new Date('2025-01-15'))).toBe('2025-01-15')
     expect(vm.formatDateForInput({ year: 2025, month: 1, day: 15 })).toBe('2025-01-15')
+    expect(vm.formatDateForInput('2025-01-15T12:00:00Z')).toBe('2025-01-15')
   })
 
   it('cancel button navigates back to notifications list', async () => {
@@ -184,10 +203,46 @@ describe('Notification_Settings.vue', () => {
 
     const buttons = wrapper.findAll('button')
     const cancelButton = buttons.find(btn => btn.text().includes('Отменить'))
-    
+
     expect(cancelButton).toBeTruthy()
     await cancelButton.trigger('click')
-    
+
     expect(mockRouter.push).toHaveBeenCalledWith('/notifications')
+  })
+
+  it('renders updated labels and placeholders', async () => {
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: {
+        stubs: defaultGlobalStubs
+      }
+    })
+
+    await resolveAll()
+
+    const labels = wrapper.findAll('label').map((label) => label.text())
+    expect(labels).toContain('Артикул:')
+    expect(labels).toContain('Срок действия:')
+
+    const articleInput = wrapper.find('input#article')
+    expect(articleInput.attributes('placeholder')).toBe('Артикул')
+  })
+
+  it('validates required fields with new messages', async () => {
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: {
+        stubs: defaultGlobalStubs
+      }
+    })
+
+    await resolveAll()
+
+    const vm = wrapper.findComponent(NotificationSettings).vm
+
+    await expect(vm.schema.validateAt('article', { article: '' })).rejects.toThrow('Необходимо ввести артикул')
+    await expect(vm.schema.validateAt('terminationDate', { terminationDate: '' })).rejects.toThrow('Необходимо ввести срок действия')
+    await expect(vm.schema.validateAt('publicationDate', { publicationDate: '' })).rejects.toThrow('Необходимо ввести дату публикации')
+    await expect(vm.schema.validateAt('registrationDate', { registrationDate: '' })).rejects.toThrow('Необходимо ввести дату регистрации')
   })
 })

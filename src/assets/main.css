@@ -1256,11 +1256,19 @@ a,
   border: 1px solid rgba(76, 175, 80, 0.3);
   overflow: ellipsis;
 }
-
+ 
 .status-cell.is-approved-with-excise {
   background-color: rgba(255, 107, 53, 0.25);
   color: #d84315;
   border: 1px solid rgba(255, 107, 53, 0.5);
+  font-weight: 600;
+  overflow: ellipsis;
+}
+
+.status-cell.is-approved-with-notification {
+  background-color: rgba(154, 53, 255, 0.25);
+  color: #ce15d8;
+  border: 1px solid rgba(154, 53, 255, 0.5);
   font-weight: 600;
   overflow: ellipsis;
 }

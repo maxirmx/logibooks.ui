@@ -202,7 +202,7 @@ function getUserName() {
 <style scoped>
 .vvv {
   width: 96.5vw;
-  margin: 1rem ;
+  margin: 1rem;
   min-width: 480px;
 }
 

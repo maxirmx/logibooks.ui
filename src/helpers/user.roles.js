@@ -9,7 +9,7 @@ export const roleSrLogist = 'sr-logist'
 export const roleShiftLead = 'shift-lead'
 export const roleAdmin = 'administrator'
 
-export const keyWhOperator = 'WWH_OPERATOR'
+export const keyWhOperator = 'WH_OPERATOR'
 export const keyLogist = 'LOGIST'
 export const keySrLogist = 'SR_LOGIST'
 export const keyShiftLead = 'SHIFT_LEAD'

@@ -92,7 +92,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       <ActionButton
         :item="item"
         icon="fa-solid fa-upload"
-        tooltip-text="Выгрузить XML накладные для реестра (без акциза)"
+        tooltip-text="Выгрузить XML накладные для реестра (без акциза и нотификаций)"
         :iconSize="iconSize"
         variant="green"
         :disabled="disabled"
@@ -106,6 +106,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         variant="orange"
         :disabled="disabled"
         @click="run('export-excise')"
+      />
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-upload"
+        tooltip-text="Выгрузить XML накладные для реестра (нотификации)"
+        :iconSize="iconSize"
+        variant="magenta"
+        :disabled="disabled"
+        @click="run('export-notifications')"
       />
       <ActionButton
         :item="item"

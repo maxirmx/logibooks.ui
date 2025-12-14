@@ -19,13 +19,14 @@ const pageRef = ref(1)
 
 const getReportsMock = vi.hoisted(() => vi.fn())
 const uploadMock = vi.hoisted(() => vi.fn())
-const deleteReportMock = vi.hoisted(() => vi.fn())
+const removeMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
 let decsStoreMock
 let alertStoreMock
 let authStoreMock
+const confirmMock = vi.hoisted(() => vi.fn())
 
 const testStubs = {
   ...defaultGlobalStubs,
@@ -97,6 +98,10 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => authStoreMock
 }))
 
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
+}))
+
 describe('UploadCustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -111,7 +116,7 @@ describe('UploadCustomsReports_List.vue', () => {
       error: errorRef,
       getReports: getReportsMock,
       upload: uploadMock,
-      deleteReport: deleteReportMock
+      remove: removeMock
     }
 
     alertStoreMock = {
@@ -378,7 +383,8 @@ describe('UploadCustomsReports_List.vue', () => {
         fileName: 'file.zip'
       }
     ]
-    deleteReportMock.mockResolvedValue()
+    removeMock.mockResolvedValue()
+    confirmMock.mockResolvedValue(true)
 
     const wrapper = mount(UploadCustomsReportsList, {
       global: {
@@ -394,7 +400,7 @@ describe('UploadCustomsReports_List.vue', () => {
     await deleteButton.trigger('click')
     await flushPromises()
 
-    expect(deleteReportMock).toHaveBeenCalledWith(7)
+    expect(removeMock).toHaveBeenCalledWith(7)
   })
 
   it('shows alert when deleting report fails', async () => {
@@ -405,7 +411,8 @@ describe('UploadCustomsReports_List.vue', () => {
         fileName: 'bad'
       }
     ]
-    deleteReportMock.mockRejectedValue(new Error('delete failed'))
+    removeMock.mockRejectedValue(new Error('delete failed'))
+    confirmMock.mockResolvedValue(true)
 
     const wrapper = mount(UploadCustomsReportsList, {
       global: {
@@ -419,8 +426,34 @@ describe('UploadCustomsReports_List.vue', () => {
     await deleteButton.trigger('click')
     await flushPromises()
 
-    expect(deleteReportMock).toHaveBeenCalledWith(11)
+    expect(removeMock).toHaveBeenCalledWith(11)
     expect(alertErrorMock).toHaveBeenCalledWith('delete failed')
+  })
+
+  it('does not call delete if confirmation is cancelled', async () => {
+    reportsRef.value = [
+      {
+        id: 9,
+        success: false,
+        fileName: 'nope'
+      }
+    ]
+    confirmMock.mockResolvedValue(false)
+    removeMock.mockResolvedValue()
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const deleteButton = wrapper.find('[data-testid="reports-delete-button"]')
+    await deleteButton.trigger('click')
+    await flushPromises()
+
+    expect(removeMock).not.toHaveBeenCalled()
   })
 
   it('omits actions column when user lacks permissions', async () => {

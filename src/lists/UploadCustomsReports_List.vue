@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, onMounted, ref } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
@@ -25,6 +26,7 @@ const { alert } = storeToRefs(alertStore)
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
+const confirm = useConfirm()
 
 onMounted(async () => {
   await decsStore.getReports()
@@ -58,8 +60,7 @@ async function onReportFileSelected(event) {
   }
 }
 
-const headers = [
-  ...(authStore.isShiftLeadPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+const baseHeaders = [
   { title: '№', key: 'id', align: 'center', width: '70px' },
   { title: 'Имя файла', key: 'fileName', align: 'center', class: 'col-text' },
   { title: 'Результат загрузки', key: 'result', align: 'center' },
@@ -73,6 +74,14 @@ const headers = [
   { title: 'Ошибочных записей', key: 'errorCount', align: 'center' },
   { title: 'Ошибка', key: 'errMsg', align: 'center', class: 'col-text' }
 ]
+
+const headers = computed(() => {
+  const list = [...baseHeaders]
+  if (authStore.isSrLogistPlus) {
+    list.unshift({ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' })
+  }
+  return list
+})
 
 // Labels for error breakdown tooltip
 const errorLabels = {
@@ -116,9 +125,28 @@ async function handleDeleteReport(report) {
     return
   }
 
+  if (runningAction.value) return
+
   runningAction.value = true
   try {
-    await decsStore.deleteReport(report.id)
+    const content = `Удалить информацию об отчёте "${report.fileName || report.id}" ?`
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content
+    })
+
+    if (!confirmed) return
+
+    await decsStore.remove(report.id)
   } catch (error) {
     const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
     alertStore.error(message)
@@ -214,7 +242,7 @@ async function handleDeleteReport(report) {
                   <ActionButton
                     :item="item"
                     icon="fa-solid fa-trash-can"
-                    tooltip-text="Удалить отчёт"
+                    tooltip-text="Удалить информацию об отчёте"
                     data-testid="reports-delete-button"
                     :disabled="loading || runningAction"
                     @click="handleDeleteReport(item)"

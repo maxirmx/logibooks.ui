@@ -8,12 +8,13 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
 import { vuetifyStubs } from './helpers/test-utils'
+import { roleAdmin, roleLogist } from '@/helpers/user.roles.js'
 
 // Centralized mock data
 const mockUsers = ref([
-  { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: ['administrator'] },
-  { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: ['logist'] },
-  { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: ['administrator', 'logist'] },
+  { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin] },
+  { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist] },
+  { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: [roleAdmin, roleLogist] },
   { id: 4, firstName: 'Alice', lastName: 'Brown', patronymic: '', email: 'alice@example.com', roles: [] }
 ])
 
@@ -103,9 +104,9 @@ describe('Users_List.vue', () => {
     
     // Reset mock data
     mockUsers.value = [
-      { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: ['administrator'] },
-      { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: ['logist'] },
-      { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: ['administrator', 'logist'] },
+      { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin] },
+      { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist] },
+      { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: [roleAdmin, roleLogist] },
       { id: 4, firstName: 'Alice', lastName: 'Brown', patronymic: '', email: 'alice@example.com', roles: [] }
     ]
     
@@ -203,19 +204,19 @@ describe('Users_List.vue', () => {
     })
 
     it('returns correct credentials for administrator role', () => {
-      const userItem = { roles: ['administrator'] }
+      const userItem = { roles: [roleAdmin] }
       const result = wrapper.vm.getCredentials(userItem)
       expect(result).toBe('Администратор')
     })
 
     it('returns correct credentials for logist role', () => {
-      const userItem = { roles: ['logist'] }
+      const userItem = { roles: [roleLogist] }
       const result = wrapper.vm.getCredentials(userItem)
       expect(result).toBe('Логист')
     })
 
     it('returns correct credentials for multiple roles', () => {
-      const userItem = { roles: ['administrator', 'logist'] }
+      const userItem = { roles: [roleAdmin, roleLogist] }
       const result = wrapper.vm.getCredentials(userItem)
       expect(result).toBe('Администратор, Логист')
     })
@@ -268,7 +269,7 @@ describe('Users_List.vue', () => {
     })
 
     it('filters users by credentials', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: ['administrator'] } }
+      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleAdmin] } }
       const result = wrapper.vm.filterUsers(null, 'Администратор', item)
       expect(result).toBe(true)
     })
@@ -401,7 +402,7 @@ describe('Users_List.vue', () => {
     })
 
     it('displays user credentials in data table item slot', () => {
-      const testUser = { roles: ['administrator'] }
+      const testUser = { roles: [roleAdmin] }
       const credentials = wrapper.vm.getCredentials(testUser)
       expect(credentials).toBe('Администратор')
     })

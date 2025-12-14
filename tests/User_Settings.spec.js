@@ -9,6 +9,7 @@ import { ref } from 'vue'
 import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
+import { roleLogist } from '@/helpers/user.roles.js'
 
 // simple stubs for vee-validate components
 const FormStub = {
@@ -22,7 +23,7 @@ const FieldStub = {
 }
 
 let isAdmin
-const mockUser = ref({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: ['logist'] })
+const mockUser = ref({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: [roleLogist] })
 const getById = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const addUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const updateUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
@@ -70,7 +71,7 @@ const Parent = {
 beforeEach(() => {
   vi.clearAllMocks()
   isAdmin = false
-  mockUser.value = { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: ['logist'] }
+  mockUser.value = { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: [roleLogist] }
 })
 
 describe('User_Settings.vue real component', () => {
@@ -107,7 +108,7 @@ describe('User_Settings.vue real component', () => {
     await resolveAll()
     expect(registerUser).toHaveBeenCalled()
     const arg = registerUser.mock.calls[0][0]
-    expect(arg.roles).toEqual(['logist'])
+    expect(arg.roles).toEqual([roleLogist])
     expect(arg.host).toBe('http://localhost')
     expect(routerPush).toHaveBeenCalledWith('/')
     expect(successAlert).toHaveBeenCalled()
@@ -154,7 +155,7 @@ describe('User_Settings.vue real component', () => {
   })
 
   it('updates user roles when editing as non-admin', async () => {
-    mockUser.value.roles = ['logist']
+    mockUser.value.roles = [roleLogist]
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
       global: { 
@@ -171,7 +172,7 @@ describe('User_Settings.vue real component', () => {
     await resolveAll()
     expect(updateUser).toHaveBeenCalled()
     const args = updateUser.mock.calls[0]
-    expect(args[1].roles).toEqual(['logist'])
+    expect(args[1].roles).toEqual([roleLogist])
     expect(routerPush).toHaveBeenCalledWith('/user/edit/2')
   })
 

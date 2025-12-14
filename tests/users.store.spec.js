@@ -8,6 +8,14 @@ import { useUsersStore } from '@/stores/users.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { createLocalStorageMock } from './helpers/test-utils.js'
+import {
+  roleAdmin,
+  roleLogist,
+  roleSrLogist,
+  keyAdmin,
+  keyLogist,
+  keySrLogist
+} from '@/helpers/user.roles.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -28,7 +36,7 @@ vi.mock('@/helpers/config.js', () => ({
 
 describe('users store', () => {
   const mockAuthStore = {
-    user: { id: 1, name: 'Test Admin', roles: ['administrator'] },
+    user: { id: 1, name: 'Test Admin', roles: [roleAdmin] },
     logout: vi.fn()
   }
 
@@ -103,7 +111,13 @@ describe('users store', () => {
       fetchWrapper.get.mockResolvedValue([])
       
       const store = useUsersStore()
-      const newUser = { firstName: 'John', lastName: 'Doe', isAdmin: 'ADMIN', isLogist: 'LOGIST', isSrLogist: 'SR_LOGIST' }
+      const newUser = {
+        firstName: 'John',
+        lastName: 'Doe',
+        isAdmin: keyAdmin,
+        isLogist: keyLogist,
+        isSrLogist: keySrLogist
+      }
       
       await store.add(newUser, true)
       
@@ -112,7 +126,7 @@ describe('users store', () => {
         expect.objectContaining({
           firstName: 'John',
           lastName: 'Doe',
-          roles: expect.arrayContaining(['logist', 'administrator', 'sr-logist'])
+          roles: expect.arrayContaining([roleLogist, roleSrLogist, roleAdmin])
         })
       )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
@@ -156,15 +170,15 @@ describe('users store', () => {
     })
 
     it('getById translates roles to isAdmin/isLogist when trnslt=true', async () => {
-      const testUser = { id: 5, firstName: 'Jane', roles: ['administrator', 'logist', 'sr-logist'] }
+      const testUser = { id: 5, firstName: 'Jane', roles: [roleAdmin, roleLogist, roleSrLogist] }
       fetchWrapper.get.mockResolvedValue(testUser)
       
       const store = useUsersStore()
       await store.getById(5, true)
       
-      expect(store.user.isAdmin).toBe('ADMIN')
-      expect(store.user.isLogist).toBe('LOGIST')
-      expect(store.user.isSrLogist).toBe('SR_LOGIST')
+      expect(store.user.isAdmin).toBe(keyAdmin)
+      expect(store.user.isLogist).toBe(keyLogist)
+      expect(store.user.isSrLogist).toBe(keySrLogist)
     })
 
     it('update calls API with correct parameters', async () => {

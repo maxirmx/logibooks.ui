@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ParcelStatusesList from '@/lists/ParcelStatuses_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
+import { roleAdmin } from '@/helpers/user.roles.js'
 
 // Mock functions at top level to avoid hoisting issues
 const getAllParcelStatuses = vi.hoisted(() => vi.fn())
@@ -58,7 +59,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     isLogist: ref(false),
     isAdminOrSrLogist: ref(true),
     isLogistOrSrLogist: ref(false),
-    user: ref({ id: 1, roles: ['administrator'] }),
+    user: ref({ id: 1, roles: [roleAdmin] }),
     parcelstatuses_per_page: ref(10),
     parcelstatuses_search: ref(''),
     parcelstatuses_sort_by: ref(['id']),

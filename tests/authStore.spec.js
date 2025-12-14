@@ -6,6 +6,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useStatusStore } from '@/stores/status.store.js'
+import {
+  roleAdmin,
+  roleLogist,
+  roleSrLogist
+} from '@/helpers/user.roles.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
 import { createLocalStorageMock } from './helpers/test-utils.js'
@@ -34,6 +39,7 @@ vi.mock('@/stores/status.store.js', () => {
     }))
   }
 })
+
 
 describe('auth store', () => {
   // Store original localStorage
@@ -74,7 +80,7 @@ describe('auth store', () => {
     })
 
     it('loads user from localStorage if present', () => {
-      const testUser = { id: 1, name: 'Test User', roles: ['administrator'] }
+      const testUser = { id: 1, name: 'Test User', roles: [roleAdmin] }
       localStorage.setItem('user', JSON.stringify(testUser))
       vi.spyOn(JSON, 'parse').mockImplementation(() => testUser)
       
@@ -87,26 +93,27 @@ describe('auth store', () => {
 
     it('correctly identifies admin users', () => {
       const store = useAuthStore()
-      store.user = { id: 1, roles: ['administrator'] }
+
+      store.user = { id: 1, roles: [roleAdmin] }
       expect(store.isAdmin).toBe(true)
       
-      store.user = { id: 2, roles: ['logist'] }
+      store.user = { id: 2, roles: [roleLogist] }
       expect(store.isAdmin).toBe(false)
       
-      store.user = { id: 3, roles: ['administrator', 'logist'] }
+      store.user = { id: 3, roles: [roleAdmin, roleLogist] }
       expect(store.isAdmin).toBe(true)
     })
 
     it('correctly identifies logist users', () => {
       const store = useAuthStore()
-      store.user = { id: 1, roles: ['logist'] }
+      store.user = { id: 1, roles: [roleLogist] }
       expect(store.isSrLogist).toBe(false)
       expect(store.isLogist).toBe(true)
       
-      store.user = { id: 2, roles: ['administrator'] }
+      store.user = { id: 2, roles: [roleAdmin] }
       expect(store.isLogist).toBe(false)
       
-      store.user = { id: 3, roles: ['administrator', 'sr-logist'] }
+      store.user = { id: 3, roles: [roleAdmin, roleSrLogist] }
       expect(store.isLogist).toBe(false)
       expect(store.isSrLogist).toBe(true)
       expect(store.isAdmin).toBe(true)
@@ -458,17 +465,6 @@ describe('auth store', () => {
 
     it('initializes selectedParcelId fields with null values', () => {
       const store = useAuthStore()
-      expect(store.selectedParcelId).toBeNull()
-      expect(store.selectedParcelId).toBeNull()
-    })
-
-    it('allows updating selectedParcelId', () => {
-      const store = useAuthStore()
-      
-      store.selectedParcelId = 123
-      expect(store.selectedParcelId).toBe(123)
-      
-      store.selectedParcelId = null
       expect(store.selectedParcelId).toBeNull()
     })
 

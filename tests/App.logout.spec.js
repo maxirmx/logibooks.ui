@@ -13,6 +13,7 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { roleAdmin } from '@/helpers/user.roles.js'
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -91,7 +92,7 @@ describe('App Logout Functionality', () => {
       lastName: 'Doe',
       patronymic: 'Smith',
       email: 'john@example.com',
-      roles: ['administrator'] // Add roles to make isAdmin computed property work
+      roles: [roleAdmin] 
     }
 
     // Mock the logout method to properly clear user data

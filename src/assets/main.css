@@ -21,6 +21,7 @@ This file is a part of Logibooks ui application
   --primary-color: #1976d2;
   --primary-color-dark: #1565c0;
   --primary-color-rgb: 25, 118, 210;
+  --checkbox-label-width: 220px;
 }
 
 /*
@@ -420,6 +421,13 @@ a,
 
 .checkbox-styled + label {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: var(--checkbox-label-width);
+  max-width: 100%;
+  gap: 0.75rem;
+  white-space: normal;
 }
 
 .checkbox-styled + label:after {

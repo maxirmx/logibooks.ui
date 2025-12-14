@@ -135,7 +135,6 @@ defineExpose({
   openCreateDialog,
   openEditDialog,
   deleteNotification,
-  formatTerminationDate,
   formatDate,
   getRow
 })

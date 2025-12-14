@@ -36,7 +36,7 @@ symlinks.forEach(({ source, target }) => {
     try {
       unlinkSync(targetPath)
     } catch {
-      // Ignore errors from removing symlinks
+      // Ignore errors when removing symlinks/files that may not exist
     }
   }
   

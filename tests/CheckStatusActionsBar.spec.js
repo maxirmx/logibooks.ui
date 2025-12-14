@@ -8,7 +8,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 // Mock FontAwesome
 vi.mock('@fortawesome/vue-fontawesome', () => ({

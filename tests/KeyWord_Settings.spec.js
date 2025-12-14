@@ -11,7 +11,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import KeyWordSettings from '@/dialogs/KeyWord_Settings.vue'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import { resolveAll, vuetifyStubs } from './helpers/test-utils'
 
 const vuetify = createVuetify()

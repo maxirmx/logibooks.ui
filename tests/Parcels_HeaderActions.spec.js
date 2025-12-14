@@ -233,7 +233,7 @@ vi.mock('@sw-consulting/tooling.ui.kit', () => ({
     name: 'ActionButton2L',
     props: ['item', 'icon', 'tooltipText', 'disabled', 'options'],
     emits: ['click', 'open', 'close', 'select'],
-    template: '<button class="action-button-2l-stub" :data-icon="icon" :disabled="disabled"></button>'
+    template: '<button class="action-button-stub" :data-icon="icon" :disabled="disabled"></button>'
   }
 }))
 

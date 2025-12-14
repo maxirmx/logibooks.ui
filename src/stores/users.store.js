@@ -7,22 +7,38 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { apiUrl } from '@/helpers/config.js'
+import {
+  roleWhOperator,
+  roleLogist,
+  roleSrLogist,
+  roleShiftLead,
+  roleAdmin,
+  keyWhOperator,
+  keyLogist,
+  keySrLogist,
+  keyShiftLead,
+  keyAdmin,
+  keyNone
+} from '@/helpers/user.roles.js'
 
 const baseUrl = `${apiUrl}/users`
 
-const roleLogist = 'logist'
-const roleAdmin = 'administrator'
-
 function translate(param) {
   const roles = []
-  if (param.isLogist === 'LOGIST' || param.isLogist === true) {
+  if (param.isLogist === keyLogist || param.isLogist === true) {
     roles.push(roleLogist)
   }
-  if (param.isSrLogist === 'SR_LOGIST' || param.isSrLogist === true) {
-    roles.push('sr-logist')
+  if (param.isSrLogist === keySrLogist || param.isSrLogist === true) {
+    roles.push(roleSrLogist)
   }
-  if (param.isAdmin === 'ADMIN' || param.isAdmin === true) {
+  if (param.isShiftLead === keyShiftLead || param.isShiftLead === true) {
+    roles.push(roleShiftLead)
+  }
+  if (param.isAdmin === keyAdmin || param.isAdmin === true) {
     roles.push(roleAdmin)
+  }
+  if (param.isWhOperator === keyWhOperator || param.isWhOperator === true) {
+    roles.push(roleWhOperator)
   }
   if (!roles.length) {
     if (param.roles) {
@@ -33,8 +49,10 @@ function translate(param) {
   }
   const res = { ...param, roles }
   delete res.isAdmin
+  delete res.isShiftLead
   delete res.isSrLogist
   delete res.isLogist
+  delete res.isWhOperator
   delete res.password2
   return res
 }
@@ -101,11 +119,15 @@ export const useUsersStore = defineStore('users', () => {
       user.value = response
       if (trnslt) {
         user.value.isAdmin =
-          user.value.roles && user.value.roles.includes(roleAdmin) ? 'ADMIN' : 'NONE'
+          user.value.roles && user.value.roles.includes(roleAdmin) ? keyAdmin : keyNone
+        user.value.isShiftLead =
+          user.value.roles && user.value.roles.includes(roleShiftLead) ? keyShiftLead : keyNone
         user.value.isSrLogist =
-          user.value.roles && user.value.roles.includes('sr-logist') ? 'SR_LOGIST' : 'NONE'
+          user.value.roles && user.value.roles.includes(roleSrLogist) ? keySrLogist : keyNone
         user.value.isLogist =
-          user.value.roles && user.value.roles.includes(roleLogist) ? 'LOGIST' : 'NONE'
+          user.value.roles && user.value.roles.includes(roleLogist) ? keyLogist : keyNone
+        user.value.isWhOperator =
+          user.value.roles && user.value.roles.includes(roleWhOperator) ? keyWhOperator : keyNone
       }
       return response
     } catch (err) {
@@ -167,6 +189,18 @@ export const useUsersStore = defineStore('users', () => {
   }
 
   return {
+    // const
+    keyNone,
+    keyWhOperator,
+    keyLogist,
+    keySrLogist,
+    keyShiftLead,
+    keyAdmin,
+    roleWhOperator,
+    roleLogist,
+    roleSrLogist,
+    roleShiftLead,
+    roleAdmin,
     // state
     users,
     user,

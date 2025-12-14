@@ -17,8 +17,9 @@ const emit = defineEmits([
   'validate-fc',
   'lookup',
   'lookup-ex',
-  'export-noexcise',
+  'export-ordinal',
   'export-excise',
+  'export-notifications',
   'download'
 ])
 
@@ -96,7 +97,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :iconSize="iconSize"
         variant="green"
         :disabled="disabled"
-        @click="run('export-noexcise')"
+        @click="run('export-ordinal')"
       />
       <ActionButton
         :item="item"

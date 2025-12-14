@@ -199,14 +199,17 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlWithoutExcise(item) {
-    await registersStore.generateWithoutExcise(item.id, item.invoiceNumber)
+  async function exportAllXmlOrdinal(item) {
+    await registersStore.generateOrdinal(item.id, item.invoiceNumber)
   }
 
   async function exportAllXmlExcise(item) {
     await registersStore.generateExcise(item.id, item.invoiceNumber)
   }
 
+  async function exportAllXmlNotifications(item) {
+    await registersStore.generateNotifications(item.id, item.invoiceNumber)
+  }
   async function downloadRegister(item) {
     await registersStore.download(item.id, item.fileName)
   }
@@ -239,8 +242,9 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
-    exportAllXmlWithoutExcise,
+    exportAllXmlOrdinal,
     exportAllXmlExcise,
+    exportAllXmlNotifications,
     downloadRegister,
     cancelValidation: cancelValidationWrapper,
     stopPolling
@@ -264,7 +268,7 @@ export function useRegisterHeaderActions({
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
-    exportAllXmlWithoutExcise,
+    exportAllXmlOrdinal,
     exportAllXmlExcise,
     downloadRegister,
     cancelValidation,
@@ -345,7 +349,7 @@ export function useRegisterHeaderActions({
   }
 
   const runExportAllXmlWithoutExcise = async () => {
-    await runActionWithDialog(exportAllXmlWithoutExcise, 'export-all-xml-without-excise')
+    await runActionWithDialog(exportAllXmlOrdinal, 'export-all-xml-without-excise')
   }
 
   const runExportAllXmlExcise = async () => {
@@ -389,7 +393,7 @@ export function useRegisterHeaderActions({
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
     lookupFeacnCodesEx: runLookupFeacnCodesEx,
-    exportAllXmlWithoutExcise: runExportAllXmlWithoutExcise,
+    exportAllXmlOrdinal: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,
     cancelValidation,

@@ -1,3 +1,7 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
 export const actionButtonProps = {
   item: { required: true },
   icon: { type: String, required: true },
@@ -15,7 +19,8 @@ export function buildActionButtonClasses(props, attrs = {}) {
       'anti-btn-orange': props.variant === 'orange',
       'anti-btn-green': props.variant === 'green',
       'anti-btn-red': props.variant === 'red',
-      'anti-btn-blue': props.variant === 'blue'
+      'anti-btn-blue': props.variant === 'blue',
+      'anti-btn-magenta': props.variant === 'magenta'
     },
     attrs.class
   ]

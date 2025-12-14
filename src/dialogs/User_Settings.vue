@@ -331,7 +331,7 @@ function onSubmit(values, { setErrors }) {
               class="checkbox checkbox-styled"
               :value="keySrLogist"
             />
-            <label for="isSrLogist">Старший логист   </label>
+            <label for="isSrLogist">Старший логист</label>
           </div>
 
           <div class="role-item">

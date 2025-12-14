@@ -75,7 +75,7 @@ const {
   parcels_tnved,
   parcels_number,
   selectedParcelId,
-  isAdminOrSrLogist
+  isSrLogistPlus
 } = storeToRefs(authStore)
 
 // Template ref for the data table
@@ -426,7 +426,7 @@ function getGenericTemplateHeaders() {
         :heading="registerHeading"
       />
       <RegisterHeaderActionsBar
-        v-if="isAdminOrSrLogist"
+        v-if="isSrLogistPlus"
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         :loading="runningAction || loading || isInitializing"

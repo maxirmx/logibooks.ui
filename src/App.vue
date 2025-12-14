@@ -104,7 +104,7 @@ function getUserName() {
         </div>
       </template>
       <v-list v-if="authStore.user">
-        <v-list-item v-if="authStore.isLogist || authStore.isSrLogist">
+        <v-list-item v-if="authStore.hasLogistRole">
           <RouterLink to="/registers" class="link">Реестры</RouterLink>
         </v-list-item>
         <v-list-item v-if="!authStore.isAdmin">
@@ -115,7 +115,7 @@ function getUserName() {
         </v-list-item>
 
         <!-- Отчёты -->
-        <v-list-item v-if="authStore.isAdminOrSrLogist">
+        <v-list-item v-if="authStore.isSrLogistPlus">
           <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
         </v-list-item>
 

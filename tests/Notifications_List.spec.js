@@ -98,7 +98,7 @@ describe('Notifications_List.vue', () => {
     }
 
     authStoreMock = {
-      isAdminOrSrLogist: true,
+      isSrLogistPlus: true,
       notifications_per_page: ref(10),
       notifications_search: ref(''),
       notifications_sort_by: ref(['id']),
@@ -173,7 +173,7 @@ describe('Notifications_List.vue', () => {
   })
 
   it('renders formatted termination date in the table', async () => {
-    authStoreMock.isAdminOrSrLogist = false
+    authStoreMock.isSrLogistPlus = false
 
     const wrapper = mount(NotificationsList, {
       global: {

@@ -104,7 +104,7 @@ function setupStores() {
     parcels_tnved: ref(''),
     parcels_number: ref(''),
     selectedParcelId: ref(null),
-    isAdminOrSrLogist: ref(true)
+    isSrLogistPlus: ref(true)
   }
 
   stores.alert = {
@@ -140,7 +140,7 @@ vi.mock('pinia', async () => {
             parcels_tnved: stores.auth.parcels_tnved,
             parcels_number: stores.auth.parcels_number,
             selectedParcelId: stores.auth.selectedParcelId,
-            isAdminOrSrLogist: stores.auth.isAdminOrSrLogist
+            isSrLogistPlus: stores.auth.isSrLogistPlus
           }
         case stores.alert:
           return { alert: stores.alert.alert }
@@ -305,7 +305,7 @@ describe.each([
   })
 
   it('hides header actions when user lacks permissions', async () => {
-    stores.auth.isAdminOrSrLogist.value = false
+    stores.auth.isSrLogistPlus.value = false
 
     const wrapper = mount(Component, {
       props: { registerId: 2 },

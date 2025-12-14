@@ -43,7 +43,7 @@ function filterStopWords(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
   { title: 'Причина запрета', key: 'explanation', sortable: true }
@@ -115,7 +115,7 @@ defineExpose({
   <div class="settings table-3" data-testid="stop-words-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Стоп-слова и фразы</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -163,7 +163,7 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
+          <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

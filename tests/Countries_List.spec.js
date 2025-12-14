@@ -56,8 +56,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     isAdmin: mockIsAdmin,
     isSrLogist: ref(false),
     isLogist: ref(false),
-    isAdminOrSrLogist: mockIsAdmin,
-    isLogistOrSrLogist: ref(false)
+    isSrLogistPlus: mockIsAdmin,
+    hasLogistRole: ref(false)
   })
 }))
 

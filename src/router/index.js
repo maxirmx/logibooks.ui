@@ -365,11 +365,11 @@ router.beforeEach(async (to) => {
     }
 
     // Check role-specific permissions
-    if (to.meta.reqAdminOrSrLogist && !auth.isAdminOrSrLogist) {
+    if (to.meta.reqAdminOrSrLogist && !auth.isSrLogistPlus) {
       return routeToLogin(to, auth)
     }
 
-    if (to.meta.reqLogistOrSrLogist && !auth.isLogistOrSrLogist) {
+    if (to.meta.reqLogistOrSrLogist && !auth.hasLogistRole) {
       return routeToLogin(to, auth)
     }
 

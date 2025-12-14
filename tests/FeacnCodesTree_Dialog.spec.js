@@ -19,9 +19,9 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: vi.fn((store) => {
-      if (store.isAdminOrSrLogist) {
+      if (store.isSrLogistPlus) {
         return { 
-          isAdminOrSrLogist: store.isAdminOrSrLogist
+          isSrLogistPlus: store.isSrLogistPlus
         }
       }
       if (store.alert) {
@@ -33,7 +33,7 @@ vi.mock('pinia', async () => {
 })
 
 const mockAuthStore = {
-  isAdminOrSrLogist: ref(true)
+  isSrLogistPlus: ref(true)
 }
 
 const mockAlertStore = {

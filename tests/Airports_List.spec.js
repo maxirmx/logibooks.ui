@@ -38,7 +38,7 @@ const mockAlertStore = {
 }
 
 const mockAuthStore = {
-  isAdminOrSrLogist: true,
+  isSrLogistPlus: true,
   airports_per_page: ref(10),
   airports_search: ref(''),
   airports_sort_by: ref(['id']),

@@ -41,7 +41,7 @@ function filterParcelStatuses(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isAdminOrSrLogist ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Название статуса', key: 'title', sortable: true }
 ]
 
@@ -105,7 +105,7 @@ defineExpose({
   <div class="settings table-2" data-testid="parcel-statuses-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Статусы посылок</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -154,7 +154,7 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
+          <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

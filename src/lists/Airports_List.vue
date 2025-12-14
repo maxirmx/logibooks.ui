@@ -41,7 +41,7 @@ function filterAirports(value, query, item) {
 }
 
 const headers = [
-  ...(authStore.isAdminOrSrLogist
+  ...(authStore.isSrLogistPlus
     ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
     : []),
   { title: 'Название', key: 'name', sortable: true },
@@ -105,7 +105,7 @@ defineExpose({
   <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коды аэропортов</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isAdminOrSrLogist">
+      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -154,7 +154,7 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isAdminOrSrLogist" class="actions-container">
+          <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

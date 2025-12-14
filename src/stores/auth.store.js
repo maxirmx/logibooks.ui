@@ -36,13 +36,13 @@ export const useAuthStore = defineStore('auth', () => {
   const isWhOperator = computed(() =>
     user.value?.roles?.includes(roleWhOperator)
   )
-  const isAdminOrShiftLead = computed(() =>
+  const isShiftLeadPlus = computed(() =>
     isAdmin.value || isShiftLead.value 
   )
-  const isAdminOrSrLogist = computed(() =>
+  const isSrLogistPlus = computed(() =>
     isAdmin.value || isShiftLead.value || isSrLogist.value 
   )
-  const isLogistOrSrLogist = computed(() =>
+  const hasLogistRole = computed(() =>
     isLogist.value || isSrLogist.value || isShiftLead.value
   )
   const hasAnyRole = computed(() =>
@@ -267,9 +267,9 @@ export const useAuthStore = defineStore('auth', () => {
     isShiftLead,
     isSrLogist,
     isWhOperator,
-    isAdminOrShiftLead,
-    isAdminOrSrLogist,
-    isLogistOrSrLogist,
+    isShiftLeadPlus,
+    isSrLogistPlus,
+    hasLogistRole,
     isLogist,
     hasAnyRole,
     // actions

@@ -10,7 +10,8 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     postFile: vi.fn(),
-    get: vi.fn()
+    get: vi.fn(),
+    delete: vi.fn()
   }
 }))
 
@@ -89,5 +90,31 @@ describe('decs.store', () => {
     expect(store.error).toBe(error)
     expect(store.reports).toEqual([])
     expect(store.loading).toBe(false)
+  })
+
+  it('deleteReport calls API and refreshes reports on success', async () => {
+    fetchWrapper.delete.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useDecsStore()
+
+    await store.deleteReport(10)
+
+    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/10', {})
+    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs')
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+  })
+
+  it('deleteReport propagates 404 error and sets error', async () => {
+    const err = { status: 404, message: 'Not found' }
+    fetchWrapper.delete.mockRejectedValue(err)
+
+    const store = useDecsStore()
+
+    await expect(store.deleteReport(999)).rejects.toEqual(err)
+    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/999', {})
+    expect(store.loading).toBe(false)
+    expect(store.error).toEqual(err)
   })
 })

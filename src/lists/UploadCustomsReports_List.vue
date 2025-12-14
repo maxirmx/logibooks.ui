@@ -23,6 +23,7 @@ const { reports, loading, error } = storeToRefs(decsStore)
 const { alert } = storeToRefs(alertStore)
 
 const fileInput = ref(null)
+const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
 onMounted(async () => {
@@ -58,6 +59,7 @@ async function onReportFileSelected(event) {
 }
 
 const headers = [
+  ...(authStore.isShiftLeadPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: '№', key: 'id', align: 'center', width: '70px' },
   { title: 'Имя файла', key: 'fileName', align: 'center', class: 'col-text' },
   { title: 'Результат загрузки', key: 'result', align: 'center' },
@@ -108,6 +110,22 @@ const tableItems = computed(() =>
     }
   })
 )
+
+async function handleDeleteReport(report) {
+  if (!report?.id || runningAction.value) {
+    return
+  }
+
+  runningAction.value = true
+  try {
+    await decsStore.deleteReport(report.id)
+  } catch (error) {
+    const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
+    alertStore.error(message)
+  } finally {
+    runningAction.value = false
+  }
+}
 </script>
 
 <template>
@@ -167,6 +185,7 @@ const tableItems = computed(() =>
                 col.class,
                 col.align === 'center' ? 'text-center' : col.align === 'end' ? 'text-right' : 'text-start'
               ]"
+              :data-column-key="col.key"
             >
               <!-- File / text columns with conditional truncation tooltip -->
               <TruncateTooltipCell
@@ -187,6 +206,20 @@ const tableItems = computed(() =>
                   </div>
                 </v-tooltip>
                 <span v-else>0</span>
+              </template>
+
+              <!-- Actions column -->
+              <template v-else-if="col.key === 'actions'">
+                <div class="actions-container">
+                  <ActionButton
+                    :item="item"
+                    icon="fa-solid fa-trash-can"
+                    tooltip-text="Удалить отчёт"
+                    data-testid="reports-delete-button"
+                    :disabled="loading || runningAction"
+                    @click="handleDeleteReport(item)"
+                  />
+                </div>
               </template>
 
               <!-- Fallback for all other columns -->

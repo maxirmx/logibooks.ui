@@ -42,11 +42,28 @@ export const useDecsStore = defineStore('decs', () => {
     }
   }
 
+  async function deleteReport(id) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.delete(`${baseUrl}/${id}`, {})
+      // refresh list after deletion
+      await getReports()
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     reports,
     loading,
     error,
     upload,
     getReports
+    ,
+    deleteReport
   }
 })

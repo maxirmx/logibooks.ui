@@ -141,6 +141,10 @@ export function getCheckStatusClass(checkStatus) {
     return 'is-approved-with-excise'
   }
 
+  if (checkStatus === CheckStatusCode.ApprovedWithNotification.value) {
+    return 'is-approved-with-notification'
+  }
+
   if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.IssueStopWordInherited) {
     return 'has-issues-with-inheritance'
   }

@@ -19,6 +19,7 @@ const pageRef = ref(1)
 
 const getReportsMock = vi.hoisted(() => vi.fn())
 const uploadMock = vi.hoisted(() => vi.fn())
+const deleteReportMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
@@ -41,11 +42,16 @@ const testStubs = {
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
-          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
-            <slot :name="'item.' + header.key" :item="item">
-              {{ item[header.key] }}
-            </slot>
-          </div>
+          <template v-if="$slots.item">
+            <slot name="item" :item="item" :columns="headers"></slot>
+          </template>
+          <template v-else>
+            <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+              <slot :name="'item.' + header.key" :item="item">
+                {{ item[header.key] }}
+              </slot>
+            </div>
+          </template>
         </div>
         <slot></slot>
       </div>
@@ -104,7 +110,8 @@ describe('UploadCustomsReports_List.vue', () => {
       loading: loadingRef,
       error: errorRef,
       getReports: getReportsMock,
-      upload: uploadMock
+      upload: uploadMock,
+      deleteReport: deleteReportMock
     }
 
     alertStoreMock = {
@@ -134,6 +141,7 @@ describe('UploadCustomsReports_List.vue', () => {
         }
       }
     })
+    authStoreMock.isSrLogistPlus = true
   })
 
   it('loads reports on mount', async () => {
@@ -179,21 +187,23 @@ describe('UploadCustomsReports_List.vue', () => {
 
     await flushPromises()
 
-    const cells = wrapper.findAll('.v-data-table-cell')
-    expect(cells.map((cell) => cell.text())).toEqual([
-      '1',
-      'report.xlsx',
-      'Успешно',
-      'IM',
-      'INV-1',
-      '50',
-      '7',
-      '8',
-      '9',
-      '10',
-      '21',
-      'Some error'
-    ])
+    const textFor = (key) => wrapper.find(`[data-column-key="${key}"]`).text()
+
+    expect(textFor('id')).toBe('1')
+    expect(textFor('fileName')).toBe('report.xlsx')
+    expect(textFor('result')).toBe('Успешно')
+    expect(textFor('customsProcedure')).toBe('IM')
+    expect(textFor('masterInvoice')).toBe('INV-1')
+    expect(textFor('processedRows')).toBe('50')
+    expect(textFor('releasedParcels')).toBe('7')
+    expect(textFor('releasedWithDutyParcels')).toBe('8')
+    expect(textFor('heldParcels')).toBe('9')
+    expect(textFor('updatedTnVedParcels')).toBe('10')
+    expect(textFor('errorCount')).toContain('21')
+    expect(textFor('errMsg')).toBe('Some error')
+
+    const actionsCell = wrapper.find('[data-column-key="actions"]')
+    expect(actionsCell.find('[data-testid="reports-delete-button"]').exists()).toBe(true)
   })
 
   it('binds pagination and sorting to authStore', async () => {
@@ -358,5 +368,80 @@ describe('UploadCustomsReports_List.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledWith('upload failed')
     expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('false')
     expect(assignedInputValue).toBe('')
+  })
+
+  it('renders delete action and calls store deletion', async () => {
+    reportsRef.value = [
+      {
+        id: 7,
+        success: false,
+        fileName: 'file.zip'
+      }
+    ]
+    deleteReportMock.mockResolvedValue()
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const deleteButton = wrapper.find('[data-testid="reports-delete-button"]')
+    expect(deleteButton.exists()).toBe(true)
+
+    await deleteButton.trigger('click')
+    await flushPromises()
+
+    expect(deleteReportMock).toHaveBeenCalledWith(7)
+  })
+
+  it('shows alert when deleting report fails', async () => {
+    reportsRef.value = [
+      {
+        id: 11,
+        success: false,
+        fileName: 'bad'
+      }
+    ]
+    deleteReportMock.mockRejectedValue(new Error('delete failed'))
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const deleteButton = wrapper.find('[data-testid="reports-delete-button"]')
+    await deleteButton.trigger('click')
+    await flushPromises()
+
+    expect(deleteReportMock).toHaveBeenCalledWith(11)
+    expect(alertErrorMock).toHaveBeenCalledWith('delete failed')
+  })
+
+  it('omits actions column when user lacks permissions', async () => {
+    authStoreMock.isSrLogistPlus = false
+    reportsRef.value = [
+      {
+        id: 3,
+        success: true,
+        fileName: 'file.xlsx'
+      }
+    ]
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-column-key="actions"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="reports-delete-button"]').exists()).toBe(false)
   })
 })

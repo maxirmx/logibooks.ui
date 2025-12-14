@@ -14,8 +14,8 @@ vi.mock('@/components/ClickableCell.vue', () => ({
   }
 }))
 
-vi.mock('@/components/ActionButton.vue', () => ({
-  default: {
+vi.mock('@sw-consulting/tooling.ui.kit', () => ({
+  ActionButton: {
     name: 'ActionButton',
     template: '<button class="action-button" :class="variant" @click="$emit(\'click\', item)" :disabled="disabled">{{ icon }}</button>',
     props: ['item', 'icon', 'tooltipText', 'disabled', 'variant'],

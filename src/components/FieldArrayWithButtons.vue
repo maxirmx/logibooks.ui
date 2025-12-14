@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { Field, FieldArray } from 'vee-validate'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 const props = defineProps({
   name: {

@@ -6,7 +6,7 @@
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'

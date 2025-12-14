@@ -85,8 +85,8 @@ vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [10, 25, 50]
 }))
 
-vi.mock('@/components/ActionButton.vue', () => ({
-  default: {
+vi.mock('@sw-consulting/tooling.ui.kit', () => ({
+  ActionButton: {
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
     emits: ['click'],

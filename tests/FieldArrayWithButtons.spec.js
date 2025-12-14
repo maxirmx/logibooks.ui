@@ -11,8 +11,8 @@ import * as Yup from 'yup'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 
 // Mock ActionButton
-vi.mock('@/components/ActionButton.vue', () => ({
-  default: {
+vi.mock('@sw-consulting/tooling.ui.kit', () => ({
+  ActionButton: {
     name: 'ActionButton',
     template: '<button @click="$emit(\'click\', item)" :disabled="disabled" :class="$attrs.class"><slot /></button>',
     props: ['item', 'icon', 'tooltipText', 'disabled'],

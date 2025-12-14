@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import ClickableCell from '@/components/ClickableCell.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 defineProps({
   item: { type: Object, required: true },

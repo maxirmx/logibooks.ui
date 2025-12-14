@@ -222,12 +222,18 @@ vi.mock('@/router', () => ({
   default: { push: vi.fn(), replace: vi.fn() }
 }))
 
-vi.mock('@/components/ActionButton.vue', () => ({
-  default: {
+vi.mock('@sw-consulting/tooling.ui.kit', () => ({
+  ActionButton: {
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'disabled'],
     emits: ['click'],
     template: '<button class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+  },
+  ActionButton2L: {
+    name: 'ActionButton2L',
+    props: ['item', 'icon', 'tooltipText', 'disabled', 'options'],
+    emits: ['click', 'open', 'close', 'select'],
+    template: '<button class="action-button-2l-stub" :data-icon="icon" :disabled="disabled"></button>'
   }
 }))
 

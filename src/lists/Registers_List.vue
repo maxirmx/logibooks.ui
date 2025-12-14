@@ -32,8 +32,7 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
 import ClickableCell from '@/components/ClickableCell.vue'
-import ActionButton from '@/components/ActionButton.vue'
-import ActionButton2L from '@/components/ActionButton2L.vue'
+import { ActionButton, ActionButton2L } from '@sw-consulting/tooling.ui.kit'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
 
 const registersStore = useRegistersStore()

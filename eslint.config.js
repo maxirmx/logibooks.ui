@@ -112,7 +112,7 @@ export default [
   },
   // Overrides for Node.js files
   {
-    files: ['.eslintrc.cjs', 'vite.config.mjs', 'vitest.config.mjs'],
+    files: ['.eslintrc.cjs', 'vite.config.mjs', 'vitest.config.mjs', 'config/**/*.js'],
     languageOptions: {
       globals: {
         module: 'readonly',

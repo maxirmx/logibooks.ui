@@ -18,8 +18,8 @@ vi.mock('@/components/FeacnCodeSearch.vue', () => ({
   }
 }))
 
-vi.mock('@/components/ActionButton.vue', () => ({
-  default: {
+vi.mock('@sw-consulting/tooling.ui.kit', () => ({
+  ActionButton: {
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'iconSize', 'disabled'],
     emits: ['click'],

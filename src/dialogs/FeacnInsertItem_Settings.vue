@@ -12,7 +12,7 @@ import * as Yup from 'yup'
 import { useFeacnInsertItemsStore } from '@/stores/feacn.insert.items.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import { ActionButton } from '@sw-consulting/tooling.ui.kit'
 
 const props = defineProps({
   mode: {

@@ -1,7 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import ActionButton from '@/components/ActionButton.vue'
-import ActionButton2L from '@/components/ActionButton2L.vue'
+import { ActionButton, ActionButton2L } from '@sw-consulting/tooling.ui.kit'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
 const props = defineProps({

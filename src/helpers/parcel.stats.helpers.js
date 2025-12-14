@@ -4,6 +4,7 @@
 
 // Helper functions related to parcel statistics (counts per check status, etc.)
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { formatIntegerThousands } from '@/helpers/number.formatters.js'
 
 /**
  * Builds multiline tooltip string from parcelsByCheckStatus map.
@@ -14,6 +15,6 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 export function formatParcelsByCheckStatusTooltip(item) {
   if (!item?.parcelsByCheckStatus) return ''
   return Object.entries(item.parcelsByCheckStatus)
-    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString(true) ?? 'Неизвестно'}: ${count}`)
+    .map(([statusId, count]) => `${new CheckStatusCode(Number(statusId)).toString(true) ?? 'Неизвестно'}: ${formatIntegerThousands(count)}`)
     .join('\n')
 }

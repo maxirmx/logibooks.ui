@@ -66,12 +66,35 @@ function getButtonText() {
   return isCreate.value ? 'Создать' : 'Сохранить'
 }
 
+// Helper to validate ISO-like date strings (YYYY-MM-DD)
+function isValidISODate(value) {
+  if (!value && value !== '') return false
+  if (value === '') return false
+  // Accept Date objects too
+  if (value instanceof Date && !isNaN(value)) return true
+  if (typeof value !== 'string') return false
+  // Basic YYYY-MM-DD format check
+  const m = value.match(/^\d{4}-\d{2}-\d{2}$/)
+  if (!m) return false
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return false
+  // Ensure date parts match (avoid JS Date autocorrection)
+  const [y, mm, dd] = value.split('-').map((s) => parseInt(s, 10))
+  return d.getUTCFullYear() === y && d.getUTCMonth() + 1 === mm && d.getUTCDate() === dd
+}
+
 const schema = Yup.object({
   article: Yup.string().required('Необходимо ввести артикул'),
   number: Yup.string(),
-  terminationDate: Yup.string().required('Необходимо ввести срок действия'),
-  publicationDate: Yup.string().required('Необходимо ввести дату публикации'),
-  registrationDate: Yup.string().required('Необходимо ввести дату регистрации')
+  terminationDate: Yup.string()
+    .required('Необходимо ввести срок действия')
+    .test('is-valid-date', 'Неверная дата', (v) => isValidISODate(v)),
+  publicationDate: Yup.string()
+    .required('Необходимо ввести дату публикации')
+    .test('is-valid-date', 'Неверная дата', (v) => isValidISODate(v)),
+  registrationDate: Yup.string()
+    .required('Необходимо ввести дату регистрации')
+    .test('is-valid-date', 'Неверная дата', (v) => isValidISODate(v))
 })
 
 function onSubmit(values, { setErrors }) {

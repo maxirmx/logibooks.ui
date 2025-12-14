@@ -32,8 +32,9 @@ function createRegisterHeaderActionsMock() {
     validateRegisterFc: vi.fn(),
     lookupFeacnCodes: vi.fn(),
     lookupFeacnCodesEx: vi.fn(),
-    exportAllXmlWithoutExcise: vi.fn(),
+    exportAllXmlOrdinal: vi.fn(),
     exportAllXmlExcise: vi.fn(),
+    exportAllXmlNotifications: vi.fn(),    
     downloadRegister: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
@@ -276,8 +277,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-  // We added an invoice action (ActionButton2L) which renders an extra button
-  expect(buttons).toHaveLength(9)
+    // We added an invoice action (ActionButton2L) which renders an extra button
+    expect(buttons).toHaveLength(10)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -291,17 +292,20 @@ describe.each([
     await buttons[3].trigger('click')
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
-  await buttons[4].trigger('click')
-  expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
+    await buttons[4].trigger('click')
+    expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
 
-  await buttons[5].trigger('click')
-  expect(registerHeaderActionsMock.exportAllXmlWithoutExcise).toHaveBeenCalled()
+    await buttons[5].trigger('click')
+    expect(registerHeaderActionsMock.exportAllXmlOrdinal).toHaveBeenCalled()
 
-  await buttons[6].trigger('click')
-  expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
+    await buttons[6].trigger('click')
+    expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
 
-  await buttons[7].trigger('click')
-  expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
+    await buttons[7].trigger('click')
+    expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
+
+    await buttons[8].trigger('click')
+    expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
   })
 
   it('hides header actions when user lacks permissions', async () => {

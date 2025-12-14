@@ -262,7 +262,29 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateWithoutExcise(id, invoiceNumber) {
+  async function generateNotifications(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      let filename
+      if (invoiceNumber !== null && invoiceNumber !== undefined) {
+        filename = `IndPost_${invoiceNumber}-нотификации.zip`
+      } else {
+        filename = `IndPost_${id}-нотификации.zip`
+      }
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/generate-notifications`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function generateOrdinal(id, invoiceNumber) {
     loading.value = true
     error.value = null
     try {
@@ -317,6 +339,10 @@ export const useRegistersStore = defineStore('registers', () => {
     [InvoiceParcelSelection.WithExcise]: {
       endpoint: 'download-invoice-excise',
       suffix: '-акциз'
+    },
+    [InvoiceParcelSelection.WithNotifications]: {
+      endpoint: 'download-invoice-notifications',
+      suffix: '-нотификации'
     },
     [InvoiceParcelSelection.WithoutExcise]: {
       endpoint: 'download-invoice-without-excise',
@@ -433,7 +459,8 @@ export const useRegistersStore = defineStore('registers', () => {
     cancelLookupFeacnCodes,
     generate,
     generateExcise,
-    generateWithoutExcise,
+    generateNotifications,
+    generateOrdinal,
     downloadInvoiceFile,
     download,
     nextParcels,

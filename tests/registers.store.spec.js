@@ -1093,6 +1093,54 @@ describe('registers store', () => {
       await expect(store.generate(5)).rejects.toThrow('fail')
       expect(store.error).toBe(error)
     })
+
+    it('generateExcise uses invoiceNumber when provided and default otherwise', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.generateExcise(6, 'INV-E')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/6/generate-excise`,
+        'IndPost_INV-E-акциз.zip'
+      )
+
+      await store.generateExcise(7, null)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/7/generate-excise`,
+        'IndPost_7-акциз.zip'
+      )
+    })
+
+    it('generateNotifications uses invoiceNumber when provided and default otherwise', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.generateNotifications(8, 'INV-N')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/8/generate-notifications`,
+        'IndPost_INV-N-нотификации.zip'
+      )
+
+      await store.generateNotifications(9, undefined)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/9/generate-notifications`,
+        'IndPost_9-нотификации.zip'
+      )
+    })
+
+    it('generateOrdinal uses invoiceNumber when provided and default otherwise', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.generateOrdinal(11, 'INV-O')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/11/generate-without-excise`,
+        'IndPost_INV-O-без-акциза.zip'
+      )
+
+      await store.generateOrdinal(12)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/12/generate-without-excise`,
+        'IndPost_12-без-акциза.zip'
+      )
+    })
   })
 
   describe('downloadInvoiceFile method', () => {

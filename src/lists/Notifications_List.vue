@@ -35,18 +35,26 @@ function filterNotifications(value, query, item) {
 
   const q = query.toLocaleUpperCase()
 
-  return [notification.model, notification.number, formatTerminationDate(notification.terminationDate)]
+  return [
+    notification.article,
+    notification.number,
+    formatDate(notification.terminationDate),
+    formatDate(notification.publicationDate),
+    formatDate(notification.registrationDate)
+  ]
     .some((field) => (field || '').toLocaleUpperCase().includes(q))
 }
 
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
-  { title: 'Модель', key: 'model', sortable: true },
+  { title: 'Артикул', key: 'article', sortable: true },
   { title: 'Номер', key: 'number', sortable: true },
+  { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
+  { title: 'Дата публикации', key: 'publicationDate', sortable: true },
   { title: 'Дата окончания', key: 'terminationDate', sortable: true }
 ]
 
-function formatTerminationDate(value) {
+function formatDate(value) {
   if (!value) {
     return ''
   }
@@ -71,6 +79,10 @@ function formatTerminationDate(value) {
   }
 
   return ''
+}
+
+function formatTerminationDate(value) {
+  return formatDate(value)
 }
 
 function getRow(item) {
@@ -103,7 +115,7 @@ async function deleteNotification(notification) {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: `Удалить нотификацию "${row.model}"?`
+      content: `Удалить нотификацию "${row.article}"?`
     })
 
     if (confirmed) {
@@ -127,6 +139,7 @@ defineExpose({
   openEditDialog,
   deleteNotification,
   formatTerminationDate,
+  formatDate,
   getRow
 })
 </script>
@@ -183,8 +196,16 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template v-slot:[`item.registrationDate`]="{ item }">
+          {{ formatDate(getRow(item)?.registrationDate) }}
+        </template>
+
+        <template v-slot:[`item.publicationDate`]="{ item }">
+          {{ formatDate(getRow(item)?.publicationDate) }}
+        </template>
+
         <template v-slot:[`item.terminationDate`]="{ item }">
-          {{ formatTerminationDate(getRow(item)?.terminationDate) }}
+          {{ formatDate(getRow(item)?.terminationDate) }}
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">

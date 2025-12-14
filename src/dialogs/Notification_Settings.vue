@@ -26,9 +26,11 @@ const notificationsStore = useNotificationsStore()
 const isCreate = computed(() => props.mode === 'create')
 
 const notificationForm = ref({
-  model: '',
+  article: '',
   number: '',
-  terminationDate: ''
+  terminationDate: '',
+  publicationDate: '',
+  registrationDate: ''
 })
 
 function formatDateForInput(value) {
@@ -65,16 +67,20 @@ function getButtonText() {
 }
 
 const schema = Yup.object({
-  model: Yup.string().required('Модель обязательна'),
+  article: Yup.string().required('Необходимо ввести артикул'),
   number: Yup.string(),
-  terminationDate: Yup.string().required('Дата окончания обязательна')
+  terminationDate: Yup.string().required('Необходимо ввести срок действия'),
+  publicationDate: Yup.string().required('Необходимо ввести дату публикации'),
+  registrationDate: Yup.string().required('Необходимо ввести дату регистрации')
 })
 
 function onSubmit(values, { setErrors }) {
   const payload = {
-    model: values.model?.trim() || '',
+    article: values.article?.trim() || '',
     number: values.number?.trim() || '',
-    terminationDate: values.terminationDate
+    terminationDate: values.terminationDate,
+    publicationDate: values.publicationDate,
+    registrationDate: values.registrationDate
   }
 
   if (isCreate.value) {
@@ -111,9 +117,11 @@ if (!isCreate.value) {
   const loaded = await notificationsStore.getById(props.notificationId)
   if (loaded) {
     notificationForm.value = {
-      model: loaded.model || '',
+      article: loaded.article || '',
       number: loaded.number || '',
-      terminationDate: formatDateForInput(loaded.terminationDate)
+      terminationDate: formatDateForInput(loaded.terminationDate),
+      publicationDate: formatDateForInput(loaded.publicationDate),
+      registrationDate: formatDateForInput(loaded.registrationDate)
     }
   } else {
     router.push('/notifications')
@@ -133,14 +141,14 @@ if (!isCreate.value) {
       v-slot="{ errors, isSubmitting }"
     >
       <div class="form-group">
-        <label for="model" class="label">Модель:</label>
+        <label for="article" class="label">Артикул:</label>
         <Field
-          name="model"
-          id="model"
+          name="article"
+          id="article"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.model }"
-          placeholder="Модель"
+          :class="{ 'is-invalid': errors.article }"
+          placeholder="Артикул"
         />
       </div>
 
@@ -157,7 +165,29 @@ if (!isCreate.value) {
       </div>
 
       <div class="form-group">
-        <label for="terminationDate" class="label">Дата окончания:</label>
+        <label for="registrationDate" class="label">Дата регистрации:</label>
+        <Field
+          name="registrationDate"
+          id="registrationDate"
+          type="date"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.registrationDate }"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="publicationDate" class="label">Дата публикации:</label>
+        <Field
+          name="publicationDate"
+          id="publicationDate"
+          type="date"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.publicationDate }"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="terminationDate" class="label">Срок действия:</label>
         <Field
           name="terminationDate"
           id="terminationDate"
@@ -183,8 +213,10 @@ if (!isCreate.value) {
         </button>
       </div>
 
-      <div v-if="errors.model" class="alert alert-danger mt-3 mb-0">{{ errors.model }}</div>
+      <div v-if="errors.article" class="alert alert-danger mt-3 mb-0">{{ errors.article }}</div>
       <div v-if="errors.number" class="alert alert-danger mt-3 mb-0">{{ errors.number }}</div>
+      <div v-if="errors.registrationDate" class="alert alert-danger mt-3 mb-0">{{ errors.registrationDate }}</div>
+      <div v-if="errors.publicationDate" class="alert alert-danger mt-3 mb-0">{{ errors.publicationDate }}</div>
       <div v-if="errors.terminationDate" class="alert alert-danger mt-3 mb-0">{{ errors.terminationDate }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>

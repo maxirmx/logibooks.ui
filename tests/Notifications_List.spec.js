@@ -85,7 +85,14 @@ describe('Notifications_List.vue', () => {
     confirmMock.mockResolvedValue(true)
 
     notificationsRef.value = [
-      { id: 1, model: 'Model A', number: 'N-001', terminationDate: '2025-01-31' }
+      {
+        id: 1,
+        article: 'Article A',
+        number: 'N-001',
+        registrationDate: '2024-12-15',
+        publicationDate: '2025-01-01',
+        terminationDate: '2025-01-31'
+      }
     ]
     loadingRef.value = false
     alertRef.value = null
@@ -161,18 +168,33 @@ describe('Notifications_List.vue', () => {
     expect(removeMock).toHaveBeenCalledWith(1)
   })
 
-  it('formats termination dates correctly', async () => {
+  it('formats dates correctly', async () => {
     const wrapper = mount(NotificationsList, {
       global: {
         stubs: testStubs
       }
     })
 
-    expect(wrapper.vm.formatTerminationDate('2025-02-15')).toBe('15.02.2025')
-    expect(wrapper.vm.formatTerminationDate({ year: 2025, month: 2, day: 15 })).toBe('15.02.2025')
+    expect(wrapper.vm.formatDate('2025-02-15')).toBe('15.02.2025')
+    expect(wrapper.vm.formatDate({ year: 2025, month: 2, day: 15 })).toBe('15.02.2025')
   })
 
-  it('renders formatted termination date in the table', async () => {
+  it('filters notifications across article and date fields', async () => {
+    const wrapper = mount(NotificationsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    const notification = notificationsRef.value[0]
+    expect(wrapper.vm.filterNotifications(null, 'article a', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, '15.12.2024', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, '01.01.2025', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, '31.01.2025', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, 'no-match', { raw: notification })).toBe(false)
+  })
+
+  it('renders formatted dates in the table', async () => {
     authStoreMock.isSrLogistPlus = false
 
     const wrapper = mount(NotificationsList, {
@@ -184,7 +206,13 @@ describe('Notifications_List.vue', () => {
     await wrapper.vm.$nextTick()
 
     const cells = wrapper.findAll('.v-data-table-cell')
-    expect(cells[cells.length - 1].text()).toBe('31.01.2025')
+    const cellTexts = cells.map(cell => cell.text())
+
+    expect(cellTexts).toContain('Article A')
+    expect(cellTexts).toContain('N-001')
+    expect(cellTexts).toContain('15.12.2024')
+    expect(cellTexts).toContain('01.01.2025')
+    expect(cellTexts).toContain('31.01.2025')
   })
 
   it('shows empty table when there are no notifications', async () => {

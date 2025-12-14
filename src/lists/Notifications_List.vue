@@ -81,9 +81,6 @@ function formatDate(value) {
   return ''
 }
 
-function formatTerminationDate(value) {
-  return formatDate(value)
-}
 
 function getRow(item) {
   return item && typeof item === 'object' && 'raw' in item ? item.raw : item

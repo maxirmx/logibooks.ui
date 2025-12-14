@@ -22,7 +22,6 @@ export const useAuthStore = defineStore('auth', () => {
   // initialize state from local storage to enable user to stay logged in
   const user = ref(JSON.parse(localStorage.getItem('user')))
   const isAdmin = computed(() =>
-    console.log('user roles', user.value?.roles) ||
     user.value?.roles?.includes(roleAdmin)
   )
   const isShiftLead = computed(() =>

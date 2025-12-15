@@ -44,69 +44,44 @@ export const FCCheckStatus = Object.freeze({
   
   IssueFeacnCode: 0x0100,
   IssueNonexistingFeacn: 0x0101,
-  IssueInvalidFeacnFormat: 0x0102,
+  IssueInvalidFeacnFormat: 0x0102,  
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
+/**
+ * Russian names map for SWCheckStatus (excluding MarkedByPartner)
+ */
+const NotCheckedString = 'Не проверено'
+const ApprovedString = 'Согласовано'
+const ApprovedWithExciseString = 'Согласовано с акцизом'
+const ApprovedWithNotificationString = 'Согласовано с нотификацией'
+const IssueStopWordString = 'Стоп слово'
+const FlagString = '🔖 '
 
-// Centralized SW status labels derived from a single verbose map
-const SW_VERBOSE = Object.freeze({
-  [SWCheckStatus.NotChecked]: 'Не проверено',
+
+export const SWCheckStatusNames = Object.freeze({
+  [SWCheckStatus.NotChecked]: NotCheckedString,
   [SWCheckStatus.NoIssues]: 'Ок стоп слова',
-  [SWCheckStatus.Approved]: 'Согласовано',
-  [SWCheckStatus.ApprovedInherited]: '🔖 Согласовано',
-  [SWCheckStatus.ApprovedWithExcise]: 'Согласовано с акцизом',
-  [SWCheckStatus.ApprovedWithNotification]: 'Согласовано с нотификацией',
-  [SWCheckStatus.IssueStopWord]: 'Стоп слово',
-  [SWCheckStatus.IssueStopWordInherited]: '🔖 Стоп слово'
+  [SWCheckStatus.Approved]: ApprovedString,
+  [SWCheckStatus.ApprovedInherited]: FlagString + ApprovedString,
+  [SWCheckStatus.ApprovedWithExcise]: ApprovedWithExciseString,
+  [SWCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
+  [SWCheckStatus.IssueStopWord]: IssueStopWordString,
+  [SWCheckStatus.IssueStopWordInherited]: FlagString + IssueStopWordString
 })
-
-// Only override short labels where they should differ from verbose
-const SW_SHORT_OVERRIDES = Object.freeze({
-  [SWCheckStatus.NotChecked]: '',
-  [SWCheckStatus.ApprovedInherited]: 'Согласовано',
-  [SWCheckStatus.IssueStopWordInherited]: 'Стоп слово'
-})
-
-const SW_LABELS = Object.freeze(
-  Object.fromEntries(
-    Object.entries(SW_VERBOSE).map(([k, v]) => [k, { verbose: v, short: SW_SHORT_OVERRIDES[k] ?? v }])
-  )
-)
-
-export const SWCheckStatusNames = Object.freeze(
-  Object.fromEntries(Object.entries(SW_LABELS).map(([k, v]) => [k, v.verbose]))
-)
 
 /**
  * Russian names map for FCCheckStatus (excluding MarkedByPartner)
  */
-// Centralized FC status labels derived from a single verbose map
-const FC_VERBOSE = Object.freeze({
-  [FCCheckStatus.NotChecked]: 'Не проверено',
+export const FCCheckStatusNames = Object.freeze({
+  [FCCheckStatus.NotChecked]: NotCheckedString,
   [FCCheckStatus.NoIssues]: 'Ок ТН ВЭД',
-  [FCCheckStatus.ApprovedWithExcise]: 'Согласовано с акцизом',
-  [FCCheckStatus.ApprovedWithNotification]: 'Согласовано с нотификацией',
+  [FCCheckStatus.ApprovedWithExcise]: ApprovedWithExciseString,
+  [FCCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
   [FCCheckStatus.IssueFeacnCode]: 'Стоп ТН ВЭД',
   [FCCheckStatus.IssueNonexistingFeacn]: 'Нет ТН ВЭД',
-  [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД',
-  [FCCheckStatus.MarkedByPartner]: 'Исключено партнёром'
+  [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД'
 })
-
-// Only override short labels where they should differ from verbose
-const FC_SHORT_OVERRIDES = Object.freeze({
-  [FCCheckStatus.NotChecked]: ''
-})
-
-const FC_LABELS = Object.freeze(
-  Object.fromEntries(
-    Object.entries(FC_VERBOSE).map(([k, v]) => [k, { verbose: v, short: FC_SHORT_OVERRIDES[k] ?? v }])
-  )
-)
-
-export const FCCheckStatusNames = Object.freeze(
-  Object.fromEntries(Object.entries(FC_LABELS).map(([k, v]) => [k, v.verbose]))
-)
 
 /**
  * Class representing a combined check status code,
@@ -216,7 +191,7 @@ export class CheckStatusCode {
   /**
    * String representation
    */
-  toString(wFlags = false) {
+  toString(wFlag = false) {
     // Special cases for combined statuses
     if (this.fc === FCCheckStatus.NotChecked && this.sw === SWCheckStatus.NotChecked) {
       return "Не проверено"
@@ -224,26 +199,46 @@ export class CheckStatusCode {
     if (this.fc === FCCheckStatus.ApprovedWithExcise && this.sw === SWCheckStatus.ApprovedWithExcise) {
       return "Согласовано с акцизом"
     }
+
+    if (this.fc === FCCheckStatus.ApprovedWithNotification && this.sw === SWCheckStatus.ApprovedWithNotification) {
+      return "Согласовано с нотификацией"
+    }
+
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {
       return "Исключено партнёром"
     }
 
-    // SW status strings derived from SW_LABELS short variants
-    const swStrings = Object.fromEntries(
-      Object.entries(SW_LABELS).map(([k, v]) => [k, v.short || ''])
+    // SW status strings
+    const swStrings1 = Object.assign(
+      {}, 
+      SWCheckStatusNames, 
+      {        
+        [SWCheckStatus.NotChecked]: '',
+      })
+
+    const swStrings2 = Object.assign(
+      {}, 
+      SWCheckStatusNames, 
+      {        
+        [SWCheckStatus.NotChecked]: '',
+        [SWCheckStatus.ApprovedInherited]: ApprovedString,
+        [SWCheckStatus.IssueStopWordInherited]: IssueStopWordString
+      })
+
+      const fcStrings = Object.assign(
+      {}, 
+      FCCheckStatusNames, 
+      { 
+        [FCCheckStatus.NotChecked]: ''
+      }
     )
 
-    // FC status strings derived from FC_LABELS short variants
-    const fcStrings = Object.fromEntries(
-      Object.entries(FC_LABELS).map(([k, v]) => [k, v.short || ''])
-    )
-
-    const swString = (wFlags ? SWCheckStatusNames[this.sw] : swStrings[this.sw]) || ''
-    const fcString = (wFlags ? FCCheckStatusNames[this.fc] : fcStrings[this.fc]) || ''
+    const swString = (wFlag ? swStrings1[this.sw] : swStrings2[this.sw]) || ''
+    const fcString = fcStrings[this.fc] || ''
 
     // Combine non-empty strings with comma
-    const parts = [swString, fcString].filter(str => str !== "")
-    return parts.length > 0 ? parts.join(", ") : ""
+    const parts = [swString, fcString].filter(str => str !== '')
+    return parts.length > 0 ? parts.join(', ') : ''
   }
 
   /**
@@ -290,6 +285,7 @@ export class CheckStatusCode {
   static get ApprovedWithNotification() {
     return CheckStatusCode.fromParts(FCCheckStatus.ApprovedWithNotification, SWCheckStatus.ApprovedWithNotification)
   }
+
   static get MarkedByPartner() {
     return CheckStatusCode.fromParts(FCCheckStatus.MarkedByPartner, SWCheckStatus.MarkedByPartner)
   }

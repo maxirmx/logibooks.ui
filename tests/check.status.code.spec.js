@@ -10,6 +10,8 @@ import CheckStatusCode, {
   WStatusValues
 } from '@/helpers/check.status.code.js'
 
+import { FCCheckStatusNames, SWCheckStatusNames } from '@/helpers/check.status.code.js'
+
 describe('WStatusValues', () => {
   it('should have correct common values', () => {
     expect(WStatusValues.ApprovedWithExcise).toBe(0x0230)
@@ -195,6 +197,19 @@ describe('CheckStatusCode', () => {
       expect(fcIssue.toString()).toBe('Стоп ТН ВЭД')
     })
 
+    it('should respect wFlag for inherited SW strings (flag vs plain)', () => {
+      // When wFlag = true SW uses swStrings1 (keeps flag emoji)
+      const inheritedWithFlag = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.ApprovedInherited)
+      expect(inheritedWithFlag.toString(true)).toBe('🔖 Согласовано')
+
+      const inheritedIssueWithFlag = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.IssueStopWordInherited)
+      expect(inheritedIssueWithFlag.toString(true)).toBe('🔖 Стоп слово')
+
+      // When wFlag = false SW uses swStrings2 (removes flag for inherited values)
+      expect(inheritedWithFlag.toString()).toBe('Согласовано')
+      expect(inheritedIssueWithFlag.toString()).toBe('Стоп слово')
+    })
+
     it('should handle mixed statuses', () => {
       const mixed = CheckStatusCode.fromParts(FCCheckStatus.IssueNonexistingFeacn, SWCheckStatus.IssueStopWord)
       expect(mixed.toString()).toBe('Стоп слово, Нет ТН ВЭД')
@@ -212,6 +227,24 @@ describe('CheckStatusCode', () => {
 
       const onlySW = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.Approved)
       expect(onlySW.toString()).toBe('Согласовано')
+    })
+
+    it('should expose NotChecked translations and use them contextually', () => {
+      // Exported mappings should contain the NotChecked Russian string
+      expect(SWCheckStatusNames[SWCheckStatus.NotChecked]).toBe('Не проверено')
+      expect(FCCheckStatusNames[FCCheckStatus.NotChecked]).toBe('Не проверено')
+
+      // When only FC is NotChecked and SW has NoIssues, toString uses SW string only
+      const onlySw = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)
+      expect(onlySw.toString()).toBe('Ок стоп слова')
+
+      // When only SW is NotChecked and FC has NoIssues, toString uses FC string only
+      const onlyFc = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NotChecked)
+      expect(onlyFc.toString()).toBe('Ок ТН ВЭД')
+
+      // When both are NotChecked, special-case should return global NotChecked
+      const both = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NotChecked)
+      expect(both.toString()).toBe('Не проверено')
     })
 
     it('should handle unknown status values', () => {

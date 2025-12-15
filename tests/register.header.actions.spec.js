@@ -44,7 +44,7 @@ describe('useRegisterHeaderActions', () => {
       getLookupFeacnCodesProgress: vi.fn(),
       cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
       generate: vi.fn().mockResolvedValue(),
-      generateOrdinal: vi.fn().mockResolvedValue(),
+      generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
@@ -86,7 +86,7 @@ describe('useRegisterHeaderActions', () => {
 
   it('shows action dialog while export without excise runs', async () => {
     const deferred = createDeferred()
-    registersStore.generateOrdinal.mockReturnValueOnce(deferred.promise)
+    registersStore.generateOrdinary.mockReturnValueOnce(deferred.promise)
 
     const actions = useRegisterHeaderActions({
       registersStore,
@@ -98,13 +98,13 @@ describe('useRegisterHeaderActions', () => {
       isComponentMounted
     })
 
-    const { actionDialog, exportAllXmlOrdinal } = actions
+    const { actionDialog, exportAllXmlOrdinary } = actions
 
-    const promise = exportAllXmlOrdinal()
+    const promise = exportAllXmlOrdinary()
 
     expect(actionDialog.show).toBe(true)
     expect(actionDialog.title).toBe('Подготовка файлов')
-    expect(registersStore.generateOrdinal).toHaveBeenCalledWith(1, 'INV-1')
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1')
 
     deferred.resolve()
     await promise

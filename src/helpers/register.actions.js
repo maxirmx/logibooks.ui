@@ -199,8 +199,8 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlOrdinal(item) {
-    await registersStore.generateOrdinal(item.id, item.invoiceNumber)
+  async function exportAllXmlOrdinary(item) {
+    await registersStore.generateOrdinary(item.id, item.invoiceNumber)
   }
 
   async function exportAllXmlExcise(item) {
@@ -242,7 +242,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
-    exportAllXmlOrdinal,
+    exportAllXmlOrdinary,
     exportAllXmlExcise,
     exportAllXmlNotifications,
     downloadRegister,
@@ -268,7 +268,7 @@ export function useRegisterHeaderActions({
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
-    exportAllXmlOrdinal,
+    exportAllXmlOrdinary,
     exportAllXmlExcise,
     downloadRegister,
     cancelValidation,
@@ -349,7 +349,7 @@ export function useRegisterHeaderActions({
   }
 
   const runExportAllXmlWithoutExcise = async () => {
-    await runActionWithDialog(exportAllXmlOrdinal, 'export-all-xml-without-excise')
+    await runActionWithDialog(exportAllXmlOrdinary, 'export-all-xml-without-excise')
   }
 
   const runExportAllXmlExcise = async () => {
@@ -393,7 +393,7 @@ export function useRegisterHeaderActions({
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
     lookupFeacnCodesEx: runLookupFeacnCodesEx,
-    exportAllXmlOrdinal: runExportAllXmlWithoutExcise,
+    exportAllXmlOrdinary: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
     downloadRegister: runDownloadRegister,
     cancelValidation,

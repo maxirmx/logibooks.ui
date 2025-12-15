@@ -214,7 +214,7 @@ const {
   validateRegisterFc: validateRegisterFcHeader,
   lookupFeacnCodes: lookupRegisterFeacnCodes,
   lookupFeacnCodesEx: lookupRegisterFeacnCodesEx,
-  exportAllXmlOrdinal: exportRegisterXmlOrdinal,
+  exportAllXmlOrdinary: exportRegisterXmlOrdinary,
   exportAllXmlExcise: exportRegisterXmlExcise,
   exportAllXmlNotifications: exportRegisterXmlNotifications,
   downloadRegister: downloadRegisterFile,
@@ -431,7 +431,7 @@ function getGenericTemplateHeaders() {
           @validate-fc="validateRegisterFcHeader"
           @lookup="lookupRegisterFeacnCodes"
           @lookup-ex="lookupRegisterFeacnCodesEx"
-          @export-ordinal="exportRegisterXmlOrdinal"
+          @export-ordinal="exportRegisterXmlOrdinary"
           @export-excise="exportRegisterXmlExcise"
           @export-notifications="exportRegisterXmlNotifications"
           @download="downloadRegisterFile"

@@ -32,7 +32,7 @@ function createRegisterHeaderActionsMock() {
     validateRegisterFc: vi.fn(),
     lookupFeacnCodes: vi.fn(),
     lookupFeacnCodesEx: vi.fn(),
-    exportAllXmlOrdinal: vi.fn(),
+    exportAllXmlOrdinary: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     exportAllXmlNotifications: vi.fn(),    
     downloadRegister: vi.fn(),
@@ -296,7 +296,7 @@ describe.each([
     expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
 
     await buttons[5].trigger('click')
-    expect(registerHeaderActionsMock.exportAllXmlOrdinal).toHaveBeenCalled()
+    expect(registerHeaderActionsMock.exportAllXmlOrdinary).toHaveBeenCalled()
 
     await buttons[6].trigger('click')
     expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()

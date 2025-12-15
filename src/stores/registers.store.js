@@ -284,7 +284,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateOrdinal(id, invoiceNumber) {
+  async function generateOrdinary(id, invoiceNumber) {
     loading.value = true
     error.value = null
     try {
@@ -460,7 +460,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generate,
     generateExcise,
     generateNotifications,
-    generateOrdinal,
+    generateOrdinary,
     downloadInvoiceFile,
     download,
     nextParcels,

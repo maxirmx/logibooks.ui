@@ -344,9 +344,9 @@ export const useRegistersStore = defineStore('registers', () => {
       endpoint: 'download-invoice-notifications',
       suffix: '-нотификации'
     },
-    [InvoiceParcelSelection.WithoutExcise]: {
-      endpoint: 'download-invoice-without-excise',
-      suffix: '-без-акциза'
+    [InvoiceParcelSelection.Ordinal]: {
+      endpoint: 'download-invoice-ordinary',
+      suffix: '-без-акциза-и-нотификаций'
     }
   }
 

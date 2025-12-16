@@ -431,7 +431,7 @@ function getGenericTemplateHeaders() {
           @validate-fc="validateRegisterFcHeader"
           @lookup="lookupRegisterFeacnCodes"
           @lookup-ex="lookupRegisterFeacnCodesEx"
-          @export-ordinal="exportRegisterXmlOrdinary"
+          @export-ordinary="exportRegisterXmlOrdinary"
           @export-excise="exportRegisterXmlExcise"
           @export-notifications="exportRegisterXmlNotifications"
           @download="downloadRegisterFile"

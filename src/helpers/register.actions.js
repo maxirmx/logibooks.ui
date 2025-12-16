@@ -210,6 +210,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
   async function exportAllXmlNotifications(item) {
     await registersStore.generateNotifications(item.id, item.invoiceNumber)
   }
+
   async function downloadRegister(item) {
     await registersStore.download(item.id, item.fileName)
   }
@@ -270,6 +271,7 @@ export function useRegisterHeaderActions({
     lookupFeacnCodesEx,
     exportAllXmlOrdinary,
     exportAllXmlExcise,
+    exportAllXmlNotifications,
     downloadRegister,
     cancelValidation,
     stopPolling
@@ -356,6 +358,10 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(exportAllXmlExcise, 'export-all-xml-excise')
   }
 
+  const runExportAllXmlNotifications = async () => {
+    await runActionWithDialog(exportAllXmlNotifications, 'export-all-xml-notifications')
+  }
+
   const runDownloadRegister = async () => {
     await runActionWithDialog(downloadRegister, 'download-register')
   }
@@ -395,6 +401,7 @@ export function useRegisterHeaderActions({
     lookupFeacnCodesEx: runLookupFeacnCodesEx,
     exportAllXmlOrdinary: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
+    exportAllXmlNotifications: runExportAllXmlNotifications,    
     downloadRegister: runDownloadRegister,
     cancelValidation,
     stop

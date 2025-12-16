@@ -17,7 +17,7 @@ const emit = defineEmits([
   'validate-fc',
   'lookup',
   'lookup-ex',
-  'export-ordinal',
+  'export-ordinary',
   'export-excise',
   'export-notifications',
   'download'
@@ -97,7 +97,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :iconSize="iconSize"
         variant="green"
         :disabled="disabled"
-        @click="run('export-ordinal')"
+        @click="run('export-ordinary')"
       />
       <ActionButton
         :item="item"
@@ -141,8 +141,12 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
             action: () => openInvoiceSettings(InvoiceParcelSelection.WithExcise)
           },
           {
-            label: 'Без акциза',
-            action: () => openInvoiceSettings(InvoiceParcelSelection.WithoutExcise)
+            label: 'С нотификациями',
+            action: () => openInvoiceSettings(InvoiceParcelSelection.WithNotifications)
+          },
+          {
+            label: 'Без акциза и нотификаций',
+            action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
           }
         ]"
       />

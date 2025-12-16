@@ -55,7 +55,12 @@ vi.mock('@/stores/alert.store.js', () => ({
   }
 }))
 
-vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
+vi.mock('@/router', () => ({ 
+  default: { 
+    push: vi.fn(() => Promise.resolve()),
+    go: vi.fn(() => Promise.resolve())
+  } 
+}))
 
 // Stub vee-validate Form used in component
 const FormStub = {
@@ -108,17 +113,17 @@ describe('Invoice_Settings.vue', () => {
   })
 
   it('initializes parcel selection from prop', async () => {
-    const wrapper = mountDialog({ id: 88, selection: InvoiceParcelSelection.WithoutExcise })
+    const wrapper = mountDialog({ id: 88, selection: InvoiceParcelSelection.Ordinal })
     await resolveAll()
     const state = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    expect(state.parcelSelection).toBe(InvoiceParcelSelection.WithoutExcise)
+    expect(state.parcelSelection).toBe(InvoiceParcelSelection.Ordinal)
   })
 
   it('submits and calls downloadInvoiceFile with selected options', async () => {
     const wrapper = mountDialog()
     await resolveAll()
     const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    comp.parcelSelection = InvoiceParcelSelection.WithoutExcise
+    comp.parcelSelection = InvoiceParcelSelection.Ordinal
     // toggle two columns
     comp.toggleColumn(InvoiceOptionalColumns.BagNumber)
     comp.toggleColumn(InvoiceOptionalColumns.Url)
@@ -127,10 +132,11 @@ describe('Invoice_Settings.vue', () => {
     expect(downloadInvoiceFileMock).toHaveBeenCalledWith(
       77,
       'INV-77',
-      InvoiceParcelSelection.WithoutExcise,
+      InvoiceParcelSelection.Ordinal,
       InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Url
     )
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    // Implementation now uses router.go(-1) instead of router.push
+    expect(router.go).toHaveBeenCalledWith(-1)
   })
 
   it('displays error on submission failure', async () => {
@@ -151,6 +157,7 @@ describe('Invoice_Settings.vue', () => {
     await resolveAll()
     const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
     await comp.onCancel()
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    // Implementation now uses router.go(-1) instead of router.push
+    expect(router.go).toHaveBeenCalledWith(-1)
   })
 })

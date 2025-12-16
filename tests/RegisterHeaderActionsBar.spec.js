@@ -37,7 +37,7 @@ describe('RegisterHeaderActionsBar', () => {
     const invoiceMenu = wrapper.findComponent(ActionButton2L)
     expect(invoiceMenu.exists()).toBe(true)
 
-    const [allOption, withExciseOption, withoutExciseOption] = invoiceMenu.props('options')
+    const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption] = invoiceMenu.props('options')
 
     await allOption.action(baseProps.item)
     expect(pushMock).toHaveBeenCalledWith({
@@ -61,7 +61,7 @@ describe('RegisterHeaderActionsBar', () => {
     expect(pushMock).toHaveBeenCalledWith({
       name: 'Настройки инвойса',
       params: { id: baseProps.item.id },
-      query: { selection: InvoiceParcelSelection.WithoutExcise }
+      query: { selection: InvoiceParcelSelection.Ordinal }
     })
   })
 

@@ -11,7 +11,7 @@ const globalStubs = {
     props: ['item', 'icon', 'tooltipText', 'iconSize', 'variant', 'disabled'],
     emits: ['click'],
     template:
-      '<button class="action-button-stub" :data-tooltip="tooltipText" :data-variant="variant" @click="$emit(\'click\', item)">Action</button>'
+      '<button class="action-button-stub" :data-tooltip="tooltipText" :data-variant="variant" :data-size="iconSize" @click="$emit(\'click\', item)">Action</button>'
   }
 }
 
@@ -49,6 +49,8 @@ describe('ArticleWithH', () => {
     expect(button.exists()).toBe(true)
     expect(button.attributes('data-tooltip')).toContain('NT-99')
     expect(button.attributes('data-variant')).toBe('magenta')
+    expect(button.attributes('data-size')).toBe('1x')
+    expect(wrapper.find('.notification-action').exists()).toBe(true)
   })
 
   it('emits approve-notification when action button is clicked', async () => {

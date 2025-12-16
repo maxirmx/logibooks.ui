@@ -47,17 +47,18 @@ function emitApproveWithNotification() {
         ]"
         :disabled="disabled"
       />
-      <ActionButton
-        v-if="showNotificationButton"
-        :item="item"
-        icon="fa-solid fa-h"
-        variant="magenta"
-        :icon-size="'2x'"
-        :tooltip-text="tooltipText"
-        :disabled="disabled"
-        data-test="approve-notification"
-        @click="emitApproveWithNotification"
-      />
+      <div v-if="showNotificationButton" class="notification-action">
+        <ActionButton
+          :item="item"
+          icon="fa-solid fa-h"
+          variant="magenta"
+          :iconSize="'1x'"
+          :tooltip-text="tooltipText"
+          :disabled="disabled"
+          data-test="approve-notification"
+          @click="emitApproveWithNotification"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -71,5 +72,14 @@ function emitApproveWithNotification() {
 
 .article-input-wrapper :deep(.form-control) {
   flex: 1;
+}
+
+.notification-action {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 </style>

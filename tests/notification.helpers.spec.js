@@ -56,11 +56,12 @@ describe('notification helpers', () => {
         notificationId: 5
       })
 
+      expect(tooltip).toContain('Нотификация для артикула Article 123')
+      expect(tooltip).toContain('---------------------------------------------')
       expect(tooltip).toContain('Номер: N-42')
       expect(tooltip).toContain('Дата регистрации: 10.01.2025')
       expect(tooltip).toContain('Дата публикации: 12.01.2025')
-      expect(tooltip).toContain('Дата окончания: 30.01.2025')
-      expect(tooltip).not.toContain('Статья')
+      expect(tooltip).toContain('Срок действия: 30.01.2025')
     })
 
     it('builds tooltip with different date formats', async () => {
@@ -68,11 +69,12 @@ describe('notification helpers', () => {
         notificationId: 10
       })
 
+      expect(tooltip).toContain('Нотификация для артикула Article 456')
+      expect(tooltip).toContain('---------------------------------------------')
       expect(tooltip).toContain('Номер: N-50')
       expect(tooltip).toContain('Дата регистрации: 15.02.2025')
       expect(tooltip).toContain('Дата публикации: 20.02.2025')
-      expect(tooltip).toContain('Дата окончания: 15.03.2025')
-      expect(tooltip).not.toContain('Статья')
+      expect(tooltip).toContain('Срок действия: 15.03.2025')
     })
 
     it('returns message when notification not found in store', async () => {
@@ -80,7 +82,7 @@ describe('notification helpers', () => {
         notificationId: 999
       })
 
-      expect(tooltip).toBe('Уведомление ID: 999 (данные не загружены)')
+      expect(tooltip).toBe('Нотификация Id: 999 (данные не загружены)')
     })
 
     it('returns empty string when notification id is missing', async () => {

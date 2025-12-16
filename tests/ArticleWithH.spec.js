@@ -27,6 +27,7 @@ describe('ArticleWithH', () => {
     })
 
     expect(wrapper.find('[data-test="article-input"]').exists()).toBe(true)
+    expect(wrapper.find('.article-field').exists()).toBe(true)
     expect(wrapper.find('.action-button-stub').exists()).toBe(false)
   })
 
@@ -51,6 +52,7 @@ describe('ArticleWithH', () => {
     expect(button.attributes('data-variant')).toBe('magenta')
     expect(button.attributes('data-size')).toBe('1x')
     expect(wrapper.find('.notification-action').exists()).toBe(true)
+    expect(wrapper.find('.article-field').exists()).toBe(true)
   })
 
   it('emits approve-notification when action button is clicked', async () => {

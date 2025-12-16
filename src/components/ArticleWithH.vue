@@ -36,17 +36,19 @@ function emitApproveWithNotification() {
       {{ ozonRegisterColumnTitles[name] }}:
     </label>
     <div class="article-input-wrapper">
-      <Field
-        :name="name"
-        :id="name"
-        type="text"
-        :class="[
-          'form-control',
-          fullWidth ? 'input-1' : 'input',
-          { 'is-invalid': errors && errors[name] }
-        ]"
-        :disabled="disabled"
-      />
+      <div class="article-field">
+        <Field
+          :name="name"
+          :id="name"
+          type="text"
+          :class="[
+            'form-control',
+            fullWidth ? 'input-1' : 'input',
+            { 'is-invalid': errors && errors[name] }
+          ]"
+          :disabled="disabled"
+        />
+      </div>
       <div v-if="showNotificationButton" class="notification-action">
         <ActionButton
           :item="item"
@@ -70,12 +72,19 @@ function emitApproveWithNotification() {
   gap: 0.5rem;
 }
 
-.article-input-wrapper :deep(.form-control) {
+.article-field {
   flex: 1;
+  min-width: 0;
+}
+
+.article-field :deep(.form-control) {
+  width: 100%;
 }
 
 .notification-action {
   display: flex;
+  margin-left: auto;
+  flex-shrink: 0;
   background: #ffffff;
   border: 1px solid #74777c;
   border-radius: 0.5rem;

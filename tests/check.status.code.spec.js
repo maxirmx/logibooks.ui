@@ -180,7 +180,7 @@ describe('CheckStatusCode', () => {
   describe('toString method', () => {
     it('should format special combined statuses', () => {
       const approvedWithExcise = CheckStatusCode.ApprovedWithExcise
-      expect(approvedWithExcise.toString()).toBe('Согласовано с акцизом')
+      expect(approvedWithExcise.toString()).toBe('Согл. с акцизом')
 
       const markedByPartner = CheckStatusCode.MarkedByPartner  
       expect(markedByPartner.toString()).toBe('Исключено партнёром')

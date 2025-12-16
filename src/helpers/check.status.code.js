@@ -197,11 +197,11 @@ export class CheckStatusCode {
       return "Не проверено"
     }
     if (this.fc === FCCheckStatus.ApprovedWithExcise && this.sw === SWCheckStatus.ApprovedWithExcise) {
-      return "Согласовано с акцизом"
+      return "Согл. с акцизом"
     }
 
     if (this.fc === FCCheckStatus.ApprovedWithNotification && this.sw === SWCheckStatus.ApprovedWithNotification) {
-      return "Согласовано с нотификацией"
+      return "Согл. с нотификацией"
     }
 
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {

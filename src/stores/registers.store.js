@@ -290,12 +290,12 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       let filename
       if (invoiceNumber !== null && invoiceNumber !== undefined) {
-        filename = `IndPost_${invoiceNumber}-без-акциза.zip`
+        filename = `IndPost_${invoiceNumber}-без-акциза-и-нотификаций.zip`
       } else {
-        filename = `IndPost_${id}-без-акциза.zip`
+        filename = `IndPost_${id}-без-акциза-и-нотификаций.zip`
       }
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/generate-without-excise`,
+        `${baseUrl}/${id}/generate-ordinary`,
         filename
       )
     } catch (err) {

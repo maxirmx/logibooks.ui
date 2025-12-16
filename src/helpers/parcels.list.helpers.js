@@ -57,7 +57,7 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Function} loadOrdersFn - Function to reload orders
- * @param {ParcelApprovalMode|boolean} approvalMode - Approval mode (default: SimpleApprove). Boolean values are kept for backwards compatibility.
+ * @param {ParcelApprovalMode} approvalMode - Approval mode (default: SimpleApprove)
  * @returns {Promise<void>}
  */
 export async function approveParcelData(item, parcelsStore, loadOrdersFn, approvalMode = ParcelApprovalMode.SimpleApprove) {

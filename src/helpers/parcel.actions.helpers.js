@@ -34,7 +34,7 @@ export async function validateParcelData(values, item, parcelsStore, sw, matchMo
  * @param {Object} params.values - Form values
  * @param {Object} params.item - Current parcel item ref
  * @param {Object} params.parcelsStore - Parcels store instance
- * @param {ParcelApprovalMode|boolean} params.approvalMode - Approval mode (default: SimpleApprove). Boolean values are kept for backwards compatibility.
+ * @param {ParcelApprovalMode} params.approvalMode - Approval mode (default: SimpleApprove)
  * @returns {Promise<void>}
  */
 export async function approveParcel(values, item, parcelsStore, approvalMode = ParcelApprovalMode.SimpleApprove ) {

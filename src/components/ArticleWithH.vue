@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of the Logibooks ui application 
 
 import { computed } from 'vue'
 import { Field } from 'vee-validate'
@@ -25,7 +25,7 @@ const labelText = computed(() => {
 
 // Show button only if item has notificationId
 const showButton = computed(() => {
-  return props.item && props.item.notificationId != null && props.item.notificationId !== undefined
+  return props.item && props.item.notificationId != null
 })
 
 // Build tooltip text with notification details

@@ -131,7 +131,7 @@ watch(() => item.value?.statusId, (newStatusId) => {
 
 // Watch for changes in item.notificationId to load notification data
 watch(() => item.value?.notificationId, async (notificationId) => {
-  if (notificationId != null && notificationId !== undefined) {
+  if (notificationId != null) {
     try {
       await notificationsStore.getById(notificationId)
     } catch (error) {

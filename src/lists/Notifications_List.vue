@@ -12,6 +12,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { formatNotificationDate } from '@/helpers/notification.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 
 const notificationsStore = useNotificationsStore()
@@ -54,32 +55,7 @@ const headers = [
   { title: 'Дата окончания', key: 'terminationDate', sortable: true }
 ]
 
-function formatDate(value) {
-  if (!value) {
-    return ''
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleDateString('ru-RU')
-  }
-
-  if (typeof value === 'string') {
-    const date = new Date(value)
-    if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleDateString('ru-RU')
-    }
-    return value
-  }
-
-  if (typeof value === 'object' && value.year && value.month && value.day) {
-    const date = new Date(value.year, value.month - 1, value.day)
-    if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleDateString('ru-RU')
-    }
-  }
-
-  return ''
-}
+const formatDate = formatNotificationDate
 
 
 function getRow(item) {

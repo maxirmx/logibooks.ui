@@ -51,7 +51,10 @@ export async function buildNotificationTooltip(item) {
     return `Нотификация Id: ${item.notificationId} (данные не загружены)`
   }
 
-  const parts = ['Нотификация для артикула ' + (notification.article || '(данные не загружены)'), '---------------------------------------------'] 
+  const parts = [
+    'Нотификация для артикула ' + (notification.article || '(данные не загружены)'), 
+    '---------------------------------------------'
+  ] 
   
   if (notification.number) {
     parts.push(`Номер: ${notification.number}`)

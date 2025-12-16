@@ -14,6 +14,7 @@ import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
+import { useNotificationsStore } from '@/stores/notifications.store.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -28,11 +29,13 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import ArticleWithH from '@/components/ArticleWithH.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
+  approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
@@ -57,6 +60,7 @@ const feacnOrdersStore = useFeacnOrdersStore()
 const feacnPrefixesStore = useFeacnPrefixesStore()
 const countriesStore = useCountriesStore()
 const parcelViewsStore = useParcelViewsStore()
+const notificationsStore = useNotificationsStore()
 
 await statusStore.ensureLoaded()
 await stopWordsStore.ensureLoaded()
@@ -79,6 +83,7 @@ const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
+const { notification } = storeToRefs(notificationsStore)
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -122,6 +127,20 @@ const overlayActive = ref(false)
 // Watch for changes in item.statusId to initialize currentStatusId
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
+}, { immediate: true })
+
+// Watch for changes in item.notificationId to load notification data
+watch(() => item.value?.notificationId, async (notificationId) => {
+  if (notificationId != null && notificationId !== undefined) {
+    try {
+      await notificationsStore.getById(notificationId)
+    } catch (error) {
+      console.error('Failed to load notification:', error)
+    }
+  } else {
+    // Clear notification data if no notificationId
+    notification.value = null
+  }
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
@@ -190,6 +209,22 @@ async function approveParcelWithExcise(values) {
     await ensureNextParcelsPromise()
 
     await approveParcelWithExciseHelper(values, item, parcelsStore)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+// Approve the parcel with notification
+async function approveParcelWithNotification(values) {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+  try {
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
+
+    await approveParcelWithNotificationHelper(values, item, parcelsStore)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -462,7 +497,14 @@ async function onLookup(values) {
             />
           </div>
           <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="article" :errors="errors" :fullWidth="false" />
+          <ArticleWithH 
+            name="article" 
+            :errors="errors" 
+            :item="item" 
+            :notification="notification"
+            :disabled="isSubmitting || runningAction || loading"
+            @approve-notification="approveParcelWithNotification(values)"
+          />
           <div class="form-group">
             <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
             <a

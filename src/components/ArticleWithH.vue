@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Field } from 'vee-validate'
 import ActionButton from '@/components/ActionButton.vue'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
@@ -23,7 +23,20 @@ const showNotificationButton = computed(
   () => props.item?.notificationId !== null && props.item?.notificationId !== undefined
 )
 
-const tooltipText = computed(() => buildNotificationTooltip(props.item))
+const tooltipText = ref('')
+
+// Watch for changes and update tooltip asynchronously
+watch(
+  () => props.item,
+  async (newItem) => {
+    if (newItem?.notificationId) {
+      tooltipText.value = await buildNotificationTooltip(newItem)
+    } else {
+      tooltipText.value = ''
+    }
+  },
+  { immediate: true }
+)
 
 function emitApproveWithNotification() {
   emit('approve-notification')

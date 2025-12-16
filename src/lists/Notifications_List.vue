@@ -52,7 +52,7 @@ const headers = [
   { title: 'Номер', key: 'number', sortable: true },
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
-  { title: 'Дата окончания', key: 'terminationDate', sortable: true }
+  { title: 'Срок действия', key: 'terminationDate', sortable: true }
 ]
 
 const formatDate = formatNotificationDate

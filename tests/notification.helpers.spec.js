@@ -1,7 +1,38 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { buildNotificationTooltip, formatNotificationDate } from '@/helpers/notification.helpers.js'
 
+// Mock the notifications store
+vi.mock('@/stores/notifications.store.js', () => ({
+  useNotificationsStore: vi.fn(() => ({
+    getById: vi.fn((id) => {
+      const notifications = [
+        {
+          id: 5,
+          number: 'N-42',
+          article: 'Article 123',
+          registrationDate: '2025-01-10',
+          publicationDate: '2025-01-12',
+          terminationDate: '2025-01-30'
+        },
+        {
+          id: 10,
+          number: 'N-50',
+          article: 'Article 456',
+          registrationDate: { year: 2025, month: 2, day: 15 },
+          publicationDate: new Date('2025-02-20T00:00:00Z'),
+          terminationDate: '2025-03-15'
+        }
+      ]
+      return Promise.resolve(notifications.find(n => n.id === id) || null)
+    })
+  }))
+}))
+
 describe('notification helpers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('formatNotificationDate', () => {
     it('formats different date inputs to ru locale string', () => {
       expect(formatNotificationDate('2025-02-15')).toBe('15.02.2025')
@@ -20,24 +51,42 @@ describe('notification helpers', () => {
   })
 
   describe('buildNotificationTooltip', () => {
-    it('builds tooltip string with available fields', () => {
-      const tooltip = buildNotificationTooltip({
-        notificationId: 5,
-        notificationNumber: 'N-42',
-        notificationRegistrationDate: '2025-01-10',
-        notificationPublicationDate: { year: 2025, month: 1, day: 12 },
-        notificationTerminationDate: new Date('2025-01-30T00:00:00Z')
+    it('builds tooltip string with notification data from store', async () => {
+      const tooltip = await buildNotificationTooltip({
+        notificationId: 5
       })
 
       expect(tooltip).toContain('Номер: N-42')
       expect(tooltip).toContain('Дата регистрации: 10.01.2025')
       expect(tooltip).toContain('Дата публикации: 12.01.2025')
       expect(tooltip).toContain('Дата окончания: 30.01.2025')
+      expect(tooltip).not.toContain('Статья')
     })
 
-    it('returns empty string when notification id is missing', () => {
-      expect(buildNotificationTooltip({})).toBe('')
-      expect(buildNotificationTooltip({ notificationId: null })).toBe('')
+    it('builds tooltip with different date formats', async () => {
+      const tooltip = await buildNotificationTooltip({
+        notificationId: 10
+      })
+
+      expect(tooltip).toContain('Номер: N-50')
+      expect(tooltip).toContain('Дата регистрации: 15.02.2025')
+      expect(tooltip).toContain('Дата публикации: 20.02.2025')
+      expect(tooltip).toContain('Дата окончания: 15.03.2025')
+      expect(tooltip).not.toContain('Статья')
+    })
+
+    it('returns message when notification not found in store', async () => {
+      const tooltip = await buildNotificationTooltip({
+        notificationId: 999
+      })
+
+      expect(tooltip).toBe('Уведомление ID: 999 (данные не загружены)')
+    })
+
+    it('returns empty string when notification id is missing', async () => {
+      expect(await buildNotificationTooltip({})).toBe('')
+      expect(await buildNotificationTooltip({ notificationId: null })).toBe('')
+      expect(await buildNotificationTooltip({ notificationId: undefined })).toBe('')
     })
   })
 })

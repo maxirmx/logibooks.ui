@@ -8,8 +8,7 @@
 
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
-import { getApprovalErrorMessage } from '@/helpers/parcel.approval.helpers.js'
-import { ParcelApprovalMode, normalizeApprovalMode } from '@/models/parcel.approval.mode.js'
+import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -58,16 +57,14 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Function} loadOrdersFn - Function to reload orders
- * @param {ParcelApprovalMode|boolean} approvalMode - Approval mode (default: SimpleApprove). Boolean values are kept for backwards compatibility.
+ * @param {ParcelApprovalMode} approvalMode - Approval mode (default: SimpleApprove)
  * @returns {Promise<void>}
  */
 export async function approveParcelData(item, parcelsStore, loadOrdersFn, approvalMode = ParcelApprovalMode.SimpleApprove) {
   try {
-    const normalizedApprovalMode = normalizeApprovalMode(approvalMode)
-    await parcelsStore.approve(item.id, normalizedApprovalMode)
+    await parcelsStore.approve(item.id, approvalMode)
   } catch (error) {
-    const errorMessage = getApprovalErrorMessage(approvalMode)
-    parcelsStore.error = error?.response?.data?.message || errorMessage
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
     const alertStore = useAlertStore()
     alertStore.error(parcelsStore.error)
   } finally {

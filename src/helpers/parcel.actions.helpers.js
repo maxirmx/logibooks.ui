@@ -3,8 +3,7 @@
 // This file is a part of Logibooks ui application 
 
 import { useAlertStore } from '@/stores/alert.store.js'
-import { getApprovalErrorMessage } from '@/helpers/parcel.approval.helpers.js'
-import { ParcelApprovalMode, normalizeApprovalMode } from '@/models/parcel.approval.mode.js'
+import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 /**
  * Validates parcel data
@@ -35,7 +34,7 @@ export async function validateParcelData(values, item, parcelsStore, sw, matchMo
  * @param {Object} params.values - Form values
  * @param {Object} params.item - Current parcel item ref
  * @param {Object} params.parcelsStore - Parcels store instance
- * @param {ParcelApprovalMode|boolean} params.approvalMode - Approval mode (default: SimpleApprove). Boolean values are kept for backwards compatibility.
+ * @param {ParcelApprovalMode} params.approvalMode - Approval mode (default: SimpleApprove)
  * @returns {Promise<void>}
  */
 export async function approveParcel(values, item, parcelsStore, approvalMode = ParcelApprovalMode.SimpleApprove ) {
@@ -44,15 +43,13 @@ export async function approveParcel(values, item, parcelsStore, approvalMode = P
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
     // Then approve the parcel
-    const normalizedApprovalMode = normalizeApprovalMode(approvalMode)
-    await parcelsStore.approve(item.value.id, normalizedApprovalMode)
+    await parcelsStore.approve(item.value.id, approvalMode)
     // Reload the order data to reflect any changes
   } catch (error) {
-    const errorMessage = getApprovalErrorMessage(approvalMode)
-    parcelsStore.error = error?.response?.data?.message || errorMessage
+    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
 
     const alertStore = useAlertStore()
-    alertStore.error(parcelsStore?.error || errorMessage)
+    alertStore.error(parcelsStore?.error || 'Ошибка при согласовании посылки')
   } finally {
       await parcelsStore.getById(item.value.id)
   }

@@ -8,6 +8,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 const baseUrl = `${apiUrl}/parcels`
 
@@ -39,6 +40,12 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   }
 
   return params
+}
+
+function buildApproveQueryParams(approvalMode) {
+  const params = new URLSearchParams()
+  params.append('approveMode', approvalMode)
+  return params.toString()
 }
 
 export const useParcelsStore = defineStore('parcels', () => {
@@ -166,16 +173,10 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function approve(id, withExcise = false) {
-    const params = new URLSearchParams()
-    if (withExcise) {
-      params.append('withExcise', 'true')
-    }
-    
-    const url = params.toString() 
-      ? `${baseUrl}/${id}/approve?${params.toString()}`
-      : `${baseUrl}/${id}/approve`
-    
+  async function approve(id, approvalMode = ParcelApprovalMode.SimpleApprove) {
+    const query = buildApproveQueryParams(approvalMode)
+    const url = `${baseUrl}/${id}/approve?${query}`
+
     await fetchWrapper.post(url)
     return true
   }

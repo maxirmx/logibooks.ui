@@ -3,6 +3,8 @@
 // This file is a part of Logibooks ui application 
 
 import { useAlertStore } from '@/stores/alert.store.js'
+import { getApprovalErrorMessage } from '@/helpers/parcel.approval.helpers.js'
+import { ParcelApprovalMode, normalizeApprovalMode } from '@/models/parcel.approval.mode.js'
 
 /**
  * Validates parcel data
@@ -33,21 +35,20 @@ export async function validateParcelData(values, item, parcelsStore, sw, matchMo
  * @param {Object} params.values - Form values
  * @param {Object} params.item - Current parcel item ref
  * @param {Object} params.parcelsStore - Parcels store instance
- * @param {boolean} params.withExcise - Whether to approve with excise (default: false)
+ * @param {ParcelApprovalMode|boolean} params.approvalMode - Approval mode (default: SimpleApprove). Boolean values are kept for backwards compatibility.
  * @returns {Promise<void>}
  */
-export async function approveParcel(values, item, parcelsStore, withExcise = false ) {
+export async function approveParcel(values, item, parcelsStore, approvalMode = ParcelApprovalMode.SimpleApprove ) {
   if (item.value.id != values.id) return Promise.resolve()
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
     // Then approve the parcel
-    await parcelsStore.approve(item.value.id, withExcise)
+    const normalizedApprovalMode = normalizeApprovalMode(approvalMode)
+    await parcelsStore.approve(item.value.id, normalizedApprovalMode)
     // Reload the order data to reflect any changes
   } catch (error) {
-    const errorMessage = withExcise 
-      ? 'Ошибка при согласовании посылки с акцизом'
-      : 'Ошибка при согласовании посылки'
+    const errorMessage = getApprovalErrorMessage(approvalMode)
     parcelsStore.error = error?.response?.data?.message || errorMessage
 
     const alertStore = useAlertStore()
@@ -92,5 +93,14 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator) {
  * @returns {Promise<void>}
  */
 export async function approveParcelWithExcise(values, item, parcelsStore) {
-  return approveParcel(values, item, parcelsStore, true)
+  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithExcise)
+}
+
+/**
+ * Convenience function for approving parcel with notification
+ * @param {Object} params - Parameters object (same as approveParcel)
+ * @returns {Promise<void>}
+ */
+export async function approveParcelWithNotification(values, item, parcelsStore) {
+  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification)
 }

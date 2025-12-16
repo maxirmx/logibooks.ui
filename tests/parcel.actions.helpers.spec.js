@@ -4,12 +4,14 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { 
-  validateParcelData, 
-  approveParcel, 
+  validateParcelData,
+  approveParcel,
   generateXml,
-  approveParcelWithExcise 
+  approveParcelWithExcise,
+  approveParcelWithNotification
 } from '@/helpers/parcel.actions.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 
 // Mock the alert store
@@ -91,16 +93,25 @@ describe('parcel actions helpers', () => {
       await approveParcel(mockValues, mockItem, mockParcelsStore)
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, false)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.SimpleApprove)
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
 
     it('should approve parcel successfully with excise', async () => {
-      await approveParcel(mockValues, mockItem, mockParcelsStore, true)
+      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithExcise)
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, true)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithExcise)
+      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
+      expect(mockParcelsStore.error).toBeNull()
+    })
+
+    it('should approve parcel successfully with notification', async () => {
+      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithNotification)
+
+      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithNotification)
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
@@ -117,8 +128,16 @@ describe('parcel actions helpers', () => {
       const error = new Error('Approval failed')
       mockParcelsStore.approve.mockRejectedValue(error)
 
-      await approveParcel(mockValues, mockItem, mockParcelsStore, true)
-      expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки с акцизом')
+      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithExcise)
+      expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
+    })
+
+    it('should handle approval errors with notification', async () => {
+      const error = new Error('Approval failed')
+      mockParcelsStore.approve.mockRejectedValue(error)
+
+      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithNotification)
+      expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
     })
 
     it('should handle approval errors with API message', async () => {
@@ -140,7 +159,15 @@ describe('parcel actions helpers', () => {
     it('should call approveParcel with withExcise=true', async () => {
       await approveParcelWithExcise(mockValues,  mockItem,  mockParcelsStore)
 
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, true)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithExcise)
+    })
+  })
+
+  describe('approveParcelWithNotification', () => {
+    it('should call approveParcel with ApproveWithNotification mode', async () => {
+      await approveParcelWithNotification(mockValues, mockItem, mockParcelsStore)
+
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithNotification)
     })
   })
 

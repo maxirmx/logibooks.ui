@@ -52,6 +52,7 @@ import {
   updateParcelTnVed,
   loadOrders
 } from '../src/helpers/parcels.list.helpers.js'
+import { ParcelApprovalMode } from '../src/models/parcel.approval.mode.js'
 
 // Import mocked FEACN info helpers
 import { getCachedFeacnInfo, preloadFeacnInfo } from '../src/helpers/feacn.info.helpers.js'
@@ -251,7 +252,7 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('approveParcelData', () => {
-    it('should approve parcel successfully (default withExcise=false)', async () => {
+    it('should approve parcel successfully (default approvalMode=SimpleApprove)', async () => {
       const mockStore = {
         approve: vi.fn().mockResolvedValue(),
         error: ''
@@ -261,11 +262,11 @@ describe('Parcels List Helpers', () => {
 
       await approveParcelData(item, mockStore, mockLoadOrders)
 
-      expect(mockStore.approve).toHaveBeenCalledWith(123, false)
+      expect(mockStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.SimpleApprove)
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 
-    it('should approve parcel with excise when withExcise=true', async () => {
+    it('should approve parcel with excise when approvalMode=ApproveWithExcise', async () => {
       const mockStore = {
         approve: vi.fn().mockResolvedValue(),
         error: ''
@@ -273,9 +274,23 @@ describe('Parcels List Helpers', () => {
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await approveParcelData(item, mockStore, mockLoadOrders, true)
+      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithExcise)
 
-      expect(mockStore.approve).toHaveBeenCalledWith(123, true)
+      expect(mockStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithExcise)
+      expect(mockLoadOrders).toHaveBeenCalled()
+    })
+
+    it('should approve parcel with notification when approvalMode=ApproveWithNotification', async () => {
+      const mockStore = {
+        approve: vi.fn().mockResolvedValue(),
+        error: ''
+      }
+      const mockLoadOrders = vi.fn()
+      const item = { id: 123 }
+
+      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithNotification)
+
+      expect(mockStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithNotification)
       expect(mockLoadOrders).toHaveBeenCalled()
     })
 
@@ -303,9 +318,23 @@ describe('Parcels List Helpers', () => {
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await approveParcelData(item, mockStore, mockLoadOrders, true)
+      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithExcise)
 
-      expect(mockStore.error).toBe('Ошибка при согласовании посылки с акцизом')
+      expect(mockStore.error).toBe('Ошибка при согласовании посылки')
+      expect(mockLoadOrders).toHaveBeenCalled()
+    })
+
+    it('should handle approval errors with notification and show appropriate message', async () => {
+      const mockStore = {
+        approve: vi.fn().mockRejectedValue(new Error('Network error')),
+        error: ''
+      }
+      const mockLoadOrders = vi.fn()
+      const item = { id: 123 }
+
+      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithNotification)
+
+      expect(mockStore.error).toBe('Ошибка при согласовании посылки')
       expect(mockLoadOrders).toHaveBeenCalled()
     })
   })

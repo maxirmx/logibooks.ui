@@ -8,6 +8,8 @@
 
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
+import { getApprovalErrorMessage } from '@/helpers/parcel.approval.helpers.js'
+import { ParcelApprovalMode, normalizeApprovalMode } from '@/models/parcel.approval.mode.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -56,16 +58,15 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
  * @param {Object} item - The parcel item
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Function} loadOrdersFn - Function to reload orders
- * @param {boolean} withExcise - Whether to approve with excise (default: false)
+ * @param {ParcelApprovalMode|boolean} approvalMode - Approval mode (default: SimpleApprove). Boolean values are kept for backwards compatibility.
  * @returns {Promise<void>}
  */
-export async function approveParcelData(item, parcelsStore, loadOrdersFn, withExcise = false) {
+export async function approveParcelData(item, parcelsStore, loadOrdersFn, approvalMode = ParcelApprovalMode.SimpleApprove) {
   try {
-    await parcelsStore.approve(item.id, withExcise)
+    const normalizedApprovalMode = normalizeApprovalMode(approvalMode)
+    await parcelsStore.approve(item.id, normalizedApprovalMode)
   } catch (error) {
-    const errorMessage = withExcise 
-      ? 'Ошибка при согласовании посылки с акцизом'
-      : 'Ошибка при согласовании посылки'
+    const errorMessage = getApprovalErrorMessage(approvalMode)
     parcelsStore.error = error?.response?.data?.message || errorMessage
     const alertStore = useAlertStore()
     alertStore.error(parcelsStore.error)

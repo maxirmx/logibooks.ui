@@ -7,11 +7,3 @@ export const ParcelApprovalMode = Object.freeze({
   ApproveWithExcise: 'ApproveWithExcise',
   ApproveWithNotification: 'ApproveWithNotification'
 })
-
-export function normalizeApprovalMode(mode) {
-  if (mode === true) return ParcelApprovalMode.ApproveWithExcise
-  if (mode === false || mode === undefined || mode === null) return ParcelApprovalMode.SimpleApprove
-  return Object.values(ParcelApprovalMode).includes(mode)
-    ? mode
-    : ParcelApprovalMode.SimpleApprove
-}

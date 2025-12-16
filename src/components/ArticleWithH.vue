@@ -13,7 +13,7 @@ const props = defineProps({
   item: { type: Object, required: true },
   errors: { type: Object, default: () => ({}) },
   disabled: { type: Boolean, default: false },
-  name: { type: String, default: 'article' },
+  nme: { type: String, default: 'article' },
   fullWidth: { type: Boolean, default: false }
 })
 
@@ -32,59 +32,39 @@ function emitApproveWithNotification() {
 
 <template>
   <div :class="fullWidth ? 'form-group-1' : 'form-group'">
-    <label :for="name" :class="fullWidth ? 'label-1' : 'label'">
-      {{ ozonRegisterColumnTitles[name] }}:
+    <label :for="nme" :class="fullWidth ? 'label-1' : 'label'">
+      {{ ozonRegisterColumnTitles[nme] }}:
     </label>
-    <div class="article-input-wrapper">
-      <div class="article-field">
-        <Field
-          :name="name"
-          :id="name"
-          type="text"
-          :class="[
-            'form-control',
-            fullWidth ? 'input-1' : 'input',
-            { 'is-invalid': errors && errors[name] }
-          ]"
-          :disabled="disabled"
-        />
-      </div>
-      <div v-if="showNotificationButton" class="notification-action">
-        <ActionButton
-          :item="item"
-          icon="fa-solid fa-h"
-          variant="magenta"
-          :iconSize="'1x'"
-          :tooltip-text="tooltipText"
-          :disabled="disabled"
-          data-test="approve-notification"
-          @click="emitApproveWithNotification"
-        />
-      </div>
+    <Field
+      :name="nme"
+      :id="nme"
+      type="text"
+      :class="[
+        'form-control',
+        fullWidth ? 'input-1' : 'input',
+        { 'is-invalid': errors && errors[nme] }
+      ]"
+      :disabled="disabled"
+    />
+    <div v-if="showNotificationButton" class="action-buttons">
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-h"
+        variant="magenta"
+        :iconSize="'1x'"
+        :tooltip-text="tooltipText"
+        :disabled="disabled"
+        data-test="approve-notification"
+        @click="emitApproveWithNotification"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.article-input-wrapper {
+.action-buttons {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.article-field {
-  flex: 1;
-  min-width: 0;
-}
-
-.article-field :deep(.form-control) {
-  width: 100%;
-}
-
-.notification-action {
-  display: flex;
-  margin-left: auto;
-  flex-shrink: 0;
+  gap: 0.25rem;
   background: #ffffff;
   border: 1px solid #74777c;
   border-radius: 0.5rem;

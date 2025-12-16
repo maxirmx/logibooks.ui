@@ -7,6 +7,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -332,54 +333,64 @@ describe('parcels store', () => {
   })
 
   describe('approve method', () => {
-    it('calls approve endpoint with correct id (default withExcise=false)', async () => {
+    it('calls approve endpoint with correct id (default approvalMode=SimpleApprove)', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 
       const store = useParcelsStore()
       const result = await store.approve(123)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`)
       expect(result).toBe(true)
     })
 
-    it('calls approve endpoint with withExcise=false explicitly', async () => {
+    it('calls approve endpoint with explicit SimpleApprove mode', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 
       const store = useParcelsStore()
-      const result = await store.approve(123, false)
+      const result = await store.approve(123, ParcelApprovalMode.SimpleApprove)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`)
       expect(result).toBe(true)
     })
 
-    it('calls approve endpoint with withExcise=true', async () => {
+    it('calls approve endpoint with ApproveWithExcise mode', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 
       const store = useParcelsStore()
-      const result = await store.approve(123, true)
+      const result = await store.approve(123, ParcelApprovalMode.ApproveWithExcise)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?withExcise=true`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`)
       expect(result).toBe(true)
     })
 
-    it('throws error when approve fails without withExcise', async () => {
+    it('calls approve endpoint with ApproveWithNotification mode', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      const result = await store.approve(123, ParcelApprovalMode.ApproveWithNotification)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithNotification`)
+      expect(result).toBe(true)
+    })
+
+    it('throws error when approve fails with default mode', async () => {
       const error = new Error('Approval failed')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useParcelsStore()
 
       await expect(store.approve(123)).rejects.toThrow('Approval failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`)
     })
 
-    it('throws error when approve fails with withExcise=true', async () => {
+    it('throws error when approve fails with ApproveWithExcise', async () => {
       const error = new Error('Approval with excise failed')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useParcelsStore()
 
-      await expect(store.approve(123, true)).rejects.toThrow('Approval with excise failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?withExcise=true`)
+      await expect(store.approve(123, ParcelApprovalMode.ApproveWithExcise)).rejects.toThrow('Approval with excise failed')
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`)
     })
   })
 

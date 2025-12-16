@@ -57,6 +57,15 @@ describe('RegisterHeaderActionsBar', () => {
 
     pushMock.mockClear()
 
+    await withNotificationsOption.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки инвойса',
+      params: { id: baseProps.item.id },
+      query: { selection: InvoiceParcelSelection.WithNotifications }
+    })
+
+    pushMock.mockClear()
+
     await withoutExciseOption.action(baseProps.item)
     expect(pushMock).toHaveBeenCalledWith({
       name: 'Настройки инвойса',

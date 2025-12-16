@@ -28,11 +28,13 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import ArticleWithH from '@/components/ArticleWithH.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
+  approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
@@ -190,6 +192,21 @@ async function approveParcelWithExcise(values) {
     await ensureNextParcelsPromise()
 
     await approveParcelWithExciseHelper(values, item, parcelsStore)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+// Approve the parcel with notification
+async function approveParcelWithNotification(values) {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+  try {
+    await ensureNextParcelsPromise()
+
+    await approveParcelWithNotificationHelper(values, item, parcelsStore)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -452,20 +469,26 @@ async function onLookup(values) {
         <div class="form-row">
           <div class="form-group">
             <label for="postingNumber" class="label">{{ ozonRegisterColumnTitles.postingNumber }}:</label>
-            <ParcelNumberExt 
-              :item="item"
-              field-name="postingNumber"
-              :disabled="isSubmitting || runningAction || loading"
-              class="readonly-parcel-number"
-              @click="() => {/* No action needed for readonly display */}"
-              @fellows="handleFellows"
-            />
-          </div>
-          <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="article" :errors="errors" :fullWidth="false" />
-          <div class="form-group">
-            <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
-            <a
+          <ParcelNumberExt
+            :item="item"
+            field-name="postingNumber"
+            :disabled="isSubmitting || runningAction || loading"
+            class="readonly-parcel-number"
+            @click="() => {/* No action needed for readonly display */}"
+            @fellows="handleFellows"
+          />
+        </div>
+        <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
+        <ArticleWithH
+          :item="item"
+          :errors="errors"
+          :disabled="isSubmitting || runningAction || loading"
+          :fullWidth="false"
+          @approve-notification="approveParcelWithNotification(values)"
+        />
+        <div class="form-group">
+          <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
+          <a
               v-if="item?.productLink"
               :href="productLinkWithProtocol"
               target="_blank"

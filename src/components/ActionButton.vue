@@ -19,7 +19,7 @@ const forwardedAttrs = computed(() => {
 })
 </script>
 <template>
-  <v-tooltip :text="props.tooltipText" :disabled="props.disabled">
+  <v-tooltip open-delay="300" :disabled="props.disabled">
     <template #activator="{ props: activatorProps }">
       <button
         type="button"
@@ -30,6 +30,9 @@ const forwardedAttrs = computed(() => {
       >
         <font-awesome-icon :size="props.iconSize" :icon="props.icon"  class="button-o-c"/>
       </button>
+    </template>
+    <template #default>
+      <div style="white-space: pre-line">{{ props.tooltipText }}</div>
     </template>
   </v-tooltip>
 </template>

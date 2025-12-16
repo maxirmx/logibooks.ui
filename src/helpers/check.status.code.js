@@ -53,8 +53,8 @@ export const FCCheckStatus = Object.freeze({
  */
 const NotCheckedString = 'Не проверено'
 const ApprovedString = 'Согласовано'
-const ApprovedWithExciseString = 'Согласовано с акцизом'
-const ApprovedWithNotificationString = 'Согласовано с нотификацией'
+const ApprovedWithExciseString = 'Согл. с акцизом'
+const ApprovedWithNotificationString = 'Согл. с нотификацией'
 const IssueStopWordString = 'Стоп слово'
 const FlagString = '🔖 '
 

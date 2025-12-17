@@ -199,8 +199,8 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlOrdinal(item) {
-    await registersStore.generateOrdinal(item.id, item.invoiceNumber)
+  async function exportAllXmlOrdinary(item) {
+    await registersStore.generateOrdinary(item.id, item.invoiceNumber)
   }
 
   async function exportAllXmlExcise(item) {
@@ -210,6 +210,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
   async function exportAllXmlNotifications(item) {
     await registersStore.generateNotifications(item.id, item.invoiceNumber)
   }
+
   async function downloadRegister(item) {
     await registersStore.download(item.id, item.fileName)
   }
@@ -242,7 +243,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
-    exportAllXmlOrdinal,
+    exportAllXmlOrdinary,
     exportAllXmlExcise,
     exportAllXmlNotifications,
     downloadRegister,
@@ -268,8 +269,9 @@ export function useRegisterHeaderActions({
     validateRegisterFc,
     lookupFeacnCodes,
     lookupFeacnCodesEx,
-    exportAllXmlOrdinal,
+    exportAllXmlOrdinary,
     exportAllXmlExcise,
+    exportAllXmlNotifications,
     downloadRegister,
     cancelValidation,
     stopPolling
@@ -349,11 +351,15 @@ export function useRegisterHeaderActions({
   }
 
   const runExportAllXmlWithoutExcise = async () => {
-    await runActionWithDialog(exportAllXmlOrdinal, 'export-all-xml-without-excise')
+    await runActionWithDialog(exportAllXmlOrdinary, 'export-all-xml-without-excise')
   }
 
   const runExportAllXmlExcise = async () => {
     await runActionWithDialog(exportAllXmlExcise, 'export-all-xml-excise')
+  }
+
+  const runExportAllXmlNotifications = async () => {
+    await runActionWithDialog(exportAllXmlNotifications, 'export-all-xml-notifications')
   }
 
   const runDownloadRegister = async () => {
@@ -393,8 +399,9 @@ export function useRegisterHeaderActions({
     validateRegisterFc: runValidateRegisterFc,
     lookupFeacnCodes: runLookupFeacnCodes,
     lookupFeacnCodesEx: runLookupFeacnCodesEx,
-    exportAllXmlOrdinal: runExportAllXmlWithoutExcise,
+    exportAllXmlOrdinary: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
+    exportAllXmlNotifications: runExportAllXmlNotifications,    
     downloadRegister: runDownloadRegister,
     cancelValidation,
     stop

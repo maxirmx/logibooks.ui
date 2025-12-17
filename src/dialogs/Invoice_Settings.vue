@@ -23,7 +23,7 @@ const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
   // Validate and default to All if not WithExcise or WithoutExcise
-  return [InvoiceParcelSelection.WithExcise, InvoiceParcelSelection.WithoutExcise].includes(value)
+  return [InvoiceParcelSelection.WithExcise, InvoiceParcelSelection.WithNotifications, InvoiceParcelSelection.Ordinal].includes(value)
     ? value
     : InvoiceParcelSelection.All;
 }
@@ -39,7 +39,8 @@ const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialo
 const parcelSelectionOptions = [
   { id: 1, label: 'Все', value: InvoiceParcelSelection.All },
   { id: 2, label: 'С акцизом', value: InvoiceParcelSelection.WithExcise },
-  { id: 3, label: 'Без акциза', value: InvoiceParcelSelection.WithoutExcise }
+  { id: 3, label: 'С нотификациями', value: InvoiceParcelSelection.WithNotifications },
+  { id: 4, label: 'Без акциза и нотификаций', value: InvoiceParcelSelection.Ordinal }
 ]
 
 const optionalColumnOptions = [
@@ -96,7 +97,7 @@ async function onSubmit() {
       parcelSelection.value,
       optionalColumns.value
     )
-    router.push('/registers')
+    router.go(-1)
   } catch (err) {
     // report error via alert store and keep dialog hidden
     const msg = normalizeError(err) || 'Не удалось сформировать инвойс'
@@ -108,7 +109,7 @@ async function onSubmit() {
 }
 
 function onCancel() {
-  router.push('/registers')
+  router.go(-1)
 }
 
 watch(

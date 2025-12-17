@@ -4,7 +4,8 @@
 export const InvoiceParcelSelection = Object.freeze({
   All: 'all',
   WithExcise: 'withExcise',
-  WithoutExcise: 'withoutExcise'
+  WithNotifications: 'withNotifications',
+  Ordinal: 'ordinal'
 })
 
 export default InvoiceParcelSelection

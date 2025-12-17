@@ -1126,19 +1126,19 @@ describe('registers store', () => {
       )
     })
 
-    it('generateOrdinal uses invoiceNumber when provided and default otherwise', async () => {
+    it('generateOrdinary uses invoiceNumber when provided and default otherwise', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.generateOrdinal(11, 'INV-O')
+      await store.generateOrdinary(11, 'INV-O')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/11/generate-without-excise`,
-        'IndPost_INV-O-без-акциза.zip'
+        `${apiUrl}/registers/11/generate-ordinary`,
+        'IndPost_INV-O-без-акциза-и-нотификаций.zip'
       )
 
-      await store.generateOrdinal(12)
+      await store.generateOrdinary(12)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/12/generate-without-excise`,
-        'IndPost_12-без-акциза.zip'
+        `${apiUrl}/registers/12/generate-ordinary`,
+        'IndPost_12-без-акциза-и-нотификаций.zip'
       )
     })
   })
@@ -1172,12 +1172,12 @@ describe('registers store', () => {
       await store.downloadInvoiceFile(
         9,
         undefined,
-        InvoiceParcelSelection.WithoutExcise,
+        InvoiceParcelSelection.Ordinal,
         optionalColumns
       )
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/9/download-invoice-without-excise?optionalColumns=${optionalColumns}`,
-        'Invoice_9-без-акциза.xlsx'
+        `${apiUrl}/registers/9/download-invoice-ordinary?optionalColumns=${optionalColumns}`,
+        'Invoice_9-без-акциза-и-нотификаций.xlsx'
       )
     })
 

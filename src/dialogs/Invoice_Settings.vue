@@ -39,8 +39,8 @@ const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialo
 const parcelSelectionOptions = [
   { id: 1, label: 'Все', value: InvoiceParcelSelection.All },
   { id: 2, label: 'С акцизом', value: InvoiceParcelSelection.WithExcise },
-  { id: 2, label: 'С нотификациями', value: InvoiceParcelSelection.WithNotifications },
-  { id: 3, label: 'Без акциза и нотификаций', value: InvoiceParcelSelection.Ordinal }
+  { id: 3, label: 'С нотификациями', value: InvoiceParcelSelection.WithNotifications },
+  { id: 4, label: 'Без акциза и нотификаций', value: InvoiceParcelSelection.Ordinal }
 ]
 
 const optionalColumnOptions = [

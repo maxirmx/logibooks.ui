@@ -39,7 +39,7 @@ export function formatNotificationDate(value) {
 /**
  * Builds tooltip text for notification details
  * @param {Object} item - Source object containing notificationId
- * @returns {string} Tooltip text with available notification details
+ * @returns {Promise<string>} Tooltip text with available notification details
  */
 export async function buildNotificationTooltip(item) {
   if (!item || item.notificationId === undefined || item.notificationId === null) return ''

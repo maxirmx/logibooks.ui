@@ -194,18 +194,18 @@ export class CheckStatusCode {
   toString(wFlag = false) {
     // Special cases for combined statuses
     if (this.fc === FCCheckStatus.NotChecked && this.sw === SWCheckStatus.NotChecked) {
-      return "Не проверено"
+      return 'Не проверено'
     }
     if (this.fc === FCCheckStatus.ApprovedWithExcise && this.sw === SWCheckStatus.ApprovedWithExcise) {
-      return "Согл. с акцизом"
+      return 'Согл. с акцизом'
     }
 
     if (this.fc === FCCheckStatus.ApprovedWithNotification && this.sw === SWCheckStatus.ApprovedWithNotification) {
-      return "Согл. с нотификацией"
+      return 'Согл. с нотификацией'
     }
 
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {
-      return "Исключено партнёром"
+      return 'Исключено партнёром'
     }
 
     // SW status strings
@@ -225,7 +225,7 @@ export class CheckStatusCode {
         [SWCheckStatus.IssueStopWordInherited]: IssueStopWordString
       })
 
-      const fcStrings = Object.assign(
+    const fcStrings = Object.assign(
       {}, 
       FCCheckStatusNames, 
       { 

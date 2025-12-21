@@ -229,7 +229,6 @@ if (!isCreate.value) {
         :has-error="Boolean(getArticlesError(errors))"
       />
 
-
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>

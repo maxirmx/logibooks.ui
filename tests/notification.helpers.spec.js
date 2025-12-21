@@ -9,7 +9,7 @@ vi.mock('@/stores/notifications.store.js', () => ({
         {
           id: 5,
           number: 'N-42',
-          article: 'Article 123',
+          articles: [{article: 'Article 123'}],
           registrationDate: '2025-01-10',
           publicationDate: '2025-01-12',
           terminationDate: '2025-01-30'
@@ -17,7 +17,7 @@ vi.mock('@/stores/notifications.store.js', () => ({
         {
           id: 10,
           number: 'N-50',
-          article: 'Article 456',
+          articles: [{article: 'Article 456'}],
           registrationDate: { year: 2025, month: 2, day: 15 },
           publicationDate: new Date('2025-02-20T00:00:00Z'),
           terminationDate: '2025-03-15'
@@ -56,9 +56,8 @@ describe('notification helpers', () => {
         notificationId: 5
       })
 
-      expect(tooltip).toContain('Нотификация для артикула Article 123')
+      expect(tooltip).toContain('Нотификация номер N-42')
       expect(tooltip).toContain('---------------------------------------------')
-      expect(tooltip).toContain('Номер: N-42')
       expect(tooltip).toContain('Дата регистрации: 10.01.2025')
       expect(tooltip).toContain('Дата публикации: 12.01.2025')
       expect(tooltip).toContain('Срок действия: 30.01.2025')
@@ -69,9 +68,8 @@ describe('notification helpers', () => {
         notificationId: 10
       })
 
-      expect(tooltip).toContain('Нотификация для артикула Article 456')
+      expect(tooltip).toContain('Нотификация номер N-50')
       expect(tooltip).toContain('---------------------------------------------')
-      expect(tooltip).toContain('Номер: N-50')
       expect(tooltip).toContain('Дата регистрации: 15.02.2025')
       expect(tooltip).toContain('Дата публикации: 20.02.2025')
       expect(tooltip).toContain('Срок действия: 15.03.2025')

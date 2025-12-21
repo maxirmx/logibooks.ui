@@ -52,13 +52,9 @@ export async function buildNotificationTooltip(item) {
   }
 
   const parts = [
-    'Нотификация для артикула ' + (notification.article || '(данные не загружены)'), 
+    'Нотификация номер ' + (notification.number || '(данные не загружены)'), 
     '---------------------------------------------'
   ] 
-  
-  if (notification.number) {
-    parts.push(`Номер: ${notification.number}`)
-  }
   
   if (notification.registrationDate) {
     const formattedDate = formatNotificationDate(notification.registrationDate)

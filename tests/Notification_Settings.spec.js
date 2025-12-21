@@ -12,7 +12,13 @@ import { defaultGlobalStubs, createMockStore, resolveAll } from './helpers/test-
 const mockRouter = vi.hoisted(() => ({ push: vi.fn() }))
 const mockNotification = {
   id: 1,
-  article: 'Test Article',
+  articles: [
+    {
+      id: 10,
+      notificationId: 1,
+      article: 'Test Article'
+    }
+  ],
   number: 'ABC-123',
   terminationDate: '2025-12-31',
   publicationDate: '2025-11-30',
@@ -62,6 +68,30 @@ vi.mock('vee-validate', () => ({
     name: 'Field',
     props: ['name', 'id', 'type', 'class', 'placeholder'],
     template: '<input v-bind="$props" />'
+  },
+  FieldArray: {
+    name: 'FieldArray',
+    props: ['name'],
+    data() {
+      return {
+        fields: [{ key: 0 }]
+      }
+    },
+    methods: {
+      pushField(value) {
+        this.fields.push({ key: this.fields.length, value })
+      },
+      removeField(index) {
+        if (this.fields.length > 1) {
+          this.fields.splice(index, 1)
+        }
+      }
+    },
+    template: `
+      <div>
+        <slot :fields="fields" :push="pushField" :remove="removeField" />
+      </div>
+    `
   }
 }))
 
@@ -130,11 +160,21 @@ describe('Notification_Settings.vue', () => {
 
     await resolveAll()
 
-    await wrapper.find('form').trigger('submit')
-    await resolveAll()
+    const vm = wrapper.findComponent(NotificationSettings).vm
+
+    await vm.onSubmit(
+      {
+        articles: ['Created Article'],
+        number: '',
+        terminationDate: '',
+        publicationDate: '',
+        registrationDate: ''
+      },
+      { setErrors: vi.fn() }
+    )
 
     expect(mockNotificationsStore.create).toHaveBeenCalledWith({
-      article: '',
+      articles: [{ article: 'Created Article' }],
       number: '',
       terminationDate: '',
       publicationDate: '',
@@ -160,7 +200,7 @@ describe('Notification_Settings.vue', () => {
       1,
       expect.objectContaining({
         id: 1,
-        article: mockNotification.article,
+        articles: [{ article: mockNotification.articles[0].article }],
         number: mockNotification.number,
         terminationDate: mockNotification.terminationDate,
         publicationDate: mockNotification.publicationDate,
@@ -224,7 +264,7 @@ describe('Notification_Settings.vue', () => {
     expect(labels).toContain('Артикул:')
     expect(labels).toContain('Срок действия:')
 
-    const articleInput = wrapper.find('input#article')
+    const articleInput = wrapper.find('input#articles_0')
     expect(articleInput.attributes('placeholder')).toBe('Артикул')
   })
 
@@ -240,7 +280,9 @@ describe('Notification_Settings.vue', () => {
 
     const vm = wrapper.findComponent(NotificationSettings).vm
 
-    await expect(vm.schema.validateAt('article', { article: '' })).rejects.toThrow('Необходимо ввести артикул')
+    await expect(
+      vm.schema.validateAt('articles[0]', { articles: [''] })
+    ).rejects.toThrow('Необходимо ввести артикул')
     await expect(vm.schema.validateAt('terminationDate', { terminationDate: '' })).rejects.toThrow('Необходимо ввести срок действия')
     await expect(vm.schema.validateAt('publicationDate', { publicationDate: '' })).rejects.toThrow('Необходимо ввести дату публикации')
     await expect(vm.schema.validateAt('registrationDate', { registrationDate: '' })).rejects.toThrow('Необходимо ввести дату регистрации')

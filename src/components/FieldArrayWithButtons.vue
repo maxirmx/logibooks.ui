@@ -58,6 +58,16 @@ const props = defineProps({
 function getFieldProps(index) {
   return typeof props.fieldProps === 'function' ? props.fieldProps({ index }) : props.fieldProps
 }
+
+function getFieldBindings(index) {
+  const fieldProps = getFieldProps(index) || {}
+  const placeholderProp =
+    props.fieldType !== 'select' && !Object.prototype.hasOwnProperty.call(fieldProps, 'placeholder')
+      ? { placeholder: props.placeholder }
+      : {}
+
+  return { ...placeholderProp, ...fieldProps, disabled: props.disabled }
+}
 </script>
 
 <template>
@@ -80,7 +90,7 @@ function getFieldProps(index) {
 
         <Field :name="`${name}[${idx}]`" :as="fieldType" :id="`${name}_${idx}`"
           class="form-control input field-container-select" :class="{ 'is-invalid': hasError }"
-          v-bind="{ ...getFieldProps(idx), disabled }"
+          v-bind="getFieldBindings(idx)"
         >
           <option v-if="fieldType === 'select'" value="">{{ placeholder }}</option>
           <template v-if="fieldType === 'select'">

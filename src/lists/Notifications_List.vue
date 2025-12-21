@@ -48,11 +48,11 @@ function filterNotifications(value, query, item) {
 
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
-  { title: 'Артикул', key: 'article', sortable: true },
   { title: 'Номер', key: 'number', sortable: true },
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
-  { title: 'Срок действия', key: 'terminationDate', sortable: true }
+  { title: 'Срок действия', key: 'terminationDate', sortable: true },
+  { title: 'Артикулы', key: 'article', sortable: true }
 ]
 
 const formatDate = formatNotificationDate

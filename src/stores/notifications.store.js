@@ -64,13 +64,20 @@ export const useNotificationsStore = defineStore('notifications', () => {
     try {
       const result = await fetchWrapper.put(`${baseUrl}/${id}`, notificationData)
       const index = notifications.value.findIndex(n => n.id === id)
+      const fallbackNotification = index !== -1 ? notifications.value[index] : null
+      const updatedNotification =
+        result && Object.keys(result).length
+          ? result
+          : fallbackNotification
+            ? { ...fallbackNotification, ...notificationData }
+            : { id, ...notificationData }
       if (index !== -1) {
-        notifications.value[index] = result
+        notifications.value[index] = updatedNotification
       }
       if (notification.value && notification.value.id === id) {
-        notification.value = result
+        notification.value = updatedNotification
       }
-      return result
+      return updatedNotification
     } catch (err) {
       error.value = err
       throw err

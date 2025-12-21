@@ -27,14 +27,28 @@ const mockNotifications = [
     title: 'New parcel registered',
     message: 'Parcel 12345 has been registered',
     isRead: false,
-    createdAt: '2024-05-01T10:00:00Z'
+    createdAt: '2024-05-01T10:00:00Z',
+    articles: [
+      {
+        id: 101,
+        notificationId: 1,
+        article: '12345'
+      }
+    ]
   },
   {
     id: 2,
     title: 'Parcel departed',
     message: 'Parcel 67890 has departed the warehouse',
     isRead: true,
-    createdAt: '2024-05-02T12:00:00Z'
+    createdAt: '2024-05-02T12:00:00Z',
+    articles: [
+      {
+        id: 102,
+        notificationId: 2,
+        article: '67890'
+      }
+    ]
   }
 ]
 
@@ -109,14 +123,24 @@ describe('notifications store', () => {
 
   describe('create', () => {
     it('creates notification successfully', async () => {
-      const newNotification = { ...mockNotification, id: 3 }
+      const createPayload = {
+        title: 'Delayed parcel',
+        message: 'Parcel 54321 is delayed',
+        isRead: false,
+        articles: [
+          {
+            article: '54321'
+          }
+        ]
+      }
+      const newNotification = { ...createPayload, id: 3, articles: [{ id: 103, notificationId: 3, article: '54321' }] }
       fetchWrapper.post.mockResolvedValue(newNotification)
       const store = useNotificationsStore()
       store.notifications = [...mockNotifications]
 
-      const result = await store.create(mockNotification)
+      const result = await store.create(createPayload)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/notifications`, mockNotification)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/notifications`, createPayload)
       expect(store.notifications).toHaveLength(3)
       expect(store.notifications[2]).toEqual(newNotification)
       expect(result).toEqual(newNotification)
@@ -138,16 +162,27 @@ describe('notifications store', () => {
 
   describe('update', () => {
     it('updates notification successfully', async () => {
-      fetchWrapper.put.mockResolvedValue({})
+      const updatedNotification = {
+        ...mockNotifications[0],
+        title: 'Updated notification',
+        isRead: true,
+        articles: [
+          {
+            id: 201,
+            notificationId: 1,
+            article: 'UPDATED-ARTICLE'
+          }
+        ]
+      }
+      fetchWrapper.put.mockResolvedValue(updatedNotification)
       const store = useNotificationsStore()
       store.notifications = [...mockNotifications]
 
-      const updateData = { title: 'Updated notification', isRead: true }
-      const result = await store.update(1, updateData)
+      const result = await store.update(1, updatedNotification)
 
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/notifications/1`, updateData)
-      expect(store.notifications[0]).toEqual({ ...mockNotifications[0], ...updateData })
-      expect(result).toBe(true)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/notifications/1`, updatedNotification)
+      expect(store.notifications[0]).toEqual(updatedNotification)
+      expect(result).toEqual(updatedNotification)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })

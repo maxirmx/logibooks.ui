@@ -8,6 +8,7 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useNotificationsStore } from '@/stores/notifications.store.js'
+import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 
 const props = defineProps({
   mode: {
@@ -26,7 +27,7 @@ const notificationsStore = useNotificationsStore()
 const isCreate = computed(() => props.mode === 'create')
 
 const notificationForm = ref({
-  article: '',
+  articles: [''],
   number: '',
   terminationDate: '',
   publicationDate: '',
@@ -66,6 +67,11 @@ function getButtonText() {
   return isCreate.value ? 'Создать' : 'Сохранить'
 }
 
+function getArticlesError(errors) {
+  const key = Object.keys(errors || {}).find((k) => k.startsWith('articles'))
+  return key ? errors[key] : null
+}
+
 // Helper to validate ISO-like date strings (YYYY-MM-DD)
 function isValidISODate(value) {
   if (!value && value !== '') return false
@@ -84,7 +90,9 @@ function isValidISODate(value) {
 }
 
 const schema = Yup.object({
-  article: Yup.string().required('Необходимо ввести артикул'),
+  articles: Yup.array()
+    .of(Yup.string().trim().required('Необходимо ввести артикул'))
+    .min(1, 'Необходимо указать хотя бы один артикул'),
   number: Yup.string(),
   terminationDate: Yup.string()
     .required('Необходимо ввести срок действия')
@@ -99,7 +107,10 @@ const schema = Yup.object({
 
 function onSubmit(values, { setErrors }) {
   const payload = {
-    article: values.article?.trim() || '',
+    articles: values.articles
+      ?.map((article) => article?.trim())
+      .filter((article) => article.length > 0)
+      .map((article) => ({ article })) || [],
     number: values.number?.trim() || '',
     terminationDate: values.terminationDate,
     publicationDate: values.publicationDate,
@@ -140,7 +151,9 @@ if (!isCreate.value) {
   const loaded = await notificationsStore.getById(props.notificationId)
   if (loaded) {
     notificationForm.value = {
-      article: loaded.article || '',
+      articles: loaded.articles?.length
+        ? loaded.articles.map((item) => item.article || '')
+        : [''],
       number: loaded.number || '',
       terminationDate: formatDateForInput(loaded.terminationDate),
       publicationDate: formatDateForInput(loaded.publicationDate),
@@ -163,17 +176,13 @@ if (!isCreate.value) {
       :validation-schema="schema"
       v-slot="{ errors, isSubmitting }"
     >
-      <div class="form-group">
-        <label for="article" class="label">Артикул:</label>
-        <Field
-          name="article"
-          id="article"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.article }"
-          placeholder="Артикул"
-        />
-      </div>
+      <FieldArrayWithButtons
+        name="articles"
+        label="Артикул"
+        field-type="input"
+        placeholder="Артикул"
+        :has-error="Boolean(getArticlesError(errors))"
+      />
 
       <div class="form-group">
         <label for="number" class="label">Номер:</label>
@@ -236,7 +245,7 @@ if (!isCreate.value) {
         </button>
       </div>
 
-      <div v-if="errors.article" class="alert alert-danger mt-3 mb-0">{{ errors.article }}</div>
+      <div v-if="getArticlesError(errors)" class="alert alert-danger mt-3 mb-0">{{ getArticlesError(errors) }}</div>
       <div v-if="errors.number" class="alert alert-danger mt-3 mb-0">{{ errors.number }}</div>
       <div v-if="errors.registrationDate" class="alert alert-danger mt-3 mb-0">{{ errors.registrationDate }}</div>
       <div v-if="errors.publicationDate" class="alert alert-danger mt-3 mb-0">{{ errors.publicationDate }}</div>

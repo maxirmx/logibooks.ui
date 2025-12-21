@@ -24,17 +24,19 @@ vi.mock('@/helpers/config.js', () => ({
 const mockNotifications = [
   {
     id: 1,
-    title: 'New parcel registered',
-    message: 'Parcel 12345 has been registered',
-    isRead: false,
-    createdAt: '2024-05-01T10:00:00Z'
+    number: 'ABC-123',
+    registrationDate: '2024-05-01',
+    publicationDate: '2024-05-02',
+    terminationDate: '2024-12-31',
+    articles: [{ id: 11, article: 'Art-1' }]
   },
   {
     id: 2,
-    title: 'Parcel departed',
-    message: 'Parcel 67890 has departed the warehouse',
-    isRead: true,
-    createdAt: '2024-05-02T12:00:00Z'
+    number: 'XYZ-789',
+    registrationDate: '2024-06-10',
+    publicationDate: '2024-06-11',
+    terminationDate: '2025-01-01',
+    articles: [{ id: 22, article: 'Art-2' }]
   }
 ]
 
@@ -142,7 +144,7 @@ describe('notifications store', () => {
       const store = useNotificationsStore()
       store.notifications = [...mockNotifications]
 
-      const updateData = { title: 'Updated notification', isRead: true }
+      const updateData = { number: 'UPDATED', articles: [{ article: 'New-art' }] }
       const result = await store.update(1, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/notifications/1`, updateData)

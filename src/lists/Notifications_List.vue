@@ -35,18 +35,25 @@ function filterNotifications(value, query, item) {
   }
 
   const q = query.toLocaleUpperCase()
-  const firstArticle = notification.articles && notification.articles.length > 0 
-    ? notification.articles[0].article 
-    : ''
-
-  return [
-    firstArticle,
+  
+  // Check if query matches any of the basic fields
+  const basicFields = [
     notification.number,
     formatDate(notification.terminationDate),
     formatDate(notification.publicationDate),
     formatDate(notification.registrationDate)
   ]
-    .some((field) => (field || '').toLocaleUpperCase().includes(q))
+  
+  const matchesBasicFields = basicFields.some((field) => (field || '').toLocaleUpperCase().includes(q))
+  
+  // Check if query matches any article in the articles array
+  const articles = Array.isArray(notification.articles) ? notification.articles : []
+  const matchesArticles = articles.some(articleObj => {
+    const article = articleObj?.article || ''
+    return article.toLocaleUpperCase().includes(q)
+  })
+  
+  return matchesBasicFields || matchesArticles
 }
 
 const headers = [
@@ -55,7 +62,7 @@ const headers = [
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
   { title: 'Срок действия', key: 'terminationDate', sortable: true },
-  { title: 'Артикулы', key: 'articles', sortable: true }
+  { title: 'Артикулы', key: 'articles', sortable: false }
 ]
 
 const formatDate = formatNotificationDate

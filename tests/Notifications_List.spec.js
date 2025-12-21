@@ -197,7 +197,7 @@ describe('Notifications_List.vue', () => {
     expect(wrapper.vm.filterNotifications(null, 'no-match', { raw: notification })).toBe(false)
   })
 
-  it('filters notifications by first article when multiple articles exist', async () => {
+  it('filters notifications by any article when multiple articles exist', async () => {
     const wrapper = mount(NotificationsList, {
       global: {
         stubs: testStubs
@@ -207,8 +207,10 @@ describe('Notifications_List.vue', () => {
     const notification = notificationsRef.value[0]
     // Should match first article
     expect(wrapper.vm.filterNotifications(null, 'article a', { raw: notification })).toBe(true)
-    // Should not match second article since we only filter by first
-    expect(wrapper.vm.filterNotifications(null, 'article b', { raw: notification })).toBe(false)
+    // Should now also match second article since we filter through all articles
+    expect(wrapper.vm.filterNotifications(null, 'article b', { raw: notification })).toBe(true)
+    // Should not match non-existent article
+    expect(wrapper.vm.filterNotifications(null, 'article z', { raw: notification })).toBe(false)
   })
 
   it('handles notifications without articles array', async () => {
@@ -227,6 +229,36 @@ describe('Notifications_List.vue', () => {
       articles: []
     }
     expect(wrapper.vm.filterNotifications(null, 'article', { raw: notificationWithoutArticles })).toBe(false)
+  })
+
+  it('filters through all articles case-insensitively', async () => {
+    // Add notification with multiple articles to test filtering through all
+    notificationsRef.value.push({
+      id: 3,
+      number: 'N-003',
+      registrationDate: '2024-12-17',
+      publicationDate: '2025-01-03',
+      terminationDate: '2025-02-03',
+      articles: [
+        { id: 5, notificationId: 3, article: 'Widget Alpha' },
+        { id: 6, notificationId: 3, article: 'Widget Beta' },
+        { id: 7, notificationId: 3, article: 'Widget Gamma' }
+      ]
+    })
+
+    const wrapper = mount(NotificationsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    const notification = notificationsRef.value[1] // The newly added notification
+    // Should match case-insensitively across all articles
+    expect(wrapper.vm.filterNotifications(null, 'alpha', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, 'BETA', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, 'gamma', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, 'widget', { raw: notification })).toBe(true)
+    expect(wrapper.vm.filterNotifications(null, 'nonexistent', { raw: notification })).toBe(false)
   })
 
   it('renders formatted dates in the table', async () => {

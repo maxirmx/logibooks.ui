@@ -121,7 +121,7 @@ defineExpose({
   openEditDialog,
   deleteNotification,
   formatDate,
-  getRow,
+  getRow
 })
 </script>
 

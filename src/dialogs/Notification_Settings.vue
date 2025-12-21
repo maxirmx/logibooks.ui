@@ -109,7 +109,7 @@ function onSubmit(values, { setErrors }) {
   const payload = {
     articles: values.articles
       ?.map((article) => article?.trim())
-      .filter((article) => article && article.length > 0)
+      .filter((article) => article.length > 0)
       .map((article) => ({ article })) || [],
     number: values.number?.trim() || '',
     terminationDate: values.terminationDate,

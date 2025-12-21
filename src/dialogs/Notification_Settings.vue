@@ -176,14 +176,6 @@ if (!isCreate.value) {
       :validation-schema="schema"
       v-slot="{ errors, isSubmitting }"
     >
-      <FieldArrayWithButtons
-        name="articles"
-        label="Артикул"
-        field-type="input"
-        placeholder="Артикул"
-        :has-error="Boolean(getArticlesError(errors))"
-      />
-
       <div class="form-group">
         <label for="number" class="label">Номер:</label>
         <Field
@@ -228,6 +220,15 @@ if (!isCreate.value) {
           :class="{ 'is-invalid': errors.terminationDate }"
         />
       </div>
+
+      <FieldArrayWithButtons
+        name="articles"
+        label="Артикулы"
+        field-type="input"
+        placeholder="Артикул"
+        :has-error="Boolean(getArticlesError(errors))"
+      />
+
 
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">

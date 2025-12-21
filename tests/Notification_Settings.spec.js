@@ -234,7 +234,7 @@ describe('Notification_Settings.vue', () => {
     await resolveAll()
 
     const labels = wrapper.findAll('label').map((label) => label.text())
-    expect(labels).toContain('Артикул:')
+    expect(labels).toContain('Артикулы:')
     expect(labels).toContain('Срок действия:')
 
     const articleInput = wrapper.find('input#articles_0')

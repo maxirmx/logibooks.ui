@@ -35,9 +35,12 @@ function filterNotifications(value, query, item) {
   }
 
   const q = query.toLocaleUpperCase()
+  const firstArticle = notification.articles && notification.articles.length > 0 
+    ? notification.articles[0].article 
+    : ''
 
   return [
-    notification.article,
+    firstArticle,
     notification.number,
     formatDate(notification.terminationDate),
     formatDate(notification.publicationDate),
@@ -52,11 +55,10 @@ const headers = [
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
   { title: 'Срок действия', key: 'terminationDate', sortable: true },
-  { title: 'Артикулы', key: 'article', sortable: true }
+  { title: 'Артикулы', key: 'articles', sortable: true }
 ]
 
 const formatDate = formatNotificationDate
-
 
 function getRow(item) {
   return item && typeof item === 'object' && 'raw' in item ? item.raw : item
@@ -88,7 +90,7 @@ async function deleteNotification(notification) {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: `Удалить нотификацию "${row.article}"?`
+      content: `Удалить нотификацию "${row.number}"?`
     })
 
     if (confirmed) {
@@ -112,7 +114,7 @@ defineExpose({
   openEditDialog,
   deleteNotification,
   formatDate,
-  getRow
+  getRow,
 })
 </script>
 
@@ -168,6 +170,12 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template v-slot:[`item.articles`]="{ item }">
+          <div v-for="article in item.articles" :key="article.id">
+            {{ article.article }}
+          </div>
+        </template>
+
         <template v-slot:[`item.registrationDate`]="{ item }">
           {{ formatDate(getRow(item)?.registrationDate) }}
         </template>

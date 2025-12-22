@@ -35,28 +35,37 @@ function filterNotifications(value, query, item) {
   }
 
   const q = query.toLocaleUpperCase()
-
-  return [
-    notification.article,
+  
+  // Check if query matches any of the basic fields
+  const basicFields = [
     notification.number,
     formatDate(notification.terminationDate),
     formatDate(notification.publicationDate),
     formatDate(notification.registrationDate)
   ]
-    .some((field) => (field || '').toLocaleUpperCase().includes(q))
+  
+  const matchesBasicFields = basicFields.some((field) => (field || '').toLocaleUpperCase().includes(q))
+  
+  // Check if query matches any article in the articles array
+  const articles = Array.isArray(notification.articles) ? notification.articles : []
+  const matchesArticles = articles.some(articleObj => {
+    const article = articleObj?.article || ''
+    return article.toLocaleUpperCase().includes(q)
+  })
+  
+  return matchesBasicFields || matchesArticles
 }
 
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
-  { title: 'Артикул', key: 'article', sortable: true },
   { title: 'Номер', key: 'number', sortable: true },
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
-  { title: 'Срок действия', key: 'terminationDate', sortable: true }
+  { title: 'Срок действия', key: 'terminationDate', sortable: true },
+  { title: 'Артикулы', key: 'articles', sortable: false }
 ]
 
 const formatDate = formatNotificationDate
-
 
 function getRow(item) {
   return item && typeof item === 'object' && 'raw' in item ? item.raw : item
@@ -88,7 +97,7 @@ async function deleteNotification(notification) {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: `Удалить нотификацию "${row.article}"?`
+      content: `Удалить нотификацию "${row.number}"?`
     })
 
     if (confirmed) {
@@ -168,6 +177,12 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template v-slot:[`item.articles`]="{ item }">
+          <div v-for="article in item.articles" :key="article.id">
+            {{ article.article }}
+          </div>
+        </template>
+
         <template v-slot:[`item.registrationDate`]="{ item }">
           {{ formatDate(getRow(item)?.registrationDate) }}
         </template>

@@ -136,8 +136,7 @@ describe('parcels store', () => {
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels/by-number?number=PN-001`
     )
-    expect(store.items).toEqual([{ id: 1, number: 'PN-001' }])
-    expect(store.totalCount).toBe(1)
+    expect(store.items_bn).toEqual([{ id: 1, number: 'PN-001' }])
   })
 
   it('initializes with default values', () => {

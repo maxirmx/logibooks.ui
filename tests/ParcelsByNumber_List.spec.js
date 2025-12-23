@@ -124,6 +124,6 @@ describe('ParcelsByNumber_List.vue', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Список посылок пуст')
+    expect(wrapper.text()).toContain('Посылок с заданным номером не найдено')
   })
 })

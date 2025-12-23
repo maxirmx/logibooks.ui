@@ -215,6 +215,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   return {
     items,
     items_bn,
+    item,
     loading,
     error,
     totalCount,

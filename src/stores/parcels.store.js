@@ -42,6 +42,14 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   return params
 }
 
+export function buildParcelsNumberParams(number) {
+  const params = new URLSearchParams()
+  if (number) {
+    params.append('number', number)
+  }
+  return params
+}
+
 function buildApproveQueryParams(approvalMode) {
   const params = new URLSearchParams()
   params.append('approveMode', approvalMode)
@@ -86,6 +94,34 @@ export const useParcelsStore = defineStore('parcels', () => {
           hasPreviousPage: response.pagination?.hasPreviousPage || false
         }
       }
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      if (options.updateStore) {
+        loading.value = false
+      }
+    }
+  }
+
+  async function getByNumber(number, options = { updateStore: true }) {
+    const authStore = useAuthStore()
+    const searchNumber = number ?? authStore.parcels_number
+    loading.value = true
+    error.value = null
+    try {
+      const params = buildParcelsNumberParams(searchNumber)
+      const response = await fetchWrapper.get(`${baseUrl}/by-number?${params.toString()}`)
+      const responseItems = Array.isArray(response) ? response : (response?.items || [])
+
+      if (options.updateStore) {
+        items.value = responseItems
+        totalCount.value = responseItems.length
+        hasNextPage.value = false
+        hasPreviousPage.value = false
+      }
+
+      return responseItems
     } catch (err) {
       error.value = err
       throw err
@@ -198,6 +234,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     getById,
     update,
     updateItems,
+    getByNumber,
     generate,
     validate,
     approve,

@@ -128,6 +128,18 @@ describe('parcels store', () => {
     )
   })
 
+  it('fetches parcels by number and updates store', async () => {
+    mockAuthStore.parcels_number = 'PN-001'
+    fetchWrapper.get.mockResolvedValue([{ id: 1, number: 'PN-001' }])
+    const store = useParcelsStore()
+    await store.getByNumber()
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels/by-number?number=PN-001`
+    )
+    expect(store.items).toEqual([{ id: 1, number: 'PN-001' }])
+    expect(store.totalCount).toBe(1)
+  })
+
   it('initializes with default values', () => {
     const store = useParcelsStore()
     expect(store.items).toEqual([])

@@ -16,20 +16,20 @@ const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { items_bn, loading, error } = storeToRefs(parcelsStore)
-const { parcels_number } = storeToRefs(authStore)
+const { parcels_number, parcels_page, parcels_per_page, parcels_sort_by } = storeToRefs(authStore)
 const { alert } = storeToRefs(alertStore)
 
 const runningAction = ref(false)
 
 const headers = [
-  { title: '№', key: 'id', align: 'center', width: '70px' },
-  { title: 'Номер', key: 'number', align: 'center', class: 'col-text' },
-  { title: 'Сделка', key: 'registerDealNumber', align: 'center', class: 'col-text' },
-  { title: 'Описание', key: 'productName', align: 'center', class: 'col-text' },
-  { title: 'Код ТН ВЭД', key: 'tnVed', align: 'center', class: 'col-text' },
-  { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'center', class: 'col-text' },
-  { title: 'Комментарий', key: 'dTagComment', align: 'center', class: 'col-text' },
-  { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', align: 'center', class: 'col-text' }
+  { title: '№', key: 'id', align: 'center', width: '170px' },
+  { title: 'Номер', key: 'number', align: 'center', width: '170px' },
+  { title: 'Сделка', key: 'registerDealNumber', align: 'center', width: '170px' },
+  { title: 'Описание', key: 'productName', align: 'center', minWidth: '300px' },
+  { title: 'Код ТН ВЭД', key: 'tnVed', align: 'center', width: '170px' },
+  { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'center', width: '170px' },
+  { title: 'Комментарий', key: 'dTagComment', align: 'center', width: '170px' },
+  { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', align: 'center', width: '170px' }
 ]
 
 const truncatedKeys = [
@@ -84,8 +84,20 @@ defineExpose({
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">
+          <v-text-field
+            v-model="parcels_number"
+            density="compact"
+            style="min-width: 250px"
+            label="Номер посылки"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            hide-details
+            :disabled="runningAction || loading"
+            @keydown.enter="loadParcelsByNumber"
+          />
           <ActionButton
-            tooltip-text="Загрузить данные"
+            tooltip-text="Найти"
             iconSize="2x"
             icon="fa-solid fa-magnifying-glass"
             :item="null"
@@ -99,21 +111,14 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div class="d-flex mb-2 align-center flex-wrap" style="gap: 10px;">
-      <v-text-field
-        v-model="parcels_number"
-        label="Номер посылки"
-        density="compact"
-        style="min-width: 250px"
-        :disabled="runningAction || loading"
-        @keydown.enter="loadParcelsByNumber"
-      />
-    </div>
-
     <v-card class="table-card">
       <v-data-table
+        v-model:items-per-page="authStore.parcels_per_page"
+        v-model:page="authStore.parcels_page"
         :headers="headers"
         :items="items_bn"
+        v-model:sort-by="authStore.parcels_sort_by"
+        :search="parcels_number"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -123,9 +128,6 @@ defineExpose({
           <TruncateTooltipCell :text="item[key] || ''" />
         </template>
       </v-data-table>
-      <div v-if="!items_bn?.length && !loading" class="text-center m-5">
-        Посылок с заданным номером не найдено
-      </div>
     </v-card>
 
     <div v-if="error" class="text-center m-5">

@@ -108,7 +108,7 @@ function getUserName() {
           <RouterLink to="/registers" class="link">Реестры</RouterLink>
         </v-list-item>
         <v-list-item v-if="authStore.hasLogistRole">
-          <RouterLink to="/parcels/by-number" class="link">Посылки по номеру</RouterLink>
+          <RouterLink to="/parcels/by-number" class="link">Посылки</RouterLink>
         </v-list-item>
         <v-list-item v-if="!authStore.isAdmin">
           <RouterLink :to="'/user/edit/' + authStore.user.id" class="link">Настройки</RouterLink>

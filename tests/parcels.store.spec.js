@@ -137,6 +137,22 @@ describe('parcels store', () => {
       `${apiUrl}/parcels/by-number?number=PN-001`
     )
     expect(store.items_bn).toEqual([{ id: 1, number: 'PN-001' }])
+    expect(store.loading).toBe(false)
+  })
+
+  it('handles getByNumber error', async () => {
+    const error = new Error('Failed to fetch parcels by number')
+    fetchWrapper.get.mockRejectedValue(error)
+
+    const store = useParcelsStore()
+    try {
+      await store.getByNumber()
+    } catch (thrown) {
+      expect(thrown).toBe(error)
+    }
+
+    expect(store.error).toBe(error)
+    expect(store.loading).toBe(false)
   })
 
   it('initializes with default values', () => {

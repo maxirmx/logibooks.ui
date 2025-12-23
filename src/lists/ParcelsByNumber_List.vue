@@ -16,7 +16,6 @@ const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { items_bn, loading, error } = storeToRefs(parcelsStore)
-const { parcels_number, parcels_page, parcels_per_page, parcels_sort_by } = storeToRefs(authStore)
 const { alert } = storeToRefs(alertStore)
 
 const runningAction = ref(false)
@@ -43,7 +42,7 @@ const truncatedKeys = [
 ]
 
 function normalizedNumber() {
-  return parcels_number.value?.trim() || ''
+  return authStore.parcels_number?.trim() || ''
 }
 
 async function loadParcelsByNumber() {
@@ -85,7 +84,7 @@ defineExpose({
         </div>
         <div class="header-actions header-actions-group">
           <v-text-field
-            v-model="parcels_number"
+            v-model="authStore.parcels_number"
             density="compact"
             style="min-width: 250px"
             label="Номер посылки"
@@ -118,7 +117,7 @@ defineExpose({
         :headers="headers"
         :items="items_bn"
         v-model:sort-by="authStore.parcels_sort_by"
-        :search="parcels_number"
+        :search="authStore.parcels_number"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"

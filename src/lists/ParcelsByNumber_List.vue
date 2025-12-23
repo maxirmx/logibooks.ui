@@ -17,6 +17,7 @@ const alertStore = useAlertStore()
 
 const { items_bn, loading, error } = storeToRefs(parcelsStore)
 const { alert } = storeToRefs(alertStore)
+const { parcels_number } = storeToRefs(authStore)
 
 const runningAction = ref(false)
 
@@ -42,7 +43,7 @@ const truncatedKeys = [
 ]
 
 function normalizedNumber() {
-  return authStore.parcels_number?.trim() || ''
+  return parcels_number.value?.trim() || ''
 }
 
 async function loadParcelsByNumber() {

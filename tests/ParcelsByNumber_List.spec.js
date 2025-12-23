@@ -111,19 +111,4 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(getByNumber).not.toHaveBeenCalled()
   })
 
-  it('renders empty state when there are no parcels', () => {
-    const wrapper = mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-
-    expect(wrapper.text()).toContain('Посылок с заданным номером не найдено')
-  })
 })

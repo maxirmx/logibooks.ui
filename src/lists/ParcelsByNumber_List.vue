@@ -15,7 +15,7 @@ const parcelsStore = useParcelsStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
-const { items, loading, error } = storeToRefs(parcelsStore)
+const { items_bn, loading, error } = storeToRefs(parcelsStore)
 const { parcels_number } = storeToRefs(authStore)
 const { alert } = storeToRefs(alertStore)
 
@@ -24,12 +24,12 @@ const runningAction = ref(false)
 const headers = [
   { title: '№', key: 'id', align: 'center', width: '70px' },
   { title: 'Номер', key: 'number', align: 'center', class: 'col-text' },
-  { title: '№ сделки', key: 'registerDealNumber', align: 'center', class: 'col-text' },
-  { title: 'Товар', key: 'productName', align: 'center', class: 'col-text' },
-  { title: 'ТН ВЭД', key: 'tnVed', align: 'center', class: 'col-text' },
+  { title: 'Сделка', key: 'registerDealNumber', align: 'center', class: 'col-text' },
+  { title: 'Описание', key: 'productName', align: 'center', class: 'col-text' },
+  { title: 'Код ТН ВЭД', key: 'tnVed', align: 'center', class: 'col-text' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'center', class: 'col-text' },
-  { title: 'Комментарий ДТЭГ/ПТДЭГ', key: 'dTagComment', align: 'center', class: 'col-text' },
-  { title: 'Предыдущий комментарий', key: 'previousDTagComment', align: 'center', class: 'col-text' }
+  { title: 'Комментарий', key: 'dTagComment', align: 'center', class: 'col-text' },
+  { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', align: 'center', class: 'col-text' }
 ]
 
 const truncatedKeys = [
@@ -76,9 +76,9 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="parcels-by-number-list">
+  <div class="settings table-4" data-testid="parcels-by-number-list">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Посылки по номеру</h1>
+      <h1 class="primary-heading">Поиск посылки по номеру</h1>
       <div style="display:flex; align-items:center;">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -113,7 +113,7 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table
         :headers="headers"
-        :items="items"
+        :items="items_bn"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -123,8 +123,8 @@ defineExpose({
           <TruncateTooltipCell :text="item[key] || ''" />
         </template>
       </v-data-table>
-      <div v-if="!items?.length && !loading" class="text-center m-5">
-        Список посылок пуст
+      <div v-if="!items_bn?.length && !loading" class="text-center m-5">
+        Посылок с заданным номером не найдено
       </div>
     </v-card>
 

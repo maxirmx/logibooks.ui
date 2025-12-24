@@ -113,7 +113,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     try {
       const params = buildParcelsNumberParams(searchNumber)
       const response = await fetchWrapper.get(`${baseUrl}/by-number?${params.toString()}`)
-      items_bn.value =  response  || []
+      items_bn.value = response || []
     } catch (err) {
       error.value = err
       throw err

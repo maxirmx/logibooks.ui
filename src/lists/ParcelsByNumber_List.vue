@@ -76,7 +76,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-4" data-testid="parcels-by-number-list">
+  <div class="settings table-3" data-testid="parcels-by-number-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Поиск посылки по номеру</h1>
       <div style="display:flex; align-items:center;">

@@ -9,6 +9,14 @@ import { ref } from 'vue'
 import ParcelsByNumberList from '@/lists/ParcelsByNumber_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
+vi.mock('@/router', () => ({
+  default: {
+    push: vi.fn()
+  }
+}))
+
+import router from '@/router'
+
 const mockItems = ref([])
 const mockLoading = ref(false)
 const mockError = ref(null)
@@ -51,6 +59,7 @@ describe('ParcelsByNumber_List.vue', () => {
     mockLoading.value = false
     mockError.value = null
     parcelsNumber.value = ''
+    router.push.mockClear()
   })
 
   const actionButtonStub = {
@@ -90,6 +99,77 @@ describe('ParcelsByNumber_List.vue', () => {
     await wrapper.find('[data-testid="parcels-by-number-search"]').trigger('click')
 
     expect(getByNumber).toHaveBeenCalledWith('P-123')
+  })
+
+  it('routes to register view when register deal number is clicked', async () => {
+    mockItems.value = [
+      {
+        id: 42,
+        registerId: 7,
+        registerDealNumber: 'D-777',
+        number: 'N-777',
+        productName: 'Product',
+        tnVed: 'TN',
+        dTag: 'DT',
+        dTagComment: 'Comment',
+        previousDTagComment: 'Prev'
+      }
+    ]
+
+    const wrapper = mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+
+    await wrapper.find('[data-testid="parcels-by-number-cell-registerDealNumber-42"]').trigger('click')
+
+    expect(router.push).toHaveBeenCalledWith('/register/edit/7')
+  })
+
+  it('routes to parcel view when any other column is clicked', async () => {
+    mockItems.value = [
+      {
+        id: 11,
+        registerId: 4,
+        registerDealNumber: 'D-004',
+        number: 'N-004',
+        productName: 'Product B',
+        tnVed: 'TN2',
+        dTag: 'DT2',
+        dTagComment: 'Comment2',
+        previousDTagComment: 'Prev2'
+      }
+    ]
+
+    const wrapper = mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+
+    await wrapper.find('[data-testid="parcels-by-number-cell-number-11"]').trigger('click')
+
+    expect(router.push).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: {
+        id: 11,
+        registerId: 4
+      },
+      query: {}
+    })
   })
 
   it('shows alert when number is empty', async () => {

@@ -8,8 +8,11 @@ import { storeToRefs } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 
 const parcelsStore = useParcelsStore()
 const authStore = useAuthStore()
@@ -41,6 +44,40 @@ const truncatedKeys = [
   'dTagComment',
   'previousDTagComment'
 ]
+
+const clickableColumns = [
+  { key: 'id', useTruncate: false },
+  ...truncatedKeys.map((key) => ({ key, useTruncate: true }))
+]
+
+function getRegisterId(item) {
+  return item?.rgisterId ?? item?.registerId
+}
+
+function openRegister(item) {
+  const registerId = getRegisterId(item)
+  if (!registerId) return
+  router.push(`/register/edit/${registerId}`)
+}
+
+function openParcel(item) {
+  const registerId = getRegisterId(item)
+  if (!registerId || !item?.id) return
+  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId })
+}
+
+function handleCellClick(item, key) {
+    openRegister(item)
+  if (key === 'registerDealNumber') {
+    openRegister(item)
+  } else {
+    openParcel(item)
+  }
+}
+
+function getCellClass(useTruncate) {
+  return useTruncate ? 'truncated-cell clickable-cell' : 'clickable-cell'
+}
 
 function normalizedNumber() {
   return parcels_number.value?.trim() || ''
@@ -121,8 +158,18 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
-        <template v-for="key in truncatedKeys" :key="key" #[`item.${key}`]="{ item }">
-          <TruncateTooltipCell :text="item[key] || ''" />
+        <template v-for="column in clickableColumns" :key="column.key" #[`item.${column.key}`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="column.useTruncate ? '' : item[column.key]"
+            :cell-class="getCellClass(column.useTruncate)"
+            :data-testid="`parcels-by-number-cell-${column.key}-${item.id}`"
+            @click="() => handleCellClick(item, column.key)"
+          >
+            <template v-if="column.useTruncate">
+              <TruncateTooltipCell :text="item[column.key] || ''" />
+            </template>
+          </ClickableCell>
         </template>
       </v-data-table>
     </v-card>

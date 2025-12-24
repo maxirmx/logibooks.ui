@@ -254,6 +254,12 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/parcels/by-number',
+      name: 'Посылки по номеру',
+      component: () => import('@/views/ParcelsByNumber_View.vue'),
+      meta: { reqLogistOrSrLogist: true }
+    },
+    {
       path: '/registers/:id/parcels',
       name: 'Посылки',
       component: () => import('@/views/Parcels_View.vue'),

@@ -89,8 +89,6 @@ defineExpose({
             density="compact"
             class="parcels-number-input"
             label="Номер посылки"
-            item-title="title"
-            item-value="value"
             variant="outlined"
             hide-details
             :disabled="runningAction || loading"

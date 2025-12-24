@@ -57,7 +57,7 @@ function getRegisterId(item) {
 function openRegister(item) {
   const registerId = getRegisterId(item)
   if (!registerId) return
-  router.push(`/register/edit/${registerId}`)
+  router.push(`/registers/${registerId}/parcels`)
 }
 
 function openParcel(item) {
@@ -67,11 +67,13 @@ function openParcel(item) {
 }
 
 function handleCellClick(item, key) {
-  if (key === 'registerDealNumber') {
     openRegister(item)
-  } else {
-    openParcel(item)
-  }
+//  if (key === 'registerDealNumber') {
+//    openRegister(item)
+//  } else {
+//    openParcel(item)
+//  }
+
 }
 
 function getCellClass(useTruncate) {

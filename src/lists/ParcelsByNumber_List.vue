@@ -89,8 +89,6 @@ defineExpose({
             density="compact"
             class="parcels-number-input"
             label="Номер посылки"
-            item-title="title"
-            item-value="value"
             variant="outlined"
             hide-details
             :disabled="runningAction || loading"
@@ -118,7 +116,6 @@ defineExpose({
         :headers="headers"
         :items="items_bn"
         v-model:sort-by="authStore.parcels_sort_by"
-        :search="authStore.parcels_number"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"

@@ -130,7 +130,7 @@ describe('ParcelsByNumber_List.vue', () => {
 
     await wrapper.find('[data-testid="parcels-by-number-cell-registerDealNumber-42"]').trigger('click')
 
-    expect(router.push).toHaveBeenCalledWith('/registers/7/parcels')
+    expect(router.push).toHaveBeenCalledWith('/register/edit/7')
   })
 
   it('routes to parcel view when any other column is clicked', async () => {
@@ -163,9 +163,10 @@ describe('ParcelsByNumber_List.vue', () => {
     await wrapper.find('[data-testid="parcels-by-number-cell-number-11"]').trigger('click')
 
     expect(router.push).toHaveBeenCalledWith({
-      name: 'Посылки',
+      name: 'Редактирование посылки',
       params: {
-        id: 4,
+        id: 11,
+        registerId: 4
       },
       query: {}
     })

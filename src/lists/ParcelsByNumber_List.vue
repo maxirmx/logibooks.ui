@@ -79,7 +79,7 @@ defineExpose({
   <div class="settings table-3" data-testid="parcels-by-number-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Поиск посылки по номеру</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-row">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -87,7 +87,7 @@ defineExpose({
           <v-text-field
             v-model="authStore.parcels_number"
             density="compact"
-            style="min-width: 250px"
+            class="parcels-number-input"
             label="Номер посылки"
             item-title="title"
             item-value="value"
@@ -143,4 +143,15 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.header-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.parcels-number-input {
+  min-width: 250px;
+}
+
 </style>

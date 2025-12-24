@@ -23,7 +23,7 @@ const alertClear = vi.fn()
 
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => ({
-    items: mockItems,
+    items_bn: mockItems,
     loading: mockLoading,
     error: mockError,
     getByNumber

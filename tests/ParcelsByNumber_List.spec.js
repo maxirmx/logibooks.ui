@@ -105,7 +105,7 @@ describe('ParcelsByNumber_List.vue', () => {
     mockItems.value = [
       {
         id: 42,
-        rgisterId: 7,
+        registerId: 7,
         registerDealNumber: 'D-777',
         number: 'N-777',
         productName: 'Product',

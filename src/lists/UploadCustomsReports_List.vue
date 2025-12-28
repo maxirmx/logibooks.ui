@@ -6,6 +6,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -15,6 +16,7 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import router from '@/router'
 
 const decsStore = useDecsStore()
 const alertStore = useAlertStore()
@@ -154,6 +156,18 @@ async function handleDeleteReport(report) {
     runningAction.value = false
   }
 }
+
+function viewReportRows(report) {
+  const query = {}
+  if (report?.masterInvoice) {
+    query.masterInvoice = report.masterInvoice
+  }
+
+  router.push({
+    path: `/customs-reports/${report.id}/rows`,
+    query
+  })
+}
 </script>
 
 <template>
@@ -216,16 +230,28 @@ async function handleDeleteReport(report) {
               :data-column-key="col.key"
             >
               <!-- File / text columns with conditional truncation tooltip -->
-              <TruncateTooltipCell
-                v-if="['fileName','masterInvoice','errMsg'].includes(col.key)"
-                :text="item[col.key]"
-              />
+              <template v-if="['fileName','masterInvoice','errMsg'].includes(col.key)">
+                <ClickableCell :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                  <template #default>
+                    <TruncateTooltipCell :text="item[col.key]" />
+                  </template>
+                </ClickableCell>
+              </template>
+
+              <!-- ID column - clickable cell to view rows -->
+              <template v-else-if="col.key === 'id'">
+                <ClickableCell :item="item" :display-value="item.id" cell-class="truncated-cell clickable-cell" :data-testid="'report-id-link-' + item.id" @click="() => viewReportRows(item)" />
+              </template>
 
               <!-- Error count with breakdown tooltip -->
               <template v-else-if="col.key === 'errorCount'">
                 <v-tooltip v-if="item.errorCount" location="top" open-delay="150">
                   <template #activator="{ props }">
-                    <span v-bind="props">{{ item.errorCount }}</span>
+                    <ClickableCell v-bind="props" :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                      <template #default>
+                        {{ item.errorCount }}
+                      </template>
+                    </ClickableCell>
                   </template>
                   <div>
                     <div v-for="e in item.errorsBreakdown" :key="e.key">
@@ -239,6 +265,12 @@ async function handleDeleteReport(report) {
               <!-- Actions column -->
               <template v-else-if="col.key === 'actions'">
                 <div class="actions-container">
+                  <ActionButton 
+                    :item="item" 
+                    icon="fa-solid fa-list" 
+                    tooltip-text="Подробная информация" 
+                    @click="viewReportRows(item)" 
+                    :disabled="loading || runningAction" />
                   <ActionButton
                     :item="item"
                     icon="fa-solid fa-trash-can"
@@ -250,9 +282,13 @@ async function handleDeleteReport(report) {
                 </div>
               </template>
 
-              <!-- Fallback for all other columns -->
+              <!-- Fallback for all other columns - make clickable -->
               <template v-else>
-                {{ item[col.key] }}
+                <ClickableCell :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                  <template #default>
+                    {{ item[col.key] }}
+                  </template>
+                </ClickableCell>
               </template>
             </td>
           </tr>
@@ -278,4 +314,5 @@ async function handleDeleteReport(report) {
 .col-text {
   min-width: 140px;
 }
+
 </style>

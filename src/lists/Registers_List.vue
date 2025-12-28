@@ -471,7 +471,8 @@ defineExpose({
         label="Поиск по любой информации о реестре"
         variant="solo"
         hide-details
-        :disabled="runningAction || loading || isInitializing"
+        :loading="loading || isInitializing"
+        :disabled="runningAction || isInitializing"
       />
     </div>
 

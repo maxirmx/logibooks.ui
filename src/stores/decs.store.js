@@ -70,7 +70,7 @@ export const useDecsStore = defineStore('decs', () => {
       const queryParams = new URLSearchParams({
         page: authStore.customsreportrows_page.toString(),
         pageSize: authStore.customsreportrows_per_page.toString(),
-        sortBy: authStore.customsreportrows_sort_by?.[0]?.key || 'rowNumber',
+        sortBy: authStore.customsreportrows_sort_by?.[0]?.key || 'id',
         sortOrder: authStore.customsreportrows_sort_by?.[0]?.order || 'asc'
       })
 

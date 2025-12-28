@@ -3,13 +3,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, computed, watch } from 'vue'
+import { onMounted, computed, watch, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
+import PaginationFooter from '@/components/PaginationFooter.vue'
 
 const props = defineProps({
   reportId: {
@@ -22,8 +23,14 @@ const decsStore = useDecsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reportRows, loading, error, totalCount } = storeToRefs(decsStore)
-const { alert } = storeToRefs(alertStore)
+const decsRefs = storeToRefs(decsStore)
+const reportRows = decsRefs.reportRows || ref([])
+const loading = decsRefs.loading || ref(false)
+const error = decsRefs.error || ref(null)
+const totalCount = decsRefs.totalCount || ref(0)
+
+const alertRefs = storeToRefs(alertStore)
+const alert = alertRefs.alert || ref(null)
 
 onMounted(async () => {
   await decsStore.getReportRows(props.reportId)
@@ -42,18 +49,36 @@ watch([
 const TRUNCATABLE_COLUMNS = []
 
 const headers = [
+  { title: 'Номер', key: 'id', align: 'start', width: '50px' },
   { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-  { title: '№ п/п', key: 'rowNumber', align: 'start', width: '120px' },
+  { title: '№ п/п ДТЭГ/ПТДЭГ', key: 'rowNumber', align: 'start', width: '120px' },
   { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
   { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '280px' },
 ]
+
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / authStore.customsreportrows_per_page)))
+
+const pageOptions = computed(() => {
+  const mp = maxPage.value
+  const current = authStore.customsreportrows_page || 1
+  if (mp <= 200) {
+    return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
+  }
+
+  const set = new Set()
+  for (let i = 1; i <= 10; i++) set.add(i)
+  for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
+  for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
+
+  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
+})
 
 // Navigation handled by parent view; no local back action
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Строки отчёта №{{ reportId }}</h1>
       <div style="display:flex; align-items:center;">
@@ -78,7 +103,7 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
         item-value="id"
-        fixed-header
+        hide-default-footer
       >
         <!-- Row-level slot -->
         <template #item="{ item, columns }">
@@ -106,6 +131,16 @@ const headers = [
           </tr>
         </template>
       </v-data-table-server>
+      <div class="v-data-table-footer">
+        <PaginationFooter
+          v-model:items-per-page="authStore.customsreportrows_per_page"
+          v-model:page="authStore.customsreportrows_page"
+          :items-per-page-options="itemsPerPageOptions"
+          :page-options="pageOptions"
+          :total-count="totalCount"
+          :max-page="maxPage"
+        />
+      </div>
     </v-card>
 
     <div v-if="error" class="text-center m-5">
@@ -117,7 +152,3 @@ const headers = [
     </div>
   </div>
 </template>
-
-<style scoped>
-@import '@/assets/styles/scrollable-table.css';
-</style>

@@ -27,6 +27,7 @@ let decsStoreMock
 let alertStoreMock
 let authStoreMock
 const confirmMock = vi.hoisted(() => vi.fn())
+const routerPushMock = vi.hoisted(() => vi.fn())
 
 const testStubs = {
   ...defaultGlobalStubs,
@@ -100,6 +101,12 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
+}))
+
+vi.mock('@/router', () => ({
+  default: {
+    push: routerPushMock
+  }
 }))
 
 describe('UploadCustomsReports_List.vue', () => {
@@ -476,5 +483,29 @@ describe('UploadCustomsReports_List.vue', () => {
 
     expect(wrapper.find('[data-column-key="actions"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="reports-delete-button"]').exists()).toBe(false)
+  })
+
+  it('navigates to rows view when report ID is clicked', async () => {
+    reportsRef.value = [
+      {
+        id: 7,
+        success: true,
+        fileName: 'report.xlsx'
+      }
+    ]
+
+    const wrapper = mount(UploadCustomsReportsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const idLink = wrapper.find('[data-testid="report-id-link-7"]')
+    expect(idLink.exists()).toBe(true)
+
+    await idLink.trigger('click')
+    expect(routerPushMock).toHaveBeenCalledWith('/customs-reports/7/rows')
   })
 })

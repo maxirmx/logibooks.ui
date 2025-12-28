@@ -132,7 +132,7 @@ describe('decs.store', () => {
     await expect(promise).resolves.toBeUndefined()
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs/5/rows')
+    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs/5/rows?page=1&pageSize=100&sortBy=rowNumber&sortOrder=asc')
     expect(store.reportRows).toEqual(rows)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()

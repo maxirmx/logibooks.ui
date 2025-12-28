@@ -3,14 +3,13 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
-import router from '@/router'
 
 const props = defineProps({
   reportId: {
@@ -23,64 +22,62 @@ const decsStore = useDecsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reportRows, loading, error } = storeToRefs(decsStore)
+const { reportRows, loading, error, totalCount } = storeToRefs(decsStore)
 const { alert } = storeToRefs(alertStore)
 
 onMounted(async () => {
   await decsStore.getReportRows(props.reportId)
 })
 
+// Watch pagination/sort changes and reload rows
+watch([
+  () => authStore.customsreportrows_page,
+  () => authStore.customsreportrows_per_page,
+  () => authStore.customsreportrows_sort_by
+], async () => {
+  await decsStore.getReportRows(props.reportId)
+})
+
 // Column keys that should use TruncateTooltipCell
-const TRUNCATABLE_COLUMNS = ['trackingNumber', 'decision', 'status', 'errorMessage']
+const TRUNCATABLE_COLUMNS = []
 
 const headers = [
-  { title: '№ строки', key: 'rowNumber', align: 'center', width: '100px' },
-  { title: 'Трек-номер', key: 'trackingNumber', align: 'center', class: 'col-text' },
-  { title: 'Решение', key: 'decision', align: 'center', class: 'col-text' },
-  { title: 'ТН ВЭД', key: 'tnVed', align: 'center' },
-  { title: 'Процедура', key: 'customsProcedure', align: 'center' },
-  { title: 'Статус', key: 'status', align: 'center', class: 'col-text' },
-  { title: 'Ошибка', key: 'errorMessage', align: 'center', class: 'col-text' }
+  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
+  { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
+  { title: '№ п/п', key: 'rowNumber', align: 'start', width: '120px' },
+  { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
+  { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '280px' },
 ]
 
-function goBack() {
-  router.push('/customs-reports')
-}
+// Navigation handled by parent view; no local back action
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Строки отчёта №{{ reportId }}</h1>
       <div style="display:flex; align-items:center;">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group">
-          <button
-            class="btn btn-secondary"
-            @click="goBack"
-            :disabled="loading"
-          >
-            <i class="fa-solid fa-arrow-left"></i> Назад к списку отчётов
-          </button>
-        </div>
+        
       </div>
     </div>
     <hr class="hr" />
 
     <v-card class="table-card">
-      <v-data-table
+      <v-data-table-server
         v-model:items-per-page="authStore.customsreportrows_per_page"
         :items-per-page-options="itemsPerPageOptions"
         v-model:page="authStore.customsreportrows_page"
         v-model:sort-by="authStore.customsreportrows_sort_by"
         :headers="headers"
         :items="reportRows"
+        :items-length="totalCount"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
-        item-value="rowNumber"
+        item-value="id"
         fixed-header
       >
         <!-- Row-level slot -->
@@ -108,7 +105,7 @@ function goBack() {
             </td>
           </tr>
         </template>
-      </v-data-table>
+      </v-data-table-server>
     </v-card>
 
     <div v-if="error" class="text-center m-5">
@@ -123,9 +120,4 @@ function goBack() {
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
-
-/* Minimal width for truncation columns */
-.col-text {
-  min-width: 140px;
-}
 </style>

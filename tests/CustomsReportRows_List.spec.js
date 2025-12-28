@@ -48,6 +48,28 @@ const testStubs = {
         <slot></slot>
       </div>
     `
+  },
+  'v-data-table-server': {
+    inheritAttrs: false,
+    emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
+    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
+    template: `
+      <div class="v-data-table-server-stub" data-testid="v-data-table">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <template v-if="$slots.item">
+            <slot name="item" :item="item" :columns="headers"></slot>
+          </template>
+          <template v-else>
+            <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+              <slot :name="'item.' + header.key" :item="item">
+                {{ item[header.key] }}
+              </slot>
+            </div>
+          </template>
+        </div>
+        <slot></slot>
+      </div>
+    `
   }
 }
 
@@ -180,22 +202,7 @@ describe('CustomsReportRows_List.vue', () => {
     expect(rows).toHaveLength(2)
   })
 
-  it('navigates back when back button is clicked', async () => {
-    const wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const backButton = wrapper.find('button.btn-secondary')
-    expect(backButton.exists()).toBe(true)
-
-    await backButton.trigger('click')
-    expect(routerPushMock).toHaveBeenCalledWith('/customs-reports')
-  })
+  // Back navigation handled by parent view; no local back button to test
 
   it('displays loading indicator when loading', async () => {
     loadingRef.value = true

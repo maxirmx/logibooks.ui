@@ -28,6 +28,7 @@ describe('decs.store', () => {
   it('initializes with default state', () => {
     const store = useDecsStore()
     expect(store.reports).toEqual([])
+    expect(store.reportRows).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -116,5 +117,38 @@ describe('decs.store', () => {
     expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/decs/999')
     expect(store.loading).toBe(false)
     expect(store.error).toEqual(err)
+  })
+
+  it('fetches report rows using fetchWrapper.get', async () => {
+    const store = useDecsStore()
+    const rows = [
+      { rowNumber: 1, trackingNumber: 'TRACK001', decision: 'Выпуск разрешён' },
+      { rowNumber: 2, trackingNumber: 'TRACK002', decision: 'Запрет выпуска' }
+    ]
+    fetchWrapper.get.mockResolvedValue(rows)
+
+    const promise = store.getReportRows(5)
+    expect(store.loading).toBe(true)
+    await expect(promise).resolves.toBeUndefined()
+
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/decs/5/rows')
+    expect(store.reportRows).toEqual(rows)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+  })
+
+  it('stores error when getReportRows fails', async () => {
+    const store = useDecsStore()
+    const error = new Error('fetch rows failed')
+    fetchWrapper.get.mockRejectedValue(error)
+
+    const promise = store.getReportRows(10)
+    expect(store.loading).toBe(true)
+    await expect(promise).resolves.toBeUndefined()
+
+    expect(store.error).toBe(error)
+    expect(store.reportRows).toEqual([])
+    expect(store.loading).toBe(false)
   })
 })

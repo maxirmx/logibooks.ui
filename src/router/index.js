@@ -206,6 +206,15 @@ const router = createRouter({
       meta: { reqAdminOrSrLogist: true }
     },
     {
+      path: '/customs-reports/:id/rows',
+      name: 'Строки отчёта о выпуске',
+      component: () => import('@/views/CustomsReportRows_View.vue'),
+      props: (route) => ({
+        reportId: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
       path: '/feacn/prefix/create',
       name: 'Создание префикса ТН ВЭД',
       component: () => import('@/views/FeacnLocalPrefix_CreateView.vue'),

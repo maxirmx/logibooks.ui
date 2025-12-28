@@ -6,7 +6,7 @@
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
 
 const props = defineProps({
-  id: {
+  reportId: {
     type: Number,
     required: true
   }
@@ -14,5 +14,5 @@ const props = defineProps({
 </script>
 
 <template>
-  <CustomsReportRowsList :report-id="props.id" />
+  <CustomsReportRowsList :report-id="props.reportId" />
 </template>

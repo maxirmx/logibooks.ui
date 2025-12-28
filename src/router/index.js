@@ -210,7 +210,7 @@ const router = createRouter({
       name: 'Строки отчёта о выпуске',
       component: () => import('@/views/CustomsReportRows_View.vue'),
       props: (route) => ({
-        id: Number(route.params.id)
+        reportId: Number(route.params.id)
       }),
       meta: { reqAdminOrSrLogist: true }
     },

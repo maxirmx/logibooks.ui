@@ -30,6 +30,9 @@ onMounted(async () => {
   await decsStore.getReportRows(props.reportId)
 })
 
+// Column keys that should use TruncateTooltipCell
+const TRUNCATABLE_COLUMNS = ['trackingNumber', 'decision', 'status', 'errorMessage']
+
 const headers = [
   { title: '№ строки', key: 'rowNumber', align: 'center', width: '100px' },
   { title: 'Трек-номер', key: 'trackingNumber', align: 'center', class: 'col-text' },
@@ -94,7 +97,7 @@ function goBack() {
             >
               <!-- Text columns with conditional truncation tooltip -->
               <TruncateTooltipCell
-                v-if="['trackingNumber', 'decision', 'status', 'errorMessage'].includes(col.key)"
+                v-if="TRUNCATABLE_COLUMNS.includes(col.key)"
                 :text="item[col.key]"
               />
 

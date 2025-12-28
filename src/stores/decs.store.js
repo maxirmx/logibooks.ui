@@ -11,6 +11,7 @@ const baseUrl = `${apiUrl}/decs`
 
 export const useDecsStore = defineStore('decs', () => {
   const reports = ref([])
+  const reportRows = ref([])
   const loading = ref(false)
   const error = ref(null)
 
@@ -57,12 +58,26 @@ export const useDecsStore = defineStore('decs', () => {
     }
   }
 
+  async function getReportRows(id) {
+    loading.value = true
+    error.value = null
+    try {
+      reportRows.value = await fetchWrapper.get(`${baseUrl}/${id}/rows`)
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     reports,
+    reportRows,
     loading,
     error,
     upload,
     getReports,
-    remove
+    remove,
+    getReportRows
   }
 })

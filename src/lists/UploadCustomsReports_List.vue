@@ -15,6 +15,7 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import router from '@/router'
 
 const decsStore = useDecsStore()
 const alertStore = useAlertStore()
@@ -154,6 +155,10 @@ async function handleDeleteReport(report) {
     runningAction.value = false
   }
 }
+
+function viewReportRows(report) {
+  router.push(`/customs-reports/${report.id}/rows`)
+}
 </script>
 
 <template>
@@ -221,6 +226,18 @@ async function handleDeleteReport(report) {
                 :text="item[col.key]"
               />
 
+              <!-- ID column - clickable link to view rows -->
+              <template v-else-if="col.key === 'id'">
+                <a
+                  href="#"
+                  @click.prevent="viewReportRows(item)"
+                  class="report-id-link"
+                  :data-testid="`report-id-link-${item.id}`"
+                >
+                  {{ item.id }}
+                </a>
+              </template>
+
               <!-- Error count with breakdown tooltip -->
               <template v-else-if="col.key === 'errorCount'">
                 <v-tooltip v-if="item.errorCount" location="top" open-delay="150">
@@ -277,5 +294,16 @@ async function handleDeleteReport(report) {
 /* Minimal width for truncation columns */
 .col-text {
   min-width: 140px;
+}
+
+/* Report ID link styling */
+.report-id-link {
+  color: #1976d2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.report-id-link:hover {
+  text-decoration: underline;
 }
 </style>

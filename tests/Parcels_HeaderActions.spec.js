@@ -50,7 +50,7 @@ function setupStores() {
   }
 
   stores.registers = {
-    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1' },
+    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1', customsProcedureId: 1 },
     getById: vi.fn().mockResolvedValue(),
     generate: vi.fn(),
     download: vi.fn(),
@@ -66,6 +66,11 @@ function setupStores() {
   stores.parcelStatuses = {
     ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: []
+  }
+
+  stores.customsProcedures = {
+    procedures: ref([{ id: 1, code: 10 }]),
+    ensureLoaded: vi.fn().mockResolvedValue()
   }
 
   stores.parcelCheckStatuses = {
@@ -145,6 +150,8 @@ vi.mock('pinia', async () => {
           }
         case stores.alert:
           return { alert: stores.alert.alert }
+        case stores.customsProcedures:
+          return { procedures: stores.customsProcedures.procedures }
         default:
           return actualStoreToRefs(store)
       }
@@ -162,6 +169,11 @@ vi.mock('@/stores/registers.store.js', () => ({
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => stores.parcelStatuses
+}))
+
+vi.mock('@/stores/customs.procedures.store.js', () => ({
+  useCustomsProceduresStore: () => stores.customsProcedures,
+  CustomsProcedureCodes: { Reimport: 60 }
 }))
 
 vi.mock('@/stores/key.words.store.js', () => ({
@@ -331,5 +343,37 @@ describe.each([
 
     wrapper.unmount()
     expect(registerHeaderActionsMock.stop).toHaveBeenCalled()
+  })
+
+  it('shows previousDTagComment and hides feacnLookup for reimport customs procedures', async () => {
+    stores.registers.item.customsProcedureId = 2
+    stores.customsProcedures.procedures.value = [{ id: 2, code: 60 }]
+
+    const wrapper = mount(Component, {
+      props: { registerId: 4 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
+    expect(headerKeys).toContain('previousDTagComment')
+    expect(headerKeys).not.toContain('feacnLookup')
+  })
+
+  it('shows feacnLookup and hides previousDTagComment for non-reimport customs procedures', async () => {
+    stores.registers.item.customsProcedureId = 3
+    stores.customsProcedures.procedures.value = [{ id: 3, code: 10 }]
+
+    const wrapper = mount(Component, {
+      props: { registerId: 5 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
+    expect(headerKeys).toContain('feacnLookup')
+    expect(headerKeys).not.toContain('previousDTagComment')
   })
 })

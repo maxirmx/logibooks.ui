@@ -6,6 +6,7 @@
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { CustomsProcedureCodes, useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -53,6 +54,7 @@ const props = defineProps({
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
+const customsProceduresStore = useCustomsProceduresStore()
 const parcelStatusStore = useParcelStatusesStore()
 const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
@@ -63,6 +65,7 @@ const transportationTypesStore = useTransportationTypesStore()
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+const { procedures } = storeToRefs(customsProceduresStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const {
@@ -82,6 +85,12 @@ const {
 const dataTableRef = ref(null)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const isReimportProcedure = computed(() => {
+  const procedureId = registersStore.item?.customsProcedureId
+  if (!procedureId) return false
+  const procedure = procedures.value?.find((proc) => proc.id === procedureId)
+  return Number(procedure?.code) === CustomsProcedureCodes.Reimport
+})
 
 // Provide page options for a select control. For very large page counts, return a compact set
 const pageOptions = computed(() => {
@@ -241,6 +250,9 @@ onMounted(async () => {
 
   // DEC_REPORT_UPLOADED_EVENT listener removed per request
 
+    await customsProceduresStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
@@ -313,7 +325,12 @@ const checkStatusOptionsFc = computed(() => [
 ])
 
 const headers = computed(() => {
-  return [
+  // Always keep FEACN lookup column at its original position.
+  const feacnLookupColumn = { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
+  // previousDTagComment is optional and should be appended at the end when reimport procedure is active.
+  const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
+
+  const baseHeaders = [
     // Actions - Always first for easy access
     { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
 
@@ -322,9 +339,10 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' },
+    // Insert FEACN lookup column only when not reimport procedure
+    ...(!isReimportProcedure.value ? [feacnLookupColumn] : []),
 
-    // Product Identification & Details - What the order contains
+    // Product Identification & Details - What the parcel contains
     { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
 
@@ -337,14 +355,21 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
     { title: wbrRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
 
-    // Recipient Information - Who receives the order
+    // Recipient Information - Who receives the parcel
     { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
 
-    // Status Information - Current state of the order
+    // Status Information - Current state of the parcel
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
-    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' }
+    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
   ]
+
+  // Append previousDTagComment at the end only for reimport procedure
+  if (isReimportProcedure.value) {
+    baseHeaders.push(previousDTagCommentColumn)
+  }
+
+  return baseHeaders
 })
 
 function editParcel(item) {
@@ -623,6 +648,15 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
+        <template #[`item.previousDTagComment`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item.previousDTagComment"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
+          />
+        </template>
+
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton 
@@ -724,11 +758,6 @@ function getGenericTemplateHeaders() {
 }
 
 </style>
-
-
-
-
-
 
 
 

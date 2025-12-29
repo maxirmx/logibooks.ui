@@ -3,20 +3,30 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-defineProps({
+const props = defineProps({
   item: { type: Object, required: true },
   displayValue: { type: [String, Number, null, undefined], default: '' },
   cellClass: { type: String, default: 'clickable-cell' },
-  showBookmark: { type: Boolean, default: false }
+  showBookmark: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  disabledClass: { type: String, default: 'clickable-cell-disabled' }
 })
 
-defineEmits(['click'])
+const emit = defineEmits(['click'])
+
+function handleClick() {
+  if (props.disabled) {
+    return
+  }
+  emit('click', props.item)
+}
 </script>
 
 <template>
   <span
-    :class="cellClass"
-    @click="$emit('click', item)"
+    :class="[cellClass, disabled ? disabledClass : '']"
+    :aria-disabled="disabled || undefined"
+    @click="handleClick"
   >
     <font-awesome-icon
       v-if="showBookmark"
@@ -32,6 +42,10 @@ defineEmits(['click'])
 <style scoped>
 .clickable-cell {
   cursor: pointer;
+}
+
+.clickable-cell-disabled {
+  cursor: not-allowed;
 }
 
 .bookmark-icon {

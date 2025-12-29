@@ -117,6 +117,16 @@ describe('ClickableCell', () => {
       await span.trigger('click')
       expect(wrapper.emitted('click')[0]).toEqual([parcelItem])
     })
+
+    it('does not emit click event when disabled', async () => {
+      const wrapper = createWrapper({ disabled: true })
+      const span = wrapper.find('span')
+
+      await span.trigger('click')
+
+      expect(wrapper.emitted('click')).toBeFalsy()
+      expect(span.classes()).toContain('clickable-cell-disabled')
+    })
   })
 
   describe('props validation', () => {
@@ -255,4 +265,3 @@ describe('ClickableCell', () => {
     })
   })
 })
-

@@ -145,11 +145,7 @@ describe('parcels store', () => {
     fetchWrapper.get.mockRejectedValue(error)
 
     const store = useParcelsStore()
-    try {
-      await store.getByNumber()
-    } catch (thrown) {
-      expect(thrown).toBe(error)
-    }
+    await expect(store.getByNumber()).rejects.toBe(error)
 
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)

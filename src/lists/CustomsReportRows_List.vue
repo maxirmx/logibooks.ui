@@ -58,7 +58,7 @@ function getRegisterId(item) {
 }
 
 function isParcelRowClickable(item) {
-  return getParcelId(item) !== null && getParcelId(item) !== undefined
+  return getParcelId(item) !== null && getRegisterId(item) !== null
 }
 
 function openParcel(item) {

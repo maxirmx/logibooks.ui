@@ -12,6 +12,8 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { mdiMagnify } from '@mdi/js'
+import router from '@/router'
+import ClickableCell from '@/components/ClickableCell.vue'
 const props = defineProps({
   reportId: {
     type: Number,
@@ -163,6 +165,12 @@ const pageOptions = computed(() => {
   return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
 })
 
+function openParcelsByNumber(item) {
+  if (!item?.parcelNumber) return
+  authStore.parcels_number = item.parcelNumber
+  router.push('/parcels/by-number')
+}
+
 // Navigation handled by parent view; no local back action
 </script>
 
@@ -229,6 +237,15 @@ const pageOptions = computed(() => {
               <TruncateTooltipCell
                 v-else-if="TRUNCATABLE_COLUMNS.includes(col.key)"
                 :text="item[col.key]"
+              />
+
+              <ClickableCell
+                v-else-if="col.key === 'parcelNumber'"
+                :item="item"
+                :display-value="item.parcelNumber"
+                cell-class="truncated-cell clickable-cell"
+                :data-testid="`customs-report-row-parcel-number-${item.parcelNumber}`"
+                @click="() => openParcelsByNumber(item)"
               />
 
               <!-- Fallback for all other columns -->

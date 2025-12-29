@@ -16,6 +16,7 @@ const alertRef = ref(null)
 const perPageRef = ref(10)
 const sortByRef = ref([{ key: 'rowNumber', order: 'asc' }])
 const pageRef = ref(1)
+const parcelsNumberRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
@@ -108,6 +109,15 @@ vi.mock('@/router', () => ({
   }
 }))
 
+vi.mock('@/components/ClickableCell.vue', () => ({
+  default: {
+    name: 'ClickableCell',
+    template: '<button class="clickable-cell" @click="$emit(\'click\', item)">{{ displayValue }}</button>',
+    props: ['item', 'displayValue', 'cellClass', 'dataTestid'],
+    emits: ['click']
+  }
+}))
+
 describe('CustomsReportRows_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -115,6 +125,7 @@ describe('CustomsReportRows_List.vue', () => {
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
+    parcelsNumberRef.value = ''
 
     decsStoreMock = {
       reportRows: reportRowsRef,
@@ -146,6 +157,12 @@ describe('CustomsReportRows_List.vue', () => {
         get: () => pageRef.value,
         set: (val) => {
           pageRef.value = val
+        }
+      },
+      parcels_number: {
+        get: () => parcelsNumberRef.value,
+        set: (val) => {
+          parcelsNumberRef.value = val
         }
       }
     })
@@ -245,5 +262,30 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
+  })
+
+  it('routes to parcels by number when parcel number is clicked', async () => {
+    reportRowsRef.value = [
+      {
+        id: 11,
+        parcelNumber: 'PN-123',
+        rowNumber: 1,
+        dTag: 'DT001'
+      }
+    ]
+
+    const wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    await wrapper.find('.clickable-cell').trigger('click')
+
+    expect(parcelsNumberRef.value).toBe('PN-123')
+    expect(routerPushMock).toHaveBeenCalledWith('/parcels/by-number')
   })
 })

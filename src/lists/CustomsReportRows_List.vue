@@ -183,7 +183,7 @@ const pageOptions = computed(() => {
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по строкам отчёта"
+        label="Поиск по отчёту"
         variant="solo"
         hide-details
         :loading="loading"

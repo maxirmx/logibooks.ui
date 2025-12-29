@@ -264,6 +264,12 @@ function viewReportRows(report) {
               <!-- Actions column -->
               <template v-else-if="col.key === 'actions'">
                 <div class="actions-container">
+                  <ActionButton 
+                    :item="item" 
+                    icon="fa-solid fa-list" 
+                    tooltip-text="Подробная информация" 
+                    @click="viewReportRows(item)" 
+                    :disabled="loading || runningAction" />
                   <ActionButton
                     :item="item"
                     icon="fa-solid fa-trash-can"

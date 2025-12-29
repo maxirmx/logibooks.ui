@@ -25,7 +25,7 @@ function handleClick() {
 <template>
   <span
     :class="[cellClass, disabled ? disabledClass : '']"
-    :aria-disabled="disabled || undefined"
+    :aria-disabled="disabled ? 'true' : undefined"
     @click="handleClick"
   >
     <font-awesome-icon

@@ -118,7 +118,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       error.value = err
       throw err
     } finally {
-        loading.value = false
+      loading.value = false
     }
   }
 

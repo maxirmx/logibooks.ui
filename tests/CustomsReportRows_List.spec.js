@@ -17,6 +17,7 @@ const alertRef = ref(null)
 const perPageRef = ref(10)
 const sortByRef = ref([{ key: 'rowNumber', order: 'asc' }])
 const pageRef = ref(1)
+const searchRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
@@ -116,11 +117,13 @@ describe('CustomsReportRows_List.vue', () => {
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
+    searchRef.value = ''
 
     decsStoreMock = {
       reportRows: reportRowsRef,
       loading: loadingRef,
       error: errorRef,
+      totalCount: ref(0),
       getReportRows: getReportRowsMock
     }
 
@@ -147,6 +150,12 @@ describe('CustomsReportRows_List.vue', () => {
         get: () => pageRef.value,
         set: (val) => {
           pageRef.value = val
+        }
+      },
+      customsreportrows_search: {
+        get: () => searchRef.value,
+        set: (val) => {
+          searchRef.value = val
         }
       }
     })

@@ -94,6 +94,10 @@ export const useDecsStore = defineStore('decs', () => {
       }
     } catch (err) {
       error.value = err
+      reportRows.value = []
+      totalCount.value = 0
+      hasNextPage.value = false
+      hasPreviousPage.value = false
     } finally {
       loading.value = false
     }

@@ -73,7 +73,6 @@ function handleCellClick(item, key) {
     openParcel(item)
   }
 }
-}
 
 function getCellClass(useTruncate) {
   return useTruncate ? 'truncated-cell clickable-cell' : 'clickable-cell'

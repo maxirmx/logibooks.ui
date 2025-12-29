@@ -139,9 +139,9 @@ async function loadReportRows() {
 const TRUNCATABLE_COLUMNS = []
 const headers = [
   { title: 'Номер записи', key: 'id', align: 'start', width: '50px' },
+  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
   { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '180px' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
   { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
   { title: 'Предшествующий ТНВЭД', key: 'prevTnVed', align: 'start', width: '120px' },
 ]

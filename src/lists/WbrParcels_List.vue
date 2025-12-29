@@ -325,10 +325,12 @@ const checkStatusOptionsFc = computed(() => [
 ])
 
 const headers = computed(() => {
-  const customsProcedureColumn = isReimportProcedure.value
-    ? { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', sortable: false, align: 'center', width: '170px' }
-    : { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
-  return [
+  // Always keep FEACN lookup column at its original position.
+  const feacnLookupColumn = { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
+  // previousDTagComment is optional and should be appended at the end when reimport procedure is active.
+  const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
+
+  const baseHeaders = [
     // Actions - Always first for easy access
     { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
 
@@ -337,7 +339,8 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    customsProcedureColumn,
+    // Insert FEACN lookup column only when not reimport procedure
+    ...(!isReimportProcedure.value ? [feacnLookupColumn] : []),
 
     // Product Identification & Details - What the parcel contains
     { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
@@ -359,8 +362,14 @@ const headers = computed(() => {
     // Status Information - Current state of the parcel
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-    { title: 'Комментарий', key: 'previousDTagComment', align: 'start', width: '170px'}
   ]
+
+  // Append previousDTagComment at the end only for reimport procedure
+  if (isReimportProcedure.value) {
+    baseHeaders.push(previousDTagCommentColumn)
+  }
+
+  return baseHeaders
 })
 
 function editParcel(item) {
@@ -636,6 +645,15 @@ function getGenericTemplateHeaders() {
             :disabled="runningAction || loading"
             @click="editParcel" 
             @fellows="handleFellows"
+          />
+        </template>
+
+        <template #[`item.previousDTagComment`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item.previousDTagComment"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 

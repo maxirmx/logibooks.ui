@@ -51,7 +51,7 @@ const clickableColumns = [
 ]
 
 function getRegisterId(item) {
-  return item?.rgisterId ?? item?.registerId
+  return item?.registerId
 }
 
 function openRegister(item) {

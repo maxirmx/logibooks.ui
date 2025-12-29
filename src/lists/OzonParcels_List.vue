@@ -324,7 +324,7 @@ const checkStatusOptionsFc = computed(() => [
 const headers = computed(() => {
   const customsProcedureColumn = isReimportProcedure.value
     ? { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', sortable: false, align: 'center', width: '170px' }
-    : { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'start', width: '120px' }
+    : { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
   return [
     // Actions - Always first for easy access
     { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },

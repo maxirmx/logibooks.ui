@@ -64,7 +64,7 @@ function isParcelRowClickable(item) {
 function openParcel(item) {
   const parcelId = getParcelId(item)
   const registerId = getRegisterId(item)
-  if (parcelId === null || parcelId === undefined || !registerId) return
+  if (!parcelId || !registerId) return
   router.push(`/registers/${registerId}/parcels/edit/${parcelId}`)
 }
 

@@ -338,7 +338,8 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' },
     // Status Information - Current state of the order
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
-    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' }
+    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
+    { title: 'Комментарий', key: 'previousDTagComment', align: 'start', width: '170px'}
   ]
 })
 

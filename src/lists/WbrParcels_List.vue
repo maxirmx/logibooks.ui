@@ -324,7 +324,7 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' },
 
-    // Product Identification & Details - What the order contains
+    // Product Identification & Details - What the parcel contains
     { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
 
@@ -337,13 +337,14 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
     { title: wbrRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
 
-    // Recipient Information - Who receives the order
+    // Recipient Information - Who receives the parcel
     { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
     { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
 
-    // Status Information - Current state of the order
+    // Status Information - Current state of the parcel
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
-    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' }
+    { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
+    { title: 'Комментарий', key: 'previousDTagComment', align: 'start', width: '170px'}
   ]
 })
 

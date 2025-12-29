@@ -9,6 +9,10 @@ import { apiUrl } from '@/helpers/config.js'
 
 const baseUrl = `${apiUrl}/customsprocedures`
 
+export const CustomsProcedureCodes = Object.freeze({
+  Reimport: 60
+})
+
 export const useCustomsProceduresStore = defineStore('customsProcedures', () => {
   const procedures = ref([])
   const loading = ref(false)

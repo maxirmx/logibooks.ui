@@ -92,6 +92,9 @@ const isReimportProcedure = computed(() => {
   return Number(procedure?.code) === CustomsProcedureCodes.Reimport
 })
 
+onMounted(async () => {
+  await customsProceduresStore.ensureLoaded()
+})
 // Provide page options for a select control. For very large page counts, return a compact set
 const pageOptions = computed(() => {
   const mp = maxPage.value

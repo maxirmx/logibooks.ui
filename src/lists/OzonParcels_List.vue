@@ -6,6 +6,7 @@
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { CustomsProcedureCodes, useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -53,6 +54,7 @@ const props = defineProps({
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
+const customsProceduresStore = useCustomsProceduresStore()
 const parcelStatusStore = useParcelStatusesStore()
 const keyWordsStore = useKeyWordsStore()
 const stopWordsStore = useStopWordsStore()
@@ -63,6 +65,7 @@ const transportationTypesStore = useTransportationTypesStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
+const { procedures } = storeToRefs(customsProceduresStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const {
@@ -82,6 +85,12 @@ const {
 const dataTableRef = ref(null)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const isReimportProcedure = computed(() => {
+  const procedureId = registersStore.item?.customsProcedureId
+  if (!procedureId) return false
+  const procedure = procedures.value?.find((proc) => proc.id === procedureId)
+  return Number(procedure?.code) === CustomsProcedureCodes.Reimport
+})
 
 // Provide page options for a select control. For very large page counts, return a compact set
 const pageOptions = computed(() => {
@@ -242,6 +251,9 @@ onMounted(async () => {
 
   // previously listened for DEC_REPORT_UPLOADED_EVENT; removed per request
 
+    await customsProceduresStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
@@ -313,6 +325,9 @@ const checkStatusOptionsFc = computed(() => [
 ])
 
 const headers = computed(() => {
+  const customsProcedureColumn = isReimportProcedure.value
+    ? { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', sortable: false, align: 'center', width: '170px' }
+    : { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
   return [
     // Actions - Always first for easy access
     { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
@@ -322,7 +337,7 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
-    { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'start', width: '120px' },
+    customsProcedureColumn,
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
     { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
@@ -717,9 +732,4 @@ function getGenericTemplateHeaders() {
 }
 
 </style>
-
-
-
-
-
 

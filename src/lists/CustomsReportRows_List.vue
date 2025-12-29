@@ -139,11 +139,11 @@ async function loadReportRows() {
 const TRUNCATABLE_COLUMNS = []
 const headers = [
   { title: 'Номер записи', key: 'id', align: 'start', width: '50px' },
+  { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '180px' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-  { title: 'П/п ДТЭГ/ПТДЭГ', key: 'rowNumber', align: 'start', width: '120px' },
   { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
   { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
-  { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '280px' },
+  { title: 'Предшествующий ТНВЭД', key: 'prevTnVed', align: 'start', width: '120px' },
 ]
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / authStore.customsreportrows_per_page)))
@@ -217,9 +217,17 @@ const pageOptions = computed(() => {
               ]"
               :data-column-key="col.key"
             >
+              <!-- DTag column: two-line display with secondary muted line for rowNumber -->
+              <template v-if="col.key === 'dTag'">
+                <div class="two-line-cell">
+                  <div class="primary-line">{{ item.dTag }}</div>
+                  <div class="secondary-line">Позиция {{ item.rowNumber }}</div>
+                </div>
+              </template>
+
               <!-- Text columns with conditional truncation tooltip -->
               <TruncateTooltipCell
-                v-if="TRUNCATABLE_COLUMNS.includes(col.key)"
+                v-else-if="TRUNCATABLE_COLUMNS.includes(col.key)"
                 :text="item[col.key]"
               />
 
@@ -252,3 +260,23 @@ const pageOptions = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.two-line-cell {
+  display: flex;
+  flex-direction: column;
+}
+.two-line-cell .primary-line {
+  font-weight: 400;
+}
+.two-line-cell .secondary-line {
+  font-size: 0.85em;
+  color: #2a2c2d; /* muted gray */
+}
+
+/* Minimal width for truncation columns */
+.col-text {
+  min-width: 140px;
+}
+
+</style>

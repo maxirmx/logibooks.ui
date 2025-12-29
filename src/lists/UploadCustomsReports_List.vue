@@ -6,6 +6,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -229,28 +230,28 @@ function viewReportRows(report) {
               :data-column-key="col.key"
             >
               <!-- File / text columns with conditional truncation tooltip -->
-              <TruncateTooltipCell
-                v-if="['fileName','masterInvoice','errMsg'].includes(col.key)"
-                :text="item[col.key]"
-              />
+              <template v-if="['fileName','masterInvoice','errMsg'].includes(col.key)">
+                <ClickableCell :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                  <template #default>
+                    <TruncateTooltipCell :text="item[col.key]" />
+                  </template>
+                </ClickableCell>
+              </template>
 
-              <!-- ID column - clickable link to view rows -->
+              <!-- ID column - clickable cell to view rows -->
               <template v-else-if="col.key === 'id'">
-                <a
-                  href="#"
-                  @click.prevent="viewReportRows(item)"
-                  class="report-id-link"
-                  :data-testid="`report-id-link-${item.id}`"
-                >
-                  {{ item.id }}
-                </a>
+                <ClickableCell :item="item" :display-value="item.id" cell-class="truncated-cell clickable-cell" :data-testid="'report-id-link-' + item.id" @click="() => viewReportRows(item)" />
               </template>
 
               <!-- Error count with breakdown tooltip -->
               <template v-else-if="col.key === 'errorCount'">
                 <v-tooltip v-if="item.errorCount" location="top" open-delay="150">
                   <template #activator="{ props }">
-                    <span v-bind="props">{{ item.errorCount }}</span>
+                    <ClickableCell v-bind="props" :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                      <template #default>
+                        {{ item.errorCount }}
+                      </template>
+                    </ClickableCell>
                   </template>
                   <div>
                     <div v-for="e in item.errorsBreakdown" :key="e.key">
@@ -281,9 +282,13 @@ function viewReportRows(report) {
                 </div>
               </template>
 
-              <!-- Fallback for all other columns -->
+              <!-- Fallback for all other columns - make clickable -->
               <template v-else>
-                {{ item[col.key] }}
+                <ClickableCell :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                  <template #default>
+                    {{ item[col.key] }}
+                  </template>
+                </ClickableCell>
               </template>
             </td>
           </tr>
@@ -310,14 +315,4 @@ function viewReportRows(report) {
   min-width: 140px;
 }
 
-/* Report ID link styling */
-.report-id-link {
-  color: #1976d2;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.report-id-link:hover {
-  text-decoration: underline;
-}
 </style>

@@ -10,8 +10,10 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { mdiMagnify } from '@mdi/js'
+import router from '@/router'
 const props = defineProps({
   reportId: {
     type: Number,
@@ -46,6 +48,31 @@ const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}
 
 const alertRefs = storeToRefs(alertStore)
 const alert = alertRefs.alert || ref(null)
+
+function getParcelId(item) {
+  return item?.parcelId ?? item?.ParcelId ?? null
+}
+
+function getRegisterId(item) {
+  return item?.registerId ?? item?.RegisterId ?? null
+}
+
+function isParcelRowClickable(item) {
+  return getParcelId(item) !== null && getRegisterId(item) !== null
+}
+
+function openParcel(item) {
+  const parcelId = getParcelId(item)
+  const registerId = getRegisterId(item)
+  if (!parcelId || !registerId) return
+  router.push(`/registers/${registerId}/parcels/edit/${parcelId}`)
+}
+
+function getCellClass(columnKey) {
+  return TRUNCATABLE_COLUMNS.includes(columnKey)
+    ? 'truncated-cell clickable-cell'
+    : 'clickable-cell'
+}
 
 function triggerLoadReportRows({ debounceMs = 0, syncSearch = false } = {}) {
   if (!isComponentMounted.value) return
@@ -217,24 +244,31 @@ const pageOptions = computed(() => {
               ]"
               :data-column-key="col.key"
             >
-              <!-- DTag column: two-line display with secondary muted line for rowNumber -->
-              <template v-if="col.key === 'dTag'">
-                <div class="two-line-cell">
-                  <div class="primary-line">{{ item.dTag }}</div>
-                  <div class="secondary-line">Позиция {{ item.rowNumber }}</div>
-                </div>
-              </template>
+              <ClickableCell
+                :item="item"
+                :cell-class="getCellClass(col.key)"
+                :disabled="!isParcelRowClickable(item)"
+                @click="openParcel"
+              >
+                <!-- DTag column: two-line display with secondary muted line for rowNumber -->
+                <template v-if="col.key === 'dTag'">
+                  <div class="two-line-cell">
+                    <div class="primary-line">{{ item.dTag }}</div>
+                    <div class="secondary-line">Позиция {{ item.rowNumber }}</div>
+                  </div>
+                </template>
 
-              <!-- Text columns with conditional truncation tooltip -->
-              <TruncateTooltipCell
-                v-else-if="TRUNCATABLE_COLUMNS.includes(col.key)"
-                :text="item[col.key]"
-              />
+                <!-- Text columns with conditional truncation tooltip -->
+                <TruncateTooltipCell
+                  v-else-if="TRUNCATABLE_COLUMNS.includes(col.key)"
+                  :text="item[col.key]"
+                />
 
-              <!-- Fallback for all other columns -->
-              <template v-else>
-                {{ item[col.key] }}
-              </template>
+                <!-- Fallback for all other columns -->
+                <template v-else>
+                  {{ item[col.key] }}
+                </template>
+              </ClickableCell>
             </td>
           </tr>
         </template>

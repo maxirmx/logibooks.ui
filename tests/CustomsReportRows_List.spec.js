@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const reportRowsRef = ref([])
@@ -245,5 +246,62 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
+  })
+
+  it('routes to parcel edit when parcelId is present', async () => {
+    reportRowsRef.value = [
+      {
+        id: 1,
+        parcelId: 12,
+        registerId: 5,
+        rowNumber: 1,
+        parcelNumber: 'PN-001',
+        processingResult: 'OK',
+        dTag: 'D1',
+        tnVed: '123',
+        prevTnVed: '122'
+      }
+    ]
+
+    const wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    const cell = wrapper.findComponent(ClickableCell)
+    await cell.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledWith('/registers/5/parcels/edit/12')
+  })
+
+  it('prevents click and shows disabled cursor when parcelId is null', async () => {
+    reportRowsRef.value = [
+      {
+        id: 2,
+        parcelId: null,
+        registerId: 5,
+        rowNumber: 1,
+        parcelNumber: 'PN-002',
+        processingResult: 'OK',
+        dTag: 'D2',
+        tnVed: '123',
+        prevTnVed: '122'
+      }
+    ]
+
+    const wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    const cell = wrapper.findComponent(ClickableCell)
+    expect(cell.classes()).toContain('clickable-cell-disabled')
+
+    await cell.trigger('click')
+    expect(routerPushMock).not.toHaveBeenCalled()
   })
 })

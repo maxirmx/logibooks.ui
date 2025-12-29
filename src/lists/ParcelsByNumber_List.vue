@@ -67,12 +67,12 @@ function openParcel(item) {
 }
 
 function handleCellClick(item, key) {
-    openRegister(item)
   if (key === 'registerDealNumber') {
     openRegister(item)
   } else {
     openParcel(item)
   }
+}
 }
 
 function getCellClass(useTruncate) {

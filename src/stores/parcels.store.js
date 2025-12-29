@@ -42,6 +42,14 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   return params
 }
 
+export function buildParcelsNumberParams(number) {
+  const params = new URLSearchParams()
+  if (number) {
+    params.append('number', number)
+  }
+  return params
+}
+
 function buildApproveQueryParams(approvalMode) {
   const params = new URLSearchParams()
   params.append('approveMode', approvalMode)
@@ -50,6 +58,7 @@ function buildApproveQueryParams(approvalMode) {
 
 export const useParcelsStore = defineStore('parcels', () => {
   const items = ref([])
+  const items_bn = ref([])
   const item = ref({})
   const loading = ref(false)
   const error = ref(null)
@@ -93,6 +102,23 @@ export const useParcelsStore = defineStore('parcels', () => {
       if (options.updateStore) {
         loading.value = false
       }
+    }
+  }
+
+  async function getByNumber(number) {
+    const authStore = useAuthStore()
+    const searchNumber = number ?? authStore.parcels_number
+    loading.value = true
+    error.value = null
+    try {
+      const params = buildParcelsNumberParams(searchNumber)
+      const response = await fetchWrapper.get(`${baseUrl}/by-number?${params.toString()}`)
+      items_bn.value = response || []
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
@@ -188,6 +214,7 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   return {
     items,
+    items_bn,
     item,
     loading,
     error,
@@ -198,6 +225,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     getById,
     update,
     updateItems,
+    getByNumber,
     generate,
     validate,
     approve,

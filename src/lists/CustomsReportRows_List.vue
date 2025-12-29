@@ -49,21 +49,13 @@ const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}
 const alertRefs = storeToRefs(alertStore)
 const alert = alertRefs.alert || ref(null)
 
-function getParcelId(item) {
-  return item?.parcelId ?? item?.ParcelId ?? null
-}
-
-function getRegisterId(item) {
-  return item?.registerId ?? item?.RegisterId ?? null
-}
-
 function isParcelRowClickable(item) {
-  return getParcelId(item) !== null && getRegisterId(item) !== null
+  return item?.parcelId !== null && item?.registerId !== null
 }
 
 function openParcel(item) {
-  const parcelId = getParcelId(item)
-  const registerId = getRegisterId(item)
+  const parcelId = item?.parcelId
+  const registerId = item?.registerId
   if (!parcelId || !registerId) return
   router.push(`/registers/${registerId}/parcels/edit/${parcelId}`)
 }

@@ -251,6 +251,9 @@ onMounted(async () => {
 
   // previously listened for DEC_REPORT_UPLOADED_EVENT; removed per request
 
+    await customsProceduresStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
     

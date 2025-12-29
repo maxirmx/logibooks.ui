@@ -506,6 +506,6 @@ describe('UploadCustomsReports_List.vue', () => {
     expect(idLink.exists()).toBe(true)
 
     await idLink.trigger('click')
-    expect(routerPushMock).toHaveBeenCalledWith('/customs-reports/7/rows')
+    expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/rows', query: {} })
   })
 })

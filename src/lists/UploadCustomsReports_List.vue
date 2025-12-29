@@ -157,7 +157,15 @@ async function handleDeleteReport(report) {
 }
 
 function viewReportRows(report) {
-  router.push(`/customs-reports/${report.id}/rows`)
+  const query = {}
+  if (report?.masterInvoice) {
+    query.masterInvoice = report.masterInvoice
+  }
+
+  router.push({
+    path: `/customs-reports/${report.id}/rows`,
+    query
+  })
 }
 </script>
 

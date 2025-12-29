@@ -9,10 +9,14 @@ const props = defineProps({
   reportId: {
     type: Number,
     required: true
+  },
+  masterInvoice: {
+    type: String,
+    default: ''
   }
 })
 </script>
 
 <template>
-  <CustomsReportRowsList :report-id="props.reportId" />
+  <CustomsReportRowsList :report-id="props.reportId" :master-invoice="props.masterInvoice" />
 </template>

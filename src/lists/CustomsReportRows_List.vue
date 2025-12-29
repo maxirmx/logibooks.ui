@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, computed, watch, ref } from 'vue'
+import { onUnmounted, computed, watch, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -11,11 +11,15 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
-
+import { mdiMagnify } from '@mdi/js'
 const props = defineProps({
   reportId: {
     type: Number,
     required: true
+  },
+  masterInvoice: {
+    type: String,
+    default: ''
   }
 })
 
@@ -28,31 +32,116 @@ const reportRows = decsRefs.reportRows || ref([])
 const loading = decsRefs.loading || ref(false)
 const error = decsRefs.error || ref(null)
 const totalCount = decsRefs.totalCount || ref(0)
+const localSearch = ref(authStore.customsreportrows_search || '')
+
+const isComponentMounted = ref(true)
+const isLoadingRows = ref(false)
+const hasPendingReload = ref(false)
+let loadRowsTimeout = null
+let pendingDebounceDelay = 0
+const watcherStops = []
+let isSearchWatcherInitialized = false
+
+const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
 
 const alertRefs = storeToRefs(alertStore)
 const alert = alertRefs.alert || ref(null)
 
-onMounted(async () => {
-  await decsStore.getReportRows(props.reportId)
+function triggerLoadReportRows({ debounceMs = 0, syncSearch = false } = {}) {
+  if (!isComponentMounted.value) return
+
+  if (syncSearch) {
+    authStore.customsreportrows_search = localSearch.value
+  }
+
+  if (loadRowsTimeout) {
+    clearTimeout(loadRowsTimeout)
+    loadRowsTimeout = null
+  }
+
+  if (isLoadingRows.value) {
+    hasPendingReload.value = true
+    pendingDebounceDelay = debounceMs
+    return
+  }
+
+  if (debounceMs > 0) {
+    pendingDebounceDelay = 0
+    loadRowsTimeout = setTimeout(() => {
+      loadRowsTimeout = null
+      triggerLoadReportRows()
+    }, debounceMs)
+    return
+  }
+
+  pendingDebounceDelay = 0
+  loadReportRows()
+}
+
+watcherStops.push(
+  watch(
+    localSearch,
+    (newValue, oldValue) => {
+      if (isSearchWatcherInitialized && newValue === oldValue) {
+        return
+      }
+
+      const debounceMs = isSearchWatcherInitialized ? 300 : 0
+      triggerLoadReportRows({ debounceMs, syncSearch: true })
+      isSearchWatcherInitialized = true
+    },
+    { immediate: true }
+  )
+)
+
+watcherStops.push(
+  watch([
+    () => authStore.customsreportrows_page,
+    () => authStore.customsreportrows_per_page,
+    () => authStore.customsreportrows_sort_by,
+    () => props.reportId
+  ], () => {
+    triggerLoadReportRows()
+  })
+)
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  watcherStops.forEach((stop) => stop())
+  if (loadRowsTimeout) {
+    clearTimeout(loadRowsTimeout)
+    loadRowsTimeout = null
+  }
 })
 
-// Watch pagination/sort changes and reload rows
-watch([
-  () => authStore.customsreportrows_page,
-  () => authStore.customsreportrows_per_page,
-  () => authStore.customsreportrows_sort_by
-], async () => {
-  await decsStore.getReportRows(props.reportId)
-})
+async function loadReportRows() {
+  if (!isComponentMounted.value || isLoadingRows.value) return
+
+  isLoadingRows.value = true
+  try {
+    hasPendingReload.value = false
+    await decsStore.getReportRows(props.reportId)
+  } finally {
+    if (isComponentMounted.value) {
+      isLoadingRows.value = false
+
+      if (hasPendingReload.value) {
+        hasPendingReload.value = false
+        const delay = pendingDebounceDelay
+        pendingDebounceDelay = 0
+        triggerLoadReportRows({ debounceMs: delay })
+      }
+    }
+  }
+}
 
 // Column keys that should use TruncateTooltipCell
 const TRUNCATABLE_COLUMNS = []
-
 const headers = [
-  { title: 'Номер', key: 'id', align: 'start', width: '50px' },
-  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
+  { title: 'Номер записи', key: 'id', align: 'start', width: '50px' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-  { title: '№ п/п ДТЭГ/ПТДЭГ', key: 'rowNumber', align: 'start', width: '120px' },
+  { title: 'П/п ДТЭГ/ПТДЭГ', key: 'rowNumber', align: 'start', width: '120px' },
+  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
   { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
   { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '280px' },
 ]
@@ -80,7 +169,7 @@ const pageOptions = computed(() => {
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Строки отчёта №{{ reportId }}</h1>
+      <h1 class="primary-heading">Отчёт о выпуске для {{ headingLabel }}</h1>
       <div style="display:flex; align-items:center;">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -89,6 +178,17 @@ const pageOptions = computed(() => {
       </div>
     </div>
     <hr class="hr" />
+
+    <div class="mb-4">
+      <v-text-field
+        v-model="localSearch"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по строкам отчёта"
+        variant="solo"
+        hide-details
+        :loading="loading"
+      />
+    </div>
 
     <v-card class="table-card">
       <v-data-table-server

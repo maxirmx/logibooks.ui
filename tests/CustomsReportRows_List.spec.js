@@ -244,6 +244,6 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.find('h1').text()).toContain('Строки отчёта №42')
+    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
   })
 })

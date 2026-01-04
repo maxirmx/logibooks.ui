@@ -47,7 +47,6 @@ import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
-// Removed DEC_REPORT_UPLOADED_EVENT import
 
 const props = defineProps({
   registerId: { type: Number, required: true }

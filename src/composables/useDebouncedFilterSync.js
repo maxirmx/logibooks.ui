@@ -4,6 +4,44 @@
 
 import { ref, watch, onUnmounted, getCurrentInstance } from 'vue'
 
+/**
+ * Composable to synchronize local filter refs with store refs and trigger a debounced load function
+ * whenever filters change.
+ *
+ * @param {Object} options - Configuration options.
+ * @param {Array<{ local: import('vue').Ref<any>, store?: import('vue').Ref<any> }>} options.filters
+ *   Array of filter definitions. Each item should contain:
+ *   - `local`: a local `ref` whose value is watched.
+ *   - `store` (optional): a `ref` (e.g., from a store) that will be kept in sync with `local`.
+ * @param {() => Promise<void> | void} [options.loadFn]
+ *   Function that is called to (re)load data when filters change. May be async.
+ * @param {import('vue').Ref<boolean>} [options.isComponentMounted]
+ *   Optional `ref` indicating whether the component using this composable is currently mounted.
+ *   If not provided, the composable assumes the component is mounted.
+ * @param {number} [options.debounceMs=500]
+ *   Default debounce delay in milliseconds applied to filter changes after the initial load.
+ *
+ * @returns {{ triggerLoad: (config?: { debounceMs?: number, syncFilters?: boolean }) => void,
+ *            executeLoad: () => Promise<void>,
+ *            stop: () => void }}
+ *   - `triggerLoad`: Manually trigger a (debounced) load, optionally syncing filters first.
+ *   - `executeLoad`: Immediately execute the load function, respecting the mounted state and
+ *     internal loading / pending-reload logic.
+ *   - `stop`: Stop watching filters and clear any pending debounced load.
+ *
+ * @example
+ * import { ref } from 'vue'
+ * import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync'
+ *
+ * const nameFilter = ref('')
+ * const nameStoreFilter = ref('')
+ *
+ * const { triggerLoad, stop } = useDebouncedFilterSync({
+ *   filters: [{ local: nameFilter, store: nameStoreFilter }],
+ *   loadFn: () => fetchData({ name: nameStoreFilter.value }),
+ *   debounceMs: 300
+ * })
+ */
 export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, debounceMs = 500 }) {
   const isLoading = ref(false)
   const hasPendingReload = ref(false)

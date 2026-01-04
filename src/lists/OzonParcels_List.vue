@@ -508,14 +508,14 @@ function getGenericTemplateHeaders() {
           label="ТН ВЭД"
           density="compact"
           style="min-width: 200px;"
-          :disabled="runningAction || loading || isInitializing"
+          :disabled="runningAction || isInitializing"
         />
         <v-text-field
           v-model="localParcelNumberSearch"
           label="Номер посылки"
           density="compact"
           style="min-width: 200px;"
-          :disabled="runningAction || loading || isInitializing"
+          :disabled="runningAction || isInitializing"
         />
       </div>
     </div>

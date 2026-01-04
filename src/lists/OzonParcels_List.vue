@@ -255,7 +255,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 const watcherStop = watch(
   [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc],
   () => triggerLoad(),
-  { immediate: true }
+  { immediate: false }
 )
 
 onMounted(async () => {

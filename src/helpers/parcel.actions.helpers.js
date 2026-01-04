@@ -39,6 +39,7 @@ export async function validateParcelData(values, item, parcelsStore, sw, matchMo
  */
 export async function approveParcel(values, item, parcelsStore, approvalMode = ParcelApprovalMode.SimpleApprove ) {
   if (item.value.id != values.id) return Promise.resolve()
+  const alertStore = useAlertStore()
   try {
     // First update the parcel with current form values
     await parcelsStore.update(item.value.id, values)
@@ -48,10 +49,14 @@ export async function approveParcel(values, item, parcelsStore, approvalMode = P
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
 
-    const alertStore = useAlertStore()
     alertStore.error(parcelsStore?.error || 'Ошибка при согласовании посылки')
-  } finally {
-      await parcelsStore.getById(item.value.id)
+  } 
+  try {
+      return await parcelsStore.getById(item.value.id)
+  } catch (e) {
+    parcelsStore.error = e?.response?.data?.message || 'Ошибка при загрузке посылки'
+    alertStore.error(parcelsStore.error)
+    return Promise.resolve()
   }
 }
 

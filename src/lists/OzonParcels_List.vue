@@ -46,6 +46,7 @@ import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 // Removed DEC_REPORT_UPLOADED_EVENT import
 
 const props = defineProps({
@@ -80,6 +81,9 @@ const {
   selectedParcelId,
   isSrLogistPlus
 } = storeToRefs(authStore)
+
+const localTnvedSearch = ref(parcels_tnved.value || '')
+const localParcelNumberSearch = ref(parcels_number.value || '')
 
 // Template ref for the data table
 const dataTableRef = ref(null)
@@ -239,9 +243,18 @@ const {
   isComponentMounted
 })
 
+const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+  filters: [
+    { local: localTnvedSearch, store: parcels_tnved },
+    { local: localParcelNumberSearch, store: parcels_number }
+  ],
+  loadFn: loadOrdersWrapper,
+  isComponentMounted
+})
+
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_tnved, parcels_number],
-  loadOrdersWrapper,
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc],
+  () => triggerLoad(),
   { immediate: true }
 )
 
@@ -294,6 +307,7 @@ onMounted(async () => {
 onUnmounted(() => {
   isComponentMounted.value = false
   stopRegisterHeaderActions()
+  stopFilterSync()
   if (watcherStop) {
     watcherStop()
   }
@@ -490,14 +504,14 @@ function getGenericTemplateHeaders() {
           :disabled="runningAction || loading || isInitializing"
         />
         <v-text-field
-          v-model="parcels_tnved"
+          v-model="localTnvedSearch"
           label="ТН ВЭД"
           density="compact"
           style="min-width: 200px;"
           :disabled="runningAction || loading || isInitializing"
         />
         <v-text-field
-          v-model="parcels_number"
+          v-model="localParcelNumberSearch"
           label="Номер посылки"
           density="compact"
           style="min-width: 200px;"
@@ -749,4 +763,3 @@ function getGenericTemplateHeaders() {
 }
 
 </style>
-

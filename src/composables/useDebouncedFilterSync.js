@@ -32,13 +32,13 @@ export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, de
 
     isLoading.value = true
     try {
-      hasPendingReload.value = false
       await loadFn?.()
     } finally {
       if (isMounted()) {
         isLoading.value = false
-        if (hasPendingReload.value) {
-          hasPendingReload.value = false
+        const shouldReload = hasPendingReload.value
+        hasPendingReload.value = false
+        if (shouldReload) {
           const delay = pendingDebounceDelay
           pendingDebounceDelay = 0
           triggerLoad({ debounceMs: delay })

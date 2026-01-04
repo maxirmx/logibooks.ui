@@ -184,14 +184,17 @@ async function approveParcel(values) {
 }
 
 // Approve the parcel with excise
-async function approveParcelWithExcise(values) {
+async function approveParcelWithExcise(values, setFieldValue) {
   if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    await approveParcelWithExciseHelper(values, item, parcelsStore)
+    const result = await approveParcelWithExciseHelper(values, item, parcelsStore)
+    if (result?.tnVed != null) {
+      setFieldValue('tnVed', result.tnVed)
+    }
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -416,7 +419,7 @@ async function onLookup(values) {
               @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
               @validate-fc="(vals) => validateParcel(vals, false)"
               @approve="approveParcel"
-              @approve-excise="approveParcelWithExcise"
+              @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
             />
           </div>
           <!-- Last view -->

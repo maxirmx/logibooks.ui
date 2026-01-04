@@ -4,7 +4,7 @@
 
 import { ref, watch, onUnmounted, getCurrentInstance } from 'vue'
 
-export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, debounceMs = 300 }) {
+export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, debounceMs = 500 }) {
   const isLoading = ref(false)
   const hasPendingReload = ref(false)
   let loadTimeout = null

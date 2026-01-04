@@ -31,6 +31,7 @@ import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
+import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
@@ -86,10 +87,6 @@ const bulkStatusState = reactive({})
 // Local search variable and loading state for debounced calls
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
-const isLoadingRegisters = ref(false)
-const hasPendingExecution = ref(false)
-let loadRegistersTimeout = null
-let pendingDebounceDelay = 0
 
 // Available customers for register upload
 const uploadCustomers = computed(() => {
@@ -231,9 +228,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
-  watcherStops.forEach((stop) => stop())
-  if (loadRegistersTimeout) {
-    clearTimeout(loadRegistersTimeout)
+  stopFilterSync()
+  if (watcherStop) {
+    watcherStop()
   }
   stopPolling()
 })
@@ -272,87 +269,20 @@ function startRegisterUpload(customerId) {
   }
 }
 
-const watcherStops = []
-
-function triggerLoadRegisters({ debounceMs = 0, syncSearch = false } = {}) {
-  if (!isComponentMounted.value) return
-
-  if (syncSearch) {
-    registers_search.value = localSearch.value
-  }
-
-  if (loadRegistersTimeout) {
-    clearTimeout(loadRegistersTimeout)
-    loadRegistersTimeout = null
-  }
-
-  if (isLoadingRegisters.value) {
-    hasPendingExecution.value = true
-    pendingDebounceDelay = debounceMs
-    return
-  }
-
-  if (debounceMs > 0) {
-    pendingDebounceDelay = 0
-    loadRegistersTimeout = setTimeout(() => {
-      loadRegistersTimeout = null
-      triggerLoadRegisters({ debounceMs: 0 })
-    }, debounceMs)
-    return
-  }
-
-  pendingDebounceDelay = 0
-  loadRegisters()
-}
-
-let isSearchWatcherInitialized = false
-watcherStops.push(
-  watch(
-    localSearch,
-    (newValue, oldValue) => {
-      if (isSearchWatcherInitialized && newValue === oldValue) {
-        return
-      }
-
-      const debounceMs = isSearchWatcherInitialized ? 300 : 0
-      triggerLoadRegisters({ debounceMs, syncSearch: true })
-      isSearchWatcherInitialized = true
-    },
-    { immediate: true }
-  )
-)
-
-watcherStops.push(
-  watch([registers_page, registers_per_page, registers_sort_by], () => {
-    triggerLoadRegisters()
-  })
-)
-
 async function loadRegisters() {
-  if (!isComponentMounted.value || isLoadingRegisters.value) {
-    return
-  }
-  
-  isLoadingRegisters.value = true
-  try {
-    // Clear pending execution flag since we're about to execute
-    hasPendingExecution.value = false
-    
-    await registersStore.getAll()
-  } finally {
-    if (isComponentMounted.value) {
-      isLoadingRegisters.value = false
-
-      // Check if there's a pending execution that was requested while we were loading
-      if (hasPendingExecution.value) {
-        hasPendingExecution.value = false
-        const delay = pendingDebounceDelay
-        pendingDebounceDelay = 0
-        triggerLoadRegisters({ debounceMs: delay })
-      }
-    }
-  }
+  await registersStore.getAll()
 }
+
+const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+  filters: [{ local: localSearch, store: registers_search }],
+  loadFn: loadRegisters,
+  isComponentMounted,
+  debounceMs: 300
+})
+
+const watcherStop = watch([registers_page, registers_per_page, registers_sort_by], () => {
+  triggerLoad()
+})
 
 function openParcels(item) {
   router.push(`/registers/${item.id}/parcels`)

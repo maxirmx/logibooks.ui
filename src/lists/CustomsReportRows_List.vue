@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onUnmounted, computed, watch, ref } from 'vue'
+import { onUnmounted, computed, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDecsStore } from '@/stores/decs.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -14,6 +14,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
+import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 const props = defineProps({
   reportId: {
     type: Number,
@@ -28,21 +29,19 @@ const props = defineProps({
 const decsStore = useDecsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
+const customsreportrows_search = toRef(authStore, 'customsreportrows_search')
+const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
+const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
+const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
 const decsRefs = storeToRefs(decsStore)
 const reportRows = decsRefs.reportRows || ref([])
 const loading = decsRefs.loading || ref(false)
 const error = decsRefs.error || ref(null)
 const totalCount = decsRefs.totalCount || ref(0)
-const localSearch = ref(authStore.customsreportrows_search || '')
+const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
-const isLoadingRows = ref(false)
-const hasPendingReload = ref(false)
-let loadRowsTimeout = null
-let pendingDebounceDelay = 0
-const watcherStops = []
-let isSearchWatcherInitialized = false
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
 
@@ -66,93 +65,31 @@ function getCellClass(columnKey) {
     : 'clickable-cell'
 }
 
-function triggerLoadReportRows({ debounceMs = 0, syncSearch = false } = {}) {
-  if (!isComponentMounted.value) return
-
-  if (syncSearch) {
-    authStore.customsreportrows_search = localSearch.value
-  }
-
-  if (loadRowsTimeout) {
-    clearTimeout(loadRowsTimeout)
-    loadRowsTimeout = null
-  }
-
-  if (isLoadingRows.value) {
-    hasPendingReload.value = true
-    pendingDebounceDelay = debounceMs
-    return
-  }
-
-  if (debounceMs > 0) {
-    pendingDebounceDelay = 0
-    loadRowsTimeout = setTimeout(() => {
-      loadRowsTimeout = null
-      triggerLoadReportRows()
-    }, debounceMs)
-    return
-  }
-
-  pendingDebounceDelay = 0
-  loadReportRows()
+async function loadReportRows() {
+  await decsStore.getReportRows(props.reportId)
 }
 
-watcherStops.push(
-  watch(
-    localSearch,
-    (newValue, oldValue) => {
-      if (isSearchWatcherInitialized && newValue === oldValue) {
-        return
-      }
+const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+  filters: [{ local: localSearch, store: customsreportrows_search }],
+  loadFn: loadReportRows,
+  isComponentMounted,
+  debounceMs: 300
+})
 
-      const debounceMs = isSearchWatcherInitialized ? 300 : 0
-      triggerLoadReportRows({ debounceMs, syncSearch: true })
-      isSearchWatcherInitialized = true
-    },
-    { immediate: true }
-  )
-)
-
-watcherStops.push(
-  watch([
-    () => authStore.customsreportrows_page,
-    () => authStore.customsreportrows_per_page,
-    () => authStore.customsreportrows_sort_by,
-    () => props.reportId
-  ], () => {
-    triggerLoadReportRows()
-  })
+const watcherStop = watch(
+  [customsreportrows_page, customsreportrows_per_page, customsreportrows_sort_by, () => props.reportId],
+  () => {
+    triggerLoad()
+  }
 )
 
 onUnmounted(() => {
   isComponentMounted.value = false
-  watcherStops.forEach((stop) => stop())
-  if (loadRowsTimeout) {
-    clearTimeout(loadRowsTimeout)
-    loadRowsTimeout = null
+  stopFilterSync()
+  if (watcherStop) {
+    watcherStop()
   }
 })
-
-async function loadReportRows() {
-  if (!isComponentMounted.value || isLoadingRows.value) return
-
-  isLoadingRows.value = true
-  try {
-    hasPendingReload.value = false
-    await decsStore.getReportRows(props.reportId)
-  } finally {
-    if (isComponentMounted.value) {
-      isLoadingRows.value = false
-
-      if (hasPendingReload.value) {
-        hasPendingReload.value = false
-        const delay = pendingDebounceDelay
-        pendingDebounceDelay = 0
-        triggerLoadReportRows({ debounceMs: delay })
-      }
-    }
-  }
-}
 
 // Column keys that should use TruncateTooltipCell
 const TRUNCATABLE_COLUMNS = []
@@ -165,11 +102,11 @@ const headers = [
   { title: 'Предшествующий ТНВЭД', key: 'prevTnVed', align: 'start', width: '120px' },
 ]
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / authStore.customsreportrows_per_page)))
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / customsreportrows_per_page.value)))
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
-  const current = authStore.customsreportrows_page || 1
+  const current = customsreportrows_page.value || 1
   if (mp <= 200) {
     return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
   }
@@ -211,10 +148,10 @@ const pageOptions = computed(() => {
 
     <v-card class="table-card">
       <v-data-table-server
-        v-model:items-per-page="authStore.customsreportrows_per_page"
+        v-model:items-per-page="customsreportrows_per_page"
         :items-per-page-options="itemsPerPageOptions"
-        v-model:page="authStore.customsreportrows_page"
-        v-model:sort-by="authStore.customsreportrows_sort_by"
+        v-model:page="customsreportrows_page"
+        v-model:sort-by="customsreportrows_sort_by"
         :headers="headers"
         :items="reportRows"
         :items-length="totalCount"
@@ -267,8 +204,8 @@ const pageOptions = computed(() => {
       </v-data-table-server>
       <div class="v-data-table-footer">
         <PaginationFooter
-          v-model:items-per-page="authStore.customsreportrows_per_page"
-          v-model:page="authStore.customsreportrows_page"
+          v-model:items-per-page="customsreportrows_per_page"
+          v-model:page="customsreportrows_page"
           :items-per-page-options="itemsPerPageOptions"
           :page-options="pageOptions"
           :total-count="totalCount"

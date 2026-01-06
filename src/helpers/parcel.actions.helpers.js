@@ -121,7 +121,6 @@ export async function deleteProductImage(values, isComponentMounted, runningActi
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
-    const content = 'Удалить изображение для этой посылки?'
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -133,7 +132,7 @@ export async function deleteProductImage(values, isComponentMounted, runningActi
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: content
+      content: 'Удалить изображение для этой посылки?'
     })
     if (!confirmed) return
     await parcelsStore.deleteImage(currentParcelId.value)

@@ -36,17 +36,10 @@ const globalStubs = {
 describe('ProductLinkWithActions', () => {
   afterEach(() => {
     vi.restoreAllMocks()
-    // cleanup global extension flag if set
-    try { delete global.window.__LOGIBOOKS_EXTENSION_ACTIVE 
-    } catch {
-      // ignore if not accessible in this test runner
-    }
   })
 
   it('renders sanitized link and emits events when actions are clicked', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-    // Simulate extension presence for select action
-    global.window.__LOGIBOOKS_EXTENSION_ACTIVE = true
 
     const wrapper = mount(ProductLinkWithActions, {
       props: {
@@ -57,18 +50,9 @@ describe('ProductLinkWithActions', () => {
       global: { stubs: globalStubs }
     })
 
-    // wait for onMounted to run and pick up extension flag
+    // Simulate extension presence by setting component's internal state
+    wrapper.vm.extensionPresent = true
     await nextTick()
-    await new Promise((r) => setTimeout(r, 0))
-    await nextTick()
-
-    // Ensure extensionPresent is true in test environment
-    try {
-      wrapper.vm.extensionPresent = true
-      await nextTick()
-    } catch {
-      // ignore if not accessible in this test runner
-    }
 
     const link = wrapper.find('[data-test="product-link-anchor"]')
     expect(link.exists()).toBe(true)

@@ -172,7 +172,6 @@ async function deleteProductImage(values) {
     })
     if (!confirmed) return
     await parcelsStore.deleteImage(currentParcelId.value)
-    await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {

@@ -31,7 +31,7 @@ function onMessage(e) {
 
 onMounted(() => {
   window.addEventListener('message', onMessage)
-  window.postMessage({ type: 'LOGIBOOKS_EXTENSION_QUERY' }, '*')
+  window.postMessage({ type: 'LOGIBOOKS_EXTENSION_QUERY' }, window.location.origin)
 })
 
 onUnmounted(() => {
@@ -61,7 +61,7 @@ function handleSelectClick() {
     target: parcelsStore.getImageProcessingUrl(props.item.id),
     url: normalizedLink.value,
     token
-  }, '*')
+  }, window.location.origin)
 }
 
 function handleViewClick() {

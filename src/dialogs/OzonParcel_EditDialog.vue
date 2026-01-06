@@ -17,25 +17,27 @@ import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
-import { ensureHttps } from '@/helpers/url.helpers.js'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ArticleWithH from '@/components/ArticleWithH.vue'
+import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
   approveParcelWithNotification as approveParcelWithNotificationHelper,
-  generateXml as generateXmlHelper
+  generateXml as generateXmlHelper,
+  deleteProductImage as deleteProductImageHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -72,6 +74,7 @@ await parcelViewsStore.add(currentParcelId.value)
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+const confirm = useConfirm()
 
 // Set the selected parcel ID in auth store
 authStore.selectedParcelId = currentParcelId.value
@@ -126,8 +129,6 @@ watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
 
-const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
-
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
   window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
@@ -151,6 +152,10 @@ const schema = Yup.object().shape({
   quantity: Yup.number().nullable().min(0, 'Количество не может быть отрицательным'),
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
+
+async function deleteProductImage(values) {
+  await deleteProductImageHelper(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore)
+}
 
 async function validateParcel(values, sw, matchMode) {
   if (!isComponentMounted.value || runningAction.value) return
@@ -489,19 +494,12 @@ async function onLookup(values) {
           :fullWidth="false"
           @approve-notification="approveParcelWithNotification(values)"
         />
-        <div class="form-group">
-          <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
-          <a
-              v-if="item?.productLink"
-              :href="productLinkWithProtocol"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="product-link-inline"
-            >
-              {{ productLinkWithProtocol }}
-            </a>
-            <span v-else class="no-link">Ссылка отсутствует</span>
-          </div>
+        <ProductLinkWithActions
+          :label="ozonRegisterColumnTitles.productLink"
+          :item="item"
+          :disabled="isSubmitting || runningAction || loading"
+          @delete-image="() => deleteProductImage(values)"
+        />
           <OzonFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">

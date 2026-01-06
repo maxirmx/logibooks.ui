@@ -26,6 +26,7 @@ vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/Parcel_EditView.vue', () => ({ default: { template: '<div />' } }))
 
 import router from '@/router'
 

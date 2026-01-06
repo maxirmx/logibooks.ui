@@ -417,4 +417,31 @@ describe('parcels store', () => {
     })
   })
 
+    describe('deleteImage method', () => {
+      it('calls DELETE endpoint and refreshes item when current', async () => {
+        fetchWrapper.delete.mockResolvedValue(undefined)
+        fetchWrapper.get.mockResolvedValue({ id: 42, hasImage: false })
+
+        const store = useParcelsStore()
+        // simulate currently loaded item
+        store.item = { id: 42, hasImage: true }
+
+        const result = await store.deleteImage(42)
+        expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/parcels/42/image`)
+        expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/42`)
+        expect(result).toBe(true)
+        expect(store.item).toEqual({ id: 42, hasImage: false })
+      })
+
+      it('propagates error when delete fails', async () => {
+        const error = new Error('Not found')
+        fetchWrapper.delete.mockRejectedValue(error)
+
+        const store = useParcelsStore()
+
+        await expect(store.deleteImage(100)).rejects.toBe(error)
+        expect(store.error).toBe(error)
+      })
+    })
+
 })

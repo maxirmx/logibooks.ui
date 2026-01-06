@@ -499,7 +499,7 @@ async function onLookup(values) {
             :label="wbrRegisterColumnTitles.productLink"
             :item="item"
             :disabled="isSubmitting || runningAction || loading"
-            @delete-image="( ) => deleteProductImage(values)"
+            @delete-image="() => deleteProductImage(values)"
           />
           <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>

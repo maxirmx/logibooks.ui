@@ -5,6 +5,8 @@
 
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 
@@ -44,14 +46,22 @@ const deleteTooltip = 'Удалить изображение для тех. до
 
 function handleSelectClick() {
   const parcelsStore = useParcelsStore()
+  const { user } = useAuthStore()
+  const token = user?.token ?? null
+
+  if (token === null) {
+    const alertStore = useAlertStore()
+    alertStore.error('Необходимо войти в систему')
+    return
+  }
+
   emit('select-image')
   window.postMessage({
     type: 'LOGIBOOKS_EXTENSION_ACTIVATE',
     target: parcelsStore.getImageProcessingUrl(props.item.id),
-    url: normalizedLink.value
+    url: normalizedLink.value,
+    token
   }, '*')
-
-  console.info('[ProductLinkWithActions] Select technical image requested')
 }
 
 function handleViewClick() {

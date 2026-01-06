@@ -9,6 +9,19 @@ vi.mock('@/stores/parcels.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({
+    user: { token: 'test-token' }
+  })
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    error: vi.fn(),
+    clear: vi.fn()
+  })
+}))
+
 const ActionButtonStub = {
   props: ['item', 'icon', 'variant', 'iconSize', 'tooltipText', 'disabled'],
   emits: ['click'],
@@ -68,7 +81,7 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['select-image']).toHaveLength(1)
     expect(wrapper.emitted()['view-image']).toHaveLength(1)
     expect(wrapper.emitted()['delete-image']).toHaveLength(1)
-    expect(infoSpy).toHaveBeenCalledTimes(2)
+    expect(infoSpy).toHaveBeenCalledTimes(1)
   })
 
   it('shows placeholder text and disables buttons when link is missing or image is unavailable', () => {

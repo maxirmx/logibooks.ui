@@ -18,17 +18,17 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import WbrFormField from '@/components/WbrFormField.vue'
-import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
@@ -124,8 +124,6 @@ const overlayActive = ref(false)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
-
-const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
 const isDescriptionVisible = ref(false)
 
@@ -491,19 +489,13 @@ async function onLookup(values) {
             />
           </div>          
 
-          <div class="form-group">
-            <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
-            <a
-              v-if="item?.productLink"
-              :href="productLinkWithProtocol"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="product-link-inline"
-            >
-              {{ productLinkWithProtocol }}
-            </a>
-            <span v-else class="no-link">Ссылка отсутствует</span>
-          </div>
+          <ProductLinkWithActions
+            :label="wbrRegisterColumnTitles.productLink"
+            :product-link="item?.productLink"
+            :item="item"
+            :has-image="!!item?.hasImage"
+            :disabled="isSubmitting || runningAction || loading"
+          />
           <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">

@@ -17,18 +17,18 @@ import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
-import { ensureHttps } from '@/helpers/url.helpers.js'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ArticleWithH from '@/components/ArticleWithH.vue'
+import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
@@ -125,8 +125,6 @@ const overlayActive = ref(false)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
-
-const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
@@ -489,19 +487,13 @@ async function onLookup(values) {
           :fullWidth="false"
           @approve-notification="approveParcelWithNotification(values)"
         />
-        <div class="form-group">
-          <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
-          <a
-              v-if="item?.productLink"
-              :href="productLinkWithProtocol"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="product-link-inline"
-            >
-              {{ productLinkWithProtocol }}
-            </a>
-            <span v-else class="no-link">Ссылка отсутствует</span>
-          </div>
+        <ProductLinkWithActions
+          :label="ozonRegisterColumnTitles.productLink"
+          :product-link="item?.productLink"
+          :item="item"
+          :has-image="!!item?.hasImage"
+          :disabled="isSubmitting || runningAction || loading"
+        />
           <OzonFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">

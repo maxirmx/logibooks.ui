@@ -1,0 +1,133 @@
+<script setup>
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
+import { computed } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
+import { ensureHttps } from '@/helpers/url.helpers.js'
+
+const props = defineProps({
+  item: { type: Object, required: true },
+  label: { type: String, required: true },
+  productLink: { type: [String, null], default: '' },
+  hasImage: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false }
+})
+
+const emit = defineEmits(['select-image', 'view-image', 'delete-image'])
+
+const normalizedLink = computed(() => ensureHttps(props.productLink) ?? '')
+const hasLink = computed(() => Boolean(normalizedLink.value))
+const buttonsDisabled = computed(() => props.disabled || !props.hasImage)
+
+const selectTooltip = 'Выбрать изображение для тех. документации'
+const viewTooltip = 'Посмотреть изображение для тех. документации'
+const deleteTooltip = 'Удалить изображение для тех. документации'
+
+function handleSelectClick() {
+  if (buttonsDisabled.value) return
+  emit('select-image')
+  console.info('[ProductLinkWithActions] Select technical image requested')
+}
+
+function handleViewClick() {
+  if (buttonsDisabled.value) return
+  emit('view-image')
+  console.info('[ProductLinkWithActions] View technical image requested')
+}
+
+function handleDeleteClick() {
+  if (buttonsDisabled.value) return
+  emit('delete-image')
+  console.info('[ProductLinkWithActions] Delete technical image requested')
+}
+</script>
+
+<template>
+  <div class="form-group product-link-with-actions">
+    <label class="label">
+      {{ label }}:
+    </label>
+    <div class="link-and-panel">
+      <div class="link-content">
+        <a
+          v-if="hasLink"
+          :href="normalizedLink"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="product-link-inline"
+          data-test="product-link-anchor"
+        >
+          {{ normalizedLink }}
+        </a>
+        <span v-else class="no-link" data-test="product-link-empty">Ссылка отсутствует</span>
+      </div>
+      <div class="action-panel" data-test="product-link-actions">
+        <ActionButton
+          :item="item"
+          icon="fa-solid fa-file-image"
+          iconSize="1x"
+          :tooltip-text="selectTooltip"
+          data-test="product-link-select"
+          @click="handleSelectClick"
+        />
+        <ActionButton
+          :item="item"
+          icon="fa-solid fa-eye"
+          iconSize="1x"
+          :tooltip-text="viewTooltip"
+          :disabled="buttonsDisabled"
+          data-test="product-link-view"
+          @click="handleViewClick"
+        />
+        <ActionButton
+          :item="item"
+          icon="fa-solid fa-trash-can"
+          iconSize="1x"
+          :tooltip-text="deleteTooltip"
+          :disabled="buttonsDisabled"
+          data-test="product-link-delete"
+          @click="handleDeleteClick"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.product-link-with-actions {
+  width: 100%;
+}
+
+.link-and-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.link-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-link-inline,
+.no-link {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-panel {
+  display: flex;
+  gap: 0.25rem;
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+</style>

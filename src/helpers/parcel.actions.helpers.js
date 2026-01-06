@@ -106,3 +106,40 @@ export async function approveParcelWithExcise(values, item, parcelsStore) {
 export async function approveParcelWithNotification(values, item, parcelsStore) {
   return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification)
 }
+
+/**
+ * Deletes product image for a parcel after user confirmation
+ * @param {Object} values - Form values containing parcel id
+ * @param {Object} isComponentMounted - Ref indicating if component is mounted
+ * @param {Object} runningAction - Ref indicating if an action is running
+ * @param {Object} currentParcelId - Ref containing current parcel id
+ * @param {Function} confirm - Confirm dialog function from vuetify-use-dialog
+ * @param {Object} parcelsStore - Parcels store instance
+ * @returns {Promise<void>}
+ */
+export async function deleteProductImage(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Удалить изображение для этой посылки?'
+    })
+    if (!confirmed) return
+    await parcelsStore.deleteImage(currentParcelId.value)
+  } catch (error) {
+    const alertStore = useAlertStore()
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}

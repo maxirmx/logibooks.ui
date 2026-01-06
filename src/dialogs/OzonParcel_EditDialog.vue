@@ -36,7 +36,8 @@ import {
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
   approveParcelWithNotification as approveParcelWithNotificationHelper,
-  generateXml as generateXmlHelper
+  generateXml as generateXmlHelper,
+  deleteProductImage as deleteProductImageHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -153,29 +154,7 @@ const schema = Yup.object().shape({
 })
 
 async function deleteProductImage(values) {
-  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
-  runningAction.value = true
-  try {
-    const confirmed = await confirm({
-      title: 'Подтверждение',
-      confirmationText: 'Удалить',
-      cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
-      content: 'Удалить изображение для этой посылки?'
-    })
-    if (!confirmed) return
-    await parcelsStore.deleteImage(currentParcelId.value)
-  } catch (error) {
-    alertStore.error(error?.message || String(error))
-  } finally {
-    if (isComponentMounted.value) runningAction.value = false
-  }
+  await deleteProductImageHelper(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore)
 }
 
 async function validateParcel(values, sw, matchMode) {

@@ -18,17 +18,17 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import WbrFormField from '@/components/WbrFormField.vue'
-import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import ParcelProductLinkPanel from '@/components/ParcelProductLinkPanel.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
@@ -125,8 +125,6 @@ watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
 
-const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
-
 const isDescriptionVisible = ref(false)
 
 // Pre-fetch next parcels after component is mounted
@@ -201,6 +199,14 @@ async function approveParcelWithExcise(values, setFieldValue) {
   } finally {
     if (isComponentMounted.value) runningAction.value = false
   }
+}
+
+function onViewTechDocImage() {
+  // Stub action: view tech documentation image
+}
+
+function onDeleteTechDocImage() {
+  // Stub action: delete tech documentation image
 }
 
 async function refreshParcelAfterReportUpload() {
@@ -492,17 +498,14 @@ async function onLookup(values) {
           </div>          
 
           <div class="form-group">
-            <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
-            <a
-              v-if="item?.productLink"
-              :href="productLinkWithProtocol"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="product-link-inline"
-            >
-              {{ productLinkWithProtocol }}
-            </a>
-            <span v-else class="no-link">Ссылка отсутствует</span>
+            <ParcelProductLinkPanel
+              :item="item"
+              :label="wbrRegisterColumnTitles.productLink"
+              :product-link="item?.productLink"
+              :disabled="isSubmitting || runningAction || loading"
+              @view-image="onViewTechDocImage"
+              @delete-image="onDeleteTechDocImage"
+            />
           </div>
           <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>

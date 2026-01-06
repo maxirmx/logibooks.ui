@@ -383,7 +383,7 @@ describe('router guards', () => {
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels/edit/2')
-  }, { timeout: 10000 })
+  })
 
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {

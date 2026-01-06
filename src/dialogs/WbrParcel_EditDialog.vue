@@ -27,6 +27,7 @@ import { ensureHttps } from '@/helpers/url.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
+import ProductImageActionsBar from '@/components/ProductImageActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -126,6 +127,14 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
+
+function viewProductImage() {
+  // Stub action for viewing the technical documentation image
+}
+
+function removeProductImage() {
+  // Stub action for removing the technical documentation image
+}
 
 const isDescriptionVisible = ref(false)
 
@@ -493,16 +502,24 @@ async function onLookup(values) {
 
           <div class="form-group">
             <label class="label">{{ wbrRegisterColumnTitles.productLink }}:</label>
-            <a
-              v-if="item?.productLink"
-              :href="productLinkWithProtocol"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="product-link-inline"
-            >
-              {{ productLinkWithProtocol }}
-            </a>
-            <span v-else class="no-link">Ссылка отсутствует</span>
+            <div class="product-link-with-actions">
+              <a
+                v-if="item?.productLink"
+                :href="productLinkWithProtocol"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="product-link-inline"
+              >
+                {{ productLinkWithProtocol }}
+              </a>
+              <span v-else class="no-link">Ссылка отсутствует</span>
+              <ProductImageActionsBar
+                :item="item"
+                :has-image="item?.hasImage"
+                @view="viewProductImage"
+                @remove="removeProductImage"
+              />
+            </div>
           </div>
           <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>

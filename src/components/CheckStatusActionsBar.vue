@@ -24,18 +24,6 @@ defineProps({
 defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve-excise'])
 </script>
 
-<style scoped>
-.action-buttons {
-  display: flex;
-  gap: 0.25rem;
-  background: #ffffff;
-  border: 1px solid #74777c;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-</style>
-
 <template>
   <div class="action-buttons">
     <ActionButton

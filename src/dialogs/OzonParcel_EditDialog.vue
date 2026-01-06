@@ -26,6 +26,7 @@ import OzonFormField from '@/components/OzonFormField.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
+import ProductImageActionsBar from '@/components/ProductImageActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ArticleWithH from '@/components/ArticleWithH.vue'
@@ -127,6 +128,14 @@ watch(() => item.value?.statusId, (newStatusId) => {
 }, { immediate: true })
 
 const productLinkWithProtocol = computed(() => ensureHttps(item.value?.productLink))
+
+function viewProductImage() {
+  // Stub action for viewing the technical documentation image
+}
+
+function removeProductImage() {
+  // Stub action for removing the technical documentation image
+}
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
@@ -491,7 +500,8 @@ async function onLookup(values) {
         />
         <div class="form-group">
           <label class="label">{{ ozonRegisterColumnTitles.productLink }}:</label>
-          <a
+          <div class="product-link-with-actions">
+            <a
               v-if="item?.productLink"
               :href="productLinkWithProtocol"
               target="_blank"
@@ -501,7 +511,14 @@ async function onLookup(values) {
               {{ productLinkWithProtocol }}
             </a>
             <span v-else class="no-link">Ссылка отсутствует</span>
+            <ProductImageActionsBar
+              :item="item"
+              :has-image="item?.hasImage"
+              @view="viewProductImage"
+              @remove="removeProductImage"
+            />
           </div>
+        </div>
           <OzonFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">

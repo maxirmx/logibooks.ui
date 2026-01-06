@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
+
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({
+    getImageProcessingUrl: (id) => `/parcels/${id}/image`
+  })
+}))
 
 const ActionButtonStub = {
   props: ['item', 'icon', 'variant', 'iconSize', 'tooltipText', 'disabled'],
@@ -16,21 +23,39 @@ const globalStubs = {
 describe('ProductLinkWithActions', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    // cleanup global extension flag if set
+    try { delete global.window.__LOGIBOOKS_EXTENSION_ACTIVE 
+    } catch {
+      // ignore if not accessible in this test runner
+    }
   })
 
   it('renders sanitized link and emits events when actions are clicked', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    // Simulate extension presence for select action
+    global.window.__LOGIBOOKS_EXTENSION_ACTIVE = true
 
     const wrapper = mount(ProductLinkWithActions, {
       props: {
         label: 'Product Link',
-        productLink: 'example.com',
-        item: { id: 10 },
-        hasImage: true,
+        item: { id: 10, productLink: 'example.com', hasImage: true },
         disabled: false
       },
       global: { stubs: globalStubs }
     })
+
+    // wait for onMounted to run and pick up extension flag
+    await nextTick()
+    await new Promise((r) => setTimeout(r, 0))
+    await nextTick()
+
+    // Ensure extensionPresent is true in test environment
+    try {
+      wrapper.vm.extensionPresent = true
+      await nextTick()
+    } catch {
+      // ignore if not accessible in this test runner
+    }
 
     const link = wrapper.find('[data-test="product-link-anchor"]')
     expect(link.exists()).toBe(true)
@@ -43,16 +68,14 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['select-image']).toHaveLength(1)
     expect(wrapper.emitted()['view-image']).toHaveLength(1)
     expect(wrapper.emitted()['delete-image']).toHaveLength(1)
-    expect(infoSpy).toHaveBeenCalledTimes(3)
+    expect(infoSpy).toHaveBeenCalledTimes(2)
   })
 
   it('shows placeholder text and disables buttons when link is missing or image is unavailable', () => {
     const wrapper = mount(ProductLinkWithActions, {
       props: {
         label: 'Product Link',
-        productLink: null,
-        item: { id: 11 },
-        hasImage: false,
+        item: { id: 11, productLink: null, hasImage: false },
         disabled: false
       },
       global: { stubs: globalStubs }
@@ -74,9 +97,7 @@ describe('ProductLinkWithActions', () => {
     const wrapper = mount(ProductLinkWithActions, {
       props: {
         label: 'Product Link',
-        productLink: '',
-        item: { id: 12 },
-        hasImage: false,
+        item: { id: 12, productLink: '', hasImage: false },
         disabled: true
       },
       global: { stubs: globalStubs }

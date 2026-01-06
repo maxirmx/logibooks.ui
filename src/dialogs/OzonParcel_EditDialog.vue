@@ -520,9 +520,7 @@ async function onLookup(values) {
         />
         <ProductLinkWithActions
           :label="ozonRegisterColumnTitles.productLink"
-          :product-link="item?.productLink"
           :item="item"
-          :has-image="!!item?.hasImage"
           :disabled="isSubmitting || runningAction || loading"
           @delete-image="( ) => deleteProductImage(values)"
         />

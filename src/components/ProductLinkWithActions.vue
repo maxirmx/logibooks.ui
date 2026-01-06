@@ -3,31 +3,54 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useParcelsStore } from '@/stores/parcels.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 
 const props = defineProps({
   item: { type: Object, required: true },
   label: { type: String, required: true },
-  productLink: { type: [String, null], default: '' },
-  hasImage: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['select-image', 'view-image', 'delete-image'])
 
-const normalizedLink = computed(() => ensureHttps(props.productLink) ?? '')
+const normalizedLink = computed(() => ensureHttps(props.item?.productLink) ?? '')
 const hasLink = computed(() => Boolean(normalizedLink.value))
-const buttonsDisabled = computed(() => props.disabled || !props.hasImage)
+const buttonsDisabled = computed(() => props.disabled || !props.item?.hasImage)
+
+const extensionPresent = ref(false)
+function onMessage(e) {
+  if (e && e.source === window && e.data && e.data.type === 'LOGIBOOKS_EXTENSION_ACTIVE') {
+    extensionPresent.value = Boolean(e.data.active)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('message', onMessage)
+  window.postMessage({ type: 'LOGIBOOKS_EXTENSION_QUERY' }, '*')
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', onMessage)
+})
+
+const selectDisabled = computed(() => props.disabled || !extensionPresent.value)
 
 const selectTooltip = 'Выбрать изображение для тех. документации'
 const viewTooltip = 'Посмотреть изображение для тех. документации'
 const deleteTooltip = 'Удалить изображение для тех. документации'
 
 function handleSelectClick() {
-  if (buttonsDisabled.value) return
+  const parcelsStore = useParcelsStore()
   emit('select-image')
+  window.postMessage({
+    type: 'LOGIBOOKS_EXTENSION_ACTIVATE',
+    target: parcelsStore.getImageProcessingUrl(props.item.id),
+    url: normalizedLink.value
+  }, '*')
+
   console.info('[ProductLinkWithActions] Select technical image requested')
 }
 
@@ -40,7 +63,6 @@ function handleViewClick() {
 function handleDeleteClick() {
   if (buttonsDisabled.value) return
   emit('delete-image')
-  console.info('[ProductLinkWithActions] Delete technical image requested')
 }
 </script>
 
@@ -69,6 +91,7 @@ function handleDeleteClick() {
           icon="fa-solid fa-file-image"
           iconSize="1x"
           :tooltip-text="selectTooltip"
+          :disabled="selectDisabled"
           data-test="product-link-select"
           @click="handleSelectClick"
         />

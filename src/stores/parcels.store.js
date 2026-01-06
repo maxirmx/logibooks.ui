@@ -215,7 +215,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   async function deleteImage(id) {
     // Calls API: DELETE /parcels/{id}/image
     try {
-      await fetchWrapper.delete(`${baseUrl}/${id}/image`)
+      await fetchWrapper.delete(getImageProcessingUrl(id))
       // Refresh current item if it's the same id to update hasImage flag
       if (item.value && item.value.id === id) {
         // refetch to update UI
@@ -226,6 +226,10 @@ export const useParcelsStore = defineStore('parcels', () => {
       error.value = err
       throw err
     }
+  }
+
+  function getImageProcessingUrl(id) {
+    return `${baseUrl}/${id}/image`
   }
 
   return {
@@ -246,6 +250,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     validate,
     approve,
     lookupFeacnCode,
+    getImageProcessingUrl,
     deleteImage
   }
 })

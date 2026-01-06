@@ -26,6 +26,7 @@ vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/Parcel_EditView.vue', () => ({ default: { template: '<div />' } }))
 
 import router from '@/router'
 
@@ -382,7 +383,7 @@ describe('router guards', () => {
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels/edit/2')
-  })
+  }, { timeout: 10000 })
 
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {

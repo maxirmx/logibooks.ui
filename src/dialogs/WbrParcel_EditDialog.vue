@@ -19,6 +19,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
@@ -71,6 +72,7 @@ await parcelViewsStore.add(currentParcelId.value)
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+const confirm = useConfirm()
 
 // Set the selected parcel ID in auth store
 authStore.selectedParcelId = currentParcelId.value
@@ -150,6 +152,33 @@ const schema = Yup.object().shape({
   unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
 })
 
+async function deleteProductImage(values) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    const content = 'Удалить изображение для этой посылки?'
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
+    if (!confirmed) return
+    await parcelsStore.deleteImage(currentParcelId.value)
+    await parcelsStore.getById(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
 
 async function validateParcel(values, sw, matchMode) {
   if (!isComponentMounted.value || runningAction.value) return
@@ -495,6 +524,7 @@ async function onLookup(values) {
             :item="item"
             :has-image="!!item?.hasImage"
             :disabled="isSubmitting || runningAction || loading"
+            @delete-image="( ) => deleteProductImage(values)"
           />
           <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>

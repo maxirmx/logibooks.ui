@@ -228,6 +228,11 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
+  async function getImageBlob(id) {
+    const response = await fetchWrapper.getFile(getImageProcessingUrl(id))
+    return response.blob()
+  }
+
   function getImageProcessingUrl(id) {
     return `${baseUrl}/${id}/image`
   }
@@ -251,6 +256,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     approve,
     lookupFeacnCode,
     getImageProcessingUrl,
+    getImageBlob,
     deleteImage
   }
 })

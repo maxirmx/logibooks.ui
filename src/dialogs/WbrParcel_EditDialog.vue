@@ -30,6 +30,7 @@ import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
+import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
@@ -40,6 +41,7 @@ import {
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+import { useParcelImageOverlay } from '@/helpers/parcel.image.overlay.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -74,6 +76,13 @@ await parcelViewsStore.add(currentParcelId.value)
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
+const {
+  imageOverlayOpen,
+  imageUrl,
+  imageLoading,
+  openImageOverlay,
+  closeImageOverlay
+} = useParcelImageOverlay(parcelsStore, alertStore)
 
 // Set the selected parcel ID in auth store
 authStore.selectedParcelId = currentParcelId.value
@@ -141,6 +150,20 @@ onUnmounted(() => {
   window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
 })
 
+function handleImageOverlayEscape(event) {
+  if (event.key === 'Escape' && imageOverlayOpen.value) {
+    closeImageOverlay()
+  }
+}
+
+watch(imageOverlayOpen, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('keydown', handleImageOverlayEscape)
+  } else {
+    document.removeEventListener('keydown', handleImageOverlayEscape)
+  }
+})
+
 const schema = Yup.object().shape({
   statusId: Yup.number().required('Необходимо выбрать статус'),
   tnVed: Yup.string()
@@ -155,6 +178,10 @@ const schema = Yup.object().shape({
 
 async function deleteProductImage(values) {
   await deleteProductImageHelper(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore)
+}
+
+async function viewProductImage() {
+  await openImageOverlay(item.value?.id)
 }
 
 async function validateParcel(values, sw, matchMode) {
@@ -361,7 +388,7 @@ async function onLookup(values) {
       :initial-values="item" 
       :validation-schema="schema" 
       v-slot="{ errors, values, isSubmitting, setFieldValue }" 
-      :class="{ 'form-disabled': overlayActive }"
+      :class="{ 'form-disabled': overlayActive || imageOverlayOpen }"
     >
     <div class="header-with-actions">
       <h1 class="primary-heading">
@@ -499,6 +526,7 @@ async function onLookup(values) {
             :label="wbrRegisterColumnTitles.productLink"
             :item="item"
             :disabled="isSubmitting || runningAction || loading"
+            @view-image="viewProductImage"
             @delete-image="() => deleteProductImage(values)"
           />
           <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
@@ -550,6 +578,12 @@ async function onLookup(values) {
       {{ alert.message }}
     </div>
   </div>
+  <ParcelImageOverlay
+    :open="imageOverlayOpen"
+    :image-url="imageUrl"
+    :loading="imageLoading"
+    @close="closeImageOverlay"
+  />
 </template>
 
 <style scoped>

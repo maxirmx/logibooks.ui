@@ -17,13 +17,15 @@ const overlayRef = ref(null)
 const closeButtonRef = ref(null)
 const previousActiveElement = ref(null)
 
+// Selector for all focusable elements within the overlay
+const FOCUSABLE_SELECTORS = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable], audio[controls], video[controls], details'
+
 // Track focusable elements within the overlay
 const focusableElements = ref([])
 
 function getFocusableElements() {
   if (!overlayRef.value) return []
-  const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable], audio[controls], video[controls], details'
-  return Array.from(overlayRef.value.querySelectorAll(selectors))
+  return Array.from(overlayRef.value.querySelectorAll(FOCUSABLE_SELECTORS))
 }
 
 function trapFocus(event) {
@@ -65,9 +67,7 @@ watch(() => props.open, async (isOpen) => {
     document.addEventListener('keydown', trapFocus)
   } else {
     document.removeEventListener('keydown', trapFocus)
-    if (previousActiveElement.value && typeof previousActiveElement.value.focus === 'function') {
-      previousActiveElement.value.focus()
-    }
+    previousActiveElement.value?.focus?.()
     previousActiveElement.value = null
   }
 }, { immediate: true })

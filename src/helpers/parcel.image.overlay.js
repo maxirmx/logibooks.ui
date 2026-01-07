@@ -26,14 +26,15 @@ export function useParcelImageOverlay(parcelsStore, alertStore) {
   async function openImageOverlay(parcelId) {
     if (!parcelId || imageLoading.value) return
     imageLoading.value = true
+    imageOverlayOpen.value = true
     try {
       const blob = await parcelsStore.getImageBlob(parcelId)
       clearImageUrl()
       activeObjectUrl = URL.createObjectURL(blob)
       imageUrl.value = activeObjectUrl
-      imageOverlayOpen.value = true
     } catch (error) {
       alertStore.error(error?.message || String(error))
+      imageOverlayOpen.value = false
     } finally {
       imageLoading.value = false
     }

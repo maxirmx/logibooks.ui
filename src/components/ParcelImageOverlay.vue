@@ -3,19 +3,101 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-defineProps({
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
+
+const props = defineProps({
   open: { type: Boolean, default: false },
   imageUrl: { type: String, default: '' },
   loading: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close'])
+
+const overlayRef = ref(null)
+const closeButtonRef = ref(null)
+let previousActiveElement = null
+
+// Track focusable elements within the overlay
+const focusableElements = ref([])
+
+function getFocusableElements() {
+  if (!overlayRef.value) return []
+  const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  return Array.from(overlayRef.value.querySelectorAll(selectors))
+}
+
+function trapFocus(event) {
+  if (event.key !== 'Tab') return
+  
+  const elements = getFocusableElements()
+  if (elements.length === 0) return
+
+  const firstElement = elements[0]
+  const lastElement = elements[elements.length - 1]
+
+  if (event.shiftKey) {
+    if (document.activeElement === firstElement) {
+      event.preventDefault()
+      lastElement.focus()
+    }
+  } else {
+    if (document.activeElement === lastElement) {
+      event.preventDefault()
+      firstElement.focus()
+    }
+  }
+}
+
+function handleBackgroundClick(event) {
+  if (event.target === event.currentTarget) {
+    emit('close')
+  }
+}
+
+watch(() => props.open, async (isOpen) => {
+  if (isOpen) {
+    previousActiveElement = document.activeElement
+    await nextTick()
+    focusableElements.value = getFocusableElements()
+    if (closeButtonRef.value) {
+      closeButtonRef.value.focus()
+    }
+    document.addEventListener('keydown', trapFocus)
+  } else {
+    document.removeEventListener('keydown', trapFocus)
+    if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
+      previousActiveElement.focus()
+    }
+    previousActiveElement = null
+  }
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', trapFocus)
+})
+
 </script>
 
 <template>
-  <div v-if="open" class="image-overlay" data-test="parcel-image-overlay">
-    <div class="image-overlay-content">
-      <button class="image-overlay-close" type="button" @click="emit('close')" aria-label="Close image overlay">
+  <div 
+    v-if="open" 
+    ref="overlayRef"
+    class="image-overlay" 
+    data-test="parcel-image-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="image-overlay-title"
+    @click="handleBackgroundClick"
+  >
+    <div class="image-overlay-content" @click.stop>
+      <span id="image-overlay-title" class="sr-only">Parcel image</span>
+      <button 
+        ref="closeButtonRef"
+        class="image-overlay-close" 
+        type="button" 
+        @click="emit('close')" 
+        aria-label="Close image overlay"
+      >
         ×
       </button>
       <div v-if="loading" class="image-overlay-loading" data-test="parcel-image-loading">
@@ -35,6 +117,7 @@ const emit = defineEmits(['close'])
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  cursor: pointer;
 }
 
 .image-overlay-content {
@@ -47,6 +130,7 @@ const emit = defineEmits(['close'])
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: default;
 }
 
 .image-overlay-close {
@@ -67,5 +151,17 @@ const emit = defineEmits(['close'])
 
 .image-overlay-loading {
   font-size: 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 </style>

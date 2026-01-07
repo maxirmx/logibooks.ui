@@ -15,14 +15,14 @@ const emit = defineEmits(['close'])
 
 const overlayRef = ref(null)
 const closeButtonRef = ref(null)
-let previousActiveElement = null
+const previousActiveElement = ref(null)
 
 // Track focusable elements within the overlay
 const focusableElements = ref([])
 
 function getFocusableElements() {
   if (!overlayRef.value) return []
-  const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable], audio[controls], video[controls], details'
   return Array.from(overlayRef.value.querySelectorAll(selectors))
 }
 
@@ -56,7 +56,7 @@ function handleBackgroundClick(event) {
 
 watch(() => props.open, async (isOpen) => {
   if (isOpen) {
-    previousActiveElement = document.activeElement
+    previousActiveElement.value = document.activeElement
     await nextTick()
     focusableElements.value = getFocusableElements()
     if (closeButtonRef.value) {
@@ -65,13 +65,14 @@ watch(() => props.open, async (isOpen) => {
     document.addEventListener('keydown', trapFocus)
   } else {
     document.removeEventListener('keydown', trapFocus)
-    if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
-      previousActiveElement.focus()
+    if (previousActiveElement.value && typeof previousActiveElement.value.focus === 'function') {
+      previousActiveElement.value.focus()
     }
-    previousActiveElement = null
+    previousActiveElement.value = null
   }
 }, { immediate: true })
 
+// Cleanup on unmount in case component is destroyed while overlay is open
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', trapFocus)
 })

@@ -215,6 +215,10 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     await registersStore.download(item.id, item.fileName)
   }
 
+  async function downloadTechdoc(item) {
+    await registersStore.downloadTechdoc(item.id, item.invoiceNumber)
+  }
+
   function cancelValidationWrapper() {
     const isFeacnLookup =
       validationState.operation === 'lookup-feacn-codes'
@@ -247,6 +251,7 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     exportAllXmlExcise,
     exportAllXmlNotifications,
     downloadRegister,
+    downloadTechdoc,
     cancelValidation: cancelValidationWrapper,
     stopPolling
   }
@@ -273,6 +278,7 @@ export function useRegisterHeaderActions({
     exportAllXmlExcise,
     exportAllXmlNotifications,
     downloadRegister,
+    downloadTechdoc,
     cancelValidation,
     stopPolling
   } = createRegisterActionHandlers(registersStore, alertStore)
@@ -366,6 +372,10 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(downloadRegister, 'download-register')
   }
 
+  const runDownloadTechdoc = async () => {
+    await runActionWithDialog(downloadTechdoc, 'download-techdoc')
+  }
+
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
@@ -403,6 +413,7 @@ export function useRegisterHeaderActions({
     exportAllXmlExcise: runExportAllXmlExcise,
     exportAllXmlNotifications: runExportAllXmlNotifications,    
     downloadRegister: runDownloadRegister,
+    downloadTechdoc: runDownloadTechdoc,
     cancelValidation,
     stop
   }

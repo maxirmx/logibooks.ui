@@ -290,7 +290,7 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // We added an invoice action (ActionButton2L) which renders an extra button
-    expect(buttons).toHaveLength(10)
+    expect(buttons).toHaveLength(11)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()

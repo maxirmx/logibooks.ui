@@ -16,11 +16,11 @@ import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
  */
 export async function validateParcelData(values, item, parcelsStore, sw, matchMode) {
   if (item.value.id != values.id) return Promise.resolve(false)
+  const alertStore = useAlertStore()
   try {
     await parcelsStore.update(item.value.id, values)
     await parcelsStore.validate(item.value.id, sw, matchMode)
   } catch (error) {
-    const alertStore = useAlertStore()
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     alertStore.error(parcelsStore.error)
   } finally {
@@ -70,6 +70,7 @@ export async function approveParcel(values, item, parcelsStore, approvalMode = P
  * @returns {Promise<void>}
  */
 export async function generateXml(item, parcelsStore, filenameOrGenerator) {
+  const alertStore = useAlertStore()
   try {
     
     // Determine filename
@@ -84,7 +85,6 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator) {
     await parcelsStore.generate(item.value.id, filename)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
-    const alertStore = useAlertStore()
     alertStore.error(parcelsStore.error)
   }
 }
@@ -105,4 +105,42 @@ export async function approveParcelWithExcise(values, item, parcelsStore) {
  */
 export async function approveParcelWithNotification(values, item, parcelsStore) {
   return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification)
+}
+
+/**
+ * Deletes product image for a parcel after user confirmation
+ * @param {Object} values - Form values containing parcel id
+ * @param {Object} isComponentMounted - Ref indicating if component is mounted
+ * @param {Object} runningAction - Ref indicating if an action is running
+ * @param {Object} currentParcelId - Ref containing current parcel id
+ * @param {Function} confirm - Confirm dialog function from vuetify-use-dialog
+ * @param {Object} parcelsStore - Parcels store instance
+ * @returns {Promise<void>}
+ */
+export async function deleteProductImage(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  const alertStore = useAlertStore()
+  try {
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Удалить изображение для этой посылки?'
+    })
+    if (confirmed) {
+      await parcelsStore.deleteImage(currentParcelId.value)
+    }
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
 }

@@ -377,7 +377,24 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function download(id, filename) {
+  async function downloadTechdoc(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+    const filename = `тех-документация_${invoiceNumber || id}-акциз.docx`
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download-techdoc`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+    async function download(id, filename) {
     if (!filename) {
       filename = `register_${id}.xlsx`
     }
@@ -463,6 +480,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateOrdinary,
     downloadInvoiceFile,
     download,
+    downloadTechdoc,
     nextParcels,
     remove,
     uploadFile

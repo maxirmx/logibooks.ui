@@ -5,7 +5,7 @@
 
 import { ref, watch, nextTick } from 'vue'
 
-defineProps({
+const props = defineProps({
   open: { type: Boolean, default: false },
   imageUrl: { type: String, default: '' },
   loading: { type: Boolean, default: false }
@@ -16,11 +16,13 @@ const closeButtonRef = ref(null)
 let previouslyFocusedElement = null
 
 // Store the previously focused element and move focus to close button when overlay opens
-watch(() => closeButtonRef.value, async (button) => {
-  if (button) {
+watch(() => props.open, async (isOpen) => {
+  if (isOpen) {
     previouslyFocusedElement = document.activeElement
     await nextTick()
-    button.focus()
+    if (closeButtonRef.value) {
+      closeButtonRef.value.focus()
+    }
   }
 })
 

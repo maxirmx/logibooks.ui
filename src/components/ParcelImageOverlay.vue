@@ -29,7 +29,11 @@ watch(() => props.open, async (isOpen) => {
 // Return focus to previously focused element when overlay closes
 function handleClose() {
   emit('close')
-  if (previouslyFocusedElement && previouslyFocusedElement.focus) {
+  if (
+    previouslyFocusedElement &&
+    previouslyFocusedElement.isConnected &&
+    typeof previouslyFocusedElement.focus === 'function'
+  ) {
     previouslyFocusedElement.focus()
   }
   previouslyFocusedElement = null

@@ -50,6 +50,7 @@ export default [
         URL: 'readonly',
         FormData: 'readonly',
         File: 'readonly',
+        HTMLElement: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
         setTimeout: 'readonly',

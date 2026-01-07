@@ -16,11 +16,11 @@ import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
  */
 export async function validateParcelData(values, item, parcelsStore, sw, matchMode) {
   if (item.value.id != values.id) return Promise.resolve(false)
+  const alertStore = useAlertStore()
   try {
     await parcelsStore.update(item.value.id, values)
     await parcelsStore.validate(item.value.id, sw, matchMode)
   } catch (error) {
-    const alertStore = useAlertStore()
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     alertStore.error(parcelsStore.error)
   } finally {
@@ -70,6 +70,7 @@ export async function approveParcel(values, item, parcelsStore, approvalMode = P
  * @returns {Promise<void>}
  */
 export async function generateXml(item, parcelsStore, filenameOrGenerator) {
+  const alertStore = useAlertStore()
   try {
     
     // Determine filename
@@ -84,7 +85,6 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator) {
     await parcelsStore.generate(item.value.id, filename)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
-    const alertStore = useAlertStore()
     alertStore.error(parcelsStore.error)
   }
 }
@@ -120,6 +120,7 @@ export async function approveParcelWithNotification(values, item, parcelsStore) 
 export async function deleteProductImage(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore) {
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
+  const alertStore = useAlertStore()
   try {
     const confirmed = await confirm({
       title: 'Подтверждение',
@@ -134,10 +135,10 @@ export async function deleteProductImage(values, isComponentMounted, runningActi
       },
       content: 'Удалить изображение для этой посылки?'
     })
-    if (!confirmed) return
-    await parcelsStore.deleteImage(currentParcelId.value)
+    if (confirmed) {
+      await parcelsStore.deleteImage(currentParcelId.value)
+    }
   } catch (error) {
-    const alertStore = useAlertStore()
     alertStore.error(error?.message || String(error))
   } finally {
     if (isComponentMounted.value) runningAction.value = false

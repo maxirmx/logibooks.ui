@@ -214,6 +214,10 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function deleteImage(id) {
     // Calls API: DELETE /parcels/{id}/image
+    // Defensive check: verify parcel has an image before making API call
+    if (item.value && item.value.id === id && !item.value.hasImage) {
+      return false
+    }
     try {
       await fetchWrapper.delete(getImageProcessingUrl(id))
       // Refresh current item if it's the same id to update hasImage flag

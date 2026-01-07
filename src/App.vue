@@ -16,6 +16,8 @@ const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
 
+const baseUrl = import.meta.env.BASE_URL
+
 onMounted(() => {
   statusStore.fetchStatus().catch(() => {})
 })
@@ -174,7 +176,7 @@ function getUserName() {
 
         <!-- Отчёты -->
         <v-list-item v-if="authStore.hasAnyRole">
-          <a href="/extensions/extension-v0.2.0.zip" target="_blank" rel="noopener" class="link">Скачать расширение</a>
+          <a :href="`${baseUrl}extensions/extension-v0.2.0.zip`" target="_blank" rel="noopener" class="link">Скачать расширение</a>
         </v-list-item>
 
         <v-list-item>

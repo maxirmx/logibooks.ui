@@ -433,6 +433,18 @@ describe('parcels store', () => {
         expect(store.item).toEqual({ id: 42, hasImage: false })
       })
 
+      it('returns false without calling API when parcel has no image', async () => {
+        fetchWrapper.delete.mockResolvedValue(undefined)
+
+        const store = useParcelsStore()
+        // simulate currently loaded item without an image
+        store.item = { id: 42, hasImage: false }
+
+        const result = await store.deleteImage(42)
+        expect(fetchWrapper.delete).not.toHaveBeenCalled()
+        expect(result).toBe(false)
+      })
+
       it('propagates error when delete fails', async () => {
         const error = new Error('Not found')
         fetchWrapper.delete.mockRejectedValue(error)

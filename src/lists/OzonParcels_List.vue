@@ -230,6 +230,7 @@ const {
   exportAllXmlExcise: exportRegisterXmlExcise,
   exportAllXmlNotifications: exportRegisterXmlNotifications,
   downloadRegister: downloadRegisterFile,
+  downloadTechdoc: downloadTechdocFile,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -471,6 +472,7 @@ function getGenericTemplateHeaders() {
           @export-excise="exportRegisterXmlExcise"
           @export-notifications="exportRegisterXmlNotifications"
           @download="downloadRegisterFile"
+          @download-techdoc="downloadTechdocFile"
         />
     </div>
     <hr class="hr" />

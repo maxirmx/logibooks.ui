@@ -20,7 +20,8 @@ const emit = defineEmits([
   'export-ordinary',
   'export-excise',
   'export-notifications',
-  'download'
+  'download',
+  'download-techdoc'
 ])
 
 const router = useRouter()
@@ -149,6 +150,14 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
             action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
           }
         ]"
+      />
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-file-image"
+        tooltip-text="Сформировать тех. документацию (акциз)"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('download-techdoc')"
       />
     </div>
   </div>

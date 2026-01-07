@@ -30,7 +30,7 @@ watch(() => props.open, async (isOpen) => {
 function handleClose() {
   emit('close')
   if (
-    previouslyFocusedElement instanceof HTMLElement &&
+    previouslyFocusedElement &&
     previouslyFocusedElement.isConnected &&
     typeof previouslyFocusedElement.focus === 'function'
   ) {

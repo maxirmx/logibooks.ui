@@ -148,7 +148,6 @@ onMounted(() => {
 onUnmounted(() => {
   isComponentMounted.value = false
   window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
-  document.removeEventListener('keydown', handleImageOverlayEscape)
 })
 
 function handleImageOverlayEscape(event) {

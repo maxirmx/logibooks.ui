@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
+import { ref, watch, nextTick } from 'vue'
+
 defineProps({
   open: { type: Boolean, default: false },
   imageUrl: { type: String, default: '' },
@@ -10,12 +12,64 @@ defineProps({
 })
 
 const emit = defineEmits(['close'])
+const closeButtonRef = ref(null)
+let previouslyFocusedElement = null
+
+// Store the previously focused element and move focus to close button when overlay opens
+watch(() => closeButtonRef.value, async (button) => {
+  if (button) {
+    previouslyFocusedElement = document.activeElement
+    await nextTick()
+    button.focus()
+  }
+})
+
+// Return focus to previously focused element when overlay closes
+function handleClose() {
+  emit('close')
+  if (previouslyFocusedElement && previouslyFocusedElement.focus) {
+    previouslyFocusedElement.focus()
+  }
+  previouslyFocusedElement = null
+}
+
+// Close overlay when clicking on the background
+function handleBackgroundClick(event) {
+  if (event.target === event.currentTarget) {
+    handleClose()
+  }
+}
+
+// Handle keyboard navigation within the modal (focus trap)
+function handleKeyDown(event) {
+  if (event.key === 'Tab') {
+    // For simplicity, since we only have one focusable element (close button),
+    // we prevent tab from doing anything to keep focus trapped
+    event.preventDefault()
+  }
+}
 </script>
 
 <template>
-  <div v-if="open" class="image-overlay" data-test="parcel-image-overlay">
+  <div 
+    v-if="open" 
+    class="image-overlay" 
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="image-overlay-title"
+    data-test="parcel-image-overlay"
+    @click="handleBackgroundClick"
+    @keydown="handleKeyDown"
+  >
     <div class="image-overlay-content">
-      <button class="image-overlay-close" type="button" @click="emit('close')" aria-label="Close image overlay">
+      <h2 id="image-overlay-title" class="visually-hidden">Parcel Image</h2>
+      <button 
+        ref="closeButtonRef"
+        class="image-overlay-close" 
+        type="button" 
+        @click="handleClose" 
+        aria-label="Close image overlay"
+      >
         ×
       </button>
       <div v-if="loading" class="image-overlay-loading" data-test="parcel-image-loading">
@@ -67,5 +121,17 @@ const emit = defineEmits(['close'])
 
 .image-overlay-loading {
   font-size: 1rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

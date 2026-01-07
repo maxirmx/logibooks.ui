@@ -377,8 +377,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function downloadTechdoc(id, invoiceNumber)
-  {
+  async function downloadTechdoc(id, invoiceNumber) {
     loading.value = true
     error.value = null
     try {

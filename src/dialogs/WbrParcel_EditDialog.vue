@@ -148,6 +148,8 @@ onMounted(() => {
 onUnmounted(() => {
   isComponentMounted.value = false
   window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
+  // Clean up keyboard event listener if still attached
+  document.removeEventListener('keydown', handleImageOverlayEscape)
 })
 
 function handleImageOverlayEscape(event) {

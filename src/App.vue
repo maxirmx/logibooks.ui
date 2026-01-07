@@ -170,10 +170,12 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/parceleventprocessing" class="link">События</RouterLink>
           </v-list-item>
-          <v-list-item>
-            <a href="/extensions/extension-v0.1.1.zip" target="_blank" rel="noopener" class="link">Расширение (zip)</a>
-          </v-list-item>
         </v-list-group>
+
+        <!-- Отчёты -->
+        <v-list-item v-if="authStore.hasAnyRole">
+          <a href="/extensions/extension-v0.2.0.zip" target="_blank" rel="noopener" class="link">Скачать расширение</a>
+        </v-list-item>
 
         <v-list-item>
           <RouterLink to="/login" @click="deauth()" class="link">Выход</RouterLink>

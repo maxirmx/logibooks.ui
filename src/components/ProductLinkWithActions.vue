@@ -138,6 +138,7 @@ function handleDeleteClick() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.5rem;
   min-width: 0;
 }
 

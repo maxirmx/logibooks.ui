@@ -96,7 +96,7 @@ function handleKeyDown(event) {
 .image-overlay-content {
   position: relative;
   background: #fff;
-  padding: 1rem;
+  padding: 0rem;
   border-radius: 0.5rem;
   max-width: 90vw;
   max-height: 90vh;

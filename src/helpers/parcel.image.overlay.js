@@ -1,0 +1,55 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
+import { ref, onUnmounted } from 'vue'
+import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+
+export function useParcelImageOverlay(parcelsStore, alertStore) {
+  const imageOverlayOpen = ref(false)
+  const imageUrl = ref('')
+  const imageLoading = ref(false)
+  let activeObjectUrl = null
+
+  function clearImageUrl() {
+    if (activeObjectUrl) {
+      URL.revokeObjectURL(activeObjectUrl)
+      activeObjectUrl = null
+    }
+    imageUrl.value = ''
+  }
+
+  function closeImageOverlay() {
+    imageOverlayOpen.value = false
+    clearImageUrl()
+  }
+
+  async function openImageOverlay(parcelId) {
+    if (!parcelId || imageLoading.value) return
+    imageLoading.value = true
+    try {
+      const response = await fetchWrapper.getFile(parcelsStore.getImageProcessingUrl(parcelId))
+      const blob = await response.blob()
+      clearImageUrl()
+      activeObjectUrl = URL.createObjectURL(blob)
+      imageUrl.value = activeObjectUrl
+      imageOverlayOpen.value = true
+    } catch (error) {
+      alertStore.error(error?.message || String(error))
+    } finally {
+      imageLoading.value = false
+    }
+  }
+
+  onUnmounted(() => {
+    clearImageUrl()
+  })
+
+  return {
+    imageOverlayOpen,
+    imageUrl,
+    imageLoading,
+    openImageOverlay,
+    closeImageOverlay
+  }
+}

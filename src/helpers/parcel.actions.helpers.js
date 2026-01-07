@@ -134,8 +134,9 @@ export async function deleteProductImage(values, isComponentMounted, runningActi
       },
       content: 'Удалить изображение для этой посылки?'
     })
-    if (!confirmed) return
-    await parcelsStore.deleteImage(currentParcelId.value)
+    if (confirmed) {
+      await parcelsStore.deleteImage(currentParcelId.value)
+    }
   } catch (error) {
     const alertStore = useAlertStore()
     alertStore.error(error?.message || String(error))

@@ -330,7 +330,9 @@ describe.each([
 
     await resolveAll()
 
-    expect(wrapper.findComponent({ name: 'RegisterHeaderActionsBar' }).exists()).toBe(false)
+    const buttons = wrapper.findAll('.header-actions .action-button-stub')
+    // When user lacks logist role the first group of actions is hidden, leaving only the export/download group
+    expect(buttons).toHaveLength(6)
   })
 
   it('calls stop handler on unmount', async () => {

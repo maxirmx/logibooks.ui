@@ -78,8 +78,7 @@ const {
   parcels_check_status_fc,
   parcels_tnved,
   parcels_number,
-  selectedParcelId,
-  isSrLogistPlus
+  selectedParcelId
 } = storeToRefs(authStore)
 
 const localTnvedSearch = ref(parcels_tnved.value || '')
@@ -467,7 +466,6 @@ function getGenericTemplateHeaders() {
         :heading="registerHeading"
       />
       <RegisterHeaderActionsBar
-        v-if="isSrLogistPlus"
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         :loading="runningAction || loading || isInitializing"

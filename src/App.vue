@@ -175,7 +175,7 @@ function getUserName() {
         </v-list-group>
 
         <!-- Отчёты -->
-        <v-list-item v-if="authStore.hasAnyRole">
+        <v-list-item v-if="authStore.hasLogistRole">
           <a :href="`${baseUrl}extensions/extension-v0.3.0.zip`" target="_blank" rel="noopener" class="link">Скачать расширение</a>
         </v-list-item>
 

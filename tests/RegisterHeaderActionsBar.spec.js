@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { vi } from 'vitest'
+import { ref } from 'vue'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
@@ -11,6 +12,21 @@ const pushMock = vi.fn()
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: pushMock
+  }),
+  createRouter: () => ({
+    // minimal router stub
+    push: () => {},
+    replace: () => {},
+    beforeEach: () => {},
+    afterEach: () => {}
+  }),
+  createWebHistory: () => ({})
+}))
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({
+    hasLogistRole: ref(true),
+    isSrLogistPlus: ref(true)
   })
 }))
 

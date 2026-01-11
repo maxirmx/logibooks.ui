@@ -1,8 +1,11 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+const authStore = useAuthStore()
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -26,6 +29,10 @@ const emit = defineEmits([
 
 const router = useRouter()
 
+const {
+  isSrLogistPlus,
+} = storeToRefs(authStore)
+
 function run(evt) {
   if (props.disabled) return
   emit(evt)
@@ -48,7 +55,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
     <div v-if="loading" class="header-actions header-actions-group">
         <span class="spinner-border spinner-border-m"></span>
     </div>
-    <div class="header-actions header-actions-group">
+    <div v-if="isSrLogistPlus" class="header-actions header-actions-group">
       <ActionButton
         :item="item"
         icon="fa-solid fa-spell-check"

@@ -8,6 +8,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
 import { useStatusStore } from '@/stores/status.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import {
   roleShiftLead,
   roleSrLogist,
@@ -194,6 +195,32 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Fetch status after successful logout as well
     statusStore.fetchStatus().catch(() => {})
+  }
+
+  // Restore temporary parcels snapshot from sessionStorage if available.
+  // This helps keep filters/sorting when a browser extension or external
+  // actor causes a navigation or reload during image selection.
+  try {
+    const raw = sessionStorage.getItem('logibooks.parcelsSnapshot')
+    if (raw) {
+      const snap = JSON.parse(raw)
+      if (snap) {
+        if (snap.parcels_sort_by != null) parcels_sort_by.value = snap.parcels_sort_by
+        if (snap.parcels_status != null) parcels_status.value = snap.parcels_status
+        if (snap.parcels_check_status_sw != null) parcels_check_status_sw.value = snap.parcels_check_status_sw
+        if (snap.parcels_check_status_fc != null) parcels_check_status_fc.value = snap.parcels_check_status_fc
+        if (snap.parcels_tnved != null) parcels_tnved.value = snap.parcels_tnved
+        if (snap.parcels_number != null) parcels_number.value = snap.parcels_number
+        if (snap.parcels_page != null) parcels_page.value = snap.parcels_page
+        if (snap.parcels_per_page != null) parcels_per_page.value = snap.parcels_per_page
+
+        // Clean up snapshot after restore so it doesn't interfere later.
+        sessionStorage.removeItem('logibooks.parcelsSnapshot')
+      }
+    }
+  } catch  {
+    const alertStore = useAlertStore()
+    alertStore.error('Не удалось восстановить фильтры и сортировку')
   }
 
   return {

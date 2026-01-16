@@ -326,6 +326,13 @@ describe('ProductLinkWithActions', () => {
     expect(raw).not.toBeNull()
     const snap = JSON.parse(raw)
     expect(snap.parcels_sort_by).toEqual(mockAuthStore.parcels_sort_by)
+    expect(snap.parcels_status).toEqual(mockAuthStore.parcels_status)
+    expect(snap.parcels_check_status_sw).toEqual(mockAuthStore.parcels_check_status_sw)
+    expect(snap.parcels_check_status_fc).toEqual(mockAuthStore.parcels_check_status_fc)
+    expect(snap.parcels_tnved).toEqual(mockAuthStore.parcels_tnved)
+    expect(snap.parcels_number).toEqual(mockAuthStore.parcels_number)
+    expect(snap.parcels_page).toEqual(mockAuthStore.parcels_page)
+    expect(snap.parcels_per_page).toEqual(mockAuthStore.parcels_per_page)
   })
 
   it('reports error to alertStore when snapshot persist fails', async () => {

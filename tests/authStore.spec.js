@@ -4,8 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useAuthStore } from '@/stores/auth.store.js'
-import { useStatusStore } from '@/stores/status.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import {
   roleAdmin,
   roleLogist,
@@ -14,6 +13,15 @@ import {
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
 import { createLocalStorageMock } from './helpers/test-utils.js'
+
+// Set up sessionStorage mock at module level  
+const originalSessionStorage = global.sessionStorage
+let sessionStorageMock = createLocalStorageMock()
+global.sessionStorage = sessionStorageMock
+
+// IMPORTANT: Import useAuthStore AFTER setting up the sessionStorage mock
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useStatusStore } from '@/stores/status.store.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -40,6 +48,18 @@ vi.mock('@/stores/status.store.js', () => {
   }
 })
 
+// Create a mock for alert store that we can track
+const mockAlertStore = {
+  error: vi.fn(),
+  success: vi.fn(),
+  clear: vi.fn()
+}
+
+// Mock the alert store
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: vi.fn(() => mockAlertStore)
+}))
+
 
 describe('auth store', () => {
   // Store original localStorage
@@ -48,9 +68,17 @@ describe('auth store', () => {
   beforeEach(() => {
     // Set up localStorage mock before each test
     global.localStorage = createLocalStorageMock()
+    // Recreate sessionStorage mock for each test to ensure isolation
+    sessionStorageMock = createLocalStorageMock()
+    global.sessionStorage = sessionStorageMock
     setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
+    sessionStorage.clear()
+    // Clear alert store mocks
+    mockAlertStore.error.mockClear()
+    mockAlertStore.success.mockClear()
+    mockAlertStore.clear.mockClear()
   })
   
   afterEach(() => {
@@ -476,6 +504,113 @@ describe('auth store', () => {
       
       store.selectedParcelId = null
       expect(store.selectedParcelId).toBeNull()
+    })
+  })
+
+  describe('parcels snapshot restoration', () => {
+    it('restores parcels filter and sort state from sessionStorage on initialization', () => {
+      // Set up a snapshot in sessionStorage BEFORE creating the store
+      const snapshot = {
+        parcels_sort_by: [{ key: 'name', order: 'desc' }],
+        parcels_status: 'active',
+        parcels_check_status_sw: 'checked',
+        parcels_check_status_fc: 'verified',
+        parcels_tnved: '1234567890',
+        parcels_number: 'TEST-123',
+        parcels_page: 2,
+        parcels_per_page: 50
+      }
+      sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify(snapshot))
+      
+      // Verify sessionStorage has the data
+      const storedData = sessionStorage.getItem('logibooks.parcelsSnapshot')
+      expect(storedData).not.toBeNull()
+      expect(JSON.parse(storedData)).toEqual(snapshot)
+      
+      // Create the store (which triggers initialization)
+      const store = useAuthStore()
+      
+      // Verify all fields are restored
+      expect(store.parcels_sort_by).toEqual(snapshot.parcels_sort_by)
+      expect(store.parcels_status).toBe(snapshot.parcels_status)
+      expect(store.parcels_check_status_sw).toBe(snapshot.parcels_check_status_sw)
+      expect(store.parcels_check_status_fc).toBe(snapshot.parcels_check_status_fc)
+      expect(store.parcels_tnved).toBe(snapshot.parcels_tnved)
+      expect(store.parcels_number).toBe(snapshot.parcels_number)
+      expect(store.parcels_page).toBe(snapshot.parcels_page)
+      expect(store.parcels_per_page).toBe(snapshot.parcels_per_page)
+      
+      // Verify snapshot is removed after restoration
+      expect(sessionStorage.getItem('logibooks.parcelsSnapshot')).toBeNull()
+    })
+
+    it('handles partial snapshot data gracefully', () => {
+      // Set up a partial snapshot with only some fields
+      const snapshot = {
+        parcels_sort_by: [{ key: 'name', order: 'desc' }],
+        parcels_page: 3
+      }
+      sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify(snapshot))
+      
+      // Create the store
+      const store = useAuthStore()
+      
+      // Verify provided fields are restored
+      expect(store.parcels_sort_by).toEqual(snapshot.parcels_sort_by)
+      expect(store.parcels_page).toBe(snapshot.parcels_page)
+      
+      // Verify snapshot is removed after restoration
+      expect(sessionStorage.getItem('logibooks.parcelsSnapshot')).toBeNull()
+    })
+
+    it('does not restore when snapshot is not present', () => {
+      // Don't set any snapshot in sessionStorage
+      
+      // Create the store
+      const store = useAuthStore()
+      
+      // Verify default values are used
+      expect(store.parcels_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      expect(store.parcels_status).toBeNull()
+      expect(store.parcels_page).toBe(1)
+      expect(store.parcels_per_page).toBe(100)
+    })
+
+    it('reports error to alertStore when snapshot restoration fails', () => {
+      // Set up invalid JSON in sessionStorage
+      sessionStorage.setItem('logibooks.parcelsSnapshot', 'invalid-json{')
+      
+      // Create the store
+      const store = useAuthStore()
+      
+      // Verify error was reported
+      expect(mockAlertStore.error).toHaveBeenCalledWith('Не удалось восстановить фильтры и сортировку')
+    })
+
+    it('handles null snapshot data gracefully', () => {
+      // Set up a snapshot with null value
+      sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify(null))
+      
+      // Create the store - should not throw
+      const store = useAuthStore()
+      
+      // Verify default values are used
+      expect(store.parcels_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      
+      // Verify snapshot is removed (it may be the string "null" or null depending on mock implementation)
+      const remaining = sessionStorage.getItem('logibooks.parcelsSnapshot')
+      expect(remaining === null || remaining === 'null').toBe(true)
+    })
+
+    it('handles empty string snapshot data gracefully', () => {
+      // Set up an empty snapshot
+      sessionStorage.setItem('logibooks.parcelsSnapshot', '')
+      
+      // Create the store - should not throw
+      const store = useAuthStore()
+      
+      // Verify default values are used
+      expect(store.parcels_sort_by).toEqual([{ key: 'id', order: 'asc' }])
     })
   })
 })

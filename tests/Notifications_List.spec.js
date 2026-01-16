@@ -26,6 +26,7 @@ let alertStoreMock
 const testStubs = {
   ...defaultGlobalStubs,
   ActionButton: true,
+  TruncateTooltipCell: true,
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" />',
     props: ['size', 'icon', 'class']

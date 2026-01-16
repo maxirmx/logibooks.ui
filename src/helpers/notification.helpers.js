@@ -48,12 +48,11 @@ export async function buildNotificationTooltip(item) {
   const notification = await notificationsStore.getById(item.notificationId)
   
   if (!notification) {
-    return `Нотификация Id: ${item.notificationId} (данные не загружены)`
+    return `Id нотификации: ${item.notificationId} (данные не загружены)`
   }
 
   const parts = [
-    'Нотификация номер ' + (notification.number || '(данные не загружены)'), 
-    '---------------------------------------------'
+    'Номер нотификации: ' + (notification.number || '(данные не загружены)')
   ] 
   
   if (notification.registrationDate) {
@@ -74,6 +73,14 @@ export async function buildNotificationTooltip(item) {
     const formattedDate = formatNotificationDate(notification.terminationDate)
     if (formattedDate) {
       parts.push(`Срок действия: ${formattedDate}`)
+    }
+  }
+
+  if (notification.comment) {
+    const c = String(notification.comment).trim()
+    if (c.length) {
+      parts.push('Комментарий:')
+      parts.push(`${c}`)
     }
   }
 

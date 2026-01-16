@@ -12,7 +12,8 @@ vi.mock('@/stores/notifications.store.js', () => ({
           articles: [{article: 'Article 123'}],
           registrationDate: '2025-01-10',
           publicationDate: '2025-01-12',
-          terminationDate: '2025-01-30'
+          terminationDate: '2025-01-30',
+          comment: 'Комментарий нотификации'
         },
         {
           id: 10,
@@ -56,11 +57,12 @@ describe('notification helpers', () => {
         notificationId: 5
       })
 
-      expect(tooltip).toContain('Нотификация номер N-42')
-      expect(tooltip).toContain('---------------------------------------------')
+      expect(tooltip).toContain('Номер нотификации: N-42')
       expect(tooltip).toContain('Дата регистрации: 10.01.2025')
       expect(tooltip).toContain('Дата публикации: 12.01.2025')
       expect(tooltip).toContain('Срок действия: 30.01.2025')
+      expect(tooltip).toContain('Комментарий:')
+      expect(tooltip).toContain('Комментарий нотификации')
     })
 
     it('builds tooltip with different date formats', async () => {
@@ -68,8 +70,7 @@ describe('notification helpers', () => {
         notificationId: 10
       })
 
-      expect(tooltip).toContain('Нотификация номер N-50')
-      expect(tooltip).toContain('---------------------------------------------')
+      expect(tooltip).toContain('Номер нотификации: N-50')
       expect(tooltip).toContain('Дата регистрации: 15.02.2025')
       expect(tooltip).toContain('Дата публикации: 20.02.2025')
       expect(tooltip).toContain('Срок действия: 15.03.2025')
@@ -80,7 +81,7 @@ describe('notification helpers', () => {
         notificationId: 999
       })
 
-      expect(tooltip).toBe('Нотификация Id: 999 (данные не загружены)')
+      expect(tooltip).toBe('Id нотификации: 999 (данные не загружены)')
     })
 
     it('returns empty string when notification id is missing', async () => {

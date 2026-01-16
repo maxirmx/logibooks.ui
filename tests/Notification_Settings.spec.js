@@ -14,6 +14,7 @@ const mockNotification = {
   id: 1,
   articles: [{ id: 10, article: 'Test Article' }],
   number: 'ABC-123',
+  comment: 'Test comment',
   terminationDate: '2025-12-31',
   publicationDate: '2025-11-30',
   registrationDate: '2025-11-01'
@@ -148,6 +149,7 @@ describe('Notification_Settings.vue', () => {
 
     expect(mockNotificationsStore.create).toHaveBeenCalledWith({
       articles: [],
+      comment: '',
       number: '',
       terminationDate: '',
       publicationDate: '',
@@ -174,6 +176,7 @@ describe('Notification_Settings.vue', () => {
       expect.objectContaining({
         id: 1,
         articles: [{ article: mockNotification.articles[0].article }],
+        comment: mockNotification.comment,
         number: mockNotification.number,
         terminationDate: mockNotification.terminationDate,
         publicationDate: mockNotification.publicationDate,

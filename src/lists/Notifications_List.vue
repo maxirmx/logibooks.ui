@@ -40,6 +40,7 @@ function filterNotifications(value, query, item) {
   // Check if query matches any of the basic fields
   const basicFields = [
     notification.number,
+    notification.comment,
     formatDate(notification.terminationDate),
     formatDate(notification.publicationDate),
     formatDate(notification.registrationDate)

@@ -219,8 +219,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
   } catch  {
-      const alertStore = useAlertStore()
-      alertStore.error('Не удалось восстановить фильтры и сортировку')
+    const alertStore = useAlertStore()
+    alertStore.error('Не удалось восстановить фильтры и сортировку')
   }
 
   return {

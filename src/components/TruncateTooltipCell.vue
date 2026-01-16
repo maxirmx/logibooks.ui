@@ -47,7 +47,9 @@ watch(() => props.text, () => {
     <template #activator="{ props: actProps }">
       <span v-bind="actProps" ref="textEl" class="file-text truncate-cell">{{ props.text }}</span>
     </template>
-    <span>{{ props.text }}</span>
+    <template #default>
+      <div style="white-space: pre-line">{{ props.text }}</div>
+    </template>
   </v-tooltip>
   <span v-else ref="textEl" class="file-text truncate-cell">{{ props.text || emptyPlaceholder }}</span>
 </template>

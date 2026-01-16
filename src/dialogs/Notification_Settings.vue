@@ -28,6 +28,7 @@ const isCreate = computed(() => props.mode === 'create')
 
 const notificationForm = ref({
   articles: [''],
+  comment: '',
   number: '',
   terminationDate: '',
   publicationDate: '',
@@ -94,6 +95,7 @@ const schema = Yup.object({
     .of(Yup.string().trim().required('Необходимо ввести артикул'))
     .min(1, 'Необходимо указать хотя бы один артикул'),
   number: Yup.string(),
+  comment: Yup.string(),
   terminationDate: Yup.string()
     .required('Необходимо ввести срок действия')
     .test('is-valid-date', 'Неверная дата', (v) => isValidISODate(v)),
@@ -111,6 +113,7 @@ function onSubmit(values, { setErrors }) {
       ?.map((article) => article?.trim())
       .filter((article) => article.length > 0)
       .map((article) => ({ article })) || [],
+    comment: values.comment?.trim() || '',
     number: values.number?.trim() || '',
     terminationDate: values.terminationDate,
     publicationDate: values.publicationDate,
@@ -154,6 +157,7 @@ if (!isCreate.value) {
       articles: loaded.articles?.length
         ? loaded.articles.map((item) => item.article || '')
         : [''],
+      comment: loaded.comment || '',
       number: loaded.number || '',
       terminationDate: formatDateForInput(loaded.terminationDate),
       publicationDate: formatDateForInput(loaded.publicationDate),
@@ -218,6 +222,19 @@ if (!isCreate.value) {
           type="date"
           class="form-control input"
           :class="{ 'is-invalid': errors.terminationDate }"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="comment" class="label">Комментарий:</label>
+        <Field
+          as="textarea"
+          name="comment"
+          id="comment"
+          rows="3"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.comment }"
+          placeholder="Комментарий"
         />
       </div>
 

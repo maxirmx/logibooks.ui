@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
+import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatNotificationDate } from '@/helpers/notification.helpers.js'
 import { mdiMagnify } from '@mdi/js'
@@ -62,6 +63,7 @@ const headers = [
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
   { title: 'Срок действия', key: 'terminationDate', sortable: true },
+  { title: 'Комментарий', key: 'comment', sortable: false },
   { title: 'Артикулы', key: 'articles', sortable: false }
 ]
 
@@ -126,7 +128,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Нотификации</h1>
       <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
@@ -193,6 +195,10 @@ defineExpose({
 
         <template v-slot:[`item.terminationDate`]="{ item }">
           {{ formatDate(getRow(item)?.terminationDate) }}
+        </template>
+
+        <template v-slot:[`item.comment`]="{ item }">
+          <TruncateTooltipCell :text="getRow(item)?.comment || ''" />
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">

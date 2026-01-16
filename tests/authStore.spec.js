@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useAlertStore } from '@/stores/alert.store.js'
 import {
   roleAdmin,
   roleLogist,
@@ -15,7 +14,6 @@ import router from '@/router'
 import { createLocalStorageMock } from './helpers/test-utils.js'
 
 // Set up sessionStorage mock at module level  
-const originalSessionStorage = global.sessionStorage
 let sessionStorageMock = createLocalStorageMock()
 global.sessionStorage = sessionStorageMock
 
@@ -110,7 +108,8 @@ describe('auth store', () => {
     it('loads user from localStorage if present', () => {
       const testUser = { id: 1, name: 'Test User', roles: [roleAdmin] }
       localStorage.setItem('user', JSON.stringify(testUser))
-      vi.spyOn(JSON, 'parse').mockImplementation(() => testUser)
+      // Use a one-time mock so other tests are not affected
+      vi.spyOn(JSON, 'parse').mockImplementationOnce(() => testUser)
       
       const store = useAuthStore()
       expect(store.user).toEqual(testUser)
@@ -580,9 +579,9 @@ describe('auth store', () => {
       // Set up invalid JSON in sessionStorage
       sessionStorage.setItem('logibooks.parcelsSnapshot', 'invalid-json{')
       
-      // Create the store
-      const store = useAuthStore()
-      
+      // Create the store to trigger initialization and parsing
+      useAuthStore()
+
       // Verify error was reported
       expect(mockAlertStore.error).toHaveBeenCalledWith('Не удалось восстановить фильтры и сортировку')
     })

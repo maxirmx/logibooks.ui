@@ -55,6 +55,28 @@ function handleSelectClick() {
     return
   }
 
+  // Persist current parcels filters/sorting to sessionStorage as a snapshot.
+  // Some extension interactions may navigate or reload parts of the app
+  // causing in-memory filter/sort state to be lost. Snapshotting allows
+  // the app to restore the user's view after the extension completes.
+  try {
+    const authStore = useAuthStore()
+    const snapshot = {
+      parcels_sort_by: authStore.parcels_sort_by?.value ?? authStore.parcels_sort_by,
+      parcels_status: authStore.parcels_status?.value ?? authStore.parcels_status,
+      parcels_check_status_sw: authStore.parcels_check_status_sw?.value ?? authStore.parcels_check_status_sw,
+      parcels_check_status_fc: authStore.parcels_check_status_fc?.value ?? authStore.parcels_check_status_fc,
+      parcels_tnved: authStore.parcels_tnved?.value ?? authStore.parcels_tnved,
+      parcels_number: authStore.parcels_number?.value ?? authStore.parcels_number,
+      parcels_page: authStore.parcels_page?.value ?? authStore.parcels_page,
+      parcels_per_page: authStore.parcels_per_page?.value ?? authStore.parcels_per_page
+    }
+    sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify(snapshot))
+  } catch  {
+    const alertStore = useAlertStore()
+    alertStore.error('Не удалось сохранить фильтры и сортировку')
+  }
+
   emit('select-image')
   window.postMessage({
     type: 'LOGIBOOKS_EXTENSION_ACTIVATE',

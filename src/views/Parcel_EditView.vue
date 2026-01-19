@@ -6,7 +6,8 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import OzonParcelEditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrParcelEditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import Wbr2ParcelsEditDialog from '@/dialogs/Wbr2Parcels_EditDialog.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -22,9 +23,10 @@ const isComponentMounted = ref(true)
 
 const editComponent = computed(() => {
   if (!isComponentMounted.value || !register.value) return null
-  const companyId = register.value.companyId
-  if (companyId === OZON_COMPANY_ID) return OzonParcelEditDialog
-  if (companyId === WBR_COMPANY_ID) return WbrParcelEditDialog
+  const registerType = register.value.registerType
+  if (registerType === OZON_COMPANY_ID) return OzonParcelEditDialog
+  if (registerType === WBR_COMPANY_ID) return WbrParcelEditDialog
+  if (registerType === WBR2_REGISTER_ID) return Wbr2ParcelsEditDialog
   return null
 })
 

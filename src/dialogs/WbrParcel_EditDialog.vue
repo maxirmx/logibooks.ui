@@ -377,10 +377,6 @@ async function onLookup(values) {
     }
   }
 }
-
-//       :key="currentParcelId" 
-
-
 </script>
 
 <template>

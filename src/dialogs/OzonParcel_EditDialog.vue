@@ -393,8 +393,6 @@ async function onLookup(values) {
     }
   }
 }
-//      :key="currentParcelId" 
-
 </script>
 
 <template>
@@ -501,7 +499,7 @@ async function onLookup(values) {
           />
         </div>
       </div>
-            <!-- Product Identification & Details Section -->
+      <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">

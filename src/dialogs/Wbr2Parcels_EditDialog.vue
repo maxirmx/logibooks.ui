@@ -20,11 +20,10 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
-import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
+import { wbr2RegisterColumnTitles, wbr2RegisterColumnTooltips } from '@/helpers/wbr2.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import WbrFormField from '@/components/WbrFormField.vue'
-import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -136,8 +135,6 @@ const overlayActive = ref(false)
 watch(() => item.value?.statusId, (newStatusId) => {
   currentStatusId.value = newStatusId
 }, { immediate: true })
-
-const isDescriptionVisible = ref(false)
 
 // Pre-fetch next parcels after component is mounted
 onMounted(() => {
@@ -377,10 +374,6 @@ async function onLookup(values) {
     }
   }
 }
-
-//       :key="currentParcelId" 
-
-
 </script>
 
 <template>
@@ -416,14 +409,14 @@ async function onLookup(values) {
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="statusId" class="label">{{ wbrRegisterColumnTitles.statusId }}:</label>
+            <label for="statusId" class="label">{{ wbr2RegisterColumnTitles.statusId }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
                  @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatus" class="label">{{ wbrRegisterColumnTitles.checkStatus }}:</label>
+            <label for="checkStatus" class="label">{{ wbr2RegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
               <font-awesome-icon
                 class="bookmark-icon"
@@ -466,8 +459,8 @@ async function onLookup(values) {
         :values="values"
         :errors="errors"
         :isSubmitting="isSubmitting"
-        :columnTitles="wbrRegisterColumnTitles"
-        :columnTooltips="wbrRegisterColumnTooltips"
+        :columnTitles="wbr2RegisterColumnTitles"
+        :columnTooltips="wbr2RegisterColumnTooltips"
         :setFieldValue="setFieldValue"
         :runningAction="runningAction"
         @update:item="(updatedItem) => (item.value = updatedItem)"
@@ -478,15 +471,8 @@ async function onLookup(values) {
       <!-- Product Name and description Section -->
       <div class="form-section">
         <div class="form-row-1 product-name-row">
-          <ActionButton
-            :item="item"
-            :icon="isDescriptionVisible ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-            :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
-            @click="isDescriptionVisible = !isDescriptionVisible"
-            :iconSize="'1x'"
-          />
           <label for="productName" class="label-1 product-name-label">
-            {{ wbrRegisterColumnTitles.productName }}:
+            {{ wbr2RegisterColumnTitles.productName }}:
           </label>
           <Field
             name="productName"
@@ -494,26 +480,13 @@ async function onLookup(values) {
             :class="['form-control', 'input-1', { 'is-invalid': errors && errors.productName }]"
           />
         </div>
-        <div class="form-row-0" v-show="isDescriptionVisible">
-          <div class="form-group-0">
-            <label for="description" class="label-0">Описание:</label>
-            <Field
-              as="textarea"
-              name="description"
-              id="description"
-              rows="5"
-              class="form-control input-0"
-              :class="{ 'is-invalid': errors && errors.description }"
-            />
-          </div>
-        </div>
       </div>
 
       <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="shk" class="label">{{ wbrRegisterColumnTitles.shk }}:</label>
+            <label for="shk" class="label">{{ wbr2RegisterColumnTitles.shk }}:</label>
             <ParcelNumberExt 
               :item="item"
               field-name="shk"
@@ -525,7 +498,7 @@ async function onLookup(values) {
           </div>          
 
           <ProductLinkWithActions
-            :label="wbrRegisterColumnTitles.productLink"
+            :label="wbr2RegisterColumnTitles.productLink"
             :item="item"
             :disabled="isSubmitting || runningAction || loading"
             @view-image="viewProductImage"
@@ -539,7 +512,6 @@ async function onLookup(values) {
           </WbrFormField>
           <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <WbrFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">

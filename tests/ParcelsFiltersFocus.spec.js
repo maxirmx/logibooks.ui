@@ -145,6 +145,21 @@ vi.mock('@/router', () => ({
   default: { push: vi.fn() }
 }))
 
+// Provide a minimal vue-router mock so components using `useRouter()`
+// receive an injected router during mounting in tests.
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  }),
+  createRouter: () => ({
+    push: () => {},
+    replace: () => {},
+    beforeEach: () => {},
+    afterEach: () => {}
+  }),
+  createWebHistory: () => ({})
+}))
+
 const textFieldStub = {
   name: 'v-text-field',
   template: '<div data-testid="v-text-field" :data-label="label"></div>',

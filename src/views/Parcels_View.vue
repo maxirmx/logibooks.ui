@@ -6,7 +6,8 @@
 import { computed, ref, onMounted } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -20,9 +21,10 @@ const error = ref(null)
 
 const listComponent = computed(() => {
   if (!register.value) return null
-  const companyId = register.value.companyId
-  if (companyId === OZON_COMPANY_ID) return OzonParcelsList
-  if (companyId === WBR_COMPANY_ID) return WbrParcelsList
+  const registerType = register.value.registerType
+  if (registerType === OZON_COMPANY_ID) return OzonParcelsList
+  if (registerType === WBR_COMPANY_ID) return WbrParcelsList
+  if (registerType === WBR2_REGISTER_ID) return Wbr2ParcelsList
   return null
 })
 

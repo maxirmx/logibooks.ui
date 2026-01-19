@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks UI application 
 
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -20,7 +20,7 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
-import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
+import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
@@ -47,7 +47,6 @@ import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
-// Removed DEC_REPORT_UPLOADED_EVENT import
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -311,6 +310,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  // DEC_REPORT_UPLOADED_EVENT listener removed
 })
 
 const statusOptions = computed(() => [
@@ -349,31 +349,32 @@ const headers = computed(() => {
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
-    { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: wbr2RegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
+    { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
+    { title: wbr2RegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     // Insert FEACN lookup column only when not reimport procedure
     ...(!isReimportProcedure.value ? [feacnLookupColumn] : []),
 
     // Product Identification & Details - What the parcel contains
-    { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
+    { title: wbr2RegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
 
     // Physical Properties - Tangible characteristics
-    { title: wbrRegisterColumnTitles.countryCode, sortable: false, key: 'countryCode', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.weightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
+    { title: wbr2RegisterColumnTitles.countryCode, sortable: false, key: 'countryCode', align: 'start', width: '100px' },
+    { title: wbr2RegisterColumnTitles.weightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
+    { title: wbr2RegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
 
     // Financial Information - Pricing and currency
-    { title: wbrRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
+    { title: wbr2RegisterColumnTitles.amountRub, sortable: false, key: 'amountRub', align: 'start', width: '100px' },
+    { title: wbr2RegisterColumnTitles.amount, sortable: false, key: 'amount', align: 'start', width: '100px' },
+    { title: wbr2RegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
 
     // Recipient Information - Who receives the parcel
-    { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
+    { title: wbr2RegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
+    { title: wbr2RegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
 
     // Status Information - Current state of the parcel
-    { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
   ]
 
@@ -468,6 +469,7 @@ function getGenericTemplateHeaders() {
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         :loading="runningAction || loading || isInitializing"
+        :no-historic-data="true"
         @validate-sw="validateRegisterSwHeader"
         @validate-sw-ex="validateRegisterSwHeaderEx"
         @validate-fc="validateRegisterFcHeader"

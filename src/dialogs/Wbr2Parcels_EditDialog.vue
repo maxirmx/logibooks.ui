@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks UI application 
 
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
@@ -14,21 +14,20 @@ import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
-import { storeToRefs } from 'pinia'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { storeToRefs } from 'pinia'
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
-import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
+import { wbr2RegisterColumnTitles, wbr2RegisterColumnTooltips } from '@/helpers/wbr2.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import { useRegistersStore } from '@/stores/registers.store.js'
-import OzonFormField from '@/components/OzonFormField.vue'
+import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
-import ArticleWithH from '@/components/ArticleWithH.vue'
 import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -36,7 +35,6 @@ import {
   validateParcelData,
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
-  approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper,
   deleteProductImage as deleteProductImageHelper
 } from '@/helpers/parcel.actions.helpers.js'
@@ -166,8 +164,7 @@ watch(imageOverlayOpen, (isOpen) => {
 })
 
 const schema = Yup.object().shape({
-  statusId: Yup.number(),
-  checkStatus: Yup.number(),
+  statusId: Yup.number().required('Необходимо выбрать статус'),
   tnVed: Yup.string()
     .required('Необходимо указать ТН ВЭД')
     .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
@@ -192,7 +189,7 @@ async function validateParcel(values, sw, matchMode) {
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
-
+    
     await validateParcelData(values, item, parcelsStore, sw, matchMode)
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -208,7 +205,7 @@ async function approveParcel(values) {
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
-
+    
     await approveParcelHelper(values, item, parcelsStore)
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -229,21 +226,6 @@ async function approveParcelWithExcise(values, setFieldValue) {
     if (result?.tnVed != null) {
       setFieldValue('tnVed', result.tnVed)
     }
-  } catch (error) {
-    alertStore.error(error?.message || String(error))
-  } finally {
-    if (isComponentMounted.value) runningAction.value = false
-  }
-}
-
-// Approve the parcel with notification
-async function approveParcelWithNotification(values) {
-  if (!isComponentMounted.value || runningAction.value) return
-  runningAction.value = true
-  try {
-    await ensureNextParcelsPromise()
-
-    await approveParcelWithNotificationHelper(values, item, parcelsStore)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -278,8 +260,8 @@ async function onSubmit(values, useTheNext = false) {
       : nextParcels?.withIssues
 
     if (nextParcel) {
-      // Inline swap: set item to preview, update current id and authStore,
-      // re-init neighbor promises and load full details in background.
+      // Inline swap: set item, update current id and authStore,
+      // re-init neighbor promises.
       item.value = nextParcel
       currentParcelId.value = nextParcel.id
       authStore.selectedParcelId = nextParcel.id
@@ -311,7 +293,7 @@ function onSave(values) {
       router.push(`/registers/${props.registerId}/parcels`)
     })
     .catch((error) => {
-      parcelsStore.error = error?.message || String(error)
+      alertStore.error(error?.message || String(error))
     })
 }
 
@@ -331,7 +313,7 @@ async function onBack(values) {
       currentParcelId.value = prevParcel.id
       authStore.selectedParcelId = prevParcel.id
 
-      // re-init neighbor promises for the newly active parcel
+      // re-init next parcels promise for the newly active parcel
       initNextParcelsPromise(currentParcelId.value)
 
       // fetch full parcel data in background
@@ -359,7 +341,7 @@ async function generateXml(values) {
     const updatePromise = parcelsStore.update(currentParcelId.value, values)
     await Promise.all([ensureNextParcelsPromise(), updatePromise])
     
-    await generateXmlHelper(item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
+    await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -367,11 +349,10 @@ async function generateXml(values) {
   }
 }
 
-
 // Handle fellows click - redirect to parcels list with filter
 function handleFellows() {
   if (!isComponentMounted.value) return
-  handleFellowsClick(item.value.registerId, item.value.postingNumber)
+  handleFellowsClick(item.value.registerId, item.value.shk)
 }
 
 // Lookup FEACN codes triggered from header actions
@@ -406,7 +387,7 @@ async function onLookup(values) {
     >
     <div class="header-with-actions">
       <h1 class="primary-heading">
-        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.postingNumber ? item.postingNumber : '[без номера]' }} 
+        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.shk ? item.shk : '[без номера]' }}
       </h1>
       <!-- Action buttons moved inside Form scope -->
       <ParcelHeaderActionsBar
@@ -421,20 +402,21 @@ async function onLookup(values) {
         @download="generateXml(values)"
       />
     </div>
+    
     <hr class="hr" />
-
+      
       <!-- Order Identification & Status Section -->
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="statusId" class="label">{{ ozonRegisterColumnTitles.statusId }}:</label>
+            <label for="statusId" class="label">{{ wbr2RegisterColumnTitles.statusId }}:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
-                   @change="(e) => currentStatusId = parseInt(e.target.value)">
+                 @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatus" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
+            <label for="checkStatus" class="label">{{ wbr2RegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
               <font-awesome-icon
                 class="bookmark-icon"
@@ -457,7 +439,7 @@ async function onLookup(values) {
           <!-- Last view -->
           <div class="form-group">
             <label for="lastView" class="label">Последний просмотр:</label>
-            <div class="readonly-field" name="lastView" id="lastView">
+            <div class="readonly-field" id="lastView" name="lastView">
               {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
             </div>
           </div>          
@@ -477,8 +459,8 @@ async function onLookup(values) {
         :values="values"
         :errors="errors"
         :isSubmitting="isSubmitting"
-        :columnTitles="ozonRegisterColumnTitles"
-        :columnTooltips="ozonRegisterColumnTooltips"
+        :columnTitles="wbr2RegisterColumnTitles"
+        :columnTooltips="wbr2RegisterColumnTooltips"
         :setFieldValue="setFieldValue"
         :runningAction="runningAction"
         @update:item="(updatedItem) => (item.value = updatedItem)"
@@ -486,11 +468,11 @@ async function onLookup(values) {
         @set-running-action="runningAction = $event"
       />
 
-      <!-- Product Name Section -->
+      <!-- Product Name and description Section -->
       <div class="form-section">
         <div class="form-row-1 product-name-row">
           <label for="productName" class="label-1 product-name-label">
-            {{ ozonRegisterColumnTitles.productName }}:
+            {{ wbr2RegisterColumnTitles.productName }}:
           </label>
           <Field
             name="productName"
@@ -499,59 +481,48 @@ async function onLookup(values) {
           />
         </div>
       </div>
+
       <!-- Product Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="postingNumber" class="label">{{ ozonRegisterColumnTitles.postingNumber }}:</label>
-          <ParcelNumberExt
+            <label for="shk" class="label">{{ wbr2RegisterColumnTitles.shk }}:</label>
+            <ParcelNumberExt 
+              :item="item"
+              field-name="shk"
+              :disabled="isSubmitting || runningAction || loading"
+              class="readonly-parcel-number"
+              @click="() => {/* No action needed for readonly display */}"
+              @fellows="handleFellows"
+            />
+          </div>          
+
+          <ProductLinkWithActions
+            :label="wbr2RegisterColumnTitles.productLink"
             :item="item"
-            field-name="postingNumber"
             :disabled="isSubmitting || runningAction || loading"
-            class="readonly-parcel-number"
-            @click="() => {/* No action needed for readonly display */}"
-            @fellows="handleFellows"
+            @view-image="viewProductImage"
+            @delete-image="() => deleteProductImage(values)"
           />
-        </div>
-        <OzonFormField name="placesCount" type="number" step="1" :errors="errors" :fullWidth="false" />
-        <ArticleWithH
-          :item="item"
-          :errors="errors"
-          :disabled="isSubmitting || runningAction || loading"
-          :fullWidth="false"
-          @approve-notification="approveParcelWithNotification(values)"
-        />
-        <ProductLinkWithActions
-          :label="ozonRegisterColumnTitles.productLink"
-          :item="item"
-          :disabled="isSubmitting || runningAction || loading"
-          @view-image="viewProductImage"
-          @delete-image="() => deleteProductImage(values)"
-        />
-          <OzonFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
+          <Wbr2FormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
               {{ country.nameRuOfficial }}
             </option>
-          </OzonFormField>
-          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="currency" :errors="errors" :fullWidth="false" />
+          </Wbr2FormField>
+          <Wbr2FormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="recipientName" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
-      
       <!-- DTag -->
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-
             <label for="dtag" class="label">ДТЭГ/ПТДЭГ:</label>
             <div class="form-control input readonly-field" id="dtag" name="dtag">
               {{ item?.dTag ? item.dTag : '-' }}
@@ -573,7 +544,6 @@ async function onLookup(values) {
       </div>
 
     </Form>
-
     <div v-if="item?.error" class="text-center m-5">
       <div class="text-danger">Ошибка: {{ item.error }}</div>
     </div>
@@ -622,7 +592,6 @@ async function onLookup(values) {
   overflow: visible !important;
 }
 
-
 /* On small screens, ensure full width for heading and buttons flow below */
 @media (max-width: 768px) {
   .header-with-actions {
@@ -638,8 +607,14 @@ async function onLookup(values) {
 
 /* Product name styling */
 .product-name-label {
-  width: 18.5%;
-  min-width: 180px;
+  width: calc(18.5% - 50px);
+  min-width: 140px;
+}
+
+/* Override product name row alignment */
+.product-name-row {
+  display: flex;
+  align-items: center;
 }
 
 /* Overlay state styling */

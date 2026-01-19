@@ -91,7 +91,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function upload(file, companyId, sourceRegisterId = 0, transfer2Reimport = false) {
+  async function upload(file, registerType, sourceRegisterId = 0, transfer2Reimport = false) {
     loading.value = true
     error.value = null
     try {
@@ -100,7 +100,7 @@ export const useRegistersStore = defineStore('registers', () => {
       
       // Build query parameters - always send all parameters
       const params = new URLSearchParams()
-      params.append('companyId', companyId)
+      params.append('registerType', registerType)
       params.append('sourceRegisterId', sourceRegisterId)
       params.append('transfer2Reimport', transfer2Reimport ? 'true' : 'false')
       

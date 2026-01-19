@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks UI application 
 
 import { Field } from 'vee-validate'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'

@@ -311,7 +311,6 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
-  // DEC_REPORT_UPLOADED_EVENT listener removed
 })
 
 const statusOptions = computed(() => [

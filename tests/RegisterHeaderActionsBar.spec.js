@@ -105,4 +105,31 @@ describe('RegisterHeaderActionsBar', () => {
 
     expect(pushMock).not.toHaveBeenCalled()
   })
+
+  it('disables historic data actions when noHistoricData is true', () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, noHistoricData: true },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const getButtonByTooltip = (tooltipText) =>
+      actionButtons.find((button) => button.props('tooltipText') === tooltipText)
+
+    const stopWordsHistoric = getButtonByTooltip(
+      'Проверить по стоп-словам с учётом исторических данных'
+    )
+    const lookupHistoric = getButtonByTooltip(
+      'Подбор кодов ТН ВЭД с учётом исторических данных'
+    )
+    const stopWords = getButtonByTooltip('Проверить по стоп-словам')
+
+    expect(stopWordsHistoric).toBeTruthy()
+    expect(lookupHistoric).toBeTruthy()
+    expect(stopWords).toBeTruthy()
+
+    expect(stopWordsHistoric.props('disabled')).toBe(true)
+    expect(lookupHistoric.props('disabled')).toBe(true)
+    expect(stopWords.props('disabled')).toBe(false)
+  })
 })

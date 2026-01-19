@@ -469,6 +469,7 @@ function getGenericTemplateHeaders() {
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         :loading="runningAction || loading || isInitializing"
+        :no-historic-data="true"
         @validate-sw="validateRegisterSwHeader"
         @validate-sw-ex="validateRegisterSwHeaderEx"
         @validate-fc="validateRegisterFcHeader"

@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 
 vi.mock('@/lists/WbrParcels_List.vue', () => ({
   default: {
@@ -22,6 +22,14 @@ vi.mock('@/lists/OzonParcels_List.vue', () => ({
     name: 'OzonParcels_List',
     props: ['register-id'],
     template: '<div data-test="ozon-list">OZON: {{ registerId }}</div>'
+  }
+}))
+
+vi.mock('@/lists/Wbr2Parcels_List.vue', () => ({
+  default: {
+    name: 'Wbr2Parcels_List',
+    props: ['register-id'],
+    template: '<div data-test="wbr2-list">WBR2: {{ registerId }}</div>'
   }
 }))
 
@@ -41,8 +49,8 @@ describe('Parcels_View', () => {
     fetchWrapper.get.mockImplementation(mockGet)
   })
 
-  it('renders WbrParcels_List when register has WBR customerId', async () => {
-    mockGet.mockResolvedValue({ companyId: WBR_COMPANY_ID })
+  it('renders WbrParcels_List when register has WBR registerType', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
     
     const wrapper = mount(ParcelsView, {
       props: {
@@ -58,8 +66,8 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })
 
-  it('renders OzonParcels_List when register has OZON customerId', async () => {
-    mockGet.mockResolvedValue({ companyId: OZON_COMPANY_ID })
+  it('renders OzonParcels_List when register has OZON registerType', async () => {
+    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
     
     const wrapper = mount(ParcelsView, {
       props: {
@@ -75,8 +83,26 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
   })
 
-  it('renders nothing when customerId is unknown', async () => {
-    mockGet.mockResolvedValue({ companyId: 999 }) // Unknown company ID
+  it('renders Wbr2Parcels_List when register has WBR2 registerType', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR2_REGISTER_ID })
+    
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 3
+      }
+    })
+
+    // Wait for async data to load
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+  })
+
+  it('renders nothing when registerType is unknown', async () => {
+    mockGet.mockResolvedValue({ registerType: 999 }) // Unknown register type
     
     const wrapper = mount(ParcelsView, {
       props: {
@@ -93,7 +119,7 @@ describe('Parcels_View', () => {
   })
 
   it('passes the register id prop to the selected component', async () => {
-    mockGet.mockResolvedValue({ companyId: WBR_COMPANY_ID })
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
     
     const wrapper = mount(ParcelsView, {
       props: {

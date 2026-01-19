@@ -64,6 +64,7 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders OzonParcels_List when register has OZON registerType', async () => {
@@ -81,6 +82,7 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders Wbr2Parcels_List when register has WBR2 registerType', async () => {
@@ -116,6 +118,7 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('passes the register id prop to the selected component', async () => {

@@ -23,7 +23,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { wbr2RegisterColumnTitles, wbr2RegisterColumnTooltips } from '@/helpers/wbr2.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import WbrFormField from '@/components/WbrFormField.vue'
+import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -504,19 +504,19 @@ async function onLookup(values) {
             @view-image="viewProductImage"
             @delete-image="() => deleteProductImage(values)"
           />
-          <WbrFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
+          <Wbr2FormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
             <option value="">Выберите страну</option>
             <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
               {{ country.nameRuOfficial }}
             </option>
-          </WbrFormField>
-          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <WbrFormField name="currency" :errors="errors" :fullWidth="false" />
+          </Wbr2FormField>
+          <Wbr2FormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <WbrFormField name="recipientName" :errors="errors" :fullWidth="false" />
-          <WbrFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="recipientName" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
       </div>
       <!-- DTag -->

@@ -24,137 +24,73 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://test-api'
 }))
 
+const commonStubs = {
+  OzonParcelEditDialog: true,
+  WbrParcelEditDialog: true,
+  Wbr2ParcelsEditDialog: true,
+  Suspense: false
+}
+
 describe('Parcel_EditView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('maps OZON_COMPANY_ID to OzonParcelEditDialog', async () => {
+  it.each([
+    {
+      name: 'maps OZON_COMPANY_ID to OzonParcelEditDialog',
+      registerType: OZON_COMPANY_ID,
+      expectedComponent: OzonParcelEditDialog,
+      registerId: 1,
+      parcelId: 100
+    },
+    {
+      name: 'maps WBR_COMPANY_ID to WbrParcelEditDialog',
+      registerType: WBR_COMPANY_ID,
+      expectedComponent: WbrParcelEditDialog,
+      registerId: 2,
+      parcelId: 200
+    },
+    {
+      name: 'maps WBR2_REGISTER_ID to Wbr2ParcelsEditDialog',
+      registerType: WBR2_REGISTER_ID,
+      expectedComponent: Wbr2ParcelsEditDialog,
+      registerId: 3,
+      parcelId: 300
+    },
+    {
+      name: 'returns null for unknown register type',
+      registerType: 999,
+      expectedComponent: null,
+      registerId: 4,
+      parcelId: 400
+    }
+  ])('$name', async ({ registerType, expectedComponent, registerId, parcelId }) => {
     mockGet.mockResolvedValue({ 
-      id: 1, 
-      registerType: OZON_COMPANY_ID 
+      id: registerId, 
+      registerType 
     })
 
     const wrapper = mount(ParcelEditView, {
       props: { 
-        registerId: 1, 
-        id: 100 
+        registerId, 
+        id: parcelId 
       },
       global: {
-        stubs: {
-          OzonParcelEditDialog: true,
-          WbrParcelEditDialog: true,
-          Wbr2ParcelsEditDialog: true,
-          Suspense: false
-        }
+        stubs: commonStubs
       }
     })
 
     await flushPromises()
     await nextTick()
 
-    expect(mockGet).toHaveBeenCalledWith('http://test-api/registers/1')
-    
-    // Access the component instance to check the computed property
-    const editComponent = wrapper.vm.editComponent
-    expect(editComponent).toBe(OzonParcelEditDialog)
-  })
-
-  it('maps WBR_COMPANY_ID to WbrParcelEditDialog', async () => {
-    mockGet.mockResolvedValue({ 
-      id: 2, 
-      registerType: WBR_COMPANY_ID 
-    })
-
-    const wrapper = mount(ParcelEditView, {
-      props: { 
-        registerId: 2, 
-        id: 200 
-      },
-      global: {
-        stubs: {
-          OzonParcelEditDialog: true,
-          WbrParcelEditDialog: true,
-          Wbr2ParcelsEditDialog: true,
-          Suspense: false
-        }
-      }
-    })
-
-    await flushPromises()
-    await nextTick()
-
-    expect(mockGet).toHaveBeenCalledWith('http://test-api/registers/2')
-    
-    // Access the component instance to check the computed property
-    const editComponent = wrapper.vm.editComponent
-    expect(editComponent).toBe(WbrParcelEditDialog)
-  })
-
-  it('maps WBR2_REGISTER_ID to Wbr2ParcelsEditDialog', async () => {
-    mockGet.mockResolvedValue({ 
-      id: 3, 
-      registerType: WBR2_REGISTER_ID 
-    })
-
-    const wrapper = mount(ParcelEditView, {
-      props: { 
-        registerId: 3, 
-        id: 300 
-      },
-      global: {
-        stubs: {
-          OzonParcelEditDialog: true,
-          WbrParcelEditDialog: true,
-          Wbr2ParcelsEditDialog: true,
-          Suspense: false
-        }
-      }
-    })
-
-    await flushPromises()
-    await nextTick()
-
-    expect(mockGet).toHaveBeenCalledWith('http://test-api/registers/3')
-    
-    // Access the component instance to check the computed property
-    const editComponent = wrapper.vm.editComponent
-    expect(editComponent).toBe(Wbr2ParcelsEditDialog)
-  })
-
-  it('returns null for unknown register type', async () => {
-    mockGet.mockResolvedValue({ 
-      id: 4, 
-      registerType: 999 // Unknown type
-    })
-
-    const wrapper = mount(ParcelEditView, {
-      props: { 
-        registerId: 4, 
-        id: 400 
-      },
-      global: {
-        stubs: {
-          OzonParcelEditDialog: true,
-          WbrParcelEditDialog: true,
-          Wbr2ParcelsEditDialog: true,
-          Suspense: false
-        }
-      }
-    })
-
-    await flushPromises()
-    await nextTick()
-
-    expect(mockGet).toHaveBeenCalledWith('http://test-api/registers/4')
-    
-    // Access the component instance to check the computed property
-    const editComponent = wrapper.vm.editComponent
-    expect(editComponent).toBeNull()
+    expect(mockGet).toHaveBeenCalledWith(`http://test-api/registers/${registerId}`)
+    expect(wrapper.vm.editComponent).toBe(expectedComponent)
   })
 
   it('shows loading state initially', () => {
-    mockGet.mockReturnValue(new Promise(() => {})) // Never resolves
+    // Mock a promise that never resolves to simulate loading state
+    mockGet.mockImplementation(() => new Promise(() => {}))
 
     const wrapper = mount(ParcelEditView, {
       props: { 

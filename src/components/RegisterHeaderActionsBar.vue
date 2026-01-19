@@ -12,6 +12,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' },
   loading: { type: Boolean, default: false },
+  noHistoricData: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -69,7 +70,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         icon="fa-solid fa-book-journal-whills"
         tooltip-text="Проверить по стоп-словам с учётом исторических данных"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || noHistoricData"
         @click="run('validate-sw-ex')"
       />
       <ActionButton
@@ -93,7 +94,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         icon="fa-solid fa-book-skull"
         tooltip-text="Подбор кодов ТН ВЭД с учётом исторических данных"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || noHistoricData"
         @click="run('lookup-ex')"
       />
     </div>

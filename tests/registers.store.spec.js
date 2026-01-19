@@ -636,7 +636,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=0&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&sourceRegisterId=0&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -654,7 +654,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=777&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&sourceRegisterId=777&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -672,7 +672,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=0&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&sourceRegisterId=0&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -689,7 +689,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=0&transfer2Reimport=true`
+        `${apiUrl}/registers/upload?registerType=123&sourceRegisterId=0&transfer2Reimport=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -707,7 +707,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?companyId=123&sourceRegisterId=777&transfer2Reimport=true`
+        `${apiUrl}/registers/upload?registerType=123&sourceRegisterId=777&transfer2Reimport=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -716,11 +716,11 @@ describe('registers store', () => {
 
     it('sets error on failure', async () => {
       const file = new File(['data'], 'test.xlsx')
-      const customerId = 123
+      const registerType = 123
       fetchWrapper.postFile.mockRejectedValue(new Error('fail'))
 
       const store = useRegistersStore()
-      await expect(store.upload(file, customerId)).rejects.toThrow('fail')
+      await expect(store.upload(file, registerType)).rejects.toThrow('fail')
       expect(store.error).toBeTruthy()
       expect(store.loading).toBe(false)
     })

@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import {
   toggleBulkStatusEditMode,
   cancelBulkStatusChange,
@@ -91,12 +91,22 @@ localSearch.value = registers_search.value || ''
 // Available customers for register upload
 const uploadCustomers = computed(() => {
   if (!companies.value) return []
-  return companies.value
+  const list = companies.value
     .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID)
     .map((company) => ({
       id: company.id,
       name: getCustomerName(company.id)
     }))
+
+  // Add extra WBR2 register option (Wildberries format 2 for TJ, GE)
+  if (list.find((c) => c.id === WBR_COMPANY_ID)) {
+    list.push({
+      id: WBR2_REGISTER_ID,
+      name: getCustomerName(WBR_COMPANY_ID) + ' (Грузия, Таджикистан)'
+    })
+  }
+
+  return list
 })
 
 const uploadMenuOptions = computed(() =>

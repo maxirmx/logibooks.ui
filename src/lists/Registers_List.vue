@@ -79,7 +79,7 @@ const { registers_per_page,
   isSrLogistPlus } = storeToRefs(authStore)
 
 const fileInput = ref(null)
-const selectedCustomerId = ref(null)
+const selectedRegisterType = ref(null)
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -249,14 +249,16 @@ async function fileSelected(files) {
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
 
-  if (!selectedCustomerId.value) {
-    alertStore.error('Не выбран клиент для загрузки реестра')
+  if (!selectedRegisterType.value) {
+    alertStore.error('Не выбран тип реестра для загрузки')
     return
   }
 
+  const customerId = selectedRegisterType.value === WBR2_REGISTER_ID ? WBR_COMPANY_ID : selectedRegisterType.value
   registersStore.item = {
     fileName: file.name,
-    companyId: selectedCustomerId.value
+    registerType: selectedRegisterType.value,
+    companyId: customerId
   }
   registersStore.uploadFile = file
   router.push('/register/load')
@@ -266,13 +268,13 @@ async function fileSelected(files) {
   }
 }
 
-function startRegisterUpload(customerId) {
-  if (!customerId) {
-    alertStore.error('Не выбран клиент для загрузки реестра')
+function startRegisterUpload(registerType) {
+  if (!registerType) {
+    alertStore.error('Не выбран тип реестра для загрузки')
     return
   }
 
-  selectedCustomerId.value = customerId
+  selectedRegisterType.value = registerType
   const input = fileInput.value
   if (input && typeof input.click === 'function') {
     input.click()

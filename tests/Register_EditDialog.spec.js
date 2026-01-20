@@ -18,6 +18,7 @@ const baseRegisterItem = {
   id: 1,
   fileName: 'r.csv',
   companyId: 2,
+  registerType: 2,
   dealNumber: 'D1',
   customsProcedureId: 1,
   transportationTypeId: 1,
@@ -471,8 +472,8 @@ describe('Register_EditDialog', () => {
 
   it('renders transfer register selector with generated names', async () => {
     registerItems.value = [
-      { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx', companyId: 2 },
-      { id: 11, dealNumber: '', fileName: 'reg-empty.xlsx', companyId: 2 }
+      { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx', registerType: 2, companyId: 2 },
+      { id: 11, dealNumber: '', fileName: 'reg-empty.xlsx', registerType: 2, companyId: 2 }
     ]
 
     const Parent = {
@@ -496,10 +497,10 @@ describe('Register_EditDialog', () => {
 
   it('passes selected register id to upload when provided', async () => {
     registerItems.value = [
-      { id: 20, dealNumber: 'D-200', fileName: 'reg-200.xlsx', companyId: 3 }
+      { id: 20, dealNumber: 'D-200', fileName: 'reg-200.xlsx', companyId: 3, registerType: 3 }
     ]
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 3 }
+    mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 3, registerType: 3 }
 
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
@@ -524,7 +525,7 @@ describe('Register_EditDialog', () => {
   it('handles create mode with upload result object', async () => {
     upload.mockResolvedValueOnce({ success: true, registerId: 42, ErrMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 2 }
+    mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', registerType: 2, companyId: 2 }
     registerItems.value = []
     const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
 

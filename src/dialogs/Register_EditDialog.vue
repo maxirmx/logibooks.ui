@@ -237,7 +237,7 @@ onMounted(async () => {
     }
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error('Не удалось инициализировать компоненту:', error)
+      alertStore.error('Не удалось инициализировать компоненту: ' + (error?.message || String(error)))
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {

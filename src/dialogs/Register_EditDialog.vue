@@ -192,7 +192,7 @@ watch(
       try {
         await registersStore.getAll()
       } catch (error) {
-        alertStore.error('Не удалось загрузить список реестров:', error)
+        alertStore.error('Не удалось загрузить список реестров: ' + (error?.message || String(error)))
       }
       // Set default values for new records
       if (!item.value.customsProcedureId) {

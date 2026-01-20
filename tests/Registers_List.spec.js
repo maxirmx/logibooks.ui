@@ -459,23 +459,24 @@ describe('Registers_List.vue', () => {
 
         await wrapper.vm.startRegisterUpload(OZON_COMPANY_ID)
 
-        expect(wrapper.vm.selectedCustomerId).toBe(OZON_COMPANY_ID)
+        expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
         expect(mockClick).toHaveBeenCalled()
       })
 
       it('shows error when trying to start upload without customer', async () => {
         await wrapper.vm.startRegisterUpload(null)
 
-        expect(alertErrorFn).toHaveBeenCalledWith('Не выбран клиент для загрузки реестра')
+        expect(alertErrorFn).toHaveBeenCalledWith('Не выбран тип реестра для загрузки')
       })
 
       it('handles file selection with array input for OZON', async () => {
         const file = new File(['data'], 'test.xlsx')
-        wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
+        wrapper.vm.selectedRegisterType = OZON_COMPANY_ID
 
         await wrapper.vm.fileSelected([file])
 
         expect(registersStore.item.fileName).toBe('test.xlsx')
+        expect(registersStore.item.registerType).toBe(OZON_COMPANY_ID)
         expect(registersStore.item.companyId).toBe(OZON_COMPANY_ID)
         expect(registersStore.uploadFile).toBe(file)
         expect(router.push).toHaveBeenCalledWith('/register/load')
@@ -483,18 +484,19 @@ describe('Registers_List.vue', () => {
 
       it('handles file selection with single file input for WBR', async () => {
         const file = new File(['data'], 'test.xlsx')
-        wrapper.vm.selectedCustomerId = WBR_COMPANY_ID
+        wrapper.vm.selectedRegisterType = WBR2_REGISTER_ID
 
         await wrapper.vm.fileSelected(file)
 
         expect(registersStore.item.fileName).toBe('test.xlsx')
+        expect(registersStore.item.registerType).toBe(WBR2_REGISTER_ID)
         expect(registersStore.item.companyId).toBe(WBR_COMPANY_ID)
         expect(registersStore.uploadFile).toBe(file)
         expect(router.push).toHaveBeenCalledWith('/register/load')
       })
 
       it('handles empty file selection', async () => {
-        wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
+        wrapper.vm.selectedRegisterType = WBR_COMPANY_ID
 
         await wrapper.vm.fileSelected(null)
         expect(router.push).not.toHaveBeenCalled()
@@ -505,11 +507,11 @@ describe('Registers_List.vue', () => {
 
       it('shows error when trying to upload without selected customer', async () => {
         const file = new File(['data'], 'test.xlsx')
-        wrapper.vm.selectedCustomerId = null
+        wrapper.vm.selectedRegisterType = null
 
         await wrapper.vm.fileSelected(file)
 
-        expect(alertErrorFn).toHaveBeenCalledWith('Не выбран клиент для загрузки реестра')
+        expect(alertErrorFn).toHaveBeenCalledWith('Не выбран тип реестра для загрузки')
         expect(router.push).not.toHaveBeenCalled()
       })
 
@@ -517,7 +519,7 @@ describe('Registers_List.vue', () => {
         const file = new File(['data'], 'test.xlsx')
         const mockFileInput = { value: null }
         wrapper.vm.fileInput = mockFileInput
-        wrapper.vm.selectedCustomerId = OZON_COMPANY_ID
+        wrapper.vm.selectedRegisterType = OZON_COMPANY_ID
 
         await wrapper.vm.fileSelected(file)
 
@@ -575,7 +577,7 @@ describe('Registers_List.vue', () => {
 
         await firstOption.action()
 
-        expect(wrapper.vm.selectedCustomerId).toBe(OZON_COMPANY_ID)
+        expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
         expect(mockClick).toHaveBeenCalled()
       })
 

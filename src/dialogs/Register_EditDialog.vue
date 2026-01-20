@@ -18,6 +18,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
 
@@ -25,6 +26,8 @@ const props = defineProps({
   id: { type: Number, required: false },
   create: { type: Boolean, default: false }
 })
+
+const alertStore = useAlertStore()
 
 const registersStore = useRegistersStore()
 const { item, uploadFile, items } = storeToRefs(registersStore)
@@ -68,12 +71,12 @@ const transferRegisterId = ref('')
 const registerOptions = computed(() => {
   if (!Array.isArray(items.value)) return []
 
-  // Only include registers that belong to the same company as the one we are editing/creating for
-  const companyId = item.value?.companyId ?? null
-  if (!companyId) return []
+  // Only include registers of the same register type as the one we are editing/creating for
+  const registerType = item.value?.registerType ?? null
+  if (!registerType) return []
 
   return items.value
-    .filter((register) => register && typeof register === 'object' && (register.companyId == companyId))
+    .filter((register) => register && typeof register === 'object' && (register.registerType == registerType))
     .map((register) => ({
       id: register.id,
       name: generateRegisterName(register.dealNumber, register.fileName)
@@ -189,7 +192,7 @@ watch(
       try {
         await registersStore.getAll()
       } catch (error) {
-        console.error('Failed to load registers for transfer selector:', error)
+        alertStore.error('Не удалось загрузить список реестров: ' + (error?.message || String(error)))
       }
       // Set default values for new records
       if (!item.value.customsProcedureId) {
@@ -234,7 +237,7 @@ onMounted(async () => {
     }
   } catch (error) {
     if (isComponentMounted.value) {
-      console.error('Failed to initialize component:', error)
+      alertStore.error('Не удалось инициализировать компоненту: ' + (error?.message || String(error)))
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {

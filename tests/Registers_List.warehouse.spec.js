@@ -218,6 +218,35 @@ describe('Registers_List.vue in warehouse mode', () => {
     expect(hasWarehouseTooltip).toBe(true)
   })
 
+  it('uses warehouse-specific table headers', async () => {
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const headerKeys = wrapper.vm.headers.map(header => header.key)
+    const headerTitles = wrapper.vm.headers.map(header => header.title)
+
+    expect(headerKeys).toEqual([
+      'actions',
+      'dealNumber',
+      'invoice',
+      'countries',
+      'senderRecipient',
+      'status',
+      'warehouse',
+      'arrivalDate'
+    ])
+    expect(headerTitles).toEqual([
+      '',
+      'Номер сделки',
+      'Мастер-накладная',
+      'Страны',
+      'Отправитель/Получатель',
+      'Статус',
+      'Склад',
+      'Дата прибытия'
+    ])
+  })
+
   it('uses warehouse-specific items-per-page text', async () => {
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()

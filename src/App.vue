@@ -213,6 +213,7 @@ const opModeToggleIcon = computed(() =>
                 v-bind="props"
                 @click="opModeStore.toggleMode"
                 data-testid="global-op-mode-toggle"
+                :aria-label="opModeToggleTooltip"
               >
                 <font-awesome-icon
                   size="1x"

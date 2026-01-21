@@ -218,7 +218,6 @@ const opModeToggleIcon = computed(() =>
                 <font-awesome-icon
                   size="1x"
                   :icon="opModeToggleIcon"
-                  class="action-btn"
                 />
               </button>
             </template>

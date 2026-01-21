@@ -3,6 +3,7 @@
 // This file is a part of Logibooks ui application 
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 
 let authStore
 const alertClear = vi.fn()
@@ -39,6 +40,9 @@ describe('router guards', () => {
   let originalConsoleError
 
   beforeEach(async () => {
+    // Set up Pinia for store access
+    setActivePinia(createPinia())
+    
     // Mock console.error to suppress router guard error messages in tests
     originalConsoleError = console.error
     console.error = vi.fn()

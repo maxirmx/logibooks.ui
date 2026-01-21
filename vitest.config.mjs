@@ -10,6 +10,13 @@ import viteConfig from './vite.config.mjs'
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    resolve: {
+      alias: {
+        'pinia-plugin-persistedstate': fileURLToPath(
+          new URL('./tests/helpers/pinia-plugin-persistedstate.js', import.meta.url)
+        )
+      }
+    },
     test: {
       environment: 'jsdom',
       globals: true,

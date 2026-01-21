@@ -6,7 +6,9 @@
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
 import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useStatusStore } from '@/stores/status.store.js'
+import { useOpModeStore, OP_MODE_WAREHOUSE } from '@/stores/op.mode.store.js'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
@@ -15,6 +17,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
+const opModeStore = useOpModeStore()
+const { globalOpMode, modeLabel } = storeToRefs(opModeStore)
 
 const baseUrl = import.meta.env.BASE_URL
 
@@ -77,6 +81,14 @@ function getUserName() {
         authStore.user.patronymic
     : ''
 }
+
+const opModeToggleTooltip = computed(() =>
+  globalOpMode.value === OP_MODE_WAREHOUSE ? 'Переключить на Оформление' : 'Переключить на Склад'
+)
+
+const opModeToggleIcon = computed(() =>
+  globalOpMode.value === OP_MODE_WAREHOUSE ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'
+)
 
 /*
 <v-list-item>
@@ -189,6 +201,28 @@ function getUserName() {
         </v-list-item>
       </v-list>
       <template v-slot:append>
+        <div class="pa-2 op-mode-section" v-if="authStore.user">
+          <div class="primary-heading op-mode-label" data-testid="global-op-mode-label">
+            {{ modeLabel }}
+          </div>
+          <v-tooltip :text="opModeToggleTooltip">
+            <template v-slot:activator="{ props }">
+              <button
+                type="button"
+                class="action-btn"
+                v-bind="props"
+                @click="opModeStore.toggleMode"
+                data-testid="global-op-mode-toggle"
+                :aria-label="opModeToggleTooltip"
+              >
+                <font-awesome-icon
+                  size="1x"
+                  :icon="opModeToggleIcon"
+                />
+              </button>
+            </template>
+          </v-tooltip>
+        </div>
         <div class="pa-2">
           <span class="primary-heading version-info"> Клиент {{ version }} </span>
           <br v-if="statusStore.coreVersion"/>
@@ -204,7 +238,7 @@ function getUserName() {
     </v-navigation-drawer>
 
     <v-main class="d-flex align-center justify-center vvv">
-      <RouterView />
+      <RouterView :key="globalOpMode" />
     </v-main>
   </v-app>
 </template>
@@ -241,6 +275,18 @@ function getUserName() {
 .exchange-rates span {
   display: inline-flex;
   align-items: center;
+}
+
+.op-mode-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+.op-mode-label {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 nav {

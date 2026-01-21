@@ -37,6 +37,7 @@ const warehouseTypeOptions = [
 ]
 
 let warehouse = ref({
+  id: 0,
   name: '',
   countryIsoNumeric: null,
   postalCode: '',
@@ -61,6 +62,7 @@ function getButtonText() {
 }
 
 const schema = Yup.object({
+  type: Yup.number().required(),
   name: Yup.string().required('Название обязательно'),
   countryIsoNumeric: Yup.number().required('Страна обязательна'),
   postalCode: Yup.string(),

@@ -81,4 +81,57 @@ describe('op mode store', () => {
     expect(store.globalOpMode).toBe(OP_MODE_WAREHOUSE)
     expect(store.modeLabel).toBe('Режим "Склад"')
   })
+
+  it('returns correct isWarehouseMode for paperwork mode', () => {
+    const store = useOpModeStore()
+    store.setMode(OP_MODE_PAPERWORK)
+    expect(store.isWarehouseMode).toBe(false)
+  })
+
+  it('returns correct isWarehouseMode for warehouse mode', () => {
+    const store = useOpModeStore()
+    store.setMode(OP_MODE_WAREHOUSE)
+    expect(store.isWarehouseMode).toBe(true)
+  })
+
+  it('returns correct registerNouns for paperwork mode', () => {
+    const store = useOpModeStore()
+    store.setMode(OP_MODE_PAPERWORK)
+    const nouns = store.registerNouns
+    expect(nouns.singular).toBe('Реестр')
+    expect(nouns.plural).toBe('Реестры')
+    expect(nouns.genitivePlural).toBe('реестров')
+    expect(nouns.genitivePluralCapitalized).toBe('Реестров')
+    expect(nouns.accusative).toBe('реестр')
+    expect(nouns.prepositional).toBe('реестре')
+    expect(nouns.genitiveSingular).toBe('реестра')
+  })
+
+  it('returns correct registerNouns for warehouse mode', () => {
+    const store = useOpModeStore()
+    store.setMode(OP_MODE_WAREHOUSE)
+    const nouns = store.registerNouns
+    expect(nouns.singular).toBe('Партия')
+    expect(nouns.plural).toBe('Партии')
+    expect(nouns.genitivePlural).toBe('партий')
+    expect(nouns.genitivePluralCapitalized).toBe('Партий')
+    expect(nouns.accusative).toBe('партию')
+    expect(nouns.prepositional).toBe('партии')
+    expect(nouns.genitiveSingular).toBe('партии')
+  })
+
+  it('setMode accepts valid paperwork mode', () => {
+    const store = useOpModeStore()
+    store.setMode(OP_MODE_WAREHOUSE)
+    expect(store.globalOpMode).toBe(OP_MODE_WAREHOUSE)
+    store.setMode(OP_MODE_PAPERWORK)
+    expect(store.globalOpMode).toBe(OP_MODE_PAPERWORK)
+  })
+
+  it('setMode accepts valid warehouse mode', () => {
+    const store = useOpModeStore()
+    expect(store.globalOpMode).toBe(OP_MODE_PAPERWORK)
+    store.setMode(OP_MODE_WAREHOUSE)
+    expect(store.globalOpMode).toBe(OP_MODE_WAREHOUSE)
+  })
 })

@@ -251,7 +251,7 @@ describe('Registers_List.vue in warehouse mode', () => {
       String(button.props('tooltipText') || '').includes('партии')
     )
 
-    expect(bulkStatusButton).toBeDefined()
+    expect(bulkStatusButton).toBeTruthy()
     expect(bulkStatusButton.props('tooltipText')).toContain('в партии')
   })
 })

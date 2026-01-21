@@ -93,6 +93,7 @@ const registerNouns = computed(() => (
       singular: 'Партия',
       plural: 'Партии',
       genitivePlural: 'партий',
+      genitivePluralCapitalized: 'Партий',
       accusative: 'партию',
       prepositional: 'партии',
       genitiveSingular: 'партии'
@@ -101,6 +102,7 @@ const registerNouns = computed(() => (
       singular: 'Реестр',
       plural: 'Реестры',
       genitivePlural: 'реестров',
+      genitivePluralCapitalized: 'Реестров',
       accusative: 'реестр',
       prepositional: 'реестре',
       genitiveSingular: 'реестра'
@@ -450,7 +452,7 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table-server
         v-model:items-per-page="registers_per_page"
-        :items-per-page-text="`${registerNouns.genitivePlural} на странице`"
+        :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
         v-model:page="registers_page"

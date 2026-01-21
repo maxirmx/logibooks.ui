@@ -214,4 +214,63 @@ describe('Registers_List.vue in warehouse mode', () => {
     )
     expect(hasWarehouseTooltip).toBe(true)
   })
+
+  it('uses warehouse-specific items-per-page text', async () => {
+    const wrapper = mount(RegistersList, {
+      global: {
+        stubs: vuetifyStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    // Access the component's computed property
+    expect(wrapper.vm.registerNouns.genitivePluralCapitalized).toBe('Партий')
+  })
+
+  it('uses warehouse-specific loading text', async () => {
+    const wrapper = mount(RegistersList, {
+      global: {
+        stubs: vuetifyStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    // Access the component's computed property
+    expect(wrapper.vm.registerNouns.genitiveSingular).toBe('партии')
+  })
+
+  it('uses warehouse-specific error messages', async () => {
+    const wrapper = mount(RegistersList, {
+      global: {
+        stubs: vuetifyStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    // Verify that the component uses warehouse-specific nouns by checking the computed property
+    expect(wrapper.vm.registerNouns.genitivePlural).toBe('партий')
+  })
+
+  it('uses warehouse-specific tooltips for bulk actions', async () => {
+    mockItems.value = [{ id: 1 }]
+
+    const wrapper = mount(RegistersList, {
+      global: {
+        stubs: vuetifyStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const bulkStatusButton = actionButtons.find(button =>
+      String(button.props('tooltipText') || '').includes('партии')
+    )
+    
+    expect(bulkStatusButton).toBeDefined()
+    expect(bulkStatusButton.props('tooltipText')).toContain('в партии')
+  })
 })

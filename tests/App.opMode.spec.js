@@ -42,6 +42,23 @@ const router = createRouter({
   routes: [
     { path: '/', component: { template: '<div>Home</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
+    { path: '/registers', component: { template: '<div>Registers</div>' } },
+    { path: '/parcels/by-number', component: { template: '<div>Parcels</div>' } },
+    { path: '/user/edit/:id', component: { template: '<div>User Edit</div>' } },
+    { path: '/users', component: { template: '<div>Users</div>' } },
+    { path: '/customs-reports', component: { template: '<div>Customs Reports</div>' } },
+    { path: '/countries', component: { template: '<div>Countries</div>' } },
+    { path: '/feacn/codes', component: { template: '<div>FEACN Codes</div>' } },
+    { path: '/feacn/orders', component: { template: '<div>FEACN Orders</div>' } },
+    { path: '/feacn/prefixes', component: { template: '<div>FEACN Prefixes</div>' } },
+    { path: '/keywords', component: { template: '<div>Keywords</div>' } },
+    { path: '/feacn/insertitems', component: { template: '<div>FEACN Insert Items</div>' } },
+    { path: '/companies', component: { template: '<div>Companies</div>' } },
+    { path: '/airports', component: { template: '<div>Airports</div>' } },
+    { path: '/notifications', component: { template: '<div>Notifications</div>' } },
+    { path: '/parcelstatuses', component: { template: '<div>Parcel Statuses</div>' } },
+    { path: '/stopwords', component: { template: '<div>Stop Words</div>' } },
+    { path: '/parceleventprocessing', component: { template: '<div>Parcel Event Processing</div>' } },
   ]
 })
 

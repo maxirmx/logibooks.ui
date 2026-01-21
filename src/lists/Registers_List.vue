@@ -26,7 +26,6 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useOpModeStore, OP_MODE_WAREHOUSE } from '@/stores/op.mode.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-// CheckStatusCode not needed here; use shared helpers instead
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'

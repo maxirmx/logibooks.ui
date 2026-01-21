@@ -79,34 +79,12 @@ const { registers_per_page,
   isSrLogistPlus } = storeToRefs(authStore)
 
 const opModeStore = useOpModeStore()
-const { globalOpMode } = storeToRefs(opModeStore)
+const { globalOpMode, registerNouns } = storeToRefs(opModeStore)
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
 
 const isWarehouseMode = computed(() => globalOpMode.value === OP_MODE_WAREHOUSE)
-
-const registerNouns = computed(() => (
-  isWarehouseMode.value
-    ? {
-      singular: 'Партия',
-      plural: 'Партии',
-      genitivePlural: 'партий',
-      genitivePluralCapitalized: 'Партий',
-      accusative: 'партию',
-      prepositional: 'партии',
-      genitiveSingular: 'партии'
-    }
-    : {
-      singular: 'Реестр',
-      plural: 'Реестры',
-      genitivePlural: 'реестров',
-      genitivePluralCapitalized: 'Реестров',
-      accusative: 'реестр',
-      prepositional: 'реестре',
-      genitiveSingular: 'реестра'
-    }
-))
 
 // State for bulk status change
 const bulkStatusState = reactive({})

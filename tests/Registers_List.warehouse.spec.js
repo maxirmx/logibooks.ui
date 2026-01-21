@@ -180,18 +180,23 @@ vi.mock('vuetify-use-dialog', () => ({
 }))
 
 describe('Registers_List.vue in warehouse mode', () => {
+  let wrapper
+
+  const createWrapper = () => {
+    return mount(RegistersList, {
+      global: {
+        stubs: vuetifyStubs
+      }
+    })
+  }
+
   beforeEach(() => {
     mockGlobalOpMode.value = 'modeWarehouse'
     mockItems.value = [{ id: 1 }]
   })
 
   it('uses warehouse labels and hides register actions', async () => {
-    const wrapper = mount(RegistersList, {
-      global: {
-        stubs: vuetifyStubs
-      }
-    })
-
+    wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('h1').text()).toBe('Партии')
@@ -216,12 +221,7 @@ describe('Registers_List.vue in warehouse mode', () => {
   })
 
   it('uses warehouse-specific items-per-page text', async () => {
-    const wrapper = mount(RegistersList, {
-      global: {
-        stubs: vuetifyStubs
-      }
-    })
-
+    wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
     // Access the component's computed property
@@ -229,12 +229,7 @@ describe('Registers_List.vue in warehouse mode', () => {
   })
 
   it('uses warehouse-specific loading text', async () => {
-    const wrapper = mount(RegistersList, {
-      global: {
-        stubs: vuetifyStubs
-      }
-    })
-
+    wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
     // Access the component's computed property
@@ -242,12 +237,7 @@ describe('Registers_List.vue in warehouse mode', () => {
   })
 
   it('uses warehouse-specific error messages', async () => {
-    const wrapper = mount(RegistersList, {
-      global: {
-        stubs: vuetifyStubs
-      }
-    })
-
+    wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
     // Verify that the component uses warehouse-specific nouns by checking the computed property
@@ -255,21 +245,14 @@ describe('Registers_List.vue in warehouse mode', () => {
   })
 
   it('uses warehouse-specific tooltips for bulk actions', async () => {
-    mockItems.value = [{ id: 1 }]
-
-    const wrapper = mount(RegistersList, {
-      global: {
-        stubs: vuetifyStubs
-      }
-    })
-
+    wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const bulkStatusButton = actionButtons.find(button =>
       String(button.props('tooltipText') || '').includes('партии')
     )
-    
+
     expect(bulkStatusButton).toBeDefined()
     expect(bulkStatusButton.props('tooltipText')).toContain('в партии')
   })

@@ -108,7 +108,7 @@ describe('App operation mode switch', () => {
     await wrapper.vm.$nextTick()
 
     const label = wrapper.find('[data-testid="global-op-mode-label"]')
-    expect(label.text()).toBe('Оформление')
+    expect(label.text()).toBe('Режим "Оформление"')
   })
 
   it('toggles the operation mode when switch is clicked', async () => {
@@ -120,7 +120,7 @@ describe('App operation mode switch', () => {
     await button.trigger('click')
 
     const label = wrapper.find('[data-testid="global-op-mode-label"]')
-    expect(label.text()).toBe('Склад')
+    expect(label.text()).toBe('Режим "Склад"')
     expect(opModeStore.globalOpMode).toBe(OP_MODE_WAREHOUSE)
   })
 })

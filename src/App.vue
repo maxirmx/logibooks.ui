@@ -153,6 +153,9 @@ const opModeToggleIcon = computed(() =>
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>
           <v-list-item>
+            <RouterLink to="/warehouses" class="link">Склады</RouterLink>
+          </v-list-item>
+          <v-list-item>
             <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
           </v-list-item>
           <v-list-item>

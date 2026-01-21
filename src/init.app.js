@@ -4,6 +4,7 @@
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 // ------------ fontawesome --------------
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -169,10 +170,13 @@ export function initializeApp() {
     }
   })
 
+  const pinia = createPinia()
+  pinia.use(piniaPluginPersistedstate)
+
   // Create the app instance but don't mount it yet
   const app = createApp(App)
     .component('font-awesome-icon', FontAwesomeIcon)
-    .use(createPinia())
+    .use(pinia)
     .use(router)
     .use(vuetify)
     .use(VuetifyUseDialog)

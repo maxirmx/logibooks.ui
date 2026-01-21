@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import ParcelEditView from '@/views/Parcel_EditView.vue'
 import OzonParcelEditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrParcelEditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
@@ -33,6 +34,7 @@ const commonStubs = {
 
 describe('Parcel_EditView.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 

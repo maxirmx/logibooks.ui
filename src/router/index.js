@@ -56,6 +56,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/warehouses',
+      name: 'Склады',
+      component: () => import('@/views/Warehouses_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/notifications',
       name: 'Нотификации',
       component: () => import('@/views/Notifications_View.vue'),
@@ -83,6 +89,21 @@ const router = createRouter({
       path: '/company/edit/:id',
       name: 'Изменить информацию о компании',
       component: () => import('@/views/Company_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/warehouse/create',
+      name: 'Регистрация склада',
+      component: () => import('@/views/Warehouse_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/warehouse/edit/:id',
+      name: 'Изменить информацию о складе',
+      component: () => import('@/views/Warehouse_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

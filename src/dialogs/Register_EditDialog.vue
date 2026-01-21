@@ -753,7 +753,7 @@ function getCustomerName(customerId) {
               <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>
             </label>
           </div>
-      </div>
+        </div>
        
         <div class="form-row-1" v-else>
           <div class="form-group lookup-by-article-group">
@@ -768,6 +768,23 @@ function getCustomerName(customerId) {
               />
               <span class="custom-checkbox-box"></span>
               <span class="label custom-checkbox-label">Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row-1">
+          <div class="form-group">
+            <label class="custom-checkbox">
+              <Field
+                id="withWarehouse"
+                type="checkbox"
+                name="withWarehouse"
+                :value="true"
+                :unchecked-value="false"
+                class="custom-checkbox-input"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="label custom-checkbox-label">Подключить функции склада</span>
             </label>
           </div>
         </div>

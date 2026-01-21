@@ -124,7 +124,8 @@ describe('App Logout Functionality', () => {
           ActionDialog: {
             props: ['actionDialog'],
             template: '<div class="action-dialog-stub" :data-show="actionDialog?.show"></div>'
-          }
+          },
+          'font-awesome-icon': { template: '<span class="fa-icon-stub"></span>' }
         }
       }
     })

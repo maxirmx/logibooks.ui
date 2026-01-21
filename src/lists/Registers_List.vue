@@ -387,7 +387,7 @@ function formatInvoiceInfo(item) {
 
 
 
-const headers = [
+const defaultHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
   { title: 'ТСД', key: 'invoice' },
@@ -398,6 +398,19 @@ const headers = [
   { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '200px', width: '200px' },
   { title: 'Дата загрузки', key: 'date' }
 ]
+
+const warehouseHeaders = [
+  { title: '', key: 'actions', sortable: false, align: 'center' },
+  { title: 'Номер сделки', key: 'dealNumber' },
+  { title: 'Мастер-накладная', key: 'invoice' },
+  { title: 'Страны', key: 'countries' },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient' },
+  { title: 'Статус', key: 'status' },
+  { title: 'Склад', key: 'warehouse' },
+  { title: 'Дата прибытия', key: 'arrivalDate' }
+]
+
+const headers = computed(() => (isWarehouseMode.value ? warehouseHeaders : defaultHeaders))
 
 defineExpose({
   validationState,
@@ -523,6 +536,15 @@ defineExpose({
               </div>
             </template>
           </ClickableCell>
+        </template>
+        <template #[`item.status`]="{ item }">
+          <span class="truncated-cell">{{ item.status }}</span>
+        </template>
+        <template #[`item.warehouse`]="{ item }">
+          <span class="truncated-cell">{{ item.warehouse }}</span>
+        </template>
+        <template #[`item.arrivalDate`]="{ item }">
+          <span class="truncated-cell">{{ formatDate(item.arrivalDate) }}</span>
         </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 

@@ -73,7 +73,10 @@ vi.mock('pinia', async () => {
         return { alert: store.alert }
       }
       if (store.globalOpMode !== undefined) {
-        return { globalOpMode: store.globalOpMode }
+        return { 
+          globalOpMode: store.globalOpMode,
+          registerNouns: store.registerNouns
+        }
       }
       return {
         registers_per_page: ref(10),
@@ -159,13 +162,26 @@ vi.mock('@/stores/auth.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/op.mode.store.js', () => ({
-  useOpModeStore: () => ({
-    globalOpMode: mockGlobalOpMode
-  }),
-  OP_MODE_PAPERWORK: 'modePaperwork',
-  OP_MODE_WAREHOUSE: 'modeWarehouse'
-}))
+vi.mock('@/stores/op.mode.store.js', () => {
+  const registerNouns = ref({
+    singular: 'Партия',
+    plural: 'Партии', 
+    genitivePlural: 'партий',
+    genitivePluralCapitalized: 'Партий',
+    accusative: 'партию',
+    prepositional: 'партии',
+    genitiveSingular: 'партии'
+  })
+  
+  return {
+    useOpModeStore: () => ({
+      globalOpMode: mockGlobalOpMode,
+      registerNouns
+    }),
+    OP_MODE_PAPERWORK: 'modePaperwork',
+    OP_MODE_WAREHOUSE: 'modeWarehouse'
+  }
+})
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]

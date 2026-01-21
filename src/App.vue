@@ -18,7 +18,7 @@ const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
 const opModeStore = useOpModeStore()
-const { globalOpMode, modeLabel } = storeToRefs(opModeStore)
+const { globalOpMode, modeLabel, registerNouns } = storeToRefs(opModeStore)
 
 const baseUrl = import.meta.env.BASE_URL
 
@@ -109,7 +109,7 @@ const opModeToggleIcon = computed(() =>
       </template>
       <v-list v-if="authStore.user">
         <v-list-item v-if="authStore.hasLogistRole">
-          <RouterLink to="/registers" class="link">Реестры</RouterLink>
+          <RouterLink to="/registers" class="link">{{ registerNouns.plural }}</RouterLink>
         </v-list-item>
         <v-list-item v-if="authStore.hasLogistRole">
           <RouterLink to="/parcels/by-number" class="link">Посылки</RouterLink>

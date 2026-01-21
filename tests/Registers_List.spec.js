@@ -85,7 +85,10 @@ vi.mock('pinia', async () => {
         // airports store
         return { airports: mockAirports }
       } else if (store.globalOpMode !== undefined) {
-        return { globalOpMode: store.globalOpMode }
+        return { 
+          globalOpMode: store.globalOpMode,
+          registerNouns: store.registerNouns
+        }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -195,13 +198,26 @@ vi.mock('@/stores/auth.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/op.mode.store.js', () => ({
-  useOpModeStore: () => ({
-    globalOpMode: mockGlobalOpMode
-  }),
-  OP_MODE_PAPERWORK: 'modePaperwork',
-  OP_MODE_WAREHOUSE: 'modeWarehouse'
-}))
+vi.mock('@/stores/op.mode.store.js', () => {
+  const registerNouns = ref({
+    singular: 'Реестр',
+    plural: 'Реестры', 
+    genitivePlural: 'реестров',
+    genitivePluralCapitalized: 'Реестров',
+    accusative: 'реестр',
+    prepositional: 'реестре',
+    genitiveSingular: 'реестра'
+  })
+  
+  return {
+    useOpModeStore: () => ({
+      globalOpMode: mockGlobalOpMode,
+      registerNouns
+    }),
+    OP_MODE_PAPERWORK: 'modePaperwork',
+    OP_MODE_WAREHOUSE: 'modeWarehouse'
+  }
+})
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]

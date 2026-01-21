@@ -17,7 +17,30 @@ export const useOpModeStore = defineStore('opMode', {
     globalOpMode: OP_MODE_PAPERWORK
   }),
   getters: {
-    modeLabel: (state) => MODE_LABELS[state.globalOpMode] || MODE_LABELS[OP_MODE_PAPERWORK]
+    modeLabel: (state) => MODE_LABELS[state.globalOpMode] || MODE_LABELS[OP_MODE_PAPERWORK],
+    isWarehouseMode: (state) => state.globalOpMode === OP_MODE_WAREHOUSE,
+    registerNouns: (state) => {
+      const isWarehouse = state.globalOpMode === OP_MODE_WAREHOUSE
+      return isWarehouse
+        ? {
+            singular: 'Партия',
+            plural: 'Партии',
+            genitivePlural: 'партий',
+            genitivePluralCapitalized: 'Партий',
+            accusative: 'партию',
+            prepositional: 'партии',
+            genitiveSingular: 'партии'
+          }
+        : {
+            singular: 'Реестр',
+            plural: 'Реестры',
+            genitivePlural: 'реестров',
+            genitivePluralCapitalized: 'Реестров',
+            accusative: 'реестр',
+            prepositional: 'реестре',
+            genitiveSingular: 'реестра'
+          }
+    }
   },
   actions: {
     setMode(mode) {

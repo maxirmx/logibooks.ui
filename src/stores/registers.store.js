@@ -14,9 +14,14 @@ import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
+import { storeToRefs } from 'pinia'
+import { useOpModeStore, OP_MODE_WAREHOUSE } from '@/stores/op.mode.store.js'
+
 const baseUrl = `${apiUrl}/registers`
 
 export const useRegistersStore = defineStore('registers', () => {
+  const opModeStore = useOpModeStore()
+  const { globalOpMode } = storeToRefs(opModeStore)
   const items = ref([])
   const item = ref({})
   const uploadFile = ref(null)
@@ -66,7 +71,8 @@ export const useRegistersStore = defineStore('registers', () => {
         page: authStore.registers_page.toString(),
         pageSize: authStore.registers_per_page.toString(),
         sortBy: authStore.registers_sort_by?.[0]?.key || 'id',
-        sortOrder: authStore.registers_sort_by?.[0]?.order || 'desc'
+        sortOrder: authStore.registers_sort_by?.[0]?.order || 'desc',
+        whOnly: globalOpMode.value === OP_MODE_WAREHOUSE ? 'true' : 'false'
       })
 
       if (authStore.registers_search) {

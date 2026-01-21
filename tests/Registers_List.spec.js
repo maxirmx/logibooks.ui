@@ -12,6 +12,7 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'
 
 let lastRegisterActions = null
+const mockGlobalOpMode = ref('modePaperwork')
 
 vi.mock('@/helpers/register.actions.js', async () => {
   const actual = await vi.importActual('@/helpers/register.actions.js')
@@ -83,6 +84,8 @@ vi.mock('pinia', async () => {
       } else if (store.airports !== undefined && store.getAll === getAirportsAll) {
         // airports store
         return { airports: mockAirports }
+      } else if (store.globalOpMode !== undefined) {
+        return { globalOpMode: store.globalOpMode }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -90,7 +93,9 @@ vi.mock('pinia', async () => {
           registers_search: ref(''),
           registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
           registers_page: ref(1),
-          alert: ref(null)
+          alert: ref(null),
+          isShiftLeadPlus: ref(false),
+          isSrLogistPlus: ref(false)
         }
       }
     }
@@ -184,8 +189,18 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_per_page: ref(10),
     registers_search: ref(''),
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
-    registers_page: ref(1)
+    registers_page: ref(1),
+    isShiftLeadPlus: ref(false),
+    isSrLogistPlus: ref(false)
   })
+}))
+
+vi.mock('@/stores/op.mode.store.js', () => ({
+  useOpModeStore: () => ({
+    globalOpMode: mockGlobalOpMode
+  }),
+  OP_MODE_PAPERWORK: 'modePaperwork',
+  OP_MODE_WAREHOUSE: 'modeWarehouse'
 }))
 
 vi.mock('@/helpers/items.per.page.js', () => ({
@@ -833,4 +848,3 @@ describe('formatInvoiceDate function', () => {
     expect(wrapper.vm.formatDate(dateWithTime)).toBe('27.07.2025')
   })
 })
-

@@ -23,6 +23,7 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useOpModeStore, OP_MODE_WAREHOUSE } from '@/stores/op.mode.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 // CheckStatusCode not needed here; use shared helpers instead
@@ -78,8 +79,33 @@ const { registers_per_page,
   isShiftLeadPlus, 
   isSrLogistPlus } = storeToRefs(authStore)
 
+const opModeStore = useOpModeStore()
+const { globalOpMode } = storeToRefs(opModeStore)
+
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
+
+const isWarehouseMode = computed(() => globalOpMode.value === OP_MODE_WAREHOUSE)
+
+const registerNouns = computed(() => (
+  isWarehouseMode.value
+    ? {
+      singular: 'Партия',
+      plural: 'Партии',
+      genitivePlural: 'партий',
+      accusative: 'партию',
+      prepositional: 'партии',
+      genitiveSingular: 'партии'
+    }
+    : {
+      singular: 'Реестр',
+      plural: 'Реестры',
+      genitivePlural: 'реестров',
+      accusative: 'реестр',
+      prepositional: 'реестре',
+      genitiveSingular: 'реестра'
+    }
+))
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -250,7 +276,7 @@ async function fileSelected(files) {
   if (!file) return
 
   if (!selectedRegisterType.value) {
-    alertStore.error('Не выбран тип реестра для загрузки')
+    alertStore.error(`Не выбран тип ${registerNouns.value.genitiveSingular} для загрузки`)
     return
   }
 
@@ -270,7 +296,7 @@ async function fileSelected(files) {
 
 function startRegisterUpload(registerType) {
   if (!registerType) {
-    alertStore.error('Не выбран тип реестра для загрузки')
+    alertStore.error(`Не выбран тип ${registerNouns.value.genitiveSingular} для загрузки`)
     return
   }
 
@@ -308,7 +334,7 @@ async function deleteRegister(item) {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    const content = `Удалить реестр "${item.fileName}" ?`
+    const content = `Удалить ${registerNouns.value.accusative} "${item.fileName}" ?`
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -327,7 +353,10 @@ async function deleteRegister(item) {
       try {
         await registersStore.remove(item.id)
       } catch (err) {
-        alertStore.error('Ошибка при удалении реестра' + (err.message ? `: ${err.message}` : ''))
+        alertStore.error(
+          `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
+          (err.message ? `: ${err.message}` : '')
+        )
       }
     }
   } finally {
@@ -378,16 +407,16 @@ defineExpose({
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Реестры</h1>
+      <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div style="display:flex; align-items:center;">
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus && !isWarehouseMode">
           <ActionButton2L
             :item="{}"
             icon="fa-solid fa-file-import"
-            tooltip-text="Загрузить реестр"
+            :tooltip-text="`Загрузить ${registerNouns.accusative}`"
             iconSize="2x"
             :disabled="runningAction || loading || isInitializing || isUploadDisabled"
             :options="uploadMenuOptions"
@@ -396,11 +425,11 @@ defineExpose({
       </div>
     </div>
     <v-file-input
-      v-if="isSrLogistPlus"
+      v-if="isSrLogistPlus && !isWarehouseMode"
       ref="fileInput"
       style="display: none"
       accept=".xls,.xlsx,.zip,.rar"
-      loading-text="Идёт загрузка реестра..."
+      :loading-text="`Идёт загрузка ${registerNouns.genitiveSingular}...`"
       @update:model-value="fileSelected"
     />
 
@@ -410,7 +439,7 @@ defineExpose({
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по любой информации о реестре"
+        :label="`Поиск по любой информации о ${registerNouns.prepositional}`"
         variant="solo"
         hide-details
         :loading="loading || isInitializing"
@@ -421,7 +450,7 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table-server
         v-model:items-per-page="registers_per_page"
-        items-per-page-text="Реестров на странице"
+        :items-per-page-text="`${registerNouns.genitivePlural} на странице`"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
         v-model:page="registers_page"
@@ -599,7 +628,14 @@ defineExpose({
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" :disabled="runningAction || loading" />
+            <ActionButton
+              v-if="!isWarehouseMode"
+              :item="item"
+              icon="fa-solid fa-pen"
+              :tooltip-text="`Редактировать ${registerNouns.accusative}`"
+              @click="editRegister"
+              :disabled="runningAction || loading"
+            />
             
             <div class="bulk-status-inline" v-if="isSrLogistPlus">
               <div v-if="isInEditMode(item.id)" class="status-selector-inline">
@@ -635,25 +671,27 @@ defineExpose({
                 v-else 
                 :item="item" 
                 icon="fa-solid fa-pen-to-square" 
-                tooltip-text="Изменить статус всех посылок в реестре" 
+                :tooltip-text="`Изменить статус всех посылок в ${registerNouns.prepositional}`"
                 :disabled="runningAction || loading" 
                 @click="() => bulkChangeStatus(item.id)" 
               />
             </div>
             <ActionButton
-              v-if="isShiftLeadPlus"
-              :item="item" 
-              icon="fa-solid fa-trash-can" 
-              tooltip-text="Удалить реестр" 
-              @click="deleteRegister" 
-              :disabled="runningAction || loading" 
+              v-if="isShiftLeadPlus && !isWarehouseMode"
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              :tooltip-text="`Удалить ${registerNouns.accusative}`"
+              @click="deleteRegister"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>
       </v-data-table-server>
     </v-card>
     <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
+      <div class="text-danger">
+        Ошибка при загрузке списка {{ registerNouns.genitivePlural }}: {{ error }}
+      </div>
     </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>

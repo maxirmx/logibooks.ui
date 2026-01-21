@@ -8,8 +8,8 @@ export const OP_MODE_PAPERWORK = 'modePaperwork'
 export const OP_MODE_WAREHOUSE = 'modeWarehouse'
 
 const MODE_LABELS = {
-  [OP_MODE_PAPERWORK]: 'Оформление',
-  [OP_MODE_WAREHOUSE]: 'Склад'
+  [OP_MODE_PAPERWORK]: 'Режим "Оформление"',
+  [OP_MODE_WAREHOUSE]: 'Режим "Склад"'
 }
 
 export const useOpModeStore = defineStore('opMode', {

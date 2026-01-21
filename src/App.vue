@@ -83,22 +83,12 @@ function getUserName() {
 }
 
 const opModeToggleTooltip = computed(() =>
-  globalOpMode.value === OP_MODE_WAREHOUSE ? 'Переключить на Оформление' : 'Переключить на Склад'
+  globalOpMode.value === OP_MODE_WAREHOUSE ? 'Переключить на "Оформление"' : 'Переключить на "Склад"'
 )
 
 const opModeToggleIcon = computed(() =>
   globalOpMode.value === OP_MODE_WAREHOUSE ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'
 )
-
-/*
-<v-list-item>
-          <RouterLink to="/register" class="link">Регистрация</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/recover" class="link">Восстановление пароля</RouterLink>
-        </v-list-item>
-*/
-
 </script>
 
 <template>
@@ -202,26 +192,26 @@ const opModeToggleIcon = computed(() =>
       </v-list>
       <template v-slot:append>
         <div class="pa-2 op-mode-section" v-if="authStore.user">
-          <div class="primary-heading op-mode-label" data-testid="global-op-mode-label">
-            {{ modeLabel }}
-          </div>
           <v-tooltip :text="opModeToggleTooltip">
             <template v-slot:activator="{ props }">
               <button
                 type="button"
-                class="action-btn"
                 v-bind="props"
                 @click="opModeStore.toggleMode"
                 data-testid="global-op-mode-toggle"
+                class="op-mode-toggle-btn"
                 :aria-label="opModeToggleTooltip"
               >
                 <font-awesome-icon
-                  size="1x"
+                  size="2x"
                   :icon="opModeToggleIcon"
                 />
               </button>
             </template>
           </v-tooltip>
+          <div class="primary-heading op-mode-label" data-testid="global-op-mode-label">
+            {{ modeLabel }}
+          </div>
         </div>
         <div class="pa-2">
           <span class="primary-heading version-info"> Клиент {{ version }} </span>
@@ -279,7 +269,8 @@ const opModeToggleIcon = computed(() =>
 
 .op-mode-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 0.5rem;
   margin-left: 1rem;
 }
@@ -287,6 +278,30 @@ const opModeToggleIcon = computed(() =>
 .op-mode-label {
   margin: 0;
   font-size: 0.9rem;
+}
+
+.op-mode-toggle-btn {
+  border: none;
+  background: transparent;
+  color: #1976d2;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease-in-out;
+  outline: none;
+}
+
+.op-mode-toggle-btn:hover {
+  color: #2196f3;
+}
+
+.op-mode-toggle-btn:focus,
+.op-mode-toggle-btn:focus-visible,
+.op-mode-toggle-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 nav {

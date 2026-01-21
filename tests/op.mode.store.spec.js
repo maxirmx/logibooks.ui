@@ -35,14 +35,14 @@ describe('op mode store', () => {
   it('defaults to paperwork mode with label', () => {
     const store = useOpModeStore()
     expect(store.globalOpMode).toBe(OP_MODE_PAPERWORK)
-    expect(store.modeLabel).toBe('Оформление')
+    expect(store.modeLabel).toBe('Режим "Оформление"')
   })
 
   it('toggles between paperwork and warehouse', () => {
     const store = useOpModeStore()
     store.toggleMode()
     expect(store.globalOpMode).toBe(OP_MODE_WAREHOUSE)
-    expect(store.modeLabel).toBe('Склад')
+    expect(store.modeLabel).toBe('Режим "Склад"')
     store.toggleMode()
     expect(store.globalOpMode).toBe(OP_MODE_PAPERWORK)
   })
@@ -79,6 +79,6 @@ describe('op mode store', () => {
     const store = useOpModeStore()
     store.$hydrate?.()
     expect(store.globalOpMode).toBe(OP_MODE_WAREHOUSE)
-    expect(store.modeLabel).toBe('Склад')
+    expect(store.modeLabel).toBe('Режим "Склад"')
   })
 })

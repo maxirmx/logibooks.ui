@@ -23,7 +23,7 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useOpModeStore, OP_MODE_WAREHOUSE } from '@/stores/op.mode.store.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
@@ -36,6 +36,13 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
+
+const props = defineProps({
+  mode: {
+    type: String,
+    default: OP_MODE_PAPERWORK
+  }
+})
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -68,7 +75,7 @@ const {
   validationState,
   progressPercent,
   stopPolling
-} = createRegisterActionHandlers(registersStore, alertStore)
+} = createRegisterActionHandlers(registersStore, alertStore, { mode: computed(() => props.mode) })
 
 const authStore = useAuthStore()
 const { registers_per_page, 
@@ -78,13 +85,11 @@ const { registers_per_page,
   isShiftLeadPlus, 
   isSrLogistPlus } = storeToRefs(authStore)
 
-const opModeStore = useOpModeStore()
-const { globalOpMode, registerNouns } = storeToRefs(opModeStore)
-
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
 
-const isWarehouseMode = computed(() => globalOpMode.value === OP_MODE_WAREHOUSE)
+const isWarehouseMode = computed(() => props.mode === OP_MODE_WAREHOUSE)
+const registerNouns = computed(() => getRegisterNouns(props.mode))
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -133,7 +138,14 @@ function cancelStatusChange(registerId) {
 }
 
 async function applyStatusToAllOrders(registerId, statusId) {
-  await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, registersStore, alertStore)
+  await applyBulkStatusToAllOrders(
+    registerId,
+    statusId,
+    bulkStatusState,
+    registersStore,
+    alertStore,
+    { mode: props.mode }
+  )
 }
 
 // Helper wrapper functions for template
@@ -287,7 +299,7 @@ function startRegisterUpload(registerType) {
 }
 
 async function loadRegisters() {
-  await registersStore.getAll()
+  await registersStore.getAll({ mode: props.mode })
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({

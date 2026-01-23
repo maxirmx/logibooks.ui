@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
@@ -282,6 +283,9 @@ const router = createRouter({
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
+      props: (route) => ({
+        mode: route.query.mode === OP_MODE_WAREHOUSE ? OP_MODE_WAREHOUSE : OP_MODE_PAPERWORK
+      }),
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {

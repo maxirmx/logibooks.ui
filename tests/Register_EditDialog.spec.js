@@ -11,6 +11,7 @@ import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
+import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 
@@ -26,6 +27,7 @@ const baseRegisterItem = {
   theOtherCountryCode: null,
   departureAirportId: 0,
   arrivalAirportId: 0,
+  warehouseId: 0,
   date: '2024-01-01',
   lookupByArticle: false
 }
@@ -81,6 +83,13 @@ const airportsStore = createMockStore({
   airports: ref([...baseAirports]),
   getAll: vi.fn(() => Promise.resolve())
 })
+const warehousesStore = createMockStore({
+  warehouses: ref([
+    { id: 10, name: 'Main Warehouse' },
+    { id: 11, name: 'Secondary Warehouse' }
+  ]),
+  getAll: vi.fn(() => Promise.resolve())
+})
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -97,6 +106,7 @@ vi.mock('pinia', async () => {
       if (store === countriesStore) return { countries: countriesStore.countries }
       if (store === companiesStore) return { companies: companiesStore.companies }
       if (store === airportsStore) return { airports: airportsStore.airports }
+      if (store === warehousesStore) return { warehouses: warehousesStore.warehouses }
       return {}
     }
   }
@@ -112,6 +122,7 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
 }))
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
+vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Simple stubs for vee-validate components
@@ -208,6 +219,10 @@ describe('Register_EditDialog', () => {
     mockItem.value = JSON.parse(JSON.stringify(baseRegisterItem))
     registerItems.value = []
     airportsStore.airports.value = [...baseAirports]
+    warehousesStore.warehouses.value = [
+      { id: 10, name: 'Main Warehouse' },
+      { id: 11, name: 'Secondary Warehouse' }
+    ]
   })
 
   it('loads data and renders fields', async () => {
@@ -226,6 +241,7 @@ describe('Register_EditDialog', () => {
     expect(transStore.ensureLoaded).toHaveBeenCalled()
     expect(procStore.ensureLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
+    expect(warehousesStore.getAll).not.toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
     expect(wrapper.find('#customsProcedureId').exists()).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
@@ -236,6 +252,7 @@ describe('Register_EditDialog', () => {
     expect(optionTexts).toContain('Шереметьево (SVO)')
     const arrivalSelect = wrapper.find('select#arrivalAirportId')
     expect(arrivalSelect.exists()).toBe(true)
+    expect(wrapper.find('#warehouseId').exists()).toBe(false)
   })
 
   it('enables airport selectors when aviation transport is selected', async () => {
@@ -261,6 +278,31 @@ describe('Register_EditDialog', () => {
     const arrivalSelect = wrapper.find('select#arrivalAirportId')
     expect(departureSelect.element.disabled).toBe(false)
     expect(arrivalSelect.element.disabled).toBe(false)
+  })
+
+  it('renders warehouse selector only for WBR2 register type', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBR2_REGISTER_ID
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    expect(warehousesStore.getAll).toHaveBeenCalled()
+    const warehouseSelect = wrapper.find('select#warehouseId')
+    expect(warehouseSelect.exists()).toBe(true)
+    const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
+    expect(optionTexts).toContain('Не задано')
+    expect(optionTexts).toContain('Main Warehouse')
   })
 
   it('switches recipient field on customs procedure change', async () => {
@@ -381,6 +423,38 @@ describe('Register_EditDialog', () => {
       transportationTypeId: 2,
       departureAirportId: 1,
       arrivalAirportId: 2
+    }))
+  })
+
+  it('submits warehouseId for WBR2 register type', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBR2_REGISTER_ID,
+      warehouseId: 11
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit(
+      {
+        warehouseId: '11'
+      },
+      { setErrors: vi.fn() }
+    )
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      warehouseId: 11
     }))
   })
 
@@ -693,4 +767,3 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.actionDialogState.show).toBe(false)
   })
 })
-

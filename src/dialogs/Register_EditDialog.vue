@@ -14,6 +14,8 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
@@ -44,6 +46,9 @@ const { companies } = storeToRefs(companiesStore)
 
 const airportsStore = useAirportsStore()
 const { airports } = storeToRefs(airportsStore)
+
+const warehousesStore = useWarehousesStore()
+const { warehouses } = storeToRefs(warehousesStore)
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
@@ -84,6 +89,11 @@ const registerOptions = computed(() => {
 })
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
+const warehouseOptions = computed(() => {
+  const available = Array.isArray(warehouses.value) ? warehouses.value : []
+  return [{ id: 0, name: 'Не задано' }, ...available]
+})
+const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
 
 const AVIA_TRANSPORT_CODE = 0
 
@@ -188,6 +198,9 @@ watch(
       if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
         item.value.lookupByArticle = false
       }
+      if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
+        item.value.warehouseId = 0
+      }
     } else {
       try {
         await registersStore.getAll()
@@ -210,6 +223,9 @@ watch(
       if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
         item.value.lookupByArticle = false
       }
+      if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
+        item.value.warehouseId = 0
+      }
     }
 
 
@@ -231,6 +247,11 @@ onMounted(async () => {
 
     await airportsStore.getAll()
     if (!isComponentMounted.value) return
+
+    if (isWbr2Register.value) {
+      await warehousesStore.getAll()
+      if (!isComponentMounted.value) return
+    }
 
     if (isComponentMounted.value) {
       updateExportStatusFromProc()
@@ -272,6 +293,7 @@ const schema = Yup.object().shape({
   theOtherCountryCode: Yup.number().nullable(),
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   lookupByArticle: Yup.boolean().default(false)
 })
 
@@ -408,6 +430,7 @@ function prepareRegisterPayload(formValues) {
   payload.arrivalAirportId = isAviaSelected
     ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
+  payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
 
   return payload
 }
@@ -772,20 +795,19 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
-        <div class="form-row-1">
+        <div class="form-row" v-if="isWbr2Register">
           <div class="form-group">
-            <label class="custom-checkbox">
-              <Field
-                id="withWarehouse"
-                type="checkbox"
-                name="withWarehouse"
-                :value="true"
-                :unchecked-value="false"
-                class="custom-checkbox-input"
-              />
-              <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Подключить функции склада</span>
-            </label>
+            <label for="warehouseId" class="label">Склад:</label>
+            <Field
+              as="select"
+              name="warehouseId"
+              id="warehouseId"
+              class="form-control input"
+            >
+              <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </Field>
           </div>
         </div>
 

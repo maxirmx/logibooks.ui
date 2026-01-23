@@ -10,33 +10,50 @@ import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 
+// Enum constants for scan job type
+export const SCANJOB_TYPE_PACKAGE = 0
+export const SCANJOB_TYPE_BAG = 1
+
+// Enum constants for scan job operation
+export const SCANJOB_OPERATION_INCOMING = 0
+export const SCANJOB_OPERATION_OUTGOING = 1
+export const SCANJOB_OPERATION_SEARCH = 2
+
+// Enum constants for scan job mode
+export const SCANJOB_MODE_MANUAL = 0
+export const SCANJOB_MODE_AUTOMATIC = 1
+
+// Enum constants for scan job status
+export const SCANJOB_STATUS_IN_PROGRESS = 0
+export const SCANJOB_STATUS_COMPLETED = 1
+
 // Constants for scan job options
 export const SCANJOB_TYPE_OPTIONS = [
-  { value: 0, label: 'Посылка' },
-  { value: 1, label: 'Мешок' }
+  { value: SCANJOB_TYPE_PACKAGE, label: 'Посылка' },
+  { value: SCANJOB_TYPE_BAG, label: 'Мешок' }
 ]
 
 export const SCANJOB_OPERATION_OPTIONS = [
-  { value: 0, label: 'Входящее' },
-  { value: 1, label: 'Исходящее' },
-  { value: 2, label: 'Поиск' }
+  { value: SCANJOB_OPERATION_INCOMING, label: 'Входящее' },
+  { value: SCANJOB_OPERATION_OUTGOING, label: 'Исходящее' },
+  { value: SCANJOB_OPERATION_SEARCH, label: 'Поиск' }
 ]
 
 export const SCANJOB_MODE_OPTIONS = [
-  { value: 0, label: 'Ручное' },
-  { value: 1, label: 'Автоматическое' }
+  { value: SCANJOB_MODE_MANUAL, label: 'Ручное' },
+  { value: SCANJOB_MODE_AUTOMATIC, label: 'Автоматическое' }
 ]
 
 export const SCANJOB_STATUS_OPTIONS = [
-  { value: 0, label: 'В работе' },
-  { value: 1, label: 'Завершено' }
+  { value: SCANJOB_STATUS_IN_PROGRESS, label: 'В работе' },
+  { value: SCANJOB_STATUS_COMPLETED, label: 'Завершено' }
 ]
 
 // Default values for scan job fields
-export const SCANJOB_DEFAULT_TYPE = 0
-export const SCANJOB_DEFAULT_OPERATION = 0
-export const SCANJOB_DEFAULT_MODE = 0
-export const SCANJOB_DEFAULT_STATUS = 0
+export const SCANJOB_DEFAULT_TYPE = SCANJOB_TYPE_PACKAGE
+export const SCANJOB_DEFAULT_OPERATION = SCANJOB_OPERATION_INCOMING
+export const SCANJOB_DEFAULT_MODE = SCANJOB_MODE_MANUAL
+export const SCANJOB_DEFAULT_STATUS = SCANJOB_STATUS_IN_PROGRESS
 
 export const useScanJobsStore = defineStore('scanjobs', () => {
   const scanJobs = ref([])

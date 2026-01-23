@@ -259,6 +259,9 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  if (modeWatcherStop) {
+    modeWatcherStop()
+  }
   stopPolling()
 })
 
@@ -311,6 +314,11 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 
 const watcherStop = watch([registers_page, registers_per_page, registers_sort_by], () => {
   triggerLoad()
+}, { immediate: false })
+
+// Watch for mode changes and reload data
+const modeWatcherStop = watch(() => props.mode, () => {
+  loadRegisters()
 }, { immediate: false })
 
 function openParcels(item) {

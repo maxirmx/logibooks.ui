@@ -432,7 +432,7 @@ async function onSubmit(values) {
           : parseInt(transferRegisterId.value, 10)
         const result = await registersStore.upload(
           uploadFile.value,
-          item.value.companyId,
+          item.value.registerType,
           Number.isNaN(sourceRegisterId) ? 0 : sourceRegisterId,
           Boolean(values.lookupForReimport)
         )

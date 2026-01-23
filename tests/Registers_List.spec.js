@@ -12,7 +12,6 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'
 
 let lastRegisterActions = null
-const mockGlobalOpMode = ref('modePaperwork')
 
 vi.mock('@/helpers/register.actions.js', async () => {
   const actual = await vi.importActual('@/helpers/register.actions.js')
@@ -84,11 +83,6 @@ vi.mock('pinia', async () => {
       } else if (store.airports !== undefined && store.getAll === getAirportsAll) {
         // airports store
         return { airports: mockAirports }
-      } else if (store.globalOpMode !== undefined) {
-        return { 
-          globalOpMode: store.globalOpMode,
-          registerNouns: store.registerNouns
-        }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -197,27 +191,6 @@ vi.mock('@/stores/auth.store.js', () => ({
     isSrLogistPlus: ref(false)
   })
 }))
-
-vi.mock('@/stores/op.mode.store.js', () => {
-  const registerNouns = ref({
-    singular: 'Реестр',
-    plural: 'Реестры', 
-    genitivePlural: 'реестров',
-    genitivePluralCapitalized: 'Реестров',
-    accusative: 'реестр',
-    prepositional: 'реестре',
-    genitiveSingular: 'реестра'
-  })
-  
-  return {
-    useOpModeStore: () => ({
-      globalOpMode: mockGlobalOpMode,
-      registerNouns
-    }),
-    OP_MODE_PAPERWORK: 'modePaperwork',
-    OP_MODE_WAREHOUSE: 'modeWarehouse'
-  }
-})
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]

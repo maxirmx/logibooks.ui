@@ -6,7 +6,13 @@
 import { computed, onMounted, onUnmounted, ref, watch, toRef } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { 
+  useScanJobsStore, 
+  SCANJOB_TYPE_OPTIONS, 
+  SCANJOB_OPERATION_OPTIONS, 
+  SCANJOB_MODE_OPTIONS, 
+  SCANJOB_STATUS_OPTIONS 
+} from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -36,26 +42,10 @@ const localSearch = ref(scanjobs_search.value || '')
 const runningAction = ref(false)
 const isComponentMounted = ref(true)
 
-const typeOptions = [
-  { value: 0, label: 'Посылка' },
-  { value: 1, label: 'Мешок' }
-]
-
-const operationOptions = [
-  { value: 0, label: 'Входящее' },
-  { value: 1, label: 'Исходящее' },
-  { value: 2, label: 'Поиск' }
-]
-
-const modeOptions = [
-  { value: 0, label: 'Ручное' },
-  { value: 1, label: 'Автоматическое' }
-]
-
-const statusOptions = [
-  { value: 0, label: 'В работе' },
-  { value: 1, label: 'Завершено' }
-]
+const typeOptions = SCANJOB_TYPE_OPTIONS
+const operationOptions = SCANJOB_OPERATION_OPTIONS
+const modeOptions = SCANJOB_MODE_OPTIONS
+const statusOptions = SCANJOB_STATUS_OPTIONS
 
 const warehousesById = computed(() => {
   if (!Array.isArray(warehouses.value)) return new Map()

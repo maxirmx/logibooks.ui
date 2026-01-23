@@ -8,7 +8,17 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { 
+  useScanJobsStore, 
+  SCANJOB_TYPE_OPTIONS, 
+  SCANJOB_OPERATION_OPTIONS, 
+  SCANJOB_MODE_OPTIONS, 
+  SCANJOB_STATUS_OPTIONS,
+  SCANJOB_DEFAULT_TYPE,
+  SCANJOB_DEFAULT_OPERATION,
+  SCANJOB_DEFAULT_MODE,
+  SCANJOB_DEFAULT_STATUS
+} from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -34,34 +44,18 @@ const isCreate = computed(() => props.mode === 'create')
 
 await warehousesStore.getAll()
 
-const typeOptions = [
-  { value: 0, label: 'Посылка' },
-  { value: 1, label: 'Мешок' }
-]
-
-const operationOptions = [
-  { value: 0, label: 'Входящее' },
-  { value: 1, label: 'Исходящее' },
-  { value: 2, label: 'Поиск' }
-]
-
-const modeOptions = [
-  { value: 0, label: 'Ручное' },
-  { value: 1, label: 'Автоматическое' }
-]
-
-const statusOptions = [
-  { value: 0, label: 'В работе' },
-  { value: 1, label: 'Завершено' }
-]
+const typeOptions = SCANJOB_TYPE_OPTIONS
+const operationOptions = SCANJOB_OPERATION_OPTIONS
+const modeOptions = SCANJOB_MODE_OPTIONS
+const statusOptions = SCANJOB_STATUS_OPTIONS
 
 let scanJob = ref({
   id: 0,
   name: '',
-  type: 0,
-  operation: 0,
-  mode: 0,
-  status: 0,
+  type: SCANJOB_DEFAULT_TYPE,
+  operation: SCANJOB_DEFAULT_OPERATION,
+  mode: SCANJOB_DEFAULT_MODE,
+  status: SCANJOB_DEFAULT_STATUS,
   warehouseId: null
 })
 

@@ -10,6 +10,34 @@ import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 
+// Constants for scan job options
+export const SCANJOB_TYPE_OPTIONS = [
+  { value: 0, label: 'Посылка' },
+  { value: 1, label: 'Мешок' }
+]
+
+export const SCANJOB_OPERATION_OPTIONS = [
+  { value: 0, label: 'Входящее' },
+  { value: 1, label: 'Исходящее' },
+  { value: 2, label: 'Поиск' }
+]
+
+export const SCANJOB_MODE_OPTIONS = [
+  { value: 0, label: 'Ручное' },
+  { value: 1, label: 'Автоматическое' }
+]
+
+export const SCANJOB_STATUS_OPTIONS = [
+  { value: 0, label: 'В работе' },
+  { value: 1, label: 'Завершено' }
+]
+
+// Default values for scan job fields
+export const SCANJOB_DEFAULT_TYPE = 0
+export const SCANJOB_DEFAULT_OPERATION = 0
+export const SCANJOB_DEFAULT_MODE = 0
+export const SCANJOB_DEFAULT_STATUS = 0
+
 export const useScanJobsStore = defineStore('scanjobs', () => {
   const scanJobs = ref([])
   const scanJob = ref(null)

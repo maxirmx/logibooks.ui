@@ -71,7 +71,24 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     totalCount: totalCountRef,
     getAll: getAllScanJobs,
     remove: removeScanJob
-  })
+  }),
+  SCANJOB_TYPE_OPTIONS: [
+    { value: 0, label: 'Посылка' },
+    { value: 1, label: 'Мешок' }
+  ],
+  SCANJOB_OPERATION_OPTIONS: [
+    { value: 0, label: 'Входящее' },
+    { value: 1, label: 'Исходящее' },
+    { value: 2, label: 'Поиск' }
+  ],
+  SCANJOB_MODE_OPTIONS: [
+    { value: 0, label: 'Ручное' },
+    { value: 1, label: 'Автоматическое' }
+  ],
+  SCANJOB_STATUS_OPTIONS: [
+    { value: 0, label: 'В работе' },
+    { value: 1, label: 'Завершено' }
+  ]
 }))
 
 vi.mock('@/stores/warehouses.store.js', () => ({

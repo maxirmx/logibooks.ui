@@ -283,9 +283,13 @@ const router = createRouter({
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
-      props: (route) => ({
-        mode: route.query.mode === OP_MODE_WAREHOUSE ? OP_MODE_WAREHOUSE : OP_MODE_PAPERWORK
-      }),
+      props: (route) => {
+        // Accept only known operation modes; default to paperwork for invalid or missing values
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const queryMode = route.query.mode
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return { mode }
+      },
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {

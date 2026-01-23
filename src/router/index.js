@@ -62,6 +62,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/scanjobs',
+      name: 'Задания сканирования',
+      component: () => import('@/views/ScanJobs_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/notifications',
       name: 'Нотификации',
       component: () => import('@/views/Notifications_View.vue'),
@@ -95,9 +101,24 @@ const router = createRouter({
       meta: { reqAdminOrSrLogist: true }
     },
     {
+      path: '/scanjob/create',
+      name: 'Создание задания сканирования',
+      component: () => import('@/views/ScanJobs_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
       path: '/warehouse/edit/:id',
       name: 'Изменить информацию о складе',
       component: () => import('@/views/Warehouse_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/scanjob/edit/:id',
+      name: 'Редактировать задание сканирования',
+      component: () => import('@/views/ScanJobs_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

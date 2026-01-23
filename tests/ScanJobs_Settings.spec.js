@@ -42,8 +42,17 @@ const mockAlertStore = createMockStore({
   clear: vi.fn()
 })
 
-vi.mock('@/stores/scanjobs.store.js', () => ({
-  useScanJobsStore: () => mockScanJobsStore,
+const {
+  SCANJOB_TYPE_PACKAGE,
+  SCANJOB_TYPE_BAG,
+  SCANJOB_OPERATION_INCOMING,
+  SCANJOB_OPERATION_OUTGOING,
+  SCANJOB_OPERATION_SEARCH,
+  SCANJOB_MODE_MANUAL,
+  SCANJOB_MODE_AUTOMATIC,
+  SCANJOB_STATUS_IN_PROGRESS,
+  SCANJOB_STATUS_COMPLETED
+} = vi.hoisted(() => ({
   SCANJOB_TYPE_PACKAGE: 0,
   SCANJOB_TYPE_BAG: 1,
   SCANJOB_OPERATION_INCOMING: 0,
@@ -52,28 +61,41 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
   SCANJOB_MODE_MANUAL: 0,
   SCANJOB_MODE_AUTOMATIC: 1,
   SCANJOB_STATUS_IN_PROGRESS: 0,
-  SCANJOB_STATUS_COMPLETED: 1,
+  SCANJOB_STATUS_COMPLETED: 1
+}))
+
+vi.mock('@/stores/scanjobs.store.js', () => ({
+  useScanJobsStore: () => mockScanJobsStore,
+  SCANJOB_TYPE_PACKAGE,
+  SCANJOB_TYPE_BAG,
+  SCANJOB_OPERATION_INCOMING,
+  SCANJOB_OPERATION_OUTGOING,
+  SCANJOB_OPERATION_SEARCH,
+  SCANJOB_MODE_MANUAL,
+  SCANJOB_MODE_AUTOMATIC,
+  SCANJOB_STATUS_IN_PROGRESS,
+  SCANJOB_STATUS_COMPLETED,
   SCANJOB_TYPE_OPTIONS: [
-    { value: 0, label: 'Посылка' },
-    { value: 1, label: 'Мешок' }
+    { value: SCANJOB_TYPE_PACKAGE, label: 'Посылка' },
+    { value: SCANJOB_TYPE_BAG, label: 'Мешок' }
   ],
   SCANJOB_OPERATION_OPTIONS: [
-    { value: 0, label: 'Входящее' },
-    { value: 1, label: 'Исходящее' },
-    { value: 2, label: 'Поиск' }
+    { value: SCANJOB_OPERATION_INCOMING, label: 'Входящее' },
+    { value: SCANJOB_OPERATION_OUTGOING, label: 'Исходящее' },
+    { value: SCANJOB_OPERATION_SEARCH, label: 'Поиск' }
   ],
   SCANJOB_MODE_OPTIONS: [
-    { value: 0, label: 'Ручное' },
-    { value: 1, label: 'Автоматическое' }
+    { value: SCANJOB_MODE_MANUAL, label: 'Ручное' },
+    { value: SCANJOB_MODE_AUTOMATIC, label: 'Автоматическое' }
   ],
   SCANJOB_STATUS_OPTIONS: [
-    { value: 0, label: 'В работе' },
-    { value: 1, label: 'Завершено' }
+    { value: SCANJOB_STATUS_IN_PROGRESS, label: 'В работе' },
+    { value: SCANJOB_STATUS_COMPLETED, label: 'Завершено' }
   ],
-  SCANJOB_DEFAULT_TYPE: 0,
-  SCANJOB_DEFAULT_OPERATION: 0,
-  SCANJOB_DEFAULT_MODE: 0,
-  SCANJOB_DEFAULT_STATUS: 0
+  SCANJOB_DEFAULT_TYPE: SCANJOB_TYPE_PACKAGE,
+  SCANJOB_DEFAULT_OPERATION: SCANJOB_OPERATION_INCOMING,
+  SCANJOB_DEFAULT_MODE: SCANJOB_MODE_MANUAL,
+  SCANJOB_DEFAULT_STATUS: SCANJOB_STATUS_IN_PROGRESS
 }))
 
 vi.mock('@/stores/warehouses.store.js', () => ({

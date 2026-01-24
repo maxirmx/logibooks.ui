@@ -34,17 +34,19 @@ const isCreate = computed(() => props.mode === 'create')
 await scanJobsStore.ensureOpsLoaded()
 await warehousesStore.getAll()
 
-let scanjob = ref({
-  id: 0,
-  name: '',
-  type: null,
-  operation: null,
-  mode: null,
-  status: null,
-  warehouseId: null
-})
+let scanjob
 
-if (!isCreate.value) {
+if (isCreate.value) {
+  scanjob = ref({
+    id: 0,
+    name: '',
+    type: null,
+    operation: null,
+    mode: null,
+    status: null,
+    warehouseId: null
+  })
+} else {
   ;({ scanjob } = storeToRefs(scanJobsStore))
   await scanJobsStore.getById(props.scanjobId)
 }

@@ -136,6 +136,9 @@ function getUserName() {
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Склад"></v-list-item>
           </template>
+          <v-list-item>
+            <RouterLink to="/scanjobs" class="link">Скан-задания</RouterLink>
+          </v-list-item>
         </v-list-group>
 
         <!-- Справочники -->

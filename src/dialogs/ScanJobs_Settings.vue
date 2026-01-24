@@ -47,7 +47,8 @@ if (isCreate.value) {
     warehouseId: null
   })
 } else {
-  ;({ scanjob } = storeToRefs(scanJobsStore))
+  const { scanjob: storeScanjob } = storeToRefs(scanJobsStore)
+  scanjob = storeScanjob
   await scanJobsStore.getById(props.scanjobId)
 }
 

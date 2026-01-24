@@ -106,6 +106,8 @@ function getUserName() {
         <v-list-item v-if="authStore.hasLogistRole">
           <RouterLink to="/parcels/by-number" class="link">Посылки</RouterLink>
         </v-list-item>
+
+        <!-- Склад -->
         <v-list-group v-if="authStore.hasLogistRole">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Склад"></v-list-item>
@@ -130,13 +132,6 @@ function getUserName() {
         <v-list-item v-if="authStore.isSrLogistPlus">
           <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
         </v-list-item>
-
-        <!-- Склад -->
-        <v-list-group  v-if="authStore.hasAnyRole">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" title="Склад"></v-list-item>
-          </template>
-        </v-list-group>
 
         <!-- Справочники -->
         <v-list-group  v-if="authStore.hasAnyRole">

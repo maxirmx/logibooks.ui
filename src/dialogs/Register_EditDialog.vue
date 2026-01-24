@@ -582,6 +582,19 @@ function getCustomerName(customerId) {
             <label for="dealNumber" class="label">Номер сделки:</label>
             <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
           </div>
+          <div class="form-group"  v-if="isWbr2Register">
+            <label for="warehouseId" class="label">Склад:</label>
+            <Field
+              as="select"
+              name="warehouseId"
+              id="warehouseId"
+              class="form-control input"
+            >
+              <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </Field>
+          </div>
         </div>
 
         <div class="form-row">
@@ -794,23 +807,6 @@ function getCustomerName(customerId) {
             </label>
           </div>
         </div>
-
-        <div class="form-row" v-if="isWbr2Register">
-          <div class="form-group">
-            <label for="warehouseId" class="label">Склад:</label>
-            <Field
-              as="select"
-              name="warehouseId"
-              id="warehouseId"
-              class="form-control input"
-            >
-              <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="warehouse.id">
-                {{ warehouse.name }}
-              </option>
-            </Field>
-          </div>
-        </div>
-
       </div>
 
       <!-- actions moved to header -->
@@ -949,7 +945,7 @@ function getCustomerName(customerId) {
   width: 100% !important;
   flex: 1 1 100%;
   max-width: none !important;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
 }
 
 .custom-checkbox {

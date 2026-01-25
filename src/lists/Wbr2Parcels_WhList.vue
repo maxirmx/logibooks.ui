@@ -5,6 +5,7 @@
 
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -13,6 +14,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadOrders } from '@/helpers/parcels.list.helpers.js'
+import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { storeToRefs } from 'pinia'
@@ -22,6 +24,7 @@ const props = defineProps({
 })
 
 const parcelsStore = useParcelsStore()
+const parcelStatusStore = useParcelStatusesStore()
 const registersStore = useRegistersStore()
 const transportationTypesStore = useTransportationTypesStore()
 const authStore = useAuthStore()
@@ -56,15 +59,17 @@ watch(maxPage, (v) => {
   if (parcels_page.value > v) parcels_page.value = v
 })
 
-const headers = computed(() => [
-  { title: '№', key: 'id', align: 'start', width: '90px' },
-  { title: 'ШК', key: 'shk', align: 'start', width: '140px' },
-  { title: 'Sticker code', key: 'stickerCode', align: 'start', width: '150px' },
-  { title: 'WB sticker', key: 'wbSticker', align: 'start', width: '150px' },
-  { title: 'Seller sticker', key: 'sellerSticker', align: 'start', width: '150px' },
-  { title: 'Масса, кг', key: 'weightKg', align: 'start', width: '110px' },
-  { title: 'Кол-во', key: 'quantity', align: 'start', width: '90px' },
-  { title: 'Статус', key: 'statusId', align: 'start', width: '120px' }
+const headers = computed(() =>[
+  { title: wbr2RegisterColumnTitles.id, key: 'id', align: 'start' },
+  { title: wbr2RegisterColumnTitles.shk, key: 'shk', align: 'start' },
+  { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
+  { title: 'Зона', key: 'zone', align: 'start' }
 ])
 
 const registerHeading = computed(() => {
@@ -96,6 +101,11 @@ const watcherStop = watch(
 onMounted(async () => {
   try {
     await transportationTypesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+ 
+    await parcelStatusStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+ 
     await fetchRegister()
     await loadOrdersWrapper()
   } catch (error) {
@@ -145,6 +155,12 @@ onUnmounted(() => {
       >
         <template #[`item.weightKg`]="{ item }">
           <span class="numeric-panel">{{ formatWeight(item.weightKg) }}</span>
+        </template>
+        <template #[`item.statusId`]="{ item }">
+          {{ parcelStatusStore.getStatusTitle(item.statusId) }}
+        </template>
+        <template #[`item.zone`]="{ item }">
+          Зелёная зона
         </template>
       </v-data-table-server>
 

@@ -162,7 +162,7 @@ describe('ScanJobs_Settings.vue', () => {
 
     await resolveAll()
 
-    expect(wrapper.find('h1').text()).toBe('Создание скан-задания')
+    expect(wrapper.find('h1').text()).toBe('Создание задания на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     expect(mockScanJobsStore.getById).not.toHaveBeenCalled()
   })
@@ -178,7 +178,7 @@ describe('ScanJobs_Settings.vue', () => {
     await resolveAll()
 
     expect(mockScanJobsStore.getById).toHaveBeenCalledWith(1)
-    expect(wrapper.find('h1').text()).toBe('Редактировать скан-задание')
+    expect(wrapper.find('h1').text()).toBe('Редактировать задание на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
   })
 
@@ -257,7 +257,7 @@ describe('ScanJobs_Settings.vue', () => {
     }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Скан-задание с таким названием уже существует' })
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Задание на сканирование с таким названием уже существует' })
   })
 
   it('redirects when scanjobId is missing in edit mode', async () => {
@@ -289,7 +289,7 @@ describe('ScanJobs_Settings.vue', () => {
 
     // Verify that the redirect and alert were called
     expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
-    expect(mockAlertStore.error).toHaveBeenCalledWith('Невозможно редактировать скан-задание: отсутствует идентификатор')
+    expect(mockAlertStore.error).toHaveBeenCalledWith('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
     expect(consoleErrorSpy).toHaveBeenCalledWith('scanjobId is required when mode is edit')
 
     consoleErrorSpy.mockRestore()

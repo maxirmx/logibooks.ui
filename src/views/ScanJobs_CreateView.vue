@@ -9,16 +9,20 @@ import ScanJobsSettings from '@/dialogs/ScanJobs_Settings.vue'
 
 const route = useRoute()
 
-const registerId = computed(() => {
-  const value = route.query.registerId
-  return value !== undefined ? Number(value) : null
-})
+function parseQueryNumber(value) {
+  if (Array.isArray(value)) {
+    value = value[0]
+  }
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : null
+}
 
-const warehouseId = computed(() => {
-  const value = route.query.warehouseId
-  return value !== undefined ? Number(value) : null
-})
+const registerId = computed(() => parseQueryNumber(route.query.registerId))
 
+const warehouseId = computed(() => parseQueryNumber(route.query.warehouseId))
 const dealNumber = computed(() => (route.query.dealNumber ? String(route.query.dealNumber) : ''))
 </script>
 

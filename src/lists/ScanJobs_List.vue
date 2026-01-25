@@ -141,20 +141,10 @@ defineExpose({
 <template>
   <div class="settings table-2">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Сканирования</h1>
+      <h1 class="primary-heading">Задания на сканирование</h1>
       <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
-        </div>
-        <div class="header-actions header-actions-group">
-          <ActionButton
-            :item="{}"
-            icon="fa-solid fa-plus"
-            tooltip-text="Создать задание на сканирование"
-            iconSize="2x"
-            :disabled="runningAction || loading || isInitializing"
-            @click="openCreateDialog"
-          />
         </div>
       </div>
     </div>

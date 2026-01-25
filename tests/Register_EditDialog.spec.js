@@ -490,6 +490,42 @@ describe('Register_EditDialog', () => {
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modeWarehouse')
   })
 
+  it('uses warehouse-specific nouns for titles when mode is warehouse', async () => {
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    // Warehouse mode uses "партии" instead of "реестре"
+    expect(wrapper.find('h1').text()).toBe('Редактирование информации о партии')
+  })
+
+  it('uses paperwork-specific nouns for titles when mode is paperwork', async () => {
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modePaperwork" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    // Paperwork mode uses "реестре"
+    expect(wrapper.find('h1').text()).toBe('Редактирование информации о реестре')
+  })
+
   it('validates invoice number format only for aviation transport', async () => {
     mockItem.value = {
       ...baseRegisterItem,

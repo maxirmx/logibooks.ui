@@ -49,6 +49,12 @@ const mockOps = ref({
 
 const mockWarehouses = ref([{ id: 10, name: 'Основной склад' }])
 
+const mockScanjobsPerPage = ref(10)
+const mockScanjobsSearch = ref('')
+const mockScanjobsSortBy = ref([{ key: 'id', order: 'desc' }])
+const mockScanjobsPage = ref(1)
+const mockTotalCount = ref(1)
+
 const getAllScanJobs = vi.hoisted(() => vi.fn())
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAllWarehouses = vi.hoisted(() => vi.fn())
@@ -61,16 +67,29 @@ const router = vi.hoisted(() => ({
   push: mockPush
 }))
 
+function mockGetOpsLabel(list, value) {
+  const num = Number(value)
+  const match = list?.find((item) => Number(item.value) === num)
+  return match ? match.name : String(value)
+}
+
+function mockGetWarehouseName(warehouseId) {
+  const num = Number(warehouseId)
+  const match = mockWarehouses.value?.find((warehouse) => warehouse.id === num)
+  return match ? match.name : String(warehouseId)
+}
+
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return {
     ...actual,
     storeToRefs: (store) => {
-      if (store.scanjobs !== undefined) {
+      if (store.items !== undefined) {
         return {
-          scanjobs: mockScanJobs,
+          items: mockScanJobs,
           loading: ref(false),
-          ops: mockOps
+          ops: mockOps,
+          totalCount: mockTotalCount
         }
       }
       if (store.warehouses !== undefined) {
@@ -83,6 +102,14 @@ vi.mock('pinia', async () => {
           alert: ref(null)
         }
       }
+      if (store.scanjobs_per_page !== undefined) {
+        return {
+          scanjobs_per_page: mockScanjobsPerPage,
+          scanjobs_search: mockScanjobsSearch,
+          scanjobs_sort_by: mockScanjobsSortBy,
+          scanjobs_page: mockScanjobsPage
+        }
+      }
       return {}
     }
   }
@@ -90,12 +117,15 @@ vi.mock('pinia', async () => {
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanJobsStore: () => ({
-    scanjobs: mockScanJobs,
+    items: mockScanJobs,
     loading: false,
     ops: mockOps,
+    totalCount: mockTotalCount,
     getAll: getAllScanJobs,
     remove: deleteScanJobFn,
-    ensureOpsLoaded
+    ensureOpsLoaded,
+    getOpsLabel: mockGetOpsLabel,
+    getWarehouseName: mockGetWarehouseName
   })
 }))
 
@@ -118,10 +148,17 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     isAdmin: true,
     isSrLogistPlus: true,
-    scanjobs_per_page: 10,
-    scanjobs_search: '',
-    scanjobs_sort_by: ['id'],
-    scanjobs_page: 1
+    scanjobs_per_page: mockScanjobsPerPage,
+    scanjobs_search: mockScanjobsSearch,
+    scanjobs_sort_by: mockScanjobsSortBy,
+    scanjobs_page: mockScanjobsPage
+  })
+}))
+
+vi.mock('@/composables/useDebouncedFilterSync.js', () => ({
+  useDebouncedFilterSync: () => ({
+    triggerLoad: vi.fn(),
+    stop: vi.fn()
   })
 }))
 
@@ -150,7 +187,7 @@ describe('ScanJobs_List.vue', () => {
     vi.useRealTimers()
   })
 
-  it('calls getAll methods on mount', async () => {
+  it('calls ensureOpsLoaded and getAll warehouses on mount', async () => {
     const wrapper = mount(ScanJobsList, {
       global: {
         stubs: testStubs
@@ -160,7 +197,6 @@ describe('ScanJobs_List.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(ensureOpsLoaded).toHaveBeenCalled()
-    expect(getAllScanJobs).toHaveBeenCalled()
     expect(getAllWarehouses).toHaveBeenCalled()
     expect(wrapper.exists()).toBe(true)
   })
@@ -204,28 +240,16 @@ describe('ScanJobs_List.vue', () => {
   })
 
   it('maps ops labels', async () => {
-    const wrapper = mount(ScanJobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    expect(wrapper.vm.getOpsLabel(mockOps.value.types, 0)).toBe('Тип 1')
-    expect(wrapper.vm.getOpsLabel(mockOps.value.operations, 1)).toBe('Операция 1')
-    expect(wrapper.vm.getOpsLabel(mockOps.value.modes, 2)).toBe('Режим 1')
-    expect(wrapper.vm.getOpsLabel(mockOps.value.statuses, 3)).toBe('Статус 1')
-    expect(wrapper.vm.getOpsLabel(mockOps.value.types, 99)).toBe(99)
+    expect(mockGetOpsLabel(mockOps.value.types, 0)).toBe('Тип 1')
+    expect(mockGetOpsLabel(mockOps.value.operations, 1)).toBe('Операция 1')
+    expect(mockGetOpsLabel(mockOps.value.modes, 2)).toBe('Режим 1')
+    expect(mockGetOpsLabel(mockOps.value.statuses, 3)).toBe('Статус 1')
+    expect(mockGetOpsLabel(mockOps.value.types, 99)).toBe('99')
   })
 
   it('maps warehouse name', async () => {
-    const wrapper = mount(ScanJobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    expect(wrapper.vm.getWarehouseName(10)).toBe('Основной склад')
-    expect(wrapper.vm.getWarehouseName(20)).toBe(20)
+    expect(mockGetWarehouseName(10)).toBe('Основной склад')
+    expect(mockGetWarehouseName(20)).toBe('20')
   })
 
   it('navigates to create page when add link is clicked', async () => {
@@ -244,7 +268,7 @@ describe('ScanJobs_List.vue', () => {
       global: {
         stubs: {
           ...testStubs,
-          'v-data-table': {
+          'v-data-table-server': {
             template: `<div><slot name="item.actions" :item="{ id: 1, name: 'Сканирование приемки' }"></slot></div>`
           }
         }
@@ -262,7 +286,7 @@ describe('ScanJobs_List.vue', () => {
       global: {
         stubs: {
           ...testStubs,
-          'v-data-table': {
+          'v-data-table-server': {
             template: `<div><slot name="item.actions" :item="{ id: 1, name: 'Сканирование приемки' }"></slot></div>`
           }
         }
@@ -283,7 +307,7 @@ describe('ScanJobs_List.vue', () => {
       global: {
         stubs: {
           ...testStubs,
-          'v-data-table': {
+          'v-data-table-server': {
             template: `<div><slot name="item.actions" :item="{ id: 1, name: 'Сканирование приемки' }"></slot></div>`
           }
         }

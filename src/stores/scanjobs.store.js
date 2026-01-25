@@ -6,14 +6,17 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 
 export const useScanJobsStore = defineStore('scanjobs', () => {
-  const scanjobs = ref([])
+  const items = ref([])
   const scanjob = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const totalCount = ref(0)
   const ops = ref({
     types: [],
     operations: [],
@@ -26,11 +29,42 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
   let opsInitialized = false
   let opsPromise = null
 
+  const warehousesStore = useWarehousesStore()
+
+  function getOpsLabel(list, value) {
+    const num = Number(value)
+    const match = list?.find((item) => Number(item.value) === num)
+    return match ? match.name : String(value)
+  }
+
+  function getWarehouseName(warehouseId) {
+    const num = Number(warehouseId)
+    const match = warehousesStore.warehouses?.find((warehouse) => warehouse.id === num)
+    return match ? match.name : String(warehouseId)
+  }
+
   async function getAll() {
+    const authStore = useAuthStore()
+    
     loading.value = true
     error.value = null
     try {
-      scanjobs.value = await fetchWrapper.get(baseUrl)
+      const queryParams = new URLSearchParams({
+        page: authStore.scanjobs_page.toString(),
+        pageSize: authStore.scanjobs_per_page.toString(),
+        sortBy: authStore.scanjobs_sort_by?.[0]?.key || 'id',
+        sortOrder: authStore.scanjobs_sort_by?.[0]?.order || 'desc'
+      })
+
+      if (authStore.scanjobs_search) {
+        queryParams.append('search', authStore.scanjobs_search)
+      }
+
+      const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
+
+      // API format with pagination metadata
+      items.value = response.items || []
+      totalCount.value = response.pagination?.totalCount || 0
     } catch (err) {
       error.value = err
     } finally {
@@ -39,15 +73,16 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
   }
 
   async function getById(id) {
-    scanjob.value = { loading: true }
     loading.value = true
     error.value = null
     try {
       scanjob.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      loading.value = false
       return scanjob.value
     } catch (err) {
       error.value = err
       scanjob.value = { error: err }
+      loading.value = false
       return null
     } finally {
       loading.value = false
@@ -59,7 +94,7 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     error.value = null
     try {
       const result = await fetchWrapper.post(baseUrl, scanJobData)
-      scanjobs.value.push(result)
+      items.value.push(result)
       return result
     } catch (err) {
       error.value = err
@@ -74,9 +109,9 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     error.value = null
     try {
       await fetchWrapper.put(`${baseUrl}/${id}`, scanJobData)
-      const index = scanjobs.value.findIndex((job) => job.id === id)
+      const index = items.value.findIndex((job) => job.id === id)
       if (index !== -1) {
-        scanjobs.value[index] = { ...scanjobs.value[index], ...scanJobData }
+        items.value[index] = { ...items.value[index], ...scanJobData }
       }
       if (scanjob.value?.id === id) {
         scanjob.value = { ...scanjob.value, ...scanJobData }
@@ -95,7 +130,7 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      scanjobs.value = scanjobs.value.filter((job) => job.id !== id)
+      items.value = items.value.filter((job) => job.id !== id)
       return true
     } catch (err) {
       error.value = err
@@ -134,10 +169,11 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
   }
 
   return {
-    scanjobs,
+    items,
     scanjob,
     loading,
     error,
+    totalCount,
     ops,
     opsLoading,
     opsError,
@@ -147,6 +183,8 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     update,
     remove,
     getOps,
-    ensureOpsLoaded
+    ensureOpsLoaded,
+    getOpsLabel,
+    getWarehouseName
   }
 })

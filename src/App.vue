@@ -120,6 +120,9 @@ function getUserName() {
               {{ warehouseRegisterNouns.plural }}
             </RouterLink>
           </v-list-item>
+          <v-list-item>
+            <RouterLink to="/scanjobs" class="link">Сканирования</RouterLink>
+          </v-list-item>
         </v-list-group>
         <v-list-item v-if="!authStore.isAdmin">
           <RouterLink :to="'/user/edit/' + authStore.user.id" class="link">Настройки</RouterLink>
@@ -133,19 +136,6 @@ function getUserName() {
           <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
         </v-list-item>
 
-<<<<<<< HEAD
-=======
-        <!-- Склад -->
-        <v-list-group  v-if="authStore.hasAnyRole">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" title="Склад"></v-list-item>
-          </template>
-          <v-list-item>
-            <RouterLink to="/scanjobs" class="link">Скан-задания</RouterLink>
-          </v-list-item>
-        </v-list-group>
-
->>>>>>> 3b0fce7a59e3710681a8e9d03c8eda4d7860a223
         <!-- Справочники -->
         <v-list-group  v-if="authStore.hasAnyRole">
           <template v-slot:activator="{ props }">

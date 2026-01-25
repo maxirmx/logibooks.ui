@@ -59,8 +59,9 @@ describe('scanjobs store', () => {
 
   it('initializes with default values', () => {
     const store = useScanJobsStore()
-    expect(store.scanjobs).toEqual([])
+    expect(store.items).toEqual([])
     expect(store.scanjob).toBeNull()
+    expect(store.totalCount).toBe(0)
     expect(store.ops).toEqual({
       types: [],
       operations: [],
@@ -72,14 +73,23 @@ describe('scanjobs store', () => {
   })
 
   describe('getAll', () => {
-    it('fetches scanjobs successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockScanJobs)
+    it('fetches scanjobs successfully with pagination', async () => {
+      const paginatedResponse = {
+        items: mockScanJobs,
+        pagination: {
+          totalCount: 2,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      }
+      fetchWrapper.get.mockResolvedValue(paginatedResponse)
       const store = useScanJobsStore()
 
       await store.getAll()
 
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs`)
-      expect(store.scanjobs).toEqual(mockScanJobs)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining(`${apiUrl}/scanjobs?`))
+      expect(store.items).toEqual(mockScanJobs)
+      expect(store.totalCount).toBe(2)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -91,7 +101,7 @@ describe('scanjobs store', () => {
 
       await store.getAll()
 
-      expect(store.scanjobs).toEqual([])
+      expect(store.items).toEqual([])
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
@@ -129,13 +139,13 @@ describe('scanjobs store', () => {
       const newScanJob = { ...mockScanJob, id: 3 }
       fetchWrapper.post.mockResolvedValue(newScanJob)
       const store = useScanJobsStore()
-      store.scanjobs = [...mockScanJobs]
+      store.items = [...mockScanJobs]
 
       const result = await store.create(mockScanJob)
 
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs`, mockScanJob)
-      expect(store.scanjobs).toHaveLength(3)
-      expect(store.scanjobs[2]).toEqual(newScanJob)
+      expect(store.items).toHaveLength(3)
+      expect(store.items[2]).toEqual(newScanJob)
       expect(result).toEqual(newScanJob)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
@@ -157,14 +167,14 @@ describe('scanjobs store', () => {
     it('updates scanjob successfully', async () => {
       fetchWrapper.put.mockResolvedValue({})
       const store = useScanJobsStore()
-      store.scanjobs = [...mockScanJobs]
+      store.items = [...mockScanJobs]
       store.scanjob = { ...mockScanJob }
 
       const updateData = { status: 0, mode: 1 }
       const result = await store.update(1, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1`, updateData)
-      expect(store.scanjobs[0]).toEqual({ ...mockScanJobs[0], ...updateData })
+      expect(store.items[0]).toEqual({ ...mockScanJobs[0], ...updateData })
       expect(store.scanjob).toEqual({ ...mockScanJob, ...updateData })
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
@@ -187,13 +197,13 @@ describe('scanjobs store', () => {
     it('removes scanjob successfully', async () => {
       fetchWrapper.delete.mockResolvedValue({})
       const store = useScanJobsStore()
-      store.scanjobs = [...mockScanJobs]
+      store.items = [...mockScanJobs]
 
       const result = await store.remove(1)
 
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1`)
-      expect(store.scanjobs).not.toContain(mockScanJobs[0])
-      expect(store.scanjobs.length).toBe(1)
+      expect(store.items).not.toContain(mockScanJobs[0])
+      expect(store.items.length).toBe(1)
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()

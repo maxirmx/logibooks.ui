@@ -382,8 +382,6 @@ function formatInvoiceInfo(item) {
   return `${transportationDocument} ${invoiceNumber || ''}`
 }
 
-
-
 const defaultHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },

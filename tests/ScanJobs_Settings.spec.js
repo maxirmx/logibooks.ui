@@ -39,7 +39,8 @@ const mockScanJobsStore = createMockStore({
 
 const mockWarehousesStore = createMockStore({
   warehouses: [{ id: 10, name: 'Основной склад' }],
-  getAll: vi.fn().mockResolvedValue()
+  getAll: vi.fn().mockResolvedValue(),
+  ensureLoaded: vi.fn().mockResolvedValue()
 })
 
 const mockAlertStore = createMockStore({

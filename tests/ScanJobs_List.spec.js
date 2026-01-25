@@ -124,15 +124,16 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     getAll: getAllScanJobs,
     remove: deleteScanJobFn,
     ensureOpsLoaded,
-    getOpsLabel: mockGetOpsLabel,
-    getWarehouseName: mockGetWarehouseName
+    getOpsLabel: mockGetOpsLabel
   })
 }))
 
 vi.mock('@/stores/warehouses.store.js', () => ({
   useWarehousesStore: () => ({
     warehouses: mockWarehouses,
-    getAll: getAllWarehouses
+    getAll: getAllWarehouses,
+    ensureLoaded: getAllWarehouses,
+    getWarehouseName: mockGetWarehouseName
   })
 }))
 
@@ -187,7 +188,7 @@ describe('ScanJobs_List.vue', () => {
     vi.useRealTimers()
   })
 
-  it('calls ensureOpsLoaded and getAll warehouses on mount', async () => {
+  it('calls ensureOpsLoaded and ensureLoaded warehouses on mount', async () => {
     const wrapper = mount(ScanJobsList, {
       global: {
         stubs: testStubs

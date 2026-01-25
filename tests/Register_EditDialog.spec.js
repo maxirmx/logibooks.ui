@@ -88,7 +88,8 @@ const warehousesStore = createMockStore({
     { id: 10, name: 'Main Warehouse' },
     { id: 11, name: 'Secondary Warehouse' }
   ]),
-  getAll: vi.fn(() => Promise.resolve())
+  getAll: vi.fn(() => Promise.resolve()),
+  ensureLoaded: vi.fn(() => Promise.resolve())
 })
 
 vi.mock('pinia', async () => {
@@ -241,7 +242,7 @@ describe('Register_EditDialog', () => {
     expect(transStore.ensureLoaded).toHaveBeenCalled()
     expect(procStore.ensureLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
-    expect(warehousesStore.getAll).not.toHaveBeenCalled()
+    expect(warehousesStore.ensureLoaded).not.toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
     expect(wrapper.find('#customsProcedureId').exists()).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
@@ -297,7 +298,7 @@ describe('Register_EditDialog', () => {
     })
     await resolveAll()
 
-    expect(warehousesStore.getAll).toHaveBeenCalled()
+    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
     const warehouseSelect = wrapper.find('select#warehouseId')
     expect(warehouseSelect.exists()).toBe(true)
     const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())

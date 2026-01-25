@@ -7,7 +7,6 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useWarehousesStore } from '@/stores/warehouses.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 
@@ -29,18 +28,11 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
   let opsInitialized = false
   let opsPromise = null
 
-  const warehousesStore = useWarehousesStore()
 
   function getOpsLabel(list, value) {
     const num = Number(value)
     const match = list?.find((item) => Number(item.value) === num)
     return match ? match.name : String(value)
-  }
-
-  function getWarehouseName(warehouseId) {
-    const num = Number(warehouseId)
-    const match = warehousesStore.warehouses?.find((warehouse) => warehouse.id === num)
-    return match ? match.name : String(warehouseId)
   }
 
   async function getAll() {
@@ -182,6 +174,6 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     getOps,
     ensureOpsLoaded,
     getOpsLabel,
-    getWarehouseName
+    // getWarehouseName moved to warehouses store
   }
 })

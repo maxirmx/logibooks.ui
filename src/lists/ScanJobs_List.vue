@@ -111,7 +111,7 @@ onMounted(async () => {
     await scanJobsStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
     
-    await warehousesStore.getAll()
+    await warehousesStore.ensureLoaded()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при загрузке данных: ' + (error?.message || 'Неизвестная ошибка'))
@@ -206,7 +206,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.warehouseId`]="{ item }">
-          {{ scanJobsStore.getWarehouseName(item.warehouseId) }}
+          {{ warehousesStore.getWarehouseName(item.warehouseId) }}
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">

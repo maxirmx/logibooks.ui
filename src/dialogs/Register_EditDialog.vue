@@ -249,7 +249,7 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
 
     if (isWbr2Register.value) {
-      await warehousesStore.getAll()
+      await warehousesStore.ensureLoaded()
       if (!isComponentMounted.value) return
     }
 

@@ -39,7 +39,7 @@ if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === un
 }
 
 await scanJobsStore.ensureOpsLoaded()
-await warehousesStore.getAll()
+await warehousesStore.ensureLoaded()
 
 let scanjob
 

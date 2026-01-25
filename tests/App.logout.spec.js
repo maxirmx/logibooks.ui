@@ -70,6 +70,7 @@ const router = createRouter({
     { path: '/notifications', component: { template: '<div>Notifications</div>' } },
     { path: '/scanjobs', component: { template: '<div>ScanJobs</div>' } },
     { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
+    { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
     { path: '/parceleventprocessing', component: { template: '<div>Parcel Event Processing</div>' } }
   ]
 })

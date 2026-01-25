@@ -68,6 +68,8 @@ const router = createRouter({
     { path: '/customs-reports', component: { template: '<div>Customs Reports</div>' } },
     { path: '/airports', component: { template: '<div>Airports</div>' } },
     { path: '/notifications', component: { template: '<div>Notifications</div>' } },
+    { path: '/scanjobs', component: { template: '<div>ScanJobs</div>' } },
+    { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
     { path: '/parceleventprocessing', component: { template: '<div>Parcel Event Processing</div>' } }
   ]
 })

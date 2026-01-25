@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
@@ -62,6 +63,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/scanjobs',
+      name: 'Скан-задания',
+      component: () => import('@/views/ScanJobs_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/notifications',
       name: 'Нотификации',
       component: () => import('@/views/Notifications_View.vue'),
@@ -98,6 +105,21 @@ const router = createRouter({
       path: '/warehouse/edit/:id',
       name: 'Изменить информацию о складе',
       component: () => import('@/views/Warehouse_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/scanjob/create',
+      name: 'Создание скан-задания',
+      component: () => import('@/views/ScanJobs_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/scanjob/edit/:id',
+      name: 'Редактировать скан-задание',
+      component: () => import('@/views/ScanJobs_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),
@@ -282,6 +304,14 @@ const router = createRouter({
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
+      props: (route) => {
+        // Accept only known operation modes; default to paperwork for invalid or missing values
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return { mode }
+      },
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {

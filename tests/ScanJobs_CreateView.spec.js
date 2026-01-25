@@ -13,9 +13,23 @@ import ScanJobsCreateView from '@/views/ScanJobs_CreateView.vue'
 vi.mock('@/dialogs/ScanJobs_Settings.vue', () => ({
   default: {
     name: 'ScanJobs_Settings',
-    props: ['mode'],
-    template: '<div data-testid="scanjobs-settings">ScanJobs Settings (mode: {{ mode }})</div>'
+    props: ['mode', 'registerId', 'warehouseId', 'dealNumber'],
+    template: `
+      <div data-testid="scanjobs-settings">
+        ScanJobs Settings (mode: {{ mode }}, registerId: {{ registerId }}, warehouseId: {{ warehouseId }}, dealNumber: {{ dealNumber }})
+      </div>
+    `
   }
+}))
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({
+    query: {
+      registerId: '11',
+      warehouseId: '22',
+      dealNumber: 'D-22'
+    }
+  })
 }))
 
 describe('ScanJobs_CreateView.vue', () => {
@@ -37,5 +51,8 @@ describe('ScanJobs_CreateView.vue', () => {
     const settings = wrapper.find('[data-testid="scanjobs-settings"]')
     expect(settings.exists()).toBe(true)
     expect(settings.text()).toContain('mode: create')
+    expect(settings.text()).toContain('registerId: 11')
+    expect(settings.text()).toContain('warehouseId: 22')
+    expect(settings.text()).toContain('dealNumber: D-22')
   })
 })

@@ -18,6 +18,21 @@ const props = defineProps({
     required: true,
     validator: (value) => ['create', 'edit'].includes(value)
   },
+  registerId: {
+    type: Number,
+    required: false,
+    default: null
+  },
+  warehouseId: {
+    type: Number,
+    required: false,
+    default: null
+  },
+  dealNumber: {
+    type: String,
+    required: false,
+    default: ''
+  },
   scanjobId: {
     type: Number,
     required: false
@@ -51,13 +66,18 @@ if (isCreate.value) {
     operation: null,
     mode: null,
     status: null,
-    warehouseId: null
+    warehouseId: props.warehouseId,
+    registerId: props.registerId
   })
 } else {
   const { scanjob: storeScanjob } = storeToRefs(scanJobsStore)
   scanjob = storeScanjob
   await scanJobsStore.getById(props.scanjobId)
 }
+
+const resolvedWarehouseId = computed(() => props.warehouseId ?? scanjob.value?.warehouseId ?? null)
+const resolvedDealNumber = computed(() => props.dealNumber || scanjob.value?.dealNumber || '')
+const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(resolvedWarehouseId.value))
 
 function getTitle() {
   return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
@@ -74,7 +94,8 @@ const schema = Yup.object({
   operation: Yup.number().required('Операция обязательна'),
   mode: Yup.number().required('Режим обязателен'),
   status: Yup.number().required('Статус обязателен'),
-  warehouseId: Yup.number().required('Склад обязателен')
+  warehouseId: Yup.number().required('Склад обязателен'),
+  registerId: Yup.number().required('Реестр обязателен')
 })
 
 function normalizeValues(values) {
@@ -93,13 +114,20 @@ function toNumberOrNull(value) {
 
 function onSubmit(values, { setErrors }) {
   const normalizedValues = normalizeValues(values) || {}
+  const resolvedRegisterId = props.registerId ?? normalizedValues.registerId ?? scanjob.value?.registerId
   const payload = {
     ...normalizedValues,
     type: toNumberOrNull(normalizedValues.type),
     operation: toNumberOrNull(normalizedValues.operation),
     mode: toNumberOrNull(normalizedValues.mode),
     status: toNumberOrNull(normalizedValues.status),
-    warehouseId: toNumberOrNull(normalizedValues.warehouseId)
+    warehouseId: toNumberOrNull(resolvedWarehouseId.value ?? normalizedValues.warehouseId),
+    registerId: toNumberOrNull(resolvedRegisterId)
+  }
+
+  if (!resolvedRegisterId) {
+    setErrors({ apiError: 'Не выбран реестр' })
+    return Promise.resolve()
   }
 
   if (isCreate.value) {
@@ -138,6 +166,8 @@ function onSubmit(values, { setErrors }) {
       :validation-schema="schema"
       v-slot="{ errors, isSubmitting }"
     >
+      <Field name="registerId" type="hidden" :value="props.registerId" />
+      <Field name="warehouseId" type="hidden" :value="resolvedWarehouseId" />
       <div class="form-group">
         <label for="name" class="label">Название:</label>
         <Field
@@ -151,19 +181,25 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div class="form-group">
-        <label for="warehouseId" class="label">Склад:</label>
-        <Field
-          name="warehouseId"
-          id="warehouseId"
-          as="select"
+        <label for="dealNumber" class="label">Номер сделки:</label>
+        <input
+          id="dealNumber"
+          type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.warehouseId }"
-        >
-          <option value="">Выберите склад</option>
-          <option v-for="warehouse in warehousesStore.warehouses" :key="warehouse.id" :value="warehouse.id">
-            {{ warehouse.name }}
-          </option>
-        </Field>
+          :value="resolvedDealNumber || '—'"
+          readonly
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="warehouseName" class="label">Склад:</label>
+        <input
+          id="warehouseName"
+          type="text"
+          class="form-control input"
+          :value="warehouseDisplayName || '—'"
+          readonly
+        />
       </div>
 
       <div class="form-group">

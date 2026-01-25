@@ -92,7 +92,8 @@ vi.mock('pinia', async () => {
           registers_page: ref(1),
           alert: ref(null),
           isShiftLeadPlus: ref(false),
-          isSrLogistPlus: ref(false)
+          isSrLogistPlus: ref(false),
+          hasWhRole: ref(false)
         }
       }
     }
@@ -202,7 +203,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
     isShiftLeadPlus: ref(false),
-    isSrLogistPlus: ref(false)
+    isSrLogistPlus: ref(false),
+    hasWhRole: ref(false)
   })
 }))
 

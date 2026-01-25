@@ -199,7 +199,7 @@ describe('Registers_List.vue in warehouse mode', () => {
       String(button.props('tooltipText') || '').includes('Удалить')
     )
 
-    expect(hasEdit).toBe(false)
+    expect(hasEdit).toBe(true)
     expect(hasDelete).toBe(false)
 
     const hasWarehouseTooltip = actionButtons.some(button =>
@@ -221,14 +221,14 @@ describe('Registers_List.vue in warehouse mode', () => {
       'invoice',
       'countries',
       'senderRecipient',
-      'status',
-      'warehouse',
-      'arrivalDate'
+      "statusId",
+      "warehouseId",
+      "warehouseArrivalDate"
     ])
     expect(headerTitles).toEqual([
       '',
       'Номер сделки',
-      'Мастер-накладная',
+      'ТСД',
       'Страны',
       'Отправитель/Получатель',
       'Статус',

@@ -41,7 +41,7 @@ if (isCreate.value) {
 
 // Get page title
 function getTitle() {
-  return isCreate.value ? 'Создание статуса реестра' : 'Редактирование статуса реестра'
+  return isCreate.value ? 'Создание статуса партии' : 'Редактирование статуса партии'
 }
 
 // Get button text
@@ -64,9 +64,9 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такой статус реестра уже существует' })
+          setErrors({ apiError: 'Такой статус партии уже существует' })
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании статуса реестра' })
+          setErrors({ apiError: error.message || 'Ошибка при создании статуса партии' })
         }
       })
   } else {
@@ -76,7 +76,7 @@ function onSubmit(values, { setErrors }) {
         router.push('/registerstatuses')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса реестра' })
+        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса партии' })
       })
   }
 }

@@ -133,7 +133,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       await resolveAll()
 
-      expect(wrapper.find('h1').text()).toBe('Создание статуса реестра')
+      expect(wrapper.find('h1').text()).toBe('Создание статуса партии')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
       expect(mockRegisterStatusesStore.getById).not.toHaveBeenCalled()
     })
@@ -148,7 +148,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       await resolveAll()
 
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса реестра')
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса партии')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -469,7 +469,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Создание статуса реестра')
+      expect(wrapper.find('h1').text()).toBe('Создание статуса партии')
     })
 
     it('displays correct title for edit mode', async () => {
@@ -481,7 +481,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса реестра')
+      expect(wrapper.find('h1').text()).toBe('Редактирование статуса партии')
     })
 
     it('displays correct button text for create mode', async () => {

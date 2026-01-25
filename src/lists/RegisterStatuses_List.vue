@@ -57,7 +57,7 @@ async function deleteRegisterStatus(registerStatus) {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    const content = 'Удалить статус реестра "' + registerStatus.title + '" ?'
+    const content = 'Удалить статус партии "' + registerStatus.title + '" ?'
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -77,9 +77,9 @@ async function deleteRegisterStatus(registerStatus) {
         await registerStatusesStore.remove(registerStatus.id)
       } catch (error) {
         if (error.message?.includes('409')) {
-          alertStore.error('Нельзя удалить статус реестра, у которого есть связанные записи')
+          alertStore.error('Нельзя удалить статус партии, у которого есть связанные записи')
         } else {
-          alertStore.error('Ошибка при удалении статуса реестра')
+          alertStore.error('Ошибка при удалении статуса партии')
         }
       }
     }
@@ -104,7 +104,7 @@ defineExpose({
 <template>
   <div class="settings table-2" data-testid="register-statuses-list">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Статусы реестров</h1>
+      <h1 class="primary-heading">Статусы партий</h1>
       <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -113,7 +113,7 @@ defineExpose({
           <ActionButton
             :item="{}"
             icon="fa-solid fa-plus"
-            tooltip-text="Зарегистрировать статус реестра"
+            tooltip-text="Зарегистрировать статус партии"
             iconSize="2x"
             :disabled="runningAction || loading"
             @click="openCreateDialog"
@@ -158,14 +158,14 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать статус реестра"
+              tooltip-text="Редактировать статус партии"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить статус реестра"
+              tooltip-text="Удалить статус партии"
               @click="deleteRegisterStatus"
               :disabled="runningAction || loading"
             />

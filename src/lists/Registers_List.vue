@@ -397,12 +397,12 @@ const defaultHeaders = [
 const warehouseHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
-  { title: 'Мастер-накладная', key: 'invoice' },
+  { title: 'ТСД', key: 'invoice' },
   { title: 'Страны', key: 'countries' },
   { title: 'Отправитель/Получатель', key: 'senderRecipient' },
-  { title: 'Статус', key: 'status' },
-  { title: 'Склад', key: 'warehouse' },
-  { title: 'Дата прибытия', key: 'arrivalDate' }
+  { title: 'Статус', key: 'statusId' },
+  { title: 'Склад', key: 'warehouseId' },
+  { title: 'Дата прибытия', key: 'warehouseArrivalDate' }
 ]
 
 const headers = computed(() => (isWarehouseMode.value ? warehouseHeaders : defaultHeaders))
@@ -538,8 +538,8 @@ defineExpose({
         <template #[`item.warehouse`]="{ item }">
           <span class="truncated-cell">{{ item.warehouse }}</span>
         </template>
-        <template #[`item.arrivalDate`]="{ item }">
-          <span class="truncated-cell">{{ formatDate(item.arrivalDate) }}</span>
+        <template #[`item.warehouseArrivalDate`]="{ item }">
+          <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>
         </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 
@@ -644,11 +644,17 @@ defineExpose({
           </div>
         </template>
 
+        <template #[`header.warehouseArrivalDate`]>
+          <div class="multiline-header">
+            <div>Дата</div>
+            <div>прибытия</div>
+          </div>
+        </template>
+
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
             <ActionButton
-              v-if="!isWarehouseMode"
               :item="item"
               icon="fa-solid fa-pen"
               :tooltip-text="`Редактировать ${registerNouns.accusative}`"

@@ -131,7 +131,7 @@ describe('RegisterStatuses_List.vue', () => {
     it('displays the correct heading', () => {
       const heading = wrapper.find('.primary-heading')
       expect(heading.exists()).toBe(true)
-      expect(heading.text()).toBe('Статусы реестров')
+      expect(heading.text()).toBe('Статусы партий')
     })
 
     it('calls getAll on mount', () => {

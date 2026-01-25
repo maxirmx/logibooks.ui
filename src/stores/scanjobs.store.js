@@ -77,12 +77,9 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     error.value = null
     try {
       scanjob.value = await fetchWrapper.get(`${baseUrl}/${id}`)
-      loading.value = false
       return scanjob.value
     } catch (err) {
       error.value = err
-      scanjob.value = { error: err }
-      loading.value = false
       return null
     } finally {
       loading.value = false

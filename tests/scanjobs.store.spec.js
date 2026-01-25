@@ -129,6 +129,24 @@ describe('scanjobs store', () => {
       const result = await store.getById(999)
 
       expect(result).toBeNull()
+      expect(store.scanjob).toBeNull() // scanjob should remain null, not set to { error }
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(error)
+    })
+
+    it('preserves previous scanjob value on fetch error', async () => {
+      const error = new Error('Not found')
+      fetchWrapper.get.mockResolvedValueOnce(mockScanJob).mockRejectedValueOnce(error)
+      const store = useScanJobsStore()
+
+      // First call succeeds
+      await store.getById(1)
+      expect(store.scanjob).toEqual(mockScanJob)
+
+      // Second call fails - should preserve previous value
+      const result = await store.getById(999)
+      expect(result).toBeNull()
+      expect(store.scanjob).toEqual(mockScanJob) // Previous value preserved
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })

@@ -399,7 +399,7 @@ describe('Registers_List.vue', () => {
       const router = (await import('@/router')).default
 
       wrapper.vm.openParcels(item)
-      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
+      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels?mode=modePaperwork')
     })
 
   })
@@ -424,7 +424,7 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.$nextTick()
       const cell = wrapper.find('.open-parcels-link')
       await cell.trigger('click')
-      expect(router.push).toHaveBeenCalledWith('/registers/1/parcels')
+      expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
     })
 
     it('edits register when sender cell is clicked', async () => {

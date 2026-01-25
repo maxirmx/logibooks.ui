@@ -334,7 +334,7 @@ const modeWatcherStop = watch(() => props.mode, () => {
 }, { immediate: false })
 
 function openParcels(item) {
-  router.push(`/registers/${item.id}/parcels`)
+  router.push(`/registers/${item.id}/parcels?mode=${props.mode}`)
 }
 
 function editRegister(item) {

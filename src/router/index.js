@@ -345,9 +345,13 @@ const router = createRouter({
       path: '/registers/:id/parcels',
       name: 'Посылки',
       component: () => import('@/views/Parcels_View.vue'),
-      props: (route) => ({
-        id: Number(route.params.id)
-      }),
+      props: (route) => {
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return { id: Number(route.params.id), mode }
+      },
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {

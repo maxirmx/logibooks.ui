@@ -276,5 +276,21 @@ describe('scanjobs store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/ops`)
       expect(store.ops).toEqual(mockOps)
     })
+
+    it('getOpsLabel returns matching name and falls back to string when missing', () => {
+      const store = useScanJobsStore()
+
+      // set ops to known values
+      store.ops = JSON.parse(JSON.stringify(mockOps))
+
+      // matching numeric value
+      expect(store.getOpsLabel(store.ops.types, 0)).toBe('Тип 1')
+      // matching when value is a string
+      expect(store.getOpsLabel(store.ops.operations, '1')).toBe('Операция 1')
+      // no match -> stringified fallback
+      expect(store.getOpsLabel(store.ops.modes, 999)).toBe('999')
+      // null/undefined list -> fallback
+      expect(store.getOpsLabel(null, 5)).toBe('5')
+    })
   })
 })

@@ -36,7 +36,6 @@ export const useWarehousesStore = defineStore('warehouses', () => {
       return warehouse.value
     } catch (err) {
       error.value = err
-      warehouse.value = { error: err }
       return null
     } finally {
       loading.value = false

@@ -307,7 +307,8 @@ const router = createRouter({
       props: (route) => {
         // Accept only known operation modes; default to paperwork for invalid or missing values
         const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
-        const queryMode = route.query.mode
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
         const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
         return { mode }
       },

@@ -83,7 +83,8 @@ const { registers_per_page,
   registers_sort_by, 
   registers_page, 
   isShiftLeadPlus, 
-  isSrLogistPlus } = storeToRefs(authStore)
+  isSrLogistPlus,
+  hasWhRole } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
@@ -662,10 +663,10 @@ defineExpose({
             />
 
             <ActionButton
-              v-if="hasWhRole && isWarehouseMode"
+              v-if="isWarehouseMode && hasWhRole"
               :item="item"
               icon="fa-solid fa-barcode"
-              :tooltip-text="`Создать задание на сканирование для ${registerNouns.genitiveSingular}`"
+              :tooltip-text="`Создать задание на сканирование`"
               @click="console.log('Create scanning task for register', item.id)"
               :disabled="runningAction || loading"
             />

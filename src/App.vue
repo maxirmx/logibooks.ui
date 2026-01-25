@@ -108,7 +108,7 @@ function getUserName() {
         </v-list-item>
 
         <!-- Склад -->
-        <v-list-group v-if="authStore.hasLogistRole">
+        <v-list-group v-if="authStore.hasWhRole">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Склад"></v-list-item>
           </template>
@@ -124,16 +124,18 @@ function getUserName() {
             <RouterLink to="/scanjobs" class="link">Сканирования</RouterLink>
           </v-list-item>
         </v-list-group>
+
+        <!-- Отчёты -->
+        <v-list-item v-if="authStore.isSrLogistPlus">
+          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
+        </v-list-item>
+
+        <!-- Пользователи -->
         <v-list-item v-if="!authStore.isAdmin">
           <RouterLink :to="'/user/edit/' + authStore.user.id" class="link">Настройки</RouterLink>
         </v-list-item>
         <v-list-item v-if="authStore.isAdmin">
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
-        </v-list-item>
-
-        <!-- Отчёты -->
-        <v-list-item v-if="authStore.isSrLogistPlus">
-          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
         </v-list-item>
 
         <!-- Справочники -->
@@ -189,7 +191,7 @@ function getUserName() {
           </v-list-item>
         </v-list-group>
 
-        <!-- Отчёты -->
+        <!-- Загрузки -->
         <v-list-item v-if="authStore.hasLogistRole">
           <a :href="`${baseUrl}extensions/extension-v0.3.0.zip`" target="_blank" rel="noopener" class="link">Скачать расширение</a>
         </v-list-item>

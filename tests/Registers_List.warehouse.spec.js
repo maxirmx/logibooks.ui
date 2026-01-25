@@ -10,6 +10,7 @@ import RegistersList from '@/lists/Registers_List.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const mockItems = ref([])
 const mockCompanies = ref([])
@@ -18,8 +19,6 @@ const mockTransportationTypes = ref([])
 const mockCustomsProcedures = ref([])
 const mockAirports = ref([])
 const mockOrderStatuses = ref([])
-const mockGlobalOpMode = ref('modeWarehouse')
-
 const getAll = vi.fn()
 const getCompaniesAll = vi.fn()
 const getAirportsAll = vi.fn()
@@ -71,12 +70,6 @@ vi.mock('pinia', async () => {
       }
       if (store.alert !== undefined) {
         return { alert: store.alert }
-      }
-      if (store.globalOpMode !== undefined) {
-        return { 
-          globalOpMode: store.globalOpMode,
-          registerNouns: store.registerNouns
-        }
       }
       return {
         registers_per_page: ref(10),
@@ -162,27 +155,6 @@ vi.mock('@/stores/auth.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/op.mode.store.js', () => {
-  const registerNouns = ref({
-    singular: 'Партия',
-    plural: 'Партии', 
-    genitivePlural: 'партий',
-    genitivePluralCapitalized: 'Партий',
-    accusative: 'партию',
-    prepositional: 'партии',
-    genitiveSingular: 'партии'
-  })
-  
-  return {
-    useOpModeStore: () => ({
-      globalOpMode: mockGlobalOpMode,
-      registerNouns
-    }),
-    OP_MODE_PAPERWORK: 'modePaperwork',
-    OP_MODE_WAREHOUSE: 'modeWarehouse'
-  }
-})
-
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
@@ -198,6 +170,9 @@ vi.mock('vuetify-use-dialog', () => ({
 describe('Registers_List.vue in warehouse mode', () => {
   const createWrapper = () => {
     return mount(RegistersList, {
+      props: {
+        mode: OP_MODE_WAREHOUSE
+      },
       global: {
         stubs: vuetifyStubs
       }
@@ -205,7 +180,6 @@ describe('Registers_List.vue in warehouse mode', () => {
   }
 
   beforeEach(() => {
-    mockGlobalOpMode.value = 'modeWarehouse'
     mockItems.value = [{ id: 1 }]
   })
 

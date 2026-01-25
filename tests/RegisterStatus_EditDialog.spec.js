@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Suspense } from 'vue'
+import { Suspense, ref } from 'vue'
 import RegisterStatusEditDialog from '@/dialogs/RegisterStatus_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
@@ -46,7 +46,7 @@ vi.mock('@/router', () => ({
 vi.mock('pinia', () => ({
   storeToRefs: (store) => {
     if (store.registerStatus !== undefined) {
-      return { registerStatus: { value: store.registerStatus } }
+      return { registerStatus: ref(store.registerStatus) }
     }
     return {}
   }
@@ -286,7 +286,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       const form = wrapper.find('form')
       await form.trigger('submit')
 
-      expect(mockRegisterStatusesStore.update).toHaveBeenCalledWith(1, { value: mockRegisterStatus })
+      expect(mockRegisterStatusesStore.update).toHaveBeenCalledWith(1, mockRegisterStatus)
     })
 
     it('shows success message and redirects after successful update', async () => {

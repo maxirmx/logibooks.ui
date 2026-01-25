@@ -295,29 +295,19 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Stubbed Create and Edit Functions', () => {
-    it('openCreateDialog shows info message', async () => {
-      const alertStore = {
-        info: vi.fn()
-      }
-
-      // Mock the alert store for this test
-      wrapper.vm.alertStore = alertStore
+    it('openCreateDialog navigates to create route', async () => {
+      mockPush.mockClear()
       await wrapper.vm.openCreateDialog()
 
-      // Since it's stubbed, we just verify the function exists and can be called
-      expect(wrapper.vm.openCreateDialog).toBeDefined()
+      expect(mockPush).toHaveBeenCalledWith('/registerstatus/create')
     })
 
-    it('openEditDialog shows info message', async () => {
+    it('openEditDialog navigates to edit route with id', async () => {
       const testRegisterStatus = mockRegisterStatuses.value[0]
-      const alertStore = {
-        info: vi.fn()
-      }
-
-      wrapper.vm.alertStore = alertStore
+      mockPush.mockClear()
       await wrapper.vm.openEditDialog(testRegisterStatus)
 
-      expect(wrapper.vm.openEditDialog).toBeDefined()
+      expect(mockPush).toHaveBeenCalledWith(`/registerstatus/edit/${testRegisterStatus.id}`)
     })
   })
 

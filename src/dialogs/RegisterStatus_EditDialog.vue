@@ -34,7 +34,7 @@ if (isCreate.value) {
     title: ''
   })
 } else {
-  ;({ registerStatus } = storeToRefs(registerStatusesStore))
+  registerStatus = storeToRefs(registerStatusesStore).registerStatus
   await registerStatusesStore.getById(props.registerStatusId)
 }
 

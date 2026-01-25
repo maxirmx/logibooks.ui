@@ -20,15 +20,7 @@ const props = defineProps({
   },
   scanjobId: {
     type: Number,
-    required: false,
-    validator: (value, props) => {
-      // In edit mode, scanjobId must be provided
-      if (props.mode === 'edit' && (value === null || value === undefined)) {
-        console.error('scanjobId is required when mode is edit')
-        return false
-      }
-      return true
-    }
+    required: false
   }
 })
 

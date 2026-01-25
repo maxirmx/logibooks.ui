@@ -162,6 +162,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/registerstatuses',
+      name: 'Статусы реестров',
+      component: () => import('@/views/RegisterStatuses_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/parceleventprocessing',
       name: 'Обработка событий посылок',
       component: () => import('@/views/ParcelEventProcessing_View.vue'),
@@ -174,9 +180,24 @@ const router = createRouter({
       meta: { reqAdminOrSrLogist: true }
     },
     {
+      path: '/registerstatus/create',
+      name: 'Регистрация статуса реестра',
+      component: () => import('@/views/RegisterStatus_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
       path: '/parcelstatus/edit/:id',
       name: 'Редактирование статуса посылки',
       component: () => import('@/views/ParcelStatus_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/registerstatus/edit/:id',
+      name: 'Редактирование статуса реестра',
+      component: () => import('@/views/RegisterStatus_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

@@ -20,7 +20,15 @@ const props = defineProps({
   },
   scanjobId: {
     type: Number,
-    required: false
+    required: false,
+    validator: (value, props) => {
+      // In edit mode, scanjobId must be provided
+      if (props.mode === 'edit' && (value === null || value === undefined)) {
+        console.error('scanjobId is required when mode is edit')
+        return false
+      }
+      return true
+    }
   }
 })
 
@@ -30,6 +38,14 @@ const alertStore = useAlertStore()
 const { ops } = storeToRefs(scanJobsStore)
 
 const isCreate = computed(() => props.mode === 'create')
+
+// Runtime guard: fail fast if scanjobId is missing in edit mode
+if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === undefined)) {
+  console.error('scanjobId is required when mode is edit')
+  alertStore.error('Невозможно редактировать скан-задание: отсутствует идентификатор')
+  router.push('/scanjobs')
+  throw new Error('scanjobId is required when mode is edit')
+}
 
 await scanJobsStore.ensureOpsLoaded()
 await warehousesStore.getAll()

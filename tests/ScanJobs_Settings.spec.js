@@ -259,4 +259,40 @@ describe('ScanJobs_Settings.vue', () => {
 
     expect(setErrors).toHaveBeenCalledWith({ apiError: 'Скан-задание с таким названием уже существует' })
   })
+
+  it('redirects when scanjobId is missing in edit mode', async () => {
+    // Suppress console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Create an error handler to catch the expected error
+    const errorHandler = vi.fn()
+
+    // Mount the component with missing scanjobId
+    // This will trigger the runtime guard and redirect
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', scanjobId: undefined },
+      global: {
+        stubs: defaultGlobalStubs,
+        config: {
+          errorHandler
+        }
+      }
+    })
+
+    // Wait for any async operations
+    await resolveAll()
+
+    // Verify the error was caught and handled
+    expect(errorHandler).toHaveBeenCalled()
+    const error = errorHandler.mock.calls[0][0]
+    expect(error.message).toBe('scanjobId is required when mode is edit')
+
+    // Verify that the redirect and alert were called
+    expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
+    expect(mockAlertStore.error).toHaveBeenCalledWith('Невозможно редактировать скан-задание: отсутствует идентификатор')
+    expect(consoleErrorSpy).toHaveBeenCalledWith('scanjobId is required when mode is edit')
+
+    consoleErrorSpy.mockRestore()
+    wrapper.unmount()
+  })
 })

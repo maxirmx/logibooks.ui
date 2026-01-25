@@ -183,13 +183,14 @@ describe('RegisterStatuses_List.vue', () => {
     it('shows confirmation dialog when delete is clicked', async () => {
       mockConfirm.mockResolvedValue(true)
 
-      const deleteButton = wrapper.find('button[title*="delete"]') ||
-                           wrapper.find('.anti-btn')
-
-      if (deleteButton.exists()) {
-        await deleteButton.trigger('click')
-        expect(mockConfirm).toHaveBeenCalled()
+      let deleteButton = wrapper.find('button[title*="delete"]')
+      if (!deleteButton.exists()) {
+        deleteButton = wrapper.find('.anti-btn')
       }
+
+      expect(deleteButton.exists()).toBe(true)
+      await deleteButton.trigger('click')
+      expect(mockConfirm).toHaveBeenCalled()
     })
 
     it('calls remove when deletion is confirmed', async () => {

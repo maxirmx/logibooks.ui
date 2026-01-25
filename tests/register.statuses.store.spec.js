@@ -309,12 +309,11 @@ describe('register.statuses.store.js', () => {
       
       store.ensureLoaded()
       
-      // Since ensureLoaded directly calls getAll synchronously,
-      // Since ensureLoaded is asynchronous and calls getAll asynchronously,
-      // we can verify it was called by awaiting pending promises
+      // ensureLoaded calls getAll immediately; the await below just lets
+      // any asynchronous work triggered by getAll settle before the test ends
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
       
-      // Wait for any pending promises to resolve
+      // Wait for any pending promises triggered by ensureLoaded/getAll to resolve
       await Promise.resolve()
     })
     

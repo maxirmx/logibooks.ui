@@ -24,10 +24,12 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
-  create: { type: Boolean, default: false }
+  create: { type: Boolean, default: false },
+  mode: { type: String, default: OP_MODE_PAPERWORK }
 })
 
 const alertStore = useAlertStore()
@@ -52,6 +54,10 @@ const warehousesStore = useWarehousesStore()
 const { warehouses } = storeToRefs(warehousesStore)
 
 const registerStatusesStore = useRegisterStatusesStore()
+
+const returnUrl = computed(() => {
+  return props.mode ? `/registers?mode=${props.mode}` : '/registers'
+})
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
@@ -280,7 +286,7 @@ onUnmounted(() => {
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
-  statusId: Yup.number().nullable(),
+  statusId: Yup.number(),
   invoiceDate: Yup.date().nullable(),
   warehouseArrivalDate: Yup.date().nullable(),
   invoiceNumber: Yup.string()
@@ -508,7 +514,7 @@ async function onSubmit(values) {
     hideActionDialog()
     // Always reset submitting state
     isSubmitting.value = false
-    await router.push('/registers')
+    await router.push(returnUrl.value)
   }
 }
 
@@ -580,7 +586,7 @@ function getCustomerName(customerId) {
           :iconSize="'2x'"
           tooltip-text="Отменить"
           :disabled="isSubmitting"
-          @click="router.push(`/registers`)"
+          @click="router.push(returnUrl)"
         />
       </div>
     </div>
@@ -852,7 +858,7 @@ function getCustomerName(customerId) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButton() }}
         </button>
-        <button class="button secondary" type="button" @click="router.push('/registers')" :disabled="isSubmitting">
+        <button class="button secondary" type="button" @click="router.push(returnUrl)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

@@ -287,4 +287,16 @@ describe('Registers_List.vue in warehouse mode', () => {
     expect(bulkStatusButton).toBeTruthy()
     expect(bulkStatusButton.props('tooltipText')).toContain('в партии')
   })
+
+  it('navigates to edit register with warehouse mode in query', async () => {
+    mockItems.value = [{ id: 42, senderId: 10 }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const router = (await import('@/router')).default
+    const cell = wrapper.find('.edit-register-link')
+    await cell.trigger('click')
+    expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modeWarehouse')
+  })
 })

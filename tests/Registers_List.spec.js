@@ -446,7 +446,7 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.$nextTick()
       const cell = wrapper.find('.edit-register-link')
       await cell.trigger('click')
-      expect(router.push).toHaveBeenCalledWith('/register/edit/2')
+      expect(router.push).toHaveBeenCalledWith('/register/edit/2?mode=modePaperwork')
     })
   })
 

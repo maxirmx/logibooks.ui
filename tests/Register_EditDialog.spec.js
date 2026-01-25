@@ -469,6 +469,27 @@ describe('Register_EditDialog', () => {
     }))
   })
 
+  it('returns to registers list with warehouse mode when mode prop is warehouse', async () => {
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modeWarehouse')
+  })
+
   it('validates invoice number format only for aviation transport', async () => {
     mockItem.value = {
       ...baseRegisterItem,
@@ -526,7 +547,7 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('still renders create dialog when register list fetch fails', async () => {
@@ -640,7 +661,7 @@ describe('Register_EditDialog', () => {
     }))
     
     // Verify navigation occurred
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('shows action dialog while upload is in progress', async () => {
@@ -671,7 +692,7 @@ describe('Register_EditDialog', () => {
     await nextTick()
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('renders lookupByArticle checkbox with correct properties', async () => {
@@ -773,7 +794,7 @@ describe('Register_EditDialog', () => {
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed
     // Verify navigation occurred (error dialog closes then navigation)
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
   })

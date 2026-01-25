@@ -338,7 +338,7 @@ function openParcels(item) {
 }
 
 function editRegister(item) {
-  router.push('/register/edit/' + item.id)
+  router.push(`/register/edit/${item.id}?mode=${props.mode}`)
 }
 
 async function deleteRegister(item) {

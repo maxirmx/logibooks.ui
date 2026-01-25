@@ -27,11 +27,13 @@ const registerStatusesStore = useRegisterStatusesStore()
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
 
-let registerStatus = ref({
-  title: ''
-})
+let registerStatus
 
-if (!isCreate.value) {
+if (isCreate.value) {
+  registerStatus = ref({
+    title: ''
+  })
+} else {
   ;({ registerStatus } = storeToRefs(registerStatusesStore))
   await registerStatusesStore.getById(props.registerStatusId)
 }

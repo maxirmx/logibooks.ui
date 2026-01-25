@@ -162,7 +162,7 @@ describe('ScanJobs_Settings.vue', () => {
 
     await resolveAll()
 
-    expect(wrapper.find('h1').text()).toBe('Создание скан-задания')
+    expect(wrapper.find('h1').text()).toBe('Создание задания на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     expect(mockScanJobsStore.getById).not.toHaveBeenCalled()
   })
@@ -178,7 +178,7 @@ describe('ScanJobs_Settings.vue', () => {
     await resolveAll()
 
     expect(mockScanJobsStore.getById).toHaveBeenCalledWith(1)
-    expect(wrapper.find('h1').text()).toBe('Редактировать скан-задание')
+    expect(wrapper.find('h1').text()).toBe('Редактировать задание на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
   })
 
@@ -257,6 +257,42 @@ describe('ScanJobs_Settings.vue', () => {
     }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Скан-задание с таким названием уже существует' })
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Задание на сканирование с таким названием уже существует' })
+  })
+
+  it('redirects when scanjobId is missing in edit mode', async () => {
+    // Suppress console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Create an error handler to catch the expected error
+    const errorHandler = vi.fn()
+
+    // Mount the component with missing scanjobId
+    // This will trigger the runtime guard and redirect
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', scanjobId: undefined },
+      global: {
+        stubs: defaultGlobalStubs,
+        config: {
+          errorHandler
+        }
+      }
+    })
+
+    // Wait for any async operations
+    await resolveAll()
+
+    // Verify the error was caught and handled
+    expect(errorHandler).toHaveBeenCalled()
+    const error = errorHandler.mock.calls[0][0]
+    expect(error.message).toBe('scanjobId is required when mode is edit')
+
+    // Verify that the redirect and alert were called
+    expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
+    expect(mockAlertStore.error).toHaveBeenCalledWith('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
+    expect(consoleErrorSpy).toHaveBeenCalledWith('scanjobId is required when mode is edit')
+
+    consoleErrorSpy.mockRestore()
+    wrapper.unmount()
   })
 })

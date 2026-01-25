@@ -22,6 +22,8 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -66,6 +68,9 @@ const airportsStore = useAirportsStore()
 const { airports } = storeToRefs(airportsStore)
 
 const customsProceduresStore = useCustomsProceduresStore()
+
+const warehousesStore = useWarehousesStore()
+const registerStatusesStore = useRegisterStatusesStore()
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -237,6 +242,12 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await customsProceduresStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
+    await warehousesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
+    await registerStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
     await companiesStore.getAll()
@@ -533,11 +544,11 @@ defineExpose({
             </template>
           </ClickableCell>
         </template>
-        <template #[`item.status`]="{ item }">
-          <span class="truncated-cell">{{ item.status }}</span>
+        <template #[`item.statusId`]="{ item }">
+          <span class="truncated-cell">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
         </template>
-        <template #[`item.warehouse`]="{ item }">
-          <span class="truncated-cell">{{ item.warehouse }}</span>
+        <template #[`item.warehouseId`]="{ item }">
+          <span class="truncated-cell">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
         </template>
         <template #[`item.warehouseArrivalDate`]="{ item }">
           <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>

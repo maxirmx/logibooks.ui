@@ -135,6 +135,20 @@ vi.mock('@/stores/airports.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/warehouses.store.js', () => ({
+  useWarehousesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getWarehouseName: vi.fn(id => id ? `Warehouse ${id}` : 'Не указан')
+  })
+}))
+
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
+  })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: ref(null),

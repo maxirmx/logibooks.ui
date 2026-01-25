@@ -257,13 +257,10 @@ describe('ScanJobs_Settings.vue', () => {
     }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Задание на сканирование с таким названием уже существует' })
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Такое задание на сканирование уже существует' })
   })
 
   it('redirects when scanjobId is missing in edit mode', async () => {
-    // Suppress console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     // Create an error handler to catch the expected error
     const errorHandler = vi.fn()
 
@@ -290,9 +287,7 @@ describe('ScanJobs_Settings.vue', () => {
     // Verify that the redirect and alert were called
     expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
     expect(mockAlertStore.error).toHaveBeenCalledWith('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
-    expect(consoleErrorSpy).toHaveBeenCalledWith('scanjobId is required when mode is edit')
 
-    consoleErrorSpy.mockRestore()
     wrapper.unmount()
   })
 })

@@ -33,7 +33,6 @@ const isCreate = computed(() => props.mode === 'create')
 
 // Runtime guard: fail fast if scanjobId is missing in edit mode
 if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === undefined)) {
-  console.error('scanjobId is required when mode is edit')
   alertStore.error('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
   router.push('/scanjobs')
   throw new Error('scanjobId is required when mode is edit')
@@ -111,7 +110,7 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Задание на сканирование с таким названием уже существует' })
+          setErrors({ apiError: 'Такое задание на сканирование уже существует' })
         } else {
           setErrors({ apiError: error.message || 'Ошибка при создании задания на сканирование' })
         }

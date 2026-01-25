@@ -10,11 +10,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useStatusStore } from '@/stores/status.store.js'
-import { useOpModeStore, OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/stores/op.mode.store.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { roleAdmin } from '@/helpers/user.roles.js'
+import { roleAdmin, roleLogist } from '@/helpers/user.roles.js'
+import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
@@ -62,16 +62,15 @@ const router = createRouter({
   ]
 })
 
-describe('App operation mode switch', () => {
+describe('App navigation for registers', () => {
   let authStore
   let statusStore
-  let opModeStore
+  const warehouseRegisterNouns = getRegisterNouns(OP_MODE_WAREHOUSE)
 
   beforeEach(async () => {
     setActivePinia(createPinia())
     authStore = useAuthStore()
     statusStore = useStatusStore()
-    opModeStore = useOpModeStore()
 
     statusStore.fetchStatus = vi.fn().mockResolvedValue({})
     authStore.user = {
@@ -80,10 +79,8 @@ describe('App operation mode switch', () => {
       lastName: 'Doe',
       patronymic: 'Smith',
       email: 'john@example.com',
-      roles: [roleAdmin]
+      roles: [roleAdmin, roleLogist]
     }
-
-    opModeStore.setMode(OP_MODE_PAPERWORK)
 
     await router.push('/')
     await router.isReady()
@@ -120,24 +117,17 @@ describe('App operation mode switch', () => {
     })
   }
 
-  it('shows the default operation mode label', async () => {
+  it('renders a warehouse registers link', async () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const label = wrapper.find('[data-testid="global-op-mode-label"]')
-    expect(label.text()).toBe('Режим "Оформление"')
-  })
+    const link = wrapper.findAll('a').find((item) =>
+      item.text().includes(warehouseRegisterNouns.plural)
+    )
 
-  it('toggles the operation mode when switch is clicked', async () => {
-    const wrapper = mountApp()
-
-    const button = wrapper.find('[data-testid="global-op-mode-toggle"]')
-    expect(button.exists()).toBe(true)
-
-    await button.trigger('click')
-
-    const label = wrapper.find('[data-testid="global-op-mode-label"]')
-    expect(label.text()).toBe('Режим "Склад"')
-    expect(opModeStore.globalOpMode).toBe(OP_MODE_WAREHOUSE)
+    expect(link).toBeTruthy()
+    expect(link?.attributes('href')).toContain(
+      `/registers?mode=${encodeURIComponent(OP_MODE_WAREHOUSE)}`
+    )
   })
 })

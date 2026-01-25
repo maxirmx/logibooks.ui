@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
   const warehouses_page = ref(1)
   const scanjobs_per_page = ref(100)
   const scanjobs_search = ref('')
-  const scanjobs_sort_by = ref(['id'])
+  const scanjobs_sort_by = ref([{ key: 'id', order: 'desc' }])
   const scanjobs_page = ref(1)
   const notifications_per_page = ref(100)
   const notifications_search = ref('')

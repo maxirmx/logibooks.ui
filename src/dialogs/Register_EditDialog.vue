@@ -582,7 +582,10 @@ function getCustomerName(customerId) {
             <label for="dealNumber" class="label">Номер сделки:</label>
             <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
           </div>
-          <div class="form-group"  v-if="isWbr2Register">
+        </div>
+
+        <div class="form-row" v-if="isWbr2Register">
+          <div class="form-group">
             <label for="warehouseId" class="label">Склад:</label>
             <Field
               as="select"

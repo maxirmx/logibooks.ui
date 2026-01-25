@@ -653,7 +653,23 @@ defineExpose({
 
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-list" 
+              tooltip-text="Открыть список посылок" 
+              @click="openParcels" 
+              :disabled="runningAction || loading" 
+            />
+
+            <ActionButton
+              v-if="hasWhRole && isWarehouseMode"
+              :item="item"
+              icon="fa-solid fa-barcode"
+              :tooltip-text="`Создать задание на сканирование для ${registerNouns.genitiveSingular}`"
+              @click="console.log('Create scanning task for register', item.id)"
+              :disabled="runningAction || loading"
+            />
+
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

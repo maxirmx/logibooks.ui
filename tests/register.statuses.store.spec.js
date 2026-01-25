@@ -68,7 +68,7 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('getAll', () => {
-    it('fetches all order statuses successfully', async () => {
+    it('fetches all register statuses successfully', async () => {
       mockGet.mockResolvedValue(mockRegisterStatuses)
 
       await store.getAll()
@@ -110,7 +110,7 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('getById', () => {
-    it('fetches order status by id successfully', async () => {
+    it('fetches register status by id successfully', async () => {
       mockGet.mockResolvedValue(mockRegisterStatus)
 
       const result = await store.getById(1)
@@ -145,18 +145,18 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('create', () => {
-    it('creates order status successfully', async () => {
-      const newOrderStatus = { title: 'Новый статус' }
-      const createdOrderStatus = { id: 4, ...newOrderStatus }
+    it('creates register status successfully', async () => {
+      const newRegisterStatus = { title: 'Новый статус' }
+      const createdRegisterStatus = { id: 4, ...newRegisterStatus }
 
-      mockPost.mockResolvedValue(createdOrderStatus)
-      mockGet.mockResolvedValue([...mockRegisterStatuses, createdOrderStatus])
+      mockPost.mockResolvedValue(createdRegisterStatus)
+      mockGet.mockResolvedValue([...mockRegisterStatuses, createdRegisterStatus])
 
-      const result = await store.create(newOrderStatus)
+      const result = await store.create(newRegisterStatus)
 
-      expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses', newOrderStatus)
+      expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses', newRegisterStatus)
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-      expect(result).toEqual(createdOrderStatus)
+      expect(result).toEqual(createdRegisterStatus)
     })
 
     it('handles create error', async () => {
@@ -168,18 +168,18 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('update', () => {
-    it('updates order status successfully', async () => {
+    it('updates register status successfully', async () => {
       const updateData = { title: 'Обновленный заголовок' }
-      const updatedOrderStatus = { ...mockRegisterStatus, ...updateData }
+      const updatedRegisterStatus = { ...mockRegisterStatus, ...updateData }
 
-      mockPut.mockResolvedValue(updatedOrderStatus)
-      mockGet.mockResolvedValue(mockRegisterStatuses.map(s => s.id === 1 ? updatedOrderStatus : s))
+      mockPut.mockResolvedValue(updatedRegisterStatus)
+      mockGet.mockResolvedValue(mockRegisterStatuses.map(s => s.id === 1 ? updatedRegisterStatus : s))
 
       const result = await store.update(1, updateData)
 
       expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses/1', updateData)
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-      expect(result).toEqual(updatedOrderStatus)
+      expect(result).toEqual(updatedRegisterStatus)
     })
 
     it('handles update error', async () => {
@@ -191,7 +191,7 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('remove', () => {
-    it('removes order status successfully', async () => {
+    it('removes register status successfully', async () => {
       mockDelete.mockResolvedValue()
       mockGet.mockResolvedValue(mockRegisterStatuses.filter(s => s.id !== 1))
 

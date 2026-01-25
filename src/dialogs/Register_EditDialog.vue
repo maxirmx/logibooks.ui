@@ -15,6 +15,7 @@ import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
@@ -49,6 +50,8 @@ const { airports } = storeToRefs(airportsStore)
 
 const warehousesStore = useWarehousesStore()
 const { warehouses } = storeToRefs(warehousesStore)
+
+const registerStatusesStore = useRegisterStatusesStore()
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
@@ -242,6 +245,9 @@ onMounted(async () => {
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
+    await registerStatusesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
@@ -274,7 +280,9 @@ onUnmounted(() => {
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
+  statusId: Yup.number().nullable(),
   invoiceDate: Yup.date().nullable(),
+  warehouseArrivalDate: Yup.date().nullable(),
   invoiceNumber: Yup.string()
     .nullable()
     .test(
@@ -431,6 +439,8 @@ function prepareRegisterPayload(formValues) {
     ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
   payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
+  payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
+  payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
 
   return payload
 }
@@ -582,6 +592,20 @@ function getCustomerName(customerId) {
             <label for="dealNumber" class="label">Номер сделки:</label>
             <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
           </div>
+          <div class="form-group">
+            <label for="statusId" class="label">Статус:</label>
+            <Field
+              as="select"
+              name="statusId"
+              id="statusId"
+              class="form-control input"
+            >
+              <option value="">Выберите статус</option>
+              <option v-for="s in registerStatusesStore.registerStatuses" :key="s.id" :value="s.id">
+                {{ s.title }}
+              </option>
+            </Field>
+          </div>
         </div>
 
         <div class="form-row" v-if="isWbr2Register">
@@ -597,6 +621,15 @@ function getCustomerName(customerId) {
                 {{ warehouse.name }}
               </option>
             </Field>
+          </div>
+          <div class="form-group">
+            <label for="warehouseArrivalDate" class="label">Дата прибытия:</label>
+            <Field 
+              name="warehouseArrivalDate" 
+              id="warehouseArrivalDate" 
+              type="date" 
+              class="form-control input" 
+            />
           </div>
         </div>
 

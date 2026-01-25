@@ -91,6 +91,15 @@ const warehousesStore = createMockStore({
   getAll: vi.fn(() => Promise.resolve()),
   ensureLoaded: vi.fn(() => Promise.resolve())
 })
+const registerStatusesStore = createMockStore({
+  registerStatuses: [
+    { id: 1, title: 'New' },
+    { id: 2, title: 'In Progress' },
+    { id: 3, title: 'Completed' }
+  ],
+  ensureLoaded: vi.fn(() => Promise.resolve()),
+  getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Unknown')
+})
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -124,6 +133,7 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
 vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
+vi.mock('@/stores/register.statuses.store.js', () => ({ useRegisterStatusesStore: () => registerStatusesStore }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Simple stubs for vee-validate components

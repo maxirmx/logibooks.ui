@@ -46,6 +46,9 @@ export const useAuthStore = defineStore('auth', () => {
   const hasLogistRole = computed(() =>
     isLogist.value || isSrLogist.value || isShiftLead.value
   )
+  const hasWhRole = computed(() =>
+    isAdmin.value || isShiftLead.value || isWhOperator.value
+  )
   const hasAnyRole = computed(() =>
     isAdmin.value || isShiftLead.value || isSrLogist.value || isLogist.value || isWhOperator.value
   )
@@ -62,6 +65,10 @@ export const useAuthStore = defineStore('auth', () => {
   const warehouses_search = ref('')
   const warehouses_sort_by = ref(['id'])
   const warehouses_page = ref(1)
+  const scanjobs_per_page = ref(100)
+  const scanjobs_search = ref('')
+  const scanjobs_sort_by = ref([{ key: 'id', order: 'desc' }])
+  const scanjobs_page = ref(1)
   const notifications_per_page = ref(100)
   const notifications_search = ref('')
   const notifications_sort_by = ref(['id'])
@@ -243,6 +250,10 @@ export const useAuthStore = defineStore('auth', () => {
     warehouses_search,
     warehouses_sort_by,
     warehouses_page,
+    scanjobs_per_page,
+    scanjobs_search,
+    scanjobs_sort_by,
+    scanjobs_page,
     notifications_per_page,
     notifications_search,
     notifications_sort_by,
@@ -316,6 +327,7 @@ export const useAuthStore = defineStore('auth', () => {
     isSrLogistPlus,
     hasLogistRole,
     isLogist,
+    hasWhRole,
     hasAnyRole,
     // actions
     check,

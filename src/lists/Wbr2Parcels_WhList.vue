@@ -159,7 +159,7 @@ onUnmounted(() => {
         <template #[`item.statusId`]="{ item }">
           {{ parcelStatusStore.getStatusTitle(item.statusId) }}
         </template>
-        <template #[`item.zone`]="{ item }">
+        <template #[`item.zone`]="{  }">
           Зелёная зона
         </template>
       </v-data-table-server>

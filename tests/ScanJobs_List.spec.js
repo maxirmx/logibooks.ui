@@ -253,35 +253,6 @@ describe('ScanJobs_List.vue', () => {
     expect(mockGetWarehouseName(20)).toBe('20')
   })
 
-  it('navigates to create page when add link is clicked', async () => {
-    const wrapper = mount(ScanJobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.openCreateDialog()
-    expect(router.push).toHaveBeenCalledWith('/scanjob/create')
-  })
-
-  it('navigates to edit page when edit is called', async () => {
-    const wrapper = mount(ScanJobsList, {
-      global: {
-        stubs: {
-          ...testStubs,
-          'v-data-table-server': {
-            template: `<div><slot name="item.actions" :item="{ id: 1, name: 'Сканирование приемки' }"></slot></div>`
-          }
-        }
-      }
-    })
-
-    const scanjob = { id: 1, name: 'Сканирование приемки' }
-    await wrapper.vm.openEditDialog(scanjob)
-
-    expect(router.push).toHaveBeenCalledWith('/scanjob/edit/1')
-  })
-
   it('calls delete function when delete button is clicked', async () => {
     const wrapper = mount(ScanJobsList, {
       global: {

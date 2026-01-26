@@ -50,10 +50,6 @@ function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
 
-function openCreateDialog() {
-  router.push('/scanjob/create')
-}
-
 async function deleteScanJob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
@@ -132,7 +128,6 @@ onUnmounted(() => {
 })
 
 defineExpose({
-  openCreateDialog,
   openEditDialog,
   deleteScanJob
 })

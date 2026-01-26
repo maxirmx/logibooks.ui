@@ -68,6 +68,13 @@ vi.mock('@/stores/parcels.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getStatusTitle: vi.fn(id => `Status ${id}`)
+  })
+}))
+
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     item: registerItem,
@@ -139,11 +146,13 @@ describe('Wbr2Parcels_WhList.vue', () => {
       'id',
       'shk',
       'stickerCode',
+      'boxNumber',
       'wbSticker',
       'sellerSticker',
       'weightKg',
       'quantity',
-      'statusId'
+      'statusId',
+      'zone'
     ])
   })
 })

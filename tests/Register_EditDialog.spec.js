@@ -88,7 +88,17 @@ const warehousesStore = createMockStore({
     { id: 10, name: 'Main Warehouse' },
     { id: 11, name: 'Secondary Warehouse' }
   ]),
-  getAll: vi.fn(() => Promise.resolve())
+  getAll: vi.fn(() => Promise.resolve()),
+  ensureLoaded: vi.fn(() => Promise.resolve())
+})
+const registerStatusesStore = createMockStore({
+  registerStatuses: [
+    { id: 1, title: 'New' },
+    { id: 2, title: 'In Progress' },
+    { id: 3, title: 'Completed' }
+  ],
+  ensureLoaded: vi.fn(() => Promise.resolve()),
+  getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Unknown')
 })
 
 vi.mock('pinia', async () => {
@@ -123,6 +133,7 @@ vi.mock('@/stores/customs.procedures.store.js', () => ({
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
 vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
+vi.mock('@/stores/register.statuses.store.js', () => ({ useRegisterStatusesStore: () => registerStatusesStore }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Simple stubs for vee-validate components
@@ -241,7 +252,7 @@ describe('Register_EditDialog', () => {
     expect(transStore.ensureLoaded).toHaveBeenCalled()
     expect(procStore.ensureLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
-    expect(warehousesStore.getAll).not.toHaveBeenCalled()
+    expect(warehousesStore.ensureLoaded).not.toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
     expect(wrapper.find('#customsProcedureId').exists()).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
@@ -297,7 +308,7 @@ describe('Register_EditDialog', () => {
     })
     await resolveAll()
 
-    expect(warehousesStore.getAll).toHaveBeenCalled()
+    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
     const warehouseSelect = wrapper.find('select#warehouseId')
     expect(warehouseSelect.exists()).toBe(true)
     const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
@@ -458,6 +469,63 @@ describe('Register_EditDialog', () => {
     }))
   })
 
+  it('returns to registers list with warehouse mode when mode prop is warehouse', async () => {
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modeWarehouse')
+  })
+
+  it('uses warehouse-specific nouns for titles when mode is warehouse', async () => {
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    // Warehouse mode uses "партии" instead of "реестре"
+    expect(wrapper.find('h1').text()).toBe('Редактирование информации о партии')
+  })
+
+  it('uses paperwork-specific nouns for titles when mode is paperwork', async () => {
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modePaperwork" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    // Paperwork mode uses "реестре"
+    expect(wrapper.find('h1').text()).toBe('Редактирование информации о реестре')
+  })
+
   it('validates invoice number format only for aviation transport', async () => {
     mockItem.value = {
       ...baseRegisterItem,
@@ -515,7 +583,7 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('still renders create dialog when register list fetch fails', async () => {
@@ -629,7 +697,7 @@ describe('Register_EditDialog', () => {
     }))
     
     // Verify navigation occurred
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('shows action dialog while upload is in progress', async () => {
@@ -660,7 +728,7 @@ describe('Register_EditDialog', () => {
     await nextTick()
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('renders lookupByArticle checkbox with correct properties', async () => {
@@ -762,7 +830,7 @@ describe('Register_EditDialog', () => {
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed
     // Verify navigation occurred (error dialog closes then navigation)
-    expect(router.push).toHaveBeenCalledWith('/registers')
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
   })

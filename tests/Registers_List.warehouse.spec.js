@@ -77,7 +77,8 @@ vi.mock('pinia', async () => {
         registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
         registers_page: ref(1),
         isShiftLeadPlus: ref(true),
-        isSrLogistPlus: ref(true)
+        isSrLogistPlus: ref(true),
+        hasWhRole: ref(true)
       }
     }
   }
@@ -135,6 +136,20 @@ vi.mock('@/stores/airports.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/warehouses.store.js', () => ({
+  useWarehousesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getWarehouseName: vi.fn(id => id ? `Warehouse ${id}` : 'Не указан')
+  })
+}))
+
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
+  })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: ref(null),
@@ -151,7 +166,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
     isShiftLeadPlus: ref(true),
-    isSrLogistPlus: ref(true)
+    isSrLogistPlus: ref(true),
+    hasWhRole: ref(true)
   })
 }))
 
@@ -179,8 +195,10 @@ describe('Registers_List.vue in warehouse mode', () => {
     })
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockItems.value = [{ id: 1 }]
+    const router = (await import('@/router')).default
+    router.push.mockClear()
   })
 
   it('uses warehouse labels and hides register actions', async () => {
@@ -199,7 +217,7 @@ describe('Registers_List.vue in warehouse mode', () => {
       String(button.props('tooltipText') || '').includes('Удалить')
     )
 
-    expect(hasEdit).toBe(false)
+    expect(hasEdit).toBe(true)
     expect(hasDelete).toBe(false)
 
     const hasWarehouseTooltip = actionButtons.some(button =>
@@ -221,14 +239,14 @@ describe('Registers_List.vue in warehouse mode', () => {
       'invoice',
       'countries',
       'senderRecipient',
-      'status',
-      'warehouse',
-      'arrivalDate'
+      "statusId",
+      "warehouseId",
+      "warehouseArrivalDate"
     ])
     expect(headerTitles).toEqual([
       '',
       'Номер сделки',
-      'Мастер-накладная',
+      'ТСД',
       'Страны',
       'Отправитель/Получатель',
       'Статус',
@@ -272,5 +290,42 @@ describe('Registers_List.vue in warehouse mode', () => {
 
     expect(bulkStatusButton).toBeTruthy()
     expect(bulkStatusButton.props('tooltipText')).toContain('в партии')
+  })
+
+  it('navigates to edit register with warehouse mode in query', async () => {
+    mockItems.value = [{ id: 42, senderId: 10 }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const router = (await import('@/router')).default
+    const cell = wrapper.find('.edit-register-link')
+    await cell.trigger('click')
+    expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modeWarehouse')
+  })
+
+  it('navigates to create scan job when barcode action is clicked', async () => {
+    mockItems.value = [{ id: 7, warehouseId: 12, dealNumber: 'D-77' }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const barcodeButton = actionButtons.find(button =>
+      String(button.props('tooltipText') || '').includes('Создать задание на сканирование')
+    )
+
+    expect(barcodeButton).toBeTruthy()
+
+    const router = (await import('@/router')).default
+    await barcodeButton.find('button').trigger('click')
+    expect(router.push).toHaveBeenCalledWith({
+      path: '/scanjob/create',
+      query: {
+        registerId: 7,
+        warehouseId: 12,
+        dealNumber: 'D-77'
+      }
+    })
   })
 })

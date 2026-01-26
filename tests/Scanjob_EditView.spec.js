@@ -8,17 +8,17 @@ import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import ScanJobsCreateView from '@/views/ScanJobs_CreateView.vue'
+import ScanjobsEditView from '@/views/Scanjob_EditView.vue'
 
-vi.mock('@/dialogs/ScanJobs_Settings.vue', () => ({
+vi.mock('@/dialogs/Scanjob_Settings.vue', () => ({
   default: {
-    name: 'ScanJobs_Settings',
-    props: ['mode'],
-    template: '<div data-testid="scanjobs-settings">ScanJobs Settings (mode: {{ mode }})</div>'
+    name: 'Scanjob_Settings',
+    props: ['mode', 'scanjobId'],
+    template: '<div data-testid="scanjobs-settings">Scanjobs Settings (mode: {{ mode }}, id: {{ scanjobId }})</div>'
   }
 }))
 
-describe('ScanJobs_CreateView.vue', () => {
+describe('Scanjob_EditView.vue', () => {
   let vuetify
   let pinia
 
@@ -27,8 +27,9 @@ describe('ScanJobs_CreateView.vue', () => {
     pinia = createPinia()
   })
 
-  it('renders ScanJobs_Settings in create mode', () => {
-    const wrapper = mount(ScanJobsCreateView, {
+  it('renders Scanjob_Settings in edit mode with id', () => {
+    const wrapper = mount(ScanjobsEditView, {
+      props: { id: 5 },
       global: {
         plugins: [vuetify, pinia]
       }
@@ -36,6 +37,7 @@ describe('ScanJobs_CreateView.vue', () => {
 
     const settings = wrapper.find('[data-testid="scanjobs-settings"]')
     expect(settings.exists()).toBe(true)
-    expect(settings.text()).toContain('mode: create')
+    expect(settings.text()).toContain('mode: edit')
+    expect(settings.text()).toContain('id: 5')
   })
 })

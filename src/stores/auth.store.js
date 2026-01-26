@@ -93,6 +93,10 @@ export const useAuthStore = defineStore('auth', () => {
   const parcelstatuses_search = ref('')
   const parcelstatuses_sort_by = ref(['id'])
   const parcelstatuses_page = ref(1)
+  const registerstatuses_per_page = ref(100)
+  const registerstatuses_search = ref('')
+  const registerstatuses_sort_by = ref(['id'])
+  const registerstatuses_page = ref(1)
   const countries_per_page = ref(100)
   const countries_search = ref('')
   const countries_sort_by = ref([])
@@ -278,6 +282,10 @@ export const useAuthStore = defineStore('auth', () => {
     parcelstatuses_search,
     parcelstatuses_sort_by,
     parcelstatuses_page,
+    registerstatuses_per_page,
+    registerstatuses_search,
+    registerstatuses_sort_by,
+    registerstatuses_page,
     countries_per_page,
     countries_search,
     countries_sort_by,

@@ -7,21 +7,21 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/parcelstatuses`
+const baseUrl = `${apiUrl}/registerstatuses`
 
-export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
-  const parcelStatuses = ref([])
-  const parcelStatus = ref({ loading: true })
+export const useRegisterStatusesStore = defineStore('registerStatuses', () => {
+  const registerStatuses = ref([])
+  const registerStatus = ref({ loading: true })
   const loading = ref(false)
-
+  let initialized = false
   const statusMap = ref(new Map())
 
   async function getAll() {
     loading.value = true
     try {
       const response = await fetchWrapper.get(baseUrl)
-      parcelStatuses.value = response || []
-      statusMap.value = new Map(parcelStatuses.value.map(status => [status.id, status]))
+      registerStatuses.value = response || []
+      statusMap.value = new Map(registerStatuses.value.map(status => [status.id, status]))
       initialized = true
     } finally {
       loading.value = false
@@ -32,7 +32,7 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
     try {
       loading.value = true
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      parcelStatus.value = response
+      registerStatus.value = response
       return response
     } finally {
       loading.value = false
@@ -69,9 +69,8 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
   }
 
   // Auto-fetch statuses when store is initialized (only once)
-  let initialized = false
   async function ensureLoaded() {
-    if (!initialized && parcelStatuses.value.length === 0 && !loading.value) {
+    if (!initialized && registerStatuses.value.length === 0 && !loading.value) {
       await getAll()
     }
   }
@@ -80,8 +79,8 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
     ensureLoaded,
     getStatusById,
     getStatusTitle,
-    parcelStatuses,
-    parcelStatus,
+    registerStatuses,
+    registerStatus,
     loading,
     statusMap,
     getAll,

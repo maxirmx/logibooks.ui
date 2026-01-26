@@ -6,7 +6,7 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -16,7 +16,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
 
-const scanJobsStore = useScanJobsStore()
+const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
@@ -36,7 +36,7 @@ const localSearch = ref('')
 localSearch.value = scanjobs_search.value || ''
 
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
   { title: 'Номер', key: 'id', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Тип', key: 'type', sortable: true },
@@ -50,11 +50,7 @@ function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
 
-function openCreateDialog() {
-  router.push('/scanjob/create')
-}
-
-async function deleteScanJob(scanJob) {
+async function deleteScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
   try {
@@ -89,13 +85,51 @@ async function deleteScanJob(scanJob) {
   }
 }
 
-async function loadScanJobs() {
+async function startScanjob(scanJob) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.start(scanJob.id)
+    await loadScanjobs()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для запуска сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при запуске сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function finishScanjob(scanJob) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.finish(scanJob.id)
+    await loadScanjobs()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для завершения сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при завершении сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function loadScanjobs() {
   await scanJobsStore.getAll()
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: scanjobs_search }],
-  loadFn: loadScanJobs,
+  loadFn: loadScanjobs,
   isComponentMounted,
   debounceMs: 300
 })
@@ -111,7 +145,7 @@ onMounted(async () => {
     await scanJobsStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
     
-    await warehousesStore.getAll()
+    await warehousesStore.ensureLoaded()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при загрузке данных: ' + (error?.message || 'Неизвестная ошибка'))
@@ -132,29 +166,20 @@ onUnmounted(() => {
 })
 
 defineExpose({
-  openCreateDialog,
   openEditDialog,
-  deleteScanJob
+  deleteScanjob,
+  startScanjob,
+  finishScanjob
 })
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Сканирования</h1>
+      <h1 class="primary-heading">Задания на сканирование</h1>
       <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
-        </div>
-        <div class="header-actions header-actions-group">
-          <ActionButton
-            :item="{}"
-            icon="fa-solid fa-plus"
-            tooltip-text="Создать задание на сканирование"
-            iconSize="2x"
-            :disabled="runningAction || loading || isInitializing"
-            @click="openCreateDialog"
-          />
         </div>
       </div>
     </div>
@@ -206,11 +231,25 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.warehouseId`]="{ item }">
-          {{ scanJobsStore.getWarehouseName(item.warehouseId) }}
+          {{ warehousesStore.getWarehouseName(item.warehouseId) }}
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isSrLogistPlus" class="actions-container">
+          <div v-if="authStore.hasWhRole" class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-play"
+              tooltip-text="Начать/продолжить сканирование"
+              @click="startScanjob"
+              :disabled="runningAction || loading"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-check-double"
+              tooltip-text="Завершить сканирование"
+              @click="finishScanjob"
+              :disabled="runningAction || loading"
+            />
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
@@ -222,7 +261,7 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить задание на сканирование"
-              @click="deleteScanJob"
+              @click="deleteScanjob"
               :disabled="runningAction || loading"
             />
           </div>

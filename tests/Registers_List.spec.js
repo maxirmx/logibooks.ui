@@ -92,7 +92,8 @@ vi.mock('pinia', async () => {
           registers_page: ref(1),
           alert: ref(null),
           isShiftLeadPlus: ref(false),
-          isSrLogistPlus: ref(false)
+          isSrLogistPlus: ref(false),
+          hasWhRole: ref(false)
         }
       }
     }
@@ -174,6 +175,20 @@ vi.mock('@/stores/airports.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/warehouses.store.js', () => ({
+  useWarehousesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getWarehouseName: vi.fn(id => id ? `Warehouse ${id}` : 'Не указан')
+  })
+}))
+
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
+  })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     success: alertSuccessFn,
@@ -188,7 +203,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
     isShiftLeadPlus: ref(false),
-    isSrLogistPlus: ref(false)
+    isSrLogistPlus: ref(false),
+    hasWhRole: ref(false)
   })
 }))
 
@@ -385,7 +401,7 @@ describe('Registers_List.vue', () => {
       const router = (await import('@/router')).default
 
       wrapper.vm.openParcels(item)
-      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels')
+      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels?mode=modePaperwork')
     })
 
   })
@@ -410,7 +426,7 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.$nextTick()
       const cell = wrapper.find('.open-parcels-link')
       await cell.trigger('click')
-      expect(router.push).toHaveBeenCalledWith('/registers/1/parcels')
+      expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
     })
 
     it('edits register when sender cell is clicked', async () => {
@@ -432,7 +448,7 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.$nextTick()
       const cell = wrapper.find('.edit-register-link')
       await cell.trigger('click')
-      expect(router.push).toHaveBeenCalledWith('/register/edit/2')
+      expect(router.push).toHaveBeenCalledWith('/register/edit/2?mode=modePaperwork')
     })
   })
 

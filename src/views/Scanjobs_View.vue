@@ -3,9 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import ScanJobs from '@/lists/ScanJobs_List.vue'
+import Scanjobs from '@/lists/Scanjobs_List.vue'
 </script>
 
 <template>
-  <ScanJobs />
+  <Scanjobs />
 </template>

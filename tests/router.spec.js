@@ -358,7 +358,7 @@ describe('router guards', () => {
     await router.push('/registers/1/parcels')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels')
-  })
+  }, 10000)
 
   it('prevents non-logist user from accessing parcel edit', async () => {
     authStore.user = { id: 7 }

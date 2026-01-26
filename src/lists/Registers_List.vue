@@ -375,6 +375,18 @@ async function deleteRegister(item) {
   }
 }
 
+function openScanJobCreate(item) {
+  if (!item) return
+  router.push({
+    path: '/scanjob/create',
+    query: {
+      registerId: item.id,
+      warehouseId: item.warehouseId,
+      dealNumber: item.dealNumber
+    }
+  })
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -678,7 +690,7 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-barcode"
               :tooltip-text="`Создать задание на сканирование`"
-              @click="console.log('Create scanning task for register', item.id)"
+              @click="openScanJobCreate"
               :disabled="runningAction || loading"
             />
 

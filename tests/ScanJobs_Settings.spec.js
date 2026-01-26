@@ -16,7 +16,9 @@ const mockScanJobData = {
   operation: 1,
   mode: 2,
   status: 3,
-  warehouseId: 10
+  warehouseId: 10,
+  dealNumber: 'D-100',
+  registerId: 99
 }
 
 const mockOps = ref({
@@ -40,7 +42,8 @@ const mockScanJobsStore = createMockStore({
 const mockWarehousesStore = createMockStore({
   warehouses: [{ id: 10, name: 'Основной склад' }],
   getAll: vi.fn().mockResolvedValue(),
-  ensureLoaded: vi.fn().mockResolvedValue()
+  ensureLoaded: vi.fn().mockResolvedValue(),
+  getWarehouseName: vi.fn(id => (id ? `Warehouse ${id}` : 'Не указан'))
 })
 
 const mockAlertStore = createMockStore({
@@ -135,10 +138,16 @@ vi.mock('vee-validate', () => ({
 
 const AsyncWrapper = {
   components: { ScanJobsSettings, Suspense },
-  props: ['mode', 'scanjobId'],
+  props: ['mode', 'scanjobId', 'registerId', 'warehouseId', 'dealNumber'],
   template: `
     <Suspense>
-      <ScanJobsSettings :mode="mode" :scanjob-id="scanjobId" />
+      <ScanJobsSettings
+        :mode="mode"
+        :scanjob-id="scanjobId"
+        :register-id="registerId"
+        :warehouse-id="warehouseId"
+        :deal-number="dealNumber"
+      />
       <template #fallback>
         <div>Loading...</div>
       </template>
@@ -155,7 +164,7 @@ beforeEach(async () => {
 describe('ScanJobs_Settings.vue', () => {
   it('renders create mode correctly', async () => {
     const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
+      props: { mode: 'create', registerId: 88, warehouseId: 10, dealNumber: 'D-200' },
       global: {
         stubs: defaultGlobalStubs
       }
@@ -166,6 +175,10 @@ describe('ScanJobs_Settings.vue', () => {
     expect(wrapper.find('h1').text()).toBe('Создание задания на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     expect(mockScanJobsStore.getById).not.toHaveBeenCalled()
+    expect(wrapper.find('#dealNumber').element.value).toBe('D-200')
+    expect(wrapper.find('#dealNumber').attributes('readonly')).toBeDefined()
+    expect(wrapper.find('#warehouseName').element.value).toBe('Warehouse 10')
+    expect(wrapper.find('#warehouseName').attributes('readonly')).toBeDefined()
   })
 
   it('renders edit mode correctly', async () => {
@@ -185,7 +198,7 @@ describe('ScanJobs_Settings.vue', () => {
 
   it('submits create form successfully', async () => {
     const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
+      props: { mode: 'create', registerId: 88, warehouseId: 10 },
       global: {
         stubs: defaultGlobalStubs
       }
@@ -205,6 +218,10 @@ describe('ScanJobs_Settings.vue', () => {
     await resolveAll()
 
     expect(mockScanJobsStore.create).toHaveBeenCalled()
+    expect(mockScanJobsStore.create).toHaveBeenCalledWith(expect.objectContaining({
+      registerId: 88,
+      warehouseId: 10
+    }))
     expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
   })
 
@@ -237,7 +254,7 @@ describe('ScanJobs_Settings.vue', () => {
     mockScanJobsStore.create.mockRejectedValueOnce(new Error('409 Conflict'))
 
     const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
+      props: { mode: 'create', registerId: 88 },
       global: {
         stubs: defaultGlobalStubs
       }

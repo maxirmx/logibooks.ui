@@ -15,11 +15,14 @@ export const useWarehousesStore = defineStore('warehouses', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  let initialized = false
+
   async function getAll() {
     loading.value = true
     error.value = null
     try {
       warehouses.value = await fetchWrapper.get(baseUrl)
+      initialized = true
     } catch (err) {
       error.value = err
     } finally {
@@ -28,7 +31,6 @@ export const useWarehousesStore = defineStore('warehouses', () => {
   }
 
   async function getById(id) {
-    warehouse.value = { loading: true }
     loading.value = true
     error.value = null
     try {
@@ -93,6 +95,18 @@ export const useWarehousesStore = defineStore('warehouses', () => {
     }
   }
 
+  async function ensureLoaded() {
+    if (!initialized && !loading.value) {
+      await getAll()
+    }
+  }
+
+  function getWarehouseName(warehouseId) {
+    const num = Number(warehouseId)
+    const match = warehouses.value?.find((warehouse) => warehouse.id === num)
+    return match ? match.name : String(warehouseId)
+  }
+
   return {
     warehouses,
     warehouse,
@@ -102,6 +116,8 @@ export const useWarehousesStore = defineStore('warehouses', () => {
     getById,
     create,
     update,
-    remove
+    remove,
+    ensureLoaded,
+    getWarehouseName
   }
 })

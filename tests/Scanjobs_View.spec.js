@@ -8,16 +8,16 @@ import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import ScanJobsView from '@/views/ScanJobs_View.vue'
+import ScanjobsView from '@/views/Scanjobs_View.vue'
 
-vi.mock('@/lists/ScanJobs_List.vue', () => ({
+vi.mock('@/lists/Scanjobs_List.vue', () => ({
   default: {
-    name: 'ScanJobs_List',
-    template: '<div data-testid="scanjobs-list">ScanJobs List Component</div>'
+    name: 'Scanjobs_List',
+    template: '<div data-testid="scanjobs-list">Scanjobs List Component</div>'
   }
 }))
 
-describe('ScanJobs_View', () => {
+describe('Scanjobs_View', () => {
   let vuetify
   let pinia
 
@@ -30,7 +30,7 @@ describe('ScanJobs_View', () => {
   })
 
   it('mounts successfully', () => {
-    const wrapper = mount(ScanJobsView, {
+    const wrapper = mount(ScanjobsView, {
       global: {
         plugins: [vuetify, pinia]
       }
@@ -39,8 +39,8 @@ describe('ScanJobs_View', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders ScanJobs_List component', () => {
-    const wrapper = mount(ScanJobsView, {
+  it('renders Scanjobs_List component', () => {
+    const wrapper = mount(ScanjobsView, {
       global: {
         plugins: [vuetify, pinia]
       }
@@ -48,16 +48,16 @@ describe('ScanJobs_View', () => {
 
     const listComponent = wrapper.find('[data-testid="scanjobs-list"]')
     expect(listComponent.exists()).toBe(true)
-    expect(listComponent.text()).toBe('ScanJobs List Component')
+    expect(listComponent.text()).toBe('Scanjobs List Component')
   })
 
   it('has correct component structure', () => {
-    const wrapper = mount(ScanJobsView, {
+    const wrapper = mount(ScanjobsView, {
       global: {
         plugins: [vuetify, pinia]
       }
     })
 
-    expect(wrapper.html()).toContain('ScanJobs List Component')
+    expect(wrapper.html()).toContain('Scanjobs List Component')
   })
 })

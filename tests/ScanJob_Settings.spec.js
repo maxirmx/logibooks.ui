@@ -6,17 +6,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { Suspense, ref } from 'vue'
-import ScanJobsSettings from '@/dialogs/ScanJobs_Settings.vue'
+import ScanjobsSettings from '@/dialogs/Scanjob_Settings.vue'
 import { defaultGlobalStubs, createMockStore, resolveAll } from './helpers/test-utils.js'
 
-const mockScanJobData = {
+const mockScanjobData = {
   id: 1,
   name: 'Сканирование приемки',
   type: 0,
   operation: 1,
   mode: 2,
   status: 3,
-  warehouseId: 10
+  warehouseId: 10,
+  dealNumber: 'D-100',
+  registerId: 99
 }
 
 const mockOps = ref({
@@ -26,20 +28,32 @@ const mockOps = ref({
   statuses: [{ value: 3, name: 'Статус 1' }]
 })
 
-const scanJobRef = ref({ ...mockScanJobData })
+// Use a plain object to store the scanjob value (simulating Pinia's unwrapping behavior)
+let scanjobValue = { ...mockScanjobData }
 
-const mockScanJobsStore = createMockStore({
-  scanjob: scanJobRef,
+const mockScanjobsStore = {
+  // Pinia auto-unwraps refs, so scanjob should appear as a plain value when accessed
+  get scanjob() {
+    return scanjobValue
+  },
+  set scanjob(val) {
+    scanjobValue = val
+  },
   ops: mockOps,
   ensureOpsLoaded: vi.fn().mockResolvedValue(mockOps.value),
-  getById: vi.fn().mockResolvedValue(mockScanJobData),
-  create: vi.fn().mockResolvedValue(mockScanJobData),
+  getById: vi.fn().mockImplementation(async () => {
+    scanjobValue = { ...mockScanjobData }
+    return scanjobValue
+  }),
+  create: vi.fn().mockResolvedValue(mockScanjobData),
   update: vi.fn().mockResolvedValue()
-})
+}
 
 const mockWarehousesStore = createMockStore({
   warehouses: [{ id: 10, name: 'Основной склад' }],
-  getAll: vi.fn().mockResolvedValue()
+  getAll: vi.fn().mockResolvedValue(),
+  ensureLoaded: vi.fn().mockResolvedValue(),
+  getWarehouseName: vi.fn(id => (id ? `Warehouse ${id}` : 'Не указан'))
 })
 
 const mockAlertStore = createMockStore({
@@ -49,7 +63,7 @@ const mockAlertStore = createMockStore({
 })
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
-  useScanJobsStore: () => mockScanJobsStore
+  useScanjobsStore: () => mockScanjobsStore
 }))
 
 vi.mock('@/stores/warehouses.store.js', () => ({
@@ -133,11 +147,17 @@ vi.mock('vee-validate', () => ({
 }))
 
 const AsyncWrapper = {
-  components: { ScanJobsSettings, Suspense },
-  props: ['mode', 'scanjobId'],
+  components: { ScanjobsSettings, Suspense },
+  props: ['mode', 'scanjobId', 'registerId', 'warehouseId', 'dealNumber'],
   template: `
     <Suspense>
-      <ScanJobsSettings :mode="mode" :scanjob-id="scanjobId" />
+      <ScanjobsSettings
+        :mode="mode"
+        :scanjob-id="scanjobId"
+        :register-id="registerId"
+        :warehouse-id="warehouseId"
+        :deal-number="dealNumber"
+      />
       <template #fallback>
         <div>Loading...</div>
       </template>
@@ -146,15 +166,15 @@ const AsyncWrapper = {
 }
 
 beforeEach(async () => {
-  scanJobRef.value = { ...mockScanJobData }
+  scanjobValue = { ...mockScanjobData }
   vi.clearAllMocks()
   await import('@/router')
 })
 
-describe('ScanJobs_Settings.vue', () => {
+describe('Scanjob_Settings.vue', () => {
   it('renders create mode correctly', async () => {
     const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
+      props: { mode: 'create', registerId: 88, warehouseId: 10, dealNumber: 'D-200' },
       global: {
         stubs: defaultGlobalStubs
       }
@@ -164,7 +184,11 @@ describe('ScanJobs_Settings.vue', () => {
 
     expect(wrapper.find('h1').text()).toBe('Создание задания на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    expect(mockScanJobsStore.getById).not.toHaveBeenCalled()
+    expect(mockScanjobsStore.getById).not.toHaveBeenCalled()
+    expect(wrapper.find('#dealNumber').element.value).toBe('D-200')
+    expect(wrapper.find('#dealNumber').attributes('readonly')).toBeDefined()
+    expect(wrapper.find('#warehouseName').element.value).toBe('Warehouse 10')
+    expect(wrapper.find('#warehouseName').attributes('readonly')).toBeDefined()
   })
 
   it('renders edit mode correctly', async () => {
@@ -177,14 +201,14 @@ describe('ScanJobs_Settings.vue', () => {
 
     await resolveAll()
 
-    expect(mockScanJobsStore.getById).toHaveBeenCalledWith(1)
+    expect(mockScanjobsStore.getById).toHaveBeenCalledWith(1)
     expect(wrapper.find('h1').text()).toBe('Редактировать задание на сканирование')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
   })
 
   it('submits create form successfully', async () => {
     const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
+      props: { mode: 'create', registerId: 88, warehouseId: 10 },
       global: {
         stubs: defaultGlobalStubs
       }
@@ -203,7 +227,11 @@ describe('ScanJobs_Settings.vue', () => {
     }, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(mockScanJobsStore.create).toHaveBeenCalled()
+    expect(mockScanjobsStore.create).toHaveBeenCalled()
+    expect(mockScanjobsStore.create).toHaveBeenCalledWith(expect.objectContaining({
+      registerId: 88,
+      warehouseId: 10
+    }))
     expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
   })
 
@@ -224,19 +252,20 @@ describe('ScanJobs_Settings.vue', () => {
       operation: 2,
       mode: 1,
       status: 0,
-      warehouseId: 10
+      warehouseId: 10,
+      registerId: 99
     }, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(mockScanJobsStore.update).toHaveBeenCalledWith(1, expect.any(Object))
+    expect(mockScanjobsStore.update).toHaveBeenCalledWith(1, expect.any(Object))
     expect(mockRouter.push).toHaveBeenCalledWith('/scanjobs')
   })
 
   it('shows api error message on create conflict', async () => {
-    mockScanJobsStore.create.mockRejectedValueOnce(new Error('409 Conflict'))
+    mockScanjobsStore.create.mockRejectedValueOnce(new Error('409 Conflict'))
 
     const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
+      props: { mode: 'create', registerId: 88 },
       global: {
         stubs: defaultGlobalStubs
       }

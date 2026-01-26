@@ -22,6 +22,8 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -67,6 +69,9 @@ const { airports } = storeToRefs(airportsStore)
 
 const customsProceduresStore = useCustomsProceduresStore()
 
+const warehousesStore = useWarehousesStore()
+const registerStatusesStore = useRegisterStatusesStore()
+
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
@@ -83,7 +88,8 @@ const { registers_per_page,
   registers_sort_by, 
   registers_page, 
   isShiftLeadPlus, 
-  isSrLogistPlus } = storeToRefs(authStore)
+  isSrLogistPlus,
+  hasWhRole } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
@@ -238,6 +244,12 @@ onMounted(async () => {
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
+    await warehousesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
+    await registerStatusesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
@@ -322,11 +334,11 @@ const modeWatcherStop = watch(() => props.mode, () => {
 }, { immediate: false })
 
 function openParcels(item) {
-  router.push(`/registers/${item.id}/parcels`)
+  router.push(`/registers/${item.id}/parcels?mode=${props.mode}`)
 }
 
 function editRegister(item) {
-  router.push('/register/edit/' + item.id)
+  router.push(`/register/edit/${item.id}?mode=${props.mode}`)
 }
 
 async function deleteRegister(item) {
@@ -363,6 +375,18 @@ async function deleteRegister(item) {
   }
 }
 
+function openScanjobCreate(item) {
+  if (!item) return
+  router.push({
+    path: '/scanjob/create',
+    query: {
+      registerId: item.id,
+      warehouseId: item.warehouseId,
+      dealNumber: item.dealNumber
+    }
+  })
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -397,12 +421,12 @@ const defaultHeaders = [
 const warehouseHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
-  { title: 'Мастер-накладная', key: 'invoice' },
+  { title: 'ТСД', key: 'invoice' },
   { title: 'Страны', key: 'countries' },
   { title: 'Отправитель/Получатель', key: 'senderRecipient' },
-  { title: 'Статус', key: 'status' },
-  { title: 'Склад', key: 'warehouse' },
-  { title: 'Дата прибытия', key: 'arrivalDate' }
+  { title: 'Статус', key: 'statusId' },
+  { title: 'Склад', key: 'warehouseId' },
+  { title: 'Дата прибытия', key: 'warehouseArrivalDate' }
 ]
 
 const headers = computed(() => (isWarehouseMode.value ? warehouseHeaders : defaultHeaders))
@@ -532,14 +556,14 @@ defineExpose({
             </template>
           </ClickableCell>
         </template>
-        <template #[`item.status`]="{ item }">
-          <span class="truncated-cell">{{ item.status }}</span>
+        <template #[`item.statusId`]="{ item }">
+          <span class="truncated-cell">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
         </template>
-        <template #[`item.warehouse`]="{ item }">
-          <span class="truncated-cell">{{ item.warehouse }}</span>
+        <template #[`item.warehouseId`]="{ item }">
+          <span class="truncated-cell">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
         </template>
-        <template #[`item.arrivalDate`]="{ item }">
-          <span class="truncated-cell">{{ formatDate(item.arrivalDate) }}</span>
+        <template #[`item.warehouseArrivalDate`]="{ item }">
+          <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>
         </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 
@@ -644,11 +668,33 @@ defineExpose({
           </div>
         </template>
 
+        <template #[`header.warehouseArrivalDate`]>
+          <div class="multiline-header">
+            <div>Дата</div>
+            <div>прибытия</div>
+          </div>
+        </template>
+
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-list" 
+              tooltip-text="Открыть список посылок" 
+              @click="openParcels" 
+              :disabled="runningAction || loading" 
+            />
+
             <ActionButton
-              v-if="!isWarehouseMode"
+              v-if="isWarehouseMode && hasWhRole"
+              :item="item"
+              icon="fa-solid fa-barcode"
+              :tooltip-text="`Создать задание на сканирование`"
+              @click="openScanjobCreate"
+              :disabled="runningAction || loading"
+            />
+
+            <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
               :tooltip-text="`Редактировать ${registerNouns.accusative}`"

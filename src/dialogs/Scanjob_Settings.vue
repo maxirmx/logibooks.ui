@@ -8,7 +8,7 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -18,13 +18,28 @@ const props = defineProps({
     required: true,
     validator: (value) => ['create', 'edit'].includes(value)
   },
+  registerId: {
+    type: Number,
+    required: false,
+    default: null
+  },
+  warehouseId: {
+    type: Number,
+    required: false,
+    default: null
+  },
+  dealNumber: {
+    type: String,
+    required: false,
+    default: ''
+  },
   scanjobId: {
     type: Number,
     required: false
   }
 })
 
-const scanJobsStore = useScanJobsStore()
+const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 const { ops } = storeToRefs(scanJobsStore)
@@ -39,25 +54,33 @@ if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === un
 }
 
 await scanJobsStore.ensureOpsLoaded()
-await warehousesStore.getAll()
+await warehousesStore.ensureLoaded()
 
-let scanjob
+// Initialize scanjob ref first so computed properties can reference it
+const scanjob = ref(null)
+
+const resolvedWarehouseId = computed(() => props.warehouseId ?? scanjob.value?.warehouseId ?? null)
+const resolvedDealNumber = computed(() => props.dealNumber || scanjob.value?.dealNumber || '')
+const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(resolvedWarehouseId.value))
+
+const resolvedOps  = computed(() => ops?.value)
 
 if (isCreate.value) {
-  scanjob = ref({
+  scanjob.value = {
     id: 0,
-    name: '',
-    type: null,
-    operation: null,
-    mode: null,
-    status: null,
-    warehouseId: null
-  })
+    name: resolvedDealNumber.value ? `Сканирование сделки ${resolvedDealNumber.value}` : '',
+    type: resolvedOps?.value.types[0]?.value,
+    operation: resolvedOps?.value.operations[0]?.value,
+    mode: resolvedOps?.value.modes[0]?.value,
+    status: resolvedOps?.value.statuses[0]?.value,
+    warehouseId: resolvedWarehouseId.value,
+    registerId: props.registerId
+  }
 } else {
-  const { scanjob: storeScanjob } = storeToRefs(scanJobsStore)
-  scanjob = storeScanjob
   await scanJobsStore.getById(props.scanjobId)
+  scanjob.value = scanJobsStore.scanjob
 }
+
 
 function getTitle() {
   return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
@@ -74,7 +97,8 @@ const schema = Yup.object({
   operation: Yup.number().required('Операция обязательна'),
   mode: Yup.number().required('Режим обязателен'),
   status: Yup.number().required('Статус обязателен'),
-  warehouseId: Yup.number().required('Склад обязателен')
+  warehouseId: Yup.number().required('Склад обязателен'),
+  registerId: Yup.number().required('Реестр обязателен')
 })
 
 function normalizeValues(values) {
@@ -93,13 +117,20 @@ function toNumberOrNull(value) {
 
 function onSubmit(values, { setErrors }) {
   const normalizedValues = normalizeValues(values) || {}
+  const resolvedRegisterId = props.registerId ?? normalizedValues.registerId ?? scanjob.value?.registerId
   const payload = {
     ...normalizedValues,
     type: toNumberOrNull(normalizedValues.type),
     operation: toNumberOrNull(normalizedValues.operation),
     mode: toNumberOrNull(normalizedValues.mode),
     status: toNumberOrNull(normalizedValues.status),
-    warehouseId: toNumberOrNull(normalizedValues.warehouseId)
+    warehouseId: toNumberOrNull(resolvedWarehouseId.value ?? normalizedValues.warehouseId),
+    registerId: toNumberOrNull(resolvedRegisterId)
+  }
+
+  if (!resolvedRegisterId) {
+    setErrors({ apiError: 'Не выбран реестр' })
+    return Promise.resolve()
   }
 
   if (isCreate.value) {
@@ -138,6 +169,8 @@ function onSubmit(values, { setErrors }) {
       :validation-schema="schema"
       v-slot="{ errors, isSubmitting }"
     >
+      <Field name="registerId" type="hidden" :value="props.registerId" />
+      <Field name="warehouseId" type="hidden" :value="resolvedWarehouseId" />
       <div class="form-group">
         <label for="name" class="label">Название:</label>
         <Field
@@ -151,19 +184,25 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div class="form-group">
-        <label for="warehouseId" class="label">Склад:</label>
-        <Field
-          name="warehouseId"
-          id="warehouseId"
-          as="select"
+        <label for="dealNumber" class="label">Номер сделки:</label>
+        <input
+          id="dealNumber"
+          type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.warehouseId }"
-        >
-          <option value="">Выберите склад</option>
-          <option v-for="warehouse in warehousesStore.warehouses" :key="warehouse.id" :value="warehouse.id">
-            {{ warehouse.name }}
-          </option>
-        </Field>
+          :value="resolvedDealNumber || '—'"
+          readonly
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="warehouseName" class="label">Склад:</label>
+        <input
+          id="warehouseName"
+          type="text"
+          class="form-control input"
+          :value="warehouseDisplayName || '—'"
+          readonly
+        />
       </div>
 
       <div class="form-group">
@@ -175,7 +214,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.type }"
         >
-          <option value="">Выберите тип</option>
           <option v-for="item in ops?.types" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
@@ -191,7 +229,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.operation }"
         >
-          <option value="">Выберите операцию</option>
           <option v-for="item in ops?.operations" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
@@ -207,7 +244,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.mode }"
         >
-          <option value="">Выберите режим</option>
           <option v-for="item in ops?.modes" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
@@ -223,7 +259,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.status }"
         >
-          <option value="">Выберите статус</option>
           <option v-for="item in ops?.statuses" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>

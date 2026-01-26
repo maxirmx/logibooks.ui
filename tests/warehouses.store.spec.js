@@ -215,4 +215,57 @@ describe('warehouses store', () => {
 
     expect(store.loading).toBe(false)
   })
+
+  describe('getWarehouseName', () => {
+    it('returns matching warehouse name and falls back to string when missing', () => {
+      const store = useWarehousesStore()
+      store.warehouses = [...mockWarehouses]
+
+      expect(store.getWarehouseName(1)).toBe('Основной склад')
+      expect(store.getWarehouseName('2')).toBe('Склад сортировки')
+      expect(store.getWarehouseName(999)).toBe('999')
+    })
+  })
+
+  describe('ensureLoaded', () => {
+    it('calls getAll when not initialized', async () => {
+      fetchWrapper.get.mockResolvedValue(mockWarehouses)
+      const store = useWarehousesStore()
+
+      await store.ensureLoaded()
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses`)
+      expect(store.warehouses).toEqual(mockWarehouses)
+    })
+
+    it('does not call getAll if already initialized', async () => {
+      fetchWrapper.get.mockResolvedValue(mockWarehouses)
+      const store = useWarehousesStore()
+
+      await store.getAll()
+      vi.clearAllMocks()
+
+      await store.ensureLoaded()
+
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
+
+    it('does not call getAll if loading is in progress', async () => {
+      let resolvePromise
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve
+      })
+      fetchWrapper.get.mockReturnValue(promise)
+
+      const store = useWarehousesStore()
+      const getAllPromise = store.getAll()
+
+      // While loading, ensureLoaded should not trigger another call
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+      resolvePromise(mockWarehouses)
+      await getAllPromise
+    })
+  })
 })

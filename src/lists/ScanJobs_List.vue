@@ -198,6 +198,20 @@ defineExpose({
           <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton
               :item="item"
+              icon="fa-solid fa-play"
+              tooltip-text="Начать/продолжить сканирование"
+              @click="console.log('Start scan job', item)"
+              :disabled="runningAction || loading || item.statusId === 20"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-check-double"
+              tooltip-text="Завершить сканирование"
+              @click="console.log('Finish scan job', item)"
+              :disabled="runningAction || loading || item.statusId !== 20"
+            />
+            <ActionButton
+              :item="item"
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать задание на сканирование"
               @click="openEditDialog"

@@ -56,28 +56,31 @@ if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === un
 await scanJobsStore.ensureOpsLoaded()
 await warehousesStore.ensureLoaded()
 
-let scanjob
-
-if (isCreate.value) {
-  scanjob = ref({
-    id: 0,
-    name: '',
-    type: null,
-    operation: null,
-    mode: null,
-    status: null,
-    warehouseId: props.warehouseId,
-    registerId: props.registerId
-  })
-} else {
-  const { scanjob: storeScanjob } = storeToRefs(scanJobsStore)
-  scanjob = storeScanjob
-  await scanJobsStore.getById(props.scanjobId)
-}
+// Initialize scanjob ref first so computed properties can reference it
+const scanjob = ref(null)
 
 const resolvedWarehouseId = computed(() => props.warehouseId ?? scanjob.value?.warehouseId ?? null)
 const resolvedDealNumber = computed(() => props.dealNumber || scanjob.value?.dealNumber || '')
 const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(resolvedWarehouseId.value))
+
+const resolvedOps  = computed(() => ops?.value)
+
+if (isCreate.value) {
+  scanjob.value = {
+    id: 0,
+    name: resolvedDealNumber.value ? `Сканирование сделки ${resolvedDealNumber.value}` : '',
+    type: resolvedOps?.value.types[0]?.value,
+    operation: resolvedOps?.value.operations[0]?.value,
+    mode: resolvedOps?.value.modes[0]?.value,
+    status: resolvedOps?.value.statuses[0]?.value,
+    warehouseId: resolvedWarehouseId.value,
+    registerId: props.registerId
+  }
+} else {
+  await scanJobsStore.getById(props.scanjobId)
+  scanjob.value = scanJobsStore.scanjob.value
+}
+
 
 function getTitle() {
   return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
@@ -211,7 +214,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.type }"
         >
-          <option value="">Выберите тип</option>
           <option v-for="item in ops?.types" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
@@ -227,7 +229,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.operation }"
         >
-          <option value="">Выберите операцию</option>
           <option v-for="item in ops?.operations" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
@@ -243,7 +244,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.mode }"
         >
-          <option value="">Выберите режим</option>
           <option v-for="item in ops?.modes" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
@@ -259,7 +259,6 @@ function onSubmit(values, { setErrors }) {
           class="form-control input"
           :class="{ 'is-invalid': errors.status }"
         >
-          <option value="">Выберите статус</option>
           <option v-for="item in ops?.statuses" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>

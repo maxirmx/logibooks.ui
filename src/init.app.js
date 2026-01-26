@@ -55,7 +55,8 @@ import {
   faFileInvoice,
   faBookJournalWhills,
   faH,
-  faFileImage
+  faFileImage,
+  faBarcode
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -103,7 +104,8 @@ library.add(
   faFileInvoice,
   faBookJournalWhills,
   faH,
-  faFileImage
+  faFileImage,
+  faBarcode
 )
 
 import 'vuetify/styles'

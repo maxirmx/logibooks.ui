@@ -37,7 +37,7 @@ vi.mock('@/components/ProductLinkWithActions.vue', () => ({
   default: { template: '<button data-test="view-btn" @click="$emit(\'view-image\')">View</button>' }
 }))
 
-import Wbr2Parcels_EditDialog from '@/dialogs/Wbr2Parcels_EditDialog.vue'
+import Wbr2Parcels_EditDialog from '@/dialogs/Wbr2Parcel_EditDialog.vue'
 
 describe('Wbr2Parcels_EditDialog image overlay', () => {
   beforeEach(() => {

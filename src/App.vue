@@ -177,6 +177,9 @@ function getUserName() {
             <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
           </v-list-item>
           <v-list-item>
+            <RouterLink to="/registerstatuses" class="link">Статусы партий</RouterLink>
+          </v-list-item>
+          <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
           </v-list-item>
         </v-list-group>

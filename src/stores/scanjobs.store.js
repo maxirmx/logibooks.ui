@@ -7,11 +7,10 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useWarehousesStore } from '@/stores/warehouses.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 
-export const useScanJobsStore = defineStore('scanjobs', () => {
+export const useScanjobsStore = defineStore('scanjobs', () => {
   const items = ref([])
   const scanjob = ref(null)
   const loading = ref(false)
@@ -29,18 +28,11 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
   let opsInitialized = false
   let opsPromise = null
 
-  const warehousesStore = useWarehousesStore()
 
   function getOpsLabel(list, value) {
     const num = Number(value)
     const match = list?.find((item) => Number(item.value) === num)
     return match ? match.name : String(value)
-  }
-
-  function getWarehouseName(warehouseId) {
-    const num = Number(warehouseId)
-    const match = warehousesStore.warehouses?.find((warehouse) => warehouse.id === num)
-    return match ? match.name : String(warehouseId)
   }
 
   async function getAll() {
@@ -137,6 +129,34 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function start(id) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/${id}/start`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function finish(id) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/${id}/finish`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function getOps() {
     opsLoading.value = true
     opsError.value = null
@@ -179,9 +199,11 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     create,
     update,
     remove,
+    start,
+    finish,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,
-    getWarehouseName
+    // getWarehouseName moved to warehouses store
   }
 })

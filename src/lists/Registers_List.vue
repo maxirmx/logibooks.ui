@@ -375,7 +375,7 @@ async function deleteRegister(item) {
   }
 }
 
-function openScanJobCreate(item) {
+function openScanjobCreate(item) {
   if (!item) return
   router.push({
     path: '/scanjob/create',
@@ -690,7 +690,7 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-barcode"
               :tooltip-text="`Создать задание на сканирование`"
-              @click="openScanJobCreate"
+              @click="openScanjobCreate"
               :disabled="runningAction || loading"
             />
 

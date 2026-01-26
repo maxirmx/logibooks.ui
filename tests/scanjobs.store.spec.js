@@ -42,7 +42,7 @@ const mockScanjobs = [
   }
 ]
 
-const mockScanJob = mockScanjobs[0]
+const mockScanjob = mockScanjobs[0]
 
 const mockOps = {
   types: [{ value: 0, name: 'Тип 1' }],
@@ -109,14 +109,14 @@ describe('scanjobs store', () => {
 
   describe('getById', () => {
     it('fetches scanjob by id successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockScanJob)
+      fetchWrapper.get.mockResolvedValue(mockScanjob)
       const store = useScanjobsStore()
 
       const result = await store.getById(1)
 
       expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1`)
-      expect(store.scanjob).toEqual(mockScanJob)
-      expect(result).toEqual(mockScanJob)
+      expect(store.scanjob).toEqual(mockScanjob)
+      expect(result).toEqual(mockScanjob)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -136,17 +136,17 @@ describe('scanjobs store', () => {
 
     it('preserves previous scanjob value on fetch error', async () => {
       const error = new Error('Not found')
-      fetchWrapper.get.mockResolvedValueOnce(mockScanJob).mockRejectedValueOnce(error)
+      fetchWrapper.get.mockResolvedValueOnce(mockScanjob).mockRejectedValueOnce(error)
       const store = useScanjobsStore()
 
       // First call succeeds
       await store.getById(1)
-      expect(store.scanjob).toEqual(mockScanJob)
+      expect(store.scanjob).toEqual(mockScanjob)
 
       // Second call fails - should preserve previous value
       const result = await store.getById(999)
       expect(result).toBeNull()
-      expect(store.scanjob).toEqual(mockScanJob) // Previous value preserved
+      expect(store.scanjob).toEqual(mockScanjob) // Previous value preserved
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
@@ -154,17 +154,17 @@ describe('scanjobs store', () => {
 
   describe('create', () => {
     it('creates scanjob successfully', async () => {
-      const newScanJob = { ...mockScanJob, id: 3 }
-      fetchWrapper.post.mockResolvedValue(newScanJob)
+      const newScanjob = { ...mockScanjob, id: 3 }
+      fetchWrapper.post.mockResolvedValue(newScanjob)
       const store = useScanjobsStore()
       store.items = [...mockScanjobs]
 
-      const result = await store.create(mockScanJob)
+      const result = await store.create(mockScanjob)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs`, mockScanJob)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs`, mockScanjob)
       expect(store.items).toHaveLength(3)
-      expect(store.items[2]).toEqual(newScanJob)
-      expect(result).toEqual(newScanJob)
+      expect(store.items[2]).toEqual(newScanjob)
+      expect(result).toEqual(newScanjob)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -174,7 +174,7 @@ describe('scanjobs store', () => {
       fetchWrapper.post.mockRejectedValue(error)
       const store = useScanjobsStore()
 
-      await expect(store.create(mockScanJob)).rejects.toThrow('Conflict')
+      await expect(store.create(mockScanjob)).rejects.toThrow('Conflict')
 
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
@@ -186,14 +186,14 @@ describe('scanjobs store', () => {
       fetchWrapper.put.mockResolvedValue({})
       const store = useScanjobsStore()
       store.items = [...mockScanjobs]
-      store.scanjob = { ...mockScanJob }
+      store.scanjob = { ...mockScanjob }
 
       const updateData = { status: 0, mode: 1 }
       const result = await store.update(1, updateData)
 
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1`, updateData)
       expect(store.items[0]).toEqual({ ...mockScanjobs[0], ...updateData })
-      expect(store.scanjob).toEqual({ ...mockScanJob, ...updateData })
+      expect(store.scanjob).toEqual({ ...mockScanjob, ...updateData })
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()

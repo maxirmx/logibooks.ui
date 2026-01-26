@@ -50,7 +50,7 @@ function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
 
-async function deleteScanJob(scanJob) {
+async function deleteScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
   try {
@@ -85,7 +85,7 @@ async function deleteScanJob(scanJob) {
   }
 }
 
-async function startScanJob(scanJob) {
+async function startScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
   try {
@@ -104,7 +104,7 @@ async function startScanJob(scanJob) {
   }
 }
 
-async function finishScanJob(scanJob) {
+async function finishScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
   try {
@@ -167,9 +167,9 @@ onUnmounted(() => {
 
 defineExpose({
   openEditDialog,
-  deleteScanJob,
-  startScanJob,
-  finishScanJob
+  deleteScanjob,
+  startScanjob,
+  finishScanjob
 })
 </script>
 
@@ -240,14 +240,14 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-play"
               tooltip-text="Начать/продолжить сканирование"
-              @click="startScanJob"
+              @click="startScanjob"
               :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-check-double"
               tooltip-text="Завершить сканирование"
-              @click="finishScanJob"
+              @click="finishScanjob"
               :disabled="runningAction || loading"
             />
             <ActionButton
@@ -261,7 +261,7 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить задание на сканирование"
-              @click="deleteScanJob"
+              @click="deleteScanjob"
               :disabled="runningAction || loading"
             />
           </div>

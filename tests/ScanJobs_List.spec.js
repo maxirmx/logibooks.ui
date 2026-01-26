@@ -58,9 +58,9 @@ const mockTotalCount = ref(1)
 const getAllScanjobs = vi.hoisted(() => vi.fn())
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAllWarehouses = vi.hoisted(() => vi.fn())
-const deleteScanJobFn = vi.hoisted(() => vi.fn())
-const startScanJobFn = vi.hoisted(() => vi.fn())
-const finishScanJobFn = vi.hoisted(() => vi.fn())
+const deleteScanjobFn = vi.hoisted(() => vi.fn())
+const startScanjobFn = vi.hoisted(() => vi.fn())
+const finishScanjobFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
 const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const mockPush = vi.hoisted(() => vi.fn())
@@ -124,9 +124,9 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     ops: mockOps,
     totalCount: mockTotalCount,
     getAll: getAllScanjobs,
-    remove: deleteScanJobFn,
-    start: startScanJobFn,
-    finish: finishScanJobFn,
+    remove: deleteScanjobFn,
+    start: startScanjobFn,
+    finish: finishScanjobFn,
     ensureOpsLoaded,
     getOpsLabel: mockGetOpsLabel
   })
@@ -270,10 +270,10 @@ describe('Scanjobs_List.vue', () => {
     })
 
     const scanjob = { id: 1, name: 'Сканирование приемки' }
-    await wrapper.vm.deleteScanJob(scanjob)
+    await wrapper.vm.deleteScanjob(scanjob)
 
     expect(confirmMock).toHaveBeenCalled()
-    expect(deleteScanJobFn).toHaveBeenCalledWith(1)
+    expect(deleteScanjobFn).toHaveBeenCalledWith(1)
   })
 
   it('does not delete scanjob when confirmation is declined', async () => {
@@ -291,15 +291,15 @@ describe('Scanjobs_List.vue', () => {
     })
 
     const scanjob = { id: 1, name: 'Сканирование приемки' }
-    await wrapper.vm.deleteScanJob(scanjob)
+    await wrapper.vm.deleteScanjob(scanjob)
 
     expect(confirmMock).toHaveBeenCalled()
-    expect(deleteScanJobFn).not.toHaveBeenCalled()
+    expect(deleteScanjobFn).not.toHaveBeenCalled()
   })
 
-  describe('startScanJob', () => {
+  describe('startScanjob', () => {
     it('calls start function and reloads list on success', async () => {
-      startScanJobFn.mockResolvedValue(true)
+      startScanjobFn.mockResolvedValue(true)
       getAllScanjobs.mockResolvedValue()
 
       const wrapper = mount(ScanjobsList, {
@@ -309,14 +309,14 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.startScanJob(scanjob)
+      await wrapper.vm.startScanjob(scanjob)
 
-      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(startScanjobFn).toHaveBeenCalledWith(1)
       expect(getAllScanjobs).toHaveBeenCalled()
     })
 
     it('shows error message on 403 Forbidden', async () => {
-      startScanJobFn.mockRejectedValue(new Error('403 Forbidden'))
+      startScanjobFn.mockRejectedValue(new Error('403 Forbidden'))
 
       const wrapper = mount(ScanjobsList, {
         global: {
@@ -325,14 +325,14 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.startScanJob(scanjob)
+      await wrapper.vm.startScanjob(scanjob)
 
-      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(startScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Нет прав для запуска сканирования')
     })
 
     it('shows error message on 404 Not Found', async () => {
-      startScanJobFn.mockRejectedValue(new Error('404 Not Found'))
+      startScanjobFn.mockRejectedValue(new Error('404 Not Found'))
 
       const wrapper = mount(ScanjobsList, {
         global: {
@@ -341,14 +341,14 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.startScanJob(scanjob)
+      await wrapper.vm.startScanjob(scanjob)
 
-      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(startScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
     })
 
     it('shows generic error message on other errors', async () => {
-      startScanJobFn.mockRejectedValue(new Error('Server error'))
+      startScanjobFn.mockRejectedValue(new Error('Server error'))
 
       const wrapper = mount(ScanjobsList, {
         global: {
@@ -357,9 +357,9 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.startScanJob(scanjob)
+      await wrapper.vm.startScanjob(scanjob)
 
-      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(startScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Ошибка при запуске сканирования')
     })
 
@@ -374,15 +374,15 @@ describe('Scanjobs_List.vue', () => {
       wrapper.vm.runningAction = true
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.startScanJob(scanjob)
+      await wrapper.vm.startScanjob(scanjob)
 
-      expect(startScanJobFn).not.toHaveBeenCalled()
+      expect(startScanjobFn).not.toHaveBeenCalled()
     })
   })
 
-  describe('finishScanJob', () => {
+  describe('finishScanjob', () => {
     it('calls finish function and reloads list on success', async () => {
-      finishScanJobFn.mockResolvedValue(true)
+      finishScanjobFn.mockResolvedValue(true)
       getAllScanjobs.mockResolvedValue()
 
       const wrapper = mount(ScanjobsList, {
@@ -392,14 +392,14 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanJob(scanjob)
+      await wrapper.vm.finishScanjob(scanjob)
 
-      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(getAllScanjobs).toHaveBeenCalled()
     })
 
     it('shows error message on 403 Forbidden', async () => {
-      finishScanJobFn.mockRejectedValue(new Error('403 Forbidden'))
+      finishScanjobFn.mockRejectedValue(new Error('403 Forbidden'))
 
       const wrapper = mount(ScanjobsList, {
         global: {
@@ -408,14 +408,14 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanJob(scanjob)
+      await wrapper.vm.finishScanjob(scanjob)
 
-      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Нет прав для завершения сканирования')
     })
 
     it('shows error message on 404 Not Found', async () => {
-      finishScanJobFn.mockRejectedValue(new Error('404 Not Found'))
+      finishScanjobFn.mockRejectedValue(new Error('404 Not Found'))
 
       const wrapper = mount(ScanjobsList, {
         global: {
@@ -424,14 +424,14 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanJob(scanjob)
+      await wrapper.vm.finishScanjob(scanjob)
 
-      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
     })
 
     it('shows generic error message on other errors', async () => {
-      finishScanJobFn.mockRejectedValue(new Error('Server error'))
+      finishScanjobFn.mockRejectedValue(new Error('Server error'))
 
       const wrapper = mount(ScanjobsList, {
         global: {
@@ -440,9 +440,9 @@ describe('Scanjobs_List.vue', () => {
       })
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanJob(scanjob)
+      await wrapper.vm.finishScanjob(scanjob)
 
-      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Ошибка при завершении сканирования')
     })
 
@@ -457,9 +457,9 @@ describe('Scanjobs_List.vue', () => {
       wrapper.vm.runningAction = true
 
       const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanJob(scanjob)
+      await wrapper.vm.finishScanjob(scanjob)
 
-      expect(finishScanJobFn).not.toHaveBeenCalled()
+      expect(finishScanjobFn).not.toHaveBeenCalled()
     })
   })
 })

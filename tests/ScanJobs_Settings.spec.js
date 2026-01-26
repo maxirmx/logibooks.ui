@@ -9,7 +9,7 @@ import { Suspense, ref } from 'vue'
 import ScanjobsSettings from '@/dialogs/Scanjob_Settings.vue'
 import { defaultGlobalStubs, createMockStore, resolveAll } from './helpers/test-utils.js'
 
-const mockScanJobData = {
+const mockScanjobData = {
   id: 1,
   name: 'Сканирование приемки',
   type: 0,
@@ -29,7 +29,7 @@ const mockOps = ref({
 })
 
 // Use a plain object to store the scanjob value (simulating Pinia's unwrapping behavior)
-let scanjobValue = { ...mockScanJobData }
+let scanjobValue = { ...mockScanjobData }
 
 const mockScanjobsStore = {
   // Pinia auto-unwraps refs, so scanjob should appear as a plain value when accessed
@@ -42,10 +42,10 @@ const mockScanjobsStore = {
   ops: mockOps,
   ensureOpsLoaded: vi.fn().mockResolvedValue(mockOps.value),
   getById: vi.fn().mockImplementation(async () => {
-    scanjobValue = { ...mockScanJobData }
+    scanjobValue = { ...mockScanjobData }
     return scanjobValue
   }),
-  create: vi.fn().mockResolvedValue(mockScanJobData),
+  create: vi.fn().mockResolvedValue(mockScanjobData),
   update: vi.fn().mockResolvedValue()
 }
 
@@ -166,7 +166,7 @@ const AsyncWrapper = {
 }
 
 beforeEach(async () => {
-  scanjobValue = { ...mockScanJobData }
+  scanjobValue = { ...mockScanjobData }
   vi.clearAllMocks()
   await import('@/router')
 })

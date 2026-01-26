@@ -8,7 +8,7 @@ import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import ScanjobsCreateView from '@/views/ScanJob_CreateView.vue'
+import ScanjobsCreateView from '@/views/Scanjob_CreateView.vue'
 
 vi.mock('@/dialogs/Scanjob_Settings.vue', () => ({
   default: {
@@ -32,7 +32,7 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-describe('ScanJob_CreateView.vue', () => {
+describe('Scanjob_CreateView.vue', () => {
   let vuetify
   let pinia
 

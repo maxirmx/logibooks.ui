@@ -8,7 +8,7 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -39,7 +39,7 @@ const props = defineProps({
   }
 })
 
-const scanJobsStore = useScanJobsStore()
+const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 const { ops } = storeToRefs(scanJobsStore)
@@ -78,7 +78,7 @@ if (isCreate.value) {
   }
 } else {
   await scanJobsStore.getById(props.scanjobId)
-  scanjob.value = scanJobsStore.scanjob.value
+  scanjob.value = scanJobsStore.scanjob
 }
 
 

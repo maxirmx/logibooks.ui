@@ -6,7 +6,7 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -16,7 +16,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
 
-const scanJobsStore = useScanJobsStore()
+const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
@@ -36,7 +36,7 @@ const localSearch = ref('')
 localSearch.value = scanjobs_search.value || ''
 
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
   { title: 'Номер', key: 'id', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Тип', key: 'type', sortable: true },
@@ -85,13 +85,51 @@ async function deleteScanJob(scanJob) {
   }
 }
 
-async function loadScanJobs() {
+async function startScanJob(scanJob) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.start(scanJob.id)
+    await loadScanjobs()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для запуска сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при запуске сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function finishScanJob(scanJob) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.finish(scanJob.id)
+    await loadScanjobs()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для завершения сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при завершении сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function loadScanjobs() {
   await scanJobsStore.getAll()
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: scanjobs_search }],
-  loadFn: loadScanJobs,
+  loadFn: loadScanjobs,
   isComponentMounted,
   debounceMs: 300
 })
@@ -129,7 +167,9 @@ onUnmounted(() => {
 
 defineExpose({
   openEditDialog,
-  deleteScanJob
+  deleteScanJob,
+  startScanJob,
+  finishScanJob
 })
 </script>
 
@@ -195,20 +235,20 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isSrLogistPlus" class="actions-container">
+          <div v-if="authStore.hasWhRole" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-play"
               tooltip-text="Начать/продолжить сканирование"
-              @click="console.log('Start scan job', item)"
-              :disabled="runningAction || loading || item.statusId === 20"
+              @click="startScanJob"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-check-double"
               tooltip-text="Завершить сканирование"
-              @click="console.log('Finish scan job', item)"
-              :disabled="runningAction || loading || item.statusId !== 20"
+              @click="finishScanJob"
+              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"

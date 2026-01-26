@@ -8,15 +8,15 @@ import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import ScanJobsCreateView from '@/views/ScanJobs_CreateView.vue'
+import ScanjobsCreateView from '@/views/ScanJob_CreateView.vue'
 
-vi.mock('@/dialogs/ScanJobs_Settings.vue', () => ({
+vi.mock('@/dialogs/Scanjob_Settings.vue', () => ({
   default: {
-    name: 'ScanJobs_Settings',
+    name: 'Scanjob_Settings',
     props: ['mode', 'registerId', 'warehouseId', 'dealNumber'],
     template: `
       <div data-testid="scanjobs-settings">
-        ScanJobs Settings (mode: {{ mode }}, registerId: {{ registerId }}, warehouseId: {{ warehouseId }}, dealNumber: {{ dealNumber }})
+        Scanjobs Settings (mode: {{ mode }}, registerId: {{ registerId }}, warehouseId: {{ warehouseId }}, dealNumber: {{ dealNumber }})
       </div>
     `
   }
@@ -32,7 +32,7 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-describe('ScanJobs_CreateView.vue', () => {
+describe('ScanJob_CreateView.vue', () => {
   let vuetify
   let pinia
 
@@ -41,8 +41,8 @@ describe('ScanJobs_CreateView.vue', () => {
     pinia = createPinia()
   })
 
-  it('renders ScanJobs_Settings in create mode', () => {
-    const wrapper = mount(ScanJobsCreateView, {
+  it('renders Scanjob_Settings in create mode', () => {
+    const wrapper = mount(ScanjobsCreateView, {
       global: {
         plugins: [vuetify, pinia]
       }

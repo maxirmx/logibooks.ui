@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 
-export const useScanJobsStore = defineStore('scanjobs', () => {
+export const useScanjobsStore = defineStore('scanjobs', () => {
   const items = ref([])
   const scanjob = ref(null)
   const loading = ref(false)
@@ -129,6 +129,34 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function start(id) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/${id}/start`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function finish(id) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/${id}/finish`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function getOps() {
     opsLoading.value = true
     opsError.value = null
@@ -171,6 +199,8 @@ export const useScanJobsStore = defineStore('scanjobs', () => {
     create,
     update,
     remove,
+    start,
+    finish,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

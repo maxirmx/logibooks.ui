@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import ScanJobsSettings from '@/dialogs/ScanJobs_Settings.vue'
+import ScanjobsSettings from '@/dialogs/Scanjob_Settings.vue'
 
 const props = defineProps({
   id: {
@@ -15,6 +15,6 @@ const props = defineProps({
 
 <template>
   <Suspense>
-    <ScanJobsSettings :mode="'edit'" :scanjob-id="props.id" />
+    <ScanjobsSettings :mode="'edit'" :scanjob-id="props.id" />
   </Suspense>
 </template>

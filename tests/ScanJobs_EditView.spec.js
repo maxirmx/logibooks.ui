@@ -8,17 +8,17 @@ import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import ScanJobsEditView from '@/views/ScanJobs_EditView.vue'
+import ScanjobsEditView from '@/views/ScanJob_EditView.vue'
 
-vi.mock('@/dialogs/ScanJobs_Settings.vue', () => ({
+vi.mock('@/dialogs/Scanjob_Settings.vue', () => ({
   default: {
-    name: 'ScanJobs_Settings',
+    name: 'Scanjob_Settings',
     props: ['mode', 'scanjobId'],
-    template: '<div data-testid="scanjobs-settings">ScanJobs Settings (mode: {{ mode }}, id: {{ scanjobId }})</div>'
+    template: '<div data-testid="scanjobs-settings">Scanjobs Settings (mode: {{ mode }}, id: {{ scanjobId }})</div>'
   }
 }))
 
-describe('ScanJobs_EditView.vue', () => {
+describe('ScanJob_EditView.vue', () => {
   let vuetify
   let pinia
 
@@ -27,8 +27,8 @@ describe('ScanJobs_EditView.vue', () => {
     pinia = createPinia()
   })
 
-  it('renders ScanJobs_Settings in edit mode with id', () => {
-    const wrapper = mount(ScanJobsEditView, {
+  it('renders Scanjob_Settings in edit mode with id', () => {
+    const wrapper = mount(ScanjobsEditView, {
       props: { id: 5 },
       global: {
         plugins: [vuetify, pinia]

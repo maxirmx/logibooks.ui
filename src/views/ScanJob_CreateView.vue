@@ -5,7 +5,7 @@
 
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import ScanJobsSettings from '@/dialogs/ScanJobs_Settings.vue'
+import ScanjobsSettings from '@/dialogs/Scanjob_Settings.vue'
 
 const route = useRoute()
 
@@ -28,7 +28,7 @@ const dealNumber = computed(() => (route.query.dealNumber ? String(route.query.d
 
 <template>
   <Suspense>
-    <ScanJobsSettings
+    <ScanjobsSettings
       :mode="'create'"
       :register-id="registerId"
       :warehouse-id="warehouseId"

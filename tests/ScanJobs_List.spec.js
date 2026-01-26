@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import ScanJobsList from '@/lists/ScanJobs_List.vue'
+import ScanjobsList from '@/lists/Scanjobs_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 
 const additionalStubs = {
@@ -28,7 +28,7 @@ const testStubs = {
   ...additionalStubs
 }
 
-const mockScanJobs = ref([
+const mockScanjobs = ref([
   {
     id: 1,
     name: 'Сканирование приемки',
@@ -55,10 +55,12 @@ const mockScanjobsSortBy = ref([{ key: 'id', order: 'desc' }])
 const mockScanjobsPage = ref(1)
 const mockTotalCount = ref(1)
 
-const getAllScanJobs = vi.hoisted(() => vi.fn())
+const getAllScanjobs = vi.hoisted(() => vi.fn())
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAllWarehouses = vi.hoisted(() => vi.fn())
 const deleteScanJobFn = vi.hoisted(() => vi.fn())
+const startScanJobFn = vi.hoisted(() => vi.fn())
+const finishScanJobFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
 const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const mockPush = vi.hoisted(() => vi.fn())
@@ -86,7 +88,7 @@ vi.mock('pinia', async () => {
     storeToRefs: (store) => {
       if (store.items !== undefined) {
         return {
-          items: mockScanJobs,
+          items: mockScanjobs,
           loading: ref(false),
           ops: mockOps,
           totalCount: mockTotalCount
@@ -116,13 +118,15 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
-  useScanJobsStore: () => ({
-    items: mockScanJobs,
+  useScanjobsStore: () => ({
+    items: mockScanjobs,
     loading: false,
     ops: mockOps,
     totalCount: mockTotalCount,
-    getAll: getAllScanJobs,
+    getAll: getAllScanjobs,
     remove: deleteScanJobFn,
+    start: startScanJobFn,
+    finish: finishScanJobFn,
     ensureOpsLoaded,
     getOpsLabel: mockGetOpsLabel
   })
@@ -179,7 +183,7 @@ vi.mock('@mdi/js', () => ({
   mdiMagnify: 'mdi-magnify'
 }))
 
-describe('ScanJobs_List.vue', () => {
+describe('Scanjobs_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -189,7 +193,7 @@ describe('ScanJobs_List.vue', () => {
   })
 
   it('calls ensureOpsLoaded and ensureLoaded warehouses on mount', async () => {
-    const wrapper = mount(ScanJobsList, {
+    const wrapper = mount(ScanjobsList, {
       global: {
         stubs: testStubs
       }
@@ -203,14 +207,14 @@ describe('ScanJobs_List.vue', () => {
   })
 
   it('handles empty scanjobs array', async () => {
-    mockScanJobs.value = []
-    const wrapper = mount(ScanJobsList, {
+    mockScanjobs.value = []
+    const wrapper = mount(ScanjobsList, {
       global: {
         stubs: testStubs
       }
     })
     expect(wrapper.exists()).toBe(true)
-    mockScanJobs.value = [
+    mockScanjobs.value = [
       {
         id: 1,
         name: 'Сканирование приемки',
@@ -224,7 +228,7 @@ describe('ScanJobs_List.vue', () => {
   })
 
   it('handles search input', async () => {
-    const wrapper = mount(ScanJobsList, {
+    const wrapper = mount(ScanjobsList, {
       global: {
         stubs: testStubs
       }
@@ -254,7 +258,7 @@ describe('ScanJobs_List.vue', () => {
   })
 
   it('calls delete function when delete button is clicked', async () => {
-    const wrapper = mount(ScanJobsList, {
+    const wrapper = mount(ScanjobsList, {
       global: {
         stubs: {
           ...testStubs,
@@ -275,7 +279,7 @@ describe('ScanJobs_List.vue', () => {
   it('does not delete scanjob when confirmation is declined', async () => {
     confirmMock.mockResolvedValue(false)
 
-    const wrapper = mount(ScanJobsList, {
+    const wrapper = mount(ScanjobsList, {
       global: {
         stubs: {
           ...testStubs,
@@ -291,5 +295,171 @@ describe('ScanJobs_List.vue', () => {
 
     expect(confirmMock).toHaveBeenCalled()
     expect(deleteScanJobFn).not.toHaveBeenCalled()
+  })
+
+  describe('startScanJob', () => {
+    it('calls start function and reloads list on success', async () => {
+      startScanJobFn.mockResolvedValue(true)
+      getAllScanjobs.mockResolvedValue()
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.startScanJob(scanjob)
+
+      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(getAllScanjobs).toHaveBeenCalled()
+    })
+
+    it('shows error message on 403 Forbidden', async () => {
+      startScanJobFn.mockRejectedValue(new Error('403 Forbidden'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.startScanJob(scanjob)
+
+      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Нет прав для запуска сканирования')
+    })
+
+    it('shows error message on 404 Not Found', async () => {
+      startScanJobFn.mockRejectedValue(new Error('404 Not Found'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.startScanJob(scanjob)
+
+      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
+    })
+
+    it('shows generic error message on other errors', async () => {
+      startScanJobFn.mockRejectedValue(new Error('Server error'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.startScanJob(scanjob)
+
+      expect(startScanJobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Ошибка при запуске сканирования')
+    })
+
+    it('does not start if runningAction is true', async () => {
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      // Set runningAction to true
+      wrapper.vm.runningAction = true
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.startScanJob(scanjob)
+
+      expect(startScanJobFn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('finishScanJob', () => {
+    it('calls finish function and reloads list on success', async () => {
+      finishScanJobFn.mockResolvedValue(true)
+      getAllScanjobs.mockResolvedValue()
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.finishScanJob(scanjob)
+
+      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(getAllScanjobs).toHaveBeenCalled()
+    })
+
+    it('shows error message on 403 Forbidden', async () => {
+      finishScanJobFn.mockRejectedValue(new Error('403 Forbidden'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.finishScanJob(scanjob)
+
+      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Нет прав для завершения сканирования')
+    })
+
+    it('shows error message on 404 Not Found', async () => {
+      finishScanJobFn.mockRejectedValue(new Error('404 Not Found'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.finishScanJob(scanjob)
+
+      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
+    })
+
+    it('shows generic error message on other errors', async () => {
+      finishScanJobFn.mockRejectedValue(new Error('Server error'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.finishScanJob(scanjob)
+
+      expect(finishScanJobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Ошибка при завершении сканирования')
+    })
+
+    it('does not finish if runningAction is true', async () => {
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      // Set runningAction to true
+      wrapper.vm.runningAction = true
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.finishScanJob(scanjob)
+
+      expect(finishScanJobFn).not.toHaveBeenCalled()
+    })
   })
 })

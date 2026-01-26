@@ -13,7 +13,7 @@ export const useRegisterStatusesStore = defineStore('registerStatuses', () => {
   const registerStatuses = ref([])
   const registerStatus = ref({ loading: true })
   const loading = ref(false)
-
+  let initialized = false
   const statusMap = ref(new Map())
 
   async function getAll() {
@@ -69,7 +69,6 @@ export const useRegisterStatusesStore = defineStore('registerStatuses', () => {
   }
 
   // Auto-fetch statuses when store is initialized (only once)
-  let initialized = false
   async function ensureLoaded() {
     if (!initialized && registerStatuses.value.length === 0 && !loading.value) {
       await getAll()

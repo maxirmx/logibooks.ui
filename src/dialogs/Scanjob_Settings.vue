@@ -147,7 +147,7 @@ onMounted(async () => {
       currentScanjob.value = loaded
     }
   } catch (err) {
-    alertStore.error('Ошибка при инициализации формы:' + err.message)
+    alertStore.error('Ошибка при инициализации формы: ' + (err?.message || 'Неизвестная ошибка'))
     router.push('/scanjobs')
   } finally {
     loading.value = false
@@ -177,6 +177,24 @@ function buildPayload(values) {
 
 // Save without redirecting, returns true on success
 async function saveScanjobQuiet() {
+  // Check required fields before saving
+  if (!name.value || !name.value.trim()) {
+    alertStore.error('Название обязательно')
+    return false
+  }
+  if (type.value === null || type.value === undefined) {
+    alertStore.error('Тип обязателен')
+    return false
+  }
+  if (operation.value === null || operation.value === undefined) {
+    alertStore.error('Операция обязательна')
+    return false
+  }
+  if (fieldMode.value === null || fieldMode.value === undefined) {
+    alertStore.error('Режим обязателен')
+    return false
+  }
+
   const values = {
     id: currentScanjob.value?.id ?? 0,
     name: name.value,
@@ -190,6 +208,10 @@ async function saveScanjobQuiet() {
   const payload = buildPayload(values)
   if (!payload.registerId) {
     alertStore.error('Не выбран реестр')
+    return false
+  }
+  if (!payload.warehouseId) {
+    alertStore.error('Не выбран склад')
     return false
   }
   try {
@@ -362,7 +384,7 @@ defineExpose({ onSubmit, cancel })
             tooltip-text="Сохранить"
             data-testid="scanjob-save-action"
             :disabled="saving || loading || runningAction"
-            @click="() => onSubmit()"
+            @click="onSubmit"
           />
           <ActionButton
             :item="{}"

@@ -884,16 +884,4 @@ defineExpose({
   text-overflow: ellipsis;
 }
 
-/* Multiline header styling */
-.multiline-header {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  color: white;
-}
-
-.multiline-header div {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
 </style>

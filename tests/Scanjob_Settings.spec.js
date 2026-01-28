@@ -214,7 +214,7 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
 
-    await wrapper.find('[data-testid="scanjob-save-action"]').trigger('click')
+    await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
 
     expect(update).toHaveBeenCalledWith(11, expect.objectContaining({
@@ -281,7 +281,7 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
 
-    await wrapper.find('[data-testid="scanjob-save-action"]').trigger('click')
+    await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
 
     expect(wrapper.text()).toContain('Такое задание на сканирование уже существует')

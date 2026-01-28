@@ -37,9 +37,9 @@ localSearch.value = scanjobs_search.value || ''
 
 const headers = [
   ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
-  { title: 'Номер', key: 'id', sortable: true },
-  { title: 'Название', key: 'name', sortable: true },
+//  { title: 'Номер', key: 'id', sortable: true },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
+  { title: 'Название', key: 'name', sortable: true },
   { title: 'Тип', key: 'type', sortable: true },
   { title: 'Операция', key: 'operation', sortable: true },
   { title: 'Режим', key: 'mode', sortable: true },

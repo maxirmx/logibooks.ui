@@ -26,6 +26,15 @@ const mockOps = ref({
   ]
 })
 
+const mockRegisterStatuses = ref([
+  { id: 301, title: 'Register Done' }
+])
+
+const mockParcelStatuses = ref([
+  { id: 401, title: 'Parcel Found' },
+  { id: 402, title: 'Parcel Missing' }
+])
+
 const mockScanjob = {
   id: 11,
   name: 'Test scanjob',
@@ -35,6 +44,9 @@ const mockScanjob = {
   status: 4,
   warehouseId: 11,
   registerId: 22,
+  registerStatusIdAfter: 301,
+  parcelFoundStatusIdAfter: 401,
+  parcelNotFoundStatusIdAfter: 402,
   allowStart: true,
   allowPause: false,
   allowFinish: false
@@ -56,6 +68,8 @@ const start = vi.hoisted(() => vi.fn())
 const pause = vi.hoisted(() => vi.fn())
 const finish = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
+const ensureRegisterStatusesLoaded = vi.hoisted(() => vi.fn())
+const ensureParcelStatusesLoaded = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
 
@@ -63,6 +77,7 @@ const getWarehouseName = vi.hoisted(() => vi.fn((id) => `Warehouse ${id}`))
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
+    ops: mockOps,
     ensureOpsLoaded,
     getById,
     create,
@@ -81,6 +96,20 @@ vi.mock('@/stores/warehouses.store.js', () => ({
   useWarehousesStore: () => ({
     ensureLoaded,
     getWarehouseName
+  })
+}))
+
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    ensureLoaded: ensureRegisterStatusesLoaded,
+    registerStatuses: mockRegisterStatuses
+  })
+}))
+
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    ensureLoaded: ensureParcelStatusesLoaded,
+    parcelStatuses: mockParcelStatuses
   })
 }))
 
@@ -108,9 +137,24 @@ vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return {
     ...actual,
-    storeToRefs: () => ({
-      ops: mockOps
-    })
+    storeToRefs: (store) => {
+      if (store.ops !== undefined) {
+        return {
+          ops: mockOps
+        }
+      }
+      if (store.registerStatuses !== undefined) {
+        return {
+          registerStatuses: mockRegisterStatuses
+        }
+      }
+      if (store.parcelStatuses !== undefined) {
+        return {
+          parcelStatuses: mockParcelStatuses
+        }
+      }
+      return {}
+    }
   }
 })
 
@@ -136,6 +180,8 @@ describe('Scanjob_Settings.vue', () => {
     vi.clearAllMocks()
     ensureOpsLoaded.mockResolvedValue(mockOps.value)
     ensureLoaded.mockResolvedValue()
+    ensureRegisterStatusesLoaded.mockResolvedValue()
+    ensureParcelStatusesLoaded.mockResolvedValue()
     getById.mockResolvedValue(mockScanjob)
     create.mockResolvedValue(mockScanjob)
     update.mockResolvedValue(true)
@@ -167,6 +213,11 @@ describe('Scanjob_Settings.vue', () => {
     expect(statusInput.exists()).toBe(true)
     expect(statusInput.element.value).toBe('Draft')
     expect(wrapper.find('select#status').exists()).toBe(false)
+    expect(wrapper.find('#registerStatusIdAfter').exists()).toBe(true)
+    expect(wrapper.find('#parcelFoundStatusIdAfter').exists()).toBe(true)
+    expect(wrapper.find('#parcelNotFoundStatusIdAfter').exists()).toBe(true)
+    expect(ensureRegisterStatusesLoaded).toHaveBeenCalled()
+    expect(ensureParcelStatusesLoaded).toHaveBeenCalled()
     expect(wrapper.find('[data-testid="scanjob-start-action"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="scanjob-save-action"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="scanjob-cancel-action"]').exists()).toBe(true)
@@ -187,6 +238,9 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('#mode').setValue('3')
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
+    await wrapper.find('#registerStatusIdAfter').setValue('301')
+    await wrapper.find('#parcelFoundStatusIdAfter').setValue('401')
+    await wrapper.find('#parcelNotFoundStatusIdAfter').setValue('402')
 
     await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
@@ -195,7 +249,10 @@ describe('Scanjob_Settings.vue', () => {
       name: 'Сканирование сделки ABC-1',
       registerId: 22,
       warehouseId: 11,
-      status: 4
+      status: 4,
+      registerStatusIdAfter: 301,
+      parcelFoundStatusIdAfter: 401,
+      parcelNotFoundStatusIdAfter: 402
     }))
     expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
@@ -213,6 +270,9 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('#mode').setValue('3')
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
+    await wrapper.find('#registerStatusIdAfter').setValue('301')
+    await wrapper.find('#parcelFoundStatusIdAfter').setValue('401')
+    await wrapper.find('#parcelNotFoundStatusIdAfter').setValue('402')
 
     await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
@@ -220,7 +280,10 @@ describe('Scanjob_Settings.vue', () => {
     expect(update).toHaveBeenCalledWith(11, expect.objectContaining({
       name: 'Test scanjob',
       registerId: 22,
-      warehouseId: 11
+      warehouseId: 11,
+      registerStatusIdAfter: 301,
+      parcelFoundStatusIdAfter: 401,
+      parcelNotFoundStatusIdAfter: 402
     }))
     expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })

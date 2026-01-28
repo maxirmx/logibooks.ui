@@ -1731,3 +1731,17 @@ a,
 .v-data-table tbody tr td {
   cursor: default !important;
 }
+
+/* Multiline header styling */
+.multiline-header {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  color: white;
+}
+
+.multiline-header div {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+

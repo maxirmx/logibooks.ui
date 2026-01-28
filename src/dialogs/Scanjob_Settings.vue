@@ -12,6 +12,8 @@ import * as Yup from 'yup'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   mode: {
@@ -43,6 +45,7 @@ const props = defineProps({
 const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
+const authStore = useAuthStore()
 const { ops } = storeToRefs(scanJobsStore)
 
 const isCreate = computed(() => props.mode === 'create')
@@ -56,6 +59,8 @@ if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === un
 
 const loading = ref(false)
 const saving = ref(false)
+const runningAction = ref(false)
+const currentScanjob = ref(null)
 
 const schema = toTypedSchema(Yup.object().shape({
   id: Yup.number().required(),
@@ -92,6 +97,14 @@ const { value: fieldRegisterId } = useField('registerId')
 
 const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(fieldWarehouseId.value))
 const resolvedDealNumber = computed(() => props.dealNumber || '')
+const statusDisplay = computed(() => {
+  if (status.value === null || status.value === undefined) return '—'
+  return scanJobsStore.getOpsLabel(ops.value?.statuses, status.value)
+})
+
+const canStart = computed(() => currentScanjob.value?.allowStart === true)
+const canPause = computed(() => currentScanjob.value?.allowPause === true)
+const canFinish = computed(() => currentScanjob.value?.allowFinish === true)
 
 onMounted(async () => {
   loading.value = true
@@ -112,6 +125,7 @@ onMounted(async () => {
       }
       resetForm({ values: defaults })
       await nextTick()
+      currentScanjob.value = null
     } else {
       const loaded = await scanJobsStore.getById(props.scanjobId)
       if (!loaded) {
@@ -130,6 +144,7 @@ onMounted(async () => {
         registerId: loaded.registerId ?? props.registerId ?? null
       }})
       await nextTick()
+      currentScanjob.value = loaded
     }
   } catch (err) {
     alertStore.error('Ошибка при инициализации формы:' + err.message)
@@ -141,10 +156,6 @@ onMounted(async () => {
 
 function getTitle() {
   return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
-}
-
-function getButtonText() {
-  return isCreate.value ? 'Создать' : 'Сохранить'
 }
 
 function toNumberOrNull(value) {
@@ -192,12 +203,135 @@ function cancel() {
   router.push('/scanjobs')
 }
 
+async function refreshScanjobStatus() {
+  if (!props.scanjobId) return
+  const updated = await scanJobsStore.getById(props.scanjobId)
+  if (!updated) {
+    alertStore.error('Не удалось обновить задание на сканирование')
+    return
+  }
+  currentScanjob.value = updated
+  if (updated.status !== null && updated.status !== undefined) {
+    status.value = updated.status
+  }
+}
+
+async function startScanjob() {
+  if (runningAction.value || isCreate.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.start(props.scanjobId)
+    await refreshScanjobStatus()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для запуска сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при запуске сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function pauseScanjob() {
+  if (runningAction.value || isCreate.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.pause(props.scanjobId)
+    await refreshScanjobStatus()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для приостановки сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при приостановке сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function finishScanjob() {
+  if (runningAction.value || isCreate.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.finish(props.scanjobId)
+    await refreshScanjobStatus()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для завершения сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при завершении сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
 defineExpose({ onSubmit, cancel })
 </script>
 
 <template>
   <div class="settings form-2">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">{{ getTitle() }}</h1>
+      <div style="display:flex; align-items:center;">
+        <div v-if="authStore.hasWhRole && !isCreate" class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-play"
+            icon-size="2x"
+            tooltip-text="Начать сканирование"
+            data-testid="scanjob-start-action"
+            :disabled="saving || loading || runningAction || !canStart"
+            @click="startScanjob"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-pause"
+            icon-size="2x"
+            tooltip-text="Приостановить сканирование"
+            data-testid="scanjob-pause-action"
+            :disabled="saving || loading || runningAction || !canPause"
+            @click="pauseScanjob"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            icon-size="2x"
+            tooltip-text="Завершить сканирование"
+            data-testid="scanjob-finish-action"
+            :disabled="saving || loading || runningAction || !canFinish"
+            @click="finishScanjob"
+          />
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            icon-size="2x"
+            tooltip-text="Сохранить"
+            data-testid="scanjob-save-action"
+            :disabled="saving || loading || runningAction"
+            @click="() => onSubmit()"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Отменить"
+            data-testid="scanjob-cancel-action"
+            :disabled="saving || loading || runningAction"
+            @click="cancel"
+          />
+        </div>
+      </div>
+    </div>
     <hr class="hr" />
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
@@ -285,33 +419,15 @@ defineExpose({ onSubmit, cancel })
 
       <div class="form-group">
         <label for="status" class="label">Статус:</label>
-        <select
+        <input
           id="status"
+          type="text"
           class="form-control input"
           :class="{ 'is-invalid': errors.status }"
-          v-model="status"
-        >
-          <option v-for="item in ops?.statuses" :key="item.value" :value="item.value">
-            {{ item.name }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saving">
-          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButtonText() }}
-        </button>
-        <button
-          class="button secondary"
-          type="button"
-          data-testid="cancel-button"
-          @click="cancel"
-        >
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
+          :value="statusDisplay"
+          readonly
+          data-testid="status-display"
+        />
       </div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
       <div v-if="errors.warehouseId" class="alert alert-danger mt-3 mb-0">{{ errors.warehouseId }}</div>

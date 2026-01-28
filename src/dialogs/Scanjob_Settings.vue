@@ -96,7 +96,7 @@ const { value: fieldWarehouseId } = useField('warehouseId')
 const { value: fieldRegisterId } = useField('registerId')
 
 const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(fieldWarehouseId.value))
-const resolvedDealNumber = computed(() => props.dealNumber || '')
+const resolvedDealNumber = computed(() => currentScanjob.value?.dealNumber || props.dealNumber || '')
 const statusDisplay = computed(() => {
   if (status.value === null || status.value === undefined) return '—'
   return scanJobsStore.getOpsLabel(ops.value?.statuses, status.value)
@@ -163,18 +163,56 @@ function toNumberOrNull(value) {
   return Number(value)
 }
 
+function buildPayload(values) {
+  return {
+    ...values,
+    type: toNumberOrNull(values.type),
+    operation: toNumberOrNull(values.operation),
+    mode: toNumberOrNull(values.mode),
+    status: toNumberOrNull(values.status),
+    warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
+    registerId: toNumberOrNull(values.registerId ?? props.registerId)
+  }
+}
+
+// Save without redirecting, returns true on success
+async function saveScanjobQuiet() {
+  const values = {
+    id: currentScanjob.value?.id ?? 0,
+    name: name.value,
+    type: type.value,
+    operation: operation.value,
+    mode: fieldMode.value,
+    status: status.value,
+    warehouseId: fieldWarehouseId.value,
+    registerId: fieldRegisterId.value
+  }
+  const payload = buildPayload(values)
+  if (!payload.registerId) {
+    alertStore.error('Не выбран реестр')
+    return false
+  }
+  try {
+    if (isCreate.value) {
+      await scanJobsStore.create(payload)
+    } else {
+      await scanJobsStore.update(props.scanjobId, payload)
+    }
+    return true
+  } catch (error) {
+    if (error?.message?.includes && error.message.includes('409')) {
+      alertStore.error('Такое задание на сканирование уже существует')
+    } else {
+      alertStore.error(error.message || 'Ошибка при сохранении задания на сканирование')
+    }
+    return false
+  }
+}
+
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
   saving.value = true
   try {
-    const payload = {
-      ...values,
-      type: toNumberOrNull(values.type),
-      operation: toNumberOrNull(values.operation),
-      mode: toNumberOrNull(values.mode),
-      status: toNumberOrNull(values.status),
-      warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
-      registerId: toNumberOrNull(values.registerId ?? props.registerId)
-    }
+    const payload = buildPayload(values)
 
     const resolvedRegisterId = payload.registerId
     if (!resolvedRegisterId) {
@@ -220,6 +258,8 @@ async function startScanjob() {
   if (runningAction.value || isCreate.value) return
   runningAction.value = true
   try {
+    const saved = await saveScanjobQuiet()
+    if (!saved) return
     await scanJobsStore.start(props.scanjobId)
     await refreshScanjobStatus()
   } catch (error) {
@@ -239,6 +279,8 @@ async function pauseScanjob() {
   if (runningAction.value || isCreate.value) return
   runningAction.value = true
   try {
+    const saved = await saveScanjobQuiet()
+    if (!saved) return
     await scanJobsStore.pause(props.scanjobId)
     await refreshScanjobStatus()
   } catch (error) {
@@ -258,6 +300,8 @@ async function finishScanjob() {
   if (runningAction.value || isCreate.value) return
   runningAction.value = true
   try {
+    const saved = await saveScanjobQuiet()
+    if (!saved) return
     await scanJobsStore.finish(props.scanjobId)
     await refreshScanjobStatus()
   } catch (error) {
@@ -277,7 +321,7 @@ defineExpose({ onSubmit, cancel })
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ getTitle() }}</h1>
       <div style="display:flex; align-items:center;">
@@ -302,7 +346,7 @@ defineExpose({ onSubmit, cancel })
           />
           <ActionButton
             :item="{}"
-            icon="fa-solid fa-check-double"
+            icon="fa-solid fa-check-circle"
             icon-size="2x"
             tooltip-text="Завершить сканирование"
             data-testid="scanjob-finish-action"
@@ -341,59 +385,64 @@ defineExpose({ onSubmit, cancel })
       <input type="hidden" name="registerId" v-model="fieldRegisterId" />
       <input type="hidden" name="warehouseId" v-model="fieldWarehouseId" />
 
-      <div class="form-group">
-        <label for="name" class="label">Название:</label>
-        <input
-          id="name"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.name }"
-          placeholder="Название"
-          v-model="name"
-        />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name" class="label">Название:</label>
+          <input
+            id="name"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.name }"
+            placeholder="Название"
+            v-model="name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="dealNumber" class="label">Номер сделки:</label>
+          <input
+            id="dealNumber"
+            type="text"
+            class="form-control input"
+            :value="resolvedDealNumber || '—'"
+            readonly
+          />
+        </div>
+
       </div>
 
-      <div class="form-group">
-        <label for="dealNumber" class="label">Номер сделки:</label>
-        <input
-          id="dealNumber"
-          type="text"
-          class="form-control input"
-          :value="resolvedDealNumber || '—'"
-          readonly
-        />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="warehouseName" class="label">Склад:</label>
+          <input
+            id="warehouseName"
+            type="text"
+            class="form-control input"
+            :value="warehouseDisplayName || '—'"
+            readonly
+          />
+        </div>
+          <div class="form-group">
+          <label for="type" class="label">Тип:</label>
+          <select
+            id="type"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.type }"
+            v-model="type"
+          >
+            <option v-for="item in ops?.types" :key="item.value" :value="item.value">
+              {{ item.name }}
+            </option>
+          </select>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="warehouseName" class="label">Склад:</label>
-        <input
-          id="warehouseName"
-          type="text"
-          class="form-control input"
-          :value="warehouseDisplayName || '—'"
-          readonly
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="type" class="label">Тип:</label>
-        <select
-          id="type"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.type }"
-          v-model="type"
-        >
-          <option v-for="item in ops?.types" :key="item.value" :value="item.value">
-            {{ item.name }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="operation" class="label">Операция:</label>
-        <select
-          id="operation"
-          class="form-control input"
+      <div class="form-row">
+        <div class="form-group">
+          <label for="operation" class="label">Операция:</label>
+          <select
+            id="operation"
+            class="form-control input"
           :class="{ 'is-invalid': errors.operation }"
           v-model="operation"
         >
@@ -416,7 +465,9 @@ defineExpose({ onSubmit, cancel })
           </option>
         </select>
       </div>
+      </div>
 
+      <div class="form-row">
       <div class="form-group">
         <label for="status" class="label">Статус:</label>
         <input
@@ -428,6 +479,7 @@ defineExpose({ onSubmit, cancel })
           readonly
           data-testid="status-display"
         />
+      </div>
       </div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
       <div v-if="errors.warehouseId" class="alert alert-danger mt-3 mb-0">{{ errors.warehouseId }}</div>

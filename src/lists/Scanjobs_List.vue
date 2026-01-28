@@ -44,7 +44,7 @@ const headers = [
   { title: 'Операция', key: 'operation', sortable: true },
   { title: 'Режим', key: 'mode', sortable: true },
   { title: 'Статус', key: 'status', sortable: true },
-  { title: 'Склад', key: 'warehouseId', sortable: true }
+  { title: 'Склад', key: 'warehouseId', sortable: true },
 ]
 
 function openEditDialog(scanJob) {

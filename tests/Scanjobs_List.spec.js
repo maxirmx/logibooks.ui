@@ -60,6 +60,7 @@ const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAllWarehouses = vi.hoisted(() => vi.fn())
 const deleteScanjobFn = vi.hoisted(() => vi.fn())
 const startScanjobFn = vi.hoisted(() => vi.fn())
+const pauseScanjobFn = vi.hoisted(() => vi.fn())
 const finishScanjobFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
 const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
@@ -126,6 +127,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     getAll: getAllScanjobs,
     remove: deleteScanjobFn,
     start: startScanjobFn,
+    pause: pauseScanjobFn,
     finish: finishScanjobFn,
     ensureOpsLoaded,
     getOpsLabel: mockGetOpsLabel
@@ -460,6 +462,89 @@ describe('Scanjobs_List.vue', () => {
       await wrapper.vm.finishScanjob(scanjob)
 
       expect(finishScanjobFn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('pauseScanjob', () => {
+    it('calls pause function and reloads list on success', async () => {
+      pauseScanjobFn.mockResolvedValue(true)
+      getAllScanjobs.mockResolvedValue()
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.pauseScanjob(scanjob)
+
+      expect(pauseScanjobFn).toHaveBeenCalledWith(1)
+      expect(getAllScanjobs).toHaveBeenCalled()
+    })
+
+    it('shows error message on 403 Forbidden', async () => {
+      pauseScanjobFn.mockRejectedValue(new Error('403 Forbidden'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.pauseScanjob(scanjob)
+
+      expect(pauseScanjobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Нет прав для приостановки сканирования')
+    })
+
+    it('shows error message on 404 Not Found', async () => {
+      pauseScanjobFn.mockRejectedValue(new Error('404 Not Found'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.pauseScanjob(scanjob)
+
+      expect(pauseScanjobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
+    })
+
+    it('shows generic error message on other errors', async () => {
+      pauseScanjobFn.mockRejectedValue(new Error('Server error'))
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.pauseScanjob(scanjob)
+
+      expect(pauseScanjobFn).toHaveBeenCalledWith(1)
+      expect(errorFn).toHaveBeenCalledWith('Ошибка при приостановке сканирования')
+    })
+
+    it('does not pause if runningAction is true', async () => {
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      // Set runningAction to true
+      wrapper.vm.runningAction = true
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.pauseScanjob(scanjob)
+
+      expect(pauseScanjobFn).not.toHaveBeenCalled()
     })
   })
 })

@@ -311,6 +311,42 @@ describe('scanjobs store', () => {
     })
   })
 
+  describe('pause', () => {
+    it('pauses scanjob successfully', async () => {
+      fetchWrapper.post.mockResolvedValue({})
+      const store = useScanjobsStore()
+
+      const result = await store.pause(1)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/pause`)
+      expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('handles pause error 403 Forbidden', async () => {
+      const error = new Error('403 Forbidden')
+      fetchWrapper.post.mockRejectedValue(error)
+      const store = useScanjobsStore()
+
+      await expect(store.pause(1)).rejects.toThrow('403 Forbidden')
+
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(error)
+    })
+
+    it('handles pause error 404 Not Found', async () => {
+      const error = new Error('404 Not Found')
+      fetchWrapper.post.mockRejectedValue(error)
+      const store = useScanjobsStore()
+
+      await expect(store.pause(999)).rejects.toThrow('404 Not Found')
+
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(error)
+    })
+  })
+
   describe('ops', () => {
     it('fetches ops successfully', async () => {
       fetchWrapper.get.mockResolvedValue(mockOps)

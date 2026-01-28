@@ -68,7 +68,7 @@ const schema = toTypedSchema(Yup.object().shape({
   registerId: Yup.number().nullable().required('Реестр обязателен')
 }))
 
-const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
+const { errors, handleSubmit, resetForm } = useForm({
   validationSchema: schema,
   initialValues: {
     id: 0,
@@ -82,16 +82,15 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   }
 })
 
-const { value: id } = useField('id')
 const { value: name } = useField('name')
 const { value: type } = useField('type')
 const { value: operation } = useField('operation')
-const { value: mode } = useField('mode')
+const { value: fieldMode } = useField('mode')
 const { value: status } = useField('status')
-const { value: warehouseId } = useField('warehouseId')
-const { value: registerId } = useField('registerId')
+const { value: fieldWarehouseId } = useField('warehouseId')
+const { value: fieldRegisterId } = useField('registerId')
 
-const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(warehouseId.value))
+const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(fieldWarehouseId.value))
 const resolvedDealNumber = computed(() => props.dealNumber || '')
 
 onMounted(async () => {
@@ -101,7 +100,6 @@ onMounted(async () => {
     await warehousesStore.ensureLoaded()
 
     if (isCreate.value) {
-      // set sensible defaults once ops are loaded
       const defaults = {
         id: 0,
         name: props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : '',
@@ -134,7 +132,7 @@ onMounted(async () => {
       await nextTick()
     }
   } catch (err) {
-    alertStore.error('Ошибка при инициализации формы')
+    alertStore.error('Ошибка при инициализации формы:' + err.message)
     router.push('/scanjobs')
   } finally {
     loading.value = false
@@ -206,8 +204,8 @@ defineExpose({ onSubmit, cancel })
     </div>
 
     <form v-else @submit.prevent="onSubmit">
-      <input type="hidden" name="registerId" v-model="registerId" />
-      <input type="hidden" name="warehouseId" v-model="warehouseId" />
+      <input type="hidden" name="registerId" v-model="fieldRegisterId" />
+      <input type="hidden" name="warehouseId" v-model="fieldWarehouseId" />
 
       <div class="form-group">
         <label for="name" class="label">Название:</label>
@@ -277,7 +275,7 @@ defineExpose({ onSubmit, cancel })
           id="mode"
           class="form-control input"
           :class="{ 'is-invalid': errors.mode }"
-          v-model="mode"
+          v-model="fieldMode"
         >
           <option v-for="item in ops?.modes" :key="item.value" :value="item.value">
             {{ item.name }}

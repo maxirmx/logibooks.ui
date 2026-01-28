@@ -227,6 +227,7 @@ describe('Scanjob_Settings.vue', () => {
 
   it('handles start action and refreshes status display', async () => {
     getById.mockResolvedValueOnce(mockScanjob).mockResolvedValueOnce(updatedScanjob)
+    update.mockResolvedValue(true)
     const wrapper = mountComponent({
       mode: 'edit',
       scanjobId: 11
@@ -237,6 +238,7 @@ describe('Scanjob_Settings.vue', () => {
     await startButton.trigger('click')
     await resolveAll()
 
+    expect(update).toHaveBeenCalled()
     expect(start).toHaveBeenCalledWith(11)
     expect(getById).toHaveBeenCalledTimes(2)
     expect(wrapper.find('[data-testid="status-display"]').element.value).toBe('Started')
@@ -245,6 +247,7 @@ describe('Scanjob_Settings.vue', () => {
   it('reports status action errors for pause and finish', async () => {
     pause.mockRejectedValue(new Error('403 Forbidden'))
     finish.mockRejectedValue(new Error('404 Not Found'))
+    update.mockResolvedValue(true)
     getById.mockResolvedValue({
       ...mockScanjob,
       allowPause: true,
@@ -289,6 +292,7 @@ describe('Scanjob_Settings.vue', () => {
 
   it('reports refresh errors when status update fails', async () => {
     getById.mockResolvedValueOnce(mockScanjob).mockResolvedValueOnce(null)
+    update.mockResolvedValue(true)
     const wrapper = mountComponent({
       mode: 'edit',
       scanjobId: 11

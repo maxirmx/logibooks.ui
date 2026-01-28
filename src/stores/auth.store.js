@@ -46,6 +46,9 @@ export const useAuthStore = defineStore('auth', () => {
   const hasLogistRole = computed(() =>
     isLogist.value || isSrLogist.value || isShiftLead.value
   )
+  const hasWhRole = computed(() =>
+    isAdmin.value || isShiftLead.value || isWhOperator.value
+  )
   const hasAnyRole = computed(() =>
     isAdmin.value || isShiftLead.value || isSrLogist.value || isLogist.value || isWhOperator.value
   )
@@ -58,6 +61,14 @@ export const useAuthStore = defineStore('auth', () => {
   const companies_search = ref('')
   const companies_sort_by = ref(['id'])
   const companies_page = ref(1)
+  const warehouses_per_page = ref(100)
+  const warehouses_search = ref('')
+  const warehouses_sort_by = ref(['id'])
+  const warehouses_page = ref(1)
+  const scanjobs_per_page = ref(100)
+  const scanjobs_search = ref('')
+  const scanjobs_sort_by = ref([{ key: 'id', order: 'desc' }])
+  const scanjobs_page = ref(1)
   const notifications_per_page = ref(100)
   const notifications_search = ref('')
   const notifications_sort_by = ref(['id'])
@@ -82,6 +93,10 @@ export const useAuthStore = defineStore('auth', () => {
   const parcelstatuses_search = ref('')
   const parcelstatuses_sort_by = ref(['id'])
   const parcelstatuses_page = ref(1)
+  const registerstatuses_per_page = ref(100)
+  const registerstatuses_search = ref('')
+  const registerstatuses_sort_by = ref(['id'])
+  const registerstatuses_page = ref(1)
   const countries_per_page = ref(100)
   const countries_search = ref('')
   const countries_sort_by = ref([])
@@ -234,6 +249,14 @@ export const useAuthStore = defineStore('auth', () => {
     companies_search,
     companies_sort_by,
     companies_page,
+    warehouses_per_page,
+    warehouses_search,
+    warehouses_sort_by,
+    warehouses_page,
+    scanjobs_per_page,
+    scanjobs_search,
+    scanjobs_sort_by,
+    scanjobs_page,
     notifications_per_page,
     notifications_search,
     notifications_sort_by,
@@ -258,6 +281,10 @@ export const useAuthStore = defineStore('auth', () => {
     parcelstatuses_search,
     parcelstatuses_sort_by,
     parcelstatuses_page,
+    registerstatuses_per_page,
+    registerstatuses_search,
+    registerstatuses_sort_by,
+    registerstatuses_page,
     countries_per_page,
     countries_search,
     countries_sort_by,
@@ -306,6 +333,7 @@ export const useAuthStore = defineStore('auth', () => {
     isSrLogistPlus,
     hasLogistRole,
     isLogist,
+    hasWhRole,
     hasAnyRole,
     // actions
     check,

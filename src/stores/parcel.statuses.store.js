@@ -28,12 +28,9 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
     }
   }
 
-  async function getById(id, refresh = false) {
-    if (refresh) {
-      parcelStatus.value = { loading: true }
-    }
-
+  async function getById(id) {
     try {
+      loading.value = true
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
       parcelStatus.value = response
       return response

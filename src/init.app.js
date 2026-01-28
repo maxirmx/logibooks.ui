@@ -4,6 +4,7 @@
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 // ------------ fontawesome --------------
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -54,7 +55,9 @@ import {
   faFileInvoice,
   faBookJournalWhills,
   faH,
-  faFileImage
+  faFileImage,
+  faBarcode,
+  faPause
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -102,7 +105,9 @@ library.add(
   faFileInvoice,
   faBookJournalWhills,
   faH,
-  faFileImage
+  faFileImage,
+  faBarcode,
+  faPause
 )
 
 import 'vuetify/styles'
@@ -119,6 +124,7 @@ import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -169,10 +175,13 @@ export function initializeApp() {
     }
   })
 
+  const pinia = createPinia()
+  pinia.use(piniaPluginPersistedstate)
+
   // Create the app instance but don't mount it yet
   const app = createApp(App)
     .component('font-awesome-icon', FontAwesomeIcon)
-    .use(createPinia())
+    .use(pinia)
     .use(router)
     .use(vuetify)
     .use(VuetifyUseDialog)
@@ -182,12 +191,14 @@ export function initializeApp() {
   const transportationTypesStore = useTransportationTypesStore()
   const customsProceduresStore = useCustomsProceduresStore()
   const countriesStore = useCountriesStore()
+  const scanJobsStore = useScanjobsStore()
 
   // Load FEACN orders globally at app startup
   feacnOrdersStore.ensureLoaded()
   transportationTypesStore.ensureLoaded()
   customsProceduresStore.ensureLoaded()
   countriesStore.ensureLoaded()
+  scanJobsStore.ensureOpsLoaded()
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

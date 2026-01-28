@@ -8,6 +8,8 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -18,6 +20,8 @@ import { mdiMagnify } from '@mdi/js'
 
 const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
+const registerStatusesStore = useRegisterStatusesStore()
+const parcelStatusesStore = useParcelStatusesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
@@ -44,11 +48,24 @@ const headers = [
   { title: 'Операция', key: 'operation', sortable: true },
   { title: 'Режим', key: 'mode', sortable: true },
   { title: 'Статус', key: 'status', sortable: true },
+  { title: 'Статус реестра после сканирования', key: 'registerStatusIdAfter', sortable: false },
+  { title: 'Статус найденной посылки', key: 'parcelFoundStatusIdAfter', sortable: false },
+  { title: 'Статус ненайденной посылки', key: 'parcelNotFoundStatusIdAfter', sortable: false },
   { title: 'Склад', key: 'warehouseId', sortable: true }
 ]
 
 function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
+}
+
+function getRegisterStatusTitle(id) {
+  if (id === null || id === undefined) return '—'
+  return registerStatusesStore.getStatusTitle(id)
+}
+
+function getParcelStatusTitle(id) {
+  if (id === null || id === undefined) return '—'
+  return parcelStatusesStore.getStatusTitle(id)
 }
 
 async function deleteScanjob(scanJob) {
@@ -167,6 +184,8 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await warehousesStore.ensureLoaded()
+    await registerStatusesStore.ensureLoaded()
+    await parcelStatusesStore.ensureLoaded()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при загрузке данных: ' + (error?.message || 'Неизвестная ошибка'))
@@ -250,6 +269,18 @@ defineExpose({
 
         <template v-slot:[`item.status`]="{ item }">
           {{ scanJobsStore.getOpsLabel(ops?.statuses, item.status) }}
+        </template>
+
+        <template v-slot:[`item.registerStatusIdAfter`]="{ item }">
+          {{ getRegisterStatusTitle(item.registerStatusIdAfter) }}
+        </template>
+
+        <template v-slot:[`item.parcelFoundStatusIdAfter`]="{ item }">
+          {{ getParcelStatusTitle(item.parcelFoundStatusIdAfter) }}
+        </template>
+
+        <template v-slot:[`item.parcelNotFoundStatusIdAfter`]="{ item }">
+          {{ getParcelStatusTitle(item.parcelNotFoundStatusIdAfter) }}
         </template>
 
         <template v-slot:[`item.warehouseId`]="{ item }">

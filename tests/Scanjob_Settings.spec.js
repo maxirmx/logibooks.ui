@@ -234,12 +234,6 @@ describe('Scanjob_Settings.vue', () => {
     })
     await resolveAll()
 
-    // Ensure form fields are populated with valid data
-    await wrapper.find('#name').setValue('Test scanjob')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
-    await wrapper.find('#mode').setValue('3')
-
     const startButton = wrapper.find('[data-testid="scanjob-start-action"]')
     await startButton.trigger('click')
     await resolveAll()
@@ -265,12 +259,6 @@ describe('Scanjob_Settings.vue', () => {
       scanjobId: 11
     })
     await resolveAll()
-
-    // Ensure form fields are populated with valid data
-    await wrapper.find('#name').setValue('Test scanjob')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
-    await wrapper.find('#mode').setValue('3')
 
     await wrapper.find('[data-testid="scanjob-pause-action"]').trigger('click')
     await resolveAll()
@@ -310,12 +298,6 @@ describe('Scanjob_Settings.vue', () => {
       scanjobId: 11
     })
     await resolveAll()
-
-    // Ensure form fields are populated with valid data
-    await wrapper.find('#name').setValue('Test scanjob')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
-    await wrapper.find('#mode').setValue('3')
 
     await wrapper.find('[data-testid="scanjob-start-action"]').trigger('click')
     await resolveAll()

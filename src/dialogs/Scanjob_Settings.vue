@@ -147,7 +147,7 @@ onMounted(async () => {
       currentScanjob.value = loaded
     }
   } catch (err) {
-    alertStore.error('Ошибка при инициализации формы: ' + (err?.message || 'Неизвестная ошибка'))
+    alertStore.error(`Ошибка при инициализации формы: ${err?.message || 'Неизвестная ошибка'}`)
     router.push('/scanjobs')
   } finally {
     loading.value = false
@@ -177,21 +177,30 @@ function buildPayload(values) {
 
 // Save without redirecting, returns true on success
 async function saveScanjobQuiet() {
-  // Check required fields before saving
+  // Validate required fields before saving to match the schema requirements
+  // This ensures status transitions only happen with valid data
   if (!name.value || !name.value.trim()) {
     alertStore.error('Название обязательно')
     return false
   }
-  if (type.value === null || type.value === undefined) {
+  if (type.value === null || type.value === undefined || type.value === '') {
     alertStore.error('Тип обязателен')
     return false
   }
-  if (operation.value === null || operation.value === undefined) {
+  if (operation.value === null || operation.value === undefined || operation.value === '') {
     alertStore.error('Операция обязательна')
     return false
   }
-  if (fieldMode.value === null || fieldMode.value === undefined) {
+  if (fieldMode.value === null || fieldMode.value === undefined || fieldMode.value === '') {
     alertStore.error('Режим обязателен')
+    return false
+  }
+  if (fieldWarehouseId.value === null || fieldWarehouseId.value === undefined || fieldWarehouseId.value === '') {
+    alertStore.error('Склад обязателен')
+    return false
+  }
+  if (fieldRegisterId.value === null || fieldRegisterId.value === undefined || fieldRegisterId.value === '') {
+    alertStore.error('Реестр обязателен')
     return false
   }
 
@@ -206,14 +215,6 @@ async function saveScanjobQuiet() {
     registerId: fieldRegisterId.value
   }
   const payload = buildPayload(values)
-  if (!payload.registerId) {
-    alertStore.error('Не выбран реестр')
-    return false
-  }
-  if (!payload.warehouseId) {
-    alertStore.error('Не выбран склад')
-    return false
-  }
   try {
     if (isCreate.value) {
       await scanJobsStore.create(payload)

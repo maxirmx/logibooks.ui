@@ -3,10 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
-import { Form, Field } from 'vee-validate'
+import { useForm, useField } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
@@ -53,34 +54,92 @@ if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === un
   throw new Error('scanjobId is required when mode is edit')
 }
 
-await scanJobsStore.ensureOpsLoaded()
-await warehousesStore.ensureLoaded()
+const loading = ref(false)
+const saving = ref(false)
 
-// Initialize scanjob ref first so computed properties can reference it
-const scanjob = ref(null)
+const schema = toTypedSchema(Yup.object().shape({
+  id: Yup.number().required(),
+  name: Yup.string().required('Название обязательно'),
+  type: Yup.number().required('Тип обязателен'),
+  operation: Yup.number().required('Операция обязательна'),
+  mode: Yup.number().required('Режим обязателен'),
+  status: Yup.number().required('Статус обязателен'),
+  warehouseId: Yup.number().nullable().required('Склад обязателен'),
+  registerId: Yup.number().nullable().required('Реестр обязателен')
+}))
 
-const resolvedWarehouseId = computed(() => props.warehouseId ?? scanjob.value?.warehouseId ?? null)
-const resolvedDealNumber = computed(() => props.dealNumber || scanjob.value?.dealNumber || '')
-const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(resolvedWarehouseId.value))
-
-const resolvedOps  = computed(() => ops?.value)
-
-if (isCreate.value) {
-  scanjob.value = {
+const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
+  validationSchema: schema,
+  initialValues: {
     id: 0,
-    name: resolvedDealNumber.value ? `Сканирование сделки ${resolvedDealNumber.value}` : '',
-    type: resolvedOps?.value.types[0]?.value,
-    operation: resolvedOps?.value.operations[0]?.value,
-    mode: resolvedOps?.value.modes[0]?.value,
-    status: resolvedOps?.value.statuses[0]?.value,
-    warehouseId: resolvedWarehouseId.value,
-    registerId: props.registerId
+    name: '',
+    type: null,
+    operation: null,
+    mode: null,
+    status: null,
+    warehouseId: props.warehouseId ?? null,
+    registerId: props.registerId ?? null
   }
-} else {
-  await scanJobsStore.getById(props.scanjobId)
-  scanjob.value = scanJobsStore.scanjob
-}
+})
 
+const { value: id } = useField('id')
+const { value: name } = useField('name')
+const { value: type } = useField('type')
+const { value: operation } = useField('operation')
+const { value: mode } = useField('mode')
+const { value: status } = useField('status')
+const { value: warehouseId } = useField('warehouseId')
+const { value: registerId } = useField('registerId')
+
+const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(warehouseId.value))
+const resolvedDealNumber = computed(() => props.dealNumber || '')
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    await scanJobsStore.ensureOpsLoaded()
+    await warehousesStore.ensureLoaded()
+
+    if (isCreate.value) {
+      // set sensible defaults once ops are loaded
+      const defaults = {
+        id: 0,
+        name: props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : '',
+        type: ops.value?.types?.[0]?.value ?? null,
+        operation: ops.value?.operations?.[0]?.value ?? null,
+        mode: ops.value?.modes?.[0]?.value ?? null,
+        status: ops.value?.statuses?.[0]?.value ?? null,
+        warehouseId: props.warehouseId ?? null,
+        registerId: props.registerId ?? null
+      }
+      resetForm({ values: defaults })
+      await nextTick()
+    } else {
+      const loaded = await scanJobsStore.getById(props.scanjobId)
+      if (!loaded) {
+        alertStore.error('Не удалось загрузить задание на сканирование')
+        router.push('/scanjobs')
+        return
+      }
+      resetForm({ values: {
+        id: loaded.id,
+        name: loaded.name || (props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : ''),
+        type: loaded.type,
+        operation: loaded.operation,
+        mode: loaded.mode,
+        status: loaded.status,
+        warehouseId: loaded.warehouseId ?? props.warehouseId ?? null,
+        registerId: loaded.registerId ?? props.registerId ?? null
+      }})
+      await nextTick()
+    }
+  } catch (err) {
+    alertStore.error('Ошибка при инициализации формы')
+    router.push('/scanjobs')
+  } finally {
+    loading.value = false
+  }
+})
 
 function getTitle() {
   return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
@@ -90,96 +149,75 @@ function getButtonText() {
   return isCreate.value ? 'Создать' : 'Сохранить'
 }
 
-const schema = Yup.object({
-  id: Yup.number().required(),
-  name: Yup.string().required('Название обязательно'),
-  type: Yup.number().required('Тип обязателен'),
-  operation: Yup.number().required('Операция обязательна'),
-  mode: Yup.number().required('Режим обязателен'),
-  status: Yup.number().required('Статус обязателен'),
-  warehouseId: Yup.number().required('Склад обязателен'),
-  registerId: Yup.number().required('Реестр обязателен')
-})
-
-function normalizeValues(values) {
-  if (values && typeof values === 'object' && values.value && typeof values.value === 'object') {
-    return values.value
-  }
-  return values
-}
-
 function toNumberOrNull(value) {
-  if (value === null || value === undefined || value === '') {
-    return null
-  }
+  if (value === null || value === undefined || value === '') return null
   return Number(value)
 }
 
-function onSubmit(values, { setErrors }) {
-  const normalizedValues = normalizeValues(values) || {}
-  const resolvedRegisterId = props.registerId ?? normalizedValues.registerId ?? scanjob.value?.registerId
-  const payload = {
-    ...normalizedValues,
-    type: toNumberOrNull(normalizedValues.type),
-    operation: toNumberOrNull(normalizedValues.operation),
-    mode: toNumberOrNull(normalizedValues.mode),
-    status: toNumberOrNull(normalizedValues.status),
-    warehouseId: toNumberOrNull(resolvedWarehouseId.value ?? normalizedValues.warehouseId),
-    registerId: toNumberOrNull(resolvedRegisterId)
-  }
+const onSubmit = handleSubmit(async (values, { setErrors }) => {
+  saving.value = true
+  try {
+    const payload = {
+      ...values,
+      type: toNumberOrNull(values.type),
+      operation: toNumberOrNull(values.operation),
+      mode: toNumberOrNull(values.mode),
+      status: toNumberOrNull(values.status),
+      warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
+      registerId: toNumberOrNull(values.registerId ?? props.registerId)
+    }
 
-  if (!resolvedRegisterId) {
-    setErrors({ apiError: 'Не выбран реестр' })
-    return Promise.resolve()
-  }
+    const resolvedRegisterId = payload.registerId
+    if (!resolvedRegisterId) {
+      setErrors({ apiError: 'Не выбран реестр' })
+      return
+    }
 
-  if (isCreate.value) {
-    return scanJobsStore
-      .create(payload)
-      .then(() => {
-        router.push('/scanjobs')
-      })
-      .catch((error) => {
-        if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такое задание на сканирование уже существует' })
-        } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании задания на сканирование' })
-        }
-      })
-  }
-
-  return scanJobsStore
-    .update(props.scanjobId, payload)
-    .then(() => {
-      router.push('/scanjobs')
-    })
-    .catch((error) => {
+    if (isCreate.value) {
+      await scanJobsStore.create(payload)
+    } else {
+      await scanJobsStore.update(props.scanjobId, payload)
+    }
+    router.push('/scanjobs')
+  } catch (error) {
+    if (error?.message?.includes && error.message.includes('409')) {
+      setErrors({ apiError: 'Такое задание на сканирование уже существует' })
+    } else {
       setErrors({ apiError: error.message || 'Ошибка при сохранении задания на сканирование' })
-    })
+    }
+  } finally {
+    saving.value = false
+  }
+})
+
+function cancel() {
+  router.push('/scanjobs')
 }
+
+defineExpose({ onSubmit, cancel })
 </script>
 
 <template>
   <div class="settings form-2">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
-    <Form
-      @submit="onSubmit"
-      :initial-values="scanjob"
-      :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
-    >
-      <Field name="registerId" type="hidden" :value="props.registerId" />
-      <Field name="warehouseId" type="hidden" :value="resolvedWarehouseId" />
+    <div v-if="loading" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
+
+    <form v-else @submit.prevent="onSubmit">
+      <input type="hidden" name="registerId" v-model="registerId" />
+      <input type="hidden" name="warehouseId" v-model="warehouseId" />
+
       <div class="form-group">
         <label for="name" class="label">Название:</label>
-        <Field
-          name="name"
+        <input
           id="name"
           type="text"
           class="form-control input"
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название"
+          v-model="name"
         />
       </div>
 
@@ -207,67 +245,63 @@ function onSubmit(values, { setErrors }) {
 
       <div class="form-group">
         <label for="type" class="label">Тип:</label>
-        <Field
-          name="type"
+        <select
           id="type"
-          as="select"
           class="form-control input"
           :class="{ 'is-invalid': errors.type }"
+          v-model="type"
         >
           <option v-for="item in ops?.types" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
-        </Field>
+        </select>
       </div>
 
       <div class="form-group">
         <label for="operation" class="label">Операция:</label>
-        <Field
-          name="operation"
+        <select
           id="operation"
-          as="select"
           class="form-control input"
           :class="{ 'is-invalid': errors.operation }"
+          v-model="operation"
         >
           <option v-for="item in ops?.operations" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
-        </Field>
+        </select>
       </div>
 
       <div class="form-group">
         <label for="mode" class="label">Режим:</label>
-        <Field
-          name="mode"
+        <select
           id="mode"
-          as="select"
           class="form-control input"
           :class="{ 'is-invalid': errors.mode }"
+          v-model="mode"
         >
           <option v-for="item in ops?.modes" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
-        </Field>
+        </select>
       </div>
 
       <div class="form-group">
         <label for="status" class="label">Статус:</label>
-        <Field
-          name="status"
+        <select
           id="status"
-          as="select"
           class="form-control input"
           :class="{ 'is-invalid': errors.status }"
+          v-model="status"
         >
           <option v-for="item in ops?.statuses" :key="item.value" :value="item.value">
             {{ item.name }}
           </option>
-        </Field>
+        </select>
       </div>
 
       <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+        <button class="button primary" type="submit" :disabled="saving">
+          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
@@ -275,7 +309,7 @@ function onSubmit(values, { setErrors }) {
           class="button secondary"
           type="button"
           data-testid="cancel-button"
-          @click="$router.push('/scanjobs')"
+          @click="cancel"
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
@@ -291,6 +325,6 @@ function onSubmit(values, { setErrors }) {
       <div v-if="alertStore.alert" class="mt-3">
         <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
       </div>
-    </Form>
+    </form>
   </div>
 </template>

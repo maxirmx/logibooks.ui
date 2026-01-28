@@ -143,6 +143,19 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function pause(id) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.post(`${baseUrl}/${id}/pause`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
   async function finish(id) {
     loading.value = true
     error.value = null
@@ -200,10 +213,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     update,
     remove,
     start,
+    pause,
     finish,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,
-    // getWarehouseName moved to warehouses store
   }
 })

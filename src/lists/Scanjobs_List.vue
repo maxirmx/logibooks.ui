@@ -39,6 +39,7 @@ const headers = [
   ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
   { title: 'Номер', key: 'id', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
+  { title: 'Номер сделки', key: 'dealNumber', sortable: true },
   { title: 'Тип', key: 'type', sortable: true },
   { title: 'Операция', key: 'operation', sortable: true },
   { title: 'Режим', key: 'mode', sortable: true },
@@ -103,6 +104,26 @@ async function startScanjob(scanJob) {
     runningAction.value = false
   }
 }
+
+async function pauseScanjob(scanJob) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await scanJobsStore.pause(scanJob.id)
+    await loadScanjobs()
+  } catch (error) {
+    if (error.message?.includes('403')) {
+      alertStore.error('Нет прав для приостановки сканирования')
+    } else if (error.message?.includes('404')) {
+      alertStore.error('Задание на сканирование не найдено')
+    } else {
+      alertStore.error('Ошибка при приостановке сканирования')
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
 
 async function finishScanjob(scanJob) {
   if (runningAction.value) return
@@ -169,6 +190,7 @@ defineExpose({
   openEditDialog,
   deleteScanjob,
   startScanjob,
+  pauseScanjob,
   finishScanjob
 })
 </script>
@@ -239,16 +261,23 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-play"
-              tooltip-text="Начать/продолжить сканирование"
+              tooltip-text="Начать сканирование"
               @click="startScanjob"
-              :disabled="runningAction || loading"
+              :disabled="runningAction || loading || item.allowStart !== true"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pause"
+              tooltip-text="Приостановить сканирование"
+              @click="pauseScanjob"
+              :disabled="runningAction || loading || item.allowPause !== true"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-check-double"
               tooltip-text="Завершить сканирование"
               @click="finishScanjob"
-              :disabled="runningAction || loading"
+              :disabled="runningAction || loading || item.allowFinish !== true"
             />
             <ActionButton
               :item="item"

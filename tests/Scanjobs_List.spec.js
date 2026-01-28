@@ -36,6 +36,9 @@ const mockScanjobs = ref([
     operation: 1,
     mode: 2,
     status: 3,
+    registerStatusIdAfter: 31,
+    parcelFoundStatusIdAfter: 41,
+    parcelNotFoundStatusIdAfter: 42,
     warehouseId: 10
   }
 ])
@@ -46,6 +49,12 @@ const mockOps = ref({
   modes: [{ value: 2, name: 'Режим 1' }],
   statuses: [{ value: 3, name: 'Статус 1' }]
 })
+
+const mockRegisterStatuses = ref([{ id: 31, title: 'Реестр готов' }])
+const mockParcelStatuses = ref([
+  { id: 41, title: 'Посылка найдена' },
+  { id: 42, title: 'Посылка не найдена' }
+])
 
 const mockWarehouses = ref([{ id: 10, name: 'Основной склад' }])
 
@@ -58,6 +67,8 @@ const mockTotalCount = ref(1)
 const getAllScanjobs = vi.hoisted(() => vi.fn())
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAllWarehouses = vi.hoisted(() => vi.fn())
+const ensureRegisterStatusesLoaded = vi.hoisted(() => vi.fn())
+const ensureParcelStatusesLoaded = vi.hoisted(() => vi.fn())
 const deleteScanjobFn = vi.hoisted(() => vi.fn())
 const startScanjobFn = vi.hoisted(() => vi.fn())
 const pauseScanjobFn = vi.hoisted(() => vi.fn())
@@ -143,6 +154,26 @@ vi.mock('@/stores/warehouses.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    ensureLoaded: ensureRegisterStatusesLoaded,
+    getStatusTitle: (id) => {
+      const match = mockRegisterStatuses.value.find((status) => status.id === id)
+      return match ? match.title : `Статус ${id}`
+    }
+  })
+}))
+
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    ensureLoaded: ensureParcelStatusesLoaded,
+    getStatusTitle: (id) => {
+      const match = mockParcelStatuses.value.find((status) => status.id === id)
+      return match ? match.title : `Статус ${id}`
+    }
+  })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: null,
@@ -202,6 +233,7 @@ describe('Scanjobs_List.vue', () => {
     })
 
     await wrapper.vm.$nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(ensureOpsLoaded).toHaveBeenCalled()
     expect(getAllWarehouses).toHaveBeenCalled()
@@ -224,6 +256,9 @@ describe('Scanjobs_List.vue', () => {
         operation: 1,
         mode: 2,
         status: 3,
+        registerStatusIdAfter: 31,
+        parcelFoundStatusIdAfter: 41,
+        parcelNotFoundStatusIdAfter: 42,
         warehouseId: 10
       }
     ]

@@ -274,7 +274,7 @@ defineExpose({
             />
             <ActionButton
               :item="item"
-              icon="fa-solid fa-check-double"
+              icon="fa-solid fa-check-circle"
               tooltip-text="Завершить сканирование"
               @click="finishScanjob"
               :disabled="runningAction || loading || item.allowFinish !== true"

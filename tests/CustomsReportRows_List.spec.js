@@ -22,7 +22,7 @@ const searchRef = ref('')
 const getReportRowsMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 
-let decsStoreMock
+let customsReportsStoreMock
 let alertStoreMock
 let authStoreMock
 const routerPushMock = vi.hoisted(() => vi.fn())
@@ -92,8 +92,8 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/decs.store.js', () => ({
-  useDecsStore: () => decsStoreMock
+vi.mock('@/stores/customs.reports.store.js', () => ({
+  useCustomsReportsStore: () => customsReportsStoreMock
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -119,7 +119,7 @@ describe('CustomsReportRows_List.vue', () => {
     alertRef.value = null
     searchRef.value = ''
 
-    decsStoreMock = {
+    customsReportsStoreMock = {
       reportRows: reportRowsRef,
       loading: loadingRef,
       error: errorRef,

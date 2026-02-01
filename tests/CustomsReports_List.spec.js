@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref, unref } from 'vue'
-import UploadCustomsReportsList from '@/lists/UploadCustomsReports_List.vue'
+import CustomsReportsList from '@/lists/CustomsReports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const reportsRef = ref([])
@@ -23,7 +23,7 @@ const removeMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
-let decsStoreMock
+let customsReportsStoreMock
 let alertStoreMock
 let authStoreMock
 const confirmMock = vi.hoisted(() => vi.fn())
@@ -87,8 +87,8 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/decs.store.js', () => ({
-  useDecsStore: () => decsStoreMock
+vi.mock('@/stores/customs.reports.store.js', () => ({
+  useCustomsReportsStore: () => customsReportsStoreMock
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -109,7 +109,7 @@ vi.mock('@/router', () => ({
   }
 }))
 
-describe('UploadCustomsReports_List.vue', () => {
+describe('CustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     reportsRef.value = []
@@ -117,7 +117,7 @@ describe('UploadCustomsReports_List.vue', () => {
     errorRef.value = null
     alertRef.value = null
 
-    decsStoreMock = {
+    customsReportsStoreMock = {
       reports: reportsRef,
       loading: loadingRef,
       error: errorRef,
@@ -157,7 +157,7 @@ describe('UploadCustomsReports_List.vue', () => {
   })
 
   it('loads reports on mount', async () => {
-    mount(UploadCustomsReportsList, {
+    mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -191,7 +191,7 @@ describe('UploadCustomsReports_List.vue', () => {
       }
     ]
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -230,7 +230,7 @@ describe('UploadCustomsReports_List.vue', () => {
     pageRef.value = 2
     sortByRef.value = [{ key: 'fileName', order: 'asc' }]
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -259,7 +259,7 @@ describe('UploadCustomsReports_List.vue', () => {
   })
 
   it('shows empty state when there are no reports', () => {
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -270,7 +270,7 @@ describe('UploadCustomsReports_List.vue', () => {
   })
 
   it('shows header upload button and triggers file input', async () => {
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -294,7 +294,7 @@ describe('UploadCustomsReports_List.vue', () => {
 
   it('uploads a report from the header action and refreshes the list', async () => {
     getReportsMock.mockResolvedValue()
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -346,7 +346,7 @@ describe('UploadCustomsReports_List.vue', () => {
 
   it('handles upload errors and clears the file input', async () => {
     getReportsMock.mockResolvedValue()
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -393,7 +393,7 @@ describe('UploadCustomsReports_List.vue', () => {
     removeMock.mockResolvedValue()
     confirmMock.mockResolvedValue(true)
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -421,7 +421,7 @@ describe('UploadCustomsReports_List.vue', () => {
     removeMock.mockRejectedValue(new Error('delete failed'))
     confirmMock.mockResolvedValue(true)
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -448,7 +448,7 @@ describe('UploadCustomsReports_List.vue', () => {
     confirmMock.mockResolvedValue(false)
     removeMock.mockResolvedValue()
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -473,7 +473,7 @@ describe('UploadCustomsReports_List.vue', () => {
       }
     ]
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }
@@ -494,7 +494,7 @@ describe('UploadCustomsReports_List.vue', () => {
       }
     ]
 
-    const wrapper = mount(UploadCustomsReportsList, {
+    const wrapper = mount(CustomsReportsList, {
       global: {
         stubs: testStubs
       }

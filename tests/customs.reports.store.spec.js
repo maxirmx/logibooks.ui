@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
@@ -29,6 +30,7 @@ describe('customsreports.store', () => {
     const store = useCustomsReportsStore()
     expect(store.reports).toEqual([])
     expect(store.reportRows).toEqual([])
+    expect(store.totalCount).toBe(0)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -64,6 +66,12 @@ describe('customsreports.store', () => {
   })
 
   it('fetches reports using fetchWrapper.get', async () => {
+    const authStore = useAuthStore()
+    authStore.uploadcustomsreports_page = 1
+    authStore.uploadcustomsreports_per_page = 100
+    authStore.uploadcustomsreports_sort_by = []
+    authStore.uploadcustomsreports_search = ''
+
     const store = useCustomsReportsStore()
     const reports = [{ id: 2 }, { id: 1 }]
     fetchWrapper.get.mockResolvedValue(reports)
@@ -73,8 +81,9 @@ describe('customsreports.store', () => {
     await expect(promise).resolves.toBeUndefined()
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports')
+    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=asc')
     expect(store.reports).toEqual(reports)
+    expect(store.totalCount).toBe(2)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -90,6 +99,7 @@ describe('customsreports.store', () => {
 
     expect(store.error).toBe(error)
     expect(store.reports).toEqual([])
+    expect(store.totalCount).toBe(0)
     expect(store.loading).toBe(false)
   })
 
@@ -102,9 +112,28 @@ describe('customsreports.store', () => {
     await store.remove(10)
 
     expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/10')
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports')
+    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=asc')
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
+  })
+
+  it('hydrates reports from paged responses', async () => {
+    const store = useCustomsReportsStore()
+    fetchWrapper.get.mockResolvedValue({
+      items: [{ id: 3 }],
+      pagination: {
+        totalCount: 55,
+        hasNextPage: true,
+        hasPreviousPage: false
+      }
+    })
+
+    await store.getReports()
+
+    expect(store.reports).toEqual([{ id: 3 }])
+    expect(store.totalCount).toBe(55)
+    expect(store.hasNextPage).toBe(true)
+    expect(store.hasPreviousPage).toBe(false)
   })
 
   it('remove propagates 404 error and sets error', async () => {

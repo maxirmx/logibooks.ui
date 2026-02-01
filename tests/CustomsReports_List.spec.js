@@ -12,10 +12,12 @@ import { defaultGlobalStubs } from './helpers/test-utils.js'
 const reportsRef = ref([])
 const loadingRef = ref(false)
 const errorRef = ref(null)
+const totalCountRef = ref(0)
 const alertRef = ref(null)
 const perPageRef = ref(10)
 const sortByRef = ref([{ key: 'id', order: 'desc' }])
 const pageRef = ref(1)
+const searchRef = ref('')
 
 const getReportsMock = vi.hoisted(() => vi.fn())
 const uploadMock = vi.hoisted(() => vi.fn())
@@ -37,10 +39,10 @@ const testStubs = {
     emits: ['click'],
     template: '<button class="v-btn-stub" data-testid="v-btn" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
   },
-  'v-data-table': {
+  'v-data-table-server': {
     inheritAttrs: false,
     emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
-    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue'],
+    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
@@ -64,6 +66,11 @@ const testStubs = {
       emits: ['click'],
       template: '<button class="action-button-stub" data-testid="action-button" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
     },
+  PaginationFooter: {
+    inheritAttrs: false,
+    props: ['itemsPerPage', 'itemsPerPageOptions', 'page', 'pageOptions', 'totalCount', 'maxPage'],
+    template: '<div class="pagination-footer-stub" data-testid="pagination-footer"></div>'
+  },
   ActionDialog: {
     props: ['actionDialog'],
     template: '<div class="action-dialog-stub" :data-show="actionDialog?.show" :data-title="actionDialog?.title"></div>'
@@ -115,12 +122,14 @@ describe('CustomsReports_List.vue', () => {
     reportsRef.value = []
     loadingRef.value = false
     errorRef.value = null
+    totalCountRef.value = 0
     alertRef.value = null
 
     customsReportsStoreMock = {
       reports: reportsRef,
       loading: loadingRef,
       error: errorRef,
+      totalCount: totalCountRef,
       getReports: getReportsMock,
       upload: uploadMock,
       remove: removeMock
@@ -150,6 +159,12 @@ describe('CustomsReports_List.vue', () => {
         get: () => pageRef.value,
         set: (val) => {
           pageRef.value = val
+        }
+      },
+      uploadcustomsreports_search: {
+        get: () => searchRef.value,
+        set: (val) => {
+          searchRef.value = val
         }
       }
     })
@@ -190,6 +205,7 @@ describe('CustomsReports_List.vue', () => {
         errMsg: 'Some error'
       }
     ]
+    totalCountRef.value = 1
 
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -226,6 +242,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'report.xlsx'
       }
     ]
+    totalCountRef.value = 1
     perPageRef.value = 50
     pageRef.value = 2
     sortByRef.value = [{ key: 'fileName', order: 'asc' }]
@@ -390,6 +407,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'file.zip'
       }
     ]
+    totalCountRef.value = 1
     removeMock.mockResolvedValue()
     confirmMock.mockResolvedValue(true)
 
@@ -418,6 +436,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'bad'
       }
     ]
+    totalCountRef.value = 1
     removeMock.mockRejectedValue(new Error('delete failed'))
     confirmMock.mockResolvedValue(true)
 
@@ -445,6 +464,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'nope'
       }
     ]
+    totalCountRef.value = 1
     confirmMock.mockResolvedValue(false)
     removeMock.mockResolvedValue()
 
@@ -472,6 +492,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'file.xlsx'
       }
     ]
+    totalCountRef.value = 1
 
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -493,6 +514,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'report.xlsx'
       }
     ]
+    totalCountRef.value = 1
 
     const wrapper = mount(CustomsReportsList, {
       global: {

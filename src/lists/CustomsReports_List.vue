@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted, ref } from 'vue'
+import { computed, onUnmounted, ref, toRef, watch } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -16,22 +16,54 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import PaginationFooter from '@/components/PaginationFooter.vue'
+import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
+import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, error } = storeToRefs(customsReportsStore)
+const { reports, loading, error, totalCount } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 const confirm = useConfirm()
+const uploadcustomsreports_page = toRef(authStore, 'uploadcustomsreports_page')
+const uploadcustomsreports_per_page = toRef(authStore, 'uploadcustomsreports_per_page')
+const uploadcustomsreports_sort_by = toRef(authStore, 'uploadcustomsreports_sort_by')
+const uploadcustomsreports_search = toRef(authStore, 'uploadcustomsreports_search')
+const localSearch = ref(uploadcustomsreports_search.value || '')
+const isComponentMounted = ref(true)
 
-onMounted(async () => {
+async function loadReports() {
   await customsReportsStore.getReports()
+}
+
+const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+  filters: [{ local: localSearch, store: uploadcustomsreports_search }],
+  loadFn: loadReports,
+  isComponentMounted,
+  debounceMs: 300
+})
+
+const watcherStop = watch(
+  [uploadcustomsreports_page, uploadcustomsreports_per_page, uploadcustomsreports_sort_by],
+  () => {
+    triggerLoad()
+  },
+  { immediate: false }
+)
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  stopFilterSync()
+  if (watcherStop) {
+    watcherStop()
+  }
 })
 
 function openReportUploadDialog() {
@@ -83,6 +115,23 @@ const headers = computed(() => {
     list.unshift({ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' })
   }
   return list
+})
+
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / uploadcustomsreports_per_page.value)))
+
+const pageOptions = computed(() => {
+  const mp = maxPage.value
+  const current = uploadcustomsreports_page.value || 1
+  if (mp <= 200) {
+    return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
+  }
+
+  const set = new Set()
+  for (let i = 1; i <= 10; i++) set.add(i)
+  for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
+  for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
+
+  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
 })
 
 // Labels for error breakdown tooltip
@@ -203,19 +252,33 @@ function viewReportRows(report) {
     </div>
     <hr class="hr" />
 
+    <div class="mb-4">
+      <v-text-field
+        v-model="localSearch"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по отчётам"
+        variant="solo"
+        hide-details
+        :loading="loading"
+        :disabled="runningAction"
+      />
+    </div>
+
     <v-card class="table-card">
-      <v-data-table
-        v-model:items-per-page="authStore.uploadcustomsreports_per_page"
+      <v-data-table-server
+        v-model:items-per-page="uploadcustomsreports_per_page"
         :items-per-page-options="itemsPerPageOptions"
-        v-model:page="authStore.uploadcustomsreports_page"
-        v-model:sort-by="authStore.uploadcustomsreports_sort_by"
+        v-model:page="uploadcustomsreports_page"
+        v-model:sort-by="uploadcustomsreports_sort_by"
         :headers="headers"
         :items="tableItems"
+        :items-length="totalCount"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
         item-value="id"
         fixed-header
+        hide-default-footer
       >
         <!-- Row-level slot to avoid dotted slot names -->
         <template #item="{ item, columns }">
@@ -293,7 +356,17 @@ function viewReportRows(report) {
             </td>
           </tr>
         </template>
-      </v-data-table>
+      </v-data-table-server>
+      <div class="v-data-table-footer">
+        <PaginationFooter
+          v-model:items-per-page="uploadcustomsreports_per_page"
+          v-model:page="uploadcustomsreports_page"
+          :items-per-page-options="itemsPerPageOptions"
+          :page-options="pageOptions"
+          :total-count="totalCount"
+          :max-page="maxPage"
+        />
+      </div>
     </v-card>
 
     <div v-if="error" class="text-center m-5">

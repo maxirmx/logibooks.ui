@@ -8,7 +8,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import { storeToRefs } from 'pinia'
-import { useDecsStore } from '@/stores/decs.store.js'
+import { useCustomsReportsStore } from '@/stores/customsreports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -18,11 +18,11 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import router from '@/router'
 
-const decsStore = useDecsStore()
+const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, error } = storeToRefs(decsStore)
+const { reports, loading, error } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 
 const fileInput = ref(null)
@@ -31,7 +31,7 @@ const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialo
 const confirm = useConfirm()
 
 onMounted(async () => {
-  await decsStore.getReports()
+  await customsReportsStore.getReports()
 })
 
 function openReportUploadDialog() {
@@ -48,9 +48,9 @@ async function onReportFileSelected(event) {
 
   try {
     showActionDialog('upload-report')
-    await decsStore.upload(file)
+    await customsReportsStore.upload(file)
     dispatchDecReportUploadedEvent({ fileName: file.name })
-    await decsStore.getReports()
+    await customsReportsStore.getReports()
   } catch (error) {
     const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
     alertStore.error(message)
@@ -148,7 +148,7 @@ async function handleDeleteReport(report) {
 
     if (!confirmed) return
 
-    await decsStore.remove(report.id)
+    await customsReportsStore.remove(report.id)
   } catch (error) {
     const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
     alertStore.error(message)

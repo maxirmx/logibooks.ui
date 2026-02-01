@@ -23,7 +23,7 @@ const removeMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
-let decsStoreMock
+let customsReportsStoreMock
 let alertStoreMock
 let authStoreMock
 const confirmMock = vi.hoisted(() => vi.fn())
@@ -87,8 +87,8 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/decs.store.js', () => ({
-  useDecsStore: () => decsStoreMock
+vi.mock('@/stores/customsreports.store.js', () => ({
+  useCustomsReportsStore: () => customsReportsStoreMock
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -117,7 +117,7 @@ describe('UploadCustomsReports_List.vue', () => {
     errorRef.value = null
     alertRef.value = null
 
-    decsStoreMock = {
+    customsReportsStoreMock = {
       reports: reportsRef,
       loading: loadingRef,
       error: errorRef,

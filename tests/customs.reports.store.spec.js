@@ -73,8 +73,15 @@ describe('customsreports.store', () => {
     authStore.uploadcustomsreports_search = ''
 
     const store = useCustomsReportsStore()
-    const reports = [{ id: 2 }, { id: 1 }]
-    fetchWrapper.get.mockResolvedValue(reports)
+    const mockResponse = {
+      items: [{ id: 2 }, { id: 1 }],
+      pagination: {
+        totalCount: 2,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    }
+    fetchWrapper.get.mockResolvedValue(mockResponse)
 
     const promise = store.getReports()
     expect(store.loading).toBe(true)
@@ -82,8 +89,10 @@ describe('customsreports.store', () => {
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=asc')
-    expect(store.reports).toEqual(reports)
+    expect(store.reports).toEqual([{ id: 2 }, { id: 1 }])
     expect(store.totalCount).toBe(2)
+    expect(store.hasNextPage).toBe(false)
+    expect(store.hasPreviousPage).toBe(false)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -105,7 +114,14 @@ describe('customsreports.store', () => {
 
   it('remove calls API and refreshes reports on success', async () => {
     fetchWrapper.delete.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([])
+    fetchWrapper.get.mockResolvedValue({
+      items: [],
+      pagination: {
+        totalCount: 0,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    })
 
     const store = useCustomsReportsStore()
 
@@ -150,11 +166,18 @@ describe('customsreports.store', () => {
 
   it('fetches report rows using fetchWrapper.get', async () => {
     const store = useCustomsReportsStore()
-    const rows = [
-      { rowNumber: 1, trackingNumber: 'TRACK001', decision: 'Выпуск разрешён' },
-      { rowNumber: 2, trackingNumber: 'TRACK002', decision: 'Запрет выпуска' }
-    ]
-    fetchWrapper.get.mockResolvedValue(rows)
+    const mockResponse = {
+      items: [
+        { rowNumber: 1, trackingNumber: 'TRACK001', decision: 'Выпуск разрешён' },
+        { rowNumber: 2, trackingNumber: 'TRACK002', decision: 'Запрет выпуска' }
+      ],
+      pagination: {
+        totalCount: 2,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    }
+    fetchWrapper.get.mockResolvedValue(mockResponse)
 
     const promise = store.getReportRows(5)
     expect(store.loading).toBe(true)
@@ -162,7 +185,10 @@ describe('customsreports.store', () => {
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/5/rows?page=1&pageSize=100&sortBy=id&sortOrder=asc')
-    expect(store.reportRows).toEqual(rows)
+    expect(store.reportRows).toEqual(mockResponse.items)
+    expect(store.totalCount).toBe(2)
+    expect(store.hasNextPage).toBe(false)
+    expect(store.hasPreviousPage).toBe(false)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })

@@ -53,17 +53,10 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
 
-      if (Array.isArray(response)) {
-        reports.value = response
-        totalCount.value = response.length
-        hasNextPage.value = false
-        hasPreviousPage.value = false
-      } else {
-        reports.value = response?.items || []
-        totalCount.value = response?.pagination?.totalCount || 0
-        hasNextPage.value = response?.pagination?.hasNextPage || false
-        hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
-      }
+      reports.value = response?.items || []
+      totalCount.value = response?.pagination?.totalCount || 0
+      hasNextPage.value = response?.pagination?.hasNextPage || false
+      hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
       reports.value = []
@@ -108,18 +101,10 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
 
       const response = await fetchWrapper.get(`${baseUrl}/${id}/rows?${queryParams.toString()}`)
 
-      // Support both legacy array response and paged result object
-      if (Array.isArray(response)) {
-        reportRows.value = response
-        totalCount.value = response.length
-        hasNextPage.value = false
-        hasPreviousPage.value = false
-      } else {
-        reportRows.value = response?.items || []
-        totalCount.value = response?.pagination?.totalCount || 0
-        hasNextPage.value = response?.pagination?.hasNextPage || false
-        hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
-      }
+      reportRows.value = response?.items || []
+      totalCount.value = response?.pagination?.totalCount || 0
+      hasNextPage.value = response?.pagination?.hasNextPage || false
+      hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
       reportRows.value = []

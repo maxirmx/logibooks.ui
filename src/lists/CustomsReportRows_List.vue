@@ -5,7 +5,7 @@
 
 import { onUnmounted, computed, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useDecsStore } from '@/stores/decs.store.js'
+import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -26,7 +26,7 @@ const props = defineProps({
   }
 })
 
-const decsStore = useDecsStore()
+const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const customsreportrows_search = toRef(authStore, 'customsreportrows_search')
@@ -34,19 +34,13 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const decsRefs = storeToRefs(decsStore)
-const reportRows = decsRefs.reportRows || ref([])
-const loading = decsRefs.loading || ref(false)
-const error = decsRefs.error || ref(null)
-const totalCount = decsRefs.totalCount || ref(0)
+const { reportRows, loading, error, totalCount } = storeToRefs(customsReportsStore)
+const { alert } = storeToRefs(alertStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
-
-const alertRefs = storeToRefs(alertStore)
-const alert = alertRefs.alert || ref(null)
 
 function isParcelRowClickable(item) {
   return item?.parcelId !== null && item?.registerId !== null
@@ -66,7 +60,7 @@ function getCellClass(columnKey) {
 }
 
 async function loadReportRows() {
-  await decsStore.getReportRows(props.reportId)
+  await customsReportsStore.getReportRows(props.reportId)
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({

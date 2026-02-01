@@ -8,9 +8,9 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 
-const baseUrl = `${apiUrl}/decs`
+const baseUrl = `${apiUrl}/customsreports`
 
-export const useDecsStore = defineStore('decs', () => {
+export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reports = ref([])
   const reportRows = ref([])
   const loading = ref(false)

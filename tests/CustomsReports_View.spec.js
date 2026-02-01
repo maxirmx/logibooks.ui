@@ -8,16 +8,16 @@ import { createVuetify } from 'vuetify'
 import { createPinia } from 'pinia'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import UploadCustomsReportsView from '@/views/UploadCustomsReports_View.vue'
+import UploadCustomsReportsView from '@/views/CustomsReports_View.vue'
 
-vi.mock('@/lists/UploadCustomsReports_List.vue', () => ({
+vi.mock('@/lists/CustomsReports_List.vue', () => ({
   default: {
-    name: 'UploadCustomsReports_List',
+    name: 'CustomsReports_List',
     template: '<div data-testid="upload-customs-reports-list">Reports List</div>'
   }
 }))
 
-describe('UploadCustomsReports_View.vue', () => {
+describe('CustomsReports_View.vue', () => {
   let vuetify
   let pinia
 
@@ -39,7 +39,7 @@ describe('UploadCustomsReports_View.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders UploadCustomsReports_List component', () => {
+  it('renders CustomsReports_List component', () => {
     const wrapper = mount(UploadCustomsReportsView, {
       global: {
         plugins: [vuetify, pinia]

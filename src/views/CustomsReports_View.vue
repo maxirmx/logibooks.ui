@@ -3,9 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import UploadCustomsReportsList from '@/lists/UploadCustomsReports_List.vue'
+import CustomsReportsList from '@/lists/CustomsReports_List.vue'
 </script>
 
 <template>
-  <UploadCustomsReportsList />
+  <CustomsReportsList />
 </template>

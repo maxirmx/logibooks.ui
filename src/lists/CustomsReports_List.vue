@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted, ref } from 'vue'
+import { computed, onUnmounted, ref, toRef, watch } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -16,22 +16,53 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
+import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, error } = storeToRefs(customsReportsStore)
+const { reports, loading, error, totalCount } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 const confirm = useConfirm()
+const uploadcustomsreports_page = toRef(authStore, 'uploadcustomsreports_page')
+const uploadcustomsreports_per_page = toRef(authStore, 'uploadcustomsreports_per_page')
+const uploadcustomsreports_sort_by = toRef(authStore, 'uploadcustomsreports_sort_by')
+const uploadcustomsreports_search = toRef(authStore, 'uploadcustomsreports_search')
+const localSearch = ref(uploadcustomsreports_search.value || '')
+const isComponentMounted = ref(true)
 
-onMounted(async () => {
+async function loadReports() {
   await customsReportsStore.getReports()
+}
+
+const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+  filters: [{ local: localSearch, store: uploadcustomsreports_search }],
+  loadFn: loadReports,
+  isComponentMounted,
+  debounceMs: 300
+})
+
+const watcherStop = watch(
+  [uploadcustomsreports_page, uploadcustomsreports_per_page, uploadcustomsreports_sort_by],
+  () => {
+    triggerLoad()
+  },
+  { immediate: false }
+)
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  stopFilterSync()
+  if (watcherStop) {
+    watcherStop()
+  }
 })
 
 function openReportUploadDialog() {
@@ -84,6 +115,7 @@ const headers = computed(() => {
   }
   return list
 })
+
 
 // Labels for error breakdown tooltip
 const errorLabels = {
@@ -203,14 +235,27 @@ function viewReportRows(report) {
     </div>
     <hr class="hr" />
 
+    <div class="mb-4">
+      <v-text-field
+        v-model="localSearch"
+        :append-inner-icon="mdiMagnify"
+        label="Поиск по номеру мастер накладной"
+        variant="solo"
+        hide-details
+        :loading="loading"
+        :disabled="runningAction"
+      />
+    </div>
+
     <v-card class="table-card">
-      <v-data-table
-        v-model:items-per-page="authStore.uploadcustomsreports_per_page"
+      <v-data-table-server
+        v-model:items-per-page="uploadcustomsreports_per_page"
         :items-per-page-options="itemsPerPageOptions"
-        v-model:page="authStore.uploadcustomsreports_page"
-        v-model:sort-by="authStore.uploadcustomsreports_sort_by"
+        v-model:page="uploadcustomsreports_page"
+        v-model:sort-by="uploadcustomsreports_sort_by"
         :headers="headers"
         :items="tableItems"
+        :items-length="totalCount"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -293,7 +338,7 @@ function viewReportRows(report) {
             </td>
           </tr>
         </template>
-      </v-data-table>
+      </v-data-table-server>
     </v-card>
 
     <div v-if="error" class="text-center m-5">

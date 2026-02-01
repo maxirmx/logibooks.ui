@@ -8,7 +8,7 @@ import { createVuetify } from 'vuetify'
 import { createPinia } from 'pinia'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import UploadCustomsReportsView from '@/views/CustomsReports_View.vue'
+import CustomsReportsView from '@/views/CustomsReports_View.vue'
 
 vi.mock('@/lists/CustomsReports_List.vue', () => ({
   default: {
@@ -30,7 +30,7 @@ describe('CustomsReports_View.vue', () => {
   })
 
   it('renders without errors', () => {
-    const wrapper = mount(UploadCustomsReportsView, {
+    const wrapper = mount(CustomsReportsView, {
       global: {
         plugins: [vuetify, pinia]
       }
@@ -40,7 +40,7 @@ describe('CustomsReports_View.vue', () => {
   })
 
   it('renders CustomsReports_List component', () => {
-    const wrapper = mount(UploadCustomsReportsView, {
+    const wrapper = mount(CustomsReportsView, {
       global: {
         plugins: [vuetify, pinia]
       }

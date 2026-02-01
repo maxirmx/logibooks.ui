@@ -36,12 +36,33 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   }
 
   async function getReports() {
+    const authStore = useAuthStore()
     loading.value = true
     error.value = null
     try {
-      reports.value = await fetchWrapper.get(`${baseUrl}`)
+      const queryParams = new URLSearchParams({
+        page: authStore.uploadcustomsreports_page.toString(),
+        pageSize: authStore.uploadcustomsreports_per_page.toString(),
+        sortBy: authStore.uploadcustomsreports_sort_by?.[0]?.key || 'id',
+        sortOrder: authStore.uploadcustomsreports_sort_by?.[0]?.order || 'desc'
+      })
+
+      if (authStore.uploadcustomsreports_search) {
+        queryParams.append('search', authStore.uploadcustomsreports_search)
+      }
+
+      const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
+
+      reports.value = response?.items || []
+      totalCount.value = response?.pagination?.totalCount || 0
+      hasNextPage.value = response?.pagination?.hasNextPage || false
+      hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
+      reports.value = []
+      totalCount.value = 0
+      hasNextPage.value = false
+      hasPreviousPage.value = false
     } finally {
       loading.value = false
     }
@@ -62,7 +83,7 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     }
   }
 
-  async function getReportRows(id) {
+  async function getReportRows(reportId) {
     const authStore = useAuthStore()
     loading.value = true
     error.value = null
@@ -78,20 +99,12 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
         queryParams.append('search', authStore.customsreportrows_search)
       }
 
-      const response = await fetchWrapper.get(`${baseUrl}/${id}/rows?${queryParams.toString()}`)
+      const response = await fetchWrapper.get(`${baseUrl}/${reportId}/rows?${queryParams.toString()}`)
 
-      // Support both legacy array response and paged result object
-      if (Array.isArray(response)) {
-        reportRows.value = response
-        totalCount.value = response.length
-        hasNextPage.value = false
-        hasPreviousPage.value = false
-      } else {
-        reportRows.value = response?.items || []
-        totalCount.value = response?.pagination?.totalCount || 0
-        hasNextPage.value = response?.pagination?.hasNextPage || false
-        hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
-      }
+      reportRows.value = response?.items || []
+      totalCount.value = response?.pagination?.totalCount || 0
+      hasNextPage.value = response?.pagination?.hasNextPage || false
+      hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
       reportRows.value = []

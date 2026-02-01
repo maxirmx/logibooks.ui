@@ -111,6 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
   const feacninsertitems_sort_by = ref([])
   const feacninsertitems_page = ref(1)
   const uploadcustomsreports_per_page = ref(100)
+  const uploadcustomsreports_search = ref('')
   const uploadcustomsreports_sort_by = ref([])
   const uploadcustomsreports_page = ref(1)
   const customsreportrows_per_page = ref(100)
@@ -287,6 +288,7 @@ export const useAuthStore = defineStore('auth', () => {
     feacninsertitems_sort_by,
     feacninsertitems_page,
     uploadcustomsreports_per_page,
+    uploadcustomsreports_search,
     uploadcustomsreports_sort_by,
     uploadcustomsreports_page,
     customsreportrows_per_page,

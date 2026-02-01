@@ -34,19 +34,13 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const customsReportsRefs = storeToRefs(customsReportsStore)
-const reportRows = customsReportsRefs.reportRows || ref([])
-const loading = customsReportsRefs.loading || ref(false)
-const error = customsReportsRefs.error || ref(null)
-const totalCount = customsReportsRefs.totalCount || ref(0)
+const { reportRows, loading, error, totalCount } = storeToRefs(customsReportsStore)
+const { alert } = storeToRefs(alertStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
-
-const alertRefs = storeToRefs(alertStore)
-const alert = alertRefs.alert || ref(null)
 
 function isParcelRowClickable(item) {
   return item?.parcelId !== null && item?.registerId !== null

@@ -88,6 +88,7 @@ describe('router guards', () => {
     authStore.isAdmin = false
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+    authStore.hasAnyRole = true
 
     await router.push('/login')
     await router.isReady()
@@ -114,6 +115,7 @@ describe('router guards', () => {
     authStore.isAdmin = true
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+    authStore.hasAnyRole = true
 
     await router.push('/login')
     await router.isReady()
@@ -153,6 +155,7 @@ describe('router guards', () => {
     authStore.isSrLogist = true
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+    authStore.hasAnyRole = true
     await router.push('/registers')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/registers')
@@ -160,6 +163,7 @@ describe('router guards', () => {
   
   it('redirects to login when server is unavailable', async () => {
     authStore.user = { id: 5 }
+    authStore.hasAnyRole = false
     checkMock.mockRejectedValueOnce(new Error('Server unavailable'))
     
     await router.push('/registers')
@@ -326,6 +330,7 @@ describe('router guards', () => {
     authStore.isSrLogist = true
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+    authStore.hasAnyRole = true
     
     await router.push('/registers')
     await router.isReady()
@@ -354,6 +359,7 @@ describe('router guards', () => {
     authStore.isSrLogist = true
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+    authStore.hasAnyRole = true
 
     await router.push('/registers/1/parcels')
     await router.isReady()
@@ -365,6 +371,7 @@ describe('router guards', () => {
     authStore.isLogist = false
     authStore.isSrLogist = false
     authStore.isAdmin = true
+    authStore.hasAnyRole = true
 
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
@@ -404,6 +411,7 @@ describe('router guards', () => {
       authStore.isSrLogist = false
       authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
       authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+      authStore.hasAnyRole = true
       await router.push('/')
       await router.isReady()
       expect(router.currentRoute.value.fullPath).toBe('/registers')
@@ -416,6 +424,7 @@ describe('router guards', () => {
       authStore.isSrLogist = false
       authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
       authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+      authStore.hasAnyRole = true
       await router.push('/')
       await router.isReady()
       expect(router.currentRoute.value.fullPath).toBe('/users')
@@ -428,6 +437,7 @@ describe('router guards', () => {
       authStore.isSrLogist = false
       authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
       authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
+      authStore.hasAnyRole = true
       await router.push('/')
       await router.isReady()
       expect(router.currentRoute.value.fullPath).toBe('/registers')

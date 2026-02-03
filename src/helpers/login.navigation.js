@@ -20,6 +20,7 @@ export function getHomeRoute(from_user_dialog = false) {
   // Priority: logist > administrator > regular user
   if (from_user_dialog && authStore.isAdmin) return '/users'
   if (authStore.hasLogistRole) return '/registers'
+  if (authStore.hasWhRole) return '/registers?mode=modeWarehouse'
   if (authStore.isAdmin) return '/users'
   
   // Regular user - go to edit profile

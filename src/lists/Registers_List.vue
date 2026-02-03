@@ -694,7 +694,7 @@ defineExpose({
               :disabled="runningAction || loading"
             />
 
-            <ActionButton
+            <ActionButton  v-if="isSrLogistPlus"
               :item="item"
               icon="fa-solid fa-pen"
               :tooltip-text="`Редактировать ${registerNouns.accusative}`"

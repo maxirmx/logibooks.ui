@@ -114,7 +114,7 @@ const router = createRouter({
       path: '/scanjob/create',
       name: 'Создание задания на сканирование',
       component: () => import('@/views/Scanjob_CreateView.vue'),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { reqWhRole: true }
     },
     {
       path: '/scanjob/edit/:id',
@@ -123,7 +123,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { reqWhRole: true }
     },
     {
       path: '/notification/create',
@@ -333,7 +333,7 @@ const router = createRouter({
         const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
         return { mode }
       },
-      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+      meta: { reqAnyRole: true, hideSidebar: true }
     },
     {
       path: '/parcels/by-number',
@@ -352,7 +352,7 @@ const router = createRouter({
         const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
         return { id: Number(route.params.id), mode }
       },
-      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+      meta: { reqAnyRole: true, hideSidebar: true }
     },
     {
       path: '/registers/:registerId/parcels/edit/:id',
@@ -468,6 +468,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.reqLogistOrSrLogist && !auth.hasLogistRole) {
+      return routeToLogin(to, auth)
+    }
+
+    if (to.meta.reqWhRole && !auth.hasWhRole) {
       return routeToLogin(to, auth)
     }
 

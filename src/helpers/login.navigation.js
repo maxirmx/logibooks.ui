@@ -11,7 +11,6 @@ import { useAuthStore } from '@/stores/auth.store.js'
  */
 export function getHomeRoute(from_user_dialog = false) {
   const authStore = useAuthStore()
-  
   // No user means we should go to login
   if (!authStore.user) {
     return '/login'

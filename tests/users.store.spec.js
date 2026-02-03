@@ -37,7 +37,8 @@ vi.mock('@/helpers/config.js', () => ({
 describe('users store', () => {
   const mockAuthStore = {
     user: { id: 1, name: 'Test Admin', roles: [roleAdmin] },
-    logout: vi.fn()
+    logout: vi.fn(),
+    isAdmin: { value: true }
   }
 
   // Store original localStorage
@@ -202,6 +203,7 @@ describe('users store', () => {
       fetchWrapper.get.mockResolvedValue([])
       
       const store = useUsersStore()
+
       const updateData = { firstName: 'Updated' }
       
       // Use the mocked auth store's user ID (1)

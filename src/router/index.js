@@ -399,7 +399,8 @@ const router = createRouter({
       component: () => import('@/views/User_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
-      })
+      }),
+      meta: {  }
     },
   ]
 })
@@ -481,9 +482,8 @@ router.beforeEach(async (to) => {
 
     // User is authenticated and has proper permissions
     return true
-  } catch (error) {
+  } catch {
     // Server unavailable or other error
-    console.error('Authentication check failed:', error)
     auth.logout()
     auth.returnUrl = to.fullPath
     alert.error('Сервер недоступен. Пожалуйста, попробуйте позже.')

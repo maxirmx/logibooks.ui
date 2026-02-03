@@ -220,6 +220,32 @@ describe('users store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
     })
 
+    it('update does not call getAll when user is not admin', async () => {
+      // Set up non-admin auth store
+      const nonAdminAuthStore = {
+        user: { id: 2, name: 'Test User', roles: [roleLogist] },
+        logout: vi.fn(),
+        isAdmin: false
+      }
+      useAuthStore.mockReturnValue(nonAdminAuthStore)
+
+      fetchWrapper.put.mockResolvedValue({})
+      fetchWrapper.get.mockResolvedValue([])
+      
+      const store = useUsersStore()
+      const updateData = { firstName: 'Updated' }
+      
+      // Update a user as non-admin
+      await store.update(3, updateData)
+      
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:8080/api/users/3',
+        updateData
+      )
+      // Verify that getAll (fetchWrapper.get for users list) was NOT called
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
+
     it('delete calls API and logs out current user when deleting self', async () => {
       fetchWrapper.delete.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue([])

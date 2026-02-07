@@ -136,6 +136,7 @@ onMounted(async () => {
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
+      scanjobLoading.value = false
     }
   }
 })

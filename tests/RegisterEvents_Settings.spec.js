@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import { ref } from 'vue'
-import ParcelEventsProcessingSettings from '@/dialogs/ParcelEventsProcessing_Settings.vue'
+import RegisterEventsProcessingSettings from '@/dialogs/RegisterEvents_Settings.vue'
 import { resolveAll } from './helpers/test-utils'
 
 // Polyfill ResizeObserver for Vuetify components in jsdom
@@ -21,8 +21,8 @@ if (!global.ResizeObserver) {
 }
 
 const mockEvents = ref([
-  { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-  { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+  { id: 1, eventId: 'Created', eventName: 'Создана', registerStatusId: null },
+  { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
 ])
 
 const mockStatuses = ref([
@@ -35,20 +35,33 @@ const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/parcel.processing.events.store.js', () => ({
-  useParcelProcessingEventsStore: () => ({
-    events: mockEvents,
-    loading: ref(false),
-    getAll,
-    updateMany
+const mockAuthStore = {
+  registerevents_per_page: ref(50),
+  registerevents_page: ref(1)
+}
+
+vi.mock('@/stores/events.store.js', () => ({
+  useEventsStore: () => ({
+    registerEvents: mockEvents,
+    registerLoading: ref(false),
+    registerGetAll: getAll,
+    registerUpdateMany: updateMany
   })
 }))
 
-vi.mock('@/stores/parcel.statuses.store.js', () => ({
-  useParcelStatusesStore: () => ({
-    parcelStatuses: mockStatuses,
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    registerStatuses: mockStatuses,
     ensureLoaded
   })
+}))
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => mockAuthStore
+}))
+
+vi.mock('@/helpers/items.per.page.js', () => ({
+  itemsPerPageOptions: [{ value: 10, title: '10' }, { value: 25, title: '25' }, { value: 50, title: '50' }]
 }))
 
 vi.mock('@/router', () => ({
@@ -68,21 +81,25 @@ vi.mock('pinia', async () => {
 const vuetify = createVuetify()
 
 const mountComponent = () =>
-  mount(ParcelEventsProcessingSettings, {
+  mount(RegisterEventsProcessingSettings, {
     global: {
       plugins: [vuetify],
       stubs: {
-        'font-awesome-icon': true
+        'font-awesome-icon': true,
+        ActionButton: {
+          template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
+          props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
+        }
       }
     }
   })
 
-describe('ParcelEventsProcessing_Settings.vue', () => {
+describe('RegisterEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
-      { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-      { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+      { id: 1, eventId: 'Created', eventName: 'Создана', registerStatusId: null },
+      { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
     ]
     mockStatuses.value = [
       { id: 1, title: 'Новый' },
@@ -102,10 +119,9 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
     expect(ensureLoaded).toHaveBeenCalled()
     expect(getAll).toHaveBeenCalled()
 
-    // Use selects count to represent rows since v-data-table structure differs
     const selects = wrapper.findAll('select[id^="status-select-"]')
     expect(selects.length).toBe(2)
-    expect(wrapper.find('[data-testid="parcel-event-row-1"]').text()).toBe('Создана')
+    expect(wrapper.find('[data-testid="register-event-row-1"]').text()).toBe('Создана')
 
     const options = wrapper.find('#status-select-1').findAll('option')
     const optionTexts = options.map((o) => o.text())
@@ -119,12 +135,12 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
 
     const select = wrapper.find('#status-select-1')
     await select.setValue('1')
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: 1 },
-      { id: 2, parcelStatusId: 3 }
+      { id: 1, registerStatusId: 1 },
+      { id: 2, registerStatusId: 3 }
     ])
   })
 
@@ -134,37 +150,34 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(wrapper.text()).toContain('Save failed')
   })
 
-  it('handles empty ("Не выбрано") status selection as 0', async () => {
+  it('handles empty ("Не менять") status selection as 0', async () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    // Event 1 has null parcelStatusId by default
     const select1 = wrapper.find('#status-select-1')
     expect(select1.exists()).toBe(true)
-    expect(select1.element.value).toBe('')
+    expect(select1.element.value).toBe('0')
 
     const optionTexts1 = select1.findAll('option').map(o => o.text())
-    expect(optionTexts1).toContain('Не выбрано')
+    expect(optionTexts1).toContain('Не менять')
 
-    // Change second event's status to empty
     const select2 = wrapper.find('#status-select-2')
     expect(select2.exists()).toBe(true)
-    expect(select2.element.value).toBe('3') // initial selected value
+    expect(select2.element.value).toBe('3')
     await select2.setValue('')
 
-    // Save changes
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: null }, // unchanged null from initial data
-      { id: 2, parcelStatusId: 0 } // cleared selection saved as 0 sentinel
+      { id: 1, registerStatusId: null },
+      { id: 2, registerStatusId: 0 }
     ])
   })
 })

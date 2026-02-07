@@ -124,7 +124,7 @@ describe('registers store', () => {
         await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
         )
         expect(store.items).toEqual(mockResponse.items)
         expect(store.loading).toBe(false)
@@ -154,7 +154,7 @@ describe('registers store', () => {
         await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&search=search+term`
+          `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&whOnly=false&search=search+term`
         )
         expect(store.items).toEqual(mockResponse.items)
       })
@@ -217,7 +217,7 @@ describe('registers store', () => {
         await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=2&pageSize=10&sortBy=name&sortOrder=asc&search=filter`
+          `${apiUrl}/registers?page=2&pageSize=10&sortBy=name&sortOrder=asc&whOnly=false&search=filter`
         )
         expect(store.items).toEqual(mockResponse.items)
         expect(store.totalCount).toBe(50)
@@ -455,7 +455,7 @@ describe('registers store', () => {
         await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&search=test+search`
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&search=test+search`
         )
       })
 
@@ -959,7 +959,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/1`)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc`
+        `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
       )
     })
 

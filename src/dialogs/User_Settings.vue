@@ -154,9 +154,7 @@ function onSubmit(values, { setErrors }) {
     }
     return usersStore
       .update(props.id, values, true)
-      .then(() =>
-        router.push(getHomeRoute(true))
-      )
+      .then(() => router.push(getHomeRoute(true)))
       .catch((error) => setErrors({ apiError: error.message || String(error) }))
   }
 }

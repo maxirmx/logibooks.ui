@@ -159,7 +159,10 @@ export const useUsersStore = defineStore('users', () => {
       }
 
       // Refresh the list after update
-      await getAll()
+      if (authStore.isAdmin) {
+        await getAll()
+      }
+
       return response
     } catch (err) {
       error.value = err

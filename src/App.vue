@@ -174,12 +174,6 @@ function getUserName() {
             <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
           </v-list-item>
           <v-list-item>
-            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
-          </v-list-item>
-          <v-list-item>
-            <RouterLink to="/registerstatuses" class="link">Статусы партий</RouterLink>
-          </v-list-item>
-          <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
           </v-list-item>
         </v-list-group>
@@ -190,7 +184,16 @@ function getUserName() {
             <v-list-item v-bind="props" title="Настройки"></v-list-item>
           </template>
           <v-list-item>
-            <RouterLink to="/parceleventprocessing" class="link">События</RouterLink>
+            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/registerstatuses" class="link">Статусы партий</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/parcelsevents" class="link">События/посылки</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/registersevents" class="link">События/партии</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/hotkeyactionschemes" class="link">Клавиатура</RouterLink>

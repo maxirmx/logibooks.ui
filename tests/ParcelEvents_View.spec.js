@@ -5,18 +5,18 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ParcelEventProcessingView from '@/views/ParcelEventProcessing_View.vue'
+import ParcelEventsView from '@/views/ParcelEvents_View.vue'
 
-vi.mock('@/dialogs/ParcelEventsProcessing_Settings.vue', () => ({
+vi.mock('@/dialogs/ParcelEvents_Settings.vue', () => ({
   default: {
-    name: 'ParcelEventsProcessingSettings',
+    name: 'ParcelEventsSettings',
     template: '<div data-testid="parcel-events-processing-settings-stub" />'
   }
 }))
 
-describe('ParcelEventProcessing_View.vue', () => {
+describe('ParcelEvents_View.vue', () => {
   it('renders settings dialog wrapper', () => {
-    const wrapper = mount(ParcelEventProcessingView)
+    const wrapper = mount(ParcelEventsView)
     expect(wrapper.find('[data-testid="parcel-events-processing-settings-stub"]').exists()).toBe(true)
   })
 })

@@ -3,9 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import ParcelEventsProcessingSettings from '@/dialogs/ParcelEventsProcessing_Settings.vue'
+import RegisterEventsSettings from '@/dialogs/RegisterEvents_Settings.vue'
 </script>
 
 <template>
-  <ParcelEventsProcessingSettings />
+  <RegisterEventsSettings />
 </template>

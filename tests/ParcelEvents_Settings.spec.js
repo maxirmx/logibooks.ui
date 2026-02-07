@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import { ref } from 'vue'
-import ParcelEventsProcessingSettings from '@/dialogs/ParcelEventsProcessing_Settings.vue'
+import ParcelEventsProcessingSettings from '@/dialogs/ParcelEvents_Settings.vue'
 import { resolveAll } from './helpers/test-utils'
 
 // Polyfill ResizeObserver for Vuetify components in jsdom
@@ -21,8 +21,8 @@ if (!global.ResizeObserver) {
 }
 
 const mockEvents = ref([
-  { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-  { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+  { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null, extData: '' },
+  { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3, extData: 'voice tip' }
 ])
 
 const mockStatuses = ref([
@@ -35,12 +35,12 @@ const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/parcel.processing.events.store.js', () => ({
-  useParcelProcessingEventsStore: () => ({
-    events: mockEvents,
-    loading: ref(false),
-    getAll,
-    updateMany
+vi.mock('@/stores/events.store.js', () => ({
+  useEventsStore: () => ({
+    parcelEvents: mockEvents,
+    parcelLoading: ref(false),
+    parcelGetAll: getAll,
+    parcelUpdateMany: updateMany
   })
 }))
 
@@ -72,17 +72,21 @@ const mountComponent = () =>
     global: {
       plugins: [vuetify],
       stubs: {
-        'font-awesome-icon': true
+        'font-awesome-icon': true,
+        ActionButton: {
+          template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
+          props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
+        }
       }
     }
   })
 
-describe('ParcelEventsProcessing_Settings.vue', () => {
+describe('ParcelEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
-      { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-      { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+      { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null, extData: '' },
+      { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3, extData: 'voice tip' }
     ]
     mockStatuses.value = [
       { id: 1, title: 'Новый' },
@@ -107,6 +111,14 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
     expect(selects.length).toBe(2)
     expect(wrapper.find('[data-testid="parcel-event-row-1"]').text()).toBe('Создана')
 
+    // extData inputs present
+    const extInput1 = wrapper.find('#extdata-input-1')
+    expect(extInput1.exists()).toBe(true)
+    expect(extInput1.element.value).toBe('')
+    const extInput2 = wrapper.find('#extdata-input-2')
+    expect(extInput2.exists()).toBe(true)
+    expect(extInput2.element.value).toBe('voice tip')
+
     const options = wrapper.find('#status-select-1').findAll('option')
     const optionTexts = options.map((o) => o.text())
     expect(optionTexts).toContain('Новый')
@@ -119,12 +131,12 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
 
     const select = wrapper.find('#status-select-1')
     await select.setValue('1')
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: 1 },
-      { id: 2, parcelStatusId: 3 }
+      { id: 1, parcelStatusId: 1, extData: '' },
+      { id: 2, parcelStatusId: 3, extData: 'voice tip' }
     ])
   })
 
@@ -134,23 +146,23 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(wrapper.text()).toContain('Save failed')
   })
 
-  it('handles empty ("Не выбрано") status selection as 0', async () => {
+  it('handles empty ("Не менять") status selection as 0', async () => {
     const wrapper = mountComponent()
     await resolveAll()
 
     // Event 1 has null parcelStatusId by default
     const select1 = wrapper.find('#status-select-1')
     expect(select1.exists()).toBe(true)
-    expect(select1.element.value).toBe('')
+    expect(select1.element.value).toBe('0')
 
     const optionTexts1 = select1.findAll('option').map(o => o.text())
-    expect(optionTexts1).toContain('Не выбрано')
+    expect(optionTexts1).toContain('Не менять')
 
     // Change second event's status to empty
     const select2 = wrapper.find('#status-select-2')
@@ -159,12 +171,12 @@ describe('ParcelEventsProcessing_Settings.vue', () => {
     await select2.setValue('')
 
     // Save changes
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: null }, // unchanged null from initial data
-      { id: 2, parcelStatusId: 0 } // cleared selection saved as 0 sentinel
+      { id: 1, parcelStatusId: null, extData: '' }, // unchanged null from initial data
+      { id: 2, parcelStatusId: 0, extData: 'voice tip' } // cleared selection saved as 0 sentinel
     ])
   })
 })

@@ -6,14 +6,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useParcelProcessingEventsStore } from '@/stores/parcel.processing.events.store.js'
-import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useEventsStore } from '@/stores/events.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
-const parcelProcessingEventsStore = useParcelProcessingEventsStore()
-const parcelStatusesStore = useParcelStatusesStore()
+const eventsStore = useEventsStore()
 
-const { events, loading } = storeToRefs(parcelProcessingEventsStore)
-const { parcelStatuses } = storeToRefs(parcelStatusesStore)
+const { registerEvents: events, registerLoading: loading } = storeToRefs(eventsStore)
+const registerStatusesStore = useRegisterStatusesStore()
+const { registerStatuses } = storeToRefs(registerStatusesStore)
 
 const statusSelections = ref({})
 const saving = ref(false)
@@ -25,7 +26,7 @@ const hasEvents = computed(() => events.value?.length > 0)
 // Headers for events settings table
 const headers = [
   { title: 'Событие', key: 'eventTitle', sortable: false, width: '60%' },
-  { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false }
+  { title: 'Статус после события', key: 'status', sortable: false }
 ]
 
 function getEventTitle(event) {
@@ -44,14 +45,14 @@ async function loadData() {
   initializing.value = true
   errorMessage.value = ''
   try {
-    await parcelStatusesStore.ensureLoaded()
-    await parcelProcessingEventsStore.getAll()
+    await registerStatusesStore.ensureLoaded()
+    await eventsStore.registerGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
-      result[item.id] = item.parcelStatusId ?? null
+      result[item.id] = item.registerStatusId ?? item.statusId ?? item.parcelStatusId ?? null
       return result
     }, {})
   } catch (error) {
-    errorMessage.value = error?.message || 'Не удалось загрузить настройки событий посылок'
+    errorMessage.value = error?.message || 'Не удалось загрузить настройки событий'
   } finally {
     initializing.value = false
   }
@@ -63,10 +64,10 @@ async function saveSettings() {
   try {
     const payload = events.value.map((item) => ({
       id: item.id,
-      parcelStatusId: statusSelections.value[item.id] ?? null
+      registerStatusId: statusSelections.value[item.id] ?? null
     }))
 
-    await parcelProcessingEventsStore.updateMany(payload)
+    await eventsStore.registerUpdateMany(payload)
     await loadData()
   } catch (error) {
     errorMessage.value = error?.message || 'Не удалось сохранить изменения'
@@ -85,8 +86,30 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="settings form-2" data-testid="parcel-events-processing-settings">
-    <h1 class="primary-heading">Обработка событий</h1>
+  <div class="settings form-3" data-testid="register-events-processing-settings">
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Обработка событий реестров/партий</h1>
+      <div class="header-actions">
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-check-double"
+          :iconSize="'2x'"
+          tooltip-text="Сохранить"
+          :disabled="saving || initializing"
+          data-testid="save-button"
+          @click="saveSettings"
+        />
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-xmark"
+          :iconSize="'2x'"
+          tooltip-text="Отменить"
+          :disabled="saving"
+          data-testid="cancel-button"
+          @click="cancel"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <div v-if="initializing" class="text-center m-5">
@@ -105,23 +128,23 @@ onMounted(async () => {
           :headers="headers"
           :items="events"
           item-value="id"
-          class="interlaced-table single-line-table parcel-events-table"
+          class="interlaced-table single-line-table register-events-table"
           density="compact"
           :loading="loading"
         >
-          <template v-slot:[`item.eventTitle`]="{ item }">
-            <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
+          <template #[`item.eventTitle`]="{ item }">
+            <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
           </template>
-          <template v-slot:[`item.parcelStatus`]="{ item }">
+          <template #[`item.status`]="{ item }">
             <select
               class="form-control input-0"
               :id="`status-select-${item.id}`"
-              :value="statusSelections[item.id] ?? ''"
+              :value="statusSelections[item.id] ?? '0'"
               @change="onStatusChange(item.id, $event.target.value)"
               :data-testid="`status-select-${item.id}`"
             >
-              <option value="">Не выбрано</option>
-              <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
+              <option value="0">Не менять</option>
+              <option v-for="status in registerStatuses" :key="status.id" :value="status.id">
                 {{ status.title }}
               </option>
             </select>
@@ -133,18 +156,31 @@ onMounted(async () => {
       </div>
 
       <div v-else class="text-center m-5">Список событий пуст</div>
-
-      <div class="form-group mt-8">
-        <button class="button primary" type="button" :disabled="saving || initializing" @click="saveSettings">
-          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          Сохранить
-        </button>
-        <button class="button secondary" type="button" :disabled="saving" @click="cancel">
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
-      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Ensure select and option elements in the register events table match text styling */
+.register-events-table .form-control,
+.register-events-table .form-control option,
+.register-events-table select,
+.register-events-table select option {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Ensure inputs and selects take full column width */
+.register-events-table :deep(td) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.register-events-table :deep(input[type='text']),
+.register-events-table :deep(select) {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+}
+</style>

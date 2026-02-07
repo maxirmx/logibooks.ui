@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useEventsStore } from '@/stores/events.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const eventsStore = useEventsStore()
 
@@ -85,8 +86,30 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="settings form-2" data-testid="register-events-processing-settings">
-    <h1 class="primary-heading">Обработка событий реестров/партий</h1>
+  <div class="settings form-3" data-testid="register-events-processing-settings">
+    <div class="header-with-actions">
+      <h1 class="primary-heading">Обработка событий реестров/партий</h1>
+      <div class="header-actions">
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-check-double"
+          :iconSize="'2x'"
+          tooltip-text="Сохранить"
+          :disabled="saving || initializing"
+          data-testid="save-button"
+          @click="saveSettings"
+        />
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-xmark"
+          :iconSize="'2x'"
+          tooltip-text="Отменить"
+          :disabled="saving"
+          data-testid="cancel-button"
+          @click="cancel"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <div v-if="initializing" class="text-center m-5">
@@ -133,18 +156,6 @@ onMounted(async () => {
       </div>
 
       <div v-else class="text-center m-5">Список событий пуст</div>
-
-      <div class="form-group mt-8">
-        <button class="button primary" type="button" :disabled="saving || initializing" @click="saveSettings">
-          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          Сохранить
-        </button>
-        <button class="button secondary" type="button" :disabled="saving" @click="cancel">
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
-      </div>
     </div>
   </div>
 </template>

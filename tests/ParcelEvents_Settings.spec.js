@@ -72,7 +72,11 @@ const mountComponent = () =>
     global: {
       plugins: [vuetify],
       stubs: {
-        'font-awesome-icon': true
+        'font-awesome-icon': true,
+        ActionButton: {
+          template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
+          props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
+        }
       }
     }
   })
@@ -127,7 +131,7 @@ describe('ParcelEvents_Settings.vue', () => {
 
     const select = wrapper.find('#status-select-1')
     await select.setValue('1')
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
@@ -142,7 +146,7 @@ describe('ParcelEvents_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(wrapper.text()).toContain('Save failed')
@@ -167,7 +171,7 @@ describe('ParcelEvents_Settings.vue', () => {
     await select2.setValue('')
 
     // Save changes
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([

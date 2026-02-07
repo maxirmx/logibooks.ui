@@ -72,7 +72,11 @@ const mountComponent = () =>
     global: {
       plugins: [vuetify],
       stubs: {
-        'font-awesome-icon': true
+        'font-awesome-icon': true,
+        ActionButton: {
+          template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
+          props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
+        }
       }
     }
   })
@@ -118,7 +122,7 @@ describe('RegisterEvents_Settings.vue', () => {
 
     const select = wrapper.find('#status-select-1')
     await select.setValue('1')
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
@@ -133,7 +137,7 @@ describe('RegisterEvents_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(wrapper.text()).toContain('Save failed')
@@ -155,7 +159,7 @@ describe('RegisterEvents_Settings.vue', () => {
     expect(select2.element.value).toBe('3')
     await select2.setValue('')
 
-    await wrapper.find('button.button.primary').trigger('click')
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([

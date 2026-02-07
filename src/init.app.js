@@ -125,6 +125,7 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -192,6 +193,7 @@ export function initializeApp() {
   const customsProceduresStore = useCustomsProceduresStore()
   const countriesStore = useCountriesStore()
   const scanJobsStore = useScanjobsStore()
+  const warehousesStore = useWarehousesStore()
 
   // Load FEACN orders globally at app startup
   feacnOrdersStore.ensureLoaded()
@@ -199,6 +201,7 @@ export function initializeApp() {
   customsProceduresStore.ensureLoaded()
   countriesStore.ensureLoaded()
   scanJobsStore.ensureOpsLoaded()
+  warehousesStore.ensureOpsLoaded()
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

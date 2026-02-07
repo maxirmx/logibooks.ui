@@ -8,13 +8,17 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useEventsStore } from '@/stores/events.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const eventsStore = useEventsStore()
+const registerStatusesStore = useRegisterStatusesStore()
+const authStore = useAuthStore()
 
 const { registerEvents: events, registerLoading: loading } = storeToRefs(eventsStore)
-const registerStatusesStore = useRegisterStatusesStore()
 const { registerStatuses } = storeToRefs(registerStatusesStore)
+const { registerevents_per_page, registerevents_page } = storeToRefs(authStore)
 
 const statusSelections = ref({})
 const saving = ref(false)
@@ -125,6 +129,9 @@ onMounted(async () => {
 
       <div v-else-if="hasEvents">
         <v-data-table
+          v-model:items-per-page="registerevents_per_page"
+          v-model:page="registerevents_page"
+          :items-per-page-options="itemsPerPageOptions"
           :headers="headers"
           :items="events"
           item-value="id"

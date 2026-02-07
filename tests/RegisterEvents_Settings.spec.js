@@ -21,8 +21,8 @@ if (!global.ResizeObserver) {
 }
 
 const mockEvents = ref([
-  { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-  { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+  { id: 1, eventId: 'Created', eventName: 'Создана', registerStatusId: null },
+  { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
 ])
 
 const mockStatuses = ref([
@@ -44,9 +44,9 @@ vi.mock('@/stores/events.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/parcel.statuses.store.js', () => ({
-  useParcelStatusesStore: () => ({
-    parcelStatuses: mockStatuses,
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    registerStatuses: mockStatuses,
     ensureLoaded
   })
 }))
@@ -81,8 +81,8 @@ describe('RegisterEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
-      { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-      { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+      { id: 1, eventId: 'Created', eventName: 'Создана', registerStatusId: null },
+      { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
     ]
     mockStatuses.value = [
       { id: 1, title: 'Новый' },
@@ -122,8 +122,8 @@ describe('RegisterEvents_Settings.vue', () => {
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: 1 },
-      { id: 2, parcelStatusId: 3 }
+      { id: 1, registerStatusId: 1 },
+      { id: 2, registerStatusId: 3 }
     ])
   })
 
@@ -159,8 +159,8 @@ describe('RegisterEvents_Settings.vue', () => {
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: null },
-      { id: 2, parcelStatusId: 0 }
+      { id: 1, registerStatusId: null },
+      { id: 2, registerStatusId: 0 }
     ])
   })
 })

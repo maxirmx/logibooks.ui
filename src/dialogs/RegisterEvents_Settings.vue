@@ -7,13 +7,13 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useEventsStore } from '@/stores/events.store.js'
-import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 
 const eventsStore = useEventsStore()
-const parcelStatusesStore = useParcelStatusesStore()
 
 const { registerEvents: events, registerLoading: loading } = storeToRefs(eventsStore)
-const { parcelStatuses } = storeToRefs(parcelStatusesStore)
+const registerStatusesStore = useRegisterStatusesStore()
+const { registerStatuses } = storeToRefs(registerStatusesStore)
 
 const statusSelections = ref({})
 const saving = ref(false)
@@ -25,7 +25,7 @@ const hasEvents = computed(() => events.value?.length > 0)
 // Headers for events settings table
 const headers = [
   { title: 'Событие', key: 'eventTitle', sortable: false, width: '60%' },
-  { title: 'Статус после события', key: 'parcelStatus', sortable: false }
+  { title: 'Статус после события', key: 'status', sortable: false }
 ]
 
 function getEventTitle(event) {
@@ -44,10 +44,10 @@ async function loadData() {
   initializing.value = true
   errorMessage.value = ''
   try {
-    await parcelStatusesStore.ensureLoaded()
+    await registerStatusesStore.ensureLoaded()
     await eventsStore.registerGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
-      result[item.id] = item.parcelStatusId ?? null
+      result[item.id] = item.registerStatusId ?? item.statusId ?? item.parcelStatusId ?? null
       return result
     }, {})
   } catch (error) {
@@ -63,7 +63,7 @@ async function saveSettings() {
   try {
     const payload = events.value.map((item) => ({
       id: item.id,
-      parcelStatusId: statusSelections.value[item.id] ?? null
+      registerStatusId: statusSelections.value[item.id] ?? null
     }))
 
     await eventsStore.registerUpdateMany(payload)
@@ -112,7 +112,7 @@ onMounted(async () => {
           <template #[`item.eventTitle`]="{ item }">
             <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
           </template>
-          <template #[`item.parcelStatus`]="{ item }">
+          <template #[`item.status`]="{ item }">
             <select
               class="form-control input-0"
               :id="`status-select-${item.id}`"
@@ -121,7 +121,7 @@ onMounted(async () => {
               :data-testid="`status-select-${item.id}`"
             >
               <option value="0">Не менять</option>
-              <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
+              <option v-for="status in registerStatuses" :key="status.id" :value="status.id">
                 {{ status.title }}
               </option>
             </select>

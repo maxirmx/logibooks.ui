@@ -12,7 +12,7 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 const eventsStore = useEventsStore()
 const parcelStatusesStore = useParcelStatusesStore()
 
-const { parcelEvents: events, parcelLoading: loading } = storeToRefs(eventsStore)
+const { registerEvents: events, registerLoading: loading } = storeToRefs(eventsStore)
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
 const statusSelections = ref({})
@@ -25,7 +25,7 @@ const hasEvents = computed(() => events.value?.length > 0)
 // Headers for events settings table
 const headers = [
   { title: 'Событие', key: 'eventTitle', sortable: false, width: '60%' },
-  { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false }
+  { title: 'Статус после события', key: 'parcelStatus', sortable: false }
 ]
 
 function getEventTitle(event) {
@@ -45,13 +45,13 @@ async function loadData() {
   errorMessage.value = ''
   try {
     await parcelStatusesStore.ensureLoaded()
-    await eventsStore.parcelGetAll()
+    await eventsStore.registerGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.parcelStatusId ?? null
       return result
     }, {})
   } catch (error) {
-    errorMessage.value = error?.message || 'Не удалось загрузить настройки событий посылок'
+    errorMessage.value = error?.message || 'Не удалось загрузить настройки событий'
   } finally {
     initializing.value = false
   }
@@ -66,7 +66,7 @@ async function saveSettings() {
       parcelStatusId: statusSelections.value[item.id] ?? null
     }))
 
-    await eventsStore.parcelUpdateMany(payload)
+    await eventsStore.registerUpdateMany(payload)
     await loadData()
   } catch (error) {
     errorMessage.value = error?.message || 'Не удалось сохранить изменения'
@@ -85,8 +85,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="settings form-2" data-testid="parcel-events-processing-settings">
-    <h1 class="primary-heading">Обработка событий</h1>
+  <div class="settings form-2" data-testid="register-events-processing-settings">
+    <h1 class="primary-heading">Обработка событий реестров</h1>
     <hr class="hr" />
 
     <div v-if="initializing" class="text-center m-5">
@@ -105,22 +105,22 @@ onMounted(async () => {
           :headers="headers"
           :items="events"
           item-value="id"
-          class="interlaced-table single-line-table parcel-events-table"
+          class="interlaced-table single-line-table register-events-table"
           density="compact"
           :loading="loading"
         >
-          <template v-slot:[`item.eventTitle`]="{ item }">
-            <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
+          <template #[`item.eventTitle`]="{ item }">
+            <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
           </template>
-          <template v-slot:[`item.parcelStatus`]="{ item }">
+          <template #[`item.parcelStatus`]="{ item }">
             <select
               class="form-control input-0"
               :id="`status-select-${item.id}`"
-              :value="statusSelections[item.id] ?? ''"
+              :value="statusSelections[item.id] ?? '0'"
               @change="onStatusChange(item.id, $event.target.value)"
               :data-testid="`status-select-${item.id}`"
             >
-              <option value="">Не выбрано</option>
+              <option value="0">Не менять</option>
               <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
                 {{ status.title }}
               </option>
@@ -150,11 +150,11 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Ensure select and option elements in the parcel events table match text styling */
-.parcel-events-table .form-control,
-.parcel-events-table .form-control option,
-.parcel-events-table select,
-.parcel-events-table select option {
+/* Ensure select and option elements in the register events table match text styling */
+.register-events-table .form-control,
+.register-events-table .form-control option,
+.register-events-table select,
+.register-events-table select option {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;

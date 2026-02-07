@@ -170,7 +170,7 @@ const router = createRouter({
     {
       path: '/events',
       name: 'Обработка событий',
-      component: () => import('@/views/Events_View.vue'),
+      component: () => import('@/views/ParcelEvents_View.vue'),
       meta: { reqAdmin: true }
     },
     {

@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import { ref } from 'vue'
-import EventsSettings from '@/dialogs/Events_Settings.vue'
+import ParcelEventsProcessingSettings from '@/dialogs/ParcelEvents_Settings.vue'
 import { resolveAll } from './helpers/test-utils'
 
 // Polyfill ResizeObserver for Vuetify components in jsdom
@@ -68,7 +68,7 @@ vi.mock('pinia', async () => {
 const vuetify = createVuetify()
 
 const mountComponent = () =>
-  mount(EventsSettings, {
+  mount(ParcelEventsProcessingSettings, {
     global: {
       plugins: [vuetify],
       stubs: {
@@ -77,7 +77,7 @@ const mountComponent = () =>
     }
   })
 
-describe('Events_Settings.vue', () => {
+describe('ParcelEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
@@ -140,17 +140,17 @@ describe('Events_Settings.vue', () => {
     expect(wrapper.text()).toContain('Save failed')
   })
 
-  it('handles empty ("Не выбрано") status selection as 0', async () => {
+  it('handles empty ("Не менять") status selection as 0', async () => {
     const wrapper = mountComponent()
     await resolveAll()
 
     // Event 1 has null parcelStatusId by default
     const select1 = wrapper.find('#status-select-1')
     expect(select1.exists()).toBe(true)
-    expect(select1.element.value).toBe('')
+    expect(select1.element.value).toBe('0')
 
     const optionTexts1 = select1.findAll('option').map(o => o.text())
-    expect(optionTexts1).toContain('Не выбрано')
+    expect(optionTexts1).toContain('Не менять')
 
     // Change second event's status to empty
     const select2 = wrapper.find('#status-select-2')

@@ -21,8 +21,8 @@ if (!global.ResizeObserver) {
 }
 
 const mockEvents = ref([
-  { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-  { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+  { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null, extData: '' },
+  { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3, extData: 'voice tip' }
 ])
 
 const mockStatuses = ref([
@@ -81,8 +81,8 @@ describe('ParcelEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
-      { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null },
-      { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3 }
+      { id: 1, eventId: 'Created', eventName: 'Создана', parcelStatusId: null, extData: '' },
+      { id: 2, eventId: 'Processing', eventName: 'В обработке', parcelStatusId: 3, extData: 'voice tip' }
     ]
     mockStatuses.value = [
       { id: 1, title: 'Новый' },
@@ -107,6 +107,14 @@ describe('ParcelEvents_Settings.vue', () => {
     expect(selects.length).toBe(2)
     expect(wrapper.find('[data-testid="parcel-event-row-1"]').text()).toBe('Создана')
 
+    // extData inputs present
+    const extInput1 = wrapper.find('#extdata-input-1')
+    expect(extInput1.exists()).toBe(true)
+    expect(extInput1.element.value).toBe('')
+    const extInput2 = wrapper.find('#extdata-input-2')
+    expect(extInput2.exists()).toBe(true)
+    expect(extInput2.element.value).toBe('voice tip')
+
     const options = wrapper.find('#status-select-1').findAll('option')
     const optionTexts = options.map((o) => o.text())
     expect(optionTexts).toContain('Новый')
@@ -123,8 +131,8 @@ describe('ParcelEvents_Settings.vue', () => {
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: 1 },
-      { id: 2, parcelStatusId: 3 }
+      { id: 1, parcelStatusId: 1, extData: '' },
+      { id: 2, parcelStatusId: 3, extData: 'voice tip' }
     ])
   })
 
@@ -163,8 +171,8 @@ describe('ParcelEvents_Settings.vue', () => {
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, parcelStatusId: null }, // unchanged null from initial data
-      { id: 2, parcelStatusId: 0 } // cleared selection saved as 0 sentinel
+      { id: 1, parcelStatusId: null, extData: '' }, // unchanged null from initial data
+      { id: 2, parcelStatusId: 0, extData: 'voice tip' } // cleared selection saved as 0 sentinel
     ])
   })
 })

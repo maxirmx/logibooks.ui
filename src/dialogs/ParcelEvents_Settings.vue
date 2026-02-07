@@ -16,6 +16,7 @@ const { parcelEvents: events, parcelLoading: loading } = storeToRefs(eventsStore
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
 const statusSelections = ref({})
+const extDataSelections = ref({})
 const saving = ref(false)
 const initializing = ref(true)
 const errorMessage = ref('')
@@ -24,8 +25,9 @@ const hasEvents = computed(() => events.value?.length > 0)
 
 // Headers for events settings table
 const headers = [
-  { title: 'Событие', key: 'eventTitle', sortable: false, width: '60%' },
-  { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false }
+  { title: 'Событие', key: 'eventTitle', sortable: false },
+  { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false },
+  { title: 'Голосовая подсказка', key: 'extData', sortable: false, width: '60%' }
 ]
 
 function getEventTitle(event) {
@@ -40,6 +42,13 @@ function onStatusChange(eventId, value) {
   }
 }
 
+function onExtDataChange(eventId, value) {
+  extDataSelections.value = {
+    ...extDataSelections.value,
+    [eventId]: value
+  }
+}
+
 async function loadData() {
   initializing.value = true
   errorMessage.value = ''
@@ -48,6 +57,10 @@ async function loadData() {
     await eventsStore.parcelGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.parcelStatusId ?? null
+      return result
+    }, {})
+    extDataSelections.value = events.value.reduce((result, item) => {
+      result[item.id] = item.extData ?? ''
       return result
     }, {})
   } catch (error) {
@@ -63,7 +76,8 @@ async function saveSettings() {
   try {
     const payload = events.value.map((item) => ({
       id: item.id,
-      parcelStatusId: statusSelections.value[item.id] ?? null
+      parcelStatusId: statusSelections.value[item.id] ?? null,
+      extData: extDataSelections.value[item.id] ?? null
     }))
 
     await eventsStore.parcelUpdateMany(payload)
@@ -85,7 +99,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="settings form-2" data-testid="parcel-events-processing-settings">
+  <div class="settings form-3" data-testid="parcel-events-processing-settings">
     <h1 class="primary-heading">Обработка событий</h1>
     <hr class="hr" />
 
@@ -125,6 +139,16 @@ onMounted(async () => {
                 {{ status.title }}
               </option>
             </select>
+          </template>
+          <template #[`item.extData`]="{ item }">
+            <input
+              type="text"
+              class="form-control input-0"
+              :id="`extdata-input-${item.id}`"
+              :value="extDataSelections[item.id] ?? ''"
+              @input="onExtDataChange(item.id, $event.target.value)"
+              :data-testid="`extdata-input-${item.id}`"
+            />
           </template>
           <template #no-data>
             <div class="text-center m-5">Список событий пуст</div>

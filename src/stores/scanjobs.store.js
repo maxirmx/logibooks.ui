@@ -16,6 +16,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
+  const scannedItems = ref([])
+  const scannedItemsLoading = ref(false)
+  const scannedItemsError = ref(null)
+  const scannedItemsTotalCount = ref(0)
   const ops = ref({
     types: [],
     operations: [],
@@ -61,6 +65,45 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       error.value = err
     } finally {
       loading.value = false
+    }
+  }
+
+  function appendFilter(queryParams, key, value) {
+    if (value === null || value === undefined) return
+    if (typeof value === 'string' && value.trim() === '') return
+    queryParams.append(key, String(value))
+  }
+
+  async function getScannedItems(scanJobId) {
+    const authStore = useAuthStore()
+
+    scannedItemsLoading.value = true
+    scannedItemsError.value = null
+    try {
+      const queryParams = new URLSearchParams({
+        page: authStore.scanneditems_page.toString(),
+        pageSize: authStore.scanneditems_per_page.toString(),
+        sortBy: authStore.scanneditems_sort_by?.[0]?.key || 'scanTime',
+        sortOrder: authStore.scanneditems_sort_by?.[0]?.order || 'desc'
+      })
+
+      appendFilter(queryParams, 'id', authStore.scanneditems_id)
+      appendFilter(queryParams, 'code', authStore.scanneditems_code)
+      appendFilter(queryParams, 'scanTimeFrom', authStore.scanneditems_scan_time_from)
+      appendFilter(queryParams, 'scanTimeTo', authStore.scanneditems_scan_time_to)
+      appendFilter(queryParams, 'userName', authStore.scanneditems_user_name)
+      appendFilter(queryParams, 'number', authStore.scanneditems_number)
+
+      const response = await fetchWrapper.get(
+        `${baseUrl}/${scanJobId}/scanned-items?${queryParams.toString()}`
+      )
+
+      scannedItems.value = response.items || []
+      scannedItemsTotalCount.value = response.pagination?.totalCount || 0
+    } catch (err) {
+      scannedItemsError.value = err
+    } finally {
+      scannedItemsLoading.value = false
     }
   }
 
@@ -204,6 +247,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     loading,
     error,
     totalCount,
+    scannedItems,
+    scannedItemsLoading,
+    scannedItemsError,
+    scannedItemsTotalCount,
     ops,
     opsLoading,
     opsError,
@@ -215,6 +262,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     start,
     pause,
     finish,
+    getScannedItems,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

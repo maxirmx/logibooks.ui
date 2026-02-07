@@ -51,6 +51,10 @@ function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
 
+function openScannedItems(scanJob) {
+  router.push(`/scanjobs/${scanJob.id}/scanned-items`)
+}
+
 async function deleteScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
@@ -188,6 +192,7 @@ onUnmounted(() => {
 
 defineExpose({
   openEditDialog,
+  openScannedItems,
   deleteScanjob,
   startScanjob,
   pauseScanjob,
@@ -258,6 +263,13 @@ defineExpose({
 
         <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.hasWhRole" class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-list"
+              tooltip-text="Сканированные позиции"
+              @click="openScannedItems"
+              :disabled="runningAction || loading"
+            />
             <ActionButton
               :item="item"
               icon="fa-solid fa-play"

@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -62,6 +63,8 @@ describe('scanjobs store', () => {
     expect(store.items).toEqual([])
     expect(store.scanjob).toBeNull()
     expect(store.totalCount).toBe(0)
+    expect(store.scannedItems).toEqual([])
+    expect(store.scannedItemsTotalCount).toBe(0)
     expect(store.ops).toEqual({
       types: [],
       operations: [],
@@ -104,6 +107,63 @@ describe('scanjobs store', () => {
       expect(store.items).toEqual([])
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
+    })
+  })
+
+  describe('getScannedItems', () => {
+    it('fetches scanned items with filters and pagination', async () => {
+      const paginatedResponse = {
+        items: [
+          { id: 11, code: 'CODE-1', scanTime: '2024-01-02T10:00:00', userName: 'User', number: 'N1' }
+        ],
+        pagination: {
+          totalCount: 1,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      }
+      fetchWrapper.get.mockResolvedValue(paginatedResponse)
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.scanneditems_page = 2
+      authStore.scanneditems_per_page = 5
+      authStore.scanneditems_sort_by = [{ key: 'scanTime', order: 'asc' }]
+      authStore.scanneditems_id = '11'
+      authStore.scanneditems_code = 'CODE'
+      authStore.scanneditems_scan_time_from = '2024-01-01'
+      authStore.scanneditems_scan_time_to = '2024-01-03'
+      authStore.scanneditems_user_name = 'User'
+      authStore.scanneditems_number = 'N1'
+
+      await store.getScannedItems(5)
+
+      const calledUrl = fetchWrapper.get.mock.calls[0][0]
+      const url = new URL(calledUrl)
+      expect(url.pathname).toBe('/api/scanjobs/5/scanned-items')
+      expect(url.searchParams.get('page')).toBe('2')
+      expect(url.searchParams.get('pageSize')).toBe('5')
+      expect(url.searchParams.get('sortBy')).toBe('scanTime')
+      expect(url.searchParams.get('sortOrder')).toBe('asc')
+      expect(url.searchParams.get('id')).toBe('11')
+      expect(url.searchParams.get('code')).toBe('CODE')
+      expect(url.searchParams.get('scanTimeFrom')).toBe('2024-01-01')
+      expect(url.searchParams.get('scanTimeTo')).toBe('2024-01-03')
+      expect(url.searchParams.get('userName')).toBe('User')
+      expect(url.searchParams.get('number')).toBe('N1')
+      expect(store.scannedItems).toEqual(paginatedResponse.items)
+      expect(store.scannedItemsTotalCount).toBe(1)
+    })
+
+    it('handles errors when fetching scanned items', async () => {
+      const error = new Error('Network error')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useScanjobsStore()
+
+      await store.getScannedItems(3)
+
+      expect(store.scannedItems).toEqual([])
+      expect(store.scannedItemsError).toBe(error)
+      expect(store.scannedItemsLoading).toBe(false)
     })
   })
 

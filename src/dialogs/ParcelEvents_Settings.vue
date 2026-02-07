@@ -27,7 +27,7 @@ const hasEvents = computed(() => events.value?.length > 0)
 const headers = [
   { title: 'Событие', key: 'eventTitle', sortable: false },
   { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false },
-  { title: 'Голосовая подсказка', key: 'extData', sortable: false, width: '60%' }
+  { title: 'Голосовая подсказка', key: 'extData', sortable: false, width: '50%' }
 ]
 
 function getEventTitle(event) {
@@ -119,7 +119,7 @@ onMounted(async () => {
           :headers="headers"
           :items="events"
           item-value="id"
-          class="interlaced-table single-line-table parcel-events-table"
+          class="single-line-table parcel-events-table"
           density="compact"
           :loading="loading"
         >
@@ -182,5 +182,18 @@ onMounted(async () => {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+}
+
+/* Ensure inputs and selects take full column width */
+.parcel-events-table :deep(td) {
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+}
+
+.parcel-events-table :deep(input[type='text']),
+.parcel-events-table :deep(select) {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
 }
 </style>

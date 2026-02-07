@@ -159,4 +159,17 @@ onMounted(async () => {
   font-size: inherit;
   line-height: inherit;
 }
+
+/* Ensure inputs and selects take full column width */
+.register-events-table :deep(td) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.register-events-table :deep(input[type='text']),
+.register-events-table :deep(select) {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+}
 </style>

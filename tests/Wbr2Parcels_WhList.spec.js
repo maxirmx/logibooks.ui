@@ -18,7 +18,8 @@ const mockItems = ref([
     sellerSticker: 'SL-1',
     weightKg: 2.4,
     quantity: 3,
-    statusId: 7
+    statusId: 7,
+    zone: 1
   }
 ])
 const mockLoading = ref(false)
@@ -102,6 +103,13 @@ vi.mock('@/stores/alert.store.js', () => ({
     alert: alertRef,
     error: alertError,
     clear: alertClear
+  })
+}))
+
+vi.mock('@/stores/warehouses.store.js', () => ({
+  useWarehousesStore: () => ({
+    ops: ref({ zones: [{ value: 1, name: 'Зона 1' }] }),
+    ensureOpsLoaded: vi.fn().mockResolvedValue()
   })
 }))
 

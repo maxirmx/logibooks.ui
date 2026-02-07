@@ -8,15 +8,23 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useEventsStore } from '@/stores/events.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const eventsStore = useEventsStore()
 const parcelStatusesStore = useParcelStatusesStore()
+const warehousesStore = useWarehousesStore()
+const authStore = useAuthStore()
 
 const { parcelEvents: events, parcelLoading: loading } = storeToRefs(eventsStore)
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
+const { ops } = storeToRefs(warehousesStore)
+const { parcelevents_per_page, parcelevents_page } = storeToRefs(authStore)
 
 const statusSelections = ref({})
+const zoneSelections = ref({})
 const extDataSelections = ref({})
 const saving = ref(false)
 const initializing = ref(true)
@@ -26,9 +34,10 @@ const hasEvents = computed(() => events.value?.length > 0)
 
 // Headers for events settings table
 const headers = [
-  { title: 'Событие', key: 'eventTitle', sortable: false },
-  { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false },
-  { title: 'Голосовая подсказка', key: 'extData', sortable: false, width: '50%' }
+  { title: 'Событие', key: 'eventTitle', sortable: false, width: '25%' },
+  { title: 'Статус посылки после события', key: 'parcelStatus', sortable: false, width: '25%' },
+  { title: 'Зона хранения после события', key: 'zone', sortable: false, width: '25%' },
+  { title: 'Голосовая подсказка', key: 'extData', sortable: false, width: '25%' }
 ]
 
 function getEventTitle(event) {
@@ -39,6 +48,14 @@ function onStatusChange(eventId, value) {
   const newValue = value === '' ? 0 : Number(value)
   statusSelections.value = {
     ...statusSelections.value,
+    [eventId]: Number.isNaN(newValue) ? 0 : newValue
+  }
+}
+
+function onZoneChange(eventId, value) {
+  const newValue = value === '' ? 0 : Number(value)
+  zoneSelections.value = {
+    ...zoneSelections.value,
     [eventId]: Number.isNaN(newValue) ? 0 : newValue
   }
 }
@@ -55,9 +72,14 @@ async function loadData() {
   errorMessage.value = ''
   try {
     await parcelStatusesStore.ensureLoaded()
+    await warehousesStore.ensureOpsLoaded()
     await eventsStore.parcelGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.parcelStatusId ?? null
+      return result
+    }, {})
+    zoneSelections.value = events.value.reduce((result, item) => {
+      result[item.id] = item.zone ?? null
       return result
     }, {})
     extDataSelections.value = events.value.reduce((result, item) => {
@@ -78,6 +100,7 @@ async function saveSettings() {
     const payload = events.value.map((item) => ({
       id: item.id,
       parcelStatusId: statusSelections.value[item.id] ?? null,
+      zone: zoneSelections.value[item.id] ?? null,
       extData: extDataSelections.value[item.id] ?? null
     }))
 
@@ -100,7 +123,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="settings form-3" data-testid="parcel-events-processing-settings">
+  <div class="settings table-3" data-testid="parcel-events-processing-settings">
     <div class="header-with-actions">
       <h1 class="primary-heading">Обработка событий посылок</h1>
       <div class="header-actions">
@@ -139,6 +162,9 @@ onMounted(async () => {
 
       <div v-else-if="hasEvents">
         <v-data-table
+          v-model:items-per-page="parcelevents_per_page"
+          v-model:page="parcelevents_page"
+          :items-per-page-options="itemsPerPageOptions"
           :headers="headers"
           :items="events"
           item-value="id"
@@ -160,6 +186,24 @@ onMounted(async () => {
               <option value="0">Не менять</option>
               <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
                 {{ status.title }}
+              </option>
+            </select>
+          </template>
+          <template #[`item.zone`]="{ item }">
+            <select
+              class="form-control input-0"
+              :id="`zone-select-${item.id}`"
+              :value="zoneSelections[item.id] ?? '0'"
+              @change="onZoneChange(item.id, $event.target.value)"
+              :data-testid="`zone-select-${item.id}`"
+            >
+              <option value="0">Не менять</option>
+              <option
+                v-for="zone in ops.zones"
+                :key="zone.value"
+                :value="zone.value"
+              >
+                {{ zone.name }}
               </option>
             </select>
           </template>

@@ -35,6 +35,11 @@ const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
 
+const mockAuthStore = {
+  registerevents_per_page: ref(50),
+  registerevents_page: ref(1)
+}
+
 vi.mock('@/stores/events.store.js', () => ({
   useEventsStore: () => ({
     registerEvents: mockEvents,
@@ -49,6 +54,14 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
     registerStatuses: mockStatuses,
     ensureLoaded
   })
+}))
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => mockAuthStore
+}))
+
+vi.mock('@/helpers/items.per.page.js', () => ({
+  itemsPerPageOptions: [{ value: 10, title: '10' }, { value: 25, title: '25' }, { value: 50, title: '50' }]
 }))
 
 vi.mock('@/router', () => ({

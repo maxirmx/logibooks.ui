@@ -85,6 +85,8 @@ export const useAuthStore = defineStore('auth', () => {
   const registers_search = ref('')
   const registers_sort_by = ref([{ key: 'id', order: 'desc' }])
   const registers_page = ref(1)
+  const registerevents_per_page = ref(50)
+  const registerevents_page = ref(1)
   const parcels_per_page = ref(100)
   const parcels_sort_by = ref([{ key: 'id', order: 'asc' }])
   const parcels_page = ref(1)
@@ -137,6 +139,8 @@ export const useAuthStore = defineStore('auth', () => {
   const customsreportrows_search = ref('')
   const customsreportrows_sort_by = ref([])
   const customsreportrows_page = ref(1)
+  const parcelevents_per_page = ref(50)
+  const parcelevents_page = ref(1)
   const selectedOrderId = ref(null)
   const selectedParcelId = ref(null)
   const returnUrl = ref(null)
@@ -330,6 +334,10 @@ export const useAuthStore = defineStore('auth', () => {
     customsreportrows_search,
     customsreportrows_sort_by,
     customsreportrows_page,
+    parcelevents_per_page,
+    parcelevents_page,
+    registerevents_per_page,
+    registerevents_page,
     selectedOrderId,
     selectedParcelId,
     returnUrl,

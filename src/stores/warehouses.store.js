@@ -14,8 +14,16 @@ export const useWarehousesStore = defineStore('warehouses', () => {
   const warehouse = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const ops = ref({
+    types: [],
+    zones: []
+  })
+  const opsLoading = ref(false)
+  const opsError = ref(null)
 
   let initialized = false
+  let opsInitialized = false
+  let opsPromise = null
 
   async function getAll() {
     loading.value = true
@@ -95,10 +103,44 @@ export const useWarehousesStore = defineStore('warehouses', () => {
     }
   }
 
+  function getOpsLabel(list, value) {
+    const num = Number(value)
+    const match = list?.find((item) => Number(item.value) === num)
+    return match ? match.name : String(value)
+  }
+
   async function ensureLoaded() {
     if (!initialized && !loading.value) {
       await getAll()
     }
+  }
+
+  async function getOps() {
+    opsLoading.value = true
+    opsError.value = null
+    try {
+      ops.value = await fetchWrapper.get(`${baseUrl}/ops`)
+      opsInitialized = true
+      return ops.value
+    } catch (err) {
+      opsError.value = err
+      return null
+    } finally {
+      opsLoading.value = false
+    }
+  }
+
+  async function ensureOpsLoaded() {
+    if (opsInitialized) {
+      return ops.value
+    }
+
+    if (!opsPromise) {
+      opsPromise = getOps().finally(() => {
+        opsPromise = null
+      })
+    }
+    return opsPromise
   }
 
   function getWarehouseName(warehouseId) {
@@ -112,12 +154,18 @@ export const useWarehousesStore = defineStore('warehouses', () => {
     warehouse,
     loading,
     error,
+    ops,
+    opsLoading,
+    opsError,
     getAll,
     getById,
     create,
     update,
     remove,
     ensureLoaded,
+    getOps,
+    ensureOpsLoaded,
+    getOpsLabel,
     getWarehouseName
   }
 })

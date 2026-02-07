@@ -44,6 +44,11 @@ const mockWarehouses = [
 
 const mockWarehouse = mockWarehouses[0]
 
+const mockOps = {
+  types: [{ value: 0, name: 'Тип 1' }],
+  zones: [{ value: 1, name: 'Зона 1' }]
+}
+
 describe('warehouses store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -54,6 +59,10 @@ describe('warehouses store', () => {
     const store = useWarehousesStore()
     expect(store.warehouses).toEqual([])
     expect(store.warehouse).toBeNull()
+    expect(store.ops).toEqual({
+      types: [],
+      zones: []
+    })
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -224,6 +233,56 @@ describe('warehouses store', () => {
       expect(store.getWarehouseName(1)).toBe('Основной склад')
       expect(store.getWarehouseName('2')).toBe('Склад сортировки')
       expect(store.getWarehouseName(999)).toBe('999')
+    })
+  })
+
+  describe('ops', () => {
+    it('fetches ops successfully', async () => {
+      fetchWrapper.get.mockResolvedValue(mockOps)
+      const store = useWarehousesStore()
+
+      const result = await store.getOps()
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses/ops`)
+      expect(store.ops).toEqual(mockOps)
+      expect(result).toEqual(mockOps)
+      expect(store.opsLoading).toBe(false)
+      expect(store.opsError).toBeNull()
+    })
+
+    it('handles ops error', async () => {
+      const error = new Error('Ops error')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useWarehousesStore()
+
+      const result = await store.getOps()
+
+      expect(result).toBeNull()
+      expect(store.opsLoading).toBe(false)
+      expect(store.opsError).toBe(error)
+    })
+
+    it('ensureOpsLoaded only calls ops once', async () => {
+      fetchWrapper.get.mockResolvedValue(mockOps)
+      const store = useWarehousesStore()
+
+      await store.ensureOpsLoaded()
+      await store.ensureOpsLoaded()
+
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses/ops`)
+      expect(store.ops).toEqual(mockOps)
+    })
+
+    it('getOpsLabel returns matching name and falls back to string when missing', () => {
+      const store = useWarehousesStore()
+
+      store.ops = JSON.parse(JSON.stringify(mockOps))
+
+      expect(store.getOpsLabel(store.ops.types, 0)).toBe('Тип 1')
+      expect(store.getOpsLabel(store.ops.zones, '1')).toBe('Зона 1')
+      expect(store.getOpsLabel(store.ops.zones, 999)).toBe('999')
+      expect(store.getOpsLabel(null, 5)).toBe('5')
     })
   })
 

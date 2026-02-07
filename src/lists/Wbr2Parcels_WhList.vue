@@ -8,6 +8,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -27,12 +28,14 @@ const parcelsStore = useParcelsStore()
 const parcelStatusStore = useParcelStatusesStore()
 const registersStore = useRegistersStore()
 const transportationTypesStore = useTransportationTypesStore()
+const warehousesStore = useWarehousesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const { parcels_per_page, parcels_sort_by, parcels_page } = storeToRefs(authStore)
+const { ops } = storeToRefs(warehousesStore)
 
 const registerLoading = ref(true)
 const isInitializing = ref(true)
@@ -106,6 +109,9 @@ onMounted(async () => {
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
  
+    await warehousesStore.ensureOpsLoaded()
+    if (!isComponentMounted.value) return
+
     await fetchRegister()
     await loadOrdersWrapper()
   } catch (error) {
@@ -159,8 +165,8 @@ onUnmounted(() => {
         <template #[`item.statusId`]="{ item }">
           {{ parcelStatusStore.getStatusTitle(item.statusId) }}
         </template>
-        <template #[`item.zone`]="{  }">
-          Зелёная зона
+        <template #[`item.zone`]="{ item }">
+          {{ ops.zones.find(z => z.value === item.zone)?.name || ' ' }}
         </template>
       </v-data-table-server>
 

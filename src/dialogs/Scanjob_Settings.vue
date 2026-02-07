@@ -10,8 +10,6 @@ import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
-import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
-import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -45,14 +43,10 @@ const props = defineProps({
 })
 
 const scanJobsStore = useScanjobsStore()
-const registerStatusesStore = useRegisterStatusesStore()
-const parcelStatusesStore = useParcelStatusesStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const { ops } = storeToRefs(scanJobsStore)
-const { registerStatuses } = storeToRefs(registerStatusesStore)
-const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
 const isCreate = computed(() => props.mode === 'create')
 
@@ -89,10 +83,7 @@ const { errors, handleSubmit, resetForm } = useForm({
     mode: null,
     status: null,
     warehouseId: props.warehouseId ?? null,
-    registerId: props.registerId ?? null,
-    registerStatusIdAfter: null,
-    parcelFoundStatusIdAfter: null,
-    parcelNotFoundStatusIdAfter: null
+    registerId: props.registerId ?? null
   }
 })
 
@@ -103,9 +94,6 @@ const { value: fieldMode } = useField('mode')
 const { value: status } = useField('status')
 const { value: fieldWarehouseId } = useField('warehouseId')
 const { value: fieldRegisterId } = useField('registerId')
-const { value: registerStatusIdAfter } = useField('registerStatusIdAfter')
-const { value: parcelFoundStatusIdAfter } = useField('parcelFoundStatusIdAfter')
-const { value: parcelNotFoundStatusIdAfter } = useField('parcelNotFoundStatusIdAfter')
 
 const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(fieldWarehouseId.value))
 const resolvedDealNumber = computed(() => currentScanjob.value?.dealNumber || props.dealNumber || '')
@@ -123,8 +111,6 @@ onMounted(async () => {
   try {
     await scanJobsStore.ensureOpsLoaded()
     await warehousesStore.ensureLoaded()
-    await registerStatusesStore.ensureLoaded()
-    await parcelStatusesStore.ensureLoaded()
 
     if (isCreate.value) {
       const defaults = {
@@ -135,10 +121,7 @@ onMounted(async () => {
         mode: ops.value?.modes?.[0]?.value ?? null,
         status: ops.value?.statuses?.[0]?.value ?? null,
         warehouseId: props.warehouseId ?? null,
-        registerId: props.registerId ?? null,
-        registerStatusIdAfter: 0,
-        parcelFoundStatusIdAfter: 0,
-        parcelNotFoundStatusIdAfter: 0
+        registerId: props.registerId ?? null
       }
       resetForm({ values: defaults })
       await nextTick()
@@ -158,10 +141,7 @@ onMounted(async () => {
         mode: loaded.mode,
         status: loaded.status,
         warehouseId: loaded.warehouseId ?? props.warehouseId ?? null,
-        registerId: loaded.registerId ?? props.registerId ?? null,
-        registerStatusIdAfter: loaded.registerStatusIdAfter ?? 0,
-        parcelFoundStatusIdAfter: loaded.parcelFoundStatusIdAfter ?? 0,
-        parcelNotFoundStatusIdAfter: loaded.parcelNotFoundStatusIdAfter ?? 0
+        registerId: loaded.registerId ?? props.registerId ?? null
       }})
       await nextTick()
       currentScanjob.value = loaded
@@ -191,10 +171,7 @@ function buildPayload(values) {
     mode: toNumberOrNull(values.mode),
     status: toNumberOrNull(values.status),
     warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
-    registerId: toNumberOrNull(values.registerId ?? props.registerId),
-    registerStatusIdAfter: toNumberOrNull(values.registerStatusIdAfter),
-    parcelFoundStatusIdAfter: toNumberOrNull(values.parcelFoundStatusIdAfter),
-    parcelNotFoundStatusIdAfter: toNumberOrNull(values.parcelNotFoundStatusIdAfter)
+    registerId: toNumberOrNull(values.registerId ?? props.registerId)
   }
 }
 
@@ -235,10 +212,7 @@ async function saveScanjobQuiet() {
     mode: fieldMode.value,
     status: status.value,
     warehouseId: fieldWarehouseId.value,
-    registerId: fieldRegisterId.value,
-    registerStatusIdAfter: registerStatusIdAfter.value,
-    parcelFoundStatusIdAfter: parcelFoundStatusIdAfter.value,
-    parcelNotFoundStatusIdAfter: parcelNotFoundStatusIdAfter.value
+    registerId: fieldRegisterId.value
   }
   const payload = buildPayload(values)
   try {
@@ -531,52 +505,6 @@ defineExpose({ onSubmit, cancel })
         </div>
       </div>
 
-    <div class="header-with-actions">
-      <h3 class="secondary-heading">Статусы после завершения сканирования</h3>
-    </div>
-      <div class="form-row" id="statuses">
-        <div class="form-group">
-          <label for="registerStatusIdAfter" class="label">Реестр:</label>
-          <select
-            id="registerStatusIdAfter"
-            class="form-control input"
-            v-model="registerStatusIdAfter"
-          >
-            <option value="0">Не менять</option>
-            <option v-for="statusItem in registerStatuses" :key="statusItem.id" :value="statusItem.id">
-              {{ statusItem.title }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="parcelFoundStatusIdAfter" class="label">Найденная посылка:</label>
-          <select
-            id="parcelFoundStatusIdAfter"
-            class="form-control input"
-            v-model="parcelFoundStatusIdAfter"
-          >
-            <option value="0">Не менять</option>
-            <option v-for="statusItem in parcelStatuses" :key="statusItem.id" :value="statusItem.id">
-              {{ statusItem.title }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="parcelNotFoundStatusIdAfter" class="label">Ненайденная посылка:</label>
-          <select
-            id="parcelNotFoundStatusIdAfter"
-            class="form-control input"
-            v-model="parcelNotFoundStatusIdAfter"
-          >
-            <option value="0">Не менять</option>
-            <option v-for="statusItem in parcelStatuses" :key="statusItem.id" :value="statusItem.id">
-              {{ statusItem.title }}
-            </option>
-          </select>
-        </div>
-      </div>
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
       <div v-if="errors.warehouseId" class="alert alert-danger mt-3 mb-0">{{ errors.warehouseId }}</div>
       <div v-if="errors.type" class="alert alert-danger mt-3 mb-0">{{ errors.type }}</div>
@@ -591,13 +519,4 @@ defineExpose({ onSubmit, cancel })
   </div>
 </template>
 
-<style scoped>
-.secondary-heading {
-  margin-top: 0.75rem;  
-  margin-top: 1.75rem;  
-  margin-bottom: 0.75rem;  
-  text-decoration: bold;
-  color: #1976d2;
-  transition: 0.4s;
-}
-</style>
+<style scoped></style>

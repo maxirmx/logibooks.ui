@@ -6,13 +6,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useParcelProcessingEventsStore } from '@/stores/parcel.processing.events.store.js'
+import { useEventsStore } from '@/stores/events.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 
-const parcelProcessingEventsStore = useParcelProcessingEventsStore()
+const eventsStore = useEventsStore()
 const parcelStatusesStore = useParcelStatusesStore()
 
-const { events, loading } = storeToRefs(parcelProcessingEventsStore)
+const { events, loading } = storeToRefs(eventsStore)
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
 const statusSelections = ref({})
@@ -45,7 +45,7 @@ async function loadData() {
   errorMessage.value = ''
   try {
     await parcelStatusesStore.ensureLoaded()
-    await parcelProcessingEventsStore.getAll()
+    await eventsStore.getAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.parcelStatusId ?? null
       return result
@@ -66,7 +66,7 @@ async function saveSettings() {
       parcelStatusId: statusSelections.value[item.id] ?? null
     }))
 
-    await parcelProcessingEventsStore.updateMany(payload)
+    await eventsStore.updateMany(payload)
     await loadData()
   } catch (error) {
     errorMessage.value = error?.message || 'Не удалось сохранить изменения'

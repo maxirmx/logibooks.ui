@@ -35,8 +35,8 @@ const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/parcel.processing.events.store.js', () => ({
-  useParcelProcessingEventsStore: () => ({
+vi.mock('@/stores/events.store.js', () => ({
+  useEventsStore: () => ({
     events: mockEvents,
     loading: ref(false),
     getAll,

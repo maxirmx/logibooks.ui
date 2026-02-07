@@ -168,9 +168,9 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
-      path: '/parceleventprocessing',
-      name: 'Обработка событий посылок',
-      component: () => import('@/views/ParcelEventProcessing_View.vue'),
+      path: '/events',
+      name: 'Обработка событий',
+      component: () => import('@/views/Events_View.vue'),
       meta: { reqAdmin: true }
     },
     {

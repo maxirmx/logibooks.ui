@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import { ref } from 'vue'
-import ParcelEventsProcessingSettings from '@/dialogs/ParcelEventsProcessing_Settings.vue'
+import EventsSettings from '@/dialogs/Events_Settings.vue'
 import { resolveAll } from './helpers/test-utils'
 
 // Polyfill ResizeObserver for Vuetify components in jsdom
@@ -68,7 +68,7 @@ vi.mock('pinia', async () => {
 const vuetify = createVuetify()
 
 const mountComponent = () =>
-  mount(ParcelEventsProcessingSettings, {
+  mount(EventsSettings, {
     global: {
       plugins: [vuetify],
       stubs: {
@@ -77,7 +77,7 @@ const mountComponent = () =>
     }
   })
 
-describe('ParcelEventsProcessing_Settings.vue', () => {
+describe('Events_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [

@@ -16,6 +16,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
+  const scannedItems = ref([])
+  const scannedItemsLoading = ref(false)
+  const scannedItemsError = ref(null)
+  const scannedItemsTotalCount = ref(0)
   const ops = ref({
     types: [],
     operations: [],
@@ -61,6 +65,36 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       error.value = err
     } finally {
       loading.value = false
+    }
+  }
+
+  async function getScannedItems(scanJobId) {
+    const authStore = useAuthStore()
+
+    scannedItemsLoading.value = true
+    scannedItemsError.value = null
+    try {
+      const queryParams = new URLSearchParams({
+        page: authStore.scanneditems_page.toString(),
+        pageSize: authStore.scanneditems_per_page.toString(),
+        sortBy: authStore.scanneditems_sort_by?.[0]?.key || 'scanTime',
+        sortOrder: authStore.scanneditems_sort_by?.[0]?.order || 'desc'
+      })
+
+      if (authStore.scanneditems_search) {
+        queryParams.append('search', authStore.scanneditems_search)
+      }
+
+      const response = await fetchWrapper.get(
+        `${baseUrl}/${scanJobId}/scanned-items?${queryParams.toString()}`
+      )
+
+      scannedItems.value = response.items || []
+      scannedItemsTotalCount.value = response.pagination?.totalCount || 0
+    } catch (err) {
+      scannedItemsError.value = err
+    } finally {
+      scannedItemsLoading.value = false
     }
   }
 
@@ -204,6 +238,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     loading,
     error,
     totalCount,
+    scannedItems,
+    scannedItemsLoading,
+    scannedItemsError,
+    scannedItemsTotalCount,
     ops,
     opsLoading,
     opsError,
@@ -215,6 +253,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     start,
     pause,
     finish,
+    getScannedItems,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

@@ -132,7 +132,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqAnyRole: true }
+      meta: { reqWhRole: true }
     },
     {
       path: '/notification/create',

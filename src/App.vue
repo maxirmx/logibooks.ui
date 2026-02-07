@@ -190,7 +190,10 @@ function getUserName() {
             <v-list-item v-bind="props" title="Настройки"></v-list-item>
           </template>
           <v-list-item>
-            <RouterLink to="/events" class="link">Посылки</RouterLink>
+            <RouterLink to="/parcelevents" class="link">Посылки</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/registerevents" class="link">Реестры/Партии</RouterLink>
           </v-list-item>
         </v-list-group>
 

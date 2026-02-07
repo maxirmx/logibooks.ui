@@ -86,7 +86,7 @@ onMounted(async () => {
 
 <template>
   <div class="settings form-2" data-testid="register-events-processing-settings">
-    <h1 class="primary-heading">Обработка событий реестров</h1>
+    <h1 class="primary-heading">Обработка событий реестров/партий</h1>
     <hr class="hr" />
 
     <div v-if="initializing" class="text-center m-5">

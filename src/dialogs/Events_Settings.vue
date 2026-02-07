@@ -79,63 +79,84 @@ function cancel() {
   router.back()
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  await loadData()
+})
 </script>
 
 <template>
-  <v-container class="d-flex flex-column justify-center align-center fill-height">
-    <v-card class="pa-4 ma-2" elevation="8" min-width="480" max-width="720">
-      <v-card-title class="text-h5 justify-center">Обработка событий</v-card-title>
-      <v-card-text>
-        <template v-if="errorMessage">
-          <v-alert type="error" dismissible class="mb-4">{{ errorMessage }}</v-alert>
-        </template>
+  <div class="settings form-2" data-testid="parcel-events-processing-settings">
+    <h1 class="primary-heading">Обработка событий</h1>
+    <hr class="hr" />
 
-        <v-skeleton-loader v-if="initializing" type="table" />
+    <div v-if="initializing" class="text-center m-5">
+      <span class="spinner-border spinner-border-lg align-center"></span>
+    </div>
 
-        <template v-else-if="hasEvents">
-          <v-data-table :headers="headers" :items="events" :loading="loading" item-value="id" density="compact">
-            <template #[`item.eventTitle`]="{ item }">
-              <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
-            </template>
-            <template #[`item.parcelStatus`]="{ item }">
-              <select
-                :id="`status-select-${item.id}`"
-                class="v-select"
-                :value="statusSelections[item.id] ?? ''"
-                @change="onStatusChange(item.id, $event.target.value)"
-              >
-                <option value="">Не выбрано</option>
-                <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
-                  {{ status.title }}
-                </option>
-              </select>
-            </template>
-          </v-data-table>
-        </template>
-        <template v-else>
-          <v-alert type="info">Нет событий для настройки</v-alert>
-        </template>
-      </v-card-text>
-      <v-card-actions class="justify-center">
-        <button class="button primary" :disabled="saving || initializing" @click="saveSettings">
-          <font-awesome-icon icon="save" class="icon" />
+    <div v-else>
+      <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0">{{ errorMessage }}</div>
+
+      <div v-if="loading" class="text-center m-5">
+        <span class="spinner-border spinner-border-lg align-center"></span>
+      </div>
+
+      <div v-else-if="hasEvents">
+        <v-data-table
+          :headers="headers"
+          :items="events"
+          item-value="id"
+          class="interlaced-table single-line-table parcel-events-table"
+          density="compact"
+          :loading="loading"
+        >
+          <template v-slot:[`item.eventTitle`]="{ item }">
+            <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
+          </template>
+          <template v-slot:[`item.parcelStatus`]="{ item }">
+            <select
+              class="form-control input-0"
+              :id="`status-select-${item.id}`"
+              :value="statusSelections[item.id] ?? ''"
+              @change="onStatusChange(item.id, $event.target.value)"
+              :data-testid="`status-select-${item.id}`"
+            >
+              <option value="">Не выбрано</option>
+              <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
+                {{ status.title }}
+              </option>
+            </select>
+          </template>
+          <template #no-data>
+            <div class="text-center m-5">Список событий пуст</div>
+          </template>
+        </v-data-table>
+      </div>
+
+      <div v-else class="text-center m-5">Список событий пуст</div>
+
+      <div class="form-group mt-8">
+        <button class="button primary" type="button" :disabled="saving || initializing" @click="saveSettings">
+          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
+          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           Сохранить
         </button>
-        <button class="button" @click="cancel">
-          <font-awesome-icon icon="xmark" class="icon" />
+        <button class="button secondary" type="button" :disabled="saving" @click="cancel">
+          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
-      </v-card-actions>
-    </v-card>
-  </v-container>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.v-select {
-  padding: 4px 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  min-width: 180px;
+/* Ensure select and option elements in the parcel events table match text styling */
+.parcel-events-table .form-control,
+.parcel-events-table .form-control option,
+.parcel-events-table select,
+.parcel-events-table select option {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 </style>

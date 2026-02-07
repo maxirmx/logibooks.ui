@@ -51,6 +51,10 @@ function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
 
+function openScannedItems(scanJob) {
+  router.push(`/scanjobs/${scanJob.id}/scanned-items`)
+}
+
 async function deleteScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
@@ -188,6 +192,7 @@ onUnmounted(() => {
 
 defineExpose({
   openEditDialog,
+  openScannedItems,
   deleteScanjob,
   startScanjob,
   pauseScanjob,
@@ -284,6 +289,13 @@ defineExpose({
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать задание на сканирование"
               @click="openEditDialog"
+              :disabled="runningAction || loading"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-list"
+              tooltip-text="Результаты сканирования"
+              @click="openScannedItems"
               :disabled="runningAction || loading"
             />
             <ActionButton

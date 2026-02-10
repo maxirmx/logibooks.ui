@@ -48,18 +48,12 @@ defineProps({
 })
 
 defineEmits([
-  'update:currentStatusId',
   'validate-sw',
   'validate-sw-ex',
   'validate-fc',
   'approve',
   'approve-excise'
 ])
-
-function handleStatusChange(e) {
-  const newStatusId = parseInt(e.target.value)
-  this.$emit('update:currentStatusId', newStatusId)
-}
 </script>
 
 <template>
@@ -72,7 +66,6 @@ function handleStatusChange(e) {
           name="statusId" 
           id="statusId" 
           class="form-control input"
-          @change="(e) => $emit('update:currentStatusId', parseInt(e.target.value))"
         >
           <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">
             {{ s.title }}

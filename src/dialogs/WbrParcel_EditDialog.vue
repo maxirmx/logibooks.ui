@@ -125,16 +125,8 @@ function ensureNextParcelsPromise() {
   return nextParcelsPromise
 }
 
-// Reactive reference to track current statusId for color updates
-const currentStatusId = ref(null)
-
 // Track overlay state for disabling form elements
 const overlayActive = ref(false)
-
-// Watch for changes in item.statusId to initialize currentStatusId
-watch(() => item.value?.statusId, (newStatusId) => {
-  currentStatusId.value = newStatusId
-}, { immediate: true })
 
 const isDescriptionVisible = ref(false)
 
@@ -418,7 +410,6 @@ async function onLookup(values) {
         :is-submitting="isSubmitting"
         :running-action="runningAction"
         :loading="loading"
-        @update:current-status-id="currentStatusId = $event"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
         @validate-fc="(vals) => validateParcel(vals, false)"

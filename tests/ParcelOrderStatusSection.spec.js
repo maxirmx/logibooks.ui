@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
@@ -22,7 +22,7 @@ vi.mock('@fortawesome/vue-fontawesome', () => ({
 
 // Mock the helpers
 vi.mock('@/helpers/parcels.check.helpers.js', () => ({
-  getCheckStatusInfo: vi.fn((item, feacnOrders, stopWords, feacnPrefixes) => {
+  getCheckStatusInfo: vi.fn((item) => {
     // Return info if item exists and has certain properties
     return item && item.id > 1 ? 'Test status info' : null
   }),

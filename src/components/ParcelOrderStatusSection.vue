@@ -3,12 +3,13 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
+import { computed } from 'vue'
 import { Field } from 'vee-validate'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import ActionButton from '@/components/ActionButton.vue'
 
-defineProps({
+const props = defineProps({
   item: {
     type: Object,
     required: true
@@ -54,6 +55,16 @@ defineEmits([
   'approve',
   'approve-excise'
 ])
+
+// Computed property for button disabled state
+const buttonsDisabled = computed(() => 
+  props.isSubmitting || props.runningAction || props.loading
+)
+
+// Computed property for check status info to avoid duplicate calls
+const checkStatusInfo = computed(() => 
+  getCheckStatusInfo(props.item, props.feacnOrders, props.stopWords, props.feacnPrefixes)
+)
 </script>
 
 <template>
@@ -92,7 +103,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-spell-check"
             tooltip-text="Сохранить и проверить стоп слова"
-            :disabled="isSubmitting || runningAction || loading"
+            :disabled="buttonsDisabled"
             @click="$emit('validate-sw', values)"
             :iconSize="'2x'"
           />
@@ -100,7 +111,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-book-journal-whills"
             tooltip-text="Сохранить и проверить стоп слова с учётом исторических данных"
-            :disabled="isSubmitting || runningAction || loading"
+            :disabled="buttonsDisabled"
             @click="$emit('validate-sw-ex', values)"
             :iconSize="'2x'"
           />
@@ -108,7 +119,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-anchor-circle-check"
             tooltip-text="Сохранить и проверить коды ТН ВЭД"
-            :disabled="isSubmitting || runningAction || loading"
+            :disabled="buttonsDisabled"
             @click="$emit('validate-fc', values)"
             :iconSize="'2x'"
           />
@@ -118,7 +129,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-check-circle"
             tooltip-text="Сохранить и согласовать"
-            :disabled="isSubmitting || runningAction || loading"
+            :disabled="buttonsDisabled"
             @click="$emit('approve', values)"
             variant="green"
             :iconSize="'2x'"
@@ -127,7 +138,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-check-circle"
             tooltip-text="Сохранить и согласовать с акцизом"
-            :disabled="isSubmitting || runningAction || loading"
+            :disabled="buttonsDisabled"
             @click="$emit('approve-excise', values)"
             variant="orange"
             :iconSize="'2x'"
@@ -143,11 +154,11 @@ defineEmits([
       </div>
       <!-- Stopwords information when there are issues -->
       <div 
-        v-if="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
+        v-if="checkStatusInfo"
         :class="['form-group', CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-info' : 'stopwords-info-approved']"
       >
         <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved'">
-          {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
+          {{ checkStatusInfo }}
         </div>
       </div>
     </div>

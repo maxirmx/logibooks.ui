@@ -62,7 +62,7 @@ describe('OzonParcel_EditDialog delete flow', () => {
             template: '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
-          CheckStatusActionsBar: true,
+          ParcelOrderStatusSection: true,
           FeacnCodeEditor: true,
           ParcelNumberExt: true,
           ArticleWithH: true,
@@ -104,7 +104,7 @@ describe('OzonParcel_EditDialog delete flow', () => {
             template: '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
-          CheckStatusActionsBar: true,
+          ParcelOrderStatusSection: true,
           FeacnCodeEditor: true,
           ParcelNumberExt: true,
           ArticleWithH: true,

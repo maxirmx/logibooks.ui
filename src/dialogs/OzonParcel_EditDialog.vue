@@ -20,12 +20,11 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
-import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
-import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
+import ParcelOrderStatusSection from '@/components/ParcelOrderStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ArticleWithH from '@/components/ArticleWithH.vue'
@@ -423,53 +422,24 @@ async function onLookup(values) {
     </div>
     <hr class="hr" />
 
-      <!-- Order Identification & Status Section -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="statusId" class="label">{{ ozonRegisterColumnTitles.statusId }}:</label>
-            <Field as="select" name="statusId" id="statusId" class="form-control input"
-                   @change="(e) => currentStatusId = parseInt(e.target.value)">
-              <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
-            </Field>
-          </div>
-          <div class="form-group">
-            <label for="checkStatus" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
-            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
-              <font-awesome-icon
-                class="bookmark-icon"
-                icon="fa-solid fa-bookmark"
-                v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
-              />
-              {{ new CheckStatusCode(item?.checkStatus).toString() }}
-            </div>
-            <CheckStatusActionsBar
-              :item="item"
-              :values="values"
-              :disabled="isSubmitting || runningAction || loading"
-              @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
-              @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
-              @validate-fc="(vals) => validateParcel(vals, false)"
-              @approve="approveParcel"
-              @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
-            />
-          </div>
-          <!-- Last view -->
-          <div class="form-group">
-            <label for="lastView" class="label">Последний просмотр:</label>
-            <div class="readonly-field" name="lastView" id="lastView">
-              {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
-            </div>
-          </div>          
-          <!-- Stopwords information when there are issues -->
-          <div v-if="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" 
-              :class="['form-group',  CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-info' : 'stopwords-info-approved']">
-            <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved'">
-              {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Order Status Section -->
+      <ParcelOrderStatusSection
+        :item="item"
+        :values="values"
+        :status-store="statusStore"
+        :feacn-orders="feacnOrders"
+        :stop-words="stopWords"
+        :feacn-prefixes="feacnPrefixes"
+        :is-submitting="isSubmitting"
+        :running-action="runningAction"
+        :loading="loading"
+        @update:current-status-id="currentStatusId = $event"
+        @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
+        @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
+        @validate-fc="(vals) => validateParcel(vals, false)"
+        @approve="approveParcel"
+        @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
+      />
 
       <!-- Feacn Code Section -->
       <FeacnCodeEditor

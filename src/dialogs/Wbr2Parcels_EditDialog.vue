@@ -25,7 +25,7 @@ import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
-import CheckStatusActionsBar from '@/components/CheckStatusActionsBar.vue'
+import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
@@ -406,52 +406,21 @@ async function onLookup(values) {
     <hr class="hr" />
       
       <!-- Order Identification & Status Section -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="statusId" class="label">Статус:</label>
-            <Field as="select" name="statusId" id="statusId" class="form-control input"
-                 @change="(e) => currentStatusId = parseInt(e.target.value)">
-              <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
-            </Field>
-          </div>
-          <div class="form-group">
-            <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
-              <font-awesome-icon
-                class="bookmark-icon"
-                icon="fa-solid fa-bookmark"
-                v-if="CheckStatusCode.isInheritedSw(item.checkStatus)"
-              />
-              {{ new CheckStatusCode(item?.checkStatus).toString() }}
-            </div>
-            <CheckStatusActionsBar
-              :item="item"
-              :values="values"
-              :disabled="isSubmitting || runningAction || loading"
-              @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
-              @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
-              @validate-fc="(vals) => validateParcel(vals, false)"
-              @approve="approveParcel"
-              @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
-            />
-          </div>
-          <!-- Last view -->
-          <div class="form-group">
-            <label for="lastView" class="label">Последний просмотр:</label>
-            <div class="readonly-field" id="lastView" name="lastView">
-              {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
-            </div>
-          </div>          
-          <!-- Stopwords information when there are issues -->
-          <div v-if="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)" 
-              :class="['form-group',  CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-info' : 'stopwords-info-approved']">
-            <div :class="CheckStatusCode.hasIssues(item?.checkStatus) ? 'stopwords-text' : 'stopwords-text-approved'">
-              {{ getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes) }}
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <ParcelStatusSection
+        :item="item"
+        :values="values"
+        :parcel-statuses="statusStore.parcelStatuses"
+        :get-check-status-class="getCheckStatusClass"
+        :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
+        :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
+        :disabled="isSubmitting || runningAction || loading"
+        @status-change="(statusId) => (currentStatusId = statusId)"
+        @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
+        @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
+        @validate-fc="(vals) => validateParcel(vals, false)"
+        @approve="approveParcel"
+        @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
+      />
       <!-- Feacn Code Section -->
       <FeacnCodeEditor
         :item="item"

@@ -62,7 +62,7 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
             template: '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
-          CheckStatusActionsBar: true,
+          ParcelStatusSection: true,
           FeacnCodeEditor: true,
           ParcelNumberExt: true,
           ActionButton: true,

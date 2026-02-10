@@ -427,14 +427,13 @@ async function onLookup(values) {
       <div class="form-section">
         <div class="form-row">
           <div class="form-group">
-            <label for="statusId" class="label">{{ ozonRegisterColumnTitles.statusId }}:</label>
+            <label for="statusId" class="label">Статус:</label>
             <Field as="select" name="statusId" id="statusId" class="form-control input"
                    @change="(e) => currentStatusId = parseInt(e.target.value)">
               <option v-for="s in statusStore.parcelStatuses" :key="s.id" :value="s.id">{{ s.title }}</option>
             </Field>
           </div>
           <div class="form-group">
-            <label for="checkStatus" class="label">{{ ozonRegisterColumnTitles.checkStatus }}:</label>
             <div class="readonly-field status-cell" :class="getCheckStatusClass(item?.checkStatus)" name="checkStatus" id="checkStatus">
               <font-awesome-icon
                 class="bookmark-icon"

@@ -126,7 +126,7 @@ defineEmits([
           <ActionButton
             :item="item"
             icon="fa-solid fa-check-circle"
-            tooltip-text="Сохранить и согласовать c акцизом"
+            tooltip-text="Сохранить и согласовать с акцизом"
             :disabled="isSubmitting || runningAction || loading"
             @click="$emit('approve-excise', values)"
             variant="orange"

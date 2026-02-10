@@ -66,14 +66,6 @@ describe('ParcelStatusSection', () => {
     expect(defaultProps.getCheckStatusClass).toHaveBeenCalledWith(defaultProps.item.checkStatus)
   })
 
-  it('emits status-change with parsed integer when status changes', async () => {
-    const wrapper = createWrapper()
-
-    await wrapper.find('#statusId').setValue('1')
-
-    expect(wrapper.emitted('status-change')).toEqual([[1]])
-  })
-
   it('emits all action events with form values payload', async () => {
     const wrapper = createWrapper()
     const buttons = wrapper.findAllComponents(ActionButton)

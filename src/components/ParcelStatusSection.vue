@@ -38,7 +38,7 @@ defineProps({
   }
 })
 
-defineEmits(['status-change', 'validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve-excise'])
+defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve-excise'])
 </script>
 
 <template>
@@ -51,7 +51,6 @@ defineEmits(['status-change', 'validate-sw', 'validate-sw-ex', 'validate-fc', 'a
           name="statusId"
           id="statusId"
           class="form-control input"
-          @change="$emit('status-change', Number.parseInt($event.target.value, 10))"
         >
           <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">{{ status.title }}</option>
         </Field>

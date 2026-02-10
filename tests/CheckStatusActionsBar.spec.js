@@ -71,7 +71,7 @@ describe('CheckStatusActionsBar', () => {
       expect(validateSwButton.props('tooltipText')).toBe('Сохранить и проверить стоп слова')
       expect(validateSwButton.props('item')).toEqual(defaultProps.item)
       expect(validateSwButton.props('disabled')).toBe(false)
-      expect(validateSwButton.props('iconSize')).toBe('1x')
+      expect(validateSwButton.props('iconSize')).toBe('2x')
     })
 
     it('renders validate stopwords extended button with correct props', () => {
@@ -83,7 +83,7 @@ describe('CheckStatusActionsBar', () => {
       expect(validateSwExButton.props('tooltipText')).toBe('Сохранить и проверить стоп слова с учётом исторических данных')
       expect(validateSwExButton.props('item')).toEqual(defaultProps.item)
       expect(validateSwExButton.props('disabled')).toBe(false)
-      expect(validateSwExButton.props('iconSize')).toBe('1x')
+      expect(validateSwExButton.props('iconSize')).toBe('2x')
     })
 
     it('renders validate feacn codes button with correct props', () => {
@@ -95,7 +95,7 @@ describe('CheckStatusActionsBar', () => {
       expect(validateFcButton.props('tooltipText')).toBe('Сохранить и проверить коды ТН ВЭД')
       expect(validateFcButton.props('item')).toEqual(defaultProps.item)
       expect(validateFcButton.props('disabled')).toBe(false)
-      expect(validateFcButton.props('iconSize')).toBe('1x')
+      expect(validateFcButton.props('iconSize')).toBe('2x')
     })
 
     it('renders approve button with correct props', () => {
@@ -108,7 +108,7 @@ describe('CheckStatusActionsBar', () => {
       expect(approveButton.props('item')).toEqual(defaultProps.item)
       expect(approveButton.props('disabled')).toBe(false)
       expect(approveButton.props('variant')).toBe('green')
-      expect(approveButton.props('iconSize')).toBe('1x')
+      expect(approveButton.props('iconSize')).toBe('2x')
     })
 
     it('renders approve with excise button with correct props', () => {
@@ -121,7 +121,7 @@ describe('CheckStatusActionsBar', () => {
       expect(approveExciseButton.props('item')).toEqual(defaultProps.item)
       expect(approveExciseButton.props('disabled')).toBe(false)
       expect(approveExciseButton.props('variant')).toBe('orange')
-      expect(approveExciseButton.props('iconSize')).toBe('1x')
+      expect(approveExciseButton.props('iconSize')).toBe('2x')
     })
   })
 

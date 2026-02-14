@@ -66,6 +66,10 @@ export const useAuthStore = defineStore('auth', () => {
   const airports_search = ref('')
   const airports_sort_by = ref(['id'])
   const airports_page = ref(1)
+  const hotkeyactionschemes_per_page = ref(10)
+  const hotkeyactionschemes_search = ref('')
+  const hotkeyactionschemes_sort_by = ref(['id'])
+  const hotkeyactionschemes_page = ref(1)
   const registers_per_page = ref(50)
   const registers_search = ref('')
   const registers_sort_by = ref([{ key: 'id', order: 'desc' }])
@@ -243,6 +247,10 @@ export const useAuthStore = defineStore('auth', () => {
     airports_search,
     airports_sort_by,
     airports_page,
+    hotkeyactionschemes_per_page,
+    hotkeyactionschemes_search,
+    hotkeyactionschemes_sort_by,
+    hotkeyactionschemes_page,
     registers_per_page,
     registers_search,
     registers_sort_by,

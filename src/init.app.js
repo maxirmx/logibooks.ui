@@ -119,6 +119,7 @@ import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
+import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -182,12 +183,14 @@ export function initializeApp() {
   const transportationTypesStore = useTransportationTypesStore()
   const customsProceduresStore = useCustomsProceduresStore()
   const countriesStore = useCountriesStore()
+  const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 
   // Load FEACN orders globally at app startup
   feacnOrdersStore.ensureLoaded()
   transportationTypesStore.ensureLoaded()
   customsProceduresStore.ensureLoaded()
   countriesStore.ensureLoaded()
+  hotKeyActionSchemesStore.ensureOpsLoaded()
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

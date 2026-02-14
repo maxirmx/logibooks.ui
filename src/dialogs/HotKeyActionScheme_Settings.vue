@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   mode: {
@@ -25,6 +26,7 @@ const props = defineProps({
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 const { ops } = storeToRefs(hotKeyActionSchemesStore)
 const isCreate = computed(() => props.mode === 'create')
+const isSubmitting = ref(false)
 
 let hotKeyActionScheme = ref({
   name: '',
@@ -74,6 +76,9 @@ const schema = Yup.object({
 })
 
 function onSubmit(values, { setErrors }) {
+  if (isSubmitting.value) return
+
+  isSubmitting.value = true
   const submitData = {
     id: hotKeyActionScheme.value.id,
     name: values.name,
@@ -93,6 +98,9 @@ function onSubmit(values, { setErrors }) {
           setErrors({ apiError: error.message || 'Ошибка при создании схемы настройки клавиатуры' })
         }
       })
+      .finally(() => {
+        isSubmitting.value = false
+      })
   }
 
   return hotKeyActionSchemesStore
@@ -103,19 +111,46 @@ function onSubmit(values, { setErrors }) {
     .catch((error) => {
       setErrors({ apiError: error.message || 'Ошибка при сохранении схемы настройки клавиатуры' })
     })
+    .finally(() => {
+      isSubmitting.value = false
+    })
+}
+
+function onCancel() {
+  router.push('/hotkeyactionschemes')
 }
 </script>
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
-    <hr class="hr" />
     <Form
       @submit="onSubmit"
       :initial-values="hotKeyActionScheme"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, handleSubmit }"
     >
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ getTitle() }}</h1>
+        <div class="header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            icon-size="2x"
+            :tooltip-text="getButtonText()"
+            :disabled="isSubmitting"
+            @click="handleSubmit(onSubmit)"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            @click="onCancel"
+          />
+        </div>
+      </div>
+      <hr class="hr" />
       <div class="form-group">
         <label for="name" class="label">Название:</label>
         <Field
@@ -183,18 +218,6 @@ function onSubmit(values, { setErrors }) {
             </tbody>
           </table>
         </div>
-      </div>
-
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButtonText() }}
-        </button>
-        <button class="button secondary" type="button" @click="$router.push('/hotkeyactionschemes')">
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
       </div>
 
       <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>

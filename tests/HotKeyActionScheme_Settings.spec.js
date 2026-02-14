@@ -116,12 +116,12 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(getOpsLabelMock).toHaveBeenCalled()
   })
 
-  it('renders input fields for keyCode', async () => {
+  it('renders KeyCaptureInput for keyCode', async () => {
     const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
     await resolveAll()
     
-    const inputs = wrapper.findAll('input[type="text"]')
-    expect(inputs.length).toBeGreaterThan(0)
+    const keyCaptureInputs = wrapper.findAllComponents({ name: 'KeyCaptureInput' })
+    expect(keyCaptureInputs.length).toBeGreaterThan(0)
   })
 
   it('renders checkboxes for shift, ctrl, alt', async () => {
@@ -132,14 +132,14 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(checkboxes.length).toBeGreaterThanOrEqual(6) // 3 columns * 2 rows minimum
   })
 
-  it('renders editable keyCode inputs', async () => {
+  it('renders editable keyCode inputs with KeyCaptureInput', async () => {
     const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
     await resolveAll()
     
-    const inputs = wrapper.findAll('input.input-sm')
-    expect(inputs.length).toBe(2) // Should match the number of actions
-    expect(inputs[0].element.value).toBe('F1')
-    expect(inputs[1].element.value).toBe('F2')
+    const keyCaptureInputs = wrapper.findAllComponents({ name: 'KeyCaptureInput' })
+    expect(keyCaptureInputs.length).toBe(2) // Should match the number of actions
+    expect(keyCaptureInputs[0].props('modelValue')).toBe('F1')
+    expect(keyCaptureInputs[1].props('modelValue')).toBe('F2')
   })
 
   it('renders editable checkboxes', async () => {

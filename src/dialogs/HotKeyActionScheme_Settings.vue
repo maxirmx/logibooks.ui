@@ -10,6 +10,7 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+import KeyCaptureInput from '@/components/KeyCaptureInput.vue'
 
 const props = defineProps({
   mode: {
@@ -180,12 +181,7 @@ function onCancel() {
               <tr v-for="(action, index) in hotKeyActionScheme.actions" :key="action.action">
                 <td>{{ getActionName(action.action) }}</td>
                 <td>
-                  <input
-                    type="text"
-                    v-model="action.keyCode"
-                    class="form-control input-sm"
-                    placeholder="Клавиша"
-                  />
+                  <KeyCaptureInput v-model="action.keyCode" class="key-input-full" />
                 </td>
                 <td class="checkbox-col">
                   <input
@@ -250,6 +246,7 @@ function onCancel() {
   padding: 0.75rem;
   text-align: left;
   border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
 }
 
 .table th {
@@ -264,21 +261,6 @@ function onCancel() {
 
 .table tbody tr:last-child td {
   border-bottom: none;
-}
-
-.input-sm {
-  padding: 0.375rem 0.5rem;
-  font-size: 0.875rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-  max-width: 150px;
-}
-
-.input-sm:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25);
 }
 
 .checkbox-col {
@@ -311,5 +293,10 @@ function onCancel() {
 
 .checkbox-col .checkbox-styled + label:before {
   right: 4px;
+}
+
+.key-input-full {
+  width: 100%;
+  max-width: none;
 }
 </style>

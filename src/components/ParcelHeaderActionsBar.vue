@@ -10,7 +10,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'next-parcel',
-  'next-problem',
+  'next-issue',
   'back',
   'save',
   'cancel',
@@ -30,13 +30,13 @@ function emitDownload() {
 
 function handleKeydown(e) {
   // console.log('key', e.key, 'code', e.code, 'keyCode', e.keyCode)
-  // Map F1 -> next-parcel, F2 -> next-problem, F3 -> back
+  // Map F1 -> next-parcel, F2 -> next-issue, F3 -> back
   if (e.key === 'F1') {
     e.preventDefault()
     emitEvent('next-parcel')
   } else if (e.key === 'F2') {
     e.preventDefault()
-    emitEvent('next-problem')
+    emitEvent('next-issue')
   } else if (e.key === 'F3') {
     e.preventDefault()
     emitEvent('back')
@@ -64,7 +64,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         :iconSize="iconSize"
         tooltip-text="Следующая проблема"
         :disabled="disabled"
-        @click="emitEvent('next-problem')"
+        @click="emitEvent('next-issue')"
       />
       <ActionButton
         :item="{}"

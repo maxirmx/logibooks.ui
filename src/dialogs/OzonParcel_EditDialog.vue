@@ -406,7 +406,7 @@ async function onLookup(values) {
         :disabled="isSubmitting || runningAction || loading"
         :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
         @next-parcel="onSubmit(values, true)"
-        @next-problem="onSubmit(values, false)"
+        @next-issue="onSubmit(values, false)"
         @back="onBack(values)"
         @save="onSave(values)"
         @lookup="onLookup(values)"

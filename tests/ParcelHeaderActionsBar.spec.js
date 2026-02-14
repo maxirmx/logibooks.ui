@@ -1,4 +1,5 @@
 /* @vitest-environment jsdom */
+/* global KeyboardEvent */
 // Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks ui application
@@ -28,13 +29,13 @@ describe('ParcelHeaderActionsBar', () => {
 
     const buttons = wrapper.findAll('button')
     // New groups and template order:
-    // group1: next-parcel(0), next-problem(1), back(2)
+    // group1: next-parcel(0), next-issue(1), back(2)
     // group2: lookup(3)
     // group3: download(4)
     // group4: save(5), cancel(6)
     const eventsByIndex = [
       'next-parcel', // 0
-      'next-problem', // 1
+      'next-issue', // 1
       'back', // 2
       'lookup', // 3
       'download', // 4
@@ -72,9 +73,9 @@ describe('ParcelHeaderActionsBar', () => {
     })
 
     const buttons = wrapper.findAll('button')
-    // indices in template: 0..6 -> next-parcel, next-problem, back, lookup, download, save, cancel
+    // indices in template: 0..6 -> next-parcel, next-issue, back, lookup, download, save, cancel
     // test non-download events: indices [0,1,2,3,5,6]
-    const eventNames = ['next-parcel', 'next-problem', 'back', 'lookup', 'save', 'cancel']
+    const eventNames = ['next-parcel', 'next-issue', 'back', 'lookup', 'save', 'cancel']
     const eventIndexes = [0, 1, 2, 3, 5, 6]
 
     for (let i = 0; i < eventIndexes.length; i++) {
@@ -104,7 +105,7 @@ describe('ParcelHeaderActionsBar', () => {
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2' }))
     await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-problem']?.length ?? 0).toBeGreaterThan(0)
+    expect(wrapper.emitted()['next-issue']?.length ?? 0).toBeGreaterThan(0)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F3' }))
     await wrapper.vm.$nextTick()

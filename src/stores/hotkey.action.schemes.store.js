@@ -108,6 +108,12 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     return match ? match.name : String(value)
   }
 
+  function getOpsEvent(list, value) {
+    const num = Number(value)
+    const match = list?.find((item) => Number(item.value) === num)
+    return match ? match.event : String(value)
+  }
+
   async function getOps() {
     opsLoading.value = true
     opsError.value = null
@@ -151,6 +157,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     remove,
     getOps,
     ensureOpsLoaded,
-    getOpsLabel
+    getOpsLabel,
+    getOpsEvent
   }
 })

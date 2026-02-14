@@ -261,5 +261,28 @@ describe('hotkey action schemes store', () => {
 
       expect(store.getOpsLabel([], 1)).toBe('1')
     })
+
+    it('getOpsEvent returns matching event and falls back to string when missing', () => {
+      const store = useHotKeyActionSchemesStore()
+
+      // set ops to known values
+      store.ops = JSON.parse(JSON.stringify(mockOps))
+
+      // matching numeric value
+      expect(store.getOpsEvent(store.ops.actions, 0)).toBe('event1')
+      // matching when value is a string
+      expect(store.getOpsEvent(store.ops.actions, '1')).toBe('event2')
+      // no match -> stringified fallback
+      expect(store.getOpsEvent(store.ops.actions, 999)).toBe('999')
+      // null/undefined list -> fallback
+      expect(store.getOpsEvent(null, 5)).toBe('5')
+      expect(store.getOpsEvent(undefined, 10)).toBe('10')
+    })
+
+    it('getOpsEvent handles empty list', () => {
+      const store = useHotKeyActionSchemesStore()
+
+      expect(store.getOpsEvent([], 1)).toBe('1')
+    })
   })
 })

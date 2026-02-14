@@ -68,9 +68,9 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
-      path: '/hotkeysactionschemes',
+      path: '/hotkeyactionschemes',
       name: 'Схемы действий горячих клавиш',
-      component: () => import('@/views/HotKeysActionSchemes_View.vue'),
+      component: () => import('@/views/HotKeyActionSchemes_View.vue'),
       meta: { reqAnyRole: true }
     },
     {
@@ -121,13 +121,13 @@ const router = createRouter({
     {
       path: '/hotkeyactionscheme/create',
       name: 'Регистрация схемы действий горячих клавиш',
-      component: () => import('@/views/HotKeysActionScheme_CreateView.vue'),
+      component: () => import('@/views/HotKeyActionScheme_CreateView.vue'),
       meta: { reqAdminOrSrLogist: true }
     },
     {
       path: '/hotkeyactionscheme/edit/:id',
       name: 'Изменить информацию о схеме действий горячих клавиш',
-      component: () => import('@/views/HotKeysActionScheme_EditView.vue'),
+      component: () => import('@/views/HotKeyActionScheme_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

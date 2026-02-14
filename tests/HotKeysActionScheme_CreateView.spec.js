@@ -4,20 +4,20 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import HotKeysActionSchemeCreateView from '@/views/HotKeysActionScheme_CreateView.vue'
+import HotKeyActionSchemeCreateView from '@/views/HotKeyActionScheme_CreateView.vue'
 
-vi.mock('@/dialogs/HotKeysActionScheme_Settings.vue', () => ({
+vi.mock('@/dialogs/HotKeyActionScheme_Settings.vue', () => ({
   default: {
-    name: 'HotKeysActionScheme_Settings',
+    name: 'HotKeyActionScheme_Settings',
     template: '<div data-testid="scheme-settings">Settings</div>',
     props: ['mode']
   }
 }))
 
-describe('HotKeysActionScheme_CreateView.vue', () => {
+describe('HotKeyActionScheme_CreateView.vue', () => {
   it('passes create mode', () => {
-    const wrapper = mount(HotKeysActionSchemeCreateView)
-    const settings = wrapper.findComponent({ name: 'HotKeysActionScheme_Settings' })
+    const wrapper = mount(HotKeyActionSchemeCreateView)
+    const settings = wrapper.findComponent({ name: 'HotKeyActionScheme_Settings' })
     expect(settings.props('mode')).toBe('create')
   })
 })

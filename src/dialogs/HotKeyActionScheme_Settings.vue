@@ -36,8 +36,8 @@ if (!isCreate.value) {
 
 function getTitle() {
   return isCreate.value
-    ? 'Регистрация схемы действий горячих клавиш'
-    : 'Изменить информацию о схеме действий горячих клавиш'
+    ? 'Создание настройки клавиатуры'
+    : 'Изменение настройки клавиатуры'
 }
 
 function getButtonText() {
@@ -45,7 +45,7 @@ function getButtonText() {
 }
 
 const schema = Yup.object({
-  name: Yup.string().required('Название схемы обязательно')
+  name: Yup.string().required('Название обязательно')
 })
 
 function onSubmit(values, { setErrors }) {
@@ -53,13 +53,13 @@ function onSubmit(values, { setErrors }) {
     return hotKeyActionSchemesStore
       .create(values)
       .then(() => {
-        router.push('/hotkeysactionschemes')
+        router.push('/hotkeyactionschemes')
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Схема действий горячих клавиш с таким названием уже существует' })
+          setErrors({ apiError: 'Настройки клавиатуры с таким названием уже существуют' })
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при регистрации схемы действий горячих клавиш' })
+          setErrors({ apiError: error.message || 'Ошибка при создании настроек клавиатуры' })
         }
       })
   }
@@ -67,16 +67,16 @@ function onSubmit(values, { setErrors }) {
   return hotKeyActionSchemesStore
     .update(props.hotKeyActionSchemeId, values)
     .then(() => {
-      router.push('/hotkeysactionschemes')
+      router.push('/hotkeyactionschemes')
     })
     .catch((error) => {
-      setErrors({ apiError: error.message || 'Ошибка при сохранении информации о схеме действий горячих клавиш' })
+      setErrors({ apiError: error.message || 'Ошибка при сохранении настроек клавиатуры' })
     })
 }
 </script>
 
 <template>
-  <div class="settings form-3">
+  <div class="settings form-2">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
     <Form
@@ -86,14 +86,14 @@ function onSubmit(values, { setErrors }) {
       v-slot="{ errors, isSubmitting }"
     >
       <div class="form-group">
-        <label for="name" class="label">Название схемы:</label>
+        <label for="name" class="label">Название настройки клавиатуры:</label>
         <Field
           name="name"
           id="name"
           type="text"
           class="form-control input"
           :class="{ 'is-invalid': errors.name }"
-          placeholder="Название схемы"
+          placeholder="Название настройки клавиатуры"
         />
       </div>
 
@@ -103,7 +103,7 @@ function onSubmit(values, { setErrors }) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
-        <button class="button secondary" type="button" @click="$router.push('/hotkeysactionschemes')">
+        <button class="button secondary" type="button" @click="$router.push('/hotkeyactionschemes')">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>

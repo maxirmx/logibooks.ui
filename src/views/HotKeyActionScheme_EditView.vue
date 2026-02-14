@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import HotKeysActionSchemeSettings from '@/dialogs/HotKeysActionScheme_Settings.vue'
+import HotKeysActionSchemeSettings from '@/dialogs/HotKeyActionScheme_Settings.vue'
 
 const props = defineProps({
   id: {

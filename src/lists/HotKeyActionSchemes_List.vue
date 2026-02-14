@@ -77,9 +77,9 @@ async function deleteHotKeyActionScheme(hotKeyActionScheme) {
         await hotKeyActionSchemesStore.remove(hotKeyActionScheme.id)
       } catch (error) {
         if (error.message?.includes('409')) {
-          alertStore.error('Нельзя удалить схему действий горячих клавиш, у которой есть связанные записи')
+          alertStore.error('Нельзя удалить настройки клавиатуры, у которых есть связанные записи')
         } else {
-          alertStore.error('Ошибка при удалении схемы действий горячих клавиш')
+          alertStore.error('Ошибка при удалении настроек клавиатуры')
         }
       }
     }
@@ -100,9 +100,9 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-1">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Схемы действий горячих клавиш</h1>
+      <h1 class="primary-heading">Варианты настроек клавиатуры</h1>
       <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -111,7 +111,7 @@ defineExpose({
           <ActionButton
             :item="{}"
             icon="fa-solid fa-plus"
-            tooltip-text="Добавить схему действий горячих клавиш"
+            tooltip-text="Добавить настройки клавиатуры"
             iconSize="2x"
             :disabled="loading"
             @click="openCreateDialog"
@@ -124,9 +124,9 @@ defineExpose({
 
     <div>
       <v-text-field
-        v-model="authStore.hotkeysactionschemes_search"
+        v-model="authStore.hotkeyactionschemes_search"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по названию схемы действий горячих клавиш"
+        label="Поиск по названию настроек клавиатуры"
         variant="solo"
         hide-details
         :disabled="runningAction || loading"
@@ -135,15 +135,15 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-model:items-per-page="authStore.hotkeysactionschemes_per_page"
-        items-per-page-text="Схем на странице"
+        v-model:items-per-page="authStore.hotkeyactionschemes_per_page"
+        items-per-page-text="Элементов на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="authStore.hotkeysactionschemes_page"
+        v-model:page="authStore.hotkeyactionschemes_page"
         :headers="headers"
         :items="hotKeyActionSchemes"
-        :search="authStore.hotkeysactionschemes_search"
-        v-model:sort-by="authStore.hotkeysactionschemes_sort_by"
+        :search="authStore.hotkeyactionschemes_search"
+        v-model:sort-by="authStore.hotkeyactionschemes_sort_by"
         :custom-filter="filterHotKeyActionSchemes"
         :loading="loading"
         item-value="id"
@@ -156,14 +156,14 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать схему действий горячих клавиш"
+              tooltip-text="Редактировать настройки клавиатуры"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить схему действий горячих клавиш"
+              tooltip-text="Удалить настройки клавиатуры"
               @click="deleteHotKeyActionScheme"
               :disabled="runningAction || loading"
             />

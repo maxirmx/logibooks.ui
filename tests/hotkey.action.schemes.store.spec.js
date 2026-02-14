@@ -46,7 +46,7 @@ describe('hotkey action schemes store', () => {
 
     await store.getAll()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeysactionschemes`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
     expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
   })
 
@@ -70,7 +70,7 @@ describe('hotkey action schemes store', () => {
 
     const result = await store.create({ name: 'Ops' })
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/hotkeysactionschemes`, { name: 'Ops' })
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`, { name: 'Ops' })
     expect(store.hotKeyActionSchemes.at(-1)).toEqual(created)
     expect(result).toEqual(created)
   })
@@ -82,7 +82,7 @@ describe('hotkey action schemes store', () => {
 
     await store.update(1, { name: 'Default v2' })
 
-    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeysactionschemes/1`, { name: 'Default v2' })
+    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`, { name: 'Default v2' })
     expect(store.hotKeyActionSchemes[0]).toEqual({ id: 1, name: 'Default v2' })
   })
 
@@ -93,7 +93,7 @@ describe('hotkey action schemes store', () => {
 
     await store.remove(1)
 
-    expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/hotkeysactionschemes/1`)
+    expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`)
     expect(store.hotKeyActionSchemes).toEqual([{ id: 2, name: 'Warehouse' }])
   })
 

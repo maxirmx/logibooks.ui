@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import HotKeysActionSchemeSettings from '@/dialogs/HotKeysActionScheme_Settings.vue'
+import HotKeyActionSchemeSettings from '@/dialogs/HotKeyActionScheme_Settings.vue'
 import { defaultGlobalStubs, resolveAll } from './helpers/test-utils.js'
 
 const schemeRef = ref({ id: 1, name: 'Default' })
@@ -28,12 +28,12 @@ vi.mock('@/stores/hotkey.action.schemes.store.js', () => ({
 vi.mock('@/router', () => ({ default: { push: pushMock } }), { virtual: true })
 
 const AsyncWrapper = {
-  components: { HotKeysActionSchemeSettings },
+  components: { HotKeyActionSchemeSettings },
   props: ['mode', 'hotKeyActionSchemeId'],
-  template: '<Suspense><HotKeysActionSchemeSettings :mode="mode" :hot-key-action-scheme-id="hotKeyActionSchemeId" /></Suspense>'
+  template: '<Suspense><HotKeyActionSchemeSettings :mode="mode" :hot-key-action-scheme-id="hotKeyActionSchemeId" /></Suspense>'
 }
 
-describe('HotKeysActionScheme_Settings.vue', () => {
+describe('HotKeyActionScheme_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     storeMock = {
@@ -61,7 +61,7 @@ describe('HotKeysActionScheme_Settings.vue', () => {
 
     expect(createMock).toHaveBeenCalledWith({ name: 'Ops' })
     expect(updateMock).toHaveBeenCalledWith(1, { name: 'Ops v2' })
-    expect(pushMock).toHaveBeenCalledWith('/hotkeysactionschemes')
+    expect(pushMock).toHaveBeenCalledWith('/hotkeyactionschemes')
   })
 
   it('sets api error for create conflict', async () => {

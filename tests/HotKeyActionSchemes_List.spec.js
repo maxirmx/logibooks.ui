@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import HotKeysActionSchemesList from '@/lists/HotKeysActionSchemes_List.vue'
+import HotKeyActionSchemesList from '@/lists/HotKeyActionSchemes_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const schemesRef = ref([])
@@ -37,29 +37,29 @@ vi.mock('@/router', () => ({ default: { push: pushMock } }), { virtual: true })
 vi.mock('@/helpers/items.per.page.js', () => ({ itemsPerPageOptions: [10, 25] }))
 vi.mock('@mdi/js', () => ({ mdiMagnify: 'mdi-magnify' }))
 
-describe('HotKeysActionSchemes_List.vue', () => {
+describe('HotKeyActionSchemes_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     schemesRef.value = [{ id: 1, name: 'Default' }]
     storeMock = { hotKeyActionSchemes: schemesRef, loading: loadingRef, getAll: getAllMock, remove: removeMock }
     authStoreMock = {
       isSrLogistPlus: true,
-      hotkeysactionschemes_per_page: ref(10),
-      hotkeysactionschemes_search: ref(''),
-      hotkeysactionschemes_sort_by: ref(['id']),
-      hotkeysactionschemes_page: ref(1)
+      hotkeyactionschemes_per_page: ref(10),
+      hotkeyactionschemes_search: ref(''),
+      hotkeyactionschemes_sort_by: ref(['id']),
+      hotkeyactionschemes_page: ref(1)
     }
     alertStoreMock = { alert: alertRef, error: errorMock, clear: clearMock }
   })
 
   it('loads on mount', async () => {
-    mount(HotKeysActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
+    mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     await Promise.resolve()
     expect(getAllMock).toHaveBeenCalled()
   })
 
   it('navigates to create/edit', async () => {
-    const wrapper = mount(HotKeysActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
+    const wrapper = mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     await wrapper.vm.openCreateDialog()
     await wrapper.vm.openEditDialog({ id: 3 })
     expect(pushMock).toHaveBeenCalledWith('/hotkeyactionscheme/create')
@@ -67,26 +67,26 @@ describe('HotKeysActionSchemes_List.vue', () => {
   })
 
   it('deletes after confirmation', async () => {
-    const wrapper = mount(HotKeysActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
+    const wrapper = mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     await wrapper.vm.deleteHotKeyActionScheme({ id: 1, name: 'Default' })
     expect(confirmMock).toHaveBeenCalled()
     expect(removeMock).toHaveBeenCalledWith(1)
   })
 
   it('filters by name', async () => {
-    const wrapper = mount(HotKeysActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
+    const wrapper = mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     expect(wrapper.vm.filterHotKeyActionSchemes(null, 'def', { raw: { name: 'Default' } })).toBe(true)
     expect(wrapper.vm.filterHotKeyActionSchemes(null, 'xyz', { raw: { name: 'Default' } })).toBe(false)
   })
 
   it('handles null filter inputs', async () => {
-    const wrapper = mount(HotKeysActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
+    const wrapper = mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     expect(wrapper.vm.filterHotKeyActionSchemes(null, null, null)).toBe(false)
     expect(wrapper.vm.filterHotKeyActionSchemes(null, 'a', { raw: null })).toBe(false)
   })
 
   it('shows specific error messages on delete failure', async () => {
-    const wrapper = mount(HotKeysActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
+    const wrapper = mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     removeMock.mockRejectedValueOnce(new Error('409 conflict'))
     await wrapper.vm.deleteHotKeyActionScheme({ id: 1, name: 'Default' })
     expect(errorMock).toHaveBeenCalledWith('Нельзя удалить схему действий горячих клавиш, у которой есть связанные записи')

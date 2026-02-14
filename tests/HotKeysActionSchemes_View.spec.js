@@ -8,16 +8,16 @@ import { createVuetify } from 'vuetify'
 import { createPinia } from 'pinia'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import HotKeysActionSchemesView from '@/views/HotKeysActionSchemes_View.vue'
+import HotKeyActionSchemesView from '@/views/HotKeyActionSchemes_View.vue'
 
-vi.mock('@/lists/HotKeysActionSchemes_List.vue', () => ({
+vi.mock('@/lists/HotKeyActionSchemes_List.vue', () => ({
   default: {
-    name: 'HotKeysActionSchemes_List',
+    name: 'HotKeyActionSchemes_List',
     template: '<div data-testid="schemes-list">Schemes List</div>'
   }
 }))
 
-describe('HotKeysActionSchemes_View.vue', () => {
+describe('HotKeyActionSchemes_View.vue', () => {
   let vuetify
   let pinia
 
@@ -27,7 +27,7 @@ describe('HotKeysActionSchemes_View.vue', () => {
   })
 
   it('renders list', () => {
-    const wrapper = mount(HotKeysActionSchemesView, {
+    const wrapper = mount(HotKeyActionSchemesView, {
       global: { plugins: [vuetify, pinia] }
     })
 

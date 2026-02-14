@@ -7,7 +7,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/hotkeysactionschemes`
+const baseUrl = `${apiUrl}/hotkeyactionschemes`
 
 export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', () => {
   const hotKeyActionSchemes = ref([])

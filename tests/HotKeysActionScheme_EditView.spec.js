@@ -4,20 +4,20 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import HotKeysActionSchemeEditView from '@/views/HotKeysActionScheme_EditView.vue'
+import HotKeyActionSchemeEditView from '@/views/HotKeyActionScheme_EditView.vue'
 
-vi.mock('@/dialogs/HotKeysActionScheme_Settings.vue', () => ({
+vi.mock('@/dialogs/HotKeyActionScheme_Settings.vue', () => ({
   default: {
-    name: 'HotKeysActionScheme_Settings',
+    name: 'HotKeyActionScheme_Settings',
     template: '<div data-testid="scheme-settings">Settings</div>',
     props: ['mode', 'hotKeyActionSchemeId']
   }
 }))
 
-describe('HotKeysActionScheme_EditView.vue', () => {
+describe('HotKeyActionScheme_EditView.vue', () => {
   it('passes edit mode and id', () => {
-    const wrapper = mount(HotKeysActionSchemeEditView, { props: { id: 11 } })
-    const settings = wrapper.findComponent({ name: 'HotKeysActionScheme_Settings' })
+    const wrapper = mount(HotKeyActionSchemeEditView, { props: { id: 11 } })
+    const settings = wrapper.findComponent({ name: 'HotKeyActionScheme_Settings' })
     expect(settings.props('mode')).toBe('edit')
     expect(settings.props('hotKeyActionSchemeId')).toBe(11)
   })

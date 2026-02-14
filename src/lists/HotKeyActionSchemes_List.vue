@@ -69,7 +69,7 @@ async function deleteHotKeyActionScheme(hotKeyActionScheme) {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: `Удалить схему действий горячих клавиш "${hotKeyActionScheme.name}"?`
+      content: `Удалить схему "${hotKeyActionScheme.name}"?`
     })
 
     if (confirmed) {
@@ -77,9 +77,9 @@ async function deleteHotKeyActionScheme(hotKeyActionScheme) {
         await hotKeyActionSchemesStore.remove(hotKeyActionScheme.id)
       } catch (error) {
         if (error.message?.includes('409')) {
-          alertStore.error('Нельзя удалить настройки клавиатуры, у которых есть связанные записи')
+          alertStore.error('Нельзя удалить схему, у которой есть связанные записи')
         } else {
-          alertStore.error('Ошибка при удалении настроек клавиатуры')
+          alertStore.error('Ошибка при удалении схемы')
         }
       }
     }
@@ -100,9 +100,9 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-1">
+  <div class="settings table-2">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Варианты настроек клавиатуры</h1>
+      <h1 class="primary-heading">Схемы настройки клавиатуры</h1>
       <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -111,7 +111,7 @@ defineExpose({
           <ActionButton
             :item="{}"
             icon="fa-solid fa-plus"
-            tooltip-text="Добавить настройки клавиатуры"
+            tooltip-text="Добавить схему"
             iconSize="2x"
             :disabled="loading"
             @click="openCreateDialog"
@@ -126,7 +126,7 @@ defineExpose({
       <v-text-field
         v-model="authStore.hotkeyactionschemes_search"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по названию настроек клавиатуры"
+        label="Поиск по названию"
         variant="solo"
         hide-details
         :disabled="runningAction || loading"
@@ -156,14 +156,14 @@ defineExpose({
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать настройки клавиатуры"
+              tooltip-text="Редактировать схему"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить настройки клавиатуры"
+              tooltip-text="Удалить схему настройки клавиатуры"
               @click="deleteHotKeyActionScheme"
               :disabled="runningAction || loading"
             />

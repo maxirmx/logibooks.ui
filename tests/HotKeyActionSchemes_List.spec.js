@@ -89,11 +89,11 @@ describe('HotKeyActionSchemes_List.vue', () => {
     const wrapper = mount(HotKeyActionSchemesList, { global: { stubs: { ...defaultGlobalStubs, ActionButton: true } } })
     removeMock.mockRejectedValueOnce(new Error('409 conflict'))
     await wrapper.vm.deleteHotKeyActionScheme({ id: 1, name: 'Default' })
-    expect(errorMock).toHaveBeenCalledWith('Нельзя удалить настройки клавиатуры, у которых есть связанные записи')
+    expect(errorMock).toHaveBeenCalledWith('Нельзя удалить схему, у которой есть связанные записи')
 
     removeMock.mockRejectedValueOnce(new Error('500'))
     await wrapper.vm.deleteHotKeyActionScheme({ id: 1, name: 'Default' })
-    expect(errorMock).toHaveBeenCalledWith('Ошибка при удалении настроек клавиатуры')
+    expect(errorMock).toHaveBeenCalledWith('Ошибка при удалении схемы')
   })
 
 })

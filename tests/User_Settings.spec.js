@@ -42,9 +42,11 @@ vi.mock('pinia', async () => {
   return { 
     ...actual, 
     storeToRefs: (store) => {
-      if (store && store.hotKeyActionSchemes !== undefined) {
+      // Return hotkey schemes store refs if it has the hotKeyActionSchemes property
+      if (store && 'hotKeyActionSchemes' in store) {
         return { hotKeyActionSchemes: mockHotKeyActionSchemes }
       }
+      // Otherwise return user store refs
       return { user: mockUser }
     }
   }

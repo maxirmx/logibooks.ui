@@ -124,12 +124,12 @@ describe('hotkey action schemes store', () => {
     expect(result).toEqual({ id: 10, name: 'A' })
   })
 
-  it('getAll stores error on failure', async () => {
+  it('getAll stores error on failure without throwing', async () => {
     const error = new Error('boom')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useHotKeyActionSchemesStore()
 
-    await expect(store.getAll()).rejects.toThrow('boom')
+    await store.getAll()
 
     expect(store.error).toBe(error)
     expect(store.isInitialized).toBe(false)
@@ -332,19 +332,20 @@ describe('hotkey action schemes store', () => {
       const firstCall = store.ensureLoaded()
       expect(store.loading).toBe(true)
 
-      // Second call while still loading should not trigger another request
+      // Second call while still loading should wait for same promise
       const secondCall = store.ensureLoaded()
 
-      // Both should be waiting
+      // Both should be waiting on the same promise
       expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
 
       // Resolve the request
       resolveGetAll(mockSchemes)
-      await firstCall
-      await secondCall
+      await Promise.all([firstCall, secondCall])
 
-      // Should still only have been called once
+      // Verify both calls completed and data is loaded
       expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+      expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
+      expect(store.isInitialized).toBe(true)
     })
 
     it('sets isInitialized flag after successful load', async () => {
@@ -363,7 +364,7 @@ describe('hotkey action schemes store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useHotKeyActionSchemesStore()
 
-      await expect(store.ensureLoaded()).rejects.toThrow('Network error')
+      await store.ensureLoaded()
 
       expect(store.isInitialized).toBe(false)
       expect(store.error).toBe(error)

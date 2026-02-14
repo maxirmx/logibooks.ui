@@ -23,6 +23,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
 
   let opsInitialized = false
   let opsPromise = null
+  let loadPromise = null
 
   async function getAll() {
     loading.value = true
@@ -32,7 +33,6 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
       isInitialized.value = true
     } catch (err) {
       error.value = err
-      throw err
     } finally {
       loading.value = false
     }
@@ -126,9 +126,16 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
   }
 
   async function ensureLoaded() {
-    if (!isInitialized.value && !loading.value) {
-      await getAll()
+    if (isInitialized.value) {
+      return
     }
+
+    if (!loadPromise) {
+      loadPromise = getAll().finally(() => {
+        loadPromise = null
+      })
+    }
+    await loadPromise
   }
 
   async function ensureOpsLoaded() {

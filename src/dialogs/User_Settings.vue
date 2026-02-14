@@ -13,6 +13,7 @@ import * as Yup from 'yup'
 import { useUsersStore } from '@/stores/users.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 import {
   roleAdmin,
   roleShiftLead,
@@ -39,6 +40,10 @@ const props = defineProps({
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
+const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
+const { hotKeyActionSchemes } = storeToRefs(hotKeyActionSchemesStore)
+
+await hotKeyActionSchemesStore.ensureLoaded()
 
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
@@ -356,6 +361,21 @@ function onSubmit(values, { setErrors }) {
             <label for="isWhOperator">Оператор склада</label>
           </div>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label for="schemeId" class="label">Схема горячих клавиш:</label>
+        <Field
+          name="schemeId"
+          id="schemeId"
+          as="select"
+          class="form-control input"
+        >
+          <option :value="0">Без схемы</option>
+          <option v-for="scheme in hotKeyActionSchemes" :key="scheme.id" :value="scheme.id">
+            {{ scheme.name }}
+          </option>
+        </Field>
       </div>
 
       <div class="form-group mt-8">

@@ -73,7 +73,7 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Схема действий горячих клавиш с таким названием уже существует' })
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Настройки клавиатуры с таким названием уже существуют' })
   })
 
   it('sets api error for edit failures', async () => {

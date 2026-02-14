@@ -14,6 +14,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
   const hotKeyActionScheme = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const isInitialized = ref(false)
   const ops = ref({
     actions: []
   })
@@ -28,8 +29,10 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     error.value = null
     try {
       hotKeyActionSchemes.value = await fetchWrapper.get(baseUrl)
+      isInitialized.value = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -129,6 +132,12 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     }
   }
 
+  async function ensureLoaded() {
+    if (!isInitialized.value && !loading.value) {
+      await getAll()
+    }
+  }
+
   async function ensureOpsLoaded() {
     if (opsInitialized) {
       return ops.value
@@ -147,6 +156,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     hotKeyActionScheme,
     loading,
     error,
+    isInitialized,
     ops,
     opsLoading,
     opsError,
@@ -155,6 +165,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     create,
     update,
     remove,
+    ensureLoaded,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

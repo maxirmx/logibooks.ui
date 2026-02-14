@@ -45,6 +45,7 @@ describe('hotkey action schemes store', () => {
     expect(store.hotKeyActionScheme).toBeNull()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
+    expect(store.isInitialized).toBe(false)
     expect(store.ops).toEqual({
       actions: []
     })
@@ -60,6 +61,7 @@ describe('hotkey action schemes store', () => {
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
     expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
+    expect(store.isInitialized).toBe(true)
   })
 
   it('getById handles fetch error', async () => {
@@ -123,9 +125,10 @@ describe('hotkey action schemes store', () => {
     fetchWrapper.get.mockRejectedValue(error)
     const store = useHotKeyActionSchemesStore()
 
-    await store.getAll()
+    await expect(store.getAll()).rejects.toThrow('boom')
 
     expect(store.error).toBe(error)
+    expect(store.isInitialized).toBe(false)
   })
 
   it('create throws and stores error on failure', async () => {
@@ -283,6 +286,99 @@ describe('hotkey action schemes store', () => {
       const store = useHotKeyActionSchemesStore()
 
       expect(store.getOpsEvent([], 1)).toBe('1')
+    })
+  })
+
+  describe('ensureLoaded', () => {
+    it('loads data when not initialized', async () => {
+      fetchWrapper.get.mockResolvedValue(mockSchemes)
+      const store = useHotKeyActionSchemesStore()
+
+      await store.ensureLoaded()
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
+      expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
+      expect(store.isInitialized).toBe(true)
+    })
+
+    it('skips loading when already initialized', async () => {
+      fetchWrapper.get.mockResolvedValue(mockSchemes)
+      const store = useHotKeyActionSchemesStore()
+
+      // First call to initialize
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+      // Second call should skip loading
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+    })
+
+    it('prevents concurrent requests when loading', async () => {
+      let resolveGetAll
+      const getAllPromise = new Promise((resolve) => {
+        resolveGetAll = resolve
+      })
+      fetchWrapper.get.mockReturnValue(getAllPromise)
+      const store = useHotKeyActionSchemesStore()
+
+      // First call starts loading
+      const firstCall = store.ensureLoaded()
+      expect(store.loading).toBe(true)
+
+      // Second call while still loading should not trigger another request
+      const secondCall = store.ensureLoaded()
+
+      // Both should be waiting
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+      // Resolve the request
+      resolveGetAll(mockSchemes)
+      await firstCall
+      await secondCall
+
+      // Should still only have been called once
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+    })
+
+    it('sets isInitialized flag after successful load', async () => {
+      fetchWrapper.get.mockResolvedValue(mockSchemes)
+      const store = useHotKeyActionSchemesStore()
+
+      expect(store.isInitialized).toBe(false)
+
+      await store.ensureLoaded()
+
+      expect(store.isInitialized).toBe(true)
+    })
+
+    it('does not set isInitialized flag on error', async () => {
+      const error = new Error('Network error')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useHotKeyActionSchemesStore()
+
+      await expect(store.ensureLoaded()).rejects.toThrow('Network error')
+
+      expect(store.isInitialized).toBe(false)
+      expect(store.error).toBe(error)
+    })
+
+    it('handles multiple sequential calls correctly', async () => {
+      fetchWrapper.get.mockResolvedValue(mockSchemes)
+      const store = useHotKeyActionSchemesStore()
+
+      // First call
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+      expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
+
+      // Second call (should skip)
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+      // Third call (should skip)
+      await store.ensureLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -76,38 +76,42 @@ describe('hotkey action schemes store', () => {
     expect(store.error).toBe(error)
   })
 
-  it('create appends created scheme', async () => {
+  it('create calls getAll to refresh list', async () => {
     const created = { id: 3, name: 'Ops' }
     fetchWrapper.post.mockResolvedValue(created)
+    fetchWrapper.get.mockResolvedValue([...mockSchemes, created])
     const store = useHotKeyActionSchemesStore()
-    store.hotKeyActionSchemes = [...mockSchemes]
 
     const result = await store.create({ name: 'Ops' })
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`, { name: 'Ops' })
-    expect(store.hotKeyActionSchemes.at(-1)).toEqual(created)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
+    expect(store.hotKeyActionSchemes).toEqual([...mockSchemes, created])
     expect(result).toEqual(created)
   })
 
-  it('update updates local list item', async () => {
-    fetchWrapper.put.mockResolvedValue({})
+  it('update calls getAll to refresh list', async () => {
+    const updated = { id: 1, name: 'Default v2' }
+    fetchWrapper.put.mockResolvedValue(updated)
+    fetchWrapper.get.mockResolvedValue([updated, { id: 2, name: 'Warehouse' }])
     const store = useHotKeyActionSchemesStore()
-    store.hotKeyActionSchemes = [...mockSchemes]
 
     await store.update(1, { name: 'Default v2' })
 
     expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`, { name: 'Default v2' })
-    expect(store.hotKeyActionSchemes[0]).toEqual({ id: 1, name: 'Default v2' })
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
+    expect(store.hotKeyActionSchemes[0]).toEqual(updated)
   })
 
-  it('remove deletes local list item', async () => {
+  it('remove calls getAll to refresh list', async () => {
     fetchWrapper.delete.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([{ id: 2, name: 'Warehouse' }])
     const store = useHotKeyActionSchemesStore()
-    store.hotKeyActionSchemes = [...mockSchemes]
 
     await store.remove(1)
 
     expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
     expect(store.hotKeyActionSchemes).toEqual([{ id: 2, name: 'Warehouse' }])
   })
 
@@ -142,8 +146,8 @@ describe('hotkey action schemes store', () => {
 
   it('update leaves list unchanged when id not found', async () => {
     fetchWrapper.put.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([{ id: 1, name: 'A' }])
     const store = useHotKeyActionSchemesStore()
-    store.hotKeyActionSchemes = [{ id: 1, name: 'A' }]
 
     await store.update(9, { name: 'B' })
 

@@ -59,7 +59,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     error.value = null
     try {
       const result = await fetchWrapper.post(baseUrl, hotKeyActionSchemeData)
-      hotKeyActionSchemes.value.push(result)
+      await getAll()
       return result
     } catch (err) {
       error.value = err
@@ -73,15 +73,9 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     loading.value = true
     error.value = null
     try {
-      await fetchWrapper.put(`${baseUrl}/${id}`, hotKeyActionSchemeData)
-      const index = hotKeyActionSchemes.value.findIndex(i => i.id === id)
-      if (index !== -1) {
-        hotKeyActionSchemes.value[index] = {
-          ...hotKeyActionSchemes.value[index],
-          ...hotKeyActionSchemeData
-        }
-      }
-      return true
+      const response = await fetchWrapper.put(`${baseUrl}/${id}`, hotKeyActionSchemeData)
+      await getAll()
+      return response
     } catch (err) {
       error.value = err
       throw err
@@ -95,8 +89,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      hotKeyActionSchemes.value = hotKeyActionSchemes.value.filter(i => i.id !== id)
-      return true
+      await getAll()
     } catch (err) {
       error.value = err
       throw err

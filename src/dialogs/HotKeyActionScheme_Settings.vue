@@ -138,7 +138,7 @@ function onCancel() {
             icon-size="2x"
             :tooltip-text="getButtonText()"
             :disabled="isSubmitting"
-            @click="handleSubmit(onSubmit)"
+            @click="handleSubmit(onSubmit)()"
           />
           <ActionButton
             :item="{}"

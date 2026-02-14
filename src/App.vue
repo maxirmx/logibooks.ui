@@ -172,6 +172,9 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/parceleventprocessing" class="link">События</RouterLink>
           </v-list-item>
+          <v-list-item>
+            <RouterLink to="/hotkeyactionschemes" class="link">Клавиатура</RouterLink>
+          </v-list-item>
         </v-list-group>
 
         <!-- Отчёты -->

@@ -56,7 +56,7 @@ describe('parcel.processing.events.store.js', () => {
 
       await store.getAll()
 
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelprocessingevents')
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels')
       expect(store.events).toEqual(mockEvents)
       expect(store.loading).toBe(false)
     })
@@ -96,7 +96,7 @@ describe('parcel.processing.events.store.js', () => {
 
       const result = await store.getById(2)
 
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelprocessingevents/2')
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels/2')
       expect(store.event).toEqual(mockEvent)
       expect(result).toEqual(mockEvent)
     })
@@ -126,8 +126,8 @@ describe('parcel.processing.events.store.js', () => {
 
       const result = await store.update(2, { parcelStatusId: 7 })
 
-      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/parcelprocessingevents/2', { id: 2, parcelStatusId: 7 })
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelprocessingevents')
+      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels/2', { id: 2, parcelStatusId: 7 })
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels')
       expect(result).toEqual(updatedEvent)
     })
 
@@ -156,8 +156,8 @@ describe('parcel.processing.events.store.js', () => {
 
       const result = await store.updateMany(payload)
 
-      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/parcelprocessingevents', payload)
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelprocessingevents')
+      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels', payload)
+      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels')
       expect(result).toEqual(updatedEvents)
     })
 

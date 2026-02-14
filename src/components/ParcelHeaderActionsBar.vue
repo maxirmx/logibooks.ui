@@ -29,7 +29,7 @@ function emitDownload() {
 }
 
 function handleKeydown(e) {
-   console.log('key', e.key, 'code', e.code, 'keyCode', e.keyCode)
+  // console.log('key', e.key, 'code', e.code, 'keyCode', e.keyCode)
   // Map F1 -> next-parcel, F2 -> next-problem, F3 -> back
   if (e.key === 'F1') {
     e.preventDefault()

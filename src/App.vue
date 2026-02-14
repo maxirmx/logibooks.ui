@@ -154,6 +154,9 @@ function getUserName() {
             <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
           </v-list-item>
           <v-list-item>
+            <RouterLink to="/hotkeysactionschemes" class="link">Схемы действий горячих клавиш</RouterLink>
+          </v-list-item>
+          <v-list-item>
             <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
           </v-list-item>
           <v-list-item>

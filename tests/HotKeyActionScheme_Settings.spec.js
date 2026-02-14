@@ -207,19 +207,19 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Настройки клавиатуры с таким названием уже существуют' })
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Схема настройки клавиатуры с таким названием уже существует' })
   })
 
   it('sets api error for edit failures', async () => {
     const setErrors = vi.fn()
-    updateMock.mockRejectedValueOnce(new Error('Save failed'))
+    updateMock.mockRejectedValueOnce(new Error('Ошибка при сохранении схемы настройки клавиатуры'))
 
     const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
     await resolveAll()
     await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Save failed' })
+    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Ошибка при сохранении схемы настройки клавиатуры' })
   })
 
   it('sets api error for create generic error', async () => {
@@ -251,14 +251,14 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     const wrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
     await resolveAll()
     
-    expect(wrapper.text()).toContain('Создание настройки клавиатуры')
+    expect(wrapper.text()).toContain('Создание схемы настройки клавиатуры')
   })
 
   it('displays correct title for edit mode', async () => {
     const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
     await resolveAll()
     
-    expect(wrapper.text()).toContain('Изменение настройки клавиатуры')
+    expect(wrapper.text()).toContain('Изменение схемы настройки клавиатуры')
   })
 
   it('displays correct button text for create mode', async () => {

@@ -57,8 +57,8 @@ if (!isCreate.value) {
 
 function getTitle() {
   return isCreate.value
-    ? 'Создание настройки клавиатуры'
-    : 'Изменение настройки клавиатуры'
+    ? 'Создание схемы настройки клавиатуры'
+    : 'Изменение схемы настройки клавиатуры'
 }
 
 function getButtonText() {
@@ -75,6 +75,7 @@ const schema = Yup.object({
 
 function onSubmit(values, { setErrors }) {
   const submitData = {
+    id: hotKeyActionScheme.value.id,
     name: values.name,
     actions: hotKeyActionScheme.value.actions
   }
@@ -87,9 +88,9 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Настройки клавиатуры с таким названием уже существуют' })
+          setErrors({ apiError: 'Схема настройки клавиатуры с таким названием уже существует' })
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании настроек клавиатуры' })
+          setErrors({ apiError: error.message || 'Ошибка при создании схемы настройки клавиатуры' })
         }
       })
   }
@@ -100,13 +101,13 @@ function onSubmit(values, { setErrors }) {
       router.push('/hotkeyactionschemes')
     })
     .catch((error) => {
-      setErrors({ apiError: error.message || 'Ошибка при сохранении настроек клавиатуры' })
+      setErrors({ apiError: error.message || 'Ошибка при сохранении схемы настройки клавиатуры' })
     })
 }
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
     <Form
@@ -116,14 +117,14 @@ function onSubmit(values, { setErrors }) {
       v-slot="{ errors, isSubmitting }"
     >
       <div class="form-group">
-        <label for="name" class="label">Название настройки клавиатуры:</label>
+        <label for="name" class="label">Название:</label>
         <Field
           name="name"
           id="name"
           type="text"
           class="form-control input"
           :class="{ 'is-invalid': errors.name }"
-          placeholder="Название настройки клавиатуры"
+          placeholder="Название"
         />
       </div>
 
@@ -204,6 +205,7 @@ function onSubmit(values, { setErrors }) {
 
 <style scoped>
 .actions-table {
+  width: 100%;
   margin-top: 1rem;
   overflow-x: auto;
   border: 1px solid #e0e0e0;
@@ -231,7 +233,6 @@ function onSubmit(values, { setErrors }) {
   font-weight: 600;
   color: #424242;
   font-size: 0.875rem;
-  text-transform: uppercase;
 }
 
 .table tbody tr:hover {

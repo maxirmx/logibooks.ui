@@ -23,15 +23,36 @@ const props = defineProps({
 })
 
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
+const { ops } = storeToRefs(hotKeyActionSchemesStore)
 const isCreate = computed(() => props.mode === 'create')
 
 let hotKeyActionScheme = ref({
-  name: ''
+  name: '',
+  actions: []
 })
+
+// Load ops data
+await hotKeyActionSchemesStore.ensureOpsLoaded()
 
 if (!isCreate.value) {
   ;({ hotKeyActionScheme } = storeToRefs(hotKeyActionSchemesStore))
   await hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId)
+  
+  // Ensure actions array exists
+  if (!hotKeyActionScheme.value.actions) {
+    hotKeyActionScheme.value.actions = []
+  }
+} else {
+  // In create mode, initialize with all actions from ops
+  hotKeyActionScheme.value.actions = ops.value.actions.map(action => ({
+    id: 0,
+    action: action.value,
+    keyCode: '',
+    shift: false,
+    ctrl: false,
+    alt: false,
+    schemeId: 0
+  }))
 }
 
 function getTitle() {
@@ -44,14 +65,23 @@ function getButtonText() {
   return isCreate.value ? 'Создать' : 'Сохранить'
 }
 
+function getActionName(actionId) {
+  return hotKeyActionSchemesStore.getOpsLabel(ops.value.actions, actionId)
+}
+
 const schema = Yup.object({
   name: Yup.string().required('Название обязательно')
 })
 
 function onSubmit(values, { setErrors }) {
+  const submitData = {
+    name: values.name,
+    actions: hotKeyActionScheme.value.actions
+  }
+
   if (isCreate.value) {
     return hotKeyActionSchemesStore
-      .create(values)
+      .create(submitData)
       .then(() => {
         router.push('/hotkeyactionschemes')
       })
@@ -65,7 +95,7 @@ function onSubmit(values, { setErrors }) {
   }
 
   return hotKeyActionSchemesStore
-    .update(props.hotKeyActionSchemeId, values)
+    .update(props.hotKeyActionSchemeId, submitData)
     .then(() => {
       router.push('/hotkeyactionschemes')
     })
@@ -97,6 +127,63 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
+      <div class="form-group mt-4">
+        <label class="label">Действия:</label>
+        <div class="actions-table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Действие</th>
+                <th>Клавиша</th>
+                <th class="checkbox-col">Shift</th>
+                <th class="checkbox-col">Ctrl</th>
+                <th class="checkbox-col">Alt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(action, index) in hotKeyActionScheme.actions" :key="action.action">
+                <td>{{ getActionName(action.action) }}</td>
+                <td>
+                  <input
+                    type="text"
+                    v-model="action.keyCode"
+                    class="form-control input-sm"
+                    placeholder="Клавиша"
+                  />
+                </td>
+                <td class="checkbox-col">
+                  <input
+                    type="checkbox"
+                    v-model="action.shift"
+                    class="checkbox checkbox-styled"
+                    :id="`shift-${index}`"
+                  />
+                  <label :for="`shift-${index}`"></label>
+                </td>
+                <td class="checkbox-col">
+                  <input
+                    type="checkbox"
+                    v-model="action.ctrl"
+                    class="checkbox checkbox-styled"
+                    :id="`ctrl-${index}`"
+                  />
+                  <label :for="`ctrl-${index}`"></label>
+                </td>
+                <td class="checkbox-col">
+                  <input
+                    type="checkbox"
+                    v-model="action.alt"
+                    class="checkbox checkbox-styled"
+                    :id="`alt-${index}`"
+                  />
+                  <label :for="`alt-${index}`"></label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
@@ -114,3 +201,91 @@ function onSubmit(values, { setErrors }) {
     </Form>
   </div>
 </template>
+
+<style scoped>
+.actions-table {
+  margin-top: 1rem;
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+.table thead {
+  background-color: #f5f5f5;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.table th {
+  font-weight: 600;
+  color: #424242;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.input-sm {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 150px;
+}
+
+.input-sm:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25);
+}
+
+.checkbox-col {
+  text-align: center;
+  width: 80px;
+}
+
+.checkbox-col input[type="checkbox"] {
+  margin: 0;
+}
+
+.checkbox-col label {
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  width: auto;
+  display: inline-block;
+}
+
+/* Override checkbox-styled label width for table */
+.checkbox-col .checkbox-styled + label {
+  width: auto;
+  min-width: 20px;
+}
+
+.checkbox-col .checkbox-styled + label:after {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.checkbox-col .checkbox-styled + label:before {
+  right: 4px;
+}
+</style>

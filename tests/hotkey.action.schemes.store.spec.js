@@ -144,13 +144,15 @@ describe('hotkey action schemes store', () => {
     expect(store.error).toBe(error)
   })
 
-  it('update leaves list unchanged when id not found', async () => {
+  it('update calls getAll even when id not found', async () => {
     fetchWrapper.put.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([{ id: 1, name: 'A' }])
     const store = useHotKeyActionSchemesStore()
 
     await store.update(9, { name: 'B' })
 
+    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/9`, { name: 'B' })
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
     expect(store.hotKeyActionSchemes).toEqual([{ id: 1, name: 'A' }])
   })
 

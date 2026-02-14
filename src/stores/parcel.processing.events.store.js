@@ -7,7 +7,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/parcelprocessingevents`
+const baseUrl = `${apiUrl}/events/parcels`
 
 export const useParcelProcessingEventsStore = defineStore('parcelProcessingEvents', () => {
   const events = ref([])

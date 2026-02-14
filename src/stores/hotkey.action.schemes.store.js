@@ -14,6 +14,14 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
   const hotKeyActionScheme = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const ops = ref({
+    actions: []
+  })
+  const opsLoading = ref(false)
+  const opsError = ref(null)
+
+  let opsInitialized = false
+  let opsPromise = null
 
   async function getAll() {
     loading.value = true
@@ -94,15 +102,55 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     }
   }
 
+  function getOpsLabel(list, value) {
+    const num = Number(value)
+    const match = list?.find((item) => Number(item.value) === num)
+    return match ? match.name : String(value)
+  }
+
+  async function getOps() {
+    opsLoading.value = true
+    opsError.value = null
+    try {
+      ops.value = await fetchWrapper.get(`${baseUrl}/ops`)
+      opsInitialized = true
+      return ops.value
+    } catch (err) {
+      opsError.value = err
+      return null
+    } finally {
+      opsLoading.value = false
+    }
+  }
+
+  async function ensureOpsLoaded() {
+    if (opsInitialized) {
+      return ops.value
+    }
+
+    if (!opsPromise) {
+      opsPromise = getOps().finally(() => {
+        opsPromise = null
+      })
+    }
+    return opsPromise
+  }
+
   return {
     hotKeyActionSchemes,
     hotKeyActionScheme,
     loading,
     error,
+    ops,
+    opsLoading,
+    opsError,
     getAll,
     getById,
     create,
     update,
-    remove
+    remove,
+    getOps,
+    ensureOpsLoaded,
+    getOpsLabel
   }
 })

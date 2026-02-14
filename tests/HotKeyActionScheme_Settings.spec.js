@@ -174,6 +174,8 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(callArg.name).toBe('New Scheme')
     expect(callArg.actions).toBeDefined()
     expect(Array.isArray(callArg.actions)).toBe(true)
+    expect(callArg.actions[0].keyCode).toBe('F10')
+    expect(callArg.actions[0].shift).toBe(true)
   })
 
   it('submits edit with actions data', async () => {
@@ -182,6 +184,7 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     
     const vm = editWrapper.findComponent(HotKeyActionSchemeSettings).vm
     vm.hotKeyActionScheme.actions[0].keyCode = 'F11'
+    vm.hotKeyActionScheme.actions[0].ctrl = true
     
     await editWrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Updated Scheme' }, { setErrors: vi.fn() })
     await resolveAll()
@@ -191,6 +194,8 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(callArg.name).toBe('Updated Scheme')
     expect(callArg.actions).toBeDefined()
     expect(Array.isArray(callArg.actions)).toBe(true)
+    expect(callArg.actions[0].keyCode).toBe('F11')
+    expect(callArg.actions[0].ctrl).toBe(true)
   })
 
   it('sets api error for create conflict', async () => {

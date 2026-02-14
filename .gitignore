@@ -30,3 +30,9 @@ coverage
 *.sw?
 
 .env
+
+# Temporary marker files
+*.rebase_marker
+*-rebase-marker
+.git-rebase-marker
+.rebase_marker

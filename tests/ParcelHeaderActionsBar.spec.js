@@ -92,4 +92,33 @@ describe('ParcelHeaderActionsBar', () => {
     const downloadAfter = wrapper.emitted()['download']?.length ?? 0
     expect(downloadAfter).toBe(downloadBefore)
   })
+
+  it('responds to F1/F2/F3 keyboard events when enabled', async () => {
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1' }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2' }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['next-problem']?.length ?? 0).toBeGreaterThan(0)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F3' }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['back']?.length ?? 0).toBeGreaterThan(0)
+  })
+
+  it('does not respond to function keys when disabled', async () => {
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { disabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1' }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()).toEqual({})
+  })
 })

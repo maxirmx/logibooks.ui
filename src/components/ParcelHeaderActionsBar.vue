@@ -1,4 +1,5 @@
 <script setup>
+import { onMounted, onBeforeUnmount } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -26,6 +27,24 @@ function emitDownload() {
   if (props.disabled || props.downloadDisabled) return
   emit('download')
 }
+
+function handleKeydown(e) {
+   console.log('key', e.key, 'code', e.code, 'keyCode', e.keyCode)
+  // Map F1 -> next-parcel, F2 -> next-problem, F3 -> back
+  if (e.key === 'F1') {
+    e.preventDefault()
+    emitEvent('next-parcel')
+  } else if (e.key === 'F2') {
+    e.preventDefault()
+    emitEvent('next-problem')
+  } else if (e.key === 'F3') {
+    e.preventDefault()
+    emitEvent('back')
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>

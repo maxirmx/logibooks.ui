@@ -14,6 +14,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
   const hotKeyActionScheme = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const isInitialized = ref(false)
   const ops = ref({
     actions: []
   })
@@ -22,12 +23,14 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
 
   let opsInitialized = false
   let opsPromise = null
+  let loadPromise = null
 
   async function getAll() {
     loading.value = true
     error.value = null
     try {
       hotKeyActionSchemes.value = await fetchWrapper.get(baseUrl)
+      isInitialized.value = true
     } catch (err) {
       error.value = err
     } finally {
@@ -56,7 +59,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     error.value = null
     try {
       const result = await fetchWrapper.post(baseUrl, hotKeyActionSchemeData)
-      hotKeyActionSchemes.value.push(result)
+      await getAll()
       return result
     } catch (err) {
       error.value = err
@@ -70,15 +73,9 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     loading.value = true
     error.value = null
     try {
-      await fetchWrapper.put(`${baseUrl}/${id}`, hotKeyActionSchemeData)
-      const index = hotKeyActionSchemes.value.findIndex(i => i.id === id)
-      if (index !== -1) {
-        hotKeyActionSchemes.value[index] = {
-          ...hotKeyActionSchemes.value[index],
-          ...hotKeyActionSchemeData
-        }
-      }
-      return true
+      const response = await fetchWrapper.put(`${baseUrl}/${id}`, hotKeyActionSchemeData)
+      await getAll()
+      return response
     } catch (err) {
       error.value = err
       throw err
@@ -92,8 +89,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      hotKeyActionSchemes.value = hotKeyActionSchemes.value.filter(i => i.id !== id)
-      return true
+      await getAll()
     } catch (err) {
       error.value = err
       throw err
@@ -129,6 +125,19 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     }
   }
 
+  async function ensureLoaded() {
+    if (isInitialized.value) {
+      return
+    }
+
+    if (!loadPromise) {
+      loadPromise = getAll().finally(() => {
+        loadPromise = null
+      })
+    }
+    await loadPromise
+  }
+
   async function ensureOpsLoaded() {
     if (opsInitialized) {
       return ops.value
@@ -147,6 +156,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     hotKeyActionScheme,
     loading,
     error,
+    isInitialized,
     ops,
     opsLoading,
     opsError,
@@ -155,6 +165,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     create,
     update,
     remove,
+    ensureLoaded,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

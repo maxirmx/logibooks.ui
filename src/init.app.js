@@ -125,7 +125,7 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
-import { useScanJobsStore } from '@/stores/scanjobs.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 
 export function initializeApp() {
@@ -194,7 +194,7 @@ export function initializeApp() {
   const customsProceduresStore = useCustomsProceduresStore()
   const countriesStore = useCountriesStore()
   const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
-  const scanJobsStore = useScanJobsStore()
+  const scanJobsStore = useScanjobsStore()
   const warehousesStore = useWarehousesStore()
 
   // Load FEACN orders globally at app startup

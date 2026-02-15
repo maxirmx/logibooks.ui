@@ -56,7 +56,7 @@ onMounted(async () => {
       }
     }
   } catch (error) {
-    console.error('Failed to load hotkey actions:', error)
+    console.error('Failed to load hotkey action scheme:', error.message || error)
   }
   
   window.addEventListener('keydown', handleKeydown)

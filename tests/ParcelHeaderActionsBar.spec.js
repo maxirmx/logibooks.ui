@@ -252,15 +252,7 @@ describe('ParcelHeaderActionsBar', () => {
     expect(wrapper.emitted()['next-issue']).toBeUndefined()
 
     // F1 with Shift (should not trigger because F1 requires no modifiers)
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: true, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
-    await wrapper.vm.$nextTick()
-    // F1 without modifiers was not pressed, so next-parcel should still be undefined
-    // But actually, the earlier test might have triggered it, so we need to check count
+    // Record count before to verify no new event is emitted
     const countBefore = wrapper.emitted()['next-parcel']?.length ?? 0
     
     window.dispatchEvent(new KeyboardEvent('keydown', { 
@@ -539,18 +531,29 @@ describe('ParcelHeaderActionsBar', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 0))
 
-    const event = new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false,
-      cancelable: true
-    })
-    
-    const preventDefaultSpy = vi.spyOn(event, 'preventDefault')
-    window.dispatchEvent(event)
-    await wrapper.vm.$nextTick()
+    // Use a custom event handler to verify preventDefault is called
+    let preventDefaultCalled = false
+    const originalPreventDefault = KeyboardEvent.prototype.preventDefault
+    KeyboardEvent.prototype.preventDefault = function() {
+      preventDefaultCalled = true
+      originalPreventDefault.call(this)
+    }
 
-    expect(preventDefaultSpy).toHaveBeenCalled()
+    try {
+      window.dispatchEvent(new KeyboardEvent('keydown', { 
+        code: 'F1', 
+        shiftKey: false, 
+        ctrlKey: false, 
+        altKey: false,
+        cancelable: true
+      }))
+      await wrapper.vm.$nextTick()
+
+      expect(preventDefaultCalled).toBe(true)
+      expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
+    } finally {
+      // Restore original preventDefault
+      KeyboardEvent.prototype.preventDefault = originalPreventDefault
+    }
   })
 })

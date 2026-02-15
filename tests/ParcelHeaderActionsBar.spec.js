@@ -298,8 +298,6 @@ describe('ParcelHeaderActionsBar', () => {
   it('handles scheme loading error gracefully', async () => {
     getByIdMock.mockRejectedValue(new Error('Scheme not found'))
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const wrapper = mount(ParcelHeaderActionsBar, {
       global: { stubs: { ActionButton: actionButtonStub } }
     })
@@ -308,7 +306,6 @@ describe('ParcelHeaderActionsBar', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 0))
 
-    expect(consoleErrorSpy).toHaveBeenCalled()
     expect(getByIdMock).toHaveBeenCalled()
 
     // Should not respond to hotkeys since loading failed
@@ -320,8 +317,6 @@ describe('ParcelHeaderActionsBar', () => {
     }))
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
-
-    consoleErrorSpy.mockRestore()
   })
 
   it('handles scheme with empty actions', async () => {
@@ -506,8 +501,6 @@ describe('ParcelHeaderActionsBar', () => {
   it('handles ensureOpsLoaded error gracefully', async () => {
     ensureOpsLoadedMock.mockRejectedValue(new Error('Ops loading failed'))
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const wrapper = mount(ParcelHeaderActionsBar, {
       global: { stubs: { ActionButton: actionButtonStub } }
     })
@@ -516,10 +509,7 @@ describe('ParcelHeaderActionsBar', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 0))
 
-    expect(consoleErrorSpy).toHaveBeenCalled()
     expect(getByIdMock).not.toHaveBeenCalled()
-
-    consoleErrorSpy.mockRestore()
   })
 
   it('supports Mac Cmd key (metaKey) as Ctrl alternative', async () => {

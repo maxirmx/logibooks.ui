@@ -60,8 +60,12 @@ onMounted(async () => {
         }).filter(action => action.event && action.keyCode)
       }
     }
-  } catch (error) {
-    console.error('Failed to load hotkey action scheme:', error.message || error)
+  } catch  {
+    // If there's an error loading hotkeys, we can choose to disable the listener
+    if (isListenerAttached.value) {
+      window.removeEventListener('keydown', handleKeydown)
+      isListenerAttached.value = false
+    }
   }
 })
 

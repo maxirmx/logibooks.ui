@@ -37,6 +37,7 @@ vi.mock('@/helpers/config.js', () => ({
 describe('users store', () => {
   const mockAuthStore = {
     user: { id: 1, name: 'Test Admin', roles: [roleAdmin] },
+    isAdmin: true,
     logout: vi.fn()
   }
 

@@ -507,5 +507,27 @@ describe('User_Settings.vue real component', () => {
     
     expect(updateUser).toHaveBeenCalledWith(1, expect.objectContaining({ schemeId: 1 }), true)
   })
-})
 
+  it('defaults schemeId to 0 when user data has null schemeId', async () => {
+    mockUser.value = { 
+      id: 1, 
+      firstName: 'John', 
+      lastName: 'Doe', 
+      email: 'john@example.com', 
+      roles: [roleLogist],
+      schemeId: null
+    }
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub
+        } 
+      }
+    })
+    await resolveAll()
+    
+    const child = wrapper.findComponent(UserSettings)
+    expect(child.vm.$.setupState.user.schemeId).toBe(0)
+  })})

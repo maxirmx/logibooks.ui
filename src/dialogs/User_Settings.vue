@@ -77,6 +77,10 @@ let user = ref({
 if (!isRegister()) {
   ;({ user } = storeToRefs(usersStore))
   await usersStore.getById(props.id, true)
+  // Ensure schemeId defaults to 0 when null or undefined
+  if (user.value.schemeId == null) {
+    user.value.schemeId = 0
+  }
 }
 
 function isRegister() {

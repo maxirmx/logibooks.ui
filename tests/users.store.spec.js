@@ -37,8 +37,8 @@ vi.mock('@/helpers/config.js', () => ({
 describe('users store', () => {
   const mockAuthStore = {
     user: { id: 1, name: 'Test Admin', roles: [roleAdmin] },
-    logout: vi.fn(),
-    isAdmin: { value: true }
+    isAdmin: true,
+    logout: vi.fn()
   }
 
   // Store original localStorage

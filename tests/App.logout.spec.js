@@ -72,7 +72,8 @@ const router = createRouter({
     { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
     { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
     { path: '/parcelsevents', component: { template: '<div>Parcel Events</div>' } },
-    { path: '/registersevents', component: { template: '<div>Register Events</div>' } }
+    { path: '/registersevents', component: { template: '<div>Register Events</div>' } },
+    { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } }
   ]
 })
 

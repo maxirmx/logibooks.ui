@@ -27,9 +27,14 @@ const emit = defineEmits([
 const authStore = useAuthStore()
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 const hotkeyActions = ref([])
+const isListenerAttached = ref(false)
 
 // Load hotkey actions on mount
 onMounted(async () => {
+  // Attach listener before async operations to ensure cleanup always works
+  window.addEventListener('keydown', handleKeydown)
+  isListenerAttached.value = true
+  
   try {
     // Ensure ops are loaded
     await hotKeyActionSchemesStore.ensureOpsLoaded()
@@ -58,11 +63,14 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to load hotkey action scheme:', error.message || error)
   }
-  
-  window.addEventListener('keydown', handleKeydown)
 })
 
-onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
+onBeforeUnmount(() => {
+  if (isListenerAttached.value) {
+    window.removeEventListener('keydown', handleKeydown)
+    isListenerAttached.value = false
+  }
+})
 
 function emitEvent(event) {
   if (props.disabled) return
@@ -87,7 +95,12 @@ function handleKeydown(e) {
     
     if (keyMatches && shiftMatches && ctrlMatches && altMatches) {
       e.preventDefault()
-      emit(action.event)
+      // Check downloadDisabled for download events
+      if (action.event === 'download') {
+        emitDownload()
+      } else {
+        emit(action.event)
+      }
       break
     }
   }

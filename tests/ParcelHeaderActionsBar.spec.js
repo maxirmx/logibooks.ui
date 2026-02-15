@@ -596,4 +596,128 @@ describe('ParcelHeaderActionsBar', () => {
       KeyboardEvent.prototype.preventDefault = originalPreventDefault
     }
   })
+
+  it('attaches event listener before async operations to prevent memory leaks', async () => {
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
+    
+    // Create a promise that we can control
+    let resolveOps
+    const slowOpsPromise = new Promise(resolve => { resolveOps = resolve })
+    ensureOpsLoadedMock.mockReturnValue(slowOpsPromise)
+    
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+    
+    // Listener should be attached immediately, before async completes
+    await wrapper.vm.$nextTick()
+    expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
+    
+    // Unmount before async completes
+    wrapper.unmount()
+    
+    // Listener should be removed
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
+    
+    // Complete the async operation
+    resolveOps(mockOps)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    
+    // Verify no additional listeners were added
+    expect(addEventListenerSpy).toHaveBeenCalledTimes(1)
+    
+    addEventListenerSpy.mockRestore()
+    removeEventListenerSpy.mockRestore()
+  })
+
+  it('respects downloadDisabled for download hotkeys', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Download Scheme',
+      actions: [
+        { id: 1, action: 7, keyCode: 'KeyD', shift: false, ctrl: true, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { downloadDisabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Ctrl+D should NOT trigger download when downloadDisabled is true
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyD', 
+      shiftKey: false, 
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['download']).toBeUndefined()
+  })
+
+  it('allows download hotkeys when downloadDisabled is false', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Download Scheme',
+      actions: [
+        { id: 1, action: 7, keyCode: 'KeyD', shift: false, ctrl: true, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { downloadDisabled: false },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Ctrl+D should trigger download when downloadDisabled is false
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyD', 
+      shiftKey: false, 
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['download']?.length ?? 0).toBeGreaterThan(0)
+  })
+
+  it('respects disabled prop for download hotkeys', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Download Scheme',
+      actions: [
+        { id: 1, action: 7, keyCode: 'KeyD', shift: false, ctrl: true, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { disabled: true, downloadDisabled: false },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Ctrl+D should NOT trigger download when disabled is true
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyD', 
+      shiftKey: false, 
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()).toEqual({})
+  })
 })

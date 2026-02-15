@@ -43,6 +43,9 @@ const router = createRouter({
   routes: [
     { path: '/', component: { template: '<div>Home</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
+    { path: '/scanjobs', component: { template: '<div>Scanjobs</div>' } },
+    { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
+    { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
   ],
 })
 
@@ -79,9 +82,10 @@ describe('App exchange rates display', () => {
           ActionDialog: {
             props: ['actionDialog'],
             template: '<div class="action-dialog-stub" :data-show="actionDialog?.show"></div>'
-          }
-        },
-      },
+          },
+          'font-awesome-icon': { template: '<span class="fa-icon-stub"></span>' }
+        }
+      }
     })
   }
 

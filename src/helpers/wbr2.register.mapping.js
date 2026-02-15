@@ -22,7 +22,11 @@ export const wbr2RegisterColumnTitles = {
   recipientAddress: 'Адрес получателя физического лица',
   contactPhone: 'Контактный номер',
   statusId: 'Статус',
-  checkStatus: 'Проверка'
+  checkStatus: 'Проверка',
+  boxNumber: 'Номер мешка/коробки',
+  stickerCode: 'Код стикера',
+  wbSticker: 'ВБ стикер',
+  sellerSticker: 'Стикер продавца'
 }
 
 export const wbr2RegisterColumnTooltips = {

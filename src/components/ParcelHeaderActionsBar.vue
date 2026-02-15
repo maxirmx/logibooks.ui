@@ -1,6 +1,12 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 
 const props = defineProps({
   disabled: { type: Boolean, default: false },
@@ -18,6 +24,46 @@ const emit = defineEmits([
   'download'
 ])
 
+const authStore = useAuthStore()
+const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
+const hotkeyActions = ref([])
+
+// Load hotkey actions on mount
+onMounted(async () => {
+  try {
+    // Ensure ops are loaded
+    await hotKeyActionSchemesStore.ensureOpsLoaded()
+    
+    // Get the user's hotkey action scheme ID
+    const schemeId = authStore.user?.hotkeyactionschemeId
+    
+    if (schemeId) {
+      // Load the scheme
+      const scheme = await hotKeyActionSchemesStore.getById(schemeId)
+      
+      if (scheme?.actions) {
+        // Build hotkey actions list with event names from ops
+        hotkeyActions.value = scheme.actions.map(action => {
+          const event = hotKeyActionSchemesStore.getOpsEvent(
+            hotKeyActionSchemesStore.ops.actions,
+            action.action
+          )
+          return {
+            ...action,
+            event
+          }
+        }).filter(action => action.event && action.keyCode)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load hotkey actions:', error)
+  }
+  
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
+
 function emitEvent(event) {
   if (props.disabled) return
   emit(event)
@@ -29,22 +75,22 @@ function emitDownload() {
 }
 
 function handleKeydown(e) {
-  // console.log('key', e.key, 'code', e.code, 'keyCode', e.keyCode)
-  // Map F1 -> next-parcel, F2 -> next-issue, F3 -> back
-  if (e.key === 'F1') {
-    e.preventDefault()
-    emitEvent('next-parcel')
-  } else if (e.key === 'F2') {
-    e.preventDefault()
-    emitEvent('next-issue')
-  } else if (e.key === 'F3') {
-    e.preventDefault()
-    emitEvent('back')
+  if (props.disabled) return
+  
+  // Check if the pressed key matches any configured hotkey action
+  for (const action of hotkeyActions.value) {
+    const keyMatches = e.code === action.keyCode
+    const shiftMatches = e.shiftKey === action.shift
+    const ctrlMatches = e.ctrlKey === action.ctrl
+    const altMatches = e.altKey === action.alt
+    
+    if (keyMatches && shiftMatches && ctrlMatches && altMatches) {
+      e.preventDefault()
+      emit(action.event)
+      break
+    }
   }
 }
-
-onMounted(() => window.addEventListener('keydown', handleKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>

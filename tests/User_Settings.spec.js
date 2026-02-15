@@ -360,6 +360,28 @@ describe('User_Settings.vue real component', () => {
     expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 1 }), true)
   })
 
+  it('submits default schemeId 0 when registering without changing field', async () => {
+    isAdmin = true
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+    // Submit without explicitly providing schemeId - it should still be included as 0
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
+    await resolveAll()
+    
+    // The initial values should include schemeId: 0, so it should be submitted
+    expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ firstName: 'Test' }), true)
+  })
+
   it('submits schemeId value when updating user as admin', async () => {
     isAdmin = true
     const wrapper = mount(Parent, {

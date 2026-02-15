@@ -71,6 +71,7 @@ const showPassword = ref(false)
 const showPassword2 = ref(false)
 
 let user = ref({
+  schemeId: 0
 })
 
 if (!isRegister()) {
@@ -364,7 +365,7 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div class="form-group">
-        <label for="schemeId" class="label">Схема горячих клавиш:</label>
+        <label for="schemeId" class="label">Схема настройки клавиатуры:</label>
         <Field
           name="schemeId"
           id="schemeId"

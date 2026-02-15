@@ -35,7 +35,7 @@ onMounted(async () => {
     await hotKeyActionSchemesStore.ensureOpsLoaded()
     
     // Get the user's hotkey action scheme ID
-    const schemeId = authStore.user?.hotkeyactionschemeId
+    const schemeId = authStore.user?.schemeId
     
     if (schemeId) {
       // Load the scheme
@@ -81,7 +81,8 @@ function handleKeydown(e) {
   for (const action of hotkeyActions.value) {
     const keyMatches = e.code === action.keyCode
     const shiftMatches = e.shiftKey === action.shift
-    const ctrlMatches = e.ctrlKey === action.ctrl
+    // On Mac, Cmd (metaKey) can be used instead of Ctrl
+    const ctrlMatches = e.ctrlKey === action.ctrl || (e.metaKey === action.ctrl)
     const altMatches = e.altKey === action.alt
     
     if (keyMatches && shiftMatches && ctrlMatches && altMatches) {

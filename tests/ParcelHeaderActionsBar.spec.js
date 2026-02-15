@@ -26,7 +26,7 @@ const actionButtonStub = {
 const mockUser = ref({
   id: 1,
   email: 'test@test.com',
-  hotkeyactionschemeId: 1
+  schemeId: 1
 })
 
 const mockScheme = {
@@ -76,7 +76,7 @@ describe('ParcelHeaderActionsBar', () => {
     mockUser.value = {
       id: 1,
       email: 'test@test.com',
-      hotkeyactionschemeId: 1
+      schemeId: 1
     }
     ensureOpsLoadedMock.mockResolvedValue(mockOps)
     getByIdMock.mockResolvedValue(mockScheme)
@@ -270,7 +270,7 @@ describe('ParcelHeaderActionsBar', () => {
     mockUser.value = {
       id: 1,
       email: 'test@test.com'
-      // no hotkeyactionschemeId
+      // no schemeId
     }
 
     const wrapper = mount(ParcelHeaderActionsBar, {
@@ -520,6 +520,46 @@ describe('ParcelHeaderActionsBar', () => {
     expect(getByIdMock).not.toHaveBeenCalled()
 
     consoleErrorSpy.mockRestore()
+  })
+
+  it('supports Mac Cmd key (metaKey) as Ctrl alternative', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Mac Scheme',
+      actions: [
+        { id: 1, action: 4, keyCode: 'KeyS', shift: false, ctrl: true, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Cmd+S on Mac (metaKey instead of ctrlKey) should trigger save
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyS', 
+      shiftKey: false, 
+      ctrlKey: false,
+      metaKey: true,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['save']?.length ?? 0).toBeGreaterThan(0)
+
+    // Regular Ctrl+S should also work
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyS', 
+      shiftKey: false, 
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['save']?.length ?? 0).toBeGreaterThan(1)
   })
 
   it('properly prevents default on matched hotkeys', async () => {

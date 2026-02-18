@@ -406,15 +406,50 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '123-12345678' })
+      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '123-12345678', theOtherCountryCode: 840 })
     ).resolves.toBeDefined()
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC' })
+      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC', theOtherCountryCode: 840 })
     ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>')
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 1, invoiceNumber: 'INVALID-FORMAT' })
+      dialog.vm.schema.validate({ transportationTypeId: 1, invoiceNumber: 'INVALID-FORMAT', theOtherCountryCode: 840 })
+    ).resolves.toBeDefined()
+  })
+
+  it('validates that theOtherCountryCode is mandatory', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    // Should fail validation when theOtherCountryCode is null/missing
+    await expect(
+      dialog.vm.schema.validate({ theOtherCountryCode: null })
+    ).rejects.toThrow('Необходимо выбрать страну')
+
+    await expect(
+      dialog.vm.schema.validate({ theOtherCountryCode: undefined })
+    ).rejects.toThrow('Необходимо выбрать страну')
+
+    // Should pass validation when theOtherCountryCode is provided
+    await expect(
+      dialog.vm.schema.validate({ theOtherCountryCode: 840 })
+    ).resolves.toBeDefined()
+
+    await expect(
+      dialog.vm.schema.validate({ theOtherCountryCode: 643 })
     ).resolves.toBeDefined()
   })
 

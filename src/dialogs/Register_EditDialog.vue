@@ -306,7 +306,10 @@ const schema = Yup.object().shape({
   transportationTypeId: Yup.number().nullable(),
   customsProcedureId: Yup.number().nullable(),
   theOtherCompanyId: Yup.number().nullable(),
-  theOtherCountryCode: Yup.number().nullable(),
+  theOtherCountryCode: Yup.number()
+    .transform((value) => (value === '' ? null : value))
+    .typeError('Необходимо выбрать страну')
+    .required('Необходимо выбрать страну'),
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
@@ -662,6 +665,7 @@ function getCustomerName(customerId) {
                 name="theOtherCountryCode"
                 id="theOtherCountryCode"
                 class="form-control input"
+                :class="{ 'is-invalid': errors.theOtherCountryCode }"
               >
                 <option value="">Выберите страну</option>
                 <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">
@@ -697,8 +701,8 @@ function getCustomerName(customerId) {
                 name="theOtherCountryCode"
                 id="theOtherCountryCode"
                 class="form-control input"
+                :class="{ 'is-invalid': errors.theOtherCountryCode }"
               >
-                <option value="">Выберите страну</option>
                 <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">
                   {{ c.nameRuOfficial }}
                 </option>
@@ -867,6 +871,7 @@ function getCustomerName(customerId) {
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
       <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceNumber }}</div>
       <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceDate }}</div>
+      <div v-if="errors.theOtherCountryCode" class="alert alert-danger mt-3 mb-0">{{ errors.theOtherCountryCode }}</div>
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>

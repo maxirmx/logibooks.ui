@@ -16,7 +16,10 @@ const vuetify = createVuetify()
 
 const mockOps = ref({
   types: [{ value: 1, name: 'Type 1' }],
-  operations: [{ value: 2, name: 'Operation 1' }],
+  operations: [
+    { value: 9, name: 'Operation 1' },
+    { value: 2, name: 'Lookup' }
+  ],
   modes: [{ value: 3, name: 'Mode 1' }],
   statuses: [
     { value: 4, name: 'Draft' },
@@ -31,6 +34,7 @@ const mockScanjob = {
   name: 'Test scanjob',
   type: 1,
   operation: 2,
+  lookupStatusId: 101,
   mode: 3,
   status: 4,
   warehouseId: 11,
@@ -56,10 +60,17 @@ const start = vi.hoisted(() => vi.fn())
 const pause = vi.hoisted(() => vi.fn())
 const finish = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
+const getRegisterById = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
+const routerBack = vi.hoisted(() => vi.fn())
 
 const getWarehouseName = vi.hoisted(() => vi.fn((id) => `Warehouse ${id}`))
+let registerItem = { registerType: 1048578 }
+const parcelStatuses = [
+  { id: 101, title: 'Найден' },
+  { id: 102, title: 'Не найден' }
+]
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
@@ -85,6 +96,21 @@ vi.mock('@/stores/warehouses.store.js', () => ({
   })
 }))
 
+
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: () => ({
+    get item() { return registerItem },
+    getById: getRegisterById
+  })
+}))
+
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    ensureLoaded,
+    parcelStatuses
+  })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     error: alertError,
@@ -101,7 +127,8 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
-    push: routerPush
+    push: routerPush,
+    back: routerBack
   }
 }))
 
@@ -142,6 +169,10 @@ describe('Scanjob_Settings.vue', () => {
     vi.clearAllMocks()
     ensureOpsLoaded.mockResolvedValue(mockOps.value)
     ensureLoaded.mockResolvedValue()
+    getRegisterById.mockImplementation(async () => {
+      registerItem = { id: 22, registerType: 1048578 }
+      return registerItem
+    })
     getById.mockResolvedValue(mockScanjob)
     create.mockResolvedValue(mockScanjob)
     update.mockResolvedValue(true)
@@ -157,7 +188,7 @@ describe('Scanjob_Settings.vue', () => {
   it('throws when edit mode is missing scanjobId', () => {
     expect(() => mountComponent({ mode: 'edit' })).toThrow('scanjobId is required when mode is edit')
     expect(alertError).toHaveBeenCalledWith('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
-    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
+    expect(routerBack).toHaveBeenCalled()
   })
 
   it('renders create mode with read-only status and header actions', async () => {
@@ -190,6 +221,7 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('#type').setValue('1')
     await wrapper.find('#operation').setValue('2')
     await wrapper.find('#mode').setValue('3')
+    await wrapper.find('#lookupStatusId').setValue('101')
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
 
@@ -200,8 +232,10 @@ describe('Scanjob_Settings.vue', () => {
       name: 'Сканирование сделки ABC-1',
       registerId: 22,
       warehouseId: 11,
-      status: 4
+      status: 4,
+      lookupStatusId: 101
     }))
+    // After successful create, navigate to scanjobs list
     expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
 
@@ -216,6 +250,7 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('#type').setValue('1')
     await wrapper.find('#operation').setValue('2')
     await wrapper.find('#mode').setValue('3')
+    await wrapper.find('#lookupStatusId').setValue('101')
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
 
@@ -225,9 +260,11 @@ describe('Scanjob_Settings.vue', () => {
     expect(update).toHaveBeenCalledWith(11, expect.objectContaining({
       name: 'Test scanjob',
       registerId: 22,
-      warehouseId: 11
+      warehouseId: 11,
+      lookupStatusId: 101
     }))
-    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
+    // After successful edit, return to caller
+    expect(routerBack).toHaveBeenCalled()
   })
 
   it('handles start action and refreshes status display', async () => {
@@ -286,6 +323,7 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.find('#type').setValue('1')
     await wrapper.find('#operation').setValue('2')
     await wrapper.find('#mode').setValue('3')
+    await wrapper.find('#lookupStatusId').setValue('101')
     await wrapper.find('input[name="registerId"]').setValue(22)
     await wrapper.find('input[name="warehouseId"]').setValue(11)
 
@@ -293,6 +331,56 @@ describe('Scanjob_Settings.vue', () => {
     await resolveAll()
 
     expect(wrapper.text()).toContain('Такое задание на сканирование уже существует')
+  })
+
+
+
+  it('enables and validates lookup status only for lookup operation', async () => {
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1'
+    })
+    await resolveAll()
+
+    // Set to lookup operation (last in array)
+    await wrapper.find('#operation').setValue('2')
+    await resolveAll()
+
+    const lookupStatusSelect = wrapper.find('[data-testid="lookup-status-select"]')
+    expect(lookupStatusSelect.attributes('disabled')).toBeUndefined()
+
+    await lookupStatusSelect.setValue('')
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Статус для поиска обязателен')
+
+    await wrapper.find('#operation').setValue('9')
+    await resolveAll()
+    expect(wrapper.find('[data-testid="lookup-status-select"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('limits operations to lookup for non-Wbr2 registers', async () => {
+    getRegisterById.mockImplementation(async () => {
+      registerItem = { id: 22, registerType: 1 }
+      return registerItem
+    })
+
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1'
+    })
+    await resolveAll()
+
+    const options = wrapper.findAll('#operation option')
+    expect(options).toHaveLength(1)
+    expect(options[0].text()).toBe('Lookup')
+    expect(wrapper.find('#operation').element.value).toBe('2')
   })
 
   it('reports refresh errors when status update fails', async () => {
@@ -309,4 +397,8 @@ describe('Scanjob_Settings.vue', () => {
 
     expect(alertError).toHaveBeenCalledWith('Не удалось обновить задание на сканирование')
   })
+
+
+
+
 })

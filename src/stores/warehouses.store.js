@@ -146,7 +146,7 @@ export const useWarehousesStore = defineStore('warehouses', () => {
   function getWarehouseName(warehouseId) {
     const num = Number(warehouseId)
     const match = warehouses.value?.find((warehouse) => warehouse.id === num)
-    return match ? match.name : String(warehouseId)
+    return match ? match.name : num ? String(num) : ''
   }
 
   return {

@@ -332,10 +332,13 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
 
     if (isCreate.value) {
       await scanJobsStore.create(payload)
+      // Navigate to scanjobs list after successfully creating
+      router.push('/scanjobs')
     } else {
       await scanJobsStore.update(props.scanjobId, payload)
+      // Return to caller after successfully updating
+      router.back()
     }
-    router.back()
   } catch (error) {
     if (error?.message?.includes && error.message.includes('409')) {
       setErrors({ apiError: 'Такое задание на сканирование уже существует' })

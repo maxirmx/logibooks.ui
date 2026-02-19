@@ -62,6 +62,7 @@ const finish = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
 const getRegisterById = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
+const routerPush = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
 
 const getWarehouseName = vi.hoisted(() => vi.fn((id) => `Warehouse ${id}`))
@@ -126,6 +127,7 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
+    push: routerPush,
     back: routerBack
   }
 }))
@@ -233,7 +235,8 @@ describe('Scanjob_Settings.vue', () => {
       status: 4,
       lookupStatusId: 101
     }))
-    expect(routerBack).toHaveBeenCalled()
+    // After successful create, navigate to scanjobs list
+    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
 
   it('renders edit mode and updates scanjob on save action', async () => {
@@ -260,6 +263,7 @@ describe('Scanjob_Settings.vue', () => {
       warehouseId: 11,
       lookupStatusId: 101
     }))
+    // After successful edit, return to caller
     expect(routerBack).toHaveBeenCalled()
   })
 

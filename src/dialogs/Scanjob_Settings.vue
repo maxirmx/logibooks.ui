@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
@@ -11,8 +11,11 @@ import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -44,6 +47,8 @@ const props = defineProps({
 
 const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
+const registersStore = useRegistersStore()
+const parcelStatusesStore = useParcelStatusesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const { ops } = storeToRefs(scanJobsStore)
@@ -62,6 +67,14 @@ const saving = ref(false)
 const runningAction = ref(false)
 const currentScanjob = ref(null)
 
+function resolveLookupOperationValue() {
+  const lookupOperation = ops.value?.operations?.find((item) => {
+    const name = String(item?.name || '').toLowerCase()
+    return name.includes('lookup') || name.includes('поиск')
+  })
+  return lookupOperation?.value ?? null
+}
+
 const schema = toTypedSchema(Yup.object().shape({
   id: Yup.number().required(),
   name: Yup.string().required('Название обязательно'),
@@ -70,7 +83,12 @@ const schema = toTypedSchema(Yup.object().shape({
   mode: Yup.number().required('Режим обязателен'),
   status: Yup.number().required('Статус обязателен'),
   warehouseId: Yup.number().nullable().required('Склад обязателен'),
-  registerId: Yup.number().nullable().required('Реестр обязателен')
+  registerId: Yup.number().nullable().required('Реестр обязателен'),
+  lookupStatusId: Yup.number().nullable().when('operation', {
+    is: (operationValue) => Number(operationValue) === Number(resolveLookupOperationValue()),
+    then: (fieldSchema) => fieldSchema.required('Статус для поиска обязателен'),
+    otherwise: (fieldSchema) => fieldSchema.nullable()
+  })
 }))
 
 const { errors, handleSubmit, resetForm } = useForm({
@@ -83,7 +101,8 @@ const { errors, handleSubmit, resetForm } = useForm({
     mode: null,
     status: null,
     warehouseId: props.warehouseId ?? null,
-    registerId: props.registerId ?? null
+    registerId: props.registerId ?? null,
+    lookupStatusId: null
   }
 })
 
@@ -94,6 +113,29 @@ const { value: fieldMode } = useField('mode')
 const { value: status } = useField('status')
 const { value: fieldWarehouseId } = useField('warehouseId')
 const { value: fieldRegisterId } = useField('registerId')
+const { value: lookupStatusId } = useField('lookupStatusId')
+
+const currentRegister = ref(null)
+
+const lookupOperationValue = computed(() => resolveLookupOperationValue())
+
+const isLookupOperation = computed(() => (
+  lookupOperationValue.value !== null
+  && Number(operation.value) === Number(lookupOperationValue.value)
+))
+
+const isLookupOnlyRegisterType = computed(() => {
+  const registerType = currentRegister.value?.registerType
+  return registerType !== null && registerType !== undefined && registerType !== WBR2_REGISTER_ID
+})
+
+const operationOptions = computed(() => {
+  if (!Array.isArray(ops.value?.operations)) return []
+  if (!isLookupOnlyRegisterType.value || lookupOperationValue.value === null) {
+    return ops.value.operations
+  }
+  return ops.value.operations.filter((item) => Number(item.value) === Number(lookupOperationValue.value))
+})
 
 const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(fieldWarehouseId.value))
 const resolvedDealNumber = computed(() => currentScanjob.value?.dealNumber || props.dealNumber || '')
@@ -106,13 +148,45 @@ const canStart = computed(() => currentScanjob.value?.allowStart === true)
 const canPause = computed(() => currentScanjob.value?.allowPause === true)
 const canFinish = computed(() => currentScanjob.value?.allowFinish === true)
 
+watch(isLookupOperation, (lookup) => {
+  if (!lookup) {
+    lookupStatusId.value = null
+  }
+})
+
+watch(operationOptions, (options) => {
+  if (!Array.isArray(options) || options.length === 0) return
+  const selectedValue = Number(operation.value)
+  const existsInOptions = options.some((item) => Number(item.value) === selectedValue)
+  if (!existsInOptions) {
+    operation.value = options[0].value
+  }
+}, { immediate: true })
+
+async function resolveRegister(registerId) {
+  if (registerId === null || registerId === undefined || registerId === '') {
+    currentRegister.value = null
+    return
+  }
+
+  await registersStore.getById(registerId)
+  if (registersStore.item?.error) {
+    currentRegister.value = null
+    return
+  }
+  currentRegister.value = registersStore.item
+}
+
 onMounted(async () => {
   loading.value = true
   try {
     await scanJobsStore.ensureOpsLoaded()
     await warehousesStore.ensureLoaded()
+    await parcelStatusesStore.ensureLoaded()
 
     if (isCreate.value) {
+      await resolveRegister(props.registerId)
+
       const defaults = {
         id: 0,
         name: props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : '',
@@ -121,7 +195,8 @@ onMounted(async () => {
         mode: ops.value?.modes?.[0]?.value ?? null,
         status: ops.value?.statuses?.[0]?.value ?? null,
         warehouseId: props.warehouseId ?? null,
-        registerId: props.registerId ?? null
+        registerId: props.registerId ?? null,
+        lookupStatusId: null
       }
       resetForm({ values: defaults })
       await nextTick()
@@ -133,6 +208,7 @@ onMounted(async () => {
         router.push('/scanjobs')
         return
       }
+      await resolveRegister(loaded.registerId ?? props.registerId)
       resetForm({ values: {
         id: loaded.id,
         name: loaded.name || (props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : ''),
@@ -141,7 +217,8 @@ onMounted(async () => {
         mode: loaded.mode,
         status: loaded.status,
         warehouseId: loaded.warehouseId ?? props.warehouseId ?? null,
-        registerId: loaded.registerId ?? props.registerId ?? null
+        registerId: loaded.registerId ?? props.registerId ?? null,
+        lookupStatusId: loaded.lookupStatusId ?? null
       }})
       await nextTick()
       currentScanjob.value = loaded
@@ -171,7 +248,8 @@ function buildPayload(values) {
     mode: toNumberOrNull(values.mode),
     status: toNumberOrNull(values.status),
     warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
-    registerId: toNumberOrNull(values.registerId ?? props.registerId)
+    registerId: toNumberOrNull(values.registerId ?? props.registerId),
+    lookupStatusId: toNumberOrNull(values.lookupStatusId)
   }
 }
 
@@ -203,6 +281,10 @@ async function saveScanjobQuiet() {
     alertStore.error('Реестр обязателен')
     return false
   }
+  if (isLookupOperation.value && (lookupStatusId.value === null || lookupStatusId.value === undefined || lookupStatusId.value === '')) {
+    alertStore.error('Статус для поиска обязателен')
+    return false
+  }
 
   const values = {
     id: currentScanjob.value?.id ?? 0,
@@ -212,7 +294,8 @@ async function saveScanjobQuiet() {
     mode: fieldMode.value,
     status: status.value,
     warehouseId: fieldWarehouseId.value,
-    registerId: fieldRegisterId.value
+    registerId: fieldRegisterId.value,
+    lookupStatusId: lookupStatusId.value
   }
   const payload = buildPayload(values)
   try {
@@ -469,7 +552,7 @@ defineExpose({ onSubmit, cancel })
           :class="{ 'is-invalid': errors.operation }"
           v-model="operation"
           >
-            <option v-for="item in ops?.operations" :key="item.value" :value="item.value">
+            <option v-for="item in operationOptions" :key="item.value" :value="item.value">
               {{ item.name }}
             </option>
           </select>
@@ -490,6 +573,29 @@ defineExpose({ onSubmit, cancel })
         </div>
       </div>
 
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lookupStatusId" class="label">Статус для поиска:</label>
+          <select
+            id="lookupStatusId"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.lookupStatusId }"
+            v-model="lookupStatusId"
+            :disabled="!isLookupOperation"
+            data-testid="lookup-status-select"
+          >
+            <option :value="null">Не выбран</option>
+            <option
+              v-for="parcelStatus in parcelStatusesStore.parcelStatuses"
+              :key="parcelStatus.id"
+              :value="parcelStatus.id"
+            >
+              {{ parcelStatus.title }}
+            </option>
+          </select>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label for="status" class="label">Статус:</label>
@@ -510,6 +616,7 @@ defineExpose({ onSubmit, cancel })
       <div v-if="errors.type" class="alert alert-danger mt-3 mb-0">{{ errors.type }}</div>
       <div v-if="errors.operation" class="alert alert-danger mt-3 mb-0">{{ errors.operation }}</div>
       <div v-if="errors.mode" class="alert alert-danger mt-3 mb-0">{{ errors.mode }}</div>
+      <div v-if="errors.lookupStatusId" class="alert alert-danger mt-3 mb-0">{{ errors.lookupStatusId }}</div>
       <div v-if="errors.status" class="alert alert-danger mt-3 mb-0">{{ errors.status }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
       <div v-if="alertStore.alert" class="mt-3">

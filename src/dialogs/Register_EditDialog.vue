@@ -14,6 +14,9 @@ import { useTransportationTypesStore } from '@/stores/transportation.types.store
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
@@ -21,10 +24,12 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
+import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
-  create: { type: Boolean, default: false }
+  create: { type: Boolean, default: false },
+  mode: { type: String, default: OP_MODE_PAPERWORK }
 })
 
 const alertStore = useAlertStore()
@@ -44,6 +49,17 @@ const { companies } = storeToRefs(companiesStore)
 
 const airportsStore = useAirportsStore()
 const { airports } = storeToRefs(airportsStore)
+
+const warehousesStore = useWarehousesStore()
+const { warehouses } = storeToRefs(warehousesStore)
+
+const registerStatusesStore = useRegisterStatusesStore()
+
+const returnUrl = computed(() => {
+  return props.mode ? `/registers?mode=${props.mode}` : '/registers'
+})
+
+const registerNouns = computed(() => getRegisterNouns(props.mode))
 
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 
@@ -84,6 +100,11 @@ const registerOptions = computed(() => {
 })
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
+const warehouseOptions = computed(() => {
+  const available = Array.isArray(warehouses.value) ? warehouses.value : []
+  return [{ id: 0, name: 'Не задано' }, ...available]
+})
+const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
 
 const AVIA_TRANSPORT_CODE = 0
 
@@ -188,11 +209,14 @@ watch(
       if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
         item.value.lookupByArticle = false
       }
+      if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
+        item.value.warehouseId = 0
+      }
     } else {
       try {
         await registersStore.getAll()
       } catch (error) {
-        alertStore.error('Не удалось загрузить список реестров: ' + (error?.message || String(error)))
+        alertStore.error(`Не удалось загрузить список ${registerNouns.value.genitivePlural}: ` + (error?.message || String(error)))
       }
       // Set default values for new records
       if (!item.value.customsProcedureId) {
@@ -210,6 +234,9 @@ watch(
       if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
         item.value.lookupByArticle = false
       }
+      if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
+        item.value.warehouseId = 0
+      }
     }
 
 
@@ -226,11 +253,19 @@ onMounted(async () => {
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
+    await registerStatusesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
     await airportsStore.getAll()
     if (!isComponentMounted.value) return
+
+    if (isWbr2Register.value) {
+      await warehousesStore.ensureLoaded()
+      if (!isComponentMounted.value) return
+    }
 
     if (isComponentMounted.value) {
       updateExportStatusFromProc()
@@ -253,7 +288,9 @@ onUnmounted(() => {
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
+  statusId: Yup.number(),
   invoiceDate: Yup.date().nullable(),
+  warehouseArrivalDate: Yup.date().nullable(),
   invoiceNumber: Yup.string()
     .nullable()
     .test(
@@ -275,6 +312,7 @@ const schema = Yup.object().shape({
     .required('Необходимо выбрать страну'),
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   lookupByArticle: Yup.boolean().default(false)
 })
 
@@ -365,8 +403,8 @@ function onLookupForReimportChange(e) {
 
 function getTitle() {
   return props.create
-    ? 'Загрузка реестра'
-    : 'Редактирование информации о реестре'
+    ? `Загрузка ${registerNouns.value.genitiveSingular}`
+    : `Редактирование информации о ${registerNouns.value.prepositional}`
 }
 
 function getButton() {
@@ -411,6 +449,9 @@ function prepareRegisterPayload(formValues) {
   payload.arrivalAirportId = isAviaSelected
     ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
+  payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
+  payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
+  payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
 
   return payload
 }
@@ -446,13 +487,13 @@ async function onSubmit(values) {
           } catch (updateError) {
             if (isComponentMounted.value) {
               hideActionDialog()
-              await showErrorAndAwaitClose('Ошибка при сохранении информации о реестре', updateError?.message )
+              await showErrorAndAwaitClose(`Ошибка при сохранении информации о ${registerNouns.value.prepositional}`, updateError?.message )
             }
           }
         } else {
           if (isComponentMounted.value) {
             await showErrorAndAwaitClose(
-              'Ошибка загрузки файла реестра',  
+              `Ошибка загрузки файла ${registerNouns.value.genitiveSingular}`,  
               result?.errMsg,
               result?.missingHeaders || [],
               result?.missingColumns || []
@@ -463,7 +504,7 @@ async function onSubmit(values) {
       } catch (uploadError) {
         // Handle upload failures with modal message box
         if (isComponentMounted.value) {
-          await showErrorAndAwaitClose('Ошибка загрузки файла реестра',  uploadError?.message )
+          await showErrorAndAwaitClose(`Ошибка загрузки файла ${registerNouns.value.genitiveSingular}`,  uploadError?.message )
         }
         return // Exit early, don't continue with normal error handling
       }
@@ -472,13 +513,13 @@ async function onSubmit(values) {
     }
   } catch (updateError) {
     if (isComponentMounted.value) {
-       await showErrorAndAwaitClose('Ошибка при сохранении информации о реестре', updateError?.message )
+       await showErrorAndAwaitClose(`Ошибка при сохранении информации о ${registerNouns.value.prepositional}`, updateError?.message )
     }
   } finally {
     hideActionDialog()
     // Always reset submitting state
     isSubmitting.value = false
-    await router.push('/registers')
+    await router.push(returnUrl.value)
   }
 }
 
@@ -550,7 +591,7 @@ function getCustomerName(customerId) {
           :iconSize="'2x'"
           tooltip-text="Отменить"
           :disabled="isSubmitting"
-          @click="router.push(`/registers`)"
+          @click="router.push(returnUrl)"
         />
       </div>
     </div>
@@ -561,6 +602,19 @@ function getCustomerName(customerId) {
           <div class="form-group">
             <label for="dealNumber" class="label">Номер сделки:</label>
             <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
+          </div>
+          <div class="form-group">
+            <label for="statusId" class="label">Статус:</label>
+            <Field
+              as="select"
+              name="statusId"
+              id="statusId"
+              class="form-control input"
+            >
+              <option v-for="s in registerStatusesStore.registerStatuses" :key="s.id" :value="s.id">
+                {{ s.title }}
+              </option>
+            </Field>
           </div>
         </div>
 
@@ -708,6 +762,31 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
+        <div class="form-row" v-if="isWbr2Register">
+          <div class="form-group">
+            <label for="warehouseId" class="label">Склад:</label>
+            <Field
+              as="select"
+              name="warehouseId"
+              id="warehouseId"
+              class="form-control input"
+            >
+              <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </Field>
+          </div>
+          <div class="form-group">
+            <label for="warehouseArrivalDate" class="label">Дата прибытия:</label>
+            <Field 
+              name="warehouseArrivalDate" 
+              id="warehouseArrivalDate" 
+              type="date" 
+              class="form-control input" 
+            />
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="fileName" class="label">Файл:</label>
@@ -719,9 +798,9 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
-        <div class="form-row" v-if="props.create">
+        <div class="form-row" v-if="props.create && props.mode === OP_MODE_PAPERWORK">
           <div class="form-group">
-            <label for="transferRegisterId" class="label">Перенести статусы из реестра:</label>
+            <label for="transferRegisterId" class="label">Перенести статусы из {{ registerNouns.genitiveSingular }}:</label>
             <Field name="lookupForReimport" v-slot="{ value }">
               <select
                 id="transferRegisterId"
@@ -741,7 +820,7 @@ function getCustomerName(customerId) {
             </Field>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" v-if="props.mode === OP_MODE_PAPERWORK">
             <label for="lookupForReimport" class="custom-checkbox" :class="{ 'disabled': isExport }">
               <Field
                 id="lookupForReimport"
@@ -757,9 +836,9 @@ function getCustomerName(customerId) {
               <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>
             </label>
           </div>
-      </div>
+        </div>
        
-        <div class="form-row-1" v-else>
+        <div class="form-row-1" v-if="!props.create && props.mode === OP_MODE_PAPERWORK">
           <div class="form-group lookup-by-article-group">
             <label class="custom-checkbox">
               <Field
@@ -775,7 +854,6 @@ function getCustomerName(customerId) {
             </label>
           </div>
         </div>
-
       </div>
 
       <!-- actions moved to header -->
@@ -785,7 +863,7 @@ function getCustomerName(customerId) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButton() }}
         </button>
-        <button class="button secondary" type="button" @click="router.push('/registers')" :disabled="isSubmitting">
+        <button class="button secondary" type="button" @click="router.push(returnUrl)" :disabled="isSubmitting">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
@@ -799,7 +877,7 @@ function getCustomerName(customerId) {
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <div v-if="item?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке реестра: {{ item.error }}</div>
+      <div class="text-danger">Ошибка при загрузке {{ registerNouns.genitiveSingular }}: {{ item.error }}</div>
     </div>
 
     <ActionDialog :action-dialog="actionDialogState" />
@@ -915,7 +993,7 @@ function getCustomerName(customerId) {
   width: 100% !important;
   flex: 1 1 100%;
   max-width: none !important;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
 }
 
 .custom-checkbox {

@@ -22,18 +22,15 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
       const response = await fetchWrapper.get(baseUrl)
       parcelStatuses.value = response || []
       statusMap.value = new Map(parcelStatuses.value.map(status => [status.id, status]))
-      initialized = true
+      isInitialized = true
     } finally {
       loading.value = false
     }
   }
 
-  async function getById(id, refresh = false) {
-    if (refresh) {
-      parcelStatus.value = { loading: true }
-    }
-
+  async function getById(id) {
     try {
+      loading.value = true
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
       parcelStatus.value = response
       return response
@@ -72,11 +69,20 @@ export const useParcelStatusesStore = defineStore('parcelStatuses', () => {
   }
 
   // Auto-fetch statuses when store is initialized (only once)
-  let initialized = false
+  let isInitialized = false
+  let loadPromise = null
+  
   async function ensureLoaded() {
-    if (!initialized && parcelStatuses.value.length === 0 && !loading.value) {
-      await getAll()
+    if (isInitialized) {
+      return
     }
+
+    if (!loadPromise) {
+      loadPromise = getAll().finally(() => {
+        loadPromise = null
+      })
+    }
+    await loadPromise
   }
 
   return {

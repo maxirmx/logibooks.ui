@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 vi.mock('@/lists/WbrParcels_List.vue', () => ({
   default: {
@@ -30,6 +31,14 @@ vi.mock('@/lists/Wbr2Parcels_List.vue', () => ({
     name: 'Wbr2Parcels_List',
     props: ['register-id'],
     template: '<div data-test="wbr2-list">WBR2: {{ registerId }}</div>'
+  }
+}))
+
+vi.mock('@/lists/Wbr2Parcels_WhList.vue', () => ({
+  default: {
+    name: 'Wbr2Parcels_WhList',
+    props: ['register-id'],
+    template: '<div data-test="wbr2-wh-list">WBR2 WH: {{ registerId }}</div>'
   }
 }))
 
@@ -99,6 +108,26 @@ describe('Parcels_View', () => {
     await nextTick()
 
     expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-wh-list"]').exists()).toBe(false)
+  })
+
+  it('renders Wbr2Parcels_WhList when register has WBR2 registerType in warehouse mode', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR2_REGISTER_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 4,
+        mode: OP_MODE_WAREHOUSE
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-test="wbr2-wh-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })

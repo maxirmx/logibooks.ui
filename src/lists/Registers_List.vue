@@ -22,10 +22,12 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-// CheckStatusCode not needed here; use shared helpers instead
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -36,6 +38,13 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
+
+const props = defineProps({
+  mode: {
+    type: String,
+    default: OP_MODE_PAPERWORK
+  }
+})
 
 const registersStore = useRegistersStore()
 const { items, loading, error, totalCount } = storeToRefs(registersStore)
@@ -60,6 +69,9 @@ const { airports } = storeToRefs(airportsStore)
 
 const customsProceduresStore = useCustomsProceduresStore()
 
+const warehousesStore = useWarehousesStore()
+const registerStatusesStore = useRegisterStatusesStore()
+
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
@@ -68,7 +80,7 @@ const {
   validationState,
   progressPercent,
   stopPolling
-} = createRegisterActionHandlers(registersStore, alertStore)
+} = createRegisterActionHandlers(registersStore, alertStore, { mode: computed(() => props.mode) })
 
 const authStore = useAuthStore()
 const { registers_per_page, 
@@ -76,10 +88,14 @@ const { registers_per_page,
   registers_sort_by, 
   registers_page, 
   isShiftLeadPlus, 
-  isSrLogistPlus } = storeToRefs(authStore)
+  isSrLogistPlus,
+  hasWhRole } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
+
+const isWarehouseMode = computed(() => props.mode === OP_MODE_WAREHOUSE)
+const registerNouns = computed(() => getRegisterNouns(props.mode))
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -128,7 +144,14 @@ function cancelStatusChange(registerId) {
 }
 
 async function applyStatusToAllOrders(registerId, statusId) {
-  await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, registersStore, alertStore)
+  await applyBulkStatusToAllOrders(
+    registerId,
+    statusId,
+    bulkStatusState,
+    registersStore,
+    alertStore,
+    { mode: props.mode }
+  )
 }
 
 // Helper wrapper functions for template
@@ -155,7 +178,7 @@ function getCustomerName(customerId) {
 
 // Helper functions to get country short names (reactive to countries store changes)
 function getCountryShortName(countryCode) {
-  if (!countryCode || !countries?.value) return countryCode
+  if (!countryCode || !countries?.value) return 'Неизвестно'
   const num = Number(countryCode)
   if (num == 643) return 'Россия' // Special case for Russia
   const country = countries.value.find(c => c.isoNumeric === num)
@@ -221,6 +244,12 @@ onMounted(async () => {
     await customsProceduresStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
+    await warehousesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
+    await registerStatusesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
@@ -242,6 +271,9 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  if (modeWatcherStop) {
+    modeWatcherStop()
+  }
   stopPolling()
 })
 
@@ -250,7 +282,7 @@ async function fileSelected(files) {
   if (!file) return
 
   if (!selectedRegisterType.value) {
-    alertStore.error('Не выбран тип реестра для загрузки')
+    alertStore.error(`Не выбран тип ${registerNouns.value.genitiveSingular} для загрузки`)
     return
   }
 
@@ -270,7 +302,7 @@ async function fileSelected(files) {
 
 function startRegisterUpload(registerType) {
   if (!registerType) {
-    alertStore.error('Не выбран тип реестра для загрузки')
+    alertStore.error(`Не выбран тип ${registerNouns.value.genitiveSingular} для загрузки`)
     return
   }
 
@@ -282,7 +314,7 @@ function startRegisterUpload(registerType) {
 }
 
 async function loadRegisters() {
-  await registersStore.getAll()
+  await registersStore.getAll({ mode: props.mode })
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
@@ -296,19 +328,24 @@ const watcherStop = watch([registers_page, registers_per_page, registers_sort_by
   triggerLoad()
 }, { immediate: false })
 
+// Watch for mode changes and reload data
+const modeWatcherStop = watch(() => props.mode, () => {
+  loadRegisters()
+}, { immediate: false })
+
 function openParcels(item) {
-  router.push(`/registers/${item.id}/parcels`)
+  router.push(`/registers/${item.id}/parcels?mode=${props.mode}`)
 }
 
 function editRegister(item) {
-  router.push('/register/edit/' + item.id)
+  router.push(`/register/edit/${item.id}?mode=${props.mode}`)
 }
 
 async function deleteRegister(item) {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    const content = `Удалить реестр "${item.fileName}" ?`
+    const content = `Удалить ${registerNouns.value.accusative} "${item.fileName}" ?`
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -327,12 +364,27 @@ async function deleteRegister(item) {
       try {
         await registersStore.remove(item.id)
       } catch (err) {
-        alertStore.error('Ошибка при удалении реестра' + (err.message ? `: ${err.message}` : ''))
+        alertStore.error(
+          `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
+          (err.message ? `: ${err.message}` : '')
+        )
       }
     }
   } finally {
     runningAction.value = false
   }
+}
+
+function openScanjobCreate(item) {
+  if (!item) return
+  router.push({
+    path: '/scanjob/create',
+    query: {
+      registerId: item.id,
+      warehouseId: item.warehouseId,
+      dealNumber: item.dealNumber
+    }
+  })
 }
 
 function formatDate(dateStr) {
@@ -354,9 +406,7 @@ function formatInvoiceInfo(item) {
   return `${transportationDocument} ${invoiceNumber || ''}`
 }
 
-
-
-const headers = [
+const defaultHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber' },
   { title: 'ТСД', key: 'invoice' },
@@ -368,6 +418,19 @@ const headers = [
   { title: 'Дата загрузки', key: 'date' }
 ]
 
+const warehouseHeaders = [
+  { title: '', key: 'actions', sortable: false, align: 'center' },
+  { title: 'Номер сделки', key: 'dealNumber' },
+  { title: 'ТСД', key: 'invoice' },
+  { title: 'Страны', key: 'countries' },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient' },
+  { title: 'Статус', key: 'statusId' },
+  { title: 'Склад', key: 'warehouseId' },
+  { title: 'Дата прибытия', key: 'warehouseArrivalDate' }
+]
+
+const headers = computed(() => (isWarehouseMode.value ? warehouseHeaders : defaultHeaders))
+
 defineExpose({
   validationState,
   progressPercent
@@ -378,16 +441,16 @@ defineExpose({
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Реестры</h1>
+      <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div style="display:flex; align-items:center;">
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus && !isWarehouseMode">
           <ActionButton2L
             :item="{}"
             icon="fa-solid fa-file-import"
-            tooltip-text="Загрузить реестр"
+            :tooltip-text="`Загрузить ${registerNouns.accusative}`"
             iconSize="2x"
             :disabled="runningAction || loading || isInitializing || isUploadDisabled"
             :options="uploadMenuOptions"
@@ -396,11 +459,11 @@ defineExpose({
       </div>
     </div>
     <v-file-input
-      v-if="isSrLogistPlus"
+      v-if="isSrLogistPlus && !isWarehouseMode"
       ref="fileInput"
       style="display: none"
       accept=".xls,.xlsx,.zip,.rar"
-      loading-text="Идёт загрузка реестра..."
+      :loading-text="`Идёт загрузка ${registerNouns.genitiveSingular}...`"
       @update:model-value="fileSelected"
     />
 
@@ -410,7 +473,7 @@ defineExpose({
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по любой информации о реестре"
+        :label="`Поиск по любой информации о ${registerNouns.prepositional}`"
         variant="solo"
         hide-details
         :loading="loading || isInitializing"
@@ -421,7 +484,7 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table-server
         v-model:items-per-page="registers_per_page"
-        items-per-page-text="Реестров на странице"
+        :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
         v-model:page="registers_page"
@@ -492,6 +555,15 @@ defineExpose({
               </div>
             </template>
           </ClickableCell>
+        </template>
+        <template #[`item.statusId`]="{ item }">
+          <span class="truncated-cell">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
+        </template>
+        <template #[`item.warehouseId`]="{ item }">
+          <span class="truncated-cell">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
+        </template>
+        <template #[`item.warehouseArrivalDate`]="{ item }">
+          <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>
         </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 
@@ -596,10 +668,30 @@ defineExpose({
           </div>
         </template>
 
+        <template #[`header.warehouseArrivalDate`]>
+          <div class="multiline-header">
+            <div>Дата</div>
+            <div>прибытия</div>
+          </div>
+        </template>
+
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Открыть список посылок" @click="openParcels" :disabled="runningAction || loading" />
-            <ActionButton :item="item" icon="fa-solid fa-pen" tooltip-text="Редактировать реестр" @click="editRegister" :disabled="runningAction || loading" />
+            <ActionButton 
+              :item="item" 
+              icon="fa-solid fa-list" 
+              tooltip-text="Открыть список посылок" 
+              @click="openParcels" 
+              :disabled="runningAction || loading" 
+            />
+
+            <ActionButton  v-if="isSrLogistPlus"
+              :item="item"
+              icon="fa-solid fa-pen"
+              :tooltip-text="`Редактировать ${registerNouns.accusative}`"
+              @click="editRegister"
+              :disabled="runningAction || loading"
+            />
             
             <div class="bulk-status-inline" v-if="isSrLogistPlus">
               <div v-if="isInEditMode(item.id)" class="status-selector-inline">
@@ -635,25 +727,35 @@ defineExpose({
                 v-else 
                 :item="item" 
                 icon="fa-solid fa-pen-to-square" 
-                tooltip-text="Изменить статус всех посылок в реестре" 
+                :tooltip-text="`Изменить статус всех посылок в ${registerNouns.prepositional}`"
                 :disabled="runningAction || loading" 
                 @click="() => bulkChangeStatus(item.id)" 
               />
             </div>
+           <ActionButton
+              v-if="hasWhRole"
+              :item="item"
+              icon="fa-solid fa-barcode"
+              :tooltip-text="`Создать задание на сканирование`"
+              @click="openScanjobCreate"
+              :disabled="runningAction || loading"
+            />
             <ActionButton
-              v-if="isShiftLeadPlus"
-              :item="item" 
-              icon="fa-solid fa-trash-can" 
-              tooltip-text="Удалить реестр" 
-              @click="deleteRegister" 
-              :disabled="runningAction || loading" 
+              v-if="isShiftLeadPlus && !isWarehouseMode"
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              :tooltip-text="`Удалить ${registerNouns.accusative}`"
+              @click="deleteRegister"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>
       </v-data-table-server>
     </v-card>
     <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке списка реестров: {{ error }}</div>
+      <div class="text-danger">
+        Ошибка при загрузке списка {{ registerNouns.genitivePlural }}: {{ error }}
+      </div>
     </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
@@ -781,16 +883,4 @@ defineExpose({
   text-overflow: ellipsis;
 }
 
-/* Multiline header styling */
-.multiline-header {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  color: white;
-}
-
-.multiline-header div {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
 </style>

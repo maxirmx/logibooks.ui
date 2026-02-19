@@ -23,7 +23,13 @@ export function calculateValidationProgress(validationState) {
   return Math.round((validationState.processed / validationState.total) * 100)
 }
 
-export async function pollValidation(validationState, registersStore, alertStore, stopPollingFn) {
+export async function pollValidation(
+  validationState,
+  registersStore,
+  alertStore,
+  stopPollingFn,
+  getAllOptions = {}
+) {
   if (!validationState.handleId) return
 
   try {
@@ -34,13 +40,13 @@ export async function pollValidation(validationState, registersStore, alertStore
     if (progress.finished || progress.total === -1 || progress.processed === -1) {
       validationState.show = false
       stopPollingFn()
-      await registersStore.getAll()
+      await registersStore.getAll(getAllOptions)
     }
   } catch (err) {
     alertStore.error(err.message || String(err))
     validationState.show = false
     stopPollingFn()
-    await registersStore.getAll()
+    await registersStore.getAll(getAllOptions)
   }
 }
 
@@ -52,7 +58,8 @@ export async function validateRegister(
   stopPollingFn,
   startPollingFn,
   sw,
-  swMatchMode
+  swMatchMode,
+  getAllOptions = {}
 ) {
   try {
     stopPollingFn()
@@ -61,7 +68,7 @@ export async function validateRegister(
     validationState.total = 0
     validationState.processed = 0
     validationState.show = true
-    await pollValidation(validationState, registersStore, alertStore, stopPollingFn)
+    await pollValidation(validationState, registersStore, alertStore, stopPollingFn, getAllOptions)
     startPollingFn()
   } catch (err) {
     alertStore.error(err.message || String(err))
@@ -97,7 +104,7 @@ export function createPollingTimer(pollFunction, interval = POLLING_INTERVAL_MS)
   }
 }
 
-export function createRegisterActionHandlers(registersStore, alertStore) {
+export function createRegisterActionHandlers(registersStore, alertStore, { mode } = {}) {
   const validationState = reactive({
     ...createValidationState(),
     operation: null
@@ -117,6 +124,13 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
 
   const progressPercent = computed(() => calculateValidationProgress(validationState))
 
+  const getAllOptions = () => {
+    if (mode === undefined) {
+      return {}
+    }
+    return { mode: unref(mode) }
+  }
+
   async function pollFeacnLookup() {
     if (!validationState.handleId) return
 
@@ -128,13 +142,13 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
       if (progress.finished || progress.total === -1 || progress.processed === -1) {
         validationState.show = false
         pollingTimer.stop()
-        await registersStore.getAll()
+        await registersStore.getAll(getAllOptions())
       }
     } catch (err) {
       alertStore.error(err?.message || String(err))
       validationState.show = false
       pollingTimer.stop()
-      await registersStore.getAll()
+      await registersStore.getAll(getAllOptions())
     }
   }
 
@@ -142,7 +156,13 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
     try {
       validationState.operation = 'validation'
       pollingFunction = () =>
-        pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop())
+        pollValidation(
+          validationState,
+          registersStore,
+          alertStore,
+          () => pollingTimer.stop(),
+          getAllOptions()
+        )
 
       await validateRegister(
         item,
@@ -152,7 +172,8 @@ export function createRegisterActionHandlers(registersStore, alertStore) {
         () => pollingTimer.stop(),
         () => pollingTimer.start(),
         sw,
-        extended ? SwValidationMatchMode.SwMatch : SwValidationMatchMode.NoSwMatch
+        extended ? SwValidationMatchMode.SwMatch : SwValidationMatchMode.NoSwMatch,
+        getAllOptions()
       )
     } catch (err) {
       alertStore.error(err?.message || String(err))

@@ -685,15 +685,6 @@ defineExpose({
               :disabled="runningAction || loading" 
             />
 
-            <ActionButton
-              v-if="isWarehouseMode && hasWhRole"
-              :item="item"
-              icon="fa-solid fa-barcode"
-              :tooltip-text="`Создать задание на сканирование`"
-              @click="openScanjobCreate"
-              :disabled="runningAction || loading"
-            />
-
             <ActionButton  v-if="isSrLogistPlus"
               :item="item"
               icon="fa-solid fa-pen"
@@ -741,6 +732,14 @@ defineExpose({
                 @click="() => bulkChangeStatus(item.id)" 
               />
             </div>
+           <ActionButton
+              v-if="hasWhRole"
+              :item="item"
+              icon="fa-solid fa-barcode"
+              :tooltip-text="`Создать задание на сканирование`"
+              @click="openScanjobCreate"
+              :disabled="runningAction || loading"
+            />
             <ActionButton
               v-if="isShiftLeadPlus && !isWarehouseMode"
               :item="item"

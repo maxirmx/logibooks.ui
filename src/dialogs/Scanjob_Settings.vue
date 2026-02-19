@@ -42,6 +42,11 @@ const props = defineProps({
   scanjobId: {
     type: Number,
     required: false
+  },
+  returnPath: {
+    type: String,
+    required: false,
+    default: '/scanjobs'
   }
 })
 
@@ -58,7 +63,7 @@ const isCreate = computed(() => props.mode === 'create')
 // Runtime guard: fail fast if scanjobId is missing in edit mode
 if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === undefined)) {
   alertStore.error('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
-  router.push('/scanjobs')
+  router.push(props.returnPath)
   throw new Error('scanjobId is required when mode is edit')
 }
 
@@ -68,10 +73,10 @@ const runningAction = ref(false)
 const currentScanjob = ref(null)
 
 function resolveLookupOperationValue() {
-  const lookupOperation = ops.value?.operations?.find((item) => {
-    const name = String(item?.name || '').toLowerCase()
-    return name.includes('lookup') || name.includes('поиск')
-  })
+  const operations = ops.value?.operations
+  if (!Array.isArray(operations) || operations.length === 0) return null
+  // Lookup operation is the last in the array
+  const lookupOperation = operations[operations.length - 1]
   return lookupOperation?.value ?? null
 }
 
@@ -195,7 +200,7 @@ onMounted(async () => {
         id: 0,
         name: props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : '',
         type: ops.value?.types?.[0]?.value ?? null,
-        operation: ops.value?.operations?.[0]?.value ?? null,
+        operation: isLookupOnlyRegisterType.value ? lookupOperationValue.value : ops.value?.operations?.[0]?.value ?? null,
         mode: ops.value?.modes?.[0]?.value ?? null,
         status: ops.value?.statuses?.[0]?.value ?? null,
         warehouseId: props.warehouseId ?? null,
@@ -209,7 +214,7 @@ onMounted(async () => {
       const loaded = await scanJobsStore.getById(props.scanjobId)
       if (!loaded) {
         alertStore.error('Не удалось загрузить задание на сканирование')
-        router.push('/scanjobs')
+        router.push(props.returnPath)
         return
       }
       await resolveRegister(loaded.registerId ?? props.registerId)
@@ -229,7 +234,7 @@ onMounted(async () => {
     }
   } catch (err) {
     alertStore.error(`Ошибка при инициализации формы: ${err?.message || 'Неизвестная ошибка'}`)
-    router.push('/scanjobs')
+    router.push(props.returnPath)
   } finally {
     loading.value = false
   }
@@ -335,7 +340,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     } else {
       await scanJobsStore.update(props.scanjobId, payload)
     }
-    router.push('/scanjobs')
+    router.push(props.returnPath)
   } catch (error) {
     if (error?.message?.includes && error.message.includes('409')) {
       setErrors({ apiError: 'Такое задание на сканирование уже существует' })
@@ -348,7 +353,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
 })
 
 function cancel() {
-  router.push('/scanjobs')
+  router.push(props.returnPath)
 }
 
 async function refreshScanjobStatus() {
@@ -549,20 +554,6 @@ defineExpose({ onSubmit, cancel })
 
       <div class="form-row">
         <div class="form-group">
-          <label for="operation" class="label">Операция:</label>
-          <select
-            id="operation"
-            class="form-control input"
-          :class="{ 'is-invalid': errors.operation }"
-          v-model="operation"
-          >
-            <option v-for="item in operationOptions" :key="item.value" :value="item.value">
-              {{ item.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label for="mode" class="label">Режим:</label>
           <select
             id="mode"
@@ -575,18 +566,43 @@ defineExpose({ onSubmit, cancel })
             </option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="status" class="label">Статус сканирования:</label>
+          <input
+            id="status"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.status }"
+            :value="statusDisplay"
+            readonly
+            data-testid="status-display"
+          />
+        </div>
       </div>
 
 
       <div class="form-row">
         <div class="form-group">
+          <label for="operation" class="label">Операция:</label>
+          <select
+            id="operation"
+            class="form-control input"
+          :class="{ 'is-invalid': errors.operation }"
+          v-model="operation"
+          >
+            <option v-for="item in operationOptions" :key="item.value" :value="item.value">
+              {{ item.name }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group" :hidden="!isLookupOperation">
           <label for="lookupStatusId" class="label">Статус для поиска:</label>
           <select
             id="lookupStatusId"
             class="form-control input"
             :class="{ 'is-invalid': errors.lookupStatusId }"
-            v-model="lookupStatusId"
             :disabled="!isLookupOperation"
+            v-model="lookupStatusId"
             data-testid="lookup-status-select"
           >
             <option :value="null">Не выбран</option>
@@ -598,20 +614,6 @@ defineExpose({ onSubmit, cancel })
               {{ parcelStatus.title }}
             </option>
           </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="status" class="label">Статус:</label>
-          <input
-            id="status"
-            type="text"
-            class="form-control input"
-            :class="{ 'is-invalid': errors.status }"
-            :value="statusDisplay"
-            readonly
-            data-testid="status-display"
-          />
         </div>
       </div>
 

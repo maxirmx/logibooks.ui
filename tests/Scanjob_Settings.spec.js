@@ -17,8 +17,8 @@ const vuetify = createVuetify()
 const mockOps = ref({
   types: [{ value: 1, name: 'Type 1' }],
   operations: [
-    { value: 2, name: 'Lookup' },
-    { value: 9, name: 'Operation 1' }
+    { value: 9, name: 'Operation 1' },
+    { value: 2, name: 'Lookup' }
   ],
   modes: [{ value: 3, name: 'Mode 1' }],
   statuses: [
@@ -340,6 +340,10 @@ describe('Scanjob_Settings.vue', () => {
     })
     await resolveAll()
 
+    // Set to lookup operation (last in array)
+    await wrapper.find('#operation').setValue('2')
+    await resolveAll()
+
     const lookupStatusSelect = wrapper.find('[data-testid="lookup-status-select"]')
     expect(lookupStatusSelect.attributes('disabled')).toBeUndefined()
 
@@ -388,5 +392,90 @@ describe('Scanjob_Settings.vue', () => {
     await resolveAll()
 
     expect(alertError).toHaveBeenCalledWith('Не удалось обновить задание на сканирование')
+  })
+
+  it('navigates to custom returnPath on successful save in create mode', async () => {
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1',
+      returnPath: '/custom/path'
+    })
+    await resolveAll()
+
+    await wrapper.find('#name').setValue('Сканирование сделки ABC-1')
+    await wrapper.find('#type').setValue('1')
+    await wrapper.find('#operation').setValue('2')
+    await wrapper.find('#mode').setValue('3')
+    await wrapper.find('#lookupStatusId').setValue('101')
+    await wrapper.find('input[name="registerId"]').setValue(22)
+    await wrapper.find('input[name="warehouseId"]').setValue(11)
+
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+
+    expect(routerPush).toHaveBeenCalledWith('/custom/path')
+  })
+
+  it('navigates to custom returnPath on cancel', async () => {
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1',
+      returnPath: '/warehouses/list'
+    })
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="scanjob-cancel-action"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="scanjob-cancel-action"]').trigger('click')
+    await resolveAll()
+
+    expect(routerPush).toHaveBeenCalledWith('/warehouses/list')
+  })
+
+  it('navigates to custom returnPath when edit mode has invalid scanjobId', () => {
+    expect(() => mountComponent({
+      mode: 'edit',
+      returnPath: '/custom/error/path'
+    })).toThrow('scanjobId is required when mode is edit')
+    expect(routerPush).toHaveBeenCalledWith('/custom/error/path')
+  })
+
+  it('navigates to custom returnPath when initial load fails in edit mode', async () => {
+    getById.mockResolvedValue(null)
+    const wrapper = mountComponent({
+      mode: 'edit',
+      scanjobId: 11,
+      returnPath: '/deals/list'
+    })
+    await resolveAll()
+
+    expect(alertError).toHaveBeenCalledWith('Не удалось загрузить задание на сканирование')
+    expect(routerPush).toHaveBeenCalledWith('/deals/list')
+  })
+
+  it('uses default returnPath /scanjobs when not provided', async () => {
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1'
+    })
+    await resolveAll()
+
+    await wrapper.find('#name').setValue('Test')
+    await wrapper.find('#type').setValue('1')
+    await wrapper.find('#operation').setValue('2')
+    await wrapper.find('#mode').setValue('3')
+    await wrapper.find('#lookupStatusId').setValue('101')
+    await wrapper.find('input[name="registerId"]').setValue(22)
+    await wrapper.find('input[name="warehouseId"]').setValue(11)
+
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+
+    expect(routerPush).toHaveBeenLastCalledWith('/scanjobs')
   })
 })

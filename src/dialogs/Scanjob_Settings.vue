@@ -131,8 +131,12 @@ const isLookupOnlyRegisterType = computed(() => {
 
 const operationOptions = computed(() => {
   if (!Array.isArray(ops.value?.operations)) return []
-  if (!isLookupOnlyRegisterType.value || lookupOperationValue.value === null) {
+  // For lookup-only register types, fail closed when lookupOperationValue cannot be resolved.
+  if (!isLookupOnlyRegisterType.value) {
     return ops.value.operations
+  }
+  if (lookupOperationValue.value === null) {
+    return []
   }
   return ops.value.operations.filter((item) => Number(item.value) === Number(lookupOperationValue.value))
 })

@@ -62,7 +62,7 @@ const finish = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
 const getRegisterById = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
-const routerPush = vi.hoisted(() => vi.fn())
+const routerBack = vi.hoisted(() => vi.fn())
 
 const getWarehouseName = vi.hoisted(() => vi.fn((id) => `Warehouse ${id}`))
 let registerItem = { registerType: 1048578 }
@@ -126,7 +126,7 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
-    push: routerPush
+    back: routerBack
   }
 }))
 
@@ -186,7 +186,7 @@ describe('Scanjob_Settings.vue', () => {
   it('throws when edit mode is missing scanjobId', () => {
     expect(() => mountComponent({ mode: 'edit' })).toThrow('scanjobId is required when mode is edit')
     expect(alertError).toHaveBeenCalledWith('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
-    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
+    expect(routerBack).toHaveBeenCalled()
   })
 
   it('renders create mode with read-only status and header actions', async () => {
@@ -233,7 +233,7 @@ describe('Scanjob_Settings.vue', () => {
       status: 4,
       lookupStatusId: 101
     }))
-    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
+    expect(routerBack).toHaveBeenCalled()
   })
 
   it('renders edit mode and updates scanjob on save action', async () => {
@@ -260,7 +260,7 @@ describe('Scanjob_Settings.vue', () => {
       warehouseId: 11,
       lookupStatusId: 101
     }))
-    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
+    expect(routerBack).toHaveBeenCalled()
   })
 
   it('handles start action and refreshes status display', async () => {
@@ -394,88 +394,7 @@ describe('Scanjob_Settings.vue', () => {
     expect(alertError).toHaveBeenCalledWith('Не удалось обновить задание на сканирование')
   })
 
-  it('navigates to custom returnPath on successful save in create mode', async () => {
-    const wrapper = mountComponent({
-      mode: 'create',
-      registerId: 22,
-      warehouseId: 11,
-      dealNumber: 'ABC-1',
-      returnPath: '/custom/path'
-    })
-    await resolveAll()
 
-    await wrapper.find('#name').setValue('Сканирование сделки ABC-1')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
-    await wrapper.find('#mode').setValue('3')
-    await wrapper.find('#lookupStatusId').setValue('101')
-    await wrapper.find('input[name="registerId"]').setValue(22)
-    await wrapper.find('input[name="warehouseId"]').setValue(11)
 
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
 
-    expect(routerPush).toHaveBeenCalledWith('/custom/path')
-  })
-
-  it('navigates to custom returnPath on cancel', async () => {
-    const wrapper = mountComponent({
-      mode: 'create',
-      registerId: 22,
-      warehouseId: 11,
-      dealNumber: 'ABC-1',
-      returnPath: '/warehouses/list'
-    })
-    await resolveAll()
-
-    expect(wrapper.find('[data-testid="scanjob-cancel-action"]').exists()).toBe(true)
-    await wrapper.find('[data-testid="scanjob-cancel-action"]').trigger('click')
-    await resolveAll()
-
-    expect(routerPush).toHaveBeenCalledWith('/warehouses/list')
-  })
-
-  it('navigates to custom returnPath when edit mode has invalid scanjobId', () => {
-    expect(() => mountComponent({
-      mode: 'edit',
-      returnPath: '/custom/error/path'
-    })).toThrow('scanjobId is required when mode is edit')
-    expect(routerPush).toHaveBeenCalledWith('/custom/error/path')
-  })
-
-  it('navigates to custom returnPath when initial load fails in edit mode', async () => {
-    getById.mockResolvedValue(null)
-    const wrapper = mountComponent({
-      mode: 'edit',
-      scanjobId: 11,
-      returnPath: '/deals/list'
-    })
-    await resolveAll()
-
-    expect(alertError).toHaveBeenCalledWith('Не удалось загрузить задание на сканирование')
-    expect(routerPush).toHaveBeenCalledWith('/deals/list')
-  })
-
-  it('uses default returnPath /scanjobs when not provided', async () => {
-    const wrapper = mountComponent({
-      mode: 'create',
-      registerId: 22,
-      warehouseId: 11,
-      dealNumber: 'ABC-1'
-    })
-    await resolveAll()
-
-    await wrapper.find('#name').setValue('Test')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
-    await wrapper.find('#mode').setValue('3')
-    await wrapper.find('#lookupStatusId').setValue('101')
-    await wrapper.find('input[name="registerId"]').setValue(22)
-    await wrapper.find('input[name="warehouseId"]').setValue(11)
-
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-
-    expect(routerPush).toHaveBeenLastCalledWith('/scanjobs')
-  })
 })

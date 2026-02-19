@@ -42,11 +42,6 @@ const props = defineProps({
   scanjobId: {
     type: Number,
     required: false
-  },
-  returnPath: {
-    type: String,
-    required: false,
-    default: '/scanjobs'
   }
 })
 
@@ -63,7 +58,7 @@ const isCreate = computed(() => props.mode === 'create')
 // Runtime guard: fail fast if scanjobId is missing in edit mode
 if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === undefined)) {
   alertStore.error('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
-  router.push(props.returnPath)
+  router.back()
   throw new Error('scanjobId is required when mode is edit')
 }
 
@@ -214,7 +209,7 @@ onMounted(async () => {
       const loaded = await scanJobsStore.getById(props.scanjobId)
       if (!loaded) {
         alertStore.error('Не удалось загрузить задание на сканирование')
-        router.push(props.returnPath)
+        router.back()
         return
       }
       await resolveRegister(loaded.registerId ?? props.registerId)
@@ -234,7 +229,7 @@ onMounted(async () => {
     }
   } catch (err) {
     alertStore.error(`Ошибка при инициализации формы: ${err?.message || 'Неизвестная ошибка'}`)
-    router.push(props.returnPath)
+    router.back()
   } finally {
     loading.value = false
   }
@@ -340,7 +335,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     } else {
       await scanJobsStore.update(props.scanjobId, payload)
     }
-    router.push(props.returnPath)
+    router.back()
   } catch (error) {
     if (error?.message?.includes && error.message.includes('409')) {
       setErrors({ apiError: 'Такое задание на сканирование уже существует' })
@@ -353,7 +348,7 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
 })
 
 function cancel() {
-  router.push(props.returnPath)
+  router.back()
 }
 
 async function refreshScanjobStatus() {

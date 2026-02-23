@@ -11,7 +11,7 @@
  * 2. Extension is invoked and may cause page reload/navigation
  * 3. List component onMounted calls restoreSelectedParcelIdSnapshot()
  * 4. selectedParcelId is restored AFTER all items are loaded, ensuring dashed border is applied
- * 5. Snapshot is cleaned up after restoration
+ * 5. Snapshot is cleaned up after successful restoration (preserved on parse failure for safety)
  */
 export function useParcelSelectionRestore() {
   /**

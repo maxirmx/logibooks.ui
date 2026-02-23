@@ -241,6 +241,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (snap.parcels_number != null) parcels_number.value = snap.parcels_number
         if (snap.parcels_page != null) parcels_page.value = snap.parcels_page
         if (snap.parcels_per_page != null) parcels_per_page.value = snap.parcels_per_page
+        if (snap.selectedParcelId !== undefined) selectedParcelId.value = snap.selectedParcelId
 
         // Clean up snapshot after restore so it doesn't interfere later.
         sessionStorage.removeItem('logibooks.parcelsSnapshot')

@@ -69,7 +69,8 @@ function handleSelectClick() {
       parcels_tnved: authStore.parcels_tnved?.value ?? authStore.parcels_tnved,
       parcels_number: authStore.parcels_number?.value ?? authStore.parcels_number,
       parcels_page: authStore.parcels_page?.value ?? authStore.parcels_page,
-      parcels_per_page: authStore.parcels_per_page?.value ?? authStore.parcels_per_page
+      parcels_per_page: authStore.parcels_per_page?.value ?? authStore.parcels_per_page,
+      selectedParcelId: authStore.selectedParcelId?.value ?? authStore.selectedParcelId
     }
     sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify(snapshot))
   } catch  {

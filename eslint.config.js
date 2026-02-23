@@ -60,12 +60,10 @@ export default [
   },
   // Base JavaScript configuration
   js.configs.recommended,
-  // Vue configuration
+  // Vue configuration - use flat config format
+  ...pluginVue.configs['flat/essential'],
   {
     files: ['**/*.vue'],
-    plugins: {
-      vue: pluginVue,
-    },
     languageOptions: {
       parser: vueParser,
       parserOptions: {
@@ -82,8 +80,6 @@ export default [
       },
     },
     rules: {
-      ...pluginVue.configs.base.rules,
-      ...pluginVue.configs['vue3-essential'].rules,
       'vue/comment-directive': 'off', 
     },
   },

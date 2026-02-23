@@ -145,11 +145,14 @@ vi.mock('@/router', () => ({
   default: { push: vi.fn() }
 }))
 
-// Provide a minimal vue-router mock so components using `useRouter()`
-// receive an injected router during mounting in tests.
+// Provide a minimal vue-router mock so components using `useRouter()` and `useRoute()`
+// receive an injected router/route during mounting in tests.
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn()
+  }),
+  useRoute: () => ({
+    query: {}
   }),
   createRouter: () => ({
     push: () => {},

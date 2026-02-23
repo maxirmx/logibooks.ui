@@ -37,6 +37,14 @@ vi.mock('@/components/ProductLinkWithActions.vue', () => ({
   default: { template: '<button data-test="view-btn" @click="$emit(\'view-image\')">View</button>' }
 }))
 
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRoute: () => ({ query: {} })
+  }
+})
+
 import WbrParcel_EditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
 
 describe('WbrParcel_EditDialog image overlay', () => {

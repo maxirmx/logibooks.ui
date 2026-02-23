@@ -7,6 +7,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 
@@ -76,6 +77,13 @@ function handleSelectClick() {
     const alertStore = useAlertStore()
     alertStore.error('Не удалось сохранить фильтры и сортировку')
   }
+
+  // Save selectedParcelId to separate snapshot for restoration after extension completes.
+  // Note: saveSelectedParcelIdSnapshot() handles its own storage errors internally.
+  const authStore = useAuthStore()
+  const { saveSelectedParcelIdSnapshot } = useParcelSelectionRestore()
+  const parcelId = authStore.selectedParcelId?.value ?? authStore.selectedParcelId
+  saveSelectedParcelIdSnapshot(parcelId)
 
   emit('select-image')
   window.postMessage({

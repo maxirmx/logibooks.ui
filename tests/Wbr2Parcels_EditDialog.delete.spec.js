@@ -36,6 +36,14 @@ vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(n
 // Stub out heavy child components and vee-validate Form/Field
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({ default: { template: '<button data-test="delete-btn" @click="$emit(\'delete-image\')">Del</button>' } }))
 
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRoute: () => ({ query: {} })
+  }
+})
+
 import Wbr2Parcels_EditDialog from '@/dialogs/Wbr2Parcel_EditDialog.vue'
 
 describe('Wbr2Parcels_EditDialog delete flow', () => {

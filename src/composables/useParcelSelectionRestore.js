@@ -11,7 +11,7 @@
  * 2. Extension is invoked and may cause page reload/navigation
  * 3. List component onMounted calls restoreSelectedParcelIdSnapshot()
  * 4. selectedParcelId is restored AFTER all items are loaded, ensuring dashed border is applied
- * 5. Snapshot is cleaned up after restoration
+ * 5. Snapshot is cleaned up after successful restoration (preserved on parse failure for safety)
  */
 export function useParcelSelectionRestore() {
   /**
@@ -26,8 +26,8 @@ export function useParcelSelectionRestore() {
         return
       }
       sessionStorage.setItem('logibooks.idSnapshot', JSON.stringify({ selectedParcelId: parcelId }))
-    } catch (error) {
-      console.warn('Failed to save parcel selection snapshot:', error)
+    } catch {
+      // Intentionally ignore storage errors (Quota, unavailable, etc.)
     }
   }
 
@@ -49,8 +49,7 @@ export function useParcelSelectionRestore() {
       sessionStorage.removeItem('logibooks.idSnapshot')
 
       return parcelId
-    } catch (error) {
-      console.warn('Failed to restore parcel selection snapshot:', error)
+    } catch {
       return null
     }
   }

@@ -2,7 +2,6 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-/* global Storage */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 
@@ -179,7 +178,7 @@ describe('useParcelSelectionRestore', () => {
       expect(restoredId).toBeNull()
     })
 
-    it('should clean up snapshot even when parsing fails', () => {
+    it('should preserve snapshot when parsing fails', () => {
       const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()
       
       sessionStorage.setItem('logibooks.idSnapshot', 'invalid {')

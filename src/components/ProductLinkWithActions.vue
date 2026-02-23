@@ -78,16 +78,12 @@ function handleSelectClick() {
     alertStore.error('Не удалось сохранить фильтры и сортировку')
   }
 
-  // Save selectedParcelId to separate snapshot for restoration after extension completes
-  try {
-    const authStore = useAuthStore()
-    const { saveSelectedParcelIdSnapshot } = useParcelSelectionRestore()
-    const parcelId = authStore.selectedParcelId?.value ?? authStore.selectedParcelId
-    saveSelectedParcelIdSnapshot(parcelId)
-  } catch {
-    const alertStore = useAlertStore()
-    alertStore.error('Не удалось сохранить выбранную посылку')
-  }
+  // Save selectedParcelId to separate snapshot for restoration after extension completes.
+  // Note: saveSelectedParcelIdSnapshot() handles its own storage errors internally.
+  const authStore = useAuthStore()
+  const { saveSelectedParcelIdSnapshot } = useParcelSelectionRestore()
+  const parcelId = authStore.selectedParcelId?.value ?? authStore.selectedParcelId
+  saveSelectedParcelIdSnapshot(parcelId)
 
   emit('select-image')
   window.postMessage({

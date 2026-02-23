@@ -37,6 +37,14 @@ vi.mock('@/components/ProductLinkWithActions.vue', () => ({
   default: { template: '<button data-test="view-btn" @click="$emit(\'view-image\')">View</button>' }
 }))
 
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRoute: () => ({ query: {} })
+  }
+})
+
 import OzonParcel_EditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 
 describe('OzonParcel_EditDialog image overlay', () => {

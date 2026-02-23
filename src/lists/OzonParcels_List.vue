@@ -186,8 +186,8 @@ function scrollToSelectedItem() {
           inline: 'nearest'
         })
       }
-    } catch (error) {
-      console.warn('Could not scroll to selected item:', error)
+    } catch {
+      // Swallow errors during scroll attempt
     }
   })
 }

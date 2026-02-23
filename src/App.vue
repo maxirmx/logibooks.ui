@@ -201,9 +201,17 @@ function getUserName() {
         </v-list-group>
 
         <!-- Загрузки -->
-        <v-list-item v-if="authStore.hasLogistRole">
-          <a :href="`${baseUrl}extensions/extension-v0.3.0.zip`" target="_blank" rel="noopener" class="link">Скачать расширение</a>
-        </v-list-item>
+        <v-list-group  v-if="authStore.hasAnyRole">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Скачать"></v-list-item>
+          </template>
+          <v-list-item v-if="authStore.hasLogistRole">
+            <a :href="`${baseUrl}downloads/extension-latest.zip`" target="_blank" rel="noopener" class="link">Расширение</a>
+          </v-list-item>
+          <v-list-item v-if="authStore.hasWhRole">
+            <a :href="`${baseUrl}downloads/app-latest.apk`" target="_blank" rel="noopener" class="link">Сканнер apk</a>
+          </v-list-item>
+        </v-list-group>
 
         <v-list-item>
           <RouterLink to="/login" @click="deauth()" class="link">Выход</RouterLink>

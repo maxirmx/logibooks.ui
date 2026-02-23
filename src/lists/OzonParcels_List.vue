@@ -15,6 +15,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
+import { useRoute } from 'vue-router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
@@ -47,6 +48,7 @@ import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
+import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -63,6 +65,7 @@ const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 const transportationTypesStore = useTransportationTypesStore()
 const alertStore = useAlertStore()
+const route = useRoute()
 
 const { alert } = storeToRefs(alertStore)
 const { procedures } = storeToRefs(customsProceduresStore)
@@ -82,6 +85,17 @@ const {
 
 const localTnvedSearch = ref(parcels_tnved.value || '')
 const localParcelNumberSearch = ref(parcels_number.value || '')
+
+function parseSelectedParcelIdFromQuery(value) {
+  const rawValue = Array.isArray(value) ? value[0] : value
+  const parsedValue = Number(rawValue)
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null
+}
+
+const selectedParcelIdFromQuery = parseSelectedParcelIdFromQuery(route.query.selectedParcelId)
+if (selectedParcelIdFromQuery != null) {
+  selectedParcelId.value = selectedParcelIdFromQuery
+}
 
 // Template ref for the data table
 const dataTableRef = ref(null)
@@ -120,13 +134,10 @@ watch(maxPage, (v) => {
 
 // Selected parcel management
 function updateSelectedParcelId() {
-  if (items.value?.length > 0) {
-    // Check if current selection is on the page
-    const isCurrentOnPage = items.value.some(item => item.id === selectedParcelId.value)
-    if (!isCurrentOnPage) {
-      selectedParcelId.value = null
-    }
-  } else {
+  if (selectedParcelId.value == null || loading.value) return
+
+  const isCurrentOnPage = items.value.some(item => item.id === selectedParcelId.value)
+  if (!isCurrentOnPage) {
     selectedParcelId.value = null
   }
 }
@@ -136,8 +147,10 @@ watch(
   () => items.value,
   () => {
     updateSelectedParcelId()
-  },
-  { immediate: true }
+    if (selectedParcelId.value) {
+      scrollToSelectedItem()
+    }
+  }
 )
 
 // Watch for page changes to set selection to null
@@ -286,9 +299,22 @@ onMounted(async () => {
     
     await fetchRegister()
 
-    updateSelectedParcelId()
-    // Scroll to selected item if it exists on current page
-    if (selectedParcelId.value) {
+    if (items.value?.length > 0) {
+      updateSelectedParcelId()
+      if (selectedParcelId.value) {
+        scrollToSelectedItem()
+      }
+    }
+
+    // Restore parcel selection from extension snapshot after all cleanups
+    // This ensures that if the user invoked an extension and returned,
+    // the previously selected parcel will be highlighted with the dashed border
+    const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()
+    const restoredParcelId = restoreSelectedParcelIdSnapshot()
+    if (restoredParcelId != null && items.value?.some(item => item.id === restoredParcelId)) {
+      selectedParcelId.value = restoredParcelId
+      // Scroll to the restored selection
+      await nextTick()
       scrollToSelectedItem()
     }
 

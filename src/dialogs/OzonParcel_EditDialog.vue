@@ -43,6 +43,7 @@ import {
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { useParcelImageOverlay } from '@/helpers/parcel.image.overlay.js'
+import { useRoute } from 'vue-router'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -52,6 +53,7 @@ const props = defineProps({
 // track current parcel id so we can swap inline without changing route
 const currentParcelId = ref(props.id)
 const isComponentMounted = ref(true)
+const route = useRoute()
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -125,6 +127,27 @@ function ensureNextParcelsPromise() {
     initNextParcelsPromise(currentParcelId.value)
   }
   return nextParcelsPromise
+}
+
+function getModeQueryParam() {
+  return typeof route.query.mode === 'string' && route.query.mode.length > 0
+    ? route.query.mode
+    : undefined
+}
+
+function goToParcelsList() {
+  const mode = getModeQueryParam()
+  const query = {
+    selectedParcelId: String(currentParcelId.value)
+  }
+  if (mode) {
+    query.mode = mode
+  }
+
+  router.push({
+    path: `/registers/${props.registerId}/parcels`,
+    query
+  })
 }
 
 
@@ -287,8 +310,7 @@ async function onSubmit(values, useTheNext = false) {
       // fetch full parcel data 
       // await parcelsStore.getById(nextParcel.id)
     } else {
-      const fallbackUrl = `/registers/${props.registerId}/parcels`
-      router.push(fallbackUrl)
+      goToParcelsList()
     }
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -301,7 +323,7 @@ function onSave(values) {
   return parcelsStore
     .update(currentParcelId.value, values)
     .then(() => {
-      router.push(`/registers/${props.registerId}/parcels`)
+      goToParcelsList()
     })
     .catch((error) => {
       parcelsStore.error = error?.message || String(error)
@@ -333,8 +355,7 @@ async function onBack(values) {
       router.replace(prevUrl)
 
     } else {
-      const fallbackUrl = `/registers/${props.registerId}/parcels`
-      router.push(fallbackUrl)
+      goToParcelsList()
     }
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -410,7 +431,7 @@ async function onLookup(values) {
         @back="onBack(values)"
         @save="onSave(values)"
         @lookup="onLookup(values)"
-        @cancel="router.push(`/registers/${props.registerId}/parcels`)"
+        @cancel="goToParcelsList()"
         @download="generateXml(values)"
       />
     </div>

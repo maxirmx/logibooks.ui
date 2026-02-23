@@ -7,6 +7,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 
@@ -69,13 +70,23 @@ function handleSelectClick() {
       parcels_tnved: authStore.parcels_tnved?.value ?? authStore.parcels_tnved,
       parcels_number: authStore.parcels_number?.value ?? authStore.parcels_number,
       parcels_page: authStore.parcels_page?.value ?? authStore.parcels_page,
-      parcels_per_page: authStore.parcels_per_page?.value ?? authStore.parcels_per_page,
-      selectedParcelId: authStore.selectedParcelId?.value ?? authStore.selectedParcelId
+      parcels_per_page: authStore.parcels_per_page?.value ?? authStore.parcels_per_page
     }
     sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify(snapshot))
   } catch  {
     const alertStore = useAlertStore()
     alertStore.error('Не удалось сохранить фильтры и сортировку')
+  }
+
+  // Save selectedParcelId to separate snapshot for restoration after extension completes
+  try {
+    const authStore = useAuthStore()
+    const { saveSelectedParcelIdSnapshot } = useParcelSelectionRestore()
+    const parcelId = authStore.selectedParcelId?.value ?? authStore.selectedParcelId
+    saveSelectedParcelIdSnapshot(parcelId)
+  } catch {
+    const alertStore = useAlertStore()
+    alertStore.error('Не удалось сохранить выбранную посылку')
   }
 
   emit('select-image')

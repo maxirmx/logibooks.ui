@@ -182,7 +182,8 @@ function scrollToSelectedItem() {
           inline: 'nearest'
         })
       }
-    } catch  {
+    } catch {
+      // Swallow errors during scroll attempt
     }
   })
 }

@@ -27,6 +27,7 @@ export function useParcelSelectionRestore() {
       }
       sessionStorage.setItem('logibooks.idSnapshot', JSON.stringify({ selectedParcelId: parcelId }))
     } catch {
+      // Intentionally ignore storage errors (Quota, unavailable, etc.)
     }
   }
 
@@ -48,7 +49,7 @@ export function useParcelSelectionRestore() {
       sessionStorage.removeItem('logibooks.idSnapshot')
 
       return parcelId
-    } catch  {
+    } catch {
       return null
     }
   }

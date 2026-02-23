@@ -2,7 +2,6 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-/* global Storage */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 

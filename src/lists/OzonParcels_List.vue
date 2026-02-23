@@ -38,6 +38,7 @@ import {
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
+import { parseSelectedParcelIdFromQuery } from '@/helpers/parcel.query.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -85,12 +86,6 @@ const {
 
 const localTnvedSearch = ref(parcels_tnved.value || '')
 const localParcelNumberSearch = ref(parcels_number.value || '')
-
-function parseSelectedParcelIdFromQuery(value) {
-  const rawValue = Array.isArray(value) ? value[0] : value
-  const parsedValue = Number(rawValue)
-  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null
-}
 
 const selectedParcelIdFromQuery = parseSelectedParcelIdFromQuery(route.query.selectedParcelId)
 if (selectedParcelIdFromQuery != null) {

@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
@@ -56,6 +57,18 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/warehouses',
+      name: 'Склады',
+      component: () => import('@/views/Warehouses_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
+      path: '/scanjobs',
+      name: 'Задания на сканирование',
+      component: () => import('@/views/Scanjobs_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/notifications',
       name: 'Нотификации',
       component: () => import('@/views/Notifications_View.vue'),
@@ -87,6 +100,45 @@ const router = createRouter({
         id: Number(route.params.id)
       }),
       meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/warehouse/create',
+      name: 'Регистрация склада',
+      component: () => import('@/views/Warehouse_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/warehouse/edit/:id',
+      name: 'Изменить информацию о складе',
+      component: () => import('@/views/Warehouse_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/scanjob/create',
+      name: 'Создание задания на сканирование',
+      component: () => import('@/views/Scanjob_CreateView.vue'),
+      meta: { reqWhRole: true }
+    },
+    {
+      path: '/scanjob/edit/:id',
+      name: 'Редактировать задание на сканирование',
+      component: () => import('@/views/Scanjob_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqWhRole: true }
+    },
+    {
+      path: '/scanjobs/:id/scanned-items',
+      name: 'Сканированные позиции',
+      component: () => import('@/views/ScannedItems_View.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqWhRole: true }
     },
     {
       path: '/notification/create',
@@ -140,9 +192,21 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
-      path: '/parceleventprocessing',
+      path: '/registerstatuses',
+      name: 'Статусы реестров',
+      component: () => import('@/views/RegisterStatuses_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
+      path: '/parcelsevents',
       name: 'Обработка событий посылок',
-      component: () => import('@/views/ParcelEventProcessing_View.vue'),
+      component: () => import('@/views/ParcelEvents_View.vue'),
+      meta: { reqAdmin: true }
+    },
+    {
+      path: '/registersevents',
+      name: 'Обработка событий реестров/партий',
+      component: () => import('@/views/RegisterEvents_View.vue'),
       meta: { reqAdmin: true }
     },
     {
@@ -152,9 +216,24 @@ const router = createRouter({
       meta: { reqAdminOrSrLogist: true }
     },
     {
+      path: '/registerstatus/create',
+      name: 'Регистрация статуса реестра',
+      component: () => import('@/views/RegisterStatus_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
       path: '/parcelstatus/edit/:id',
       name: 'Редактирование статуса посылки',
       component: () => import('@/views/ParcelStatus_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/registerstatus/edit/:id',
+      name: 'Редактирование статуса реестра',
+      component: () => import('@/views/RegisterStatus_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),
@@ -282,7 +361,15 @@ const router = createRouter({
       path: '/registers',
       name: 'Реестры',
       component: () => import('@/views/Registers_View.vue'),
-      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+      props: (route) => {
+        // Accept only known operation modes; default to paperwork for invalid or missing values
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return { mode }
+      },
+      meta: { reqAnyRole: true, hideSidebar: true }
     },
     {
       path: '/parcels/by-number',
@@ -294,10 +381,14 @@ const router = createRouter({
       path: '/registers/:id/parcels',
       name: 'Посылки',
       component: () => import('@/views/Parcels_View.vue'),
-      props: (route) => ({
-        id: Number(route.params.id)
-      }),
-      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+      props: (route) => {
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return { id: Number(route.params.id), mode }
+      },
+      meta: { reqAnyRole: true, hideSidebar: true }
     },
     {
       path: '/registers/:registerId/parcels/edit/:id',
@@ -313,7 +404,13 @@ const router = createRouter({
       path: '/register/edit/:id',
       name: 'Редактирование реестра',
       component: () => import('@/views/Register_EditView.vue'),
-      props: (route) => ({ id: Number(route.params.id) }),
+      props: (route) => {
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return { id: Number(route.params.id), mode }
+      },
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
@@ -338,7 +435,8 @@ const router = createRouter({
       component: () => import('@/views/User_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
-      })
+      }),
+      meta: {  }
     },
   ]
 })
@@ -410,15 +508,18 @@ router.beforeEach(async (to) => {
       return routeToLogin(to, auth)
     }
 
+    if (to.meta.reqWhRole && !auth.hasWhRole) {
+      return routeToLogin(to, auth)
+    }
+
     if (to.meta.reqAnyRole && !auth.hasAnyRole) {
       return routeToLogin(to, auth)
     }
 
     // User is authenticated and has proper permissions
     return true
-  } catch (error) {
+  } catch {
     // Server unavailable or other error
-    console.error('Authentication check failed:', error)
     auth.logout()
     auth.returnUrl = to.fullPath
     alert.error('Сервер недоступен. Пожалуйста, попробуйте позже.')

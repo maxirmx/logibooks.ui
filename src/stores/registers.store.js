@@ -14,6 +14,8 @@ import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+
 const baseUrl = `${apiUrl}/registers`
 
 export const useRegistersStore = defineStore('registers', () => {
@@ -55,7 +57,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function getAll() {
+  async function getAll({ mode = OP_MODE_PAPERWORK } = {}) {
     const authStore = useAuthStore()
     
     customsProceduresStore.ensureLoaded()
@@ -66,7 +68,8 @@ export const useRegistersStore = defineStore('registers', () => {
         page: authStore.registers_page.toString(),
         pageSize: authStore.registers_per_page.toString(),
         sortBy: authStore.registers_sort_by?.[0]?.key || 'id',
-        sortOrder: authStore.registers_sort_by?.[0]?.order || 'desc'
+        sortOrder: authStore.registers_sort_by?.[0]?.order || 'desc',
+        whOnly: mode === OP_MODE_WAREHOUSE ? 'true' : 'false'
       })
 
       if (authStore.registers_search) {

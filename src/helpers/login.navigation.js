@@ -3,6 +3,7 @@
 // This file is a part of Logibooks ui application 
 
 import { useAuthStore } from '@/stores/auth.store.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 /**
  * Determines the route to navigate to after successful login
@@ -11,7 +12,6 @@ import { useAuthStore } from '@/stores/auth.store.js'
  */
 export function getHomeRoute(from_user_dialog = false) {
   const authStore = useAuthStore()
-  
   // No user means we should go to login
   if (!authStore.user) {
     return '/login'
@@ -20,6 +20,7 @@ export function getHomeRoute(from_user_dialog = false) {
   // Priority: logist > administrator > regular user
   if (from_user_dialog && authStore.isAdmin) return '/users'
   if (authStore.hasLogistRole) return '/registers'
+  if (authStore.hasWhRole) return `/registers?mode=${OP_MODE_WAREHOUSE}`
   if (authStore.isAdmin) return '/users'
   
   // Regular user - go to edit profile

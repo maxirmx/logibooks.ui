@@ -7,6 +7,7 @@ import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
 import { computed, onMounted } from 'vue'
 import { useStatusStore } from '@/stores/status.store.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
@@ -17,6 +18,8 @@ const authStore = useAuthStore()
 const statusStore = useStatusStore()
 
 const baseUrl = import.meta.env.BASE_URL
+const paperworkRegisterNouns = getRegisterNouns(OP_MODE_PAPERWORK)
+const warehouseRegisterNouns = getRegisterNouns(OP_MODE_WAREHOUSE)
 
 onMounted(() => {
   statusStore.fetchStatus().catch(() => {})
@@ -78,15 +81,6 @@ function getUserName() {
     : ''
 }
 
-/*
-<v-list-item>
-          <RouterLink to="/register" class="link">Регистрация</RouterLink>
-        </v-list-item>
-        <v-list-item>
-          <RouterLink to="/recover" class="link">Восстановление пароля</RouterLink>
-        </v-list-item>
-*/
-
 </script>
 
 <template>
@@ -105,13 +99,38 @@ function getUserName() {
           <img alt="Logibooks" class="logo" src="@/assets/logo.png" />
         </div>
       </template>
-      <v-list v-if="authStore.user">
+        <v-list v-if="authStore.user">
         <v-list-item v-if="authStore.hasLogistRole">
-          <RouterLink to="/registers" class="link">Реестры</RouterLink>
+          <RouterLink to="/registers" class="link">{{ paperworkRegisterNouns.plural }}</RouterLink>
         </v-list-item>
         <v-list-item v-if="authStore.hasLogistRole">
           <RouterLink to="/parcels/by-number" class="link">Посылки</RouterLink>
         </v-list-item>
+
+        <!-- Склад -->
+        <v-list-group v-if="authStore.hasWhRole">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Склад"></v-list-item>
+          </template>
+          <v-list-item>
+            <RouterLink
+              :to="{ path: '/registers', query: { mode: OP_MODE_WAREHOUSE } }"
+              class="link"
+            >
+              {{ warehouseRegisterNouns.plural }}
+            </RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/scanjobs" class="link">Сканирования</RouterLink>
+          </v-list-item>
+        </v-list-group>
+
+        <!-- Отчёты -->
+        <v-list-item v-if="authStore.isSrLogistPlus">
+          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
+        </v-list-item>
+
+        <!-- Пользователи -->
         <v-list-item v-if="!authStore.isAdmin">
           <RouterLink :to="'/user/edit/' + authStore.user.id" class="link">Настройки</RouterLink>
         </v-list-item>
@@ -119,13 +138,8 @@ function getUserName() {
           <RouterLink to="/users" class="link">Пользователи</RouterLink>
         </v-list-item>
 
-        <!-- Отчёты -->
-        <v-list-item v-if="authStore.isSrLogistPlus">
-          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
-        </v-list-item>
-
         <!-- Справочники -->
-        <v-list-group  v-if="authStore.hasAnyRole">
+        <v-list-group  v-if="authStore.hasLogistRole">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Справочники"></v-list-item>
           </template>
@@ -151,13 +165,13 @@ function getUserName() {
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>
           <v-list-item>
+            <RouterLink to="/warehouses" class="link">Склады</RouterLink>
+          </v-list-item>
+          <v-list-item>
             <RouterLink to="/airports" class="link">Коды аэропортов</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/notifications" class="link">Нотификации</RouterLink>
-          </v-list-item>
-          <v-list-item>
-            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/stopwords" class="link">Стоп-слова</RouterLink>
@@ -170,14 +184,23 @@ function getUserName() {
             <v-list-item v-bind="props" title="Настройки"></v-list-item>
           </template>
           <v-list-item>
-            <RouterLink to="/parceleventprocessing" class="link">События</RouterLink>
+            <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/registerstatuses" class="link">Статусы партий</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/parcelsevents" class="link">События/посылки</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/registersevents" class="link">События/партии</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/hotkeyactionschemes" class="link">Клавиатура</RouterLink>
           </v-list-item>
         </v-list-group>
 
-        <!-- Отчёты -->
+        <!-- Загрузки -->
         <v-list-item v-if="authStore.hasLogistRole">
           <a :href="`${baseUrl}extensions/extension-v0.3.0.zip`" target="_blank" rel="noopener" class="link">Скачать расширение</a>
         </v-list-item>

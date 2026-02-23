@@ -106,7 +106,8 @@ export async function applyBulkStatusToAllOrders(
   statusId,
   bulkStatusState,
   registersStore,
-  alertStore
+  alertStore,
+  getAllOptions = {}
 ) {
   const validation = validateBulkStatusParams(registerId, statusId)
   if (!validation.isValid) {
@@ -124,7 +125,7 @@ export async function applyBulkStatusToAllOrders(
     alertStore.error(errorMessage)
     resetBulkStatusState(registerId, bulkStatusState)
   } finally {
-    await registersStore.getAll()
+    await registersStore.getAll(getAllOptions)
   }
 }
 

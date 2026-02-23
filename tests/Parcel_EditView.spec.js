@@ -5,10 +5,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import ParcelEditView from '@/views/Parcel_EditView.vue'
 import OzonParcelEditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrParcelEditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
-import Wbr2ParcelsEditDialog from '@/dialogs/Wbr2Parcels_EditDialog.vue'
+import Wbr2ParcelsEditDialog from '@/dialogs/Wbr2Parcel_EditDialog.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 
 // Mock fetchWrapper
@@ -33,6 +34,7 @@ const commonStubs = {
 
 describe('Parcel_EditView.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 

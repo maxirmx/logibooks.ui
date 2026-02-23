@@ -55,6 +55,11 @@ const { ops } = storeToRefs(scanJobsStore)
 
 const isCreate = computed(() => props.mode === 'create')
 
+// Title function must be defined before guards to prevent template render errors
+function getTitle() {
+  return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
+}
+
 // Runtime guard: fail fast if scanjobId is missing in edit mode
 if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === undefined)) {
   alertStore.error('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
@@ -234,10 +239,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-function getTitle() {
-  return isCreate.value ? 'Создание задания на сканирование' : 'Редактировать задание на сканирование'
-}
 
 function toNumberOrNull(value) {
   if (value === null || value === undefined || value === '') return null

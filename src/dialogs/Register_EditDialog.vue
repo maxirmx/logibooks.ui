@@ -820,7 +820,7 @@ function getCustomerName(customerId) {
                 :value="true"
                 :unchecked-value="false"
                 class="custom-checkbox-input"
-                :disabled="isRe"
+                :disabled="!isRe"
                 @change="onLookupForReimportChange"
               />
               <span class="custom-checkbox-box"></span>

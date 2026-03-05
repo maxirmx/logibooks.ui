@@ -342,8 +342,9 @@ describe('registers store', () => {
       it('clears previous error on successful request', async () => {
         const store = useRegistersStore()
 
-        // First request fails (both ops and registers calls reject)
-        fetchWrapper.get.mockRejectedValue(new Error('First error'))
+        // First request fails: both the ops call and the registers call reject
+        fetchWrapper.get.mockRejectedValueOnce(new Error('First error')) // ops call
+        fetchWrapper.get.mockRejectedValueOnce(new Error('First error')) // registers call
         await store.getAll()
         expect(store.error).toBeTruthy()
 
@@ -1300,13 +1301,16 @@ describe('registers store', () => {
       fetchWrapper.get.mockResolvedValue(null)
 
       const store = useRegistersStore()
-      await store.getOps()
+      await store.ensureOpsLoaded() // opsInitialized should remain false
 
-      // opsInitialized is not exposed, but calling getOps again should re-fetch
+      // Since opsInitialized is still false, a subsequent ensureOpsLoaded should re-fetch
       fetchWrapper.get.mockResolvedValue({ customsProcedures: [], transportationTypes: [] })
-      await store.getOps()
+      await store.ensureOpsLoaded()
 
+      // Two fetches: first returned null (invalid), second returned valid data
       expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+      expect(store.ops.customsProcedures).toEqual([])
+      expect(store.ops.transportationTypes).toEqual([])
     })
 
     it('getOps does not set opsInitialized when response has invalid shape', async () => {

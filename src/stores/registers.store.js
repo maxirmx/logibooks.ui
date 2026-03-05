@@ -44,18 +44,21 @@ export const useRegistersStore = defineStore('registers', () => {
 
   function getTransportationDocument(value) {
     const num = Number(value)
-    const type = ops.value.transportationTypes?.find(t => Number(t.value) === num)
+    const type = ops.value?.transportationTypes?.find(t => Number(t.value) === num)
     return type ? type.document : `[Тип ${value}]`
   }
 
   function isExportProcedure(customsProcedureValue) {
     const num = Number(customsProcedureValue)
-    const proc = ops.value.customsProcedures?.find(p => Number(p.value) === num)
+    const proc = ops.value?.customsProcedures?.find(p => Number(p.value) === num)
     return proc ? proc.isExport : false
   }
 
   function setDestinationField(register) {
-    if (!register || !register.customsProcedureCode) {
+    if (!register) {
+      return
+    }
+    if (!register.customsProcedureCode) {
       register.destination = 'in'
       return
     }
@@ -78,8 +81,11 @@ export const useRegistersStore = defineStore('registers', () => {
     opsLoading.value = true
     opsError.value = null
     try {
-      ops.value = await fetchWrapper.get(`${baseUrl}/ops`)
-      opsInitialized = true
+      const response = await fetchWrapper.get(`${baseUrl}/ops`)
+      if (response && Array.isArray(response.customsProcedures) && Array.isArray(response.transportationTypes)) {
+        ops.value = response
+        opsInitialized = true
+      }
       return ops.value
     } catch (err) {
       opsError.value = err
@@ -108,6 +114,8 @@ export const useRegistersStore = defineStore('registers', () => {
     loading.value = true
     error.value = null
     try {
+      await ensureOpsLoaded()
+
       const queryParams = new URLSearchParams({
         page: authStore.registers_page.toString(),
         pageSize: authStore.registers_per_page.toString(),
@@ -165,6 +173,7 @@ export const useRegistersStore = defineStore('registers', () => {
   async function getById(id) {
     item.value = { loading: true }
     try {
+      await ensureOpsLoaded()
       item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
       setDestinationField(item.value)
     } catch (err) {

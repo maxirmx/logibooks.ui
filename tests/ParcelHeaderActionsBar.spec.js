@@ -700,6 +700,37 @@ describe('ParcelHeaderActionsBar', () => {
     expect(wrapper.emitted()['download']).toBeUndefined()
   })
 
+  it('skips hotkey mapping when ops metadata is unavailable', async () => {
+    // ensureOpsLoaded resolves with null when the fetch fails
+    ensureOpsLoadedMock.mockResolvedValue(null)
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // getById should not have been called since we returned early when ops unavailable
+    expect(getByIdMock).not.toHaveBeenCalled()
+
+    // Key presses on this wrapper should not emit any event (hotkeyActions is empty)
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'F1',
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false
+    }))
+    await wrapper.vm.$nextTick()
+
+    // No declared events should have been emitted by this wrapper
+    const emittedEvents = Object.keys(wrapper.emitted())
+    expect(emittedEvents).toHaveLength(0)
+
+    wrapper.unmount()
+  })
+
   it('allows download hotkeys when downloadDisabled is false', async () => {
     getByIdMock.mockResolvedValue({
       id: 1,

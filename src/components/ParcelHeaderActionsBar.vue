@@ -36,9 +36,12 @@ onMounted(async () => {
   isListenerAttached.value = true
   
   try {
-    // Ensure ops are loaded
-    await hotKeyActionSchemesStore.ensureOpsLoaded()
-    
+    // Ensure ops are loaded; skip hotkey mapping if ops metadata is unavailable
+    const opsData = await hotKeyActionSchemesStore.ensureOpsLoaded()
+    if (!opsData) {
+      return
+    }
+
     // Get the user's hotkey action scheme ID
     const schemeId = authStore.user?.schemeId
     

@@ -6,7 +6,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
@@ -27,22 +26,40 @@ export const useRegistersStore = defineStore('registers', () => {
   const totalCount = ref(0)
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
-  
-  const customsProceduresStore = useCustomsProceduresStore()
+  const ops = ref({
+    customsProcedures: [],
+    transportationTypes: []
+  })
+  const opsLoading = ref(false)
+  const opsError = ref(null)
+
+  let opsInitialized = false
+  let opsPromise = null
+
+  function getOpsLabel(list, value) {
+    const num = Number(value)
+    const match = list?.find((item) => Number(item.value) === num)
+    return match ? match.name : String(value)
+  }
+
+  function getTransportationDocument(value) {
+    const num = Number(value)
+    const type = ops.value.transportationTypes?.find(t => Number(t.value) === num)
+    return type ? type.document : `[Тип ${value}]`
+  }
+
+  function isExportProcedure(customsProcedureValue) {
+    const num = Number(customsProcedureValue)
+    const proc = ops.value.customsProcedures?.find(p => Number(p.value) === num)
+    return proc ? proc.isExport : false
+  }
 
   function setDestinationField(register) {
-    if (!register || !register.customsProcedureId) {
+    if (!register || !register.customsProcedureCode) {
       register.destination = 'in'
       return
     }
-    let proc = null
-    if (customsProceduresStore.procedureMap && customsProceduresStore.procedureMap.value) {
-      proc = customsProceduresStore.procedureMap.value.get(register.customsProcedureId)
-    }
-    if (!proc && Array.isArray(customsProceduresStore.procedures)) {
-      proc = customsProceduresStore.procedures.find(p => p.id === register.customsProcedureId)
-    }
-    if (proc && proc.code == 10) {
+    if (isExportProcedure(register.customsProcedureCode)) {
       register.destination = 'out'
       register.destCountryCode = register.theOtherCountryCode
       register.origCountryCode = 643 // Russia
@@ -57,10 +74,37 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function getOps() {
+    opsLoading.value = true
+    opsError.value = null
+    try {
+      ops.value = await fetchWrapper.get(`${baseUrl}/ops`)
+      opsInitialized = true
+      return ops.value
+    } catch (err) {
+      opsError.value = err
+      return null
+    } finally {
+      opsLoading.value = false
+    }
+  }
+
+  async function ensureOpsLoaded() {
+    if (opsInitialized) {
+      return ops.value
+    }
+
+    if (!opsPromise) {
+      opsPromise = getOps().finally(() => {
+        opsPromise = null
+      })
+    }
+    return opsPromise
+  }
+
   async function getAll({ mode = OP_MODE_PAPERWORK } = {}) {
     const authStore = useAuthStore()
     
-    customsProceduresStore.ensureLoaded()
     loading.value = true
     error.value = null
     try {
@@ -119,7 +163,6 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function getById(id) {
-    customsProceduresStore.ensureLoaded()
     item.value = { loading: true }
     try {
       item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
@@ -466,6 +509,9 @@ export const useRegistersStore = defineStore('registers', () => {
     totalCount,
     hasNextPage,
     hasPreviousPage,
+    ops,
+    opsLoading,
+    opsError,
     getAll,
     upload,
     getById,
@@ -486,6 +532,11 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadTechdoc,
     nextParcels,
     remove,
-    uploadFile
+    uploadFile,
+    getOps,
+    ensureOpsLoaded,
+    getOpsLabel,
+    getTransportationDocument,
+    isExportProcedure
   }
 })

@@ -194,7 +194,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('user', JSON.stringify(userData))
 
       if (returnUrl.value) {
-        router.push(returnUrl.value)
+        await router.push(returnUrl.value).catch(() => {})
         returnUrl.value = null
       }
     } catch (error) {

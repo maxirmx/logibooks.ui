@@ -14,13 +14,11 @@ import { getHomeRoute } from '@/helpers/login.navigation.js'
 
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
-import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
-import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
-const transportationTypesStore = useTransportationTypesStore()
-const customsProceduresStore = useCustomsProceduresStore()
+const registersStore = useRegistersStore()
 const parcelStatusesStore = useParcelStatusesStore()
 
 const schema = Yup.object().shape({
@@ -46,8 +44,7 @@ function onSubmit(values, { setErrors }) {
     .then(async () => {
       await parcelStatusesStore.ensureLoaded()
       await countriesStore.ensureLoaded()
-      await transportationTypesStore.ensureLoaded()
-      await customsProceduresStore.ensureLoaded()
+      await registersStore.ensureOpsLoaded()
       await companiesStore.getAll()
       router.push(getHomeRoute())
     })

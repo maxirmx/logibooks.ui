@@ -121,8 +121,7 @@ import router from '@/router'
 
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
-import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
-import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
@@ -190,8 +189,7 @@ export function initializeApp() {
 
   // Initialize global data after Pinia is set up
   const feacnOrdersStore = useFeacnOrdersStore()
-  const transportationTypesStore = useTransportationTypesStore()
-  const customsProceduresStore = useCustomsProceduresStore()
+  const registersStore = useRegistersStore()
   const countriesStore = useCountriesStore()
   const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
   const scanJobsStore = useScanjobsStore()
@@ -199,8 +197,7 @@ export function initializeApp() {
 
   // Load FEACN orders globally at app startup
   feacnOrdersStore.ensureLoaded()
-  transportationTypesStore.ensureLoaded()
-  customsProceduresStore.ensureLoaded()
+  registersStore.ensureOpsLoaded()
   countriesStore.ensureLoaded()
   hotKeyActionSchemesStore.ensureOpsLoaded()
   scanJobsStore.ensureOpsLoaded()

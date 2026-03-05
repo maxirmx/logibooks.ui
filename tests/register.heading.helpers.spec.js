@@ -15,7 +15,7 @@ describe('register.heading.helpers', () => {
       dealNumber: 'DEAL-123',
       invoiceNumber: 'INV-45',
       invoiceDate: '2025-09-01',
-      transportationTypeId: 7,
+      transportationTypeCode: 7,
       parcelsTotal: 15,
       placesTotal: 20
     }
@@ -31,7 +31,7 @@ describe('register.heading.helpers', () => {
       dealNumber: 'DEAL-123',
       invoiceNumber: 'INV-45',
       invoiceDate: '2025-09-01',
-      transportationTypeId: 7
+      transportationTypeCode: 7
     }
     const heading = buildParcelListHeading(register, mockGetTransportationDocument)
     expect(heading).not.toContain(';')

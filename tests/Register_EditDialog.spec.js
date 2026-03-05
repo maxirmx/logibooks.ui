@@ -21,8 +21,8 @@ const baseRegisterItem = {
   companyId: 2,
   registerType: 2,
   dealNumber: 'D1',
-  customsProcedureId: 1,
-  transportationTypeId: 1,
+  customsProcedureCode: 1,
+  transportationTypeCode: 1,
   theOtherCompanyId: null,
   theOtherCountryCode: null,
   departureAirportId: 0,
@@ -38,6 +38,17 @@ const upload = vi.fn(() => Promise.resolve())
 const getAll = vi.fn(() => Promise.resolve())
 const registerItems = ref([])
 
+const mockOps = ref({
+  customsProcedures: [
+    { value: 1, charCode: 'ИМ11', name: 'Импорт' },
+    { value: 2, charCode: 'ЭК10', name: 'Экспорт' }
+  ],
+  transportationTypes: [
+    { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
+    { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
+  ]
+})
+
 const registersStore = createMockStore({
   item: mockItem,
   items: registerItems,
@@ -45,27 +56,23 @@ const registersStore = createMockStore({
   getAll,
   update,
   upload,
-  uploadFile: ref(null)
+  uploadFile: ref(null),
+  ops: mockOps,
+  ensureOpsLoaded: vi.fn(() => Promise.resolve()),
+  getTransportationDocument: vi.fn((id) => {
+    const type = mockOps.value.transportationTypes.find(t => t.value === id)
+    return type ? type.document : `[Тип ${id}]`
+  }),
+  isExportProcedure: vi.fn((id) => {
+    const proc = mockOps.value.customsProcedures.find(p => p.value === id)
+    return proc?.charCode === 'ЭК10'
+  })
 })
 const countriesStore = createMockStore({
   countries: ref([
     { id: 1, isoNumeric: 840, nameRuOfficial: 'США' },
     { id: 2, isoNumeric: 643, nameRuOfficial: 'Россия' }
   ]),
-  ensureLoaded: vi.fn()
-})
-const transStore = createMockStore({
-  types: [
-    { id: 1, name: 'Авто', code: 1 },
-    { id: 2, name: 'Авиа', code: 0 }
-  ],
-  ensureLoaded: vi.fn()
-})
-const procStore = createMockStore({
-  procedures: [
-    { id: 1, code: 11, name: 'Импорт' },
-    { id: 2, code: 10, name: 'Экспорт' }
-  ],
   ensureLoaded: vi.fn()
 })
 const companiesStore = createMockStore({
@@ -110,7 +117,8 @@ vi.mock('pinia', async () => {
         return {
           item: mockItem,
           uploadFile: registersStore.uploadFile,
-          items: registersStore.items
+          items: registersStore.items,
+          ops: mockOps
         }
       }
       if (store === countriesStore) return { countries: countriesStore.countries }
@@ -122,14 +130,10 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersStore }))
+vi.mock('@/stores/registers.store.js', () => ({ 
+  useRegistersStore: () => registersStore
+}))
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => countriesStore }))
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => transStore
-}))
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => procStore
-}))
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
 vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
@@ -249,12 +253,11 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     expect(getById).toHaveBeenCalledWith(1)
     expect(countriesStore.ensureLoaded).toHaveBeenCalled()
-    expect(transStore.ensureLoaded).toHaveBeenCalled()
-    expect(procStore.ensureLoaded).toHaveBeenCalled()
+    expect(registersStore.ensureOpsLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
     expect(warehousesStore.ensureLoaded).not.toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
-    expect(wrapper.find('#customsProcedureId').exists()).toBe(true)
+    expect(wrapper.find('#customsProcedureCode').exists()).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
     expect(departureSelect.exists()).toBe(true)
     expect(departureSelect.element.disabled).toBe(true)
@@ -269,7 +272,7 @@ describe('Register_EditDialog', () => {
   it('enables airport selectors when aviation transport is selected', async () => {
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeId: 2,
+      transportationTypeCode: 0,
       departureAirportId: 1,
       arrivalAirportId: 2
     }
@@ -289,6 +292,43 @@ describe('Register_EditDialog', () => {
     const arrivalSelect = wrapper.find('select#arrivalAirportId')
     expect(departureSelect.element.disabled).toBe(false)
     expect(arrivalSelect.element.disabled).toBe(false)
+  })
+
+  it('keeps transportation type set to 0 when ops load later', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      transportationTypeCode: 0
+    }
+    mockOps.value = {
+      customsProcedures: [],
+      transportationTypes: []
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    mockOps.value = {
+      customsProcedures: [
+        { value: 1, charCode: 'ИМ11', name: 'Импорт', isRe: true, isExport: false },
+        { value: 2, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }
+      ],
+      transportationTypes: [
+        { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
+        { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
+      ]
+    }
+
+    await nextTick()
+
+    expect(mockItem.value.transportationTypeCode).toBe(0)
   })
 
   it('renders warehouse selector only for WBR2 register type', async () => {
@@ -331,7 +371,7 @@ describe('Register_EditDialog', () => {
     let recipientGroup = getGroupByLabel(wrapper, 'Получатель')
     expect(recipientGroup.find('.readonly-field').exists()).toBe(true)
 
-    const procSelect = wrapper.find('#customsProcedureId')
+    const procSelect = wrapper.find('#customsProcedureCode')
     await procSelect.setValue('2')
     await procSelect.trigger('change')
     await nextTick()
@@ -344,7 +384,7 @@ describe('Register_EditDialog', () => {
     // Start with non-aviation transport (disabled airports)
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeId: 1, // Non-aviation transport
+      transportationTypeCode: 1, // Non-aviation transport
       departureAirportId: 0,
       arrivalAirportId: 0
     }
@@ -366,9 +406,9 @@ describe('Register_EditDialog', () => {
     expect(departureSelect.element.disabled).toBe(true)
     expect(arrivalSelect.element.disabled).toBe(true)
 
-    // Change to aviation transport type (id: 2, code: 0)
-    const transportSelect = wrapper.find('#transportationTypeId')
-    await transportSelect.setValue('2')
+    // Change to aviation transport type (value: 0)
+    const transportSelect = wrapper.find('#transportationTypeCode')
+    await transportSelect.setValue('0')
     await transportSelect.trigger('change')
     await nextTick()
 
@@ -403,7 +443,7 @@ describe('Register_EditDialog', () => {
   it('submits airport ids when aviation transport is chosen', async () => {
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeId: 2,
+      transportationTypeCode: 0,
       departureAirportId: 1,
       arrivalAirportId: 2
     }
@@ -422,7 +462,7 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit(
       {
-        transportationTypeId: '2',
+        transportationTypeCode: '0',
         departureAirportId: '1',
         arrivalAirportId: '2'
       },
@@ -431,7 +471,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      transportationTypeId: 2,
+      transportationTypeCode: 0,
       departureAirportId: 1,
       arrivalAirportId: 2
     }))
@@ -529,7 +569,7 @@ describe('Register_EditDialog', () => {
   it('validates invoice number format only for aviation transport', async () => {
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeId: 2
+      transportationTypeCode: 0
     }
 
     const Parent = {
@@ -548,15 +588,15 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '123-12345678', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({ transportationTypeCode: 0, invoiceNumber: '123-12345678', theOtherCountryCode: 840 })
     ).resolves.toBeDefined()
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({ transportationTypeCode: 0, invoiceNumber: '12-ABC', theOtherCountryCode: 840 })
     ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>')
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 1, invoiceNumber: 'INVALID-FORMAT', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({ transportationTypeCode: 1, invoiceNumber: 'INVALID-FORMAT', theOtherCountryCode: 840 })
     ).resolves.toBeDefined()
   })
 
@@ -726,7 +766,7 @@ describe('Register_EditDialog', () => {
     expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
       dealNumber: 'D42',
       invoiceNumber: 'INV42',
-      transportationTypeId: 1,
+      transportationTypeCode: 1,
       departureAirportId: 0,
       arrivalAirportId: 0
     }))

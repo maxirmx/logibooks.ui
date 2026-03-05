@@ -32,7 +32,6 @@ const parcelsPage = ref(1)
 
 const registerItem = ref({ dealNumber: 'D-1' })
 
-const ensureLoaded = vi.fn().mockResolvedValue()
 const getById = vi.fn().mockResolvedValue()
 
 const alertRef = ref(null)
@@ -79,14 +78,10 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     item: registerItem,
-    getById
-  })
-}))
-
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => ({
-    ensureLoaded,
-    getDocument: () => 'Документ'
+    ops: { customsProcedures: [], transportationTypes: [] },
+    getById,
+    ensureOpsLoaded: vi.fn().mockResolvedValue(),
+    getTransportationDocument: vi.fn(() => 'Документ')
   })
 }))
 

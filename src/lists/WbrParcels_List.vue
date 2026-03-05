@@ -6,7 +6,6 @@
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import { CustomsProcedureCodes, useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -17,7 +16,6 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { useRoute } from 'vue-router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
@@ -57,19 +55,16 @@ const props = defineProps({
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
-const customsProceduresStore = useCustomsProceduresStore()
 const parcelStatusStore = useParcelStatusesStore()
 const stopWordsStore = useStopWordsStore()
 const keyWordsStore = useKeyWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
-const transportationTypesStore = useTransportationTypesStore()
 const route = useRoute()
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
-const { procedures } = storeToRefs(customsProceduresStore)
 
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
 const {
@@ -102,11 +97,11 @@ if (selectedParcelIdFromQuery != null) {
 const dataTableRef = ref(null)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
-const isReimportProcedure = computed(() => {
-  const procedureId = registersStore.item?.customsProcedureId
-  if (!procedureId) return false
-  const procedure = procedures.value?.find((proc) => proc.id === procedureId)
-  return Number(procedure?.code) === CustomsProcedureCodes.Reimport
+const isReProcedure = computed(() => {
+  const procedureId = registersStore.item?.customsProcedureCode
+  if (procedureId == null) return false
+  const procedure = registersStore.ops?.customsProcedures?.find((proc) => Number(proc.value) === Number(procedureId))
+  return procedure?.isRe
 })
 
 // Provide page options for a select control. For very large page counts, return a compact set
@@ -201,7 +196,7 @@ const isComponentMounted = ref(true)
 const runningAction = ref(false)
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка реестра...'
-  return buildParcelListHeading(registersStore.item, transportationTypesStore.getDocument)
+  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
 })
 
 async function fetchRegister() {
@@ -276,7 +271,7 @@ onMounted(async () => {
 
   // DEC_REPORT_UPLOADED_EVENT listener removed per request
 
-    await customsProceduresStore.ensureLoaded()
+    await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
     await parcelStatusStore.ensureLoaded()
@@ -287,9 +282,6 @@ onMounted(async () => {
     
   await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
-  await transportationTypesStore.ensureLoaded()
-  if (!isComponentMounted.value) return
 
     await stopWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
@@ -379,7 +371,7 @@ const headers = computed(() => {
     { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     // Insert FEACN lookup column only when not reimport procedure
-    ...(!isReimportProcedure.value ? [feacnLookupColumn] : []),
+    ...(!isReProcedure.value ? [feacnLookupColumn] : []),
 
     // Product Identification & Details - What the parcel contains
     { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
@@ -404,7 +396,7 @@ const headers = computed(() => {
   ]
 
   // Append previousDTagComment at the end only for reimport procedure
-  if (isReimportProcedure.value) {
+  if (isReProcedure.value) {
     baseHeaders.push(previousDTagCommentColumn)
   }
 

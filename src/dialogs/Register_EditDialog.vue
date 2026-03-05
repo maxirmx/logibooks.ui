@@ -211,7 +211,7 @@ watch(
         alertStore.error(`Не удалось загрузить список ${registerNouns.value.genitivePlural}: ` + (error?.message || String(error)))
       }
       // Set default values for new records
-      if (!item.value.customsProcedureId) {
+      if (item.value.customsProcedureId == null) {
         item.value.customsProcedureId = ops.value?.customsProcedures?.[0]?.value ?? null
       }
       if (item.value.transportationTypeId == null) {
@@ -364,13 +364,13 @@ watch(
 )
 
 watch(proceduresLoaded, (loaded) => {
-  if (loaded && !item.value.customsProcedureId) {
+  if (loaded && item.value.customsProcedureId == null) {
     item.value.customsProcedureId = ops.value?.customsProcedures?.[0]?.value ?? null
   }
 })
 
 watch(typesLoaded, (loaded) => {
-  if (loaded && !item.value.transportationTypeId) {
+  if (loaded && item.value.transportationTypeId == null) {
     item.value.transportationTypeId = ops.value?.transportationTypes?.[0]?.value ?? null
   }
 })

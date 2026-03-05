@@ -296,6 +296,43 @@ describe('Register_EditDialog', () => {
     expect(arrivalSelect.element.disabled).toBe(false)
   })
 
+  it('keeps transportation type set to 0 when ops load later', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      transportationTypeId: 0
+    }
+    mockOps.value = {
+      customsProcedures: [],
+      transportationTypes: []
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    mockOps.value = {
+      customsProcedures: [
+        { value: 1, charCode: 'ИМ11', name: 'Импорт' },
+        { value: 2, charCode: 'ЭК10', name: 'Экспорт' }
+      ],
+      transportationTypes: [
+        { value: 1, name: 'Авто', document: 'CMR' },
+        { value: 0, name: 'Авиа', document: 'AWB' }
+      ]
+    }
+
+    await nextTick()
+
+    expect(mockItem.value.transportationTypeId).toBe(0)
+  })
+
   it('renders warehouse selector only for WBR2 register type', async () => {
     mockItem.value = {
       ...baseRegisterItem,

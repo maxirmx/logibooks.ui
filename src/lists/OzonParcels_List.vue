@@ -98,7 +98,7 @@ const dataTableRef = ref(null)
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
 const isReimportProcedure = computed(() => {
   const procedureId = registersStore.item?.customsProcedureId
-  if (!procedureId && procedureId !== 0) return false
+  if (procedureId == null) return false
   const procedure = registersStore.ops?.customsProcedures?.find((proc) => Number(proc.value) === Number(procedureId))
   return procedure?.charCode === CustomsProcedureCharCodes.Reimport
 })

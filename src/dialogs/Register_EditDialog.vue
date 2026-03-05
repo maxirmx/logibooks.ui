@@ -118,7 +118,7 @@ function isAviaTransportationValue(typeValue) {
 const isAviaTransportation = computed(() => {
   // Use current form value if available, otherwise fall back to item value
   const typeId = currentTransportationTypeId.value ?? item.value?.transportationTypeId
-  if (!typeId && typeId !== 0) return false
+  if (typeId == null) return false
   return isAviaTransportationValue(typeId)
 })
 
@@ -214,7 +214,7 @@ watch(
       if (!item.value.customsProcedureId) {
         item.value.customsProcedureId = ops.value?.customsProcedures?.[0]?.value ?? null
       }
-      if (!item.value.transportationTypeId && item.value.transportationTypeId !== 0) {
+      if (item.value.transportationTypeId == null) {
         item.value.transportationTypeId = ops.value?.transportationTypes?.[0]?.value ?? null
       }
       if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {

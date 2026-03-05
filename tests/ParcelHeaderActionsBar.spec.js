@@ -551,6 +551,56 @@ describe('ParcelHeaderActionsBar', () => {
     expect(wrapper.emitted()['save']?.length ?? 0).toBeGreaterThan(1)
   })
 
+  it('does not fire ctrl:false actions when Ctrl or Cmd is pressed', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'No Modifier Scheme',
+      actions: [
+        { id: 1, action: 1, keyCode: 'F1', shift: false, ctrl: false, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Ctrl+F1 should NOT trigger the action (action requires ctrl: false)
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'F1',
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['next-parcel'] ?? []).toHaveLength(0)
+
+    // Cmd+F1 should also NOT trigger the action
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'F1',
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: true,
+      altKey: false
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['next-parcel'] ?? []).toHaveLength(0)
+
+    // Plain F1 (no modifiers) SHOULD trigger the action
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'F1',
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
+  })
+
   it('properly prevents default on matched hotkeys', async () => {
     const wrapper = mount(ParcelHeaderActionsBar, {
       global: { stubs: { ActionButton: actionButtonStub } }

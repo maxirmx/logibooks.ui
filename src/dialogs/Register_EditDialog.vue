@@ -8,10 +8,8 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRegistersStore } from '@/stores/registers.store.js'
+import { useRegistersStore, AVIA_TRANSPORT_VALUE, CustomsProcedureCharCodes } from '@/stores/registers.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
-import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
-import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
@@ -35,14 +33,10 @@ const props = defineProps({
 const alertStore = useAlertStore()
 
 const registersStore = useRegistersStore()
-const { item, uploadFile, items } = storeToRefs(registersStore)
+const { item, uploadFile, items, ops } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
 const { countries } = storeToRefs(countriesStore)
-
-const transportationTypesStore = useTransportationTypesStore()
-
-const customsProceduresStore = useCustomsProceduresStore()
 
 const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
@@ -106,28 +100,26 @@ const warehouseOptions = computed(() => {
 })
 const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
 
-const AVIA_TRANSPORT_CODE = 0
-
-function getTransportationTypeById(typeId) {
-  const numericId = typeof typeId === 'string' ? parseInt(typeId, 10) : typeId
+function getTransportationTypeByValue(typeValue) {
+  const numericId = typeof typeValue === 'string' ? parseInt(typeValue, 10) : typeValue
   if (numericId === null || numericId === undefined || Number.isNaN(numericId)) {
     return null
   }
-  return transportationTypesStore.types?.find((type) => type.id === numericId) || null
+  return ops.value?.transportationTypes?.find((type) => Number(type.value) === numericId) || null
 }
 
 // Track current form transportation type for reactive UI updates
 const currentTransportationTypeId = ref(null)
 
-function isAviaTransportationId(typeId) {
-  return getTransportationTypeById(typeId)?.code === AVIA_TRANSPORT_CODE
+function isAviaTransportationValue(typeValue) {
+  return getTransportationTypeByValue(typeValue)?.value === AVIA_TRANSPORT_VALUE
 }
 
 const isAviaTransportation = computed(() => {
   // Use current form value if available, otherwise fall back to item value
   const typeId = currentTransportationTypeId.value ?? item.value?.transportationTypeId
-  if (!typeId) return false
-  return isAviaTransportationId(typeId)
+  if (!typeId && typeId !== 0) return false
+  return isAviaTransportationValue(typeId)
 })
 
 // Watch for form field changes to update UI reactively
@@ -136,9 +128,9 @@ function handleTransportationTypeChange(e, setFieldValue) {
   currentTransportationTypeId.value = newValue ? parseInt(newValue, 10) : null
   
   // Handle airport field updates based on transportation type
-  const type = getTransportationTypeById(currentTransportationTypeId.value)
+  const type = getTransportationTypeByValue(currentTransportationTypeId.value)
   
-  if (!type || type.code !== AVIA_TRANSPORT_CODE) {
+  if (!type || type.value !== AVIA_TRANSPORT_VALUE) {
     // Clear form fields only (not item.value) when switching to non-aviation transport
     if (setFieldValue && typeof setFieldValue === 'function') {
       setFieldValue('departureAirportId', 0)
@@ -193,9 +185,9 @@ watch(
       item.value.arrivalAirportId = 0
       return
     }
-    const type = getTransportationTypeById(newVal)
+    const type = getTransportationTypeByValue(newVal)
     if (!type) return
-    if (type.code !== AVIA_TRANSPORT_CODE) {
+    if (type.value !== AVIA_TRANSPORT_VALUE) {
       item.value.departureAirportId = 0
       item.value.arrivalAirportId = 0
     }
@@ -220,10 +212,10 @@ watch(
       }
       // Set default values for new records
       if (!item.value.customsProcedureId) {
-        item.value.customsProcedureId = 1
+        item.value.customsProcedureId = ops.value?.customsProcedures?.[0]?.value ?? null
       }
-      if (!item.value.transportationTypeId) {
-        item.value.transportationTypeId = 1
+      if (!item.value.transportationTypeId && item.value.transportationTypeId !== 0) {
+        item.value.transportationTypeId = ops.value?.transportationTypes?.[0]?.value ?? null
       }
       if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
         item.value.departureAirportId = 0
@@ -247,10 +239,7 @@ onMounted(async () => {
     await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await transportationTypesStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-
-    await customsProceduresStore.ensureLoaded()
+    await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
     await registerStatusesStore.ensureLoaded()
@@ -298,7 +287,7 @@ const schema = Yup.object().shape({
       'Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>',
       function (value) {
         const typeId = this?.parent?.transportationTypeId ?? item.value?.transportationTypeId
-        if (!isAviaTransportationId(typeId)) return true
+        if (!isAviaTransportationValue(typeId)) return true
         if (value === null || value === undefined || value === '') return true
         return /^\d{3}-\d{8}$/.test(value)
       }
@@ -318,17 +307,17 @@ const schema = Yup.object().shape({
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
 const shouldUpdateExportStatus = computed(() => {
-  return Array.isArray(customsProceduresStore.procedures) && 
-         customsProceduresStore.procedures.length > 0 && 
+  return Array.isArray(ops.value?.customsProcedures) && 
+         ops.value.customsProcedures.length > 0 && 
          !procedureCodeLoaded.value
 })
 
-// Function to update export status based on the procedure code
+// Function to update export status based on the procedure charCode
 function updateExportStatusFromProc() {
-  if (Array.isArray(customsProceduresStore.procedures) && customsProceduresStore.procedures.length > 0) {
-    const proc = customsProceduresStore.procedures.find(p => p.id === (item.value?.customsProcedureId || 1))
+  if (Array.isArray(ops.value?.customsProcedures) && ops.value.customsProcedures.length > 0) {
+    const proc = ops.value.customsProcedures.find(p => Number(p.value) === Number(item.value?.customsProcedureId || ops.value.customsProcedures[0]?.value))
     if (proc) {
-      isExport.value = proc.code === 10
+      isExport.value = proc.charCode === CustomsProcedureCharCodes.Export
       updateDirection()
       procedureCodeLoaded.value = true
     }
@@ -343,11 +332,11 @@ watch(shouldUpdateExportStatus, (shouldUpdate) => {
 })
 
 const proceduresLoaded = computed(
-  () => Array.isArray(customsProceduresStore.procedures) && customsProceduresStore.procedures.length > 0
+  () => Array.isArray(ops.value?.customsProcedures) && ops.value.customsProcedures.length > 0
 )
 
 const typesLoaded = computed(
-  () => Array.isArray(transportationTypesStore.types) && transportationTypesStore.types.length > 0
+  () => Array.isArray(ops.value?.transportationTypes) && ops.value.transportationTypes.length > 0
 )
 
 function updateDirection() {
@@ -376,20 +365,20 @@ watch(
 
 watch(proceduresLoaded, (loaded) => {
   if (loaded && !item.value.customsProcedureId) {
-    item.value.customsProcedureId = 1
+    item.value.customsProcedureId = ops.value?.customsProcedures?.[0]?.value ?? null
   }
 })
 
 watch(typesLoaded, (loaded) => {
   if (loaded && !item.value.transportationTypeId) {
-    item.value.transportationTypeId = 1
+    item.value.transportationTypeId = ops.value?.transportationTypes?.[0]?.value ?? null
   }
 })
 
 function handleProcedureChange(e) {
   item.value.customsProcedureId = parseInt(e.target.value)
-  const proc = customsProceduresStore.procedures?.find((p) => p.id === item.value.customsProcedureId)
-  isExport.value = proc && proc.code === 10
+  const proc = ops.value?.customsProcedures?.find((p) => Number(p.value) === item.value.customsProcedureId)
+  isExport.value = proc?.charCode === CustomsProcedureCharCodes.Export
   updateDirection()
 }
 
@@ -441,7 +430,7 @@ function prepareRegisterPayload(formValues) {
 
   const isAviaSelected =
     selectedTransportationTypeId !== null &&
-    getTransportationTypeById(selectedTransportationTypeId)?.code === AVIA_TRANSPORT_CODE
+    getTransportationTypeByValue(selectedTransportationTypeId)?.value === AVIA_TRANSPORT_VALUE
 
   payload.departureAirportId = isAviaSelected
     ? parseNumberOrZero(null, formValues.departureAirportId ?? item.value?.departureAirportId)
@@ -739,7 +728,7 @@ function getCustomerName(customerId) {
               @change="(e) => handleTransportationTypeChange(e, setFieldValue)"
             >
               <option value="">Выберите тип</option>
-              <option v-for="t in transportationTypesStore.types" :key="t.id" :value="t.id">
+              <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
                 {{ t.name }}
               </option>
             </Field>
@@ -755,7 +744,7 @@ function getCustomerName(customerId) {
               @change="handleProcedureChange"
             >
               <option value="">Выберите процедуру</option>
-              <option v-for="p in customsProceduresStore.procedures" :key="p.id" :value="p.id">
+              <option v-for="p in ops.customsProcedures" :key="p.value" :value="p.value">
                 {{ p.name }}
               </option>
             </Field>

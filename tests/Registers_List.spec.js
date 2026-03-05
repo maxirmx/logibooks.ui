@@ -30,8 +30,10 @@ const mockItems = ref([])
 const mockCompanies = ref([])
 const mockOrderStatuses = ref([])
 const mockCountries = ref([])
-const mockTransportationTypes = ref([])
-const mockCustomsProcedures = ref([])
+const mockOps = ref({
+  customsProcedures: [],
+  transportationTypes: []
+})
 const mockAirports = ref([])
 const getAll = vi.fn()
 const getAirportsAll = vi.fn()
@@ -41,8 +43,7 @@ const getCompaniesAll = vi.fn()
 const getOrderStatusesAll = vi.fn()
 const getCountriesAll = vi.fn()
 const countriesEnsureLoadedFn = vi.fn().mockResolvedValue(mockCountries.value)
-const getTransportationTypesAll = vi.fn()
-const getCustomsProceduresAll = vi.fn()
+const ensureOpsLoadedFn = vi.fn().mockResolvedValue()
 const generateFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertErrorFn = vi.fn()
@@ -64,7 +65,7 @@ vi.mock('pinia', async () => {
     storeToRefs: (store) => {
       if (store.getAll && store.upload && store.setParcelStatuses) {
         // registers store
-        return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) }
+        return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0), ops: mockOps }
       } else if (store.getAll && !store.upload && store.companies) {
         // companies store
         return { companies: mockCompanies }
@@ -74,12 +75,6 @@ vi.mock('pinia', async () => {
       } else if (store.getAll && store.countries) {
         // countries store
         return { countries: mockCountries }
-      } else if (store.types && store.getName && store.getDocument) {
-        // transportation types store
-        return { types: mockTransportationTypes }
-      } else if (store.procedures && store.getName) {
-        // customs procedures store
-        return { procedures: mockCustomsProcedures }
       } else if (store.airports !== undefined && store.getAll === getAirportsAll) {
         // airports store
         return { airports: mockAirports }
@@ -116,11 +111,21 @@ const registersStore = {
   uploadFile,
   loading: ref(false),
   error: ref(null),
-  totalCount: ref(0)
+  totalCount: ref(0),
+  ops: mockOps,
+  ensureOpsLoaded: ensureOpsLoadedFn,
+  getOpsLabel: vi.fn((list, value) => {
+    const num = Number(value)
+    const match = list?.find(item => Number(item.value) === num)
+    return match ? match.name : String(value)
+  }),
+  getTransportationDocument: vi.fn(id => `Doc ${id}`)
 }
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => registersStore
+  useRegistersStore: () => registersStore,
+  AVIA_TRANSPORT_VALUE: 0,
+  CustomsProcedureCharCodes: { Export: 'ЭК10', Reimport: 'ИМ60' }
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -144,27 +149,6 @@ vi.mock('@/stores/countries.store.js', () => ({
     getAll: getCountriesAll,
     ensureLoaded: countriesEnsureLoadedFn,
     getCountryShortName: vi.fn(code => `Country ${code}`)
-  })
-}))
-
-const transportationEnsureLoadedFn = vi.fn()
-
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => ({
-    types: mockTransportationTypes,
-    getAll: getTransportationTypesAll,
-    ensureLoaded: transportationEnsureLoadedFn,
-    getName: vi.fn(id => `Type ${id}`),
-    getDocument: vi.fn(id => `Doc ${id}`)
-  })
-}))
-
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => ({
-    procedures: mockCustomsProcedures,
-    getAll: getCustomsProceduresAll,
-    ensureLoaded: vi.fn(),
-    getName: vi.fn(id => `Proc ${id}`)
   })
 }))
 
@@ -228,9 +212,9 @@ describe('Registers_List.vue', () => {
     mockOrderStatuses.value = []
     mockCountries.value = []
     mockAirports.value = []
-    mockTransportationTypes.value = []
+    mockOps.value = { customsProcedures: [], transportationTypes: [] }
     getAirportsAll.mockClear()
-    transportationEnsureLoadedFn.mockClear()
+    ensureOpsLoadedFn.mockClear()
   })
 
   describe('getCustomerName function', () => {
@@ -294,9 +278,12 @@ describe('Registers_List.vue', () => {
         { isoNumeric: 643, nameRuShort: 'Россия' },
         { isoNumeric: 840, nameRuShort: 'США' }
       ]
-      mockTransportationTypes.value = [
-        { id: 5, code: 0 }
-      ]
+      mockOps.value = {
+        customsProcedures: [],
+        transportationTypes: [
+          { value: 0, name: 'Авиационный', document: 'AWB' }
+        ]
+      }
       mockAirports.value = [
         { id: 10, codeIata: 'SVO' },
         { id: 20, codeIata: 'JFK' }
@@ -309,7 +296,7 @@ describe('Registers_List.vue', () => {
       })
 
       const item = {
-        transportationTypeId: 5,
+        transportationTypeId: 0,
         origCountryCode: '643',
         destCountryCode: '840',
         departureAirportId: 10,
@@ -324,9 +311,12 @@ describe('Registers_List.vue', () => {
       mockCountries.value = [
         { isoNumeric: 36, nameRuShort: 'Австралия' }
       ]
-      mockTransportationTypes.value = [
-        { id: 8, code: 1 }
-      ]
+      mockOps.value = {
+        customsProcedures: [],
+        transportationTypes: [
+          { value: 1, name: 'Автодорожный', document: 'CMR' }
+        ]
+      }
       mockAirports.value = [
         { id: 30, codeIata: 'SYD' }
       ]
@@ -338,7 +328,7 @@ describe('Registers_List.vue', () => {
       })
 
       const item = {
-        transportationTypeId: 8,
+        transportationTypeId: 1,
         origCountryCode: '036',
         departureAirportId: 30
       }

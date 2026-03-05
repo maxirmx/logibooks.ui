@@ -38,6 +38,17 @@ const upload = vi.fn(() => Promise.resolve())
 const getAll = vi.fn(() => Promise.resolve())
 const registerItems = ref([])
 
+const mockOps = ref({
+  customsProcedures: [
+    { value: 1, charCode: 'ИМ11', name: 'Импорт' },
+    { value: 2, charCode: 'ЭК10', name: 'Экспорт' }
+  ],
+  transportationTypes: [
+    { value: 1, name: 'Авто', document: 'CMR' },
+    { value: 0, name: 'Авиа', document: 'AWB' }
+  ]
+})
+
 const registersStore = createMockStore({
   item: mockItem,
   items: registerItems,
@@ -45,27 +56,23 @@ const registersStore = createMockStore({
   getAll,
   update,
   upload,
-  uploadFile: ref(null)
+  uploadFile: ref(null),
+  ops: mockOps,
+  ensureOpsLoaded: vi.fn(() => Promise.resolve()),
+  getTransportationDocument: vi.fn((id) => {
+    const type = mockOps.value.transportationTypes.find(t => t.value === id)
+    return type ? type.document : `[Тип ${id}]`
+  }),
+  isExportProcedure: vi.fn((id) => {
+    const proc = mockOps.value.customsProcedures.find(p => p.value === id)
+    return proc?.charCode === 'ЭК10'
+  })
 })
 const countriesStore = createMockStore({
   countries: ref([
     { id: 1, isoNumeric: 840, nameRuOfficial: 'США' },
     { id: 2, isoNumeric: 643, nameRuOfficial: 'Россия' }
   ]),
-  ensureLoaded: vi.fn()
-})
-const transStore = createMockStore({
-  types: [
-    { id: 1, name: 'Авто', code: 1 },
-    { id: 2, name: 'Авиа', code: 0 }
-  ],
-  ensureLoaded: vi.fn()
-})
-const procStore = createMockStore({
-  procedures: [
-    { id: 1, code: 11, name: 'Импорт' },
-    { id: 2, code: 10, name: 'Экспорт' }
-  ],
   ensureLoaded: vi.fn()
 })
 const companiesStore = createMockStore({
@@ -110,7 +117,8 @@ vi.mock('pinia', async () => {
         return {
           item: mockItem,
           uploadFile: registersStore.uploadFile,
-          items: registersStore.items
+          items: registersStore.items,
+          ops: mockOps
         }
       }
       if (store === countriesStore) return { countries: countriesStore.countries }
@@ -122,14 +130,12 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersStore }))
+vi.mock('@/stores/registers.store.js', () => ({ 
+  useRegistersStore: () => registersStore,
+  AVIA_TRANSPORT_VALUE: 0,
+  CustomsProcedureCharCodes: { Export: 'ЭК10', Reimport: 'ИМ60' }
+}))
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => countriesStore }))
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => transStore
-}))
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => procStore
-}))
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
 vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
@@ -249,8 +255,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     expect(getById).toHaveBeenCalledWith(1)
     expect(countriesStore.ensureLoaded).toHaveBeenCalled()
-    expect(transStore.ensureLoaded).toHaveBeenCalled()
-    expect(procStore.ensureLoaded).toHaveBeenCalled()
+    expect(registersStore.ensureOpsLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
     expect(warehousesStore.ensureLoaded).not.toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
@@ -269,7 +274,7 @@ describe('Register_EditDialog', () => {
   it('enables airport selectors when aviation transport is selected', async () => {
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeId: 2,
+      transportationTypeId: 0,
       departureAirportId: 1,
       arrivalAirportId: 2
     }
@@ -366,9 +371,9 @@ describe('Register_EditDialog', () => {
     expect(departureSelect.element.disabled).toBe(true)
     expect(arrivalSelect.element.disabled).toBe(true)
 
-    // Change to aviation transport type (id: 2, code: 0)
+    // Change to aviation transport type (value: 0, AVIA_TRANSPORT_VALUE)
     const transportSelect = wrapper.find('#transportationTypeId')
-    await transportSelect.setValue('2')
+    await transportSelect.setValue('0')
     await transportSelect.trigger('change')
     await nextTick()
 
@@ -403,7 +408,7 @@ describe('Register_EditDialog', () => {
   it('submits airport ids when aviation transport is chosen', async () => {
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeId: 2,
+      transportationTypeId: 0,
       departureAirportId: 1,
       arrivalAirportId: 2
     }
@@ -422,7 +427,7 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit(
       {
-        transportationTypeId: '2',
+        transportationTypeId: '0',
         departureAirportId: '1',
         arrivalAirportId: '2'
       },
@@ -431,7 +436,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      transportationTypeId: 2,
+      transportationTypeId: 0,
       departureAirportId: 1,
       arrivalAirportId: 2
     }))
@@ -548,11 +553,11 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '123-12345678', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({ transportationTypeId: 0, invoiceNumber: '123-12345678', theOtherCountryCode: 840 })
     ).resolves.toBeDefined()
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeId: 2, invoiceNumber: '12-ABC', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({ transportationTypeId: 0, invoiceNumber: '12-ABC', theOtherCountryCode: 840 })
     ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>')
 
     await expect(

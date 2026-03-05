@@ -15,13 +15,11 @@ import {
 } from '@/helpers/registers.list.helpers.js'
 import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
-import { useRegistersStore } from '@/stores/registers.store.js'
+import { useRegistersStore, AVIA_TRANSPORT_VALUE } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
-import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
-import { useCustomsProceduresStore } from '@/stores/customs.procedures.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -47,7 +45,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
-const { items, loading, error, totalCount } = storeToRefs(registersStore)
+const { items, loading, error, totalCount, ops } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
 
@@ -61,13 +59,8 @@ const { companies } = storeToRefs(companiesStore)
 const countriesStore = useCountriesStore()
 const { countries } = storeToRefs(countriesStore)
 
-const transportationTypesStore = useTransportationTypesStore()
-const { types: transportationTypes } = storeToRefs(transportationTypesStore)
-
 const airportsStore = useAirportsStore()
 const { airports } = storeToRefs(airportsStore)
-
-const customsProceduresStore = useCustomsProceduresStore()
 
 const warehousesStore = useWarehousesStore()
 const registerStatusesStore = useRegisterStatusesStore()
@@ -188,8 +181,8 @@ function getCountryShortName(countryCode) {
 
 
 const transportationTypesById = computed(() => {
-  if (!Array.isArray(transportationTypes.value)) return new Map()
-  return new Map(transportationTypes.value.map(type => [type.id, type]))
+  if (!Array.isArray(ops.value?.transportationTypes)) return new Map()
+  return new Map(ops.value.transportationTypes.map(type => [Number(type.value), type]))
 })
 
 const airportsById = computed(() => {
@@ -197,13 +190,11 @@ const airportsById = computed(() => {
   return new Map(airports.value.map(airport => [airport.id, airport]))
 })
 
-const AVIA_TRANSPORT_CODE = 0
-
 function isAviaTransportation(item) {
   const typeId = Number(item?.transportationTypeId)
   if (typeId == null || isNaN(typeId)) return false
   const type = transportationTypesById.value.get(typeId)
-  return type?.code === AVIA_TRANSPORT_CODE
+  return type?.value === AVIA_TRANSPORT_VALUE
 }
 
 function getAirportIata(airportId) {
@@ -238,10 +229,7 @@ onMounted(async () => {
     await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
     
-    await transportationTypesStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-    
-    await customsProceduresStore.ensureLoaded()
+    await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
     await warehousesStore.ensureLoaded()
@@ -399,10 +387,7 @@ function formatDate(dateStr) {
 
 function formatInvoiceInfo(item) {
   const { invoiceNumber, transportationTypeId } = item
-  // Access the reactive transportation types to ensure reactivity
-  const transportationDocument = transportationTypes?.value ? 
-    transportationTypesStore.getDocument(transportationTypeId) : 
-    `[Тип ${transportationTypeId}]`
+  const transportationDocument = registersStore.getTransportationDocument(transportationTypeId)
   return `${transportationDocument} ${invoiceNumber || ''}`
 }
 
@@ -531,7 +516,7 @@ defineExpose({
           >
             <template #default>
               <div class="countries-box">
-                <div class="customs-procedure">{{ customsProceduresStore.getName(item.customsProcedureId) }}</div>
+                <div class="customs-procedure">{{ registersStore.getOpsLabel(ops.customsProcedures, item.customsProcedureId) }}</div>
                 <div class="country-route">
                   <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
                   <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />

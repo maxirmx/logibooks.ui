@@ -16,7 +16,6 @@ const parcelsError = ref(null)
 const parcelsTotal = ref(0)
 
 const registersItem = ref({})
-const proceduresRef = []
 const parcelStatusesRef = []
 
 const authStoreMock = {
@@ -100,17 +99,12 @@ vi.mock('@/stores/parcels.store.js', () => ({
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     item: registersItem,
-    getById: vi.fn().mockResolvedValue()
-  })
-}))
-
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => ({
-    procedures: proceduresRef,
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getName: vi.fn()
+    ops: { customsProcedures: [], transportationTypes: [] },
+    getById: vi.fn().mockResolvedValue(),
+    ensureOpsLoaded: vi.fn().mockResolvedValue(),
+    getTransportationDocument: vi.fn(() => '')
   }),
-  CustomsProcedureCodes: { Reimport: 12 }
+  CustomsProcedureCharCodes: { Export: 'ЭК10', Reimport: 'ИМ60' }
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -125,12 +119,6 @@ vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: createNoopStor
 vi.mock('@/stores/stop.words.store.js', () => ({ useStopWordsStore: createNoopStore }))
 vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: createNoopStore }))
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: createNoopStore }))
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => ({
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getDocument: vi.fn()
-  })
-}))
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => authStoreMock
 }))

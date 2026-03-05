@@ -15,8 +15,7 @@ import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 const mockItems = ref([])
 const mockCompanies = ref([])
 const mockCountries = ref([])
-const mockTransportationTypes = ref([])
-const mockCustomsProcedures = ref([])
+const mockOps = ref({ customsProcedures: [], transportationTypes: [] })
 const mockAirports = ref([])
 const mockOrderStatuses = ref([])
 const getAll = vi.fn()
@@ -31,7 +30,15 @@ const registersStore = {
   uploadFile: ref(null),
   loading: ref(false),
   error: ref(null),
-  totalCount: ref(0)
+  totalCount: ref(0),
+  ops: mockOps,
+  ensureOpsLoaded: vi.fn().mockResolvedValue(),
+  getOpsLabel: vi.fn((list, value) => {
+    const num = Number(value)
+    const match = list?.find(item => Number(item.value) === num)
+    return match ? match.name : String(value)
+  }),
+  getTransportationDocument: vi.fn(id => `Doc ${id}`)
 }
 
 vi.mock('@/helpers/register.actions.js', () => ({
@@ -48,7 +55,7 @@ vi.mock('pinia', async () => {
     ...actual,
     storeToRefs: (store) => {
       if (store.items && store.uploadFile !== undefined) {
-        return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0) }
+        return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0), ops: mockOps }
       }
       if (store.companies !== undefined) {
         return { companies: mockCompanies }
@@ -58,12 +65,6 @@ vi.mock('pinia', async () => {
       }
       if (store.countries !== undefined) {
         return { countries: mockCountries }
-      }
-      if (store.types !== undefined) {
-        return { types: mockTransportationTypes }
-      }
-      if (store.procedures !== undefined) {
-        return { procedures: mockCustomsProcedures }
       }
       if (store.airports !== undefined) {
         return { airports: mockAirports }
@@ -85,7 +86,9 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => registersStore
+  useRegistersStore: () => registersStore,
+  AVIA_TRANSPORT_VALUE: 0,
+  CustomsProcedureCharCodes: { Export: 'ЭК10', Reimport: 'ИМ60' }
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -108,24 +111,6 @@ vi.mock('@/stores/countries.store.js', () => ({
     countries: mockCountries,
     getAll: vi.fn(),
     ensureLoaded: vi.fn().mockResolvedValue()
-  })
-}))
-
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => ({
-    types: mockTransportationTypes,
-    getAll: vi.fn(),
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getDocument: vi.fn(id => `Doc ${id}`)
-  })
-}))
-
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => ({
-    procedures: mockCustomsProcedures,
-    getAll: vi.fn(),
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getName: vi.fn(id => `Proc ${id}`)
   })
 }))
 

@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useRegistersStore } from '@/stores/registers.store.js'
+import { useRegistersStore, AVIA_TRANSPORT_VALUE, CustomsProcedureCharCodes } from '@/stores/registers.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
@@ -49,19 +49,6 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
-// Mock customs procedures store for destination logic
-const mockCustomsProceduresStore = {
-  procedureMap: { value: new Map() },
-  procedures: [],
-  ensureLoaded: vi.fn()
-}
-
-vi.mock('@/stores/customs.procedures.store.js', () => {
-  return {
-    useCustomsProceduresStore: () => mockCustomsProceduresStore
-  }
-})
-
 // Mock auth store
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: vi.fn()
@@ -90,9 +77,6 @@ describe('registers store', () => {
     vi.clearAllMocks()
     // Set default mock for auth store
     useAuthStore.mockReturnValue(defaultAuthStore)
-    // Reset customs procedures mock to default state
-    mockCustomsProceduresStore.procedureMap = { value: new Map() }
-    mockCustomsProceduresStore.procedures = []
     // Suppress console output during tests
     console.log = vi.fn()
     console.error = vi.fn()
@@ -526,10 +510,7 @@ describe('registers store', () => {
       expect(store.items[0].destination).toBe('in')
     })
 
-    it('sets destination to "out" when customs procedure code is 10', async () => {
-      // Mock customs procedures store with procedure code 10
-      mockCustomsProceduresStore.procedureMap = { value: new Map([[1, { id: 1, code: 10 }]]) }
-
+    it('sets destination to "out" when customs procedure charCode is export', async () => {
       const register = { 
         id: 1, 
         customsProcedureId: 1, 
@@ -543,6 +524,8 @@ describe('registers store', () => {
       })
 
       const store = useRegistersStore()
+      // Set ops with export procedure
+      store.ops.customsProcedures = [{ value: 1, name: 'Экспорт', charCode: CustomsProcedureCharCodes.Export }]
       await store.getAll()
 
       expect(store.items[0].destination).toBe('out')
@@ -552,10 +535,7 @@ describe('registers store', () => {
       expect(store.items[0].senderId).toBe(100)
     })
 
-    it('sets destination to "in" when customs procedure code is not 10', async () => {
-      // Mock customs procedures store with procedure code other than 10
-      mockCustomsProceduresStore.procedureMap = { value: new Map([[1, { id: 1, code: 40 }]]) }
-
+    it('sets destination to "in" when customs procedure charCode is not export', async () => {
       const register = { 
         id: 1, 
         customsProcedureId: 1, 
@@ -569,6 +549,8 @@ describe('registers store', () => {
       })
 
       const store = useRegistersStore()
+      // Set ops with non-export procedure
+      store.ops.customsProcedures = [{ value: 1, name: 'Импорт', charCode: 'ИМ40' }]
       await store.getAll()
 
       expect(store.items[0].destination).toBe('in')
@@ -578,34 +560,7 @@ describe('registers store', () => {
       expect(store.items[0].senderId).toBe(200)
     })
 
-    it('falls back to procedures array when procedureMap is not available', async () => {
-      // Mock customs procedures store with procedures array fallback
-      mockCustomsProceduresStore.procedureMap = { value: null }
-      mockCustomsProceduresStore.procedures = [{ id: 1, code: 10 }]
-
-      const register = { 
-        id: 1, 
-        customsProcedureId: 1, 
-        companyId: 100, 
-        theOtherCompanyId: 200, 
-        theOtherCountryCode: 840 
-      }
-      fetchWrapper.get.mockResolvedValue({
-        items: [register],
-        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-      })
-
-      const store = useRegistersStore()
-      await store.getAll()
-
-      expect(store.items[0].destination).toBe('out')
-    })
-
-    it('sets destination to "in" when procedure is not found', async () => {
-      // Mock customs procedures store with no matching procedure
-      mockCustomsProceduresStore.procedureMap = { value: new Map() }
-      mockCustomsProceduresStore.procedures = []
-
+    it('sets destination to "in" when procedure is not found in ops', async () => {
       const register = { 
         id: 1, 
         customsProcedureId: 999, 
@@ -619,6 +574,8 @@ describe('registers store', () => {
       })
 
       const store = useRegistersStore()
+      // ops has no matching procedure
+      store.ops.customsProcedures = [{ value: 1, name: 'Экспорт', charCode: CustomsProcedureCharCodes.Export }]
       await store.getAll()
 
       expect(store.items[0].destination).toBe('in')
@@ -1324,4 +1281,140 @@ describe('registers store', () => {
       expect(store.loading).toBe(false)
     })
   })
+
+  describe('ops functionality', () => {
+    it('getOps fetches ops data from /registers/ops', async () => {
+      const opsData = {
+        customsProcedures: [
+          { value: 1, name: 'Экспорт', charCode: CustomsProcedureCharCodes.Export },
+          { value: 2, name: 'Импорт', charCode: 'ИМ40' }
+        ],
+        transportationTypes: [
+          { value: AVIA_TRANSPORT_VALUE, name: 'Авиационный', document: 'AWB' },
+          { value: 1, name: 'Автодорожный', document: 'CMR' }
+        ]
+      }
+      fetchWrapper.get.mockResolvedValue(opsData)
+
+      const store = useRegistersStore()
+      const result = await store.getOps()
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/ops`)
+      expect(result).toEqual(opsData)
+      expect(store.ops.customsProcedures).toHaveLength(2)
+      expect(store.ops.transportationTypes).toHaveLength(2)
+    })
+
+    it('getOps sets opsError on failure', async () => {
+      const error = new Error('Ops fetch failed')
+      fetchWrapper.get.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      const result = await store.getOps()
+
+      expect(result).toBeNull()
+      expect(store.opsError).toBe(error)
+    })
+
+    it('ensureOpsLoaded calls getOps on first load', async () => {
+      const opsData = { customsProcedures: [], transportationTypes: [] }
+      fetchWrapper.get.mockResolvedValue(opsData)
+
+      const store = useRegistersStore()
+      await store.ensureOpsLoaded()
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/ops`)
+    })
+
+    it('ensureOpsLoaded does not call getOps again if already initialized', async () => {
+      const opsData = { customsProcedures: [], transportationTypes: [] }
+      fetchWrapper.get.mockResolvedValue(opsData)
+
+      const store = useRegistersStore()
+      await store.ensureOpsLoaded()
+      await store.ensureOpsLoaded()
+
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+    })
+
+    it('ensureOpsLoaded deduplicates concurrent calls', async () => {
+      const opsData = { customsProcedures: [], transportationTypes: [] }
+      fetchWrapper.get.mockResolvedValue(opsData)
+
+      const store = useRegistersStore()
+      const promise1 = store.ensureOpsLoaded()
+      const promise2 = store.ensureOpsLoaded()
+      await Promise.all([promise1, promise2])
+
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+    })
+
+    it('getOpsLabel returns name for matching value', () => {
+      const store = useRegistersStore()
+      const list = [
+        { value: 1, name: 'Экспорт' },
+        { value: 2, name: 'Импорт' }
+      ]
+      expect(store.getOpsLabel(list, 1)).toBe('Экспорт')
+      expect(store.getOpsLabel(list, 2)).toBe('Импорт')
+    })
+
+    it('getOpsLabel returns string value when not found', () => {
+      const store = useRegistersStore()
+      const list = [{ value: 1, name: 'Экспорт' }]
+      expect(store.getOpsLabel(list, 99)).toBe('99')
+    })
+
+    it('getOpsLabel handles null list', () => {
+      const store = useRegistersStore()
+      expect(store.getOpsLabel(null, 1)).toBe('1')
+    })
+
+    it('getTransportationDocument returns document for matching value', () => {
+      const store = useRegistersStore()
+      store.ops.transportationTypes = [
+        { value: AVIA_TRANSPORT_VALUE, name: 'Авиационный', document: 'AWB' },
+        { value: 1, name: 'Автодорожный', document: 'CMR' }
+      ]
+      expect(store.getTransportationDocument(AVIA_TRANSPORT_VALUE)).toBe('AWB')
+      expect(store.getTransportationDocument(1)).toBe('CMR')
+    })
+
+    it('getTransportationDocument returns fallback when type not found', () => {
+      const store = useRegistersStore()
+      store.ops.transportationTypes = []
+      expect(store.getTransportationDocument(5)).toBe('[Тип 5]')
+    })
+
+    it('isExportProcedure returns true for export charCode', () => {
+      const store = useRegistersStore()
+      store.ops.customsProcedures = [
+        { value: 1, name: 'Экспорт', charCode: CustomsProcedureCharCodes.Export }
+      ]
+      expect(store.isExportProcedure(1)).toBe(true)
+    })
+
+    it('isExportProcedure returns false for non-export charCode', () => {
+      const store = useRegistersStore()
+      store.ops.customsProcedures = [
+        { value: 1, name: 'Импорт', charCode: 'ИМ40' }
+      ]
+      expect(store.isExportProcedure(1)).toBe(false)
+    })
+
+    it('isExportProcedure returns false when procedure not found', () => {
+      const store = useRegistersStore()
+      store.ops.customsProcedures = []
+      expect(store.isExportProcedure(1)).toBe(false)
+    })
+
+    it('AVIA_TRANSPORT_VALUE is 0', () => {
+      expect(AVIA_TRANSPORT_VALUE).toBe(0)
+    })
+
+    it('CustomsProcedureCharCodes has Export and Reimport', () => {
+      expect(CustomsProcedureCharCodes.Export).toBe('ЭК10')
+      expect(CustomsProcedureCharCodes.Reimport).toBe('ИМ60')
+    })
   })
+})

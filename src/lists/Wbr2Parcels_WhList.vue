@@ -7,7 +7,6 @@ import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import { useTransportationTypesStore } from '@/stores/transportation.types.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -27,7 +26,6 @@ const props = defineProps({
 const parcelsStore = useParcelsStore()
 const parcelStatusStore = useParcelStatusesStore()
 const registersStore = useRegistersStore()
-const transportationTypesStore = useTransportationTypesStore()
 const warehousesStore = useWarehousesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
@@ -77,7 +75,7 @@ const headers = computed(() =>[
 
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка реестра...'
-  return buildParcelListHeading(registersStore.item, transportationTypesStore.getDocument)
+  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
 })
 
 async function fetchRegister() {
@@ -103,7 +101,7 @@ const watcherStop = watch(
 
 onMounted(async () => {
   try {
-    await transportationTypesStore.ensureLoaded()
+    await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
  
     await parcelStatusStore.ensureLoaded()

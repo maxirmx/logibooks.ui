@@ -209,7 +209,7 @@ function getUserName() {
             <a :href="`${baseUrl}downloads/extension-v0.5.0.zip`" target="_blank" rel="noopener" class="link">Расширение</a>
           </v-list-item>
           <v-list-item v-if="authStore.hasWhRole">
-            <a :href="`${baseUrl}downloads/app-v0.2.2.apk`" target="_blank" rel="noopener" class="link">Сканнер apk</a>
+            <a :href="`${baseUrl}downloads/app-latest.apk`" target="_blank" rel="noopener" class="link">Сканнер apk</a>
           </v-list-item>
         </v-list-group>
 

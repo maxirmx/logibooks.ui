@@ -569,7 +569,7 @@ describe('Register_EditDialog', () => {
   it('validates invoice number format only for aviation transport', async () => {
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeCode: 2
+      transportationTypeCode: 0
     }
 
     const Parent = {

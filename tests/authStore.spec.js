@@ -32,7 +32,7 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
-    push: vi.fn()
+    push: vi.fn().mockResolvedValue(undefined)
   }
 }))
 

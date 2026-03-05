@@ -53,7 +53,11 @@ function setupStores() {
   }
 
   stores.registers = {
-    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1', customsProcedureId: 1 },
+    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1', customsProcedureCode: 1 },
+    ops: {
+      customsProcedures: [{ value: 1, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }],
+      transportationTypes: []
+    },
     getById: vi.fn().mockResolvedValue(),
     generate: vi.fn(),
     download: vi.fn(),
@@ -63,7 +67,9 @@ function setupStores() {
     lookupFeacnCodes: vi.fn(),
     getLookupFeacnCodesProgress: vi.fn(),
     cancelLookupFeacnCodes: vi.fn(),
-    getAll: vi.fn()
+    getAll: vi.fn(),
+    ensureOpsLoaded: vi.fn().mockResolvedValue(),
+    getTransportationDocument: vi.fn(() => 'Документ')
   }
 
   stores.parcelStatuses = {
@@ -153,8 +159,6 @@ vi.mock('pinia', async () => {
           }
         case stores.alert:
           return { alert: stores.alert.alert }
-        case stores.customsProcedures:
-          return { procedures: stores.customsProcedures.procedures }
         default:
           return actualStoreToRefs(store)
       }
@@ -167,16 +171,11 @@ vi.mock('@/stores/parcels.store.js', () => ({
 }))
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => stores.registers
+  useRegistersStore: () => stores.registers,
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => stores.parcelStatuses
-}))
-
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => stores.customsProcedures,
-  CustomsProcedureCodes: { Reimport: 60 }
 }))
 
 vi.mock('@/stores/key.words.store.js', () => ({
@@ -193,13 +192,6 @@ vi.mock('@/stores/feacn.orders.store.js', () => ({
 
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => stores.countries
-}))
-
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => ({
-    ensureLoaded: vi.fn().mockResolvedValue(),
-    getDocument: vi.fn(() => 'Документ')
-  })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -351,8 +343,8 @@ describe.each([
   })
 
   it('shows previousDTagComment and hides feacnLookup for reimport customs procedures', async () => {
-    stores.registers.item.customsProcedureId = 2
-    stores.customsProcedures.procedures.value = [{ id: 2, code: 60 }]
+    stores.registers.item.customsProcedureCode = 2
+    stores.registers.ops.customsProcedures = [{ value: 2, charCode: 'ИМ60', name: 'Реимпорт', isRe: true, isExport: false }]
 
     const wrapper = mount(Component, {
       props: { registerId: 4 },
@@ -367,8 +359,8 @@ describe.each([
   })
 
   it('shows feacnLookup and hides previousDTagComment for non-reimport customs procedures', async () => {
-    stores.registers.item.customsProcedureId = 3
-    stores.customsProcedures.procedures.value = [{ id: 3, code: 10 }]
+    stores.registers.item.customsProcedureCode = 3
+    stores.registers.ops.customsProcedures = [{ value: 3, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }]
 
     const wrapper = mount(Component, {
       props: { registerId: 5 },

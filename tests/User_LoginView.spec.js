@@ -40,12 +40,8 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({ ensureLoaded: ensureLoadedMock })
 }))
 
-vi.mock('@/stores/transportation.types.store.js', () => ({
-  useTransportationTypesStore: () => ({ ensureLoaded: ensureLoadedMock })
-}))
-
-vi.mock('@/stores/customs.procedures.store.js', () => ({
-  useCustomsProceduresStore: () => ({ ensureLoaded: ensureLoadedMock })
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: () => ({ ensureOpsLoaded: ensureLoadedMock })
 }))
 
 vi.mock('@/stores/companies.store.js', () => ({

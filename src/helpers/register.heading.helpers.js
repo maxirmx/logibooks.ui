@@ -10,14 +10,14 @@
  * Formats invoice (ТСД) information similar to Registers_List implementation.
  * Combines transportation document type, invoice number and date.
  * @param {Object} register - The register item object.
- * @param {Function} getTransportationDocument - Function returning document label for transportationTypeId.
+ * @param {Function} getTransportationDocument - Function returning document label for transportationTypeCode.
  * @returns {string} A formatted invoice info string or empty string if insufficient data.
  */
 export function formatRegisterInvoice(register, getTransportationDocument) {
   if (!register) return ''
-  const { invoiceNumber, transportationTypeId } = register
-  const transportationDocument = transportationTypeId != null && typeof getTransportationDocument === 'function'
-    ? getTransportationDocument(transportationTypeId)
+  const { invoiceNumber, transportationTypeCode } = register
+  const transportationDocument = transportationTypeCode != null && typeof getTransportationDocument === 'function'
+    ? getTransportationDocument(transportationTypeCode)
     : ''
 
   const numberPart = invoiceNumber ? ` ${invoiceNumber}` : ''

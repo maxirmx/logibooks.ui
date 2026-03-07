@@ -342,8 +342,9 @@ describe('registers store', () => {
       it('clears previous error on successful request', async () => {
         const store = useRegistersStore()
 
-        // First request fails
-        fetchWrapper.get.mockRejectedValueOnce(new Error('First error'))
+        // First request fails: both the ops call and the registers call reject
+        fetchWrapper.get.mockRejectedValueOnce(new Error('First error')) // ops call
+        fetchWrapper.get.mockRejectedValueOnce(new Error('First error')) // registers call
         await store.getAll()
         expect(store.error).toBeTruthy()
 
@@ -417,7 +418,7 @@ describe('registers store', () => {
         const store = useRegistersStore()
         await store.getAll()
 
-        const calledUrl = fetchWrapper.get.mock.calls[0][0]
+        const calledUrl = fetchWrapper.get.mock.calls[1][0]
         expect(calledUrl).not.toContain('search=')
       })
 
@@ -460,7 +461,7 @@ describe('registers store', () => {
         const store = useRegistersStore()
         await store.getAll()
 
-        const calledUrl = fetchWrapper.get.mock.calls[0][0]
+        const calledUrl = fetchWrapper.get.mock.calls[1][0]
         expect(calledUrl).toContain('search=test+%26+search+%2B+special+chars')
       })
     })
@@ -914,6 +915,7 @@ describe('registers store', () => {
   describe('getById and update', () => {
     it('retrieves single register', async () => {
       const data = { id: 5, fileName: 'r' }
+      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [] })
       fetchWrapper.get.mockResolvedValueOnce(data)
       const store = useRegistersStore()
       await store.getById(5)
@@ -923,6 +925,7 @@ describe('registers store', () => {
 
     it('handles getById error', async () => {
       const error = new Error('Not found')
+      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [] })
       fetchWrapper.get.mockRejectedValueOnce(error)
       const store = useRegistersStore()
       await store.getById(5)
@@ -1292,6 +1295,61 @@ describe('registers store', () => {
 
       expect(result).toBeNull()
       expect(store.opsError).toBe(error)
+    })
+
+    it('getOps does not set opsInitialized when response is null', async () => {
+      fetchWrapper.get.mockResolvedValue(null)
+
+      const store = useRegistersStore()
+      await store.ensureOpsLoaded() // opsInitialized should remain false
+
+      // Since opsInitialized is still false, a subsequent ensureOpsLoaded should re-fetch
+      fetchWrapper.get.mockResolvedValue({ customsProcedures: [], transportationTypes: [] })
+      await store.ensureOpsLoaded()
+
+      // Two fetches: first returned null (invalid), second returned valid data
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+      expect(store.ops.customsProcedures).toEqual([])
+      expect(store.ops.transportationTypes).toEqual([])
+    })
+
+    it('getOps does not set opsInitialized when response has invalid shape', async () => {
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+
+      const store = useRegistersStore()
+      await store.getOps()
+
+      // ops.value should retain its default empty arrays (not overwritten by invalid response)
+      expect(store.ops.customsProcedures).toEqual([])
+      expect(store.ops.transportationTypes).toEqual([])
+    })
+
+    it('getOps preserves existing ops.value when response is invalid', async () => {
+      const store = useRegistersStore()
+      store.ops.customsProcedures = [{ value: 1, name: 'Экспорт', isExport: true }]
+
+      fetchWrapper.get.mockResolvedValue(null)
+      await store.getOps()
+
+      // Manual ops value should not be overwritten
+      expect(store.ops.customsProcedures).toHaveLength(1)
+    })
+
+    it('getAll awaits ops before applying setDestinationField', async () => {
+      const opsData = {
+        customsProcedures: [{ value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }],
+        transportationTypes: []
+      }
+      const register = { id: 1, customsProcedureCode: 1, companyId: 100, theOtherCompanyId: 200, theOtherCountryCode: 840 }
+      fetchWrapper.get.mockImplementation((url) => {
+        if (url.includes('/ops')) return Promise.resolve(opsData)
+        return Promise.resolve({ items: [register], pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false } })
+      })
+
+      const store = useRegistersStore()
+      await store.getAll()
+
+      expect(store.items[0].destination).toBe('out')
     })
 
     it('ensureOpsLoaded calls getOps on first load', async () => {

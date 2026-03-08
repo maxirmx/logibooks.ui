@@ -69,6 +69,7 @@ function handleSelectClick() {
       parcels_check_status_fc: authStore.parcels_check_status_fc?.value ?? authStore.parcels_check_status_fc,
       parcels_tnved: authStore.parcels_tnved?.value ?? authStore.parcels_tnved,
       parcels_number: authStore.parcels_number?.value ?? authStore.parcels_number,
+      parcels_product_name: authStore.parcels_product_name?.value ?? authStore.parcels_product_name,
       parcels_page: authStore.parcels_page?.value ?? authStore.parcels_page,
       parcels_per_page: authStore.parcels_per_page?.value ?? authStore.parcels_per_page
     }

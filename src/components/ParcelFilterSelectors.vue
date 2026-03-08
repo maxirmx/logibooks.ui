@@ -13,6 +13,7 @@ const props = defineProps({
   parcelsCheckStatusFc: { type: [String, Number], default: null },
   localTnvedSearch: { type: String, default: '' },
   localParcelNumberSearch: { type: String, default: '' },
+  localProductNameSearch: { type: String, default: '' },
 })
 
 const emit = defineEmits([
@@ -21,6 +22,7 @@ const emit = defineEmits([
   'update:parcelsCheckStatusFc',
   'update:localTnvedSearch',
   'update:localParcelNumberSearch',
+  'update:localProductNameSearch',
 ])
 
 const disabledState = computed(() => {
@@ -57,6 +59,11 @@ const localTnvedSearchModel = computed({
 const localParcelNumberSearchModel = computed({
   get: () => props.localParcelNumberSearch,
   set: (value) => emit('update:localParcelNumberSearch', value),
+})
+
+const localProductNameSearchModel = computed({
+  get: () => props.localProductNameSearch,
+  set: (value) => emit('update:localProductNameSearch', value),
 })
 </script>
 
@@ -99,6 +106,13 @@ const localParcelNumberSearchModel = computed({
       label="Номер посылки"
       density="compact"
       style="min-width: 200px;"
+      :disabled="disabledState.textFieldsDisabled"
+    />
+    <v-text-field
+      v-model="localProductNameSearchModel"
+      label="Название продукта"
+      density="compact"
+      style="min-width: 220px;"
       :disabled="disabledState.textFieldsDisabled"
     />
   </div>

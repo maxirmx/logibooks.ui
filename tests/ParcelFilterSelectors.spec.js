@@ -18,6 +18,7 @@ describe('ParcelFilterSelectors', () => {
       parcelsCheckStatusFc: null,
       localTnvedSearch: '',
       localParcelNumberSearch: '',
+      localProductNameSearch: '',
       ...props,
     },
     global: {
@@ -41,7 +42,7 @@ describe('ParcelFilterSelectors', () => {
     const textFieldNodes = wrapper.findAll('.v-text-field-stub')
 
     expect(selectNodes).toHaveLength(3)
-    expect(textFieldNodes).toHaveLength(2)
+    expect(textFieldNodes).toHaveLength(3)
 
     selectNodes.forEach((node) => {
       expect(node.attributes('data-disabled')).toBe(String(expectedSelectDisabled))
@@ -81,6 +82,7 @@ describe('ParcelFilterSelectors', () => {
     wrapper.vm.parcelsCheckStatusFcModel = 'fc'
     wrapper.vm.localTnvedSearchModel = '1234'
     wrapper.vm.localParcelNumberSearchModel = 'ABC'
+    wrapper.vm.localProductNameSearchModel = 'Product X'
 
     await wrapper.vm.$nextTick()
 
@@ -89,6 +91,7 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:parcelsCheckStatusFc')?.[0]).toEqual(['fc'])
     expect(wrapper.emitted('update:localTnvedSearch')?.[0]).toEqual(['1234'])
     expect(wrapper.emitted('update:localParcelNumberSearch')?.[0]).toEqual(['ABC'])
+    expect(wrapper.emitted('update:localProductNameSearch')?.[0]).toEqual(['Product X'])
   })
   it('keeps controls disabled when multiple blocking flags are active', () => {
     const wrapper = mountComponent({ runningAction: true, loading: true, isInitializing: true })

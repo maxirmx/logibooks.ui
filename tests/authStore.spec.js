@@ -516,6 +516,7 @@ describe('auth store', () => {
         parcels_check_status_fc: 'verified',
         parcels_tnved: '1234567890',
         parcels_number: 'TEST-123',
+        parcels_product_name: 'Phone',
         parcels_page: 2,
         parcels_per_page: 50
       }
@@ -536,6 +537,7 @@ describe('auth store', () => {
       expect(store.parcels_check_status_fc).toBe(snapshot.parcels_check_status_fc)
       expect(store.parcels_tnved).toBe(snapshot.parcels_tnved)
       expect(store.parcels_number).toBe(snapshot.parcels_number)
+      expect(store.parcels_product_name).toBe(snapshot.parcels_product_name)
       expect(store.parcels_page).toBe(snapshot.parcels_page)
       expect(store.parcels_per_page).toBe(snapshot.parcels_per_page)
       

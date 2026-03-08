@@ -77,11 +77,13 @@ const {
   parcels_check_status_fc,
   parcels_tnved,
   parcels_number,
+  parcels_product_name,
   selectedParcelId
 } = storeToRefs(authStore)
 
 const localTnvedSearch = ref(parcels_tnved.value || '')
 const localParcelNumberSearch = ref(parcels_number.value || '')
+const localProductNameSearch = ref(parcels_product_name.value || '')
 
 function parseSelectedParcelIdFromQuery(value) {
   const rawValue = Array.isArray(value) ? value[0] : value
@@ -254,7 +256,8 @@ const {
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [
     { local: localTnvedSearch, store: parcels_tnved },
-    { local: localParcelNumberSearch, store: parcels_number }
+    { local: localParcelNumberSearch, store: parcels_number },
+    { local: localProductNameSearch, store: parcels_product_name }
   ],
   loadFn: loadOrdersWrapper,
   isComponentMounted
@@ -509,6 +512,7 @@ function getGenericTemplateHeaders() {
         v-model:parcels-check-status-fc="parcels_check_status_fc"
         v-model:local-tnved-search="localTnvedSearch"
         v-model:local-parcel-number-search="localParcelNumberSearch"
+        v-model:local-product-name-search="localProductNameSearch"
         :status-options="statusOptions"
         :check-status-options-sw="checkStatusOptionsSw"
         :check-status-options-fc="checkStatusOptionsFc"

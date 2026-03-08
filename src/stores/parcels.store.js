@@ -39,6 +39,10 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
     params.append('number', authStore.parcels_number)
   }
 
+  if (authStore.parcels_product_name) {
+    params.append('productName', authStore.parcels_product_name)
+  }
+
   return params
 }
 

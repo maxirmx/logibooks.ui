@@ -99,6 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
   const parcels_check_status_fc = ref(null)
   const parcels_tnved = ref('')
   const parcels_number = ref('')
+  const parcels_product_name = ref('')
   const parcelstatuses_per_page = ref(100)
   const parcelstatuses_search = ref('')
   const parcelstatuses_sort_by = ref(['id'])
@@ -239,6 +240,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (snap.parcels_check_status_fc != null) parcels_check_status_fc.value = snap.parcels_check_status_fc
         if (snap.parcels_tnved != null) parcels_tnved.value = snap.parcels_tnved
         if (snap.parcels_number != null) parcels_number.value = snap.parcels_number
+        if (snap.parcels_product_name != null) parcels_product_name.value = snap.parcels_product_name
         if (snap.parcels_page != null) parcels_page.value = snap.parcels_page
         if (snap.parcels_per_page != null) parcels_per_page.value = snap.parcels_per_page
 
@@ -298,6 +300,7 @@ export const useAuthStore = defineStore('auth', () => {
     parcels_check_status_fc,
     parcels_tnved,
     parcels_number,
+    parcels_product_name,
     parcelstatuses_per_page,
     parcelstatuses_search,
     parcelstatuses_sort_by,

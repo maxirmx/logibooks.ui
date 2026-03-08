@@ -118,6 +118,7 @@ function setupStores() {
     parcels_check_status_fc: ref(null),
     parcels_tnved: ref(''),
     parcels_number: ref(''),
+    parcels_product_name: ref(''),
     selectedParcelId: ref(null),
     isSrLogistPlus: ref(true)
   }
@@ -154,6 +155,7 @@ vi.mock('pinia', async () => {
             parcels_check_status_fc: stores.auth.parcels_check_status_fc,
             parcels_tnved: stores.auth.parcels_tnved,
             parcels_number: stores.auth.parcels_number,
+            parcels_product_name: stores.auth.parcels_product_name,
             selectedParcelId: stores.auth.selectedParcelId,
             isSrLogistPlus: stores.auth.isSrLogistPlus
           }

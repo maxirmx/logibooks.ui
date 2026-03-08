@@ -304,6 +304,7 @@ describe('ProductLinkWithActions', () => {
     mockAuthStore.parcels_check_status_fc = null
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
+    mockAuthStore.parcels_product_name = 'Headphones'
     mockAuthStore.parcels_page = 1
     mockAuthStore.parcels_per_page = 100
 
@@ -331,6 +332,7 @@ describe('ProductLinkWithActions', () => {
     expect(snap.parcels_check_status_fc).toEqual(mockAuthStore.parcels_check_status_fc)
     expect(snap.parcels_tnved).toEqual(mockAuthStore.parcels_tnved)
     expect(snap.parcels_number).toEqual(mockAuthStore.parcels_number)
+    expect(snap.parcels_product_name).toEqual(mockAuthStore.parcels_product_name)
     expect(snap.parcels_page).toEqual(mockAuthStore.parcels_page)
     expect(snap.parcels_per_page).toEqual(mockAuthStore.parcels_per_page)
   })

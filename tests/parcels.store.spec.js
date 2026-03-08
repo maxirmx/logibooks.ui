@@ -32,7 +32,8 @@ const mockAuthStore = {
   parcels_check_status_sw: null,
   parcels_check_status_fc: null,
   parcels_tnved: '',
-  parcels_number: ''
+  parcels_number: '',
+  parcels_product_name: ''
 }
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -52,6 +53,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_check_status_fc = null
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
+    mockAuthStore.parcels_product_name = ''
   })
 
   it('fetches data with default parameters from auth store', async () => {
@@ -116,15 +118,28 @@ describe('parcels store', () => {
     )
   })
 
-  it('fetches data with combined tnved and number filtering', async () => {
+  it('fetches data with combined tnved, number and product name filtering', async () => {
     mockAuthStore.parcels_tnved = 'AA'
     mockAuthStore.parcels_number = 'OZON456'
+    mockAuthStore.parcels_product_name = 'Notebook'
     
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(2)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=2&page=1&pageSize=100&sortBy=id&sortOrder=asc&tnVed=AA&number=OZON456`
+      `${apiUrl}/parcels?registerId=2&page=1&pageSize=100&sortBy=id&sortOrder=asc&tnVed=AA&number=OZON456&productName=Notebook`
+    )
+  })
+
+
+  it('fetches data with product name filtering', async () => {
+    mockAuthStore.parcels_product_name = 'Телефон'
+
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+    await store.getAll(4)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=4&page=1&pageSize=100&sortBy=id&sortOrder=asc&productName=%D0%A2%D0%B5%D0%BB%D0%B5%D1%84%D0%BE%D0%BD`
     )
   })
 

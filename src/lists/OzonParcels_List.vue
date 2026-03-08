@@ -45,6 +45,7 @@ import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 
@@ -495,46 +496,19 @@ function getGenericTemplateHeaders() {
 
 
     <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
-      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <v-select
-          v-model="parcels_status"
-          :items="statusOptions"
-          label="Статус"
-          density="compact"
-          style="min-width: 250px"
-          :disabled="runningAction || loading || isInitializing"
-        />
-        <v-select
-          v-model="parcels_check_status_sw"
-          :items="checkStatusOptionsSw"
-          label="Статус проверки по стоп-словам"
-          density="compact"
-          style="min-width: 250px"
-          :disabled="runningAction || loading || isInitializing"
-        />
-        <v-select
-          v-model="parcels_check_status_fc"
-          :items="checkStatusOptionsFc"
-          label="Статус проверки по ТН ВЭД"
-          density="compact"
-          style="min-width: 250px"
-          :disabled="runningAction || loading || isInitializing"
-        />
-        <v-text-field
-          v-model="localTnvedSearch"
-          label="ТН ВЭД"
-          density="compact"
-          style="min-width: 200px;"
-          :disabled="runningAction || isInitializing"
-        />
-        <v-text-field
-          v-model="localParcelNumberSearch"
-          label="Номер посылки"
-          density="compact"
-          style="min-width: 200px;"
-          :disabled="runningAction || isInitializing"
-        />
-      </div>
+      <ParcelFilterSelectors
+        v-model:parcels-status="parcels_status"
+        v-model:parcels-check-status-sw="parcels_check_status_sw"
+        v-model:parcels-check-status-fc="parcels_check_status_fc"
+        v-model:local-tnved-search="localTnvedSearch"
+        v-model:local-parcel-number-search="localParcelNumberSearch"
+        :status-options="statusOptions"
+        :check-status-options-sw="checkStatusOptionsSw"
+        :check-status-options-fc="checkStatusOptionsFc"
+        :running-action="runningAction"
+        :loading="loading"
+        :is-initializing="isInitializing"
+      />
     </div>
 
     <v-card class="table-card">

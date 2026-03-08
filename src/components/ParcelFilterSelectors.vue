@@ -8,9 +8,9 @@ const props = defineProps({
   runningAction: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
   isInitializing: { type: Boolean, default: false },
-  parcelsStatus: { type: [String, Number, null], default: null },
-  parcelsCheckStatusSw: { type: [String, Number, null], default: null },
-  parcelsCheckStatusFc: { type: [String, Number, null], default: null },
+  parcelsStatus: { type: [String, Number], default: null },
+  parcelsCheckStatusSw: { type: [String, Number], default: null },
+  parcelsCheckStatusFc: { type: [String, Number], default: null },
   localTnvedSearch: { type: String, default: '' },
   localParcelNumberSearch: { type: String, default: '' },
 })

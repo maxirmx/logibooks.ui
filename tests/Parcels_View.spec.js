@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 vi.mock('@/lists/WbrParcels_List.vue', () => ({
@@ -39,6 +39,14 @@ vi.mock('@/lists/Wbr2Parcels_WhList.vue', () => ({
     name: 'Wbr2Parcels_WhList',
     props: ['register-id'],
     template: '<div data-test="wbr2-wh-list">WBR2 WH: {{ registerId }}</div>'
+  }
+}))
+
+vi.mock('@/lists/GtcParcels_List.vue', () => ({
+  default: {
+    name: 'GtcParcels_List',
+    props: ['register-id'],
+    template: '<div data-test="gtc-list">GTC: {{ registerId }}</div>'
   }
 }))
 
@@ -130,6 +138,24 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+  })
+
+  it('renders GtcParcels_List when register has GTC registerType', async () => {
+    mockGet.mockResolvedValue({ registerType: GTC_COMPANY_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 5
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-test="gtc-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders nothing when registerType is unknown', async () => {

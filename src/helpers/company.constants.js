@@ -4,7 +4,9 @@
 
 export const OZON_COMPANY_ID = 1
 export const WBR_COMPANY_ID = 2
-export const GTC_OMPANY_ID = 4
+export const GTC_COMPANY_ID = 4
+// Backward compatibility for the historical typo.
+export const GTC_OMPANY_ID = GTC_COMPANY_ID
 
 // All real company IDs must be <= THE_LAST_VISIBLE_COMPANY.
 // Values greater than this boundary are reserved for synthetic entities

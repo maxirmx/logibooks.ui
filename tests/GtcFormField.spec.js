@@ -128,7 +128,7 @@ describe('GtcFormField', () => {
     expect(label.text()).toContain(':')
   })
 
-  it('applies tooltip from ozonRegisterColumnTooltips', () => {
+  it('applies tooltip from gtcRegisterColumnTooltips', () => {
     const wrapper = mount(GtcFormField, {
       props: {
         name: 'tnVed',

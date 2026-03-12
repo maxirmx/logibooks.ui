@@ -4,6 +4,7 @@
 
 export const OZON_COMPANY_ID = 1
 export const WBR_COMPANY_ID = 2
+export const GTC_COMPANY_ID = 8
 
 // All real company IDs must be <= THE_LAST_VISIBLE_COMPANY.
 // Values greater than this boundary are reserved for synthetic entities

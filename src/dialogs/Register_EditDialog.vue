@@ -14,7 +14,7 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
-import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
@@ -100,6 +100,16 @@ const warehouseOptions = computed(() => {
   return [{ id: 0, name: 'Не задано' }, ...available]
 })
 const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
+const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
+
+const filteredCustomsProcedures = computed(() => {
+  const all = ops.value?.customsProcedures
+  if (!Array.isArray(all)) return []
+  if (isGtcRegister.value) {
+    return all.filter(p => p.isGtc === true)
+  }
+  return all.filter(p => !p.isGtc)
+})
 
 function getTransportationTypeByValue(typeValue) {
   const numericId = typeof typeValue === 'string' ? parseInt(typeValue, 10) : typeValue
@@ -212,7 +222,7 @@ watch(
       }
       // Set default values for new records
       if (item.value.customsProcedureCode == null) {
-        item.value.customsProcedureCode = ops.value?.customsProcedures?.[0]?.value ?? null
+        item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
       }
       if (item.value.transportationTypeCode == null) {
         item.value.transportationTypeCode = ops.value?.transportationTypes?.[0]?.value ?? null
@@ -333,7 +343,7 @@ watch(shouldUpdateExportStatus, (shouldUpdate) => {
 })
 
 const proceduresLoaded = computed(
-  () => Array.isArray(ops.value?.customsProcedures) && ops.value.customsProcedures.length > 0
+  () => filteredCustomsProcedures.value.length > 0
 )
 
 const typesLoaded = computed(
@@ -366,7 +376,7 @@ watch(
 
 watch(proceduresLoaded, (loaded) => {
   if (loaded && item.value.customsProcedureCode == null) {
-    item.value.customsProcedureCode = ops.value?.customsProcedures?.[0]?.value ?? null
+    item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
   }
 })
 
@@ -746,7 +756,7 @@ function getCustomerName(customerId) {
               @change="handleProcedureChange"
             >
               <option value="">Выберите процедуру</option>
-              <option v-for="p in ops.customsProcedures" :key="p.value" :value="p.value">
+              <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
                 {{ p.name }}
               </option>
             </Field>

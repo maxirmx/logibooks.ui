@@ -11,7 +11,7 @@ import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
-import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 
@@ -40,8 +40,9 @@ const registerItems = ref([])
 
 const mockOps = ref({
   customsProcedures: [
-    { value: 1, charCode: 'ИМ11', name: 'Импорт' },
-    { value: 2, charCode: 'ЭК10', name: 'Экспорт' }
+    { value: 1, charCode: 'ИМ11', name: 'Импорт', isExport: false, isGtc: false },
+    { value: 2, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
+    { value: 3, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
   ],
   transportationTypes: [
     { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -238,6 +239,17 @@ describe('Register_EditDialog', () => {
       { id: 10, name: 'Main Warehouse' },
       { id: 11, name: 'Secondary Warehouse' }
     ]
+    mockOps.value = {
+      customsProcedures: [
+        { value: 1, charCode: 'ИМ11', name: 'Импорт', isExport: false, isGtc: false },
+        { value: 2, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
+        { value: 3, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
+      ],
+      transportationTypes: [
+        { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
+        { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
+      ]
+    }
   })
 
   it('loads data and renders fields', async () => {
@@ -317,8 +329,9 @@ describe('Register_EditDialog', () => {
 
     mockOps.value = {
       customsProcedures: [
-        { value: 1, charCode: 'ИМ11', name: 'Импорт', isRe: true, isExport: false },
-        { value: 2, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }
+        { value: 1, charCode: 'ИМ11', name: 'Импорт', isRe: true, isExport: false, isGtc: false },
+        { value: 2, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true, isGtc: false },
+        { value: 3, charCode: 'ГТК1', name: 'ГТК Импорт', isGtc: true }
       ],
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -908,5 +921,81 @@ describe('Register_EditDialog', () => {
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
+  })
+
+  it('shows only GTC procedures when registerType is GTC_COMPANY_ID', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: GTC_COMPANY_ID,
+      customsProcedureCode: 3
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const procSelect = wrapper.find('#customsProcedureCode')
+    const options = procSelect.findAll('option').filter(o => o.attributes('value') !== '')
+    const optionTexts = options.map(o => o.text())
+
+    expect(optionTexts).toContain('ГТК Импорт')
+    expect(optionTexts).not.toContain('Импорт')
+    expect(optionTexts).not.toContain('Экспорт')
+  })
+
+  it('hides GTC procedures when registerType is not GTC_COMPANY_ID', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: 2,
+      customsProcedureCode: 1
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const procSelect = wrapper.find('#customsProcedureCode')
+    const options = procSelect.findAll('option').filter(o => o.attributes('value') !== '')
+    const optionTexts = options.map(o => o.text())
+
+    expect(optionTexts).toContain('Импорт')
+    expect(optionTexts).toContain('Экспорт')
+    expect(optionTexts).not.toContain('ГТК Импорт')
+  })
+
+  it('defaults to first filtered procedure for GTC register in create mode', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: GTC_COMPANY_ID,
+      customsProcedureCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    // Should default to the first GTC procedure (value: 3)
+    expect(mockItem.value.customsProcedureCode).toBe(3)
   })
 })

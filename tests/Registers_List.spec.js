@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'
 
@@ -545,11 +545,12 @@ describe('Registers_List.vue', () => {
 
         const uploadCustomers = wrapper.vm.uploadCustomers
 
-        expect(uploadCustomers).toHaveLength(3)
+        expect(uploadCustomers).toHaveLength(4)
         expect(uploadCustomers).toEqual([
           { id: OZON_COMPANY_ID, name: 'Озон' },
           { id: WBR_COMPANY_ID, name: 'РВБ' },
-          { id: WBR2_REGISTER_ID, name: 'РВБ (Грузия, Таджикистан)' }
+          { id: WBR2_REGISTER_ID, name: 'РВБ (Грузия, Таджикистан)' },
+          { id: GTC_COMPANY_ID, name: 'Импорт' }
         ])
       })
 
@@ -578,7 +579,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(3)
+        expect(options).toHaveLength(4)
 
         const [firstOption] = options
         expect(firstOption.label).toBe('Озон')

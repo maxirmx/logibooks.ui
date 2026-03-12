@@ -63,6 +63,7 @@ const router = createRouter({
     { path: '/scanjobs', component: { template: '<div>Scanjobs</div>' } },
     { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
     { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
+    { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } },
   ]
 })
 

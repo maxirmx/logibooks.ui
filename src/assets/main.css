@@ -1559,7 +1559,8 @@ a,
 
 /* Header cell overflow rules for WbrParcels_List and OzonParcels_List tables only */
 .wbr-parcels-table .v-data-table__th .v-data-table-header__content,
-.ozon-parcels-table .v-data-table__th .v-data-table-header__content {
+.ozon-parcels-table .v-data-table__th .v-data-table-header__content,
+.gtc-parcels-table .v-data-table__th .v-data-table-header__content {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;

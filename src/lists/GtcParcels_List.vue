@@ -19,7 +19,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
-import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
+import { gtcRegisterColumnTitles } from '@/helpers/gtc.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
@@ -160,7 +160,7 @@ watch(
 )
 
 // Custom row props function with selection highlighting
-function getRowPropsForOzonParcel(data) {
+function getRowPropsForGtcParcel(data) {
   const baseClass = getRowPropsForParcel(data).class
   const selectedClass = data.item.id === selectedParcelId.value ? 'selected-parcel-row' : ''
   return { class: `${baseClass} ${selectedClass}`.trim() }
@@ -360,42 +360,43 @@ const checkStatusOptionsFc = computed(() => [
 ])
 
 const headers = computed(() => {
-  const feacnLookupColumn = { title: 'Подбор ТНВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
-  const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
+  const feacnLookupColumn = { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
+  // Вероятно, потребуется, когда дело дойдёт до реэкспорта
+  // const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
 
   const baseHeaders = [
-    // Actions - Always first for easy access
+    // Actions 
     { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
-    { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
+    { title: gtcRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     // Insert FEACN lookup column only when not reimport procedure
     ...(!isReProcedure.value ? [feacnLookupColumn] : []),
-    { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
-    { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
-//    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
-    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
+    { title: gtcRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
+//    { title: gtcRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
+    { title: gtcRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
+    { title: gtcRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
+    { title: gtcRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
+    { title: gtcRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
+    { title: gtcRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
+    { title: "Паспорт", key: 'passport', sortable: false, align: 'start', width: '120px' },
     // Status Information - Current state of the order
-    { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
   ]
 
+  // Вероятно, потребуется, когда дело дойдёт до реэкспорта
   // Append previousDTagComment at the end only for reimport procedure
-  if (isReProcedure.value) {
-    baseHeaders.push(previousDTagCommentColumn)
-  }
+  // if (isReProcedure.value) {
+  //   baseHeaders.push(previousDTagCommentColumn)
+  // }
 
   return baseHeaders
 })
@@ -469,6 +470,16 @@ async function approveParcel(item) {
 function getGenericTemplateHeaders() {
   return filterGenericTemplateHeadersForParcel(headers.value)
 }
+
+function formatPassport(item) {
+  const parts = [item.passportSeries, item.passportNumber]
+  if (item.passportIssuedBy || item.passportDate) {
+    parts.push('выдан')
+    if (item.passportIssuedBy) parts.push(item.passportIssuedBy)
+    if (item.passportDate) parts.push(item.passportDate)
+  }
+  return parts.filter(Boolean).join(' ')
+}
 </script>
 
 <template>
@@ -483,6 +494,7 @@ function getGenericTemplateHeaders() {
           :item="registersStore.item"
           :disabled="generalActionsDisabled"
           :loading="runningAction || loading || isInitializing"
+          :no-historic-data="true"
           @validate-sw="validateRegisterSwHeader"
           @validate-sw-ex="validateRegisterSwHeaderEx"
           @validate-fc="validateRegisterFcHeader"
@@ -526,13 +538,13 @@ function getGenericTemplateHeaders() {
         v-model:sort-by="parcels_sort_by"
         :headers="headers"
         :items="items"
-        :row-props="getRowPropsForOzonParcel"
+        :row-props="getRowPropsForGtcParcel"
         @click:row="(event, { item }) => { selectedParcelId = item.id }"
         :items-length="totalCount"
         :loading="loading || isInitializing"
         density="compact"
         hide-default-footer
-        class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
+        class="elevation-1 single-line-table interlaced-table gtc-parcels-table"
       >
         <!-- Add tooltip templates for each data field -->
         <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
@@ -573,10 +585,10 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <template #[`item.weightKg`]="{ item }">
+        <template #[`item.weight`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatWeight(item.weightKg)"
+            :display-value="formatWeight(item.weight)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
           />
@@ -591,10 +603,10 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <template #[`item.unitPrice`]="{ item }">
+        <template #[`item.cost`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatPrice(item.unitPrice)"
+            :display-value="formatPrice(item.cost)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
           />
@@ -648,6 +660,15 @@ function getGenericTemplateHeaders() {
             :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
             cell-class="truncated-cell clickable-cell" 
             @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.passport`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatPassport(item)"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 

@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import {
   toggleBulkStatusEditMode,
   cancelBulkStatusChange,
@@ -112,6 +112,10 @@ const uploadCustomers = computed(() => {
     list.push({
       id: WBR2_REGISTER_ID,
       name: getCustomerName(WBR_COMPANY_ID) + ' (Грузия, Таджикистан)'
+    })
+    list.push({
+      id: GTC_COMPANY_ID,
+      name: 'Импорт'
     })
   }
 

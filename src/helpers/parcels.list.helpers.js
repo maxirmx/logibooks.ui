@@ -98,7 +98,8 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     'shk',
     'weightKg',
     'unitPrice',
-    'quantity'
+    'quantity',
+    'passport'
   ])
   
   return headers.filter(h => !h.key.startsWith('actions') && !excluded.has(h.key))

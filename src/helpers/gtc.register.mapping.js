@@ -28,8 +28,8 @@ export const gtcRegisterColumnTitles = {
   passportIssuedBy: 'Кем выдан паспорт',
   inn: 'ИНН',
   countryCode: 'Страна',
-  senderCountryCode: 'Код страны отправления',
-  tradingCountryCode: 'Код торгующей страны',
+  senderCountryCode: 'Страна отправления',
+  tradingCountryCode: 'Торгующая страна',
   productLink: 'Ссылка на товар',
   statusId: 'Статус',
   checkStatus: 'Проверка'

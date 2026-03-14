@@ -23,6 +23,7 @@ import { gtcRegisterColumnTitles } from '@/helpers/gtc.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
+import { formatDate } from '@/helpers/date.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -473,10 +474,10 @@ function getGenericTemplateHeaders() {
 
 function formatPassport(item) {
   const parts = [item.passportSeries, item.passportNumber]
-  if (item.passportIssuedBy || item.passportDate) {
+  if (item.passportIssuedBy || item.passportIssueDate) {
     parts.push('выдан')
     if (item.passportIssuedBy) parts.push(item.passportIssuedBy)
-    if (item.passportDate) parts.push(item.passportDate)
+    if (item.passportIssueDate) parts.push(formatDate(item.passportIssueDate))
   }
   return parts.filter(Boolean).join(' ')
 }
@@ -585,10 +586,10 @@ function formatPassport(item) {
           />
         </template>
 
-        <template #[`item.weight`]="{ item }">
+        <template #[`item.weightKg`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatWeight(item.weight)"
+            :display-value="formatWeight(item.weightKg)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
           />
@@ -603,10 +604,10 @@ function formatPassport(item) {
           />
         </template>
 
-        <template #[`item.cost`]="{ item }">
+        <template #[`item.unitPrice`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatPrice(item.cost)"
+            :display-value="formatPrice(item.unitPrice)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
           />

@@ -187,6 +187,8 @@ const schema = Yup.object().shape({
     .required('Необходимо указать ТН ВЭД')
     .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
   countryCode: Yup.number().required('Необходимо выбрать страну'),
+  senderCountryCode: Yup.number().required('Необходимо выбрать страну отправления'),
+  tradingCountryCode: Yup.number().required('Необходимо выбрать торгующую страну'),
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
   quantity: Yup.number().nullable().min(0, 'Количество не может быть отрицательным'),
@@ -507,19 +509,40 @@ async function onLookup(values) {
               {{ country.nameRuOfficial }}
             </option>
           </GtcFormField>
+          <GtcFormField name="senderCountryCode" as="select" :errors="errors" :fullWidth="false">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </GtcFormField>
+          <GtcFormField name="tradingCountryCode" as="select" :errors="errors" :fullWidth="false">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </GtcFormField>
           <GtcFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <GtcFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <GtcFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <GtcFormField name="currency" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
         </div>
+      </div>
+
+      <!-- Customer Identification & Details Section -->
+      <div class="form-section">
         <div class="form-row">
           <GtcFormField name="lastName" :errors="errors" :fullWidth="false" />
           <GtcFormField name="firstName" :errors="errors" :fullWidth="false" />
           <GtcFormField name="patronymic" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <GtcFormField name="passportSeries" :errors="errors" :fullWidth="false" />
           <GtcFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="passportIssueDate" type="date" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="passportIssuedBy" :errors="errors" :fullWidth="false" />
         </div>
       </div>
-      
+    
       <!-- DTag -->
       <div class="form-section">
         <div class="form-row">

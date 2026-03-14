@@ -27,6 +27,7 @@ import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helper
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
+import { formatDate } from '@/helpers/date.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -377,16 +378,6 @@ function openScanjobCreate(item) {
       dealNumber: item.dealNumber
     }
   })
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d)) return dateStr
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  return `${dd}.${mm}.${yyyy}`
 }
 
 function formatInvoiceInfo(item) {

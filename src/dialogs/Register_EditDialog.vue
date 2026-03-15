@@ -644,7 +644,7 @@ function getCustomerName(customerId) {
 
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Отправитель:</label>
+            <label class="label" for="theOtherCompanyId">Отправитель:</label>
             <template v-if="!isExport">
               <Field
                 as="select"
@@ -659,7 +659,7 @@ function getCustomerName(customerId) {
             <div v-else class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
           </div>
           <div class="form-group">
-            <label class="label">Страна отправления:</label>
+            <label class="label" for="theOtherCountryCode">Страна отправления:</label>
             <template v-if="!isExport">
               <Field
                 as="select"
@@ -680,7 +680,7 @@ function getCustomerName(customerId) {
 
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Получатель:</label>
+            <label class="label" for="theOtherCompanyId">Получатель:</label>
             <template v-if="isExport">
               <Field
                 as="select"
@@ -695,7 +695,7 @@ function getCustomerName(customerId) {
             <div v-else class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
           </div>
           <div class="form-group">
-            <label class="label">Страна назначения:</label>
+            <label class="label" for="theOtherCountryCode">Страна назначения:</label>
             <template v-if="isExport">
               <Field
                 as="select"
@@ -790,11 +790,11 @@ function getCustomerName(customerId) {
 
         <div class="form-row">
           <div class="form-group">
-            <label for="fileName" class="label">Файл:</label>
+            <span class="label">Файл:</span>
             <div id="fileName" class="readonly-field">{{ item.fileName }}</div>
           </div>
           <div class="form-group">
-            <label for="uploadDate" class="label">Дата загрузки:</label>
+            <span class="label">Дата загрузки:</span>
             <div id="uploadDate" class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
           </div>
         </div>

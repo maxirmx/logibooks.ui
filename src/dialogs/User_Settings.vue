@@ -231,6 +231,7 @@ function onSubmit(values, { setErrors }) {
         <div class="password-wrapper">
           <Field
             name="password"
+            autocomplete="new-password"
             id="password"
             ref="password"
             :type="showPassword ? 'text' : 'password'"
@@ -269,6 +270,7 @@ function onSubmit(values, { setErrors }) {
           <Field
             name="password2"
             id="password2"
+            autocomplete="new-password"
             :type="showPassword2 ? 'text' : 'password'"
             class="form-control input password"
             :class="{ 'is-invalid': errors.password2 }"

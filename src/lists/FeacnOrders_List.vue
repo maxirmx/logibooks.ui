@@ -27,6 +27,7 @@ const {
   feacnprefixes_sort_by,
   feacnprefixes_page,
   selectedOrderId,
+  isAdmin,
   isSrLogistPlus
 } = storeToRefs(authStore)
 
@@ -192,10 +193,10 @@ async function handleToggleOrderEnabled(order) {
               <button
                 type="button"
                 class="action-btn"
-                :class="{ 'disabled-btn': runningAction || loading || !isSrLogistPlus }"
+                :class="{ 'disabled-btn': runningAction || loading || !isAdmin }"
                 v-bind="props"
                 @click.stop="handleToggleOrderEnabled(item)"
-                :disabled="runningAction || loading || !isSrLogistPlus"
+                :disabled="runningAction || loading || !isAdmin"
                 data-testid="toggle-order-enabled"
               >
                 <font-awesome-icon

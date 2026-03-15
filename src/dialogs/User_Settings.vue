@@ -302,14 +302,14 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
       <div v-if="showCredentials()" class="form-group">
-        <label for="crd" class="label">Права:</label>
-        <span id="crd"
+        <span class="label">Права:</span>
+        <span
           ><em>{{ getCredentials() }}</em></span
         >
       </div>
 
       <div v-if="showAndEditCredentials()" class="form-group">
-        <label class="label">Права:</label>
+        <span class="label">Права:</span>
         <div class="roles-grid">
           <div class="role-item">
             <Field

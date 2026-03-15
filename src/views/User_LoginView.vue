@@ -61,6 +61,7 @@ function onSubmit(values, { setErrors }) {
         <label for="login_email" class="label">Адрес электронной почты:</label>
         <Field
           name="login_email"
+          autocomplete="username"
           id="login_email"
           type="text"
           class="form-control input"
@@ -73,6 +74,7 @@ function onSubmit(values, { setErrors }) {
         <div class="password-wrapper">
           <Field
             name="login_password"
+            autocomplete="current-password"
             id="login_password"
             :type="showPassword ? 'text' : 'password'"
             class="form-control input password"

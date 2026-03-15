@@ -120,12 +120,6 @@ import App from '@/App.vue'
 import router from '@/router'
 
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
-import { useRegistersStore } from '@/stores/registers.store.js'
-import { useCountriesStore } from '@/stores/countries.store.js'
-import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
-import { useScanjobsStore } from '@/stores/scanjobs.store.js'
-import { useWarehousesStore } from '@/stores/warehouses.store.js'
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -186,22 +180,6 @@ export function initializeApp() {
     .use(router)
     .use(vuetify)
     .use(VuetifyUseDialog)
-
-  // Initialize global data after Pinia is set up
-  const feacnOrdersStore = useFeacnOrdersStore()
-  const registersStore = useRegistersStore()
-  const countriesStore = useCountriesStore()
-  const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
-  const scanJobsStore = useScanjobsStore()
-  const warehousesStore = useWarehousesStore()
-
-  // Load FEACN orders globally at app startup
-  feacnOrdersStore.ensureLoaded()
-  registersStore.ensureOpsLoaded()
-  countriesStore.ensureLoaded()
-  hotKeyActionSchemesStore.ensureOpsLoaded()
-  scanJobsStore.ensureOpsLoaded()
-  warehousesStore.ensureOpsLoaded()
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

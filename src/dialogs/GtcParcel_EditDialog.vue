@@ -503,24 +503,6 @@ async function onLookup(values) {
           @view-image="viewProductImage"
           @delete-image="() => deleteProductImage(values)"
         />
-          <GtcFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
-            <option value="">Выберите страну</option>
-            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
-              {{ country.nameRuOfficial }}
-            </option>
-          </GtcFormField>
-          <GtcFormField name="senderCountryCode" as="select" :errors="errors" :fullWidth="false">
-            <option value="">Выберите страну</option>
-            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
-              {{ country.nameRuOfficial }}
-            </option>
-          </GtcFormField>
-          <GtcFormField name="tradingCountryCode" as="select" :errors="errors" :fullWidth="false">
-            <option value="">Выберите страну</option>
-            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
-              {{ country.nameRuOfficial }}
-            </option>
-          </GtcFormField>
           <GtcFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <GtcFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <GtcFormField name="currency" :errors="errors" :fullWidth="false" />
@@ -534,12 +516,48 @@ async function onLookup(values) {
           <GtcFormField name="lastName" :errors="errors" :fullWidth="false" />
           <GtcFormField name="firstName" :errors="errors" :fullWidth="false" />
           <GtcFormField name="patronymic" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="inn" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <GtcFormField name="phone" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="email" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
           <GtcFormField name="passportSeries" :errors="errors" :fullWidth="false" />
           <GtcFormField name="passportNumber" :errors="errors" :fullWidth="false" />
           <GtcFormField name="passportIssueDate" type="date" :errors="errors" :fullWidth="false" />
           <GtcFormField name="passportIssuedBy" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <GtcFormField name="countryCode" as="select" :errors="errors" :fullWidth="false">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </GtcFormField>
+          <GtcFormField name="postalCode" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="city" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="address" :errors="errors" :fullWidth="false" />
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-row">
+          <GtcFormField name="senderCountryCode" as="select" :errors="errors" :fullWidth="false">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </GtcFormField>
+          <GtcFormField name="tradingCountryCode" as="select" :errors="errors" :fullWidth="false">
+            <option value="">Выберите страну</option>
+            <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
+              {{ country.nameRuOfficial }}
+            </option>
+          </GtcFormField>
+          <GtcFormField name="sender" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="senderPhone" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="senderEmail" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="senderAddress" :errors="errors" :fullWidth="false" />
         </div>
       </div>
     

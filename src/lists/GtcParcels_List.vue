@@ -377,17 +377,30 @@ const headers = computed(() => {
     // Insert FEACN lookup column only when not reimport procedure
     ...(!isReProcedure.value ? [feacnLookupColumn] : []),
     { title: gtcRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
-    { title: gtcRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
+    { title: gtcRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
 //    { title: gtcRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.phone, key: 'phone', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.email, key: 'email', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.postalCode, key: 'postalCode', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.city, key: 'city', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.address, key: 'address', sortable: false, align: 'start', width: '120px' },
+    { title: "Паспорт", key: 'passport', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.inn, key: 'inn', sortable: false, align: 'start', width: '120px' },
     { title: gtcRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
     { title: gtcRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
     { title: gtcRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
     { title: gtcRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
-    { title: gtcRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
-    { title: gtcRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
-    { title: gtcRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
-    { title: gtcRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
-    { title: "Паспорт", key: 'passport', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.sender, key: 'sender', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.senderPhone, key: 'senderPhone', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.senderEmail, key: 'senderEmail', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.senderAddress, key: 'senderAddress', sortable: false, align: 'start', width: '120px' },
+    { title: gtcRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
+    { title: gtcRegisterColumnTitles.senderCountryCode, key: 'senderCountryCode', sortable: false, align: 'start', width: '100px' },
+    { title: gtcRegisterColumnTitles.tradingCountryCode, key: 'tradingCountryCode', sortable: false, align: 'start', width: '100px' },
+
     // Status Information - Current state of the order
     { title: gtcRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
@@ -659,6 +672,24 @@ function formatPassport(item) {
           <ClickableCell 
             :item="item" 
             :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.senderCountryCode`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryAlpha2(item.senderCountryCode)" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.tradingCountryCode`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryAlpha2(item.tradingCountryCode)" 
             cell-class="truncated-cell clickable-cell" 
             @click="editParcel" 
           />

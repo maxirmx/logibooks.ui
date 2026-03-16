@@ -92,6 +92,8 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     'statusId',
     'checkStatus',
     'countryCode',
+    'senderCountryCode',
+    'tradingCountryCode',
     'feacnLookup',
     'tnVed',
     'postingNumber',

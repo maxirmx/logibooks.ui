@@ -677,6 +677,24 @@ function formatPassport(item) {
           />
         </template>
 
+        <template #[`item.senderCountryCode`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryAlpha2(item.senderCountryCode)" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.tradingCountryCode`]="{ item }">
+          <ClickableCell 
+            :item="item" 
+            :display-value="countriesStore.getCountryAlpha2(item.tradingCountryCode)" 
+            cell-class="truncated-cell clickable-cell" 
+            @click="editParcel" 
+          />
+        </template>
+
         <template #[`item.passport`]="{ item }">
           <ClickableCell
             :item="item"

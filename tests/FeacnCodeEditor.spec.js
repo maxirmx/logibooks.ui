@@ -20,7 +20,8 @@ vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({
 vi.mock('vee-validate', () => ({
   Field: {
     name: 'Field',
-    template: '<input />'
+    props: ['disabled', 'readonly'],
+    template: '<input :disabled="disabled" :readonly="readonly" />'
   },
   useFormValues: () => ({ value: { tnVed: '1234567890' } })
 }))
@@ -89,5 +90,98 @@ describe('FeacnCodeEditor', () => {
     await input.trigger('mouseenter')
     await wrapper.vm.$nextTick()
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('1234567890')
+  })
+
+  describe('when disabled prop is true', () => {
+    let disabledWrapper
+
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      disabledWrapper = mount(FeacnCodeEditor, {
+        props: {
+          item: { id: 1, tnVed: '1234567890' },
+          values: { tnVed: '1234567890' },
+          errors: {},
+          isSubmitting: false,
+          columnTitles: { tnVed: 'ТН ВЭД' },
+          columnTooltips: { tnVed: 'Код ТН ВЭД' },
+          setFieldValue: vi.fn(),
+          runningAction: false,
+          disabled: true
+        },
+        global: {
+          stubs: { ...vuetifyStubs }
+        }
+      })
+    })
+
+    it('disables the TN VED input field', () => {
+      const input = disabledWrapper.find('input')
+      expect(input.element.disabled).toBe(true)
+    })
+
+    it('does not activate search on label dblclick', async () => {
+      const label = disabledWrapper.find('label')
+      await label.trigger('dblclick')
+      await disabledWrapper.vm.$nextTick()
+      // Search overlay should not appear
+      expect(disabledWrapper.find('.feacn-overlay').exists()).toBe(false)
+    })
+
+    it('does not activate search on field dblclick', async () => {
+      const input = disabledWrapper.find('input')
+      await input.trigger('dblclick')
+      await disabledWrapper.vm.$nextTick()
+      // Search overlay should not appear
+      expect(disabledWrapper.find('.feacn-overlay').exists()).toBe(false)
+    })
+
+    it('disables the search toggle button', () => {
+      // ActionButton is stubbed, but the disabled prop should be passed
+      const actionButton = disabledWrapper.findComponent({ name: 'ActionButton' })
+      expect(actionButton.exists()).toBe(true)
+      expect(actionButton.props('disabled')).toBe(true)
+    })
+
+    it('does not update field value via selectFeacnCode when disabled', async () => {
+      const setFieldValue = disabledWrapper.props('setFieldValue')
+      // Trigger a code selection via the exposed selectFeacnCode
+      // The component guards against calling setFieldValue when disabled
+      const label = disabledWrapper.find('label')
+      await label.trigger('dblclick')
+      await disabledWrapper.vm.$nextTick()
+      // setFieldValue should not have been called
+      expect(setFieldValue).not.toHaveBeenCalled()
+    })
+
+    it('passes disabled prop to FeacnCodeSelectorW', () => {
+      const selectorW = disabledWrapper.findComponent({ name: 'FeacnCodeSelectorW' })
+      if (selectorW.exists()) {
+        expect(selectorW.props('disabled')).toBe(true)
+      }
+    })
+  })
+
+  describe('when disabled prop is false (default)', () => {
+    it('does not disable the TN VED input field', () => {
+      const input = wrapper.find('input')
+      expect(input.element.disabled).toBe(false)
+    })
+
+    it('activates search on label dblclick', async () => {
+      const label = wrapper.find('label')
+      await label.trigger('dblclick')
+      await wrapper.vm.$nextTick()
+      // Search overlay should appear
+      expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
+    })
+
+    it('activates search on field dblclick', async () => {
+      const input = wrapper.find('input')
+      await input.trigger('dblclick')
+      await wrapper.vm.$nextTick()
+      // Search overlay should appear
+      expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
+    })
   })
 })

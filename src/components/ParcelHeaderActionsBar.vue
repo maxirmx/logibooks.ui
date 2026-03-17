@@ -11,6 +11,7 @@ import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.stor
 const props = defineProps({
   disabled: { type: Boolean, default: false },
   downloadDisabled: { type: Boolean, default: false },
+  lookupDisabled: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' }
 })
 
@@ -84,6 +85,11 @@ function emitEvent(event) {
   emit(event)
 }
 
+function emitLookup() {
+  if (props.disabled || props.lookupDisabled) return
+  emit('lookup')
+}
+
 function emitDownload() {
   if (props.disabled || props.downloadDisabled) return
   emit('download')
@@ -105,6 +111,8 @@ function handleKeydown(e) {
       // Check downloadDisabled for download events
       if (action.event === 'download') {
         emitDownload()
+      } else if (action.event === 'lookup') {
+        emitLookup()
       } else {
         emit(action.event)
       }
@@ -148,8 +156,8 @@ function handleKeydown(e) {
         icon="fa-solid fa-magnifying-glass"
         :iconSize="iconSize"
         tooltip-text="Сохранить и подобрать код ТН ВЭД"
-        :disabled="disabled"
-        @click="emitEvent('lookup')"
+        :disabled="disabled || lookupDisabled"
+        @click="emitLookup"
       />
     </div>
     <div class="header-actions header-actions-group">

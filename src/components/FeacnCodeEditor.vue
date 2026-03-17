@@ -29,7 +29,9 @@ const props = defineProps({
   // Function to set field value in parent form
   setFieldValue: { type: Function, required: true },
   // Running action flag from parent
-  runningAction: { type: [Boolean, Object], default: false }
+  runningAction: { type: [Boolean, Object], default: false },
+  // Disabled flag from parent (e.g. for Duplicate checkstatus)
+  disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:item', 'overlay-state-changed', 'set-running-action'])
@@ -55,7 +57,7 @@ watch(() => props.item, (v) => {
 
 // Computed properties for disabled states to ensure reactivity
 const isSearchButtonDisabled = computed(() => {
-  return props.isSubmitting || props.runningAction
+  return props.isSubmitting || props.runningAction || props.disabled
 })
 
 
@@ -76,6 +78,7 @@ watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.
 }, { immediate: true })
 
 function toggleSearch() {
+  if (props.disabled) return
   // open/close main search; if opening main search, ensure keyword panel is closed by emitting overlay state
   const next = !searchActive.value
   searchActive.value = next
@@ -118,6 +121,7 @@ onUnmounted(() => {
 
 // Select a FEACN code and update TN VED
 async function selectFeacnCode(feacnCode) {
+  if (props.disabled) return
   try {
     // Update the form field immediately
     props.setFieldValue('tnVed', feacnCode)
@@ -159,6 +163,7 @@ function handleTnVedMouseEnter() {
               <Field name="tnVed" id="tnVed" class="form-control input"
                      v-bind="tooltipProps"
                      :readonly="searchActive"
+                     :disabled="props.disabled"
                      :class="{
                        'is-invalid': props.errors && props.errors.tnVed,
                        [tnVedClass]: true
@@ -196,6 +201,7 @@ function handleTnVedMouseEnter() {
           :item="localItem"
           :onSelect="selectFeacnCode"
           :externalSearchOpen="searchActive"
+          :disabled="props.disabled"
           @overlay-state-changed="(val) => { if (val) { searchActive = false } }"
         />
     </div>

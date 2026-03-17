@@ -682,21 +682,21 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-spell-check" 
               tooltip-text="Проверить по стоп-словам" 
               @click="validateParcelSw" 
-              :disabled="runningAction || loading" 
+              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
             />
             <ActionButton 
               :item="item" 
               icon="fa-solid fa-anchor-circle-check" 
               tooltip-text="Проверить по кодам ТН ВЭД" 
               @click="validateParcelFc" 
-              :disabled="runningAction || loading" 
+              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
             />
             <ActionButton 
               :item="item" 
               icon="fa-solid fa-magnifying-glass" 
               tooltip-text="Подобрать код ТН ВЭД" 
               @click="lookupFeacnCodes" 
-              :disabled="runningAction || loading" 
+              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
             />
             <ActionButton 
               :item="item" 
@@ -710,7 +710,7 @@ function getGenericTemplateHeaders() {
               icon="fa-solid fa-check-circle" 
               tooltip-text="Согласовать" 
               @click="approveParcel" 
-              :disabled="runningAction || loading" 
+              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
             />
           </div>
         </template>

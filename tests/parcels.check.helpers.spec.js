@@ -372,6 +372,10 @@ describe('parcels.check.helpers', () => {
         expect(getCheckStatusClass(swApprovedInherited.value)).toBe('is-approved-with-inheritance')
       })
 
+      it('returns "has-issues" for Duplicate status', () => {
+        expect(getCheckStatusClass(CheckStatusCode.Duplicate.value)).toBe('has-issues')
+      })
+
       it('returns "no-issues" as default for other status codes', () => {
         const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
         const swNoIssues = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)

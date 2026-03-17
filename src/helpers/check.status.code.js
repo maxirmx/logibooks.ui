@@ -158,7 +158,16 @@ export class CheckStatusCode {
    */
   static hasIssues(value) {
     return (CheckStatusCode.getFC(value) & 0x0100) !== 0 || 
-           (CheckStatusCode.getSW(value) & 0x0100) !== 0
+           (CheckStatusCode.getSW(value) & 0x0100) !== 0 ||
+           CheckStatusCode.isDuplicate(value)
+  }
+
+  /**
+   * Check if the combined status is Duplicate
+   */
+  static isDuplicate(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.Duplicate && 
+           CheckStatusCode.getSW(value) === SWCheckStatus.Duplicate
   }
 
   static isInheritedSw(value) {

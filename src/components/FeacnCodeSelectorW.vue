@@ -16,7 +16,9 @@ const props = defineProps({
   // Parent's main search panel state; when true, this keyword panel should close
   externalSearchOpen: { type: Boolean, default: false },
   // Parent-provided keyword panel state (external toggle)
-  externalKeywordOpen: { type: Boolean, default: false }
+  externalKeywordOpen: { type: Boolean, default: false },
+  // Disabled flag from parent (e.g. for Duplicate checkstatus)
+  disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['overlay-state-changed'])
@@ -59,17 +61,20 @@ const combinedCodes = computed(() => {
 })
 
 function handleCodeSelect(feacnCode) {
+  if (props.disabled) return
   if (typeof props.onSelect === 'function') {
     props.onSelect(feacnCode)
   }
 }
 
 function openKeywordLookup() {
+  if (props.disabled) return
   isKeywordLookupOpen.value = !isKeywordLookupOpen.value
   emit('overlay-state-changed', isKeywordLookupOpen.value)
 }
 
 function handleKeywordLookupSelect(code) {
+  if (props.disabled) return
   handleCodeSelect(code)
   isKeywordLookupOpen.value = false
   emit('overlay-state-changed', false)
@@ -96,7 +101,7 @@ function handleMouseEnter(code) {
         :icon="isKeywordLookupOpen ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
         :tooltip-text="isKeywordLookupOpen ? 'Скрыть подбор' : 'Открыть подбор'"
         class="keyword-toggle"
-        :disabled="false"
+        :disabled="props.disabled"
         @click="openKeywordLookup"
         :iconSize="'1x'"
       />

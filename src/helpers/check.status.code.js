@@ -10,6 +10,7 @@ export const SwInheritanceFlag = 0x0080
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
+  Duplicate: 0x01FE,
   MarkedByPartner: 0x01FF
 })
 
@@ -28,6 +29,7 @@ export const SWCheckStatus = Object.freeze({
   
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
+  Duplicate: WStatusValues.Duplicate,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -45,6 +47,7 @@ export const FCCheckStatus = Object.freeze({
   IssueFeacnCode: 0x0100,
   IssueNonexistingFeacn: 0x0101,
   IssueInvalidFeacnFormat: 0x0102,  
+  Duplicate: WStatusValues.Duplicate,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -56,6 +59,8 @@ const ApprovedString = 'Согласовано'
 const ApprovedWithExciseString = 'Согл. с акцизом'
 const ApprovedWithNotificationString = 'Согл. с нотификацией'
 const IssueStopWordString = 'Стоп слово'
+const DuplicateString = 'Дубликат'
+const MarkedByPartnerString = 'Исключено партнёром'
 const FlagString = '🔖 '
 
 
@@ -194,18 +199,22 @@ export class CheckStatusCode {
   toString(wFlag = false) {
     // Special cases for combined statuses
     if (this.fc === FCCheckStatus.NotChecked && this.sw === SWCheckStatus.NotChecked) {
-      return 'Не проверено'
+      return NotCheckedString
     }
     if (this.fc === FCCheckStatus.ApprovedWithExcise && this.sw === SWCheckStatus.ApprovedWithExcise) {
-      return 'Согл. с акцизом'
+      return ApprovedWithExciseString
     }
 
     if (this.fc === FCCheckStatus.ApprovedWithNotification && this.sw === SWCheckStatus.ApprovedWithNotification) {
-      return 'Согл. с нотификацией'
+      return ApprovedWithNotificationString
+    }
+
+    if (this.fc === FCCheckStatus.Duplicate && this.sw === SWCheckStatus.Duplicate) {
+      return DuplicateString
     }
 
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {
-      return 'Исключено партнёром'
+      return MarkedByPartnerString
     }
 
     // SW status strings
@@ -284,6 +293,10 @@ export class CheckStatusCode {
 
   static get ApprovedWithNotification() {
     return CheckStatusCode.fromParts(FCCheckStatus.ApprovedWithNotification, SWCheckStatus.ApprovedWithNotification)
+  }
+
+  static get Duplicate() {
+    return CheckStatusCode.fromParts(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate)
   }
 
   static get MarkedByPartner() {

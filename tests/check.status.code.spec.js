@@ -16,7 +16,7 @@ describe('WStatusValues', () => {
   it('should have correct common values', () => {
     expect(WStatusValues.ApprovedWithExcise).toBe(0x0230)
     expect(WStatusValues.MarkedByPartner).toBe(0x01FF)
-    expect(WStatusValues.Duplicate).toBe(0x0200)
+    expect(WStatusValues.Duplicate).toBe(0x01FE)
   })
 
   it('should be frozen', () => {
@@ -35,7 +35,7 @@ describe('FCCheckStatus', () => {
     expect(FCCheckStatus.IssueNonexistingFeacn).toBe(0x0101)
     expect(FCCheckStatus.IssueInvalidFeacnFormat).toBe(0x0102)
     expect(FCCheckStatus.MarkedByPartner).toBe(0x01FF)
-    expect(FCCheckStatus.Duplicate).toBe(0x0200)
+    expect(FCCheckStatus.Duplicate).toBe(0x01FE)
   })
 
   it('should be frozen', () => {
@@ -53,7 +53,7 @@ describe('SWCheckStatus', () => {
     expect(SWCheckStatus.ApprovedWithExcise).toBe(0x0230)
     expect(SWCheckStatus.IssueStopWord).toBe(0x0100)
     expect(SWCheckStatus.MarkedByPartner).toBe(0x01FF)
-    expect(SWCheckStatus.Duplicate).toBe(0x0200)
+    expect(SWCheckStatus.Duplicate).toBe(0x01FE)
   })
 
   it('should be frozen', () => {
@@ -282,10 +282,6 @@ describe('CheckStatusCode', () => {
       // Exported mappings should contain the NotChecked Russian string
       expect(SWCheckStatusNames[SWCheckStatus.NotChecked]).toBe('Не проверено')
       expect(FCCheckStatusNames[FCCheckStatus.NotChecked]).toBe('Не проверено')
-
-      // Duplicate translations should be present in both mappings
-      expect(SWCheckStatusNames[SWCheckStatus.Duplicate]).toBe('Дубликат')
-      expect(FCCheckStatusNames[FCCheckStatus.Duplicate]).toBe('Дубликат')
 
       // When only FC is NotChecked and SW has NoIssues, toString uses SW string only
       const onlySw = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)

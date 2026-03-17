@@ -430,8 +430,8 @@ describe('Parcels List Helpers', () => {
       const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
       CheckStatusCode.hasIssues.mockReturnValue(true)
 
-      // Duplicate combined value: compose(0x0200, 0x0200) = 0x02000200
-      const duplicateValue = 0x02000200
+      // Duplicate combined value: compose(0x01FE, 0x01FE) = 0x01FE01FE
+      const duplicateValue = 0x01FE01FE
       const data = {
         item: { checkStatus: duplicateValue }
       }

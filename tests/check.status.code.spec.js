@@ -386,7 +386,7 @@ describe('CheckStatusCode', () => {
       const duplicate = CheckStatusCode.Duplicate
       expect(duplicate.fc).toBe(FCCheckStatus.Duplicate)
       expect(duplicate.sw).toBe(SWCheckStatus.Duplicate)
-      expect(duplicate.value).toBe(CheckStatusCode.compose(0x0200, 0x0200))
+      expect(duplicate.value).toBe(CheckStatusCode.compose(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate))
     })
   })
 })

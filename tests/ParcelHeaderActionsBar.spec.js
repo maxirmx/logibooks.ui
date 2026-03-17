@@ -157,6 +157,94 @@ describe('ParcelHeaderActionsBar', () => {
     expect(downloadAfter).toBe(downloadBefore)
   })
 
+  it('prevents only lookup when lookupDisabled is true', async () => {
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { lookupDisabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    const buttons = wrapper.findAll('button')
+    // indices in template: 0..6 -> next-parcel, next-issue, back, lookup, download, save, cancel
+    // test non-lookup events: indices [0,1,2,4,5,6]
+    const eventNames = ['next-parcel', 'next-issue', 'back', 'download', 'save', 'cancel']
+    const eventIndexes = [0, 1, 2, 4, 5, 6]
+
+    for (let i = 0; i < eventIndexes.length; i++) {
+      const idx = eventIndexes[i]
+      const eventName = eventNames[i]
+      const before = wrapper.emitted()[eventName]?.length ?? 0
+      await buttons[idx].trigger('click')
+      const after = wrapper.emitted()[eventName]?.length ?? 0
+      expect(after).toBe(before + 1)
+    }
+
+    const lookupBefore = wrapper.emitted()['lookup']?.length ?? 0
+    // attempt to click lookup button (index 3) - should not emit because lookupDisabled true
+    await buttons[3].trigger('click')
+    const lookupAfter = wrapper.emitted()['lookup']?.length ?? 0
+    expect(lookupAfter).toBe(lookupBefore)
+  })
+
+  it('respects lookupDisabled for lookup hotkeys', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Lookup Scheme',
+      actions: [
+        { id: 1, action: 6, keyCode: 'KeyL', shift: false, ctrl: true, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { lookupDisabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Ctrl+L should NOT trigger lookup when lookupDisabled is true
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyL', 
+      shiftKey: false, 
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['lookup']).toBeUndefined()
+  })
+
+  it('allows lookup hotkeys when lookupDisabled is false', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Lookup Scheme',
+      actions: [
+        { id: 1, action: 6, keyCode: 'KeyL', shift: false, ctrl: true, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { lookupDisabled: false },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    // Wait for onMounted to complete
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Ctrl+L should trigger lookup when lookupDisabled is false
+    window.dispatchEvent(new KeyboardEvent('keydown', { 
+      code: 'KeyL', 
+      shiftKey: false, 
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false 
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['lookup']?.length ?? 0).toBeGreaterThan(0)
+  })
+
   it('loads hotkey actions from store on mount', async () => {
     const wrapper = mount(ParcelHeaderActionsBar, {
       global: { stubs: { ActionButton: actionButtonStub } }

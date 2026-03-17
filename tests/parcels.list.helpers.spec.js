@@ -425,6 +425,21 @@ describe('Parcels List Helpers', () => {
       expect(result).toEqual({ class: '' })
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(0x00010001)
     })
+
+    it('should return class for parcel with Duplicate status', async () => {
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(true)
+
+      const duplicateValue = 0x02000200  // Duplicate combined value
+      const data = {
+        item: { checkStatus: duplicateValue }
+      }
+
+      const result = getRowPropsForParcel(data)
+
+      expect(result).toEqual({ class: 'order-has-issues' })
+      expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicateValue)
+    })
   })
 
   describe('filterGenericTemplateHeadersForParcel', () => {

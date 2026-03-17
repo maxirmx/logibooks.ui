@@ -16,6 +16,7 @@ describe('WStatusValues', () => {
   it('should have correct common values', () => {
     expect(WStatusValues.ApprovedWithExcise).toBe(0x0230)
     expect(WStatusValues.MarkedByPartner).toBe(0x01FF)
+    expect(WStatusValues.Duplicate).toBe(0x0200)
   })
 
   it('should be frozen', () => {
@@ -34,6 +35,7 @@ describe('FCCheckStatus', () => {
     expect(FCCheckStatus.IssueNonexistingFeacn).toBe(0x0101)
     expect(FCCheckStatus.IssueInvalidFeacnFormat).toBe(0x0102)
     expect(FCCheckStatus.MarkedByPartner).toBe(0x01FF)
+    expect(FCCheckStatus.Duplicate).toBe(0x0200)
   })
 
   it('should be frozen', () => {
@@ -51,6 +53,7 @@ describe('SWCheckStatus', () => {
     expect(SWCheckStatus.ApprovedWithExcise).toBe(0x0230)
     expect(SWCheckStatus.IssueStopWord).toBe(0x0100)
     expect(SWCheckStatus.MarkedByPartner).toBe(0x01FF)
+    expect(SWCheckStatus.Duplicate).toBe(0x0200)
   })
 
   it('should be frozen', () => {
@@ -139,6 +142,49 @@ describe('CheckStatusCode', () => {
       expect(CheckStatusCode.hasIssues(0x00020001)).toBe(false)
       expect(CheckStatusCode.hasIssues(0x00000000)).toBe(false)
     })
+
+    it('should detect Duplicate status as having issues', () => {
+      expect(CheckStatusCode.hasIssues(CheckStatusCode.Duplicate.value)).toBe(true)
+    })
+  })
+
+  describe('isDuplicate method', () => {
+    it('should return true for Duplicate status', () => {
+      expect(CheckStatusCode.isDuplicate(CheckStatusCode.Duplicate.value)).toBe(true)
+    })
+
+    it('should return true for manually composed Duplicate value', () => {
+      const value = CheckStatusCode.compose(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate)
+      expect(CheckStatusCode.isDuplicate(value)).toBe(true)
+    })
+
+    it('should return false for non-Duplicate statuses', () => {
+      expect(CheckStatusCode.isDuplicate(CheckStatusCode.NotChecked.value)).toBe(false)
+      expect(CheckStatusCode.isDuplicate(CheckStatusCode.NoIssues.value)).toBe(false)
+      expect(CheckStatusCode.isDuplicate(CheckStatusCode.ApprovedWithExcise.value)).toBe(false)
+      expect(CheckStatusCode.isDuplicate(CheckStatusCode.MarkedByPartner.value)).toBe(false)
+    })
+
+    it('should return false when only FC is Duplicate', () => {
+      const value = CheckStatusCode.compose(FCCheckStatus.Duplicate, SWCheckStatus.NotChecked)
+      expect(CheckStatusCode.isDuplicate(value)).toBe(false)
+    })
+
+    it('should return false when only SW is Duplicate', () => {
+      const value = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.Duplicate)
+      expect(CheckStatusCode.isDuplicate(value)).toBe(false)
+    })
+
+    it('should return false for zero value', () => {
+      expect(CheckStatusCode.isDuplicate(0)).toBe(false)
+    })
+
+    it('should return false for issue statuses', () => {
+      const swIssue = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.IssueStopWord)
+      const fcIssue = CheckStatusCode.compose(FCCheckStatus.IssueFeacnCode, SWCheckStatus.NotChecked)
+      expect(CheckStatusCode.isDuplicate(swIssue)).toBe(false)
+      expect(CheckStatusCode.isDuplicate(fcIssue)).toBe(false)
+    })
   })
 
   describe('compose method', () => {
@@ -184,6 +230,9 @@ describe('CheckStatusCode', () => {
 
       const markedByPartner = CheckStatusCode.MarkedByPartner  
       expect(markedByPartner.toString()).toBe('Исключено партнёром')
+
+      const duplicate = CheckStatusCode.Duplicate
+      expect(duplicate.toString()).toBe('Дубликат')
     })
 
     it('should format individual statuses correctly', () => {
@@ -233,6 +282,10 @@ describe('CheckStatusCode', () => {
       // Exported mappings should contain the NotChecked Russian string
       expect(SWCheckStatusNames[SWCheckStatus.NotChecked]).toBe('Не проверено')
       expect(FCCheckStatusNames[FCCheckStatus.NotChecked]).toBe('Не проверено')
+
+      // Duplicate translations should be present in both mappings
+      expect(SWCheckStatusNames[SWCheckStatus.Duplicate]).toBe('Дубликат')
+      expect(FCCheckStatusNames[FCCheckStatus.Duplicate]).toBe('Дубликат')
 
       // When only FC is NotChecked and SW has NoIssues, toString uses SW string only
       const onlySw = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)
@@ -327,6 +380,13 @@ describe('CheckStatusCode', () => {
       const marked = CheckStatusCode.MarkedByPartner
       expect(marked.fc).toBe(FCCheckStatus.MarkedByPartner)
       expect(marked.sw).toBe(SWCheckStatus.MarkedByPartner)
+    })
+
+    it('should have Duplicate constant', () => {
+      const duplicate = CheckStatusCode.Duplicate
+      expect(duplicate.fc).toBe(FCCheckStatus.Duplicate)
+      expect(duplicate.sw).toBe(SWCheckStatus.Duplicate)
+      expect(duplicate.value).toBe(CheckStatusCode.compose(0x0200, 0x0200))
     })
   })
 })
@@ -431,5 +491,51 @@ describe('Integration tests', () => {
     expect(hasIssues.fc).toBe(0x0101)
     expect(hasIssues.sw).toBe(0x0100)
     expect(CheckStatusCode.hasIssues(hasIssues.value)).toBe(true)
+  })
+
+  it('should correctly handle Duplicate status in all operations', () => {
+    const duplicate = CheckStatusCode.Duplicate
+    
+    // Verify it's composed of Duplicate parts
+    expect(duplicate.fc).toBe(FCCheckStatus.Duplicate)
+    expect(duplicate.sw).toBe(SWCheckStatus.Duplicate)
+    
+    // Verify it's detected as having issues
+    expect(CheckStatusCode.hasIssues(duplicate.value)).toBe(true)
+    
+    // Verify isDuplicate
+    expect(CheckStatusCode.isDuplicate(duplicate.value)).toBe(true)
+    
+    // Verify toString
+    expect(duplicate.toString()).toBe('Дубликат')
+    
+    // Verify it can be decomposed correctly
+    const decomposed = CheckStatusHelper.decompose(duplicate.value)
+    expect(decomposed.fc).toBe(FCCheckStatus.Duplicate)
+    expect(decomposed.sw).toBe(SWCheckStatus.Duplicate)
+    
+    // Verify CheckStatusHelper also sees it as having issues
+    expect(CheckStatusHelper.hasIssues(duplicate.value)).toBe(true)
+  })
+
+  it('should distinguish Duplicate from other issue statuses', () => {
+    const duplicate = CheckStatusCode.Duplicate
+    const markedByPartner = CheckStatusCode.MarkedByPartner
+    const issueStatus = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.IssueStopWord)
+    
+    // All are issues
+    expect(CheckStatusCode.hasIssues(duplicate.value)).toBe(true)
+    expect(CheckStatusCode.hasIssues(markedByPartner.value)).toBe(true)
+    expect(CheckStatusCode.hasIssues(issueStatus.value)).toBe(true)
+    
+    // Only Duplicate is detected by isDuplicate
+    expect(CheckStatusCode.isDuplicate(duplicate.value)).toBe(true)
+    expect(CheckStatusCode.isDuplicate(markedByPartner.value)).toBe(false)
+    expect(CheckStatusCode.isDuplicate(issueStatus.value)).toBe(false)
+    
+    // All have different string representations
+    expect(duplicate.toString()).toBe('Дубликат')
+    expect(markedByPartner.toString()).toBe('Исключено партнёром')
+    expect(issueStatus.toString()).not.toBe('Дубликат')
   })
 })

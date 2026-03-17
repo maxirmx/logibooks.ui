@@ -29,7 +29,9 @@ const props = defineProps({
   // Function to set field value in parent form
   setFieldValue: { type: Function, required: true },
   // Running action flag from parent
-  runningAction: { type: [Boolean, Object], default: false }
+  runningAction: { type: [Boolean, Object], default: false },
+  // Disabled flag from parent (e.g. for Duplicate checkstatus)
+  disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:item', 'overlay-state-changed', 'set-running-action'])
@@ -55,7 +57,7 @@ watch(() => props.item, (v) => {
 
 // Computed properties for disabled states to ensure reactivity
 const isSearchButtonDisabled = computed(() => {
-  return props.isSubmitting || props.runningAction
+  return props.isSubmitting || props.runningAction || props.disabled
 })
 
 

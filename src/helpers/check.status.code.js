@@ -10,7 +10,8 @@ export const SwInheritanceFlag = 0x0080
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
-  MarkedByPartner: 0x01FF
+  MarkedByPartner: 0x01FF,
+  Duplicate: 0x0200
 })
 
 /**
@@ -28,7 +29,8 @@ export const SWCheckStatus = Object.freeze({
   
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
-  MarkedByPartner: WStatusValues.MarkedByPartner
+  MarkedByPartner: WStatusValues.MarkedByPartner,
+  Duplicate: WStatusValues.Duplicate
 })
 
 /**
@@ -45,7 +47,8 @@ export const FCCheckStatus = Object.freeze({
   IssueFeacnCode: 0x0100,
   IssueNonexistingFeacn: 0x0101,
   IssueInvalidFeacnFormat: 0x0102,  
-  MarkedByPartner: WStatusValues.MarkedByPartner
+  MarkedByPartner: WStatusValues.MarkedByPartner,
+  Duplicate: WStatusValues.Duplicate
 })
 
 /**
@@ -56,6 +59,7 @@ const ApprovedString = 'Согласовано'
 const ApprovedWithExciseString = 'Согл. с акцизом'
 const ApprovedWithNotificationString = 'Согл. с нотификацией'
 const IssueStopWordString = 'Стоп слово'
+const DuplicateString = 'Дубликат'
 const FlagString = '🔖 '
 
 
@@ -67,7 +71,8 @@ export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.ApprovedWithExcise]: ApprovedWithExciseString,
   [SWCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
   [SWCheckStatus.IssueStopWord]: IssueStopWordString,
-  [SWCheckStatus.IssueStopWordInherited]: FlagString + IssueStopWordString
+  [SWCheckStatus.IssueStopWordInherited]: FlagString + IssueStopWordString,
+  [SWCheckStatus.Duplicate]: DuplicateString
 })
 
 /**
@@ -80,7 +85,8 @@ export const FCCheckStatusNames = Object.freeze({
   [FCCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
   [FCCheckStatus.IssueFeacnCode]: 'Стоп ТН ВЭД',
   [FCCheckStatus.IssueNonexistingFeacn]: 'Нет ТН ВЭД',
-  [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД'
+  [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД',
+  [FCCheckStatus.Duplicate]: DuplicateString
 })
 
 /**
@@ -153,7 +159,16 @@ export class CheckStatusCode {
    */
   static hasIssues(value) {
     return (CheckStatusCode.getFC(value) & 0x0100) !== 0 || 
-           (CheckStatusCode.getSW(value) & 0x0100) !== 0
+           (CheckStatusCode.getSW(value) & 0x0100) !== 0 ||
+           CheckStatusCode.isDuplicate(value)
+  }
+
+  /**
+   * Check if the combined status is Duplicate
+   */
+  static isDuplicate(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.Duplicate && 
+           CheckStatusCode.getSW(value) === SWCheckStatus.Duplicate
   }
 
   static isInheritedSw(value) {
@@ -206,6 +221,10 @@ export class CheckStatusCode {
 
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {
       return 'Исключено партнёром'
+    }
+
+    if (this.fc === FCCheckStatus.Duplicate && this.sw === SWCheckStatus.Duplicate) {
+      return 'Дубликат'
     }
 
     // SW status strings
@@ -288,6 +307,10 @@ export class CheckStatusCode {
 
   static get MarkedByPartner() {
     return CheckStatusCode.fromParts(FCCheckStatus.MarkedByPartner, SWCheckStatus.MarkedByPartner)
+  }
+
+  static get Duplicate() {
+    return CheckStatusCode.fromParts(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate)
   }
 }
 

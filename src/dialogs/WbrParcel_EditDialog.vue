@@ -31,6 +31,7 @@ import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
+import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import {
   validateParcelData,
@@ -526,28 +527,7 @@ async function onLookup(values) {
         </div>
       </div>
       <!-- DTag -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="dtag" class="label">ДТЭГ/ПТДЭГ:</label>
-            <div class="form-control input readonly-field" id="dtag" name="dtag">
-              {{ item?.dTag ? item.dTag : '-' }}
-            </div>
-          </div>
-          <div class="form-group" v-if="item?.dTagComment != null">
-            <div class="form-control input readonly-field" id="dtagComment" name="dtagComment">
-              {{ item?.dTagComment ? item.dTagComment : '' }}
-            </div>
-          </div>
-        </div>
-        <div class="form-row"  v-if="item?.previousDTagComment != null">
-          <div class="form-group">
-            <div class="form-control input readonly-field" id="previousDDtagComment" name="previousDDtagComment">
-              {{ item?.previousDTagComment ? item.previousDTagComment : '' }}
-            </div>
-          </div>
-        </div>
-      </div>
+      <DTagSection :item="item" />
 
     </Form>
     <div v-if="item?.error" class="text-center m-5">

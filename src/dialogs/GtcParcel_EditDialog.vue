@@ -192,7 +192,15 @@ const schema = Yup.object().shape({
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
   quantity: Yup.number().nullable().min(0, 'Количество не может быть отрицательным'),
-  unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
+  unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной'),
+  phone: Yup.string()
+    .nullable()
+    .matches(/^\+?\d{7,15}$/, { message: 'Неверный формат телефона', excludeEmptyString: true }),
+  email: Yup.string().nullable().email('Неверный формат email'),
+  senderPhone: Yup.string()
+    .nullable()
+    .matches(/^\+?\d{7,15}$/, { message: 'Неверный формат телефона отправителя', excludeEmptyString: true }),
+  senderEmail: Yup.string().nullable().email('Неверный формат email отправителя'),
 })
 
 async function deleteProductImage(values) {

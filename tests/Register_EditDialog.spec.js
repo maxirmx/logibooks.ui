@@ -670,7 +670,7 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 0, false)
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
@@ -749,7 +749,7 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
 
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 20, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 20, false)
   })
 
   it('handles create mode with upload result object', async () => {
@@ -773,7 +773,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 0, false)
     
     // Verify update was called with the Id from the Reference object and the sanitized form values
     expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
@@ -913,7 +913,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, 0, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 0, false)
     
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed

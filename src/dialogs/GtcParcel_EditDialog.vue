@@ -384,6 +384,7 @@ async function generateXml(values) {
     await Promise.all([ensureNextParcelsPromise(), updatePromise])
     
     await generateXmlHelper(item, parcelsStore, String(item.value?.postingNumber || '').padStart(20, '0'))
+    await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {

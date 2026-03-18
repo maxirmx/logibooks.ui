@@ -12,7 +12,7 @@ defineProps({
   <div class="form-section">
     <div class="form-row">
       <div class="form-group">
-        <label for="dtag" class="label">ДТЭГ/ПТДЭГ:</label>
+        <span class="label">ДТЭГ/ПТДЭГ:</span>
         <div class="form-control input readonly-field dtag-ellipsis" id="dtag" name="dtag" :title="item?.dTag || '-'">
           {{ item?.dTag ? item.dTag : '-' }}
         </div>

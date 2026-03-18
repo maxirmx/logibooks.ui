@@ -10,7 +10,7 @@ export const SwInheritanceFlag = 0x0080
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
-  Duplicate: 0x01FE,
+  Duplicate: 0x017E,
   MarkedByPartner: 0x01FF
 })
 

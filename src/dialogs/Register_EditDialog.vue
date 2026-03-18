@@ -478,6 +478,7 @@ async function onSubmit(values) {
         const result = await registersStore.upload(
           uploadFile.value,
           item.value.registerType,
+          item.value.customsProcedureCode,
           Number.isNaN(sourceRegisterId) ? 0 : sourceRegisterId,
           Boolean(values.lookupForReimport)
         )

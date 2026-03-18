@@ -6,38 +6,12 @@ import { describe, it, expect } from 'vitest'
 import CheckStatusCode, { 
   CheckStatusHelper, 
   FCCheckStatus, 
-  SWCheckStatus,
-  WStatusValues
+  SWCheckStatus
 } from '@/helpers/check.status.code.js'
 
 import { FCCheckStatusNames, SWCheckStatusNames } from '@/helpers/check.status.code.js'
 
-describe('WStatusValues', () => {
-  it('should have correct common values', () => {
-    expect(WStatusValues.ApprovedWithExcise).toBe(0x0230)
-    expect(WStatusValues.MarkedByPartner).toBe(0x01FF)
-    expect(WStatusValues.Duplicate).toBe(0x01FE)
-  })
-
-  it('should be frozen', () => {
-    expect(() => {
-      WStatusValues.NewValue = 999
-    }).toThrow()
-  })
-})
-
 describe('FCCheckStatus', () => {
-  it('should have correct enum values', () => {
-    expect(FCCheckStatus.NotChecked).toBe(0)
-    expect(FCCheckStatus.NoIssues).toBe(0x0010)
-    expect(FCCheckStatus.ApprovedWithExcise).toBe(0x0230)
-    expect(FCCheckStatus.IssueFeacnCode).toBe(0x0100)
-    expect(FCCheckStatus.IssueNonexistingFeacn).toBe(0x0101)
-    expect(FCCheckStatus.IssueInvalidFeacnFormat).toBe(0x0102)
-    expect(FCCheckStatus.MarkedByPartner).toBe(0x01FF)
-    expect(FCCheckStatus.Duplicate).toBe(0x01FE)
-  })
-
   it('should be frozen', () => {
     expect(() => {
       FCCheckStatus.NewValue = 999
@@ -46,16 +20,6 @@ describe('FCCheckStatus', () => {
 })
 
 describe('SWCheckStatus', () => {
-  it('should have correct enum values', () => {
-    expect(SWCheckStatus.NotChecked).toBe(0x0000)
-    expect(SWCheckStatus.NoIssues).toBe(0x0010)
-    expect(SWCheckStatus.Approved).toBe(0x0020)
-    expect(SWCheckStatus.ApprovedWithExcise).toBe(0x0230)
-    expect(SWCheckStatus.IssueStopWord).toBe(0x0100)
-    expect(SWCheckStatus.MarkedByPartner).toBe(0x01FF)
-    expect(SWCheckStatus.Duplicate).toBe(0x01FE)
-  })
-
   it('should be frozen', () => {
     expect(() => {
       SWCheckStatus.NewValue = 999

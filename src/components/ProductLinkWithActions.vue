@@ -98,7 +98,6 @@ function handleSelectClick() {
 function handleViewClick() {
   if (buttonsDisabled.value) return
   emit('view-image')
-  console.info('[ProductLinkWithActions] View technical image requested')
 }
 
 function handleDeleteClick() {

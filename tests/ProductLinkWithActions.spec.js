@@ -55,8 +55,6 @@ describe('ProductLinkWithActions', () => {
   })
 
   it('renders sanitized link and emits events when actions are clicked', async () => {
-    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-
     const wrapper = mount(ProductLinkWithActions, {
       props: {
         label: 'Product Link',
@@ -81,7 +79,6 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['select-image']).toHaveLength(1)
     expect(wrapper.emitted()['view-image']).toHaveLength(1)
     expect(wrapper.emitted()['delete-image']).toHaveLength(1)
-    expect(infoSpy).toHaveBeenCalledTimes(1)
   })
 
   it('shows placeholder text and disables buttons when link is missing or image is unavailable', () => {
@@ -105,8 +102,6 @@ describe('ProductLinkWithActions', () => {
   })
 
   it('does not emit events when buttons are disabled', async () => {
-    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-
     const wrapper = mount(ProductLinkWithActions, {
       props: {
         label: 'Product Link',
@@ -123,7 +118,6 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['select-image']).toBeUndefined()
     expect(wrapper.emitted()['view-image']).toBeUndefined()
     expect(wrapper.emitted()['delete-image']).toBeUndefined()
-    expect(infoSpy).not.toHaveBeenCalled()
   })
 
   it('handles extension presence through window messages', async () => {

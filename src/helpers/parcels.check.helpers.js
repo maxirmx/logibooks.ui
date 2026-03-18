@@ -109,11 +109,12 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
  * @returns {string|null} - Combined formatted information or null if neither present
  */
 export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollection, feacnPrefixesCollection) {
+  const duplicateInfo = item?.duplicateComment ? item.duplicateComment : null
   const feacnInfo = getFeacnOrdersInfo(item, feacnOrdersCollection)
   const stopWordsInfo = getStopWordsInfo(item, stopWordsCollection)
   const feacnPrefixesInfo = getFeacnPrefixesInfo(item, feacnPrefixesCollection)
   
-  const allInfo = [feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
+  const allInfo = [duplicateInfo, feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
   
   // Add matchingSWComment if present
   if (item?.matchingSWComment) {

@@ -116,7 +116,7 @@ defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve
         </div>
       </div>
       <div class="form-group">
-        <label for="lastView" class="label">Последний просмотр:</label>
+        <span class="label">Последний просмотр:</span>
         <div class="readonly-field" id="lastView" name="lastView">
           {{ item?.dTime ? new Date(item.dTime).toLocaleString() : '' }}
         </div>

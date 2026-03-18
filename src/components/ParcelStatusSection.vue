@@ -35,6 +35,10 @@ defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  noHistoricData: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -77,7 +81,7 @@ defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve
             :item="item"
             icon="fa-solid fa-book-journal-whills"
             tooltip-text="Сохранить и проверить стоп слова с учётом исторических данных"
-            :disabled="disabled"
+            :disabled="disabled || noHistoricData"
             @click="$emit('validate-sw-ex', values)"
             :iconSize="'2x'"
           />

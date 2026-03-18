@@ -123,4 +123,33 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('#lastView').text()).toBe('')
   })
+
+  it('disables only validate-sw-ex button when noHistoricData is true', () => {
+    const wrapper = createWrapper({ noHistoricData: true, disabled: false })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise
+    expect(buttons[0].props('disabled')).toBe(false)
+    expect(buttons[1].props('disabled')).toBe(true)
+    expect(buttons[2].props('disabled')).toBe(false)
+    expect(buttons[3].props('disabled')).toBe(false)
+    expect(buttons[4].props('disabled')).toBe(false)
+  })
+
+  it('disables all buttons when both disabled and noHistoricData are true', () => {
+    const wrapper = createWrapper({ noHistoricData: true, disabled: true })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    buttons.forEach((button) => {
+      expect(button.props('disabled')).toBe(true)
+    })
+  })
+
+  it('does not disable validate-sw-ex when noHistoricData is false', () => {
+    const wrapper = createWrapper({ noHistoricData: false, disabled: false })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    // validate-sw-ex (index 1) should not be disabled
+    expect(buttons[1].props('disabled')).toBe(false)
+  })
 })

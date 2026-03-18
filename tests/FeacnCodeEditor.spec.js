@@ -147,9 +147,7 @@ describe('FeacnCodeEditor', () => {
       const setFieldValue = disabledWrapper.props('setFieldValue')
       // Trigger a code selection via the exposed selectFeacnCode
       // The component guards against calling setFieldValue when disabled
-      const label = disabledWrapper.find('label')
-      await label.trigger('dblclick')
-      await disabledWrapper.vm.$nextTick()
+      await disabledWrapper.vm.selectFeacnCode('9876543210')
       // setFieldValue should not have been called
       expect(setFieldValue).not.toHaveBeenCalled()
     })

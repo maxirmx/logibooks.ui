@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -23,9 +23,6 @@ const { alert } = storeToRefs(alertStore)
 const { parcels_number, parcels_bn_per_page, parcels_bn_page, parcels_bn_sort_by } = storeToRefs(authStore)
 
 const runningAction = ref(false)
-
-const maxPage = computed(() => Math.max(1, Math.ceil((items_bn.value?.length || 0) / parcels_bn_per_page.value)))
-
 
 const headers = [
   { title: '№', key: 'id', align: 'center', width: '170px' },
@@ -104,9 +101,7 @@ async function loadParcelsByNumber() {
 }
 
 onMounted(async () => {
-  if (parcels_bn_page.value > maxPage.value) {
-    parcels_bn_page.value = maxPage.value
-  }
+  parcels_bn_page.value = 1
   if (normalizedNumber()) {
     await loadParcelsByNumber()
   }

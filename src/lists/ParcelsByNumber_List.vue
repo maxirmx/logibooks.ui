@@ -9,6 +9,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
@@ -156,6 +157,7 @@ defineExpose({
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
+        :items-per-page-options="itemsPerPageOptions"
         fixed-header
       >
         <template v-for="column in clickableColumns" :key="column.key" #[`item.${column.key}`]="{ item }">

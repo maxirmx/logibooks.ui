@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -20,9 +20,15 @@ const alertStore = useAlertStore()
 
 const { items_bn, loading, error } = storeToRefs(parcelsStore)
 const { alert } = storeToRefs(alertStore)
-const { parcels_number } = storeToRefs(authStore)
+const { parcels_number, parcels_bn_per_page, parcels_bn_page, parcels_bn_sort_by } = storeToRefs(authStore)
 
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((items_bn.value?.length || 0) / parcels_bn_per_page.value)))
+
+watch(maxPage, (v) => {
+  if (parcels_bn_page.value > v) parcels_bn_page.value = v
+})
 
 const headers = [
   { title: '№', key: 'id', align: 'center', width: '170px' },
@@ -101,6 +107,9 @@ async function loadParcelsByNumber() {
 }
 
 onMounted(async () => {
+  if (parcels_bn_page.value > maxPage.value) {
+    parcels_bn_page.value = 1
+  }
   if (normalizedNumber()) {
     await loadParcelsByNumber()
   }
@@ -147,11 +156,11 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-model:items-per-page="authStore.parcels_per_page"
-        v-model:page="authStore.parcels_page"
+        v-model:items-per-page="authStore.parcels_bn_per_page"
+        v-model:page="authStore.parcels_bn_page"
         :headers="headers"
         :items="items_bn"
-        v-model:sort-by="authStore.parcels_sort_by"
+        v-model:sort-by="authStore.parcels_bn_sort_by"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"

@@ -24,6 +24,9 @@ const mockError = ref(null)
 const getByNumber = vi.fn()
 
 const parcelsNumber = ref('')
+const parcelsBnPerPage = ref(100)
+const parcelsBnPage = ref(1)
+const parcelsBnSortBy = ref([{ key: 'id', order: 'asc' }])
 
 const mockAlert = ref(null)
 const alertError = vi.fn()
@@ -40,7 +43,10 @@ vi.mock('@/stores/parcels.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    parcels_number: parcelsNumber
+    parcels_number: parcelsNumber,
+    parcels_bn_per_page: parcelsBnPerPage,
+    parcels_bn_page: parcelsBnPage,
+    parcels_bn_sort_by: parcelsBnSortBy
   })
 }))
 
@@ -59,6 +65,9 @@ describe('ParcelsByNumber_List.vue', () => {
     mockLoading.value = false
     mockError.value = null
     parcelsNumber.value = ''
+    parcelsBnPerPage.value = 100
+    parcelsBnPage.value = 1
+    parcelsBnSortBy.value = [{ key: 'id', order: 'asc' }]
     router.push.mockClear()
   })
 
@@ -189,6 +198,66 @@ describe('ParcelsByNumber_List.vue', () => {
 
     expect(alertError).toHaveBeenCalledWith('Введите номер посылки')
     expect(getByNumber).not.toHaveBeenCalled()
+  })
+
+  it('resets page to 1 on mount when page exceeds maxPage', () => {
+    parcelsBnPage.value = 5
+    mockItems.value = []
+    mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+    expect(parcelsBnPage.value).toBe(1)
+  })
+
+  it('keeps page when it is within range on mount', () => {
+    parcelsBnPerPage.value = 1
+    parcelsBnPage.value = 2
+    mockItems.value = [
+      { id: 1, registerId: 1, registerDealNumber: 'D1', number: 'N1', productName: 'P1', tnVed: 'T1', dTag: 'DT1', dTagComment: 'C1', previousDTagComment: 'PC1' },
+      { id: 2, registerId: 2, registerDealNumber: 'D2', number: 'N2', productName: 'P2', tnVed: 'T2', dTag: 'DT2', dTagComment: 'C2', previousDTagComment: 'PC2' }
+    ]
+    mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+    expect(parcelsBnPage.value).toBe(2)
+  })
+
+  it('uses separate bn settings independent of shared parcels settings', () => {
+    parcelsBnPerPage.value = 50
+    parcelsBnPage.value = 3
+    parcelsBnSortBy.value = [{ key: 'number', order: 'desc' }]
+
+    mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+
+    // The bn settings remain at their own values, independent from shared parcels_* settings
+    expect(parcelsBnPerPage.value).toBe(50)
+    expect(parcelsBnSortBy.value).toEqual([{ key: 'number', order: 'desc' }])
   })
 
 })

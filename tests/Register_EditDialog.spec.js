@@ -663,49 +663,18 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(getById).not.toHaveBeenCalled()
-    expect(getAll).toHaveBeenCalled()
+    expect(getAll).not.toHaveBeenCalled()
     expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Загрузить')
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 0, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, false, false)
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
-  it('still renders create dialog when register list fetch fails', async () => {
-    const loadError = new Error('load failed')
-    getAll.mockRejectedValueOnce(loadError)
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-    try {
-      const Parent = {
-        template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-        components: { RegisterEditDialog }
-      }
-      const wrapper = mount(Parent, {
-        global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
-      })
-
-      await resolveAll()
-
-      expect(getAll).toHaveBeenCalled()
-      expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
-      const selector = wrapper.find('select#transferRegisterId')
-      expect(selector.exists()).toBe(true)
-      expect(selector.findAll('option')).toHaveLength(1)
-    } finally {
-      consoleErrorSpy.mockRestore()
-    }
-  })
-
-  it('renders transfer register selector with generated names', async () => {
-    registerItems.value = [
-      { id: 10, dealNumber: 'D-100', fileName: 'reg-100.xlsx', registerType: 2, companyId: 2 },
-      { id: 11, dealNumber: '', fileName: 'reg-empty.xlsx', registerType: 2, companyId: 2 }
-    ]
-
+  it('renders checkForDuplicates checkbox only in create mode', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
       components: { RegisterEditDialog }
@@ -716,22 +685,28 @@ describe('Register_EditDialog', () => {
 
     await resolveAll()
 
-    const selector = wrapper.find('select#transferRegisterId')
-    expect(selector.exists()).toBe(true)
-
-    const optionTexts = selector.findAll('option').map((option) => option.text())
-    expect(optionTexts).toContain('Не выбрано')
-    expect(optionTexts).toContain('Реестр для сделки D-100')
-    expect(optionTexts).toContain('Реестр для сделки без номера (файл: reg-empty.xlsx)')
+    const checkbox = wrapper.find('#checkForDuplicates')
+    expect(checkbox.exists()).toBe(true)
+    expect(wrapper.text()).toContain('Проверить на дубликаты')
   })
 
-  it('passes selected register id to upload when provided', async () => {
-    registerItems.value = [
-      { id: 20, dealNumber: 'D-200', fileName: 'reg-200.xlsx', companyId: 3, registerType: 3 }
-    ]
+  it('does not render checkForDuplicates checkbox in edit mode', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('#checkForDuplicates').exists()).toBe(false)
+  })
+
+  it('passes checkForDuplicates=true to upload when provided', async () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 3, registerType: 3 }
-
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
       components: { RegisterEditDialog }
@@ -742,14 +717,17 @@ describe('Register_EditDialog', () => {
 
     await resolveAll()
 
-    const selector = wrapper.find('select#transferRegisterId')
-    await selector.setValue('20')
-
     const dialog = wrapper.findComponent(RegisterEditDialog)
-    await dialog.vm.onSubmit({}, { setErrors: () => {} })
+    await dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: () => {} })
     await resolveAll()
 
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 20, false)
+    expect(upload).toHaveBeenCalledWith(
+      registersStore.uploadFile.value,
+      mockItem.value.companyId,
+      mockItem.value.customsProcedureCode,
+      true,
+      false
+    )
   })
 
   it('handles create mode with upload result object', async () => {
@@ -773,7 +751,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 0, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, false, false)
     
     // Verify update was called with the Id from the Reference object and the sanitized form values
     expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
@@ -913,7 +891,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, 0, false)
+    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, false, false)
     
 
     // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed
@@ -921,6 +899,27 @@ describe('Register_EditDialog', () => {
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
+  })
+
+  it('handles update errors in edit mode', async () => {
+    update.mockRejectedValueOnce(new Error('Update failed'))
+    mockItem.value = { ...baseRegisterItem }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({ dealNumber: 'D-ERR' }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalled()
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('shows only GTC procedures when registerType is GTC_COMPANY_ID', async () => {

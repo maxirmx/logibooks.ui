@@ -104,7 +104,8 @@ vi.mock('vue-router', async () => {
   const actual = await vi.importActual('vue-router')
   return {
     ...actual,
-    useRoute: () => ({ query: {} })
+    useRoute: () => ({ query: {} }),
+    useRouter: () => ({ push: vi.fn(), replace: vi.fn() })
   }
 })
 

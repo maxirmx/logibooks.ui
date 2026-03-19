@@ -45,6 +45,13 @@ vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: vi.fn(() => ({ update: vi.fn(), lookupFeacnCode: vi.fn(async () => ({ keyWordIds: [] })) }))
 }))
 
+vi.mock('@/stores/feacn.codes.store.js', () => ({
+  useFeacnCodesStore: vi.fn(() => ({
+    getChildren: vi.fn(async () => []),
+    search: vi.fn(async () => [])
+  }))
+}))
+
 describe('FeacnCodeEditor', () => {
   let wrapper
 

@@ -9,6 +9,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
@@ -20,7 +21,7 @@ const alertStore = useAlertStore()
 
 const { items_bn, loading, error } = storeToRefs(parcelsStore)
 const { alert } = storeToRefs(alertStore)
-const { parcels_number } = storeToRefs(authStore)
+const { parcels_number, parcels_bn_per_page, parcels_bn_page, parcels_bn_sort_by } = storeToRefs(authStore)
 
 const runningAction = ref(false)
 
@@ -101,6 +102,7 @@ async function loadParcelsByNumber() {
 }
 
 onMounted(async () => {
+  parcels_bn_page.value = 1
   if (normalizedNumber()) {
     await loadParcelsByNumber()
   }
@@ -147,12 +149,15 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-model:items-per-page="authStore.parcels_per_page"
-        v-model:page="authStore.parcels_page"
+        v-model:items-per-page="parcels_bn_per_page"
+        v-model:page="parcels_bn_page"
         :headers="headers"
         :items="items_bn"
-        v-model:sort-by="authStore.parcels_sort_by"
+        v-model:sort-by="parcels_bn_sort_by"
         :loading="loading"
+        items-per-page-text="Посылок на странице"
+        :items-per-page-options="itemsPerPageOptions"
+        page-text="{0}-{1} из {2}"
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header

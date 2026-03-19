@@ -95,6 +95,12 @@ if (selectedParcelIdFromQuery != null) {
   selectedParcelId.value = selectedParcelIdFromQuery
 }
 
+// Multi-select state
+const selectedParcelIds = ref(new Set(
+  selectedParcelId.value != null ? [selectedParcelId.value] : []
+))
+const lastClickedId = ref(selectedParcelId.value)
+
 // Template ref for the data table
 const dataTableRef = ref(null)
 
@@ -130,55 +136,99 @@ watch(maxPage, (v) => {
   if (parcels_page.value > v) parcels_page.value = v
 })
 
-// Selected parcel management
-function updateSelectedParcelId() {
-  if (selectedParcelId.value == null || loading.value) return
+// Multi-select management
+function updateSelectedParcelIds() {
+  if (loading.value) return
+  const currentIds = new Set(items.value.map(i => i.id))
+  const filtered = new Set([...selectedParcelIds.value].filter(id => currentIds.has(id)))
+  selectedParcelIds.value = filtered
 
-  const isCurrentOnPage = items.value.some(item => item.id === selectedParcelId.value)
-  if (!isCurrentOnPage) {
+  if (selectedParcelId.value && !currentIds.has(selectedParcelId.value)) {
     selectedParcelId.value = null
   }
+}
+
+function handleRowClick(event, { item }) {
+  const id = item.id
+
+  if (event.shiftKey && lastClickedId.value != null) {
+    // Range select
+    const ids = items.value.map(i => i.id)
+    const startIdx = ids.indexOf(lastClickedId.value)
+    const endIdx = ids.indexOf(id)
+    if (startIdx !== -1 && endIdx !== -1) {
+      const [from, to] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)]
+      const newSet = (event.ctrlKey || event.metaKey)
+        ? new Set(selectedParcelIds.value)
+        : new Set()
+      for (let i = from; i <= to; i++) {
+        newSet.add(ids[i])
+      }
+      selectedParcelIds.value = newSet
+    }
+  } else if (event.ctrlKey || event.metaKey) {
+    // Toggle individual row
+    const newSet = new Set(selectedParcelIds.value)
+    if (newSet.has(id)) {
+      newSet.delete(id)
+    } else {
+      newSet.add(id)
+    }
+    selectedParcelIds.value = newSet
+  } else {
+    // Plain click — single select
+    selectedParcelIds.value = new Set([id])
+  }
+
+  lastClickedId.value = id
+  selectedParcelId.value = id
 }
 
 // Watch for items changes to update selection and scroll to selected item
 watch(
   () => items.value,
   () => {
-    updateSelectedParcelId()
-    if (selectedParcelId.value) {
+    updateSelectedParcelIds()
+    if (selectedParcelIds.value.size > 0) {
       scrollToSelectedItem()
     }
   }
 )
 
-// Watch for page changes to set selection to null
+// Watch for page changes to clear selection
 watch(
   parcels_page,
   () => {
+    selectedParcelIds.value = new Set()
     selectedParcelId.value = null
+    lastClickedId.value = null
   }
 )
 
-// Custom row props function with selection highlighting
+// Custom row props function with multi-selection highlighting
 function getRowPropsForOzonParcel(data) {
   const baseClass = getRowPropsForParcel(data).class
-  const selectedClass = data.item.id === selectedParcelId.value ? 'selected-parcel-row' : ''
+  const selectedClass = selectedParcelIds.value.has(data.item.id) ? 'selected-parcel-row' : ''
   return { class: `${baseClass} ${selectedClass}`.trim() }
 }
 
-// Scroll to selected item function
+// Computed list of selected items for bulk operations
+const selectedItems = computed(() =>
+  items.value.filter(item => selectedParcelIds.value.has(item.id))
+)
+
+// Scroll to the last selected item
 function scrollToSelectedItem() {
-  if (!selectedParcelId.value || !dataTableRef.value) return
+  if (selectedParcelIds.value.size === 0 || !dataTableRef.value) return
   
   nextTick(() => {
     try {
-      // Find the selected row by looking for the selected-parcel-row class
       const tableElement = dataTableRef.value.$el || dataTableRef.value
-      const selectedRow = tableElement.querySelector('.selected-parcel-row')
+      const selectedRows = tableElement.querySelectorAll('.selected-parcel-row')
+      const lastRow = selectedRows[selectedRows.length - 1]
       
-      if (selectedRow) {
-        // Scroll the row into view with smooth behavior
-        selectedRow.scrollIntoView({
+      if (lastRow) {
+        lastRow.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
           inline: 'nearest'
@@ -296,20 +346,19 @@ onMounted(async () => {
     await fetchRegister()
 
     if (items.value?.length > 0) {
-      updateSelectedParcelId()
-      if (selectedParcelId.value) {
+      updateSelectedParcelIds()
+      if (selectedParcelIds.value.size > 0) {
         scrollToSelectedItem()
       }
     }
 
     // Restore parcel selection from extension snapshot after all cleanups
-    // This ensures that if the user invoked an extension and returned,
-    // the previously selected parcel will be highlighted with the dashed border
     const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()
     const restoredParcelId = restoreSelectedParcelIdSnapshot()
     if (restoredParcelId != null && items.value?.some(item => item.id === restoredParcelId)) {
       selectedParcelId.value = restoredParcelId
-      // Scroll to the restored selection
+      selectedParcelIds.value = new Set([restoredParcelId])
+      lastClickedId.value = restoredParcelId
       await nextTick()
       scrollToSelectedItem()
     }
@@ -527,7 +576,7 @@ function getGenericTemplateHeaders() {
         :headers="headers"
         :items="items"
         :row-props="getRowPropsForOzonParcel"
-        @click:row="(event, { item }) => { selectedParcelId = item.id }"
+        @click:row="handleRowClick"
         :items-length="totalCount"
         :loading="loading || isInitializing"
         density="compact"

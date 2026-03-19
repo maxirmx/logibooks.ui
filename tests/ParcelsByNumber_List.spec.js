@@ -200,7 +200,7 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(getByNumber).not.toHaveBeenCalled()
   })
 
-  it('resets page to 1 on mount when page exceeds maxPage', () => {
+  it('resets page to 1 on mount', () => {
     parcelsBnPage.value = 5
     mockItems.value = []
     mount(ParcelsByNumberList, {
@@ -217,7 +217,7 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(parcelsBnPage.value).toBe(1)
   })
 
-  it('keeps page when it is within range on mount', () => {
+  it('resets page to 1 on mount even when page is within range', () => {
     parcelsBnPerPage.value = 1
     parcelsBnPage.value = 2
     mockItems.value = [
@@ -235,7 +235,7 @@ describe('ParcelsByNumber_List.vue', () => {
         }
       }
     })
-    expect(parcelsBnPage.value).toBe(2)
+    expect(parcelsBnPage.value).toBe(1)
   })
 
   it('uses separate bn settings independent of shared parcels settings', () => {

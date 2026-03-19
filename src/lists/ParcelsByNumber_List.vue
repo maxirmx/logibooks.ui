@@ -156,11 +156,11 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        v-model:items-per-page="authStore.parcels_bn_per_page"
-        v-model:page="authStore.parcels_bn_page"
+        v-model:items-per-page="parcels_bn_per_page"
+        v-model:page="parcels_bn_page"
         :headers="headers"
         :items="items_bn"
-        v-model:sort-by="authStore.parcels_bn_sort_by"
+        v-model:sort-by="parcels_bn_sort_by"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"

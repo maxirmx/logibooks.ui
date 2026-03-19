@@ -15,9 +15,12 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reportRows = ref([])
   const loading = ref(false)
   const error = ref(null)
-  const totalCount = ref(0)
-  const hasNextPage = ref(false)
-  const hasPreviousPage = ref(false)
+  const reportsTotalCount = ref(0)
+  const reportsHasNextPage = ref(false)
+  const reportsHasPreviousPage = ref(false)
+  const rowsTotalCount = ref(0)
+  const rowsHasNextPage = ref(false)
+  const rowsHasPreviousPage = ref(false)
 
   async function upload(file) {
     loading.value = true
@@ -54,15 +57,15 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
 
       reports.value = response?.items || []
-      totalCount.value = response?.pagination?.totalCount || 0
-      hasNextPage.value = response?.pagination?.hasNextPage || false
-      hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
+      reportsTotalCount.value = response?.pagination?.totalCount || 0
+      reportsHasNextPage.value = response?.pagination?.hasNextPage || false
+      reportsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
       reports.value = []
-      totalCount.value = 0
-      hasNextPage.value = false
-      hasPreviousPage.value = false
+      reportsTotalCount.value = 0
+      reportsHasNextPage.value = false
+      reportsHasPreviousPage.value = false
     } finally {
       loading.value = false
     }
@@ -102,15 +105,15 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       const response = await fetchWrapper.get(`${baseUrl}/${reportId}/rows?${queryParams.toString()}`)
 
       reportRows.value = response?.items || []
-      totalCount.value = response?.pagination?.totalCount || 0
-      hasNextPage.value = response?.pagination?.hasNextPage || false
-      hasPreviousPage.value = response?.pagination?.hasPreviousPage || false
+      rowsTotalCount.value = response?.pagination?.totalCount || 0
+      rowsHasNextPage.value = response?.pagination?.hasNextPage || false
+      rowsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
       reportRows.value = []
-      totalCount.value = 0
-      hasNextPage.value = false
-      hasPreviousPage.value = false
+      rowsTotalCount.value = 0
+      rowsHasNextPage.value = false
+      rowsHasPreviousPage.value = false
     } finally {
       loading.value = false
     }
@@ -119,9 +122,12 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   return {
     reports,
     reportRows,
-    totalCount,
-    hasNextPage,
-    hasPreviousPage,
+    reportsTotalCount,
+    reportsHasNextPage,
+    reportsHasPreviousPage,
+    rowsTotalCount,
+    rowsHasNextPage,
+    rowsHasPreviousPage,
     loading,
     error,
     upload,

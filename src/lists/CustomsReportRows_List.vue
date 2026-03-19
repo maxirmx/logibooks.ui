@@ -34,7 +34,7 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, error, totalCount } = storeToRefs(customsReportsStore)
+const { reportRows, loading, error, rowsTotalCount } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
@@ -97,7 +97,7 @@ const headers = [
   { title: 'Предшествующий ТНВЭД', key: 'prevTnVed', align: 'start', width: '120px' },
 ]
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / customsreportrows_per_page.value)))
+const maxPage = computed(() => Math.max(1, Math.ceil((rowsTotalCount.value || 0) / customsreportrows_per_page.value)))
 
 watch(maxPage, (v) => {
   if (customsreportrows_page.value > v) customsreportrows_page.value = v
@@ -153,7 +153,7 @@ const pageOptions = computed(() => {
         v-model:sort-by="customsreportrows_sort_by"
         :headers="headers"
         :items="reportRows"
-        :items-length="totalCount"
+        :items-length="rowsTotalCount"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -207,7 +207,7 @@ const pageOptions = computed(() => {
           v-model:page="customsreportrows_page"
           :items-per-page-options="itemsPerPageOptions"
           :page-options="pageOptions"
-          :total-count="totalCount"
+          :total-count="rowsTotalCount"
           :max-page="maxPage"
         />
       </div>

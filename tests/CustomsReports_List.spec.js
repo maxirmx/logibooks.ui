@@ -12,7 +12,7 @@ import { defaultGlobalStubs } from './helpers/test-utils.js'
 const reportsRef = ref([])
 const loadingRef = ref(false)
 const errorRef = ref(null)
-const totalCountRef = ref(0)
+const reportsTotalCountRef = ref(0)
 const alertRef = ref(null)
 const perPageRef = ref(10)
 const sortByRef = ref([{ key: 'id', order: 'desc' }])
@@ -122,14 +122,14 @@ describe('CustomsReports_List.vue', () => {
     reportsRef.value = []
     loadingRef.value = false
     errorRef.value = null
-    totalCountRef.value = 0
+    reportsTotalCountRef.value = 0
     alertRef.value = null
 
     customsReportsStoreMock = {
       reports: reportsRef,
       loading: loadingRef,
       error: errorRef,
-      totalCount: totalCountRef,
+      reportsTotalCount: reportsTotalCountRef,
       getReports: getReportsMock,
       upload: uploadMock,
       remove: removeMock
@@ -205,7 +205,7 @@ describe('CustomsReports_List.vue', () => {
         errMsg: 'Some error'
       }
     ]
-    totalCountRef.value = 1
+    reportsTotalCountRef.value = 1
 
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -242,7 +242,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'report.xlsx'
       }
     ]
-    totalCountRef.value = 100
+    reportsTotalCountRef.value = 100
     perPageRef.value = 50
     pageRef.value = 2
     sortByRef.value = [{ key: 'fileName', order: 'asc' }]
@@ -407,7 +407,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'file.zip'
       }
     ]
-    totalCountRef.value = 1
+    reportsTotalCountRef.value = 1
     removeMock.mockResolvedValue()
     confirmMock.mockResolvedValue(true)
 
@@ -436,7 +436,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'bad'
       }
     ]
-    totalCountRef.value = 1
+    reportsTotalCountRef.value = 1
     removeMock.mockRejectedValue(new Error('delete failed'))
     confirmMock.mockResolvedValue(true)
 
@@ -464,7 +464,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'nope'
       }
     ]
-    totalCountRef.value = 1
+    reportsTotalCountRef.value = 1
     confirmMock.mockResolvedValue(false)
     removeMock.mockResolvedValue()
 
@@ -492,7 +492,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'file.xlsx'
       }
     ]
-    totalCountRef.value = 1
+    reportsTotalCountRef.value = 1
 
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -514,7 +514,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'report.xlsx'
       }
     ]
-    totalCountRef.value = 1
+    reportsTotalCountRef.value = 1
 
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -532,7 +532,7 @@ describe('CustomsReports_List.vue', () => {
   })
 
   it('clamps page to maxPage on mount when page exceeds range', async () => {
-    totalCountRef.value = 10
+    reportsTotalCountRef.value = 10
     perPageRef.value = 10
     pageRef.value = 5
 
@@ -545,7 +545,7 @@ describe('CustomsReports_List.vue', () => {
   })
 
   it('keeps page when it is within range on mount', async () => {
-    totalCountRef.value = 100
+    reportsTotalCountRef.value = 100
     perPageRef.value = 10
     pageRef.value = 5
 

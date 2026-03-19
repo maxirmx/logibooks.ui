@@ -24,7 +24,7 @@ const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, error, totalCount } = storeToRefs(customsReportsStore)
+const { reports, loading, error, reportsTotalCount } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 
 const fileInput = ref(null)
@@ -255,7 +255,7 @@ function viewReportRows(report) {
         v-model:sort-by="uploadcustomsreports_sort_by"
         :headers="headers"
         :items="tableItems"
-        :items-length="totalCount"
+        :items-length="reportsTotalCount"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"

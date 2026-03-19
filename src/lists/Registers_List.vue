@@ -310,6 +310,12 @@ async function loadRegisters() {
   await registersStore.getAll({ mode: props.mode })
 }
 
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / registers_per_page.value)))
+
+watch(maxPage, (v) => {
+  if (registers_page.value > v) registers_page.value = v
+}, { immediate: true })
+
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: registers_search }],
   loadFn: loadRegisters,

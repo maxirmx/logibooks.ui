@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAirportsStore } from '@/stores/airports.store.js'
@@ -23,6 +23,12 @@ const { airports, loading } = storeToRefs(airportsStore)
 const { alert } = storeToRefs(alertStore)
 
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((airports.value?.length || 0) / authStore.airports_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.airports_page > v) authStore.airports_page = v
+}, { immediate: true })
 
 function filterAirports(value, query, item) {
   if (query === null || item === null) {

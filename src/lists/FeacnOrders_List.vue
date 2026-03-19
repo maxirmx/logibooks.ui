@@ -31,6 +31,12 @@ const {
   isSrLogistPlus
 } = storeToRefs(authStore)
 
+const maxPage = computed(() => Math.max(1, Math.ceil((prefixes.value?.length || 0) / feacnprefixes_per_page.value)))
+
+watch(maxPage, (v) => {
+  if (feacnprefixes_page.value > v) feacnprefixes_page.value = v
+}, { immediate: true })
+
 // Always keep selectedOrderId in sync with visible orders
 watch(
   () => orders.value,

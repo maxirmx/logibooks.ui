@@ -99,6 +99,10 @@ const headers = [
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / customsreportrows_per_page.value)))
 
+watch(maxPage, (v) => {
+  if (customsreportrows_page.value > v) customsreportrows_page.value = v
+}, { immediate: true })
+
 const pageOptions = computed(() => {
   const mp = maxPage.value
   const current = customsreportrows_page.value || 1

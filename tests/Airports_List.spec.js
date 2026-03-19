@@ -5,7 +5,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import AirportsList from '@/lists/Airports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
@@ -37,13 +37,13 @@ const mockAlertStore = {
   clear: alertClear
 }
 
-const mockAuthStore = {
+const mockAuthStore = reactive({
   isSrLogistPlus: true,
   airports_per_page: ref(10),
   airports_search: ref(''),
   airports_sort_by: ref(['id']),
   airports_page: ref(1)
-}
+})
 
 vi.mock('pinia', () => ({
   storeToRefs: (store) => {
@@ -164,5 +164,38 @@ describe('Airports_List.vue', () => {
     // after refactor the header remains and data table is always rendered (shows empty)
     expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
     expect(wrapper.find('.header-with-actions').exists()).toBe(true)
+  })
+
+  it('clamps page to maxPage on mount when page exceeds range', async () => {
+    mockAirports.value = [
+      { id: 1, name: 'Sheremetyevo', codeIata: 'SVO' },
+      { id: 2, name: 'Domodedovo', codeIata: 'DME' }
+    ]
+    mockAuthStore.airports_per_page = 10
+    mockAuthStore.airports_page = 5
+
+    mount(AirportsList, {
+      global: { stubs: testStubs }
+    })
+
+    await Promise.resolve()
+    expect(mockAuthStore.airports_page).toBe(1)
+  })
+
+  it('keeps page when it is within range on mount', async () => {
+    mockAirports.value = Array.from({ length: 25 }, (_, i) => ({
+      id: i + 1,
+      name: `Airport ${i + 1}`,
+      codeIata: `A${i}`
+    }))
+    mockAuthStore.airports_per_page = 10
+    mockAuthStore.airports_page = 2
+
+    mount(AirportsList, {
+      global: { stubs: testStubs }
+    })
+
+    await Promise.resolve()
+    expect(mockAuthStore.airports_page).toBe(2)
   })
 })

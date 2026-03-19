@@ -42,6 +42,12 @@ async function loadReports() {
   await customsReportsStore.getReports()
 }
 
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / uploadcustomsreports_per_page.value)))
+
+watch(maxPage, (v) => {
+  if (uploadcustomsreports_page.value > v) uploadcustomsreports_page.value = v
+}, { immediate: true })
+
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: uploadcustomsreports_search }],
   loadFn: loadReports,

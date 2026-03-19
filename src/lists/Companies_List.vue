@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useCompaniesStore } from '@/stores/companies.store.js'
@@ -26,7 +26,11 @@ countriesStore.ensureLoaded()
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
-// Remove local search and itemsPerPage refs - use auth store instead
+const maxPage = computed(() => Math.max(1, Math.ceil((companies.value?.length || 0) / authStore.companies_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.companies_page > v) authStore.companies_page = v
+}, { immediate: true })
 
 // Custom filter function for v-data-table
 function filterCompanies(value, query, item) {

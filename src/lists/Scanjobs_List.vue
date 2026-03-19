@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
@@ -151,6 +151,12 @@ async function finishScanjob(scanJob) {
 async function loadScanjobs() {
   await scanJobsStore.getAll()
 }
+
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / scanjobs_per_page.value)))
+
+watch(maxPage, (v) => {
+  if (scanjobs_page.value > v) scanjobs_page.value = v
+}, { immediate: true })
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: scanjobs_search }],

@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -24,6 +24,12 @@ const confirm = useConfirm()
 const { stopWords, loading } = storeToRefs(stopWordsStore)
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((stopWords.value?.length || 0) / authStore.stopwords_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.stopwords_page > v) authStore.stopwords_page = v
+}, { immediate: true })
 
 // Custom filter function for v-data-table
 function filterStopWords(value, query, item) {

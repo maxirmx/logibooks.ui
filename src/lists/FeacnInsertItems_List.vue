@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnInsertItemsStore } from '@/stores/feacn.insert.items.store.js'
@@ -26,6 +26,12 @@ const confirm = useConfirm()
 const { insertItems, loading } = storeToRefs(insertItemsStore)
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((insertItems.value?.length || 0) / authStore.feacninsertitems_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.feacninsertitems_page > v) authStore.feacninsertitems_page = v
+}, { immediate: true })
 
 // Use shared FEACN tooltip cache
 const feacnTooltips = useFeacnTooltips()

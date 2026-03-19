@@ -30,7 +30,7 @@ const clear = vi.fn()
 
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
-    items: mockItems,
+    countries: mockItems,
     loading: mockLoading,
     error: mockError,
     getAll,
@@ -132,6 +132,28 @@ describe('Countries_List.vue', () => {
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).toContain('Ошибка при загрузке информации')
+  })
+
+  it('clamps page to maxPage on mount when page exceeds range', () => {
+    mockItems.value = [
+      { isoNumeric: 840, isoAlpha2: 'US', nameEnOfficial: 'United States', nameRuOfficial: 'США' }
+    ]
+    codesPerPage.value = 10
+    codesPage.value = 5
+
+    mount(CountriesList, { global: { stubs: vuetifyStubs } })
+    expect(codesPage.value).toBe(1)
+  })
+
+  it('keeps page when it is within range on mount', () => {
+    mockItems.value = Array.from({ length: 25 }, (_, i) => ({
+      isoNumeric: i, isoAlpha2: `A${i}`, nameEnOfficial: `C${i}`, nameRuOfficial: `С${i}`
+    }))
+    codesPerPage.value = 10
+    codesPage.value = 2
+
+    mount(CountriesList, { global: { stubs: vuetifyStubs } })
+    expect(codesPage.value).toBe(2)
   })
 })
 

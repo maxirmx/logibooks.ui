@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useNotificationsStore } from '@/stores/notifications.store.js'
@@ -24,6 +24,12 @@ const confirm = useConfirm()
 const { notifications, loading } = storeToRefs(notificationsStore)
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((notifications.value?.length || 0) / authStore.notifications_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.notifications_page > v) authStore.notifications_page = v
+}, { immediate: true })
 
 function filterNotifications(value, query, item) {
   if (query === null || item === null) {

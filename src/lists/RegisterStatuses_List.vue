@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
@@ -22,6 +22,12 @@ const confirm = useConfirm()
 const { registerStatuses, loading } = storeToRefs(registerStatusesStore)
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((registerStatuses.value?.length || 0) / authStore.registerstatuses_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.registerstatuses_page > v) authStore.registerstatuses_page = v
+}, { immediate: true })
 
 // Custom filter function for v-data-table
 function filterRegisterStatuses(value, query, item) {

@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
@@ -23,6 +23,12 @@ const { hotKeyActionSchemes, loading } = storeToRefs(hotKeyActionSchemesStore)
 const { alert } = storeToRefs(alertStore)
 
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((hotKeyActionSchemes.value?.length || 0) / authStore.hotkeyactionschemes_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.hotkeyactionschemes_page > v) authStore.hotkeyactionschemes_page = v
+}, { immediate: true })
 
 function filterHotKeyActionSchemes(value, query, item) {
   if (query === null || item === null) {

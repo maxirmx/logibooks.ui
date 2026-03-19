@@ -5,7 +5,7 @@
 
 import router from '@/router'
 
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -26,6 +26,12 @@ const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
 const runningAction = ref(false)
 usersStore.ensureLoaded()
+
+const maxPage = computed(() => Math.max(1, Math.ceil((users.value?.length || 0) / authStore.users_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.users_page > v) authStore.users_page = v
+}, { immediate: true })
 
 import { useAlertStore } from '@/stores/alert.store.js'
 const alertStore = useAlertStore()

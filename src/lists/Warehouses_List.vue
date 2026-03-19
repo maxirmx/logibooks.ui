@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
@@ -25,6 +25,12 @@ const { warehouses, loading } = storeToRefs(warehousesStore)
 countriesStore.ensureLoaded()
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((warehouses.value?.length || 0) / authStore.warehouses_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.warehouses_page > v) authStore.warehouses_page = v
+}, { immediate: true })
 
 const warehouseTypeOptions = [
   { value: 0, label: 'Склад временного хранения' },

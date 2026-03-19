@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
@@ -27,6 +27,12 @@ const confirm = useConfirm()
 const { prefixes, loading } = storeToRefs(prefixesStore)
 const runningAction = ref(false)
 const { alert } = storeToRefs(alertStore)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((prefixes.value?.length || 0) / authStore.feacnlocalprefixes_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.feacnlocalprefixes_page > v) authStore.feacnlocalprefixes_page = v
+}, { immediate: true })
 
 // Shared FEACN info cache
 const feacnTooltips = useFeacnTooltips()

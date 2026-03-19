@@ -9,7 +9,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { onMounted } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 
 const countriesStore = useCountriesStore()
@@ -30,6 +30,12 @@ const {
   countries_page,
   isSrLogistPlus
 } = storeToRefs(authStore)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((countries.value?.length || 0) / countries_per_page.value)))
+
+watch(maxPage, (v) => {
+  if (countries_page.value > v) countries_page.value = v
+}, { immediate: true })
 
 function filterCodes(value, query, item) {
   if (!query) return true

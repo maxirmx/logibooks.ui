@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -30,6 +30,12 @@ const confirm = useConfirm()
 const { keyWords, loading } = storeToRefs(keyWordsStore)
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
+
+const maxPage = computed(() => Math.max(1, Math.ceil((keyWords.value?.length || 0) / authStore.keywords_per_page)))
+
+watch(maxPage, (v) => {
+  if (authStore.keywords_page > v) authStore.keywords_page = v
+}, { immediate: true })
 
 // File upload reference
 const fileInput = ref(null)

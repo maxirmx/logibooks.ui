@@ -242,7 +242,7 @@ describe('CustomsReports_List.vue', () => {
         fileName: 'report.xlsx'
       }
     ]
-    totalCountRef.value = 1
+    totalCountRef.value = 100
     perPageRef.value = 50
     pageRef.value = 2
     sortByRef.value = [{ key: 'fileName', order: 'asc' }]
@@ -529,5 +529,31 @@ describe('CustomsReports_List.vue', () => {
 
     await idLink.trigger('click')
     expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/rows', query: {} })
+  })
+
+  it('clamps page to maxPage on mount when page exceeds range', async () => {
+    totalCountRef.value = 10
+    perPageRef.value = 10
+    pageRef.value = 5
+
+    mount(CustomsReportsList, {
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+    expect(pageRef.value).toBe(1)
+  })
+
+  it('keeps page when it is within range on mount', async () => {
+    totalCountRef.value = 100
+    perPageRef.value = 10
+    pageRef.value = 5
+
+    mount(CustomsReportsList, {
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+    expect(pageRef.value).toBe(5)
   })
 })

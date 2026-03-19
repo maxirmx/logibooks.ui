@@ -199,11 +199,6 @@ watch(
         item.value.warehouseId = 0
       }
     } else {
-      try {
-        await registersStore.getAll()
-      } catch (error) {
-        alertStore.error(`Не удалось загрузить список ${registerNouns.value.genitivePlural}: ` + (error?.message || String(error)))
-      }
       // Set default values for new records
       if (item.value.customsProcedureCode == null) {
         item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
@@ -379,11 +374,6 @@ function handleProcedureChange(e) {
   updateDirection()
 }
 
-function onLookupForReimportChange(e) {
-  // Field may emit a boolean or a DOM event
-  return typeof e === 'boolean' ? e : (e?.target?.checked ?? false)
-}
-
 function getTitle() {
   return props.create
     ? `Загрузка ${registerNouns.value.genitiveSingular}`
@@ -412,6 +402,7 @@ function parseNumber(value, defaultValue) {
 
 function prepareRegisterPayload(formValues) {
   const payload = { ...formValues }
+  delete payload.checkForDuplicates
 
   const selectedTransportationTypeId = parseNumber(formValues.transportationTypeCode ?? item.value?.transportationTypeCode, null)
   payload.transportationTypeCode = selectedTransportationTypeId
@@ -801,7 +792,6 @@ function getCustomerName(customerId) {
                 :unchecked-value="false"
                 class="custom-checkbox-input"
                 :disabled="!isRe"
-                @change="onLookupForReimportChange"
               />
               <span class="custom-checkbox-box"></span>
               <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>

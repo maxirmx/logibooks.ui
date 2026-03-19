@@ -663,7 +663,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(getById).not.toHaveBeenCalled()
-    expect(getAll).toHaveBeenCalled()
+    expect(getAll).not.toHaveBeenCalled()
     expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
     expect(wrapper.find('button[type="submit"]').text()).toContain('Загрузить')
 
@@ -672,31 +672,6 @@ describe('Register_EditDialog', () => {
     await resolveAll()
     expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, false, false)
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
-  })
-
-  it('still renders create dialog when register list fetch fails', async () => {
-    const loadError = new Error('load failed')
-    getAll.mockRejectedValueOnce(loadError)
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-    try {
-      const Parent = {
-        template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-        components: { RegisterEditDialog }
-      }
-      const wrapper = mount(Parent, {
-        global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
-      })
-
-      await resolveAll()
-
-      expect(getAll).toHaveBeenCalled()
-      expect(wrapper.find('h1').text()).toBe('Загрузка реестра')
-      const checkForDuplicatesCheckbox = wrapper.find('#checkForDuplicates')
-      expect(checkForDuplicatesCheckbox.exists()).toBe(true)
-    } finally {
-      consoleErrorSpy.mockRestore()
-    }
   })
 
   it('renders checkForDuplicates checkbox only in create mode', async () => {

@@ -569,49 +569,29 @@ describe('registers store', () => {
       fetchWrapper.postFile.mockResolvedValue({ id: 1 })
 
       const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure)
+      await store.upload(file, customerId, customsProcedure, false)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&sourceRegisterId=0&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
     })
 
-    it('uploads file with sourceRegisterId parameter', async () => {
+    it('uploads file with checkForDuplicates=true', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       const customsProcedure = 2
-      const sourceRegisterId = 777
       fetchWrapper.postFile.mockResolvedValue({ id: 2 })
 
       const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, sourceRegisterId)
+      await store.upload(file, customerId, customsProcedure, true)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&sourceRegisterId=777&transfer2Reimport=false`
-      )
-      const formData = fetchWrapper.postFile.mock.calls[0][1]
-      expect(formData instanceof FormData).toBe(true)
-      expect(formData.get('file')).toBe(file)
-    })
-
-    it('uploads file with sourceRegisterId zero explicitly set', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const customerId = 123
-      const customsProcedure = 1
-      const sourceRegisterId = 0
-      fetchWrapper.postFile.mockResolvedValue({ id: 3 })
-
-      const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, sourceRegisterId)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&sourceRegisterId=0&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&checkForDuplicates=true&transfer2Reimport=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -622,14 +602,14 @@ describe('registers store', () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       const customsProcedure = 1
-      fetchWrapper.postFile.mockResolvedValue({ id: 4 })
+      fetchWrapper.postFile.mockResolvedValue({ id: 3 })
 
       const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, 0, true)
+      await store.upload(file, customerId, customsProcedure, false, true)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&sourceRegisterId=0&transfer2Reimport=true`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Reimport=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -640,19 +620,26 @@ describe('registers store', () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       const customsProcedure = 3
-      const sourceRegisterId = 777
-      fetchWrapper.postFile.mockResolvedValue({ id: 5 })
+      fetchWrapper.postFile.mockResolvedValue({ id: 4 })
 
       const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, sourceRegisterId, true)
+      await store.upload(file, customerId, customsProcedure, true, true)
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&sourceRegisterId=777&transfer2Reimport=true`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&checkForDuplicates=true&transfer2Reimport=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
+    })
+
+    it('throws when checkForDuplicates is missing', async () => {
+      const file = new File(['data'], 'test.xlsx')
+      const store = useRegistersStore()
+
+      await expect(store.upload(file, 123, 1)).rejects.toThrow('checkForDuplicates parameter is required and must be boolean')
+      expect(fetchWrapper.postFile).not.toHaveBeenCalled()
     })
 
     it('sets error on failure', async () => {
@@ -661,7 +648,7 @@ describe('registers store', () => {
       fetchWrapper.postFile.mockRejectedValue(new Error('fail'))
 
       const store = useRegistersStore()
-      await expect(store.upload(file, registerType, 1)).rejects.toThrow('fail')
+      await expect(store.upload(file, registerType, 1, false)).rejects.toThrow('fail')
       expect(store.error).toBeTruthy()
       expect(store.loading).toBe(false)
     })

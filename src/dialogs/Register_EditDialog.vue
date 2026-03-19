@@ -20,7 +20,6 @@ import ActionDialog from '@/components/ActionDialog.vue'
 import ErrorDialog from '@/components/ErrorDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { generateRegisterName } from '@/helpers/parcels.list.helpers.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 
@@ -33,7 +32,7 @@ const props = defineProps({
 const alertStore = useAlertStore()
 
 const registersStore = useRegistersStore()
-const { item, uploadFile, items, ops } = storeToRefs(registersStore)
+const { item, uploadFile, ops } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
 const { countries } = storeToRefs(countriesStore)
@@ -77,22 +76,7 @@ const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 const isSubmitting = ref(false)
-const transferRegisterId = ref('')
-
-const registerOptions = computed(() => {
-  if (!Array.isArray(items.value)) return []
-
-  // Only include registers of the same register type as the one we are editing/creating for
-  const registerType = item.value?.registerType ?? null
-  if (!registerType) return []
-
-  return items.value
-    .filter((register) => register && typeof register === 'object' && (register.registerType == registerType))
-    .map((register) => ({
-      id: register.id,
-      name: generateRegisterName(register.dealNumber, register.fileName)
-    }))
-})
+const checkForDuplicates = ref(false)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const warehouseOptions = computed(() => {
@@ -215,11 +199,6 @@ watch(
         item.value.warehouseId = 0
       }
     } else {
-      try {
-        await registersStore.getAll()
-      } catch (error) {
-        alertStore.error(`Не удалось загрузить список ${registerNouns.value.genitivePlural}: ` + (error?.message || String(error)))
-      }
       // Set default values for new records
       if (item.value.customsProcedureCode == null) {
         item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
@@ -312,7 +291,8 @@ const schema = Yup.object().shape({
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
-  lookupByArticle: Yup.boolean().default(false)
+  lookupByArticle: Yup.boolean().default(false),
+  checkForDuplicates: Yup.boolean().default(false)
 })
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
@@ -394,14 +374,6 @@ function handleProcedureChange(e) {
   updateDirection()
 }
 
-function onLookupForReimportChange(e) {
-  // Field may emit a boolean or a DOM event
-  const checked = typeof e === 'boolean' ? e : (e?.target?.checked ?? false)
-  if (checked) {
-    transferRegisterId.value = ''
-  }
-}
-
 function getTitle() {
   return props.create
     ? `Загрузка ${registerNouns.value.genitiveSingular}`
@@ -430,6 +402,7 @@ function parseNumber(value, defaultValue) {
 
 function prepareRegisterPayload(formValues) {
   const payload = { ...formValues }
+  delete payload.checkForDuplicates
 
   const selectedTransportationTypeId = parseNumber(formValues.transportationTypeCode ?? item.value?.transportationTypeCode, null)
   payload.transportationTypeCode = selectedTransportationTypeId
@@ -472,14 +445,11 @@ async function onSubmit(values) {
     if (props.create) {
       showActionDialog('upload-register')
       try {
-        const sourceRegisterId = transferRegisterId.value === ''
-          ? 0
-          : parseInt(transferRegisterId.value, 10)
         const result = await registersStore.upload(
           uploadFile.value,
           item.value.registerType,
           item.value.customsProcedureCode,
-          Number.isNaN(sourceRegisterId) ? 0 : sourceRegisterId,
+          Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
           Boolean(values.lookupForReimport)
         )
         if (!isComponentMounted.value) return
@@ -529,11 +499,7 @@ async function onSubmit(values) {
 // Helper: show the error dialog and wait until it's closed by the user
 async function showErrorAndAwaitClose(title, message, missingHeaders = [], missingColumns = []) {
   // Ensure any action dialog is hidden first
-  try {
-    hideActionDialog()
-  } catch {
-    // ignore if not available or already hidden
-  }
+  hideActionDialog()
 
   errorDialogState.value = {
     show: true,
@@ -800,26 +766,20 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
-        <div class="form-row" v-if="props.create && props.mode === OP_MODE_PAPERWORK">
+        <div class="form-row" v-if="props.create">
           <div class="form-group">
-            <label for="transferRegisterId" class="label">Перенести статусы из {{ registerNouns.genitiveSingular }}:</label>
-            <Field name="lookupForReimport" v-slot="{ value }">
-              <select
-                id="transferRegisterId"
-                class="form-control input"
-                v-model="transferRegisterId"
-                :disabled="value"
-              >
-                <option value="">Не выбрано</option>
-                <option
-                  v-for="register in registerOptions"
-                  :key="register.id"
-                  :value="register.id"
-                >
-                  {{ register.name }}
-                </option>
-              </select>
-            </Field>
+            <label for="checkForDuplicates" class="custom-checkbox">
+              <Field
+                id="checkForDuplicates"
+                type="checkbox"
+                name="checkForDuplicates"
+                :value="true"
+                :unchecked-value="false"
+                class="custom-checkbox-input"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="label custom-checkbox-label">Проверить на дубликаты</span>
+            </label>
           </div>
 
           <div class="form-group" v-if="props.mode === OP_MODE_PAPERWORK">
@@ -832,7 +792,6 @@ function getCustomerName(customerId) {
                 :unchecked-value="false"
                 class="custom-checkbox-input"
                 :disabled="!isRe"
-                @change="onLookupForReimportChange"
               />
               <span class="custom-checkbox-box"></span>
               <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>

@@ -76,7 +76,7 @@ const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 const isSubmitting = ref(false)
-const checkForDuplicates = ref(false)
+const checkForDuplicates = ref(true)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const warehouseOptions = computed(() => {
@@ -215,6 +215,9 @@ watch(
       if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
         item.value.lookupByArticle = false
       }
+      if (item.value.checkForDuplicates === undefined || item.value.checkForDuplicates === null) {
+        item.value.checkForDuplicates = true
+      }
       if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
         item.value.warehouseId = 0
       }
@@ -292,7 +295,7 @@ const schema = Yup.object().shape({
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   lookupByArticle: Yup.boolean().default(false),
-  checkForDuplicates: Yup.boolean().default(false)
+  checkForDuplicates: Yup.boolean().default(true)
 })
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure

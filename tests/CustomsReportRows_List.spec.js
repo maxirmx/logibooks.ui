@@ -123,7 +123,7 @@ describe('CustomsReportRows_List.vue', () => {
       reportRows: reportRowsRef,
       loading: loadingRef,
       error: errorRef,
-      totalCount: ref(0),
+      reportRowsTotalCount: ref(0),
       getReportRows: getReportRowsMock
     }
 

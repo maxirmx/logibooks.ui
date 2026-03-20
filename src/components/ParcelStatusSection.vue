@@ -128,7 +128,7 @@ defineEmits([
             icon="fa-solid fa-broom"
             tooltip-text="Очистить статус"
             :disabled="disabled"
-            @click="$emit('clear-check-status')"
+            @click="$emit('clear-check-status', values)"
             :iconSize="'2x'"
           />
           <ActionButton
@@ -136,7 +136,7 @@ defineEmits([
             icon="fa-solid fa-clone"
             tooltip-text="Проверить на дубликат"
             :disabled="disabled"
-            @click="$emit('check-for-duplicate')"
+            @click="$emit('check-for-duplicate', values)"
             :iconSize="'2x'"
           />
         </div>

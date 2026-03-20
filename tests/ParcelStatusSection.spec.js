@@ -83,8 +83,8 @@ describe('ParcelStatusSection', () => {
     expect(wrapper.emitted('validate-fc')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve-excise')?.[0]).toEqual([defaultProps.values])
-    expect(wrapper.emitted('clear-check-status')?.[0]).toEqual([])
-    expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([])
+    expect(wrapper.emitted('clear-check-status')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([defaultProps.values])
   })
 
   it('passes disabled state to each action button', () => {

@@ -455,8 +455,8 @@ async function onLookup(values) {
         @validate-fc="(vals) => validateParcel(vals, false)"
         @approve="approveParcel"
         @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
-        @clear-check-status="runCheckStatusAction(values, parcelsStore.clearCheckStatus)"
-        @check-for-duplicate="runCheckStatusAction(values, parcelsStore.checkForDuplicate)"
+        @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
+        @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
       />
       <!-- Feacn Code Section -->
       <FeacnCodeEditor

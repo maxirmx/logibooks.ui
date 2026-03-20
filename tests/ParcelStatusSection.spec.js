@@ -55,7 +55,7 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('#statusId').exists()).toBe(true)
     expect(wrapper.findAll('option')).toHaveLength(2)
-    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(5)
+    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(7)
   })
 
   it('renders current check status and computed class', () => {
@@ -75,12 +75,16 @@ describe('ParcelStatusSection', () => {
     await buttons[2].vm.$emit('click')
     await buttons[3].vm.$emit('click')
     await buttons[4].vm.$emit('click')
+    await buttons[5].vm.$emit('click')
+    await buttons[6].vm.$emit('click')
 
     expect(wrapper.emitted('validate-sw')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('validate-sw-ex')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('validate-fc')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve-excise')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('clear-check-status')?.[0]).toEqual([])
+    expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([])
   })
 
   it('passes disabled state to each action button', () => {
@@ -128,12 +132,14 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ noHistoricData: true, disabled: false })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise
+    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
     expect(buttons[0].props('disabled')).toBe(false)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(false)
     expect(buttons[3].props('disabled')).toBe(false)
     expect(buttons[4].props('disabled')).toBe(false)
+    expect(buttons[5].props('disabled')).toBe(false)
+    expect(buttons[6].props('disabled')).toBe(false)
   })
 
   it('disables all buttons when both disabled and noHistoricData are true', () => {

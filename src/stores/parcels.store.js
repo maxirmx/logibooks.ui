@@ -216,6 +216,16 @@ export const useParcelsStore = defineStore('parcels', () => {
     return result
   }
 
+  async function clearCheckStatus(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/clear`)
+    return true
+  }
+
+  async function checkForDuplicate(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/checkDuplicate`)
+    return true
+  }
+
   async function deleteImage(id) {
     // Calls API: DELETE /parcels/{id}/image
     // Defensive check: verify parcel has an image before making API call
@@ -263,6 +273,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     validate,
     approve,
     lookupFeacnCode,
+    clearCheckStatus,
+    checkForDuplicate,
     getImageProcessingUrl,
     getImageBlob,
     deleteImage

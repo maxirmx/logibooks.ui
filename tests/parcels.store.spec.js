@@ -205,6 +205,26 @@ describe('parcels store', () => {
     expect(store.loading).toBe(false)
   })
 
+  it('clears check status for parcel', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+
+    const result = await store.clearCheckStatus(9)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/9/clear`)
+    expect(result).toBe(true)
+  })
+
+  it('checks parcel for duplicates', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+
+    const result = await store.checkForDuplicate(12)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/checkDuplicate`)
+    expect(result).toBe(true)
+  })
+
   describe('update method', () => {
     it('updates order and calls API with correct parameters', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })

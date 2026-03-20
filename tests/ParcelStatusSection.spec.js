@@ -55,7 +55,7 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('#statusId').exists()).toBe(true)
     expect(wrapper.findAll('option')).toHaveLength(2)
-    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(5)
+    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(7)
   })
 
   it('renders current check status and computed class', () => {
@@ -75,20 +75,65 @@ describe('ParcelStatusSection', () => {
     await buttons[2].vm.$emit('click')
     await buttons[3].vm.$emit('click')
     await buttons[4].vm.$emit('click')
+    await buttons[5].vm.$emit('click')
+    await buttons[6].vm.$emit('click')
 
     expect(wrapper.emitted('validate-sw')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('validate-sw-ex')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('validate-fc')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve-excise')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('clear-check-status')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([defaultProps.values])
   })
 
-  it('passes disabled state to each action button', () => {
+  it('passes disabled state to each action button except clear-check-status', () => {
     const wrapper = createWrapper({ disabled: true })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
+    // All buttons except clear-check-status (index 5) use the disabled prop
+    expect(buttons[0].props('disabled')).toBe(true)
+    expect(buttons[1].props('disabled')).toBe(true)
+    expect(buttons[2].props('disabled')).toBe(true)
+    expect(buttons[3].props('disabled')).toBe(true)
+    expect(buttons[4].props('disabled')).toBe(true)
+    // clear-check-status uses clearCheckStatusDisabled (defaults to false)
+    expect(buttons[5].props('disabled')).toBe(false)
+    expect(buttons[6].props('disabled')).toBe(true)
+  })
+
+  it('disables clear-check-status button via clearCheckStatusDisabled prop', () => {
+    const wrapper = createWrapper({ clearCheckStatusDisabled: true })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    // Only clear-check-status (index 5) should be disabled
+    expect(buttons[0].props('disabled')).toBe(false)
+    expect(buttons[5].props('disabled')).toBe(true)
+    expect(buttons[6].props('disabled')).toBe(false)
+  })
+
+  it('disables all buttons when disabled and clearCheckStatusDisabled are both true', () => {
+    const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: true })
 
     wrapper.findAllComponents(ActionButton).forEach((button) => {
       expect(button.props('disabled')).toBe(true)
     })
+  })
+
+  it('enables clear-check-status when disabled is true but clearCheckStatusDisabled is false', () => {
+    const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: false })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    // All other buttons disabled
+    expect(buttons[0].props('disabled')).toBe(true)
+    expect(buttons[1].props('disabled')).toBe(true)
+    expect(buttons[2].props('disabled')).toBe(true)
+    expect(buttons[3].props('disabled')).toBe(true)
+    expect(buttons[4].props('disabled')).toBe(true)
+    // clear-check-status enabled
+    expect(buttons[5].props('disabled')).toBe(false)
+    expect(buttons[6].props('disabled')).toBe(true)
   })
 
   it('shows bookmark icon for inherited stopwords status', () => {
@@ -128,16 +173,18 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ noHistoricData: true, disabled: false })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise
+    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
     expect(buttons[0].props('disabled')).toBe(false)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(false)
     expect(buttons[3].props('disabled')).toBe(false)
     expect(buttons[4].props('disabled')).toBe(false)
+    expect(buttons[5].props('disabled')).toBe(false)
+    expect(buttons[6].props('disabled')).toBe(false)
   })
 
-  it('disables all buttons when both disabled and noHistoricData are true', () => {
-    const wrapper = createWrapper({ noHistoricData: true, disabled: true })
+  it('disables all buttons when disabled, clearCheckStatusDisabled, and noHistoricData are true', () => {
+    const wrapper = createWrapper({ noHistoricData: true, disabled: true, clearCheckStatusDisabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
     buttons.forEach((button) => {

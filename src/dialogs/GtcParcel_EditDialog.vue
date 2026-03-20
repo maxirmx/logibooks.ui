@@ -227,6 +227,23 @@ async function validateParcel(values, sw, matchMode) {
   }
 }
 
+async function runCheckStatusAction(values, actionFn) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    await ensureNextParcelsPromise()
+    await parcelsStore.update(currentParcelId.value, values)
+    await actionFn(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) {
+      await parcelsStore.getById(currentParcelId.value)
+      runningAction.value = false
+    }
+  }
+}
+
 // Approve the parcel
 async function approveParcel(values) {
   if (!isComponentMounted.value || runningAction.value) return
@@ -458,6 +475,7 @@ async function onLookup(values) {
         :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
         :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)"
+        :clear-check-status-disabled="isSubmitting || runningAction || loading"
         :no-historic-data="true"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
@@ -465,6 +483,8 @@ async function onLookup(values) {
         @approve="approveParcel"
         @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
         @approve-notification="approveParcelWithNotification(values)"
+        @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
+        @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
       />
       <!-- Feacn Code Section -->
       <FeacnCodeEditor

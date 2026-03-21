@@ -108,6 +108,36 @@ export async function approveParcelWithNotification(values, item, parcelsStore) 
 }
 
 /**
+ * Runs a check status action (e.g. clearCheckStatus or checkForDuplicate) on the current parcel.
+ * Saves the current form values before running the action and reloads the parcel afterwards.
+ * @param {Object} values - Form values containing parcel id
+ * @param {Function} actionFn - Action function to run (e.g. parcelsStore.clearCheckStatus)
+ * @param {Object} isComponentMounted - Ref indicating if component is mounted
+ * @param {Object} runningAction - Ref indicating if an action is running
+ * @param {Object} currentParcelId - Ref containing current parcel id
+ * @param {Function} ensureNextParcelsPromise - Function that returns/creates the next-parcels promise
+ * @param {Object} parcelsStore - Parcels store instance
+ * @returns {Promise<void>}
+ */
+export async function runCheckStatusAction(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  const alertStore = useAlertStore()
+  try {
+    await ensureNextParcelsPromise()
+    await parcelsStore.update(currentParcelId.value, values)
+    await actionFn(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) {
+      await parcelsStore.getById(currentParcelId.value)
+      runningAction.value = false
+    }
+  }
+}
+
+/**
  * Deletes product image for a parcel after user confirmation
  * @param {Object} values - Form values containing parcel id
  * @param {Object} isComponentMounted - Ref indicating if component is mounted

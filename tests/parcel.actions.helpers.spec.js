@@ -8,7 +8,8 @@ import {
   approveParcel,
   generateXml,
   approveParcelWithExcise,
-  approveParcelWithNotification
+  approveParcelWithNotification,
+  runCheckStatusAction
 } from '@/helpers/parcel.actions.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
@@ -211,6 +212,102 @@ describe('parcel actions helpers', () => {
       await generateXml(mockItem, mockParcelsStore, 'test-file')
 
       expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
+    })
+  })
+
+  describe('runCheckStatusAction', () => {
+    let mockIsComponentMounted
+    let mockRunningAction
+    let mockCurrentParcelId
+    let mockEnsureNextParcelsPromise
+    let mockActionFn
+
+    beforeEach(() => {
+      mockIsComponentMounted = { value: true }
+      mockRunningAction = { value: false }
+      mockCurrentParcelId = { value: parcelId }
+      mockEnsureNextParcelsPromise = vi.fn().mockResolvedValue()
+      mockActionFn = vi.fn().mockResolvedValue()
+    })
+
+    it('should run action successfully', async () => {
+      await runCheckStatusAction(
+        mockValues, mockActionFn,
+        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
+        mockEnsureNextParcelsPromise, mockParcelsStore
+      )
+
+      expect(mockEnsureNextParcelsPromise).toHaveBeenCalled()
+      expect(mockParcelsStore.update).toHaveBeenCalledWith(parcelId, mockValues)
+      expect(mockActionFn).toHaveBeenCalledWith(parcelId)
+      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
+      expect(mockRunningAction.value).toBe(false)
+    })
+
+    it('should not run if component is unmounted', async () => {
+      mockIsComponentMounted.value = false
+
+      await runCheckStatusAction(
+        mockValues, mockActionFn,
+        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
+        mockEnsureNextParcelsPromise, mockParcelsStore
+      )
+
+      expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
+      expect(mockActionFn).not.toHaveBeenCalled()
+    })
+
+    it('should not run if another action is already running', async () => {
+      mockRunningAction.value = true
+
+      await runCheckStatusAction(
+        mockValues, mockActionFn,
+        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
+        mockEnsureNextParcelsPromise, mockParcelsStore
+      )
+
+      expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
+      expect(mockActionFn).not.toHaveBeenCalled()
+    })
+
+    it('should not run if parcel id does not match', async () => {
+      mockCurrentParcelId.value = 999
+
+      await runCheckStatusAction(
+        mockValues, mockActionFn,
+        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
+        mockEnsureNextParcelsPromise, mockParcelsStore
+      )
+
+      expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
+      expect(mockActionFn).not.toHaveBeenCalled()
+    })
+
+    it('should handle errors and reset runningAction', async () => {
+      mockActionFn.mockRejectedValue(new Error('Action failed'))
+
+      await runCheckStatusAction(
+        mockValues, mockActionFn,
+        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
+        mockEnsureNextParcelsPromise, mockParcelsStore
+      )
+
+      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
+      expect(mockRunningAction.value).toBe(false)
+    })
+
+    it('should not reload parcel if component is unmounted in finally', async () => {
+      mockActionFn.mockImplementation(async () => {
+        mockIsComponentMounted.value = false
+      })
+
+      await runCheckStatusAction(
+        mockValues, mockActionFn,
+        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
+        mockEnsureNextParcelsPromise, mockParcelsStore
+      )
+
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
     })
   })
 })

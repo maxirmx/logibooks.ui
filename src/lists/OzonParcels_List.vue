@@ -375,13 +375,13 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  console.log(selectedItems.value)
   isComponentMounted.value = false
   stopRegisterHeaderActions()
   stopFilterSync()
   if (watcherStop) {
     watcherStop()
   }
-  // event listener for DEC_REPORT_UPLOADED_EVENT removed
 })
 
 const statusOptions = computed(() => [

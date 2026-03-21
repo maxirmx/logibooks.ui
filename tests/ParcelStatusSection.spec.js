@@ -91,8 +91,8 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ disabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
-    // All buttons except clear-check-status (index 5) use the disabled prop
+    // button order: validate-sw, validate-sw-ex, validate-fc, clear-check-status, check-for-duplicate, approve, approve-excise
+    // All buttons except clear-check-status (index 3) use the disabled prop
     expect(buttons[0].props('disabled')).toBe(true)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(true)
@@ -107,7 +107,7 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ clearCheckStatusDisabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // Only clear-check-status (index 5) should be disabled
+    // Only clear-check-status (index 3) should be disabled
     expect(buttons[0].props('disabled')).toBe(false)
     expect(buttons[3].props('disabled')).toBe(true)
     expect(buttons[4].props('disabled')).toBe(false)

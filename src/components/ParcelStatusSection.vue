@@ -109,6 +109,24 @@ defineEmits([
         <div class="action-buttons">
           <ActionButton
             :item="item"
+            icon="fa-solid fa-broom"
+            tooltip-text="Очистить статус"
+            :disabled="clearCheckStatusDisabled"
+            @click="$emit('clear-check-status', values)"
+            :iconSize="'2x'"
+          />
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-clone"
+            tooltip-text="Проверить на дубликат"
+            :disabled="disabled"
+            @click="$emit('check-for-duplicate', values)"
+            :iconSize="'2x'"
+          />
+        </div>
+        <div class="action-buttons">
+          <ActionButton
+            :item="item"
             icon="fa-solid fa-check-circle"
             tooltip-text="Сохранить и согласовать"
             :disabled="disabled"
@@ -123,24 +141,6 @@ defineEmits([
             :disabled="disabled"
             @click="$emit('approve-excise', values)"
             variant="orange"
-            :iconSize="'2x'"
-          />
-        </div>
-        <div class="action-buttons">
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-broom"
-            tooltip-text="Очистить статус"
-            :disabled="clearCheckStatusDisabled"
-            @click="$emit('clear-check-status', values)"
-            :iconSize="'2x'"
-          />
-          <ActionButton
-            :item="item"
-            icon="fa-solid fa-clone"
-            tooltip-text="Проверить на дубликат"
-            :disabled="disabled"
-            @click="$emit('check-for-duplicate', values)"
             :iconSize="'2x'"
           />
         </div>

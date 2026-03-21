@@ -91,15 +91,15 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ disabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
-    // All buttons except clear-check-status (index 5) use the disabled prop
+    // button order: validate-sw, validate-sw-ex, validate-fc, clear-check-status, check-for-duplicate, approve, approve-excise
+    // All buttons except clear-check-status (index 3) use the disabled prop
     expect(buttons[0].props('disabled')).toBe(true)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(true)
-    expect(buttons[3].props('disabled')).toBe(true)
-    expect(buttons[4].props('disabled')).toBe(true)
     // clear-check-status uses clearCheckStatusDisabled (defaults to false)
-    expect(buttons[5].props('disabled')).toBe(false)
+    expect(buttons[3].props('disabled')).toBe(false)
+    expect(buttons[4].props('disabled')).toBe(true)
+    expect(buttons[5].props('disabled')).toBe(true)
     expect(buttons[6].props('disabled')).toBe(true)
   })
 
@@ -107,10 +107,10 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ clearCheckStatusDisabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // Only clear-check-status (index 5) should be disabled
+    // Only clear-check-status (index 3) should be disabled
     expect(buttons[0].props('disabled')).toBe(false)
-    expect(buttons[5].props('disabled')).toBe(true)
-    expect(buttons[6].props('disabled')).toBe(false)
+    expect(buttons[3].props('disabled')).toBe(true)
+    expect(buttons[4].props('disabled')).toBe(false)
   })
 
   it('disables all buttons when disabled and clearCheckStatusDisabled are both true', () => {
@@ -125,14 +125,15 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: false })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // All other buttons disabled
+    // clear-check-status enabled
+    // all other buttons disabled
     expect(buttons[0].props('disabled')).toBe(true)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(true)
-    expect(buttons[3].props('disabled')).toBe(true)
+    expect(buttons[3].props('disabled')).toBe(false)
     expect(buttons[4].props('disabled')).toBe(true)
-    // clear-check-status enabled
-    expect(buttons[5].props('disabled')).toBe(false)
+
+    expect(buttons[5].props('disabled')).toBe(true)
     expect(buttons[6].props('disabled')).toBe(true)
   })
 

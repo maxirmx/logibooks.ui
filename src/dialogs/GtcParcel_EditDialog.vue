@@ -38,7 +38,8 @@ import {
   approveParcelWithExcise as approveParcelWithExciseHelper,
   approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper,
-  deleteProductImage as deleteProductImageHelper
+  deleteProductImage as deleteProductImageHelper,
+  runCheckStatusAction as runCheckStatusActionHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -228,20 +229,7 @@ async function validateParcel(values, sw, matchMode) {
 }
 
 async function runCheckStatusAction(values, actionFn) {
-  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
-  runningAction.value = true
-  try {
-    await ensureNextParcelsPromise()
-    await parcelsStore.update(currentParcelId.value, values)
-    await actionFn(currentParcelId.value)
-  } catch (error) {
-    alertStore.error(error?.message || String(error))
-  } finally {
-    if (isComponentMounted.value) {
-      await parcelsStore.getById(currentParcelId.value)
-      runningAction.value = false
-    }
-  }
+  return runCheckStatusActionHelper(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore)
 }
 
 // Approve the parcel

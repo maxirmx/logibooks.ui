@@ -44,10 +44,12 @@ import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
+import AssignTnvedDialog from '@/components/AssignTnvedDialog.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
+import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -98,6 +100,32 @@ if (selectedParcelIdFromQuery != null) {
 // Template ref for the data table
 const dataTableRef = ref(null)
 
+const {
+  selectedParcelIds,
+  lastClickedId,
+  handleRowClick,
+  handleRowContextMenu,
+  updateSelectedParcelIds,
+  scrollToSelectedItem,
+  getRowProps: getRowPropsForOzonParcel,
+  stop: stopMultiSelect,
+} = useParcelMultiSelect({
+  items,
+  loading,
+  selectedParcelId,
+  page: parcels_page,
+  dataTableRef,
+  getBaseRowClass: (data) => getRowPropsForParcel(data).class,
+  onContextMenu: () => { showAssignTnvedDialog.value = true },
+})
+
+const showAssignTnvedDialog = ref(false)
+
+function handleAssignTnvedConfirm(ids) {
+  // TODO: implement actual ТН ВЭД assignment logic
+  console.log('Assign ТН ВЭД for IDs:', ids)
+}
+
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
 const isReProcedure = computed(() => {
   const procedureId = registersStore.item?.customsProcedureCode
@@ -130,65 +158,7 @@ watch(maxPage, (v) => {
   if (parcels_page.value > v) parcels_page.value = v
 })
 
-// Selected parcel management
-function updateSelectedParcelId() {
-  if (selectedParcelId.value == null || loading.value) return
 
-  const isCurrentOnPage = items.value.some(item => item.id === selectedParcelId.value)
-  if (!isCurrentOnPage) {
-    selectedParcelId.value = null
-  }
-}
-
-// Watch for items changes to update selection and scroll to selected item
-watch(
-  () => items.value,
-  () => {
-    updateSelectedParcelId()
-    if (selectedParcelId.value) {
-      scrollToSelectedItem()
-    }
-  }
-)
-
-// Watch for page changes to set selection to null
-watch(
-  parcels_page,
-  () => {
-    selectedParcelId.value = null
-  }
-)
-
-// Custom row props function with selection highlighting
-function getRowPropsForOzonParcel(data) {
-  const baseClass = getRowPropsForParcel(data).class
-  const selectedClass = data.item.id === selectedParcelId.value ? 'selected-parcel-row' : ''
-  return { class: `${baseClass} ${selectedClass}`.trim() }
-}
-
-// Scroll to selected item function
-function scrollToSelectedItem() {
-  if (!selectedParcelId.value || !dataTableRef.value) return
-  
-  nextTick(() => {
-    try {
-      // Find the selected row by looking for the selected-parcel-row class
-      const tableElement = dataTableRef.value.$el || dataTableRef.value
-      const selectedRow = tableElement.querySelector('.selected-parcel-row')
-      
-      if (selectedRow) {
-        // Scroll the row into view with smooth behavior
-        selectedRow.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'nearest'
-        })
-      }
-    } catch {
-      // Swallow errors during scroll attempt
-    }
-  })
-}
 
 const registerFileName = ref('')
 const registerDealNumber = ref('')
@@ -296,20 +266,19 @@ onMounted(async () => {
     await fetchRegister()
 
     if (items.value?.length > 0) {
-      updateSelectedParcelId()
-      if (selectedParcelId.value) {
+      updateSelectedParcelIds()
+      if (selectedParcelIds.value.size > 0) {
         scrollToSelectedItem()
       }
     }
 
     // Restore parcel selection from extension snapshot after all cleanups
-    // This ensures that if the user invoked an extension and returned,
-    // the previously selected parcel will be highlighted with the dashed border
     const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()
     const restoredParcelId = restoreSelectedParcelIdSnapshot()
     if (restoredParcelId != null && items.value?.some(item => item.id === restoredParcelId)) {
       selectedParcelId.value = restoredParcelId
-      // Scroll to the restored selection
+      selectedParcelIds.value = new Set([restoredParcelId])
+      lastClickedId.value = restoredParcelId
       await nextTick()
       scrollToSelectedItem()
     }
@@ -327,12 +296,12 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
+  stopMultiSelect()
   stopRegisterHeaderActions()
   stopFilterSync()
   if (watcherStop) {
     watcherStop()
   }
-  // event listener for DEC_REPORT_UPLOADED_EVENT removed
 })
 
 const statusOptions = computed(() => [
@@ -527,7 +496,8 @@ function getGenericTemplateHeaders() {
         :headers="headers"
         :items="items"
         :row-props="getRowPropsForOzonParcel"
-        @click:row="(event, { item }) => { selectedParcelId = item.id }"
+        @click:row="handleRowClick"
+        @contextmenu:row="handleRowContextMenu"
         :items-length="totalCount"
         :loading="loading || isInitializing"
         density="compact"
@@ -732,10 +702,23 @@ function getGenericTemplateHeaders() {
       :cancel-validation="cancelRegisterValidation"
       :action-dialog="actionDialogState"
     />
+
+    <AssignTnvedDialog
+      :show="showAssignTnvedDialog"
+      :selected-ids="[...selectedParcelIds]"
+      @update:show="showAssignTnvedDialog = $event"
+      @confirm="handleAssignTnvedConfirm"
+    />
   </div>
 </template>
 
 <style scoped>
+/* Prevent native text selection on the table so shift-click multi-select
+   does not trigger browser text highlighting */
+.ozon-parcels-table {
+  user-select: none;
+}
+
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
 }

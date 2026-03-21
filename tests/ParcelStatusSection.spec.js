@@ -130,7 +130,6 @@ describe('ParcelStatusSection', () => {
     expect(buttons[0].props('disabled')).toBe(true)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(true)
-    
     expect(buttons[3].props('disabled')).toBe(false)
     expect(buttons[4].props('disabled')).toBe(true)
 

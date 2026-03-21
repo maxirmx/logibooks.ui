@@ -39,7 +39,8 @@ import {
   approveParcelWithExcise as approveParcelWithExciseHelper,
   approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper,
-  deleteProductImage as deleteProductImageHelper
+  deleteProductImage as deleteProductImageHelper,
+  runCheckStatusAction as runCheckStatusActionHelper
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -216,6 +217,10 @@ async function validateParcel(values, sw, matchMode) {
   } finally {
     if (isComponentMounted.value) runningAction.value = false
   }
+}
+
+async function runCheckStatusAction(values, actionFn) {
+  return runCheckStatusActionHelper(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore)
 }
 
 // Approve the parcel
@@ -449,11 +454,14 @@ async function onLookup(values) {
         :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
         :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)"
+        :clear-check-status-disabled="isSubmitting || runningAction || loading"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
         @validate-fc="(vals) => validateParcel(vals, false)"
         @approve="approveParcel"
         @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
+        @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
+        @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
       />
       <!-- Feacn Code Section -->
       <FeacnCodeEditor

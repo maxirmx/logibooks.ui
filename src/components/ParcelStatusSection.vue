@@ -36,13 +36,25 @@ defineProps({
     type: Boolean,
     default: false
   },
+  clearCheckStatusDisabled: {
+    type: Boolean,
+    default: false
+  },
   noHistoricData: {
     type: Boolean,
     default: false
   }
 })
 
-defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve-excise'])
+defineEmits([
+  'validate-sw',
+  'validate-sw-ex',
+  'validate-fc',
+  'approve',
+  'approve-excise',
+  'clear-check-status',
+  'check-for-duplicate'
+])
 </script>
 
 <template>
@@ -111,6 +123,24 @@ defineEmits(['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve
             :disabled="disabled"
             @click="$emit('approve-excise', values)"
             variant="orange"
+            :iconSize="'2x'"
+          />
+        </div>
+        <div class="action-buttons">
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-broom"
+            tooltip-text="Очистить статус"
+            :disabled="clearCheckStatusDisabled"
+            @click="$emit('clear-check-status', values)"
+            :iconSize="'2x'"
+          />
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-clone"
+            tooltip-text="Проверить на дубликат"
+            :disabled="disabled"
+            @click="$emit('check-for-duplicate', values)"
             :iconSize="'2x'"
           />
         </div>

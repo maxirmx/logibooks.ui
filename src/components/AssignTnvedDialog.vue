@@ -73,7 +73,14 @@ watch(() => props.show, (visible) => {
 </script>
 
 <template>
-  <v-dialog :model-value="show" width="30%" min-width="250px" @update:model-value="onDialogUpdate">
+  <v-dialog
+    :model-value="show"
+    width="30%"
+    min-width="250px"
+    :scrim="!searchActive && !keywordSearchActive"
+    content-class="assign-tnved-dialog-position"
+    @update:model-value="onDialogUpdate"
+  >
     <v-card>
       <v-card-title class="primary-heading">
         Установить код ТН ВЭД для выбранных посылок
@@ -151,10 +158,19 @@ watch(() => props.show, (visible) => {
 .main-window-overlay {
   position: fixed;
   top: 50%;
-  left: 50%;
+  left: 55%;
   transform: translate(-50%, -50%);
   z-index: 2200;
-  width: min(1400px, 92vw);
+  width: min(1400px, 60vw);
   max-height: 88vh;
+}
+</style>
+
+<style>
+/* Unscoped: Vuetify hoists dialog content outside the component root */
+.assign-tnved-dialog-position {
+  align-self: flex-start !important;
+  margin-left: 2vw !important;
+  margin-top: 10vh !important;
 }
 </style>

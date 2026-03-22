@@ -59,7 +59,9 @@ import {
   faBarcode,
   faPause,
   faBroom,
-  faClone
+  faClone,
+  faArrowDownAZ,
+  faArrowUpZA
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -111,7 +113,9 @@ library.add(
   faBarcode,
   faPause,
   faBroom,
-  faClone
+  faClone,
+  faArrowDownAZ,
+  faArrowUpZA
 )
 
 import 'vuetify/styles'

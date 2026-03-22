@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
 

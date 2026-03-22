@@ -78,7 +78,13 @@ export function useParcelMultiSelect({
     }
 
     lastClickedId.value = id
-    selectedParcelId.value = id
+    if (selectedParcelIds.value.has(id)) {
+      selectedParcelId.value = id
+    } else {
+      selectedParcelId.value = selectedParcelIds.value.size > 0
+        ? [...selectedParcelIds.value].at(-1)
+        : null
+    }
   }
 
   // ------- scroll -------

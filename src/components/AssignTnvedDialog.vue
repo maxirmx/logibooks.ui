@@ -19,7 +19,6 @@ const targetTnVed = ref('')
 const searchActive = ref(false)
 const keywordSearchActive = ref(false)
 
-const idList = computed(() => props.selectedIds.join(', '))
 const normalizedTargetTnVed = computed(() => targetTnVed.value.trim())
 const isTnVedValid = computed(() => /^\d{10}$/.test(normalizedTargetTnVed.value))
 
@@ -42,7 +41,6 @@ function resetState() {
 function confirm() {
   if (!isTnVedValid.value) return
   emit('confirm', props.selectedIds, normalizedTargetTnVed.value)
-  close()
 }
 
 function toggleSearch() {
@@ -77,12 +75,10 @@ watch(() => props.show, (visible) => {
 <template>
   <v-dialog :model-value="show" width="30%" min-width="250px" @update:model-value="onDialogUpdate">
     <v-card>
-      <v-card-title>
-        ТН ВЭД для выбранных посылок
+      <v-card-title class="primary-heading">
+        Установить код ТН ВЭД для выбранных посылок
       </v-card-title>
       <v-card-text>
-        <div class="selected-ids-list">{{ idList }}</div>
-
         <div class="target-input-row">
           <input
             id="target-tnved"
@@ -135,17 +131,6 @@ watch(() => props.show, (visible) => {
 </template>
 
 <style scoped>
-.selected-ids-list {
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.85em;
-  word-break: break-all;
-}
-
 .target-input-row {
   display: flex;
   align-items: center;

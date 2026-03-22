@@ -22,6 +22,7 @@ export function useParcelMultiSelect({
   page,
   dataTableRef,
   getBaseRowClass = () => '',
+  onContextMenu = null,
 }) {
   const selectedParcelIds = ref(new Set(
     selectedParcelId.value != null ? [selectedParcelId.value] : []
@@ -107,9 +108,7 @@ export function useParcelMultiSelect({
     items.value.filter(item => selectedParcelIds.value.has(item.id))
   )
 
-  // ------- context menu -------
-
-  const contextMenu = ref({ show: false, x: 0, y: 0 })
+  // ------- right-click handler -------
 
   function handleRowContextMenu(event, { item }) {
     event.preventDefault()
@@ -120,7 +119,7 @@ export function useParcelMultiSelect({
       lastClickedId.value = item.id
     }
 
-    contextMenu.value = { show: true, x: event.clientX, y: event.clientY }
+    onContextMenu?.()
   }
 
   // ------- watchers -------
@@ -150,7 +149,6 @@ export function useParcelMultiSelect({
     selectedParcelIds,
     lastClickedId,
     selectedItems,
-    contextMenu,
     handleRowClick,
     handleRowContextMenu,
     updateSelectedParcelIds,

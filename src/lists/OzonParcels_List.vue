@@ -44,7 +44,6 @@ import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
-import ParcelContextMenu from '@/components/ParcelContextMenu.vue'
 import AssignTnvedDialog from '@/components/AssignTnvedDialog.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
@@ -105,7 +104,6 @@ const {
   selectedParcelIds,
   lastClickedId,
   selectedItems,
-  contextMenu,
   handleRowClick,
   handleRowContextMenu,
   updateSelectedParcelIds,
@@ -119,15 +117,10 @@ const {
   page: parcels_page,
   dataTableRef,
   getBaseRowClass: (data) => getRowPropsForParcel(data).class,
+  onContextMenu: () => { showAssignTnvedDialog.value = true },
 })
 
-// Assign ТН ВЭД dialog
 const showAssignTnvedDialog = ref(false)
-
-function handleAssignTnved() {
-  contextMenu.value.show = false
-  showAssignTnvedDialog.value = true
-}
 
 function handleAssignTnvedConfirm(ids) {
   // TODO: implement actual ТН ВЭД assignment logic
@@ -683,12 +676,6 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
       </v-data-table-server>
-
-      <ParcelContextMenu
-        :context-menu="contextMenu"
-        :selected-count="selectedParcelIds.size"
-        @assign-tnved="handleAssignTnved"
-      />
 
       <!-- Custom pagination controls outside the scrollable area -->
       <div class="v-data-table-footer">

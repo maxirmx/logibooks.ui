@@ -25,18 +25,17 @@ function confirm() {
 </script>
 
 <template>
-  <v-dialog :model-value="show" width="420" @update:model-value="close">
+  <v-dialog :model-value="show" width="30%" min-width="250px" @update:model-value="close">
     <v-card>
-      <v-card-title class="primary-heading">
-        Назначить ТН ВЭД
+      <v-card-title>
+        ТН ВЭД для выбранных посылок
       </v-card-title>
       <v-card-text>
-        <div class="mb-2">Выбрано посылок: <strong>{{ selectedIds.length }}</strong></div>
         <div class="selected-ids-list">{{ idList }}</div>
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="close">Закрыть</v-btn>
-        <v-btn color="primary" variant="flat" @click="confirm">Назначить</v-btn>
+        <v-btn variant="text" @click="close">Отменить</v-btn>
+        <v-btn color="orange-darken-3" variant="text" @click="confirm">Назначить</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

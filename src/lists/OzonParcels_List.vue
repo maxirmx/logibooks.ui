@@ -121,9 +121,9 @@ const {
 
 const showAssignTnvedDialog = ref(false)
 
-function handleAssignTnvedConfirm(ids) {
+function handleAssignTnvedConfirm(ids, tnVed) {
   // TODO: implement actual ТН ВЭД assignment logic
-  console.log('Assign ТН ВЭД for IDs:', ids)
+  console.log('Assign ТН ВЭД for IDs:', ids, 'target tnVed:', tnVed)
 }
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))

@@ -298,6 +298,26 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([1, 2, 3])
   })
 
+
+  it('Shift+Click falls back to single selection when anchor leaves current items', async () => {
+    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
+
+    mockItems.value = [
+      { id: 2, postingNumber: 'P-2', productName: 'Item2', checkStatus: 0 },
+      { id: 3, postingNumber: 'P-3', productName: 'Item3', checkStatus: 0 },
+      { id: 4, postingNumber: 'P-4', productName: 'Item4', checkStatus: 0 }
+    ]
+    await resolveAll()
+
+    expect(wrapper.vm.lastClickedId).toBe(null)
+
+    wrapper.vm.handleRowClick({ shiftKey: true, ctrlKey: false, metaKey: false }, { item: mockItems.value[1] })
+
+    expect([...wrapper.vm.selectedParcelIds]).toEqual([3])
+    expect(selectedParcelId.value).toBe(3)
+    expect(wrapper.vm.lastClickedId).toBe(3)
+  })
+
   it('Ctrl+Shift+Click extends range onto existing selection', () => {
     // Select rows 1 and 2 via Ctrl
     wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })

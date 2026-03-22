@@ -107,7 +107,7 @@ const {
   handleRowContextMenu,
   updateSelectedParcelIds,
   scrollToSelectedItem,
-  getRowProps: getRowPropsForWbrParcel,
+  getRowProps: getRowPropsForWbr2Parcel,
   stop: stopMultiSelect,
 } = useParcelMultiSelect({
   items,
@@ -518,7 +518,7 @@ function getGenericTemplateHeaders() {
         v-model:sort-by="parcels_sort_by"
         :headers="headers"
         :items="items"
-        :row-props="getRowPropsForWbrParcel"
+        :row-props="getRowPropsForWbr2Parcel"
         @click:row="handleRowClick"
         @contextmenu:row="handleRowContextMenu"
         :items-length="totalCount"

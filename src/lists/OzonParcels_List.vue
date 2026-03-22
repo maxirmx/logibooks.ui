@@ -152,6 +152,8 @@ function handleRowClick(event, { item }) {
   const id = item.id
 
   if (event.shiftKey && lastClickedId.value != null) {
+    // Clear any native text selection caused by shift-click
+    window.getSelection()?.removeAllRanges()
     // Range select
     const ids = items.value.map(i => i.id)
     const startIdx = ids.indexOf(lastClickedId.value)
@@ -785,6 +787,12 @@ function getGenericTemplateHeaders() {
 </template>
 
 <style scoped>
+/* Prevent native text selection on the table so shift-click multi-select
+   does not trigger browser text highlighting */
+.ozon-parcels-table {
+  user-select: none;
+}
+
 :deep(.selected-parcel-row) {
   border: 2px dashed #5d798f !important;
 }

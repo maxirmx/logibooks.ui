@@ -98,7 +98,7 @@ function handleMouseEnter(code) {
       <label class="label keyword-label" @click="openKeywordLookup">Подбор ТН ВЭД</label>
       <ActionButton
         :item="item"
-        :icon="isKeywordLookupOpen ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+        :icon="isKeywordLookupOpen ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'"
         :tooltip-text="isKeywordLookupOpen ? 'Скрыть подбор' : 'Открыть подбор'"
         class="keyword-toggle"
         :disabled="props.disabled"

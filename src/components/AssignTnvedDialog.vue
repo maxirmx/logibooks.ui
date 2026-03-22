@@ -152,64 +152,68 @@ watch(() => props.show, (visible) => {
     content-class="assign-tnved-dialog-position"
     @update:model-value="onDialogUpdate"
   >
-    <v-card class="assign-tnved-card">
-      <v-card-title class="primary-heading">
-        Код ТН ВЭД для выбранных посылок
-      </v-card-title>
-      <v-card-text>
-        <div class="target-input-row">
-          <input
-            id="target-tnved"
-            v-model="targetTnVed"
-            type="text"
-            class="input target-tnved-input"
-            maxlength="10"
-            placeholder="Код ТН ВЭД (10 цифр)"
-            data-testid="target-tnved-input"
-          >
-          <ActionButton
-            :item="selectedIds"
-            :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-            :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код (дерево ТН ВЭД)'"
-            class="button-o-c"
-            @click="toggleSearch"
-            :iconSize="'1x'"
-          />
-          <ActionButton
-            :item="selectedIds"
-            :icon="keywordSearchActive ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'"
-            :tooltip-text="keywordSearchActive ? 'Скрыть подбор по ключевым словам' : 'Выбрать код (ключевые слова)'"
-            class="button-o-c"
-            @click="toggleKeywordSearch"
-            :iconSize="'1x'"
-          />
-        </div>
-        <div v-if="validationMessage" class="validation-error" data-testid="target-tnved-error">
-          <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
-          {{ validationMessage }}
-        </div>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="close">Отменить</v-btn>
-        <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Применить</v-btn>
-      </v-card-actions>
-    </v-card>
+    <div class="assign-tnved-layout">
+      <v-card class="assign-tnved-card">
+        <v-card-title class="primary-heading">
+          Код ТН ВЭД для выбранных посылок
+        </v-card-title>
+        <v-card-text>
+          <div class="target-input-row">
+            <input
+              id="target-tnved"
+              v-model="targetTnVed"
+              type="text"
+              class="input target-tnved-input"
+              maxlength="10"
+              placeholder="Код ТН ВЭД (10 цифр)"
+              data-testid="target-tnved-input"
+            >
+            <ActionButton
+              :item="selectedIds"
+              :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код (дерево ТН ВЭД)'"
+              class="button-o-c"
+              @click="toggleSearch"
+              :iconSize="'1x'"
+            />
+            <ActionButton
+              :item="selectedIds"
+              :icon="keywordSearchActive ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'"
+              :tooltip-text="keywordSearchActive ? 'Скрыть подбор по ключевым словам' : 'Выбрать код (ключевые слова)'"
+              class="button-o-c"
+              @click="toggleKeywordSearch"
+              :iconSize="'1x'"
+            />
+          </div>
+          <div v-if="validationMessage" class="validation-error" data-testid="target-tnved-error">
+            <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
+            {{ validationMessage }}
+          </div>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="close">Отменить</v-btn>
+          <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Применить</v-btn>
+        </v-card-actions>
+      </v-card>
+
+      <div v-if="show && searchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-search-overlay">
+        <FeacnCodeSearch @select="handleSearchSelect" />
+      </div>
+
+      <div v-if="show && keywordSearchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-keyword-overlay">
+        <FeacnCodeSearchByKeyword v-model="keywordSearchActive" @select="handleKeywordSearchSelect" />
+      </div>
+    </div>
   </v-dialog>
-
-  <teleport to="body">
-    <div v-if="show && searchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-search-overlay">
-      <FeacnCodeSearch @select="handleSearchSelect" />
-    </div>
-  </teleport>
-
-  <teleport to="body">
-    <div v-if="show && keywordSearchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-keyword-overlay">
-      <FeacnCodeSearchByKeyword v-model="keywordSearchActive" @select="handleKeywordSearchSelect" />
-    </div>
-  </teleport>
 </template>
 
 <style scoped>
+.assign-tnved-layout {
+  position: relative;
+  overflow: visible;
+  width: 100%;
+}
+
 .assign-tnved-card {
   border: 2px solid #797979;
   box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
@@ -234,23 +238,24 @@ watch(() => props.show, (visible) => {
 }
 
 .main-window-overlay {
-  position: fixed;
-  top: 50%;
-  left: 2vw;
-  transform: translateY(-50%);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
   z-index: 2200;
   width: min(1400px, 60vw);
-  max-height: 88vh;
+  max-width: calc(98vw - 2vw);
+  max-height: calc(90vh - 10vh - 140px);
+  overflow: auto;
 }
 </style>
 
 <style>
-/* Unscoped: Vuetify hoists dialog content outside the component root */
-.v-overlay:has(.assign-tnved-dialog-position) .v-overlay__content {
+.assign-tnved-dialog-position {
   position: absolute !important;
   top: 10vh !important;
   left: 2vw !important;
   width: 30% !important;
   min-width: 250px !important;
+  overflow: visible !important;
 }
 </style>

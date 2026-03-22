@@ -27,6 +27,12 @@ function close() {
   emit('update:show', false)
 }
 
+function onDialogUpdate(value) {
+  if (!value) {
+    close()
+  }
+}
+
 function resetState() {
   targetTnVed.value = ''
   searchActive.value = false
@@ -69,7 +75,7 @@ watch(() => props.show, (visible) => {
 </script>
 
 <template>
-  <v-dialog :model-value="show" width="30%" min-width="250px" @update:model-value="close">
+  <v-dialog :model-value="show" width="30%" min-width="250px" @update:model-value="onDialogUpdate">
     <v-card>
       <v-card-title>
         ТН ВЭД для выбранных посылок

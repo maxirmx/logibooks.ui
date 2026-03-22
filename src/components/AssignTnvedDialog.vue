@@ -49,12 +49,23 @@ async function lookupTnVed(code) {
   tnvedLookupError.value = ''
   try {
     const result = await feacnCodesStore.getByCode(code)
+    // Ignore result if user has already changed the code
+    if (code !== normalizedTargetTnVed.value) {
+      return
+    }
     tnvedExists.value = !!result
   } catch {
+    // Ignore error if it relates to an outdated code
+    if (code !== normalizedTargetTnVed.value) {
+      return
+    }
     tnvedExists.value = false
     tnvedLookupError.value = 'Несуществующий код ТН ВЭД'
   } finally {
-    tnvedChecking.value = false
+    // Only clear the checking flag for the currently active code
+    if (code === normalizedTargetTnVed.value) {
+      tnvedChecking.value = false
+    }
   }
 }
 
@@ -67,7 +78,7 @@ watch(normalizedTargetTnVed, (code) => {
   tnvedLookupError.value = ''
   tnvedChecking.value = false
 
-  if (/^\d{10}$/.test(code)) {
+  if (hasCorrectFormat.value) {
     tnvedChecking.value = true
     lookupTimeout = setTimeout(() => lookupTnVed(code), 500)
   }

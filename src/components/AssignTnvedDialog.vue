@@ -83,7 +83,6 @@ watch(() => props.show, (visible) => {
       <v-card-text>
         <div class="selected-ids-list">{{ idList }}</div>
 
-        <label for="target-tnved" class="label mt-4 d-block">Целевой ТН ВЭД:</label>
         <div class="target-input-row">
           <input
             id="target-tnved"
@@ -104,7 +103,7 @@ watch(() => props.show, (visible) => {
           />
           <ActionButton
             :item="selectedIds"
-            :icon="keywordSearchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-keyboard'"
+            :icon="keywordSearchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
             :tooltip-text="keywordSearchActive ? 'Скрыть подбор по ключевым словам' : 'Выбрать код (ключевые слова)'"
             class="button-o-c"
             @click="toggleKeywordSearch"

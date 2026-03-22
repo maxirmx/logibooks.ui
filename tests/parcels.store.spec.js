@@ -225,6 +225,29 @@ describe('parcels store', () => {
     expect(result).toBe(true)
   })
 
+  describe('bulkAssignTnved method', () => {
+    it('calls assign-tnved endpoint with payload', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+      const store = useParcelsStore()
+
+      const result = await store.bulkAssignTnved([7, 8], '1234567890')
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/assign-tnved`, {
+        tnVed: '1234567890',
+        parcelIds: [7, 8]
+      })
+      expect(result).toBe(true)
+    })
+
+    it('propagates error when request fails', async () => {
+      const error = new Error('Bulk assign failed')
+      fetchWrapper.post.mockRejectedValue(error)
+      const store = useParcelsStore()
+
+      await expect(store.bulkAssignTnved([7], '1234567890')).rejects.toBe(error)
+    })
+  })
+
   describe('update method', () => {
     it('updates order and calls API with correct parameters', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })

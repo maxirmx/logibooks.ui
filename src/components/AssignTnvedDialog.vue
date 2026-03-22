@@ -191,7 +191,7 @@ watch(() => props.show, (visible) => {
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-btn variant="text" @click="close">Отменить</v-btn>
-        <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Установить</v-btn>
+        <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Применить</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

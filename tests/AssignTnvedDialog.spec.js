@@ -67,7 +67,7 @@ describe('AssignTnvedDialog', () => {
     expect(wrapper.find('[data-testid="target-tnved-error"]').exists()).toBe(true)
   })
 
-  it('enables confirm and emits trimmed 10-digit code', async () => {
+  it('enables confirm and emits trimmed 10-digit code without closing dialog', async () => {
     const wrapper = createWrapper()
 
     const input = wrapper.find('[data-testid="target-tnved-input"]')
@@ -81,6 +81,7 @@ describe('AssignTnvedDialog', () => {
     const confirmEvents = wrapper.emitted('confirm')
     expect(confirmEvents).toBeTruthy()
     expect(confirmEvents[0]).toEqual([[101, 102], '1234567890'])
+    expect(wrapper.emitted('update:show')).toBeFalsy()
   })
 
   it('opens FEACN tree search overlay and applies selected code', async () => {

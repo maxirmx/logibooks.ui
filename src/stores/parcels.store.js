@@ -226,6 +226,14 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
+  async function bulkAssignTnved(parcelIds, tnVed) {
+    await fetchWrapper.post(`${baseUrl}/assign-tnved`, {
+      tnVed,
+      parcelIds
+    })
+    return true
+  }
+
   async function deleteImage(id) {
     // Calls API: DELETE /parcels/{id}/image
     // Defensive check: verify parcel has an image before making API call
@@ -275,6 +283,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     lookupFeacnCode,
     clearCheckStatus,
     checkForDuplicate,
+    bulkAssignTnved,
     getImageProcessingUrl,
     getImageBlob,
     deleteImage

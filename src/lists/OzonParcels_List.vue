@@ -121,9 +121,19 @@ const {
 
 const showAssignTnvedDialog = ref(false)
 
-function handleAssignTnvedConfirm(ids, tnVed) {
-  // TODO: implement actual ТН ВЭД assignment logic
-  console.log('Assign ТН ВЭД for IDs:', ids, 'target tnVed:', tnVed)
+async function handleAssignTnvedConfirm(ids, tnVed) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    await parcelsStore.bulkAssignTnved(ids, tnVed)
+    showAssignTnvedDialog.value = false
+    selectedParcelIds.value = new Set()
+    selectedParcelId.value = null
+    lastClickedId.value = null
+    await loadOrdersWrapper()
+  } finally {
+    runningAction.value = false
+  }
 }
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))

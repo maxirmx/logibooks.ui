@@ -208,6 +208,7 @@ const globalStubs = {
   RegisterHeaderActionsBar: { template: '<div data-testid="register-header-actions"></div>' },
   PaginationFooter: { template: '<div data-testid="pagination-footer"></div>' },
   RegisterActionsDialogs: { template: '<div></div>' },
+  AssignTnvedDialog: { template: '<div></div>' },
   ParcelFilterSelectors: { template: '<div data-testid="parcel-filter-selectors"></div>' },
   FeacnCodeSelector: { template: '<div></div>' },
   FeacnCodeCurrent: { template: '<div></div>' },
@@ -313,7 +314,8 @@ describe('OzonParcels_List.vue – multi-select', () => {
     wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
     wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: true, metaKey: false }, { item: mockItems.value[3] })
 
-    const selected = wrapper.vm.selectedItems
+    const ids = wrapper.vm.selectedParcelIds
+    const selected = mockItems.value.filter(item => ids.has(item.id))
     expect(selected).toHaveLength(2)
     expect(selected.map(i => i.id)).toEqual([1, 4])
   })

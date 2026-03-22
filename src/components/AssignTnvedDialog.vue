@@ -42,7 +42,6 @@ function resetState() {
 function confirm() {
   if (!isTnVedValid.value) return
   emit('confirm', props.selectedIds, normalizedTargetTnVed.value)
-  close()
 }
 
 function toggleSearch() {

@@ -381,6 +381,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await expect(wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')).rejects.toThrow('failed')
 
     expect(wrapper.vm.runningAction).toBe(false)
-    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(true)
   })
 })

@@ -19,6 +19,7 @@ const mockLoading = ref(false)
 const mockError = ref(null)
 const mockTotalCount = ref(5)
 const selectedParcelId = ref(null)
+const mockBulkAssignTnved = vi.fn().mockResolvedValue(true)
 
 const parcelsPerPage = ref(100)
 const parcelsSortBy = ref([])
@@ -127,7 +128,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
-    totalCount: mockTotalCount
+    totalCount: mockTotalCount,
+    bulkAssignTnved: mockBulkAssignTnved
   })
 }))
 
@@ -222,6 +224,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    mockBulkAssignTnved.mockResolvedValue(true)
     selectedParcelId.value = null
     mockItems.value = [
       { id: 1, postingNumber: 'P-1', productName: 'Item1', checkStatus: 0 },
@@ -347,5 +350,37 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(wrapper.vm.selectedParcelIds.size).toBe(2)
     expect(wrapper.vm.selectedParcelIds.has(1)).toBe(true)
     expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
+  })
+
+  it('assigns tnved in bulk and reloads rows on confirm', async () => {
+    const { loadOrders } = await import('@/helpers/parcels.list.helpers.js')
+    wrapper.vm.showAssignTnvedDialog = true
+    wrapper.vm.selectedParcelIds.add(1)
+    wrapper.vm.selectedParcelIds.add(3)
+
+    await wrapper.vm.handleAssignTnvedConfirm([1, 3], '1234567890')
+
+    expect(mockBulkAssignTnved).toHaveBeenCalledWith([1, 3], '1234567890')
+    expect(loadOrders).toHaveBeenCalled()
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
+    expect(wrapper.vm.selectedParcelIds.size).toBe(0)
+  })
+
+  it('does not assign tnved when another action is running', async () => {
+    wrapper.vm.runningAction = true
+
+    await wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')
+
+    expect(mockBulkAssignTnved).not.toHaveBeenCalled()
+  })
+
+  it('resets running flag when bulk assignment fails', async () => {
+    mockBulkAssignTnved.mockRejectedValueOnce(new Error('failed'))
+    wrapper.vm.showAssignTnvedDialog = true
+
+    await expect(wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')).rejects.toThrow('failed')
+
+    expect(wrapper.vm.runningAction).toBe(false)
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(true)
   })
 })

@@ -266,6 +266,10 @@ vi.mock('@/components/ParcelNumberExt.vue', () => ({
   }
 }))
 
+vi.mock('@/components/AssignTnvedDialog.vue', () => ({
+  default: { name: 'AssignTnvedDialog', template: '<div class="assign-tnved-dialog-stub"></div>' }
+}))
+
 describe.each([
   ['OzonParcels_List', OzonParcelsList],
   ['WbrParcels_List', WbrParcelsList]

@@ -273,7 +273,16 @@ onMounted(async () => {
     
     await fetchRegister()
 
-    if (items.value?.length > 0) updateSelectedParcelIds()
+    if (items.value?.length > 0) {
+      updateSelectedParcelIds()
+      // If any parcels are selected after updating selection on mount,
+      // scroll them into view (restores behavior of single-select logic
+      // and aligns with OzonParcels_List.vue).
+      if (selectedParcelIds.value && selectedParcelIds.value.size > 0) {
+        await nextTick()
+        scrollToSelectedItem()
+      }
+    }
 
     // Restore parcel selection from extension snapshot after all cleanups
     // This ensures that if the user invoked an extension and returned,
@@ -283,6 +292,7 @@ onMounted(async () => {
     if (restoredParcelId != null && items.value?.some(item => item.id === restoredParcelId)) {
       selectedParcelIds.value = new Set([restoredParcelId])
       selectedParcelId.value = restoredParcelId
+      lastClickedId.value = restoredParcelId
       // Scroll to the restored selection
       await nextTick()
       scrollToSelectedItem()

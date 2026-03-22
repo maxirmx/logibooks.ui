@@ -137,13 +137,11 @@ watch(() => props.show, (visible) => {
 <template>
   <v-dialog
     :model-value="show"
-    width="30%"
-    min-width="250px"
     :scrim="!searchActive && !keywordSearchActive"
     content-class="assign-tnved-dialog-position"
     @update:model-value="onDialogUpdate"
   >
-    <v-card>
+    <v-card class="assign-tnved-card">
       <v-card-title class="primary-heading">
         Код ТН ВЭД для выбранных посылок
       </v-card-title>
@@ -155,7 +153,7 @@ watch(() => props.show, (visible) => {
             type="text"
             class="input target-tnved-input"
             maxlength="10"
-            placeholder="10 цифр"
+            placeholder="Код ТН ВЭД (10 цифр)"
             data-testid="target-tnved-input"
           >
           <ActionButton
@@ -201,6 +199,12 @@ watch(() => props.show, (visible) => {
 </template>
 
 <style scoped>
+.assign-tnved-card {
+  border: 2px solid #797979;
+  box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+}
+
 .target-input-row {
   display: flex;
   align-items: center;
@@ -221,8 +225,8 @@ watch(() => props.show, (visible) => {
 .main-window-overlay {
   position: fixed;
   top: 50%;
-  left: 55%;
-  transform: translate(-50%, -50%);
+  left: 2vw;
+  transform: translateY(-50%);
   z-index: 2200;
   width: min(1400px, 60vw);
   max-height: 88vh;
@@ -231,9 +235,11 @@ watch(() => props.show, (visible) => {
 
 <style>
 /* Unscoped: Vuetify hoists dialog content outside the component root */
-.assign-tnved-dialog-position {
-  align-self: flex-start !important;
-  margin-left: 2vw !important;
-  margin-top: 10vh !important;
+.v-overlay:has(.assign-tnved-dialog-position) .v-overlay__content {
+  position: absolute !important;
+  top: 10vh !important;
+  left: 2vw !important;
+  width: 30% !important;
+  min-width: 250px !important;
 }
 </style>

@@ -44,10 +44,13 @@ import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/components/RegisterActionsDialogs.vue'
+import ParcelContextMenu from '@/components/ParcelContextMenu.vue'
+import AssignTnvedDialog from '@/components/AssignTnvedDialog.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
+import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -95,14 +98,41 @@ if (selectedParcelIdFromQuery != null) {
   selectedParcelId.value = selectedParcelIdFromQuery
 }
 
-// Multi-select state
-const selectedParcelIds = ref(new Set(
-  selectedParcelId.value != null ? [selectedParcelId.value] : []
-))
-const lastClickedId = ref(selectedParcelId.value)
-
 // Template ref for the data table
 const dataTableRef = ref(null)
+
+const {
+  selectedParcelIds,
+  lastClickedId,
+  selectedItems,
+  contextMenu,
+  handleRowClick,
+  handleRowContextMenu,
+  updateSelectedParcelIds,
+  scrollToSelectedItem,
+  getRowProps: getRowPropsForOzonParcel,
+  stop: stopMultiSelect,
+} = useParcelMultiSelect({
+  items,
+  loading,
+  selectedParcelId,
+  page: parcels_page,
+  dataTableRef,
+  getBaseRowClass: (data) => getRowPropsForParcel(data).class,
+})
+
+// Assign ТН ВЭД dialog
+const showAssignTnvedDialog = ref(false)
+
+function handleAssignTnved() {
+  contextMenu.value.show = false
+  showAssignTnvedDialog.value = true
+}
+
+function handleAssignTnvedConfirm(ids) {
+  // TODO: implement actual ТН ВЭД assignment logic
+  console.log('Assign ТН ВЭД for IDs:', ids)
+}
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
 const isReProcedure = computed(() => {
@@ -136,111 +166,7 @@ watch(maxPage, (v) => {
   if (parcels_page.value > v) parcels_page.value = v
 })
 
-// Multi-select management
-function updateSelectedParcelIds() {
-  if (loading.value) return
-  const currentIds = new Set(items.value.map(i => i.id))
-  const filtered = new Set([...selectedParcelIds.value].filter(id => currentIds.has(id)))
-  selectedParcelIds.value = filtered
 
-  if (selectedParcelId.value && !currentIds.has(selectedParcelId.value)) {
-    selectedParcelId.value = null
-  }
-}
-
-function handleRowClick(event, { item }) {
-  const id = item.id
-
-  if (event.shiftKey && lastClickedId.value != null) {
-    // Clear any native text selection caused by shift-click
-    window.getSelection()?.removeAllRanges()
-    // Range select
-    const ids = items.value.map(i => i.id)
-    const startIdx = ids.indexOf(lastClickedId.value)
-    const endIdx = ids.indexOf(id)
-    if (startIdx !== -1 && endIdx !== -1) {
-      const [from, to] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)]
-      const newSet = (event.ctrlKey || event.metaKey)
-        ? new Set(selectedParcelIds.value)
-        : new Set()
-      for (let i = from; i <= to; i++) {
-        newSet.add(ids[i])
-      }
-      selectedParcelIds.value = newSet
-    }
-  } else if (event.ctrlKey || event.metaKey) {
-    // Toggle individual row
-    const newSet = new Set(selectedParcelIds.value)
-    if (newSet.has(id)) {
-      newSet.delete(id)
-    } else {
-      newSet.add(id)
-    }
-    selectedParcelIds.value = newSet
-  } else {
-    // Plain click — single select
-    selectedParcelIds.value = new Set([id])
-  }
-
-  lastClickedId.value = id
-  selectedParcelId.value = id
-}
-
-// Watch for items changes to update selection and scroll to selected item
-watch(
-  () => items.value,
-  () => {
-    updateSelectedParcelIds()
-    if (selectedParcelIds.value.size > 0) {
-      scrollToSelectedItem()
-    }
-  }
-)
-
-// Watch for page changes to clear selection
-watch(
-  parcels_page,
-  () => {
-    selectedParcelIds.value = new Set()
-    selectedParcelId.value = null
-    lastClickedId.value = null
-  }
-)
-
-// Custom row props function with multi-selection highlighting
-function getRowPropsForOzonParcel(data) {
-  const baseClass = getRowPropsForParcel(data).class
-  const selectedClass = selectedParcelIds.value.has(data.item.id) ? 'selected-parcel-row' : ''
-  return { class: `${baseClass} ${selectedClass}`.trim() }
-}
-
-// Computed list of selected items for bulk operations
-const selectedItems = computed(() =>
-  items.value.filter(item => selectedParcelIds.value.has(item.id))
-)
-
-// Scroll to the last selected item
-function scrollToSelectedItem() {
-  if (selectedParcelIds.value.size === 0 || !dataTableRef.value) return
-  
-  nextTick(() => {
-    try {
-      const tableElement = dataTableRef.value.$el || dataTableRef.value
-      const selectedRows = tableElement.querySelectorAll('.selected-parcel-row')
-      const lastRow = selectedRows[selectedRows.length - 1]
-      
-      if (lastRow) {
-        lastRow.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'nearest'
-        })
-      }
-    } catch {
-      // Swallow errors during scroll attempt
-    }
-  })
-}
 
 const registerFileName = ref('')
 const registerDealNumber = ref('')
@@ -377,8 +303,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  console.log(selectedItems.value)
   isComponentMounted.value = false
+  stopMultiSelect()
   stopRegisterHeaderActions()
   stopFilterSync()
   if (watcherStop) {
@@ -579,6 +505,7 @@ function getGenericTemplateHeaders() {
         :items="items"
         :row-props="getRowPropsForOzonParcel"
         @click:row="handleRowClick"
+        @contextmenu:row="handleRowContextMenu"
         :items-length="totalCount"
         :loading="loading || isInitializing"
         density="compact"
@@ -757,6 +684,12 @@ function getGenericTemplateHeaders() {
         </template>
       </v-data-table-server>
 
+      <ParcelContextMenu
+        :context-menu="contextMenu"
+        :selected-count="selectedParcelIds.size"
+        @assign-tnved="handleAssignTnved"
+      />
+
       <!-- Custom pagination controls outside the scrollable area -->
       <div class="v-data-table-footer">
         <PaginationFooter
@@ -782,6 +715,13 @@ function getGenericTemplateHeaders() {
       :progress-percent="progressPercent"
       :cancel-validation="cancelRegisterValidation"
       :action-dialog="actionDialogState"
+    />
+
+    <AssignTnvedDialog
+      :show="showAssignTnvedDialog"
+      :selected-ids="[...selectedParcelIds]"
+      @update:show="showAssignTnvedDialog = $event"
+      @confirm="handleAssignTnvedConfirm"
     />
   </div>
 </template>

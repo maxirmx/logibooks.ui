@@ -208,6 +208,8 @@ const globalStubs = {
   RegisterHeaderActionsBar: { template: '<div data-testid="register-header-actions"></div>' },
   PaginationFooter: { template: '<div data-testid="pagination-footer"></div>' },
   RegisterActionsDialogs: { template: '<div></div>' },
+  AssignTnvedDialog: { template: '<div></div>' },
+  ParcelContextMenu: { template: '<div></div>' },
   ParcelFilterSelectors: { template: '<div data-testid="parcel-filter-selectors"></div>' },
   FeacnCodeSelector: { template: '<div></div>' },
   FeacnCodeCurrent: { template: '<div></div>' },

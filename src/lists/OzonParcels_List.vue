@@ -127,7 +127,9 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
   try {
     await parcelsStore.bulkAssignTnved(ids, tnVed)
     showAssignTnvedDialog.value = false
-    selectedParcelIds.value.clear()
+    selectedParcelIds.value = new Set()
+    selectedParcelId.value = null
+    lastClickedId.value = null
     await loadOrdersWrapper()
   } finally {
     runningAction.value = false

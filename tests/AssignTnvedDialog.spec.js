@@ -2,10 +2,20 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import AssignTnvedDialog from '@/components/AssignTnvedDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
+
+const mockGetByCode = vi.fn()
+
+vi.mock('@/stores/feacn.codes.store.js', () => ({
+  useFeacnCodesStore: () => ({
+    getByCode: mockGetByCode,
+    loading: { value: false },
+    error: { value: null },
+  })
+}))
 
 vi.mock('@/components/ActionButton.vue', () => ({
   default: {
@@ -56,7 +66,25 @@ function createWrapper(props = {}) {
 }
 
 describe('AssignTnvedDialog', () => {
-  it('keeps confirm button disabled for invalid TN VED', async () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    mockGetByCode.mockReset()
+    mockGetByCode.mockResolvedValue({ code: '1234567890', name: 'Test' })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function setInputAndWaitLookup(wrapper, value) {
+    const input = wrapper.find('[data-testid="target-tnved-input"]')
+    await input.setValue(value)
+    // Advance past 500ms debounce
+    await vi.advanceTimersByTimeAsync(600)
+    await flushPromises()
+  }
+
+  it('keeps confirm button disabled for invalid TN VED (wrong length)', async () => {
     const wrapper = createWrapper()
 
     const input = wrapper.find('[data-testid="target-tnved-input"]')
@@ -67,11 +95,31 @@ describe('AssignTnvedDialog', () => {
     expect(wrapper.find('[data-testid="target-tnved-error"]').exists()).toBe(true)
   })
 
-  it('enables confirm and emits trimmed 10-digit code without closing dialog', async () => {
+  it('keeps confirm disabled until lookup confirms code exists', async () => {
+    // Make lookup slow — never resolve during this test
+    mockGetByCode.mockReturnValue(new Promise(() => {}))
     const wrapper = createWrapper()
 
     const input = wrapper.find('[data-testid="target-tnved-input"]')
-    await input.setValue(' 1234567890 ')
+    await input.setValue('1234567890')
+
+    // Before debounce fires: checking flag set, button still disabled
+    const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
+    expect(confirmBtn.element.disabled).toBe(true)
+
+    // Advance debounce
+    await vi.advanceTimersByTimeAsync(600)
+    await flushPromises()
+
+    // Still disabled (lookup hasn't resolved)
+    expect(confirmBtn.element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="target-tnved-error"]').text()).toContain('Проверка')
+  })
+
+  it('enables confirm and emits trimmed 10-digit code after successful lookup', async () => {
+    const wrapper = createWrapper()
+
+    await setInputAndWaitLookup(wrapper, ' 1234567890 ')
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(false)
@@ -82,6 +130,28 @@ describe('AssignTnvedDialog', () => {
     expect(confirmEvents).toBeTruthy()
     expect(confirmEvents[0]).toEqual([[101, 102], '1234567890'])
     expect(wrapper.emitted('update:show')).toBeFalsy()
+  })
+
+  it('disables confirm when code does not exist in catalog', async () => {
+    mockGetByCode.mockResolvedValue(null)
+    const wrapper = createWrapper()
+
+    await setInputAndWaitLookup(wrapper, '9999999999')
+
+    const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
+    expect(confirmBtn.element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="target-tnved-error"]').text()).toContain('Несуществующий код ТН ВЭД')
+  })
+
+  it('disables confirm when lookup throws an error', async () => {
+    mockGetByCode.mockRejectedValue(new Error('Network error'))
+    const wrapper = createWrapper()
+
+    await setInputAndWaitLookup(wrapper, '1234567890')
+
+    const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
+    expect(confirmBtn.element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="target-tnved-error"]').text()).toContain('Несуществующий код ТН ВЭД')
   })
 
   it('opens FEACN tree search overlay and applies selected code', async () => {
@@ -138,5 +208,24 @@ describe('AssignTnvedDialog', () => {
     await confirmBtn.trigger('click')
 
     expect(wrapper.emitted('confirm')).toBeFalsy()
+    // getByCode should never be called for non-digit input
+    expect(mockGetByCode).not.toHaveBeenCalled()
+  })
+
+  it('debounces lookup calls when input changes rapidly', async () => {
+    const wrapper = createWrapper()
+
+    const input = wrapper.find('[data-testid="target-tnved-input"]')
+    await input.setValue('1234567890')
+    await vi.advanceTimersByTimeAsync(200)
+    await input.setValue('1234567891')
+    await vi.advanceTimersByTimeAsync(200)
+    await input.setValue('1234567892')
+    await vi.advanceTimersByTimeAsync(600)
+    await flushPromises()
+
+    // Only the last value should have triggered a lookup
+    expect(mockGetByCode).toHaveBeenCalledTimes(1)
+    expect(mockGetByCode).toHaveBeenCalledWith('1234567892')
   })
 })

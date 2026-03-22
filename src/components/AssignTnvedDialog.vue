@@ -3,10 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
+import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -15,12 +16,66 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show', 'confirm'])
 
+const feacnCodesStore = useFeacnCodesStore()
+
 const targetTnVed = ref('')
 const searchActive = ref(false)
 const keywordSearchActive = ref(false)
 
 const normalizedTargetTnVed = computed(() => targetTnVed.value.trim())
-const isTnVedValid = computed(() => /^\d{10}$/.test(normalizedTargetTnVed.value))
+const hasCorrectFormat = computed(() => /^\d{10}$/.test(normalizedTargetTnVed.value))
+
+// FEACN code existence check state
+const tnvedExists = ref(null)    // null = not checked, true/false = result
+const tnvedChecking = ref(false)
+const tnvedLookupError = ref('')
+let lookupTimeout = null
+
+const isTnVedValid = computed(() => hasCorrectFormat.value && tnvedExists.value === true)
+
+const validationMessage = computed(() => {
+  const code = normalizedTargetTnVed.value
+  if (!code) return ''
+  if (!hasCorrectFormat.value) return 'Введите 10 цифр для кода ТН ВЭД'
+  if (tnvedChecking.value) return 'Проверка кода ТН ВЭД...'
+  if (tnvedLookupError.value) return tnvedLookupError.value
+  if (tnvedExists.value === false) return 'Несуществующий код ТН ВЭД'
+  return ''
+})
+
+async function lookupTnVed(code) {
+  tnvedChecking.value = true
+  tnvedExists.value = null
+  tnvedLookupError.value = ''
+  try {
+    const result = await feacnCodesStore.getByCode(code)
+    tnvedExists.value = !!result
+  } catch {
+    tnvedExists.value = false
+    tnvedLookupError.value = 'Несуществующий код ТН ВЭД'
+  } finally {
+    tnvedChecking.value = false
+  }
+}
+
+watch(normalizedTargetTnVed, (code) => {
+  if (lookupTimeout) {
+    clearTimeout(lookupTimeout)
+    lookupTimeout = null
+  }
+  tnvedExists.value = null
+  tnvedLookupError.value = ''
+  tnvedChecking.value = false
+
+  if (/^\d{10}$/.test(code)) {
+    tnvedChecking.value = true
+    lookupTimeout = setTimeout(() => lookupTnVed(code), 500)
+  }
+})
+
+onUnmounted(() => {
+  if (lookupTimeout) clearTimeout(lookupTimeout)
+})
 
 function close() {
   emit('update:show', false)
@@ -36,6 +91,13 @@ function resetState() {
   targetTnVed.value = ''
   searchActive.value = false
   keywordSearchActive.value = false
+  tnvedExists.value = null
+  tnvedChecking.value = false
+  tnvedLookupError.value = ''
+  if (lookupTimeout) {
+    clearTimeout(lookupTimeout)
+    lookupTimeout = null
+  }
 }
 
 function confirm() {
@@ -83,7 +145,7 @@ watch(() => props.show, (visible) => {
   >
     <v-card>
       <v-card-title class="primary-heading">
-        Установить код ТН ВЭД для выбранных посылок
+        Код ТН ВЭД для выбранных посылок
       </v-card-title>
       <v-card-text>
         <div class="target-input-row">
@@ -113,13 +175,14 @@ watch(() => props.show, (visible) => {
             :iconSize="'1x'"
           />
         </div>
-        <div v-if="targetTnVed && !isTnVedValid" class="validation-error" data-testid="target-tnved-error">
-          Введите корректный код ТН ВЭД: ровно 10 цифр.
+        <div v-if="validationMessage" class="validation-error" data-testid="target-tnved-error">
+          <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
+          {{ validationMessage }}
         </div>
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-btn variant="text" @click="close">Отменить</v-btn>
-        <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Назначить</v-btn>
+        <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Установить</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

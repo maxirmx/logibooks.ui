@@ -103,7 +103,6 @@ const dataTableRef = ref(null)
 const {
   selectedParcelIds,
   lastClickedId,
-  selectedItems,
   handleRowClick,
   handleRowContextMenu,
   updateSelectedParcelIds,

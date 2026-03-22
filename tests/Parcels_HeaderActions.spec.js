@@ -8,6 +8,8 @@ import { mount } from '@vue/test-utils'
 import { ref, reactive } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
+import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
+import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 vi.mock('vue-router', () => ({
@@ -23,6 +25,17 @@ vi.mock('vue-router', () => ({
 const stores = {}
 let registerHeaderActionsMock
 const loadOrdersMock = vi.fn()
+const useParcelMultiSelectMock = vi.fn(() => ({
+  selectedParcelIds: ref(new Set()),
+  lastClickedId: ref(null),
+  selectedItems: ref([]),
+  handleRowClick: vi.fn(),
+  handleRowContextMenu: vi.fn(),
+  updateSelectedParcelIds: vi.fn(),
+  scrollToSelectedItem: vi.fn(),
+  getRowProps: vi.fn(() => ({ class: '' })),
+  stop: vi.fn()
+}))
 
 function createRegisterHeaderActionsMock() {
   return {
@@ -208,6 +221,10 @@ vi.mock('@/helpers/register.actions.js', () => ({
   useRegisterHeaderActions: vi.fn(() => registerHeaderActionsMock)
 }))
 
+vi.mock('@/composables/useParcelMultiSelect.js', () => ({
+  useParcelMultiSelect: (...args) => useParcelMultiSelectMock(...args)
+}))
+
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   navigateToEditParcel: vi.fn(),
   validateParcelData: vi.fn(),
@@ -271,9 +288,11 @@ vi.mock('@/components/AssignTnvedDialog.vue', () => ({
 }))
 
 describe.each([
-  ['OzonParcels_List', OzonParcelsList],
-  ['WbrParcels_List', WbrParcelsList]
-])('%s header actions', (name, Component) => {
+  ['OzonParcels_List', OzonParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true }],
+  ['WbrParcels_List', WbrParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true }],
+  ['Wbr2Parcels_List', Wbr2ParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: true }],
+  ['GtcParcels_List', GtcParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: false }]
+])('%s header actions', (name, Component, capabilities) => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupStores()
@@ -297,7 +316,11 @@ describe.each([
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
 
     await buttons[1].trigger('click')
-    expect(registerHeaderActionsMock.validateRegisterSwEx).toHaveBeenCalled()
+    if (capabilities.hasHistoricActions) {
+      expect(registerHeaderActionsMock.validateRegisterSwEx).toHaveBeenCalled()
+    } else {
+      expect(registerHeaderActionsMock.validateRegisterSwEx).not.toHaveBeenCalled()
+    }
 
     await buttons[2].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
@@ -306,7 +329,11 @@ describe.each([
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
     await buttons[4].trigger('click')
-    expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
+    if (capabilities.hasHistoricActions) {
+      expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
+    } else {
+      expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
+    }
 
     await buttons[5].trigger('click')
     expect(registerHeaderActionsMock.exportAllXmlOrdinary).toHaveBeenCalled()
@@ -319,6 +346,19 @@ describe.each([
 
     await buttons[8].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
+  })
+
+  it('wires parcel multi-select composable', async () => {
+    useParcelMultiSelectMock.mockClear()
+
+    mount(Component, {
+      props: { registerId: 11 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    expect(useParcelMultiSelectMock).toHaveBeenCalledTimes(1)
   })
 
   it('hides header actions when user lacks permissions', async () => {
@@ -349,6 +389,7 @@ describe.each([
   })
 
   it('shows previousDTagComment and hides feacnLookup for reimport customs procedures', async () => {
+    if (!capabilities.hasPreviousDTagComment) return
     stores.registers.item.customsProcedureCode = 2
     stores.registers.ops.customsProcedures = [{ value: 2, charCode: 'ИМ60', name: 'Реимпорт', isRe: true, isExport: false }]
 
@@ -365,6 +406,7 @@ describe.each([
   })
 
   it('shows feacnLookup and hides previousDTagComment for non-reimport customs procedures', async () => {
+    if (!capabilities.hasPreviousDTagComment) return
     stores.registers.item.customsProcedureCode = 3
     stores.registers.ops.customsProcedures = [{ value: 3, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }]
 

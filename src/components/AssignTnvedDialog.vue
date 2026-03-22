@@ -84,7 +84,7 @@ watch(() => props.show, (visible) => {
             v-model="targetTnVed"
             type="text"
             class="input target-tnved-input"
-            maxlength="30"
+            maxlength="10"
             placeholder="10 цифр"
             data-testid="target-tnved-input"
           >

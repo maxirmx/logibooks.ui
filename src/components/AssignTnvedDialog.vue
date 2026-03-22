@@ -67,7 +67,7 @@ watch(normalizedTargetTnVed, (code) => {
   tnvedLookupError.value = ''
   tnvedChecking.value = false
 
-  if (/^\d{10}$/.test(code)) {
+  if (hasCorrectFormat.value) {
     tnvedChecking.value = true
     lookupTimeout = setTimeout(() => lookupTnVed(code), 500)
   }

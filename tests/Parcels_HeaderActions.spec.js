@@ -350,15 +350,20 @@ describe.each([
 
   it('wires parcel multi-select composable', async () => {
     useParcelMultiSelectMock.mockClear()
+    const stopSpy = vi.fn()
+    useParcelMultiSelectMock.mockReturnValue({ stop: stopSpy })
 
-    mount(Component, {
+    const wrapper = mount(Component, {
       props: { registerId: 11 },
       global: { stubs: vuetifyStubs }
     })
 
     await resolveAll()
 
+    wrapper.unmount()
+
     expect(useParcelMultiSelectMock).toHaveBeenCalledTimes(1)
+    expect(stopSpy).toHaveBeenCalled()
   })
 
   it('hides header actions when user lacks permissions', async () => {

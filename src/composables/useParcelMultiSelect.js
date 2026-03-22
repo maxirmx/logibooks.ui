@@ -39,6 +39,10 @@ export function useParcelMultiSelect({
     if (selectedParcelId.value && !currentIds.has(selectedParcelId.value)) {
       selectedParcelId.value = null
     }
+
+    if (lastClickedId.value != null && !currentIds.has(lastClickedId.value)) {
+      lastClickedId.value = null
+    }
   }
 
   function handleRowClick(event, { item }) {
@@ -58,6 +62,8 @@ export function useParcelMultiSelect({
           newSet.add(ids[i])
         }
         selectedParcelIds.value = newSet
+      } else {
+        selectedParcelIds.value = new Set([id])
       }
     } else if (event.ctrlKey || event.metaKey) {
       const newSet = new Set(selectedParcelIds.value)

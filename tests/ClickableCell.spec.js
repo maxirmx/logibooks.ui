@@ -127,6 +127,33 @@ describe('ClickableCell', () => {
       expect(wrapper.emitted('click')).toBeFalsy()
       expect(span.classes()).toContain('clickable-cell-disabled')
     })
+
+    it('does not emit click event when shift is pressed', async () => {
+      const wrapper = createWrapper()
+      const span = wrapper.find('span')
+
+      await span.trigger('click', { shiftKey: true })
+
+      expect(wrapper.emitted('click')).toBeFalsy()
+    })
+
+    it('does not emit click event when control is pressed', async () => {
+      const wrapper = createWrapper()
+      const span = wrapper.find('span')
+
+      await span.trigger('click', { ctrlKey: true })
+
+      expect(wrapper.emitted('click')).toBeFalsy()
+    })
+
+    it('does not emit click event when command is pressed', async () => {
+      const wrapper = createWrapper()
+      const span = wrapper.find('span')
+
+      await span.trigger('click', { metaKey: true })
+
+      expect(wrapper.emitted('click')).toBeFalsy()
+    })
   })
 
   describe('props validation', () => {

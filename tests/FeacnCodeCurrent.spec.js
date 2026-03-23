@@ -75,6 +75,7 @@ describe('FeacnCodeCurrent', () => {
       const wrapper = createWrapper({ item: { id: 2 } })
       const span = wrapper.find('span')
       expect(span.exists()).toBe(true)
+      expect(span.text()).toBe('')
     })
 
     it('applies truncated-cell class', () => {

@@ -739,19 +739,19 @@ function getGenericTemplateHeaders() {
 
 <style scoped>
 :deep(.selected-parcel-row:nth-child(odd)) {
-  background-color: #dbeafe !important;
+  background-color: #b7d5fe !important;
 }
 
 :deep(.selected-parcel-row:nth-child(odd) > td) {
-  background-color: #dbeafe !important;
+  background-color: #b7d5fe !important;
 }
 
 :deep(.selected-parcel-row:nth-child(even)) {
-  background-color: #bfdbfe !important;
+  background-color: #8fb5fd !important;
 }
 
 :deep(.selected-parcel-row:nth-child(even) > td) {
-  background-color: #bfdbfe !important;
+  background-color: #8fb5fd !important;
 }
 
 .header-actions-group + .header-actions-group {

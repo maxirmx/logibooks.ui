@@ -48,7 +48,10 @@ const tooltipMaxWidth = computed(() => {
   return '400px' // fallback
 })
 
-async function selectCode(code) {
+async function selectCode(event, code) {
+  if (event.shiftKey || event.ctrlKey || event.metaKey) {
+    return
+  }
   if (code !== props.item.tnVed) {
     await updateParcelTnVed(props.item, code, parcelsStore, loadOrders)
   }
@@ -85,7 +88,7 @@ function getTooltipText(code) {
           :class="entry.isMatching
             ? getMatchingFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
             : getFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)"
-          @click="selectCode(entry.code)"
+          @click="selectCode($event, entry.code)"
           @mouseenter="loadTooltip(entry.code)"
         >
           <span class="d-inline-flex align-center">

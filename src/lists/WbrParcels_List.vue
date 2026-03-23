@@ -738,12 +738,20 @@ function getGenericTemplateHeaders() {
 </template>
 
 <style scoped>
-:deep(.selected-parcel-row) {
+:deep(.selected-parcel-row:nth-child(odd)) {
   background-color: #dbeafe !important;
 }
 
-:deep(.selected-parcel-row > td) {
+:deep(.selected-parcel-row:nth-child(odd) > td) {
   background-color: #dbeafe !important;
+}
+
+:deep(.selected-parcel-row:nth-child(even)) {
+  background-color: #bfdbfe !important;
+}
+
+:deep(.selected-parcel-row:nth-child(even) > td) {
+  background-color: #bfdbfe !important;
 }
 
 .header-actions-group + .header-actions-group {

@@ -739,7 +739,11 @@ function getGenericTemplateHeaders() {
 
 <style scoped>
 :deep(.selected-parcel-row) {
-  border: 2px dashed #5d798f !important;
+  background-color: #dbeafe !important;
+}
+
+:deep(.selected-parcel-row > td) {
+  background-color: #dbeafe !important;
 }
 
 .header-actions-group + .header-actions-group {

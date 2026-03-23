@@ -31,6 +31,13 @@ watch([() => componentProps.item.tnVed, () => componentProps.feacnCodes, () => c
   }
 }, { immediate: true })
 
+function handleClick(event) {
+  if (event.shiftKey || event.ctrlKey || event.metaKey) {
+    return
+  }
+  emit('click', componentProps.item)
+}
+
 function handleMouseEnter() {
   if (componentProps.item.tnVed) {
     loadFeacnTooltipOnHover(componentProps.item.tnVed)
@@ -44,7 +51,7 @@ function handleMouseEnter() {
       <span
         v-bind="tooltipProps"
         :class="cellClass"
-        @click="emit('click', componentProps.item)"
+        @click="handleClick"
         @mouseenter="handleMouseEnter"
       >
         {{ componentProps.item.tnVed || '' }}

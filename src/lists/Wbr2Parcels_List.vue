@@ -738,8 +738,12 @@ function getGenericTemplateHeaders() {
 </template>
 
 <style scoped>
+.wbr-parcels-table {
+  user-select: none;
+}
+
 :deep(.selected-parcel-row) {
-  border: 2px dashed #5d798f !important;
+  background-color: #b7d5fe !important;
 }
 
 .header-actions-group + .header-actions-group {

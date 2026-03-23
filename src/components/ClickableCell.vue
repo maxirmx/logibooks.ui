@@ -14,8 +14,8 @@ const props = defineProps({
 
 const emit = defineEmits(['click'])
 
-function handleClick() {
-  if (props.disabled) {
+function handleClick(event) {
+  if (props.disabled || event.shiftKey || event.ctrlKey || event.metaKey) {
     return
   }
   emit('click', props.item)

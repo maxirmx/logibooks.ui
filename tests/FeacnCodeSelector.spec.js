@@ -264,5 +264,29 @@ describe('FeacnCodeSelector', () => {
       await matchingDiv.trigger('click')
       expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
     })
+
+    it('does not call updateParcelTnVed when shift is pressed', async () => {
+      const wrapper = createWrapper()
+      const unselectedCodeDiv = wrapper.find('.unselected-code')
+      expect(unselectedCodeDiv.exists()).toBe(true)
+      await unselectedCodeDiv.trigger('click', { shiftKey: true })
+      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
+    })
+
+    it('does not call updateParcelTnVed when control is pressed', async () => {
+      const wrapper = createWrapper()
+      const unselectedCodeDiv = wrapper.find('.unselected-code')
+      expect(unselectedCodeDiv.exists()).toBe(true)
+      await unselectedCodeDiv.trigger('click', { ctrlKey: true })
+      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
+    })
+
+    it('does not call updateParcelTnVed when command is pressed', async () => {
+      const wrapper = createWrapper()
+      const unselectedCodeDiv = wrapper.find('.unselected-code')
+      expect(unselectedCodeDiv.exists()).toBe(true)
+      await unselectedCodeDiv.trigger('click', { metaKey: true })
+      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
+    })
   })
 })

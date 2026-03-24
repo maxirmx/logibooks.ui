@@ -228,12 +228,9 @@ vi.mock('@/composables/useParcelMultiSelect.js', () => ({
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   navigateToEditParcel: vi.fn(),
   validateParcelData: vi.fn(),
-  approveParcelData: vi.fn(),
   getRowPropsForParcel: vi.fn(() => ({ class: '' })),
   filterGenericTemplateHeadersForParcel: vi.fn(() => []),
   generateRegisterName: vi.fn(() => 'Реестр'),
-  exportParcelXmlData: vi.fn(),
-  lookupFeacn: vi.fn(),
   getFeacnCodesForKeywords: vi.fn(() => []),
   loadOrders: vi.fn((...args) => {
     loadOrdersMock(...args)

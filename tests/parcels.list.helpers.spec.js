@@ -39,12 +39,9 @@ vi.mock('../src/helpers/feacn.info.helpers.js', () => ({
 import {
   navigateToEditParcel,
   validateParcelData,
-  exportParcelXmlData,
-  approveParcelData,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
   generateRegisterName,
-  lookupFeacn,
   getFeacnCodesForKeywords,
   getKeywordFeacnPairs,
   getFeacnCodeItemClass,
@@ -52,7 +49,6 @@ import {
   updateParcelTnVed,
   loadOrders
 } from '../src/helpers/parcels.list.helpers.js'
-import { ParcelApprovalMode } from '../src/models/parcel.approval.mode.js'
 
 // Import mocked FEACN info helpers
 import { getCachedFeacnInfo, preloadFeacnInfo } from '../src/helpers/feacn.info.helpers.js'
@@ -191,208 +187,6 @@ describe('Parcels List Helpers', () => {
       await validateParcelData(item, mockStore, mockLoadOrders, false)
 
       expect(mockStore.error).toBe('Ошибка при проверке информации о посылке')
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-  })
-
-  describe('exportParcelXmlData', () => {
-    it('should export parcel XML successfully with WBR filename format', async () => {
-      const mockStore = {
-        generate: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const item = { id: 123, shk: '123', postingNumber: 'POST-123' }
-      const filename = '00000000000000000123'
-
-      await exportParcelXmlData(item, mockStore, filename)
-
-      expect(mockStore.generate).toHaveBeenCalledWith(123, '00000000000000000123')
-    })
-
-    it('should export parcel XML successfully with Ozon filename format', async () => {
-      const mockStore = {
-        generate: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const item = { id: 456, postingNumber: 'OZON-456' }
-      const filename = 'OZON-456'
-
-      await exportParcelXmlData(item, mockStore, filename)
-
-      expect(mockStore.generate).toHaveBeenCalledWith(456, 'OZON-456')
-    })
-
-    it('should handle export errors', async () => {
-      const mockStore = {
-        generate: vi.fn().mockRejectedValue({
-          response: { data: { message: 'Export failed' } }
-        }),
-        error: ''
-      }
-      const item = { id: 123, postingNumber: 'POST-123' }
-      const filename = 'test-filename'
-
-      await exportParcelXmlData(item, mockStore, filename)
-
-      expect(mockStore.error).toBe('Export failed')
-    })
-
-    it('should handle export errors with default message', async () => {
-      const mockStore = {
-        generate: vi.fn().mockRejectedValue(new Error('Network error')),
-        error: ''
-      }
-      const item = { id: 123, postingNumber: 'POST-123' }
-      const filename = 'test-filename'
-
-      await exportParcelXmlData(item, mockStore, filename)
-
-      expect(mockStore.error).toBe('Ошибка при выгрузке накладной для посылки')
-    })
-  })
-
-  describe('approveParcelData', () => {
-    it('should approve parcel successfully (default approvalMode=SimpleApprove)', async () => {
-      const mockStore = {
-        approve: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await approveParcelData(item, mockStore, mockLoadOrders)
-
-      expect(mockStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.SimpleApprove)
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should approve parcel with excise when approvalMode=ApproveWithExcise', async () => {
-      const mockStore = {
-        approve: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithExcise)
-
-      expect(mockStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithExcise)
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should approve parcel with notification when approvalMode=ApproveWithNotification', async () => {
-      const mockStore = {
-        approve: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithNotification)
-
-      expect(mockStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithNotification)
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should handle approval errors without excise', async () => {
-      const mockStore = {
-        approve: vi.fn().mockRejectedValue({
-          response: { data: { message: 'Approval failed' } }
-        }),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await approveParcelData(item, mockStore, mockLoadOrders)
-
-      expect(mockStore.error).toBe('Approval failed')
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should handle approval errors with excise and show appropriate message', async () => {
-      const mockStore = {
-        approve: vi.fn().mockRejectedValue(new Error('Network error')),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithExcise)
-
-      expect(mockStore.error).toBe('Ошибка при согласовании посылки')
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should handle approval errors with notification and show appropriate message', async () => {
-      const mockStore = {
-        approve: vi.fn().mockRejectedValue(new Error('Network error')),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await approveParcelData(item, mockStore, mockLoadOrders, ParcelApprovalMode.ApproveWithNotification)
-
-      expect(mockStore.error).toBe('Ошибка при согласовании посылки')
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-  })
-
-  describe('lookupFeacn', () => {
-    it('should lookup FEACN codes and reload orders', async () => {
-      const mockStore = {
-        lookupFeacnCode: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await lookupFeacn(item, mockStore, mockLoadOrders)
-
-      expect(mockStore.lookupFeacnCode).toHaveBeenCalledWith(123)
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should lookup FEACN codes without calling loadOrdersFn when not provided', async () => {
-      const mockStore = {
-        lookupFeacnCode: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const item = { id: 123 }
-
-      await lookupFeacn(item, mockStore, null)
-
-      expect(mockStore.lookupFeacnCode).toHaveBeenCalledWith(123)
-    })
-
-    it('should handle lookup errors', async () => {
-      const mockStore = {
-        lookupFeacnCode: vi.fn().mockRejectedValue({
-          response: { data: { message: 'Lookup failed' } }
-        }),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await lookupFeacn(item, mockStore, mockLoadOrders)
-
-      expect(mockStore.error).toBe('Lookup failed')
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
-    it('should handle lookup errors with default message', async () => {
-      const mockStore = {
-        lookupFeacnCode: vi.fn().mockRejectedValue(new Error('Network error')),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await lookupFeacn(item, mockStore, mockLoadOrders)
-
-      expect(mockStore.error).toBe('Ошибка при подборе кодов ТН ВЭД')
       expect(mockLoadOrders).toHaveBeenCalled()
     })
   })

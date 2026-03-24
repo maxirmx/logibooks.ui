@@ -50,10 +50,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
     getRowPropsForParcel: vi.fn(() => ({ class: '' })),
     navigateToEditParcel: vi.fn(),
     validateParcelData: vi.fn().mockResolvedValue(),
-    approveParcelData: vi.fn().mockResolvedValue(),
     filterGenericTemplateHeadersForParcel: vi.fn(() => []),
-    exportParcelXmlData: vi.fn().mockResolvedValue(),
-    lookupFeacn: vi.fn().mockResolvedValue(),
     getFeacnCodesForKeywords: vi.fn().mockResolvedValue()
   }
 })

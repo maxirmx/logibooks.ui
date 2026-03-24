@@ -26,12 +26,8 @@ import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
-  validateParcelData,
-  approveParcelData,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
-  exportParcelXmlData,
-  lookupFeacn,
   getFeacnCodesForKeywords,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
@@ -400,62 +396,6 @@ function handleFellows(item) {
   handleFellowsClick(item.registerId, item.shk)
 }
 
-async function exportParcelXml(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    const filename = String(item.shk || '').padStart(20, '0')
-    await exportParcelXmlData(item, parcelsStore, filename)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function validateParcelSw(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await validateParcelData(item, parcelsStore, loadOrdersWrapper, true)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function validateParcelFc(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await validateParcelData(item, parcelsStore, loadOrdersWrapper, false)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function lookupFeacnCodes(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function approveParcel(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await approveParcelData(item, parcelsStore, loadOrdersWrapper)
-  } finally {
-    runningAction.value = false
-  }
-}
-
 // Function to filter headers that need generic templates
 function getGenericTemplateHeaders() {
   return filterGenericTemplateHeadersForParcel(headers.value)
@@ -660,41 +600,6 @@ function getGenericTemplateHeaders() {
               tooltip-text="Редактировать посылку" 
               @click="editParcel" 
               :disabled="runningAction || loading" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-spell-check" 
-              tooltip-text="Проверить по стоп-словам" 
-              @click="validateParcelSw" 
-              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-anchor-circle-check" 
-              tooltip-text="Проверить по кодам ТН ВЭД" 
-              @click="validateParcelFc" 
-              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-magnifying-glass" 
-              tooltip-text="Подобрать код ТН ВЭД" 
-              @click="lookupFeacnCodes" 
-              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-upload" 
-              tooltip-text="Выгрузить XML накладную для посылки" 
-              @click="exportParcelXml" 
-              :disabled="runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-check-circle" 
-              tooltip-text="Согласовать" 
-              @click="approveParcel" 
-              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
             />
           </div>
         </template>

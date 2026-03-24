@@ -8,7 +8,6 @@
 
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
-import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -45,26 +44,6 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
     await parcelsStore.validate(item.id, sw)
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
-    const alertStore = useAlertStore()
-    alertStore.error(parcelsStore.error)
-  } finally {
-    loadOrdersFn()
-  }
-}
-
-/**
- * Approves a parcel and reloads data
- * @param {Object} item - The parcel item
- * @param {Object} parcelsStore - The parcels store instance
- * @param {Function} loadOrdersFn - Function to reload orders
- * @param {ParcelApprovalMode} approvalMode - Approval mode (default: SimpleApprove)
- * @returns {Promise<void>}
- */
-export async function approveParcelData(item, parcelsStore, loadOrdersFn, approvalMode = ParcelApprovalMode.SimpleApprove) {
-  try {
-    await parcelsStore.approve(item.id, approvalMode)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
     const alertStore = useAlertStore()
     alertStore.error(parcelsStore.error)
   } finally {
@@ -118,45 +97,6 @@ export function generateRegisterName(dealNumber, fileName) {
     return `Реестр для сделки ${dealNumber}`
   } else {
     return 'Реестр для сделки без номера (файл: ' + fileName + ')'
-  }
-}
-
-/**
- * Exports parcel XML with provided filename
- * @param {Object} item - The parcel item
- * @param {Object} parcelsStore - The parcels store instance
- * @param {string} filename - The filename to use for export
- * @returns {Promise<void>}
- */
-export async function exportParcelXmlData(item, parcelsStore, filename) {
-  try {
-    await parcelsStore.generate(item.id, filename)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при выгрузке накладной для посылки'
-    const alertStore = useAlertStore()
-    alertStore.error(parcelsStore.error)
-  }
-}
-
-/**
- * Looks up FEACN codes for a parcel
- * @param {Object} item - The parcel item
- * @param {Object} parcelsStore - The parcels store instance
- * @param {Function} loadOrdersFn - Function to reload orders
- * @returns {Promise<void>}
- */
-export async function lookupFeacn(item, parcelsStore, loadOrdersFn) {
-  try {
-    await parcelsStore.lookupFeacnCode(item.id)
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при подборе кодов ТН ВЭД'
-    const alertStore = useAlertStore()
-    alertStore.error(parcelsStore.error)
-  }
-  finally {
-    if (loadOrdersFn) {
-      loadOrdersFn()
-    }
   }
 }
 

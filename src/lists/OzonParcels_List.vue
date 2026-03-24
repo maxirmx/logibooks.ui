@@ -26,12 +26,8 @@ import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
-  validateParcelData,
-  approveParcelData,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
-  exportParcelXmlData,
-  lookupFeacn,
   getFeacnCodesForKeywords,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
@@ -354,6 +350,7 @@ const headers = computed(() => {
     // Insert FEACN lookup column only when not reimport procedure
     ...(!isReProcedure.value ? [feacnLookupColumn] : []),
     { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
+    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
     { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
 //    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
@@ -361,7 +358,6 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
     { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
     { title: ozonRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
     { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
@@ -386,62 +382,6 @@ function editParcel(item) {
 
 function handleFellows(item) {
   handleFellowsClick(item.registerId, item.postingNumber)
-}
-
-async function exportParcelXml(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    const filename = item.postingNumber
-    await exportParcelXmlData(item, parcelsStore, filename)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function validateParcelSw(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await validateParcelData(item, parcelsStore, loadOrdersWrapper, true)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function validateParcelFc(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await validateParcelData(item, parcelsStore, loadOrdersWrapper, false)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function lookupFeacnCodes(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await lookupFeacn(item, parcelsStore, loadOrdersWrapper)
-  } finally {
-    runningAction.value = false
-  }
-}
-
-async function approveParcel(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    selectedParcelId.value = item.id
-    await approveParcelData(item, parcelsStore, loadOrdersWrapper)
-  } finally {
-    runningAction.value = false
-  }
 }
 
 // Function to filter headers that need generic templates
@@ -648,39 +588,6 @@ function getGenericTemplateHeaders() {
               tooltip-text="Редактировать информацию о посылке" 
               @click="editParcel" 
               :disabled="runningAction || loading" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-spell-check" 
-              tooltip-text="Проверить по стоп-словам" 
-              @click="validateParcelSw" 
-              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-anchor-circle-check" 
-              tooltip-text="Проверить по кодам ТН ВЭД" 
-              @click="validateParcelFc" :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-magnifying-glass" 
-              tooltip-text="Подобрать код ТН ВЭД" 
-              @click="lookupFeacnCodes" :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)"
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-upload" 
-              tooltip-text="Выгрузить XML накладную для посылки" 
-              @click="exportParcelXml" 
-              :disabled="runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem" 
-            />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-check-circle" 
-              tooltip-text="Согласовать" 
-              @click="approveParcel" 
-              :disabled="runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)" 
             />
           </div>
         </template>

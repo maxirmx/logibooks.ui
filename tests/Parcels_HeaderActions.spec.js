@@ -280,7 +280,7 @@ vi.mock('@/components/ParcelNumberExt.vue', () => ({
   }
 }))
 
-vi.mock('@/components/AssignTnvedDialog.vue', () => ({
+vi.mock('@/l2/AssignTnvedDialog.vue', () => ({
   default: { name: 'AssignTnvedDialog', template: '<div class="assign-tnved-dialog-stub"></div>' }
 }))
 

@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import AssignTnvedDialog from '@/components/AssignTnvedDialog.vue'
+import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const mockGetByCode = vi.fn()

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, unref } from 'vue'
-import ActionDialog from '@/components/ActionDialog.vue'
+import ActionDialog from '@/l2/ActionDialog.vue'
 
 const props = defineProps({
   validationState: { type: Object, required: true },

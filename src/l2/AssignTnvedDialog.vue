@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, ref, watch, onUnmounted } from 'vue'
+import { computed, ref, watch, onUnmounted, nextTick } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
@@ -15,6 +15,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:show', 'confirm'])
+
+const inputRef = ref(null)
 
 function handleKeydown(event) {
   if (!props.show) return
@@ -100,6 +102,10 @@ watch(normalizedTargetTnVed, (code) => {
 watch(() => props.show, (newValue) => {
   if (newValue) {
     document.addEventListener('keydown', handleKeydown)
+    // Focus input field when dialog opens
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
   } else {
     document.removeEventListener('keydown', handleKeydown)
   }
@@ -183,6 +189,7 @@ watch(() => props.show, (visible) => {
         <v-card-text>
           <div class="target-input-row">
             <input
+              ref="inputRef"
               id="target-tnved"
               v-model="targetTnVed"
               type="text"

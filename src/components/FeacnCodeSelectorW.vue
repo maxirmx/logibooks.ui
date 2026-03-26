@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
 import { getFeacnCodesForKeywords,  getFeacnCodeItemClass,  getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } from '@/helpers/parcels.list.helpers.js'
@@ -80,11 +80,37 @@ function handleKeywordLookupSelect(code) {
   emit('overlay-state-changed', false)
 }
 
+function handleClickOutside(event) {
+  // Get the wrapper element
+  const wrapper = document.querySelector('.keyword-selector-wrapper')
+  // Close if click is outside the wrapper
+  if (wrapper && !wrapper.contains(event.target)) {
+    isKeywordLookupOpen.value = false
+  }
+}
+
 // Close this overlay when the external main search panel opens
 watch(() => props.externalSearchOpen, (val) => {
   if (val) {
     isKeywordLookupOpen.value = false
   }
+})
+
+// Manage click-outside listener
+watch(isKeywordLookupOpen, (val, oldVal) => {
+  // Remove listener first if it was previously attached
+  if (oldVal) {
+    document.removeEventListener('click', handleClickOutside)
+  }
+  // Add listener if needed
+  if (val) {
+    document.addEventListener('click', handleClickOutside)
+  }
+})
+
+// Clean up on unmount
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 
 function handleMouseEnter(code) {

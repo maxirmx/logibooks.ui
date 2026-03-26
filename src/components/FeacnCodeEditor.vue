@@ -96,15 +96,26 @@ function handleEscape(event) {
   }
 }
 
+function handleClickOutside(event) {
+  // Get the wrapper element
+  const wrapper = document.querySelector('.feacn-search-wrapper')
+  // Close if click is outside the wrapper
+  if (wrapper && !wrapper.contains(event.target)) {
+    searchActive.value = false
+  }
+}
+
 // Improved watch with defensive cleanup
 watch(searchActive, (val, oldVal) => {
-  // Remove listener first if it was previously attached
+  // Remove listeners first if they were previously attached
   if (oldVal) {
     document.removeEventListener('keydown', handleEscape)
+    document.removeEventListener('click', handleClickOutside)
   }
-  // Add listener if needed
+  // Add listeners if needed
   if (val) {
     document.addEventListener('keydown', handleEscape)
+    document.addEventListener('click', handleClickOutside)
   }
   
   // Emit overlay state to parent
@@ -114,6 +125,7 @@ watch(searchActive, (val, oldVal) => {
 // Always try to remove on unmount
 onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 // Lookup FEACN codes for this parcel

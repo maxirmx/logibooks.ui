@@ -87,30 +87,3 @@ onUnmounted(() => {
     </v-card>
   </v-dialog>
 </template>
-
-<style scoped>
-.error-dialog__lists {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.error-dialog__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.error-dialog__list-title {
-  font-weight: 600;
-}
-
-.error-dialog__list ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.error-dialog__list li + li {
-  margin-top: 4px;
-}
-</style>

@@ -16,6 +16,18 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show', 'confirm'])
 
+function handleKeydown(event) {
+  if (!props.show) return
+  
+  if (event.key === 'Enter' && isTnVedValid.value) {
+    event.preventDefault()
+    confirm()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    close()
+  }
+}
+
 const feacnCodesStore = useFeacnCodesStore()
 
 const targetTnVed = ref('')
@@ -84,7 +96,18 @@ watch(normalizedTargetTnVed, (code) => {
   }
 })
 
+// Add/remove keydown event listener when dialog opens/closes
+watch(() => props.show, (newValue) => {
+  if (newValue) {
+    document.addEventListener('keydown', handleKeydown)
+  } else {
+    document.removeEventListener('keydown', handleKeydown)
+  }
+})
+
+// Cleanup on unmount
 onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
   if (lookupTimeout) clearTimeout(lookupTimeout)
 })
 
@@ -167,6 +190,7 @@ watch(() => props.show, (visible) => {
               maxlength="10"
               placeholder="Код ТН ВЭД (10 цифр)"
               data-testid="target-tnved-input"
+              autofocus
             >
             <ActionButton
               :item="selectedIds"
@@ -192,7 +216,7 @@ watch(() => props.show, (visible) => {
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="close">Отменить</v-btn>
-          <v-btn color="orange-darken-3" variant="text" :disabled="!isTnVedValid" @click="confirm">Применить</v-btn>
+          <v-btn color="orange-darken-3" variant="flat" :disabled="!isTnVedValid" @click="confirm">Применить</v-btn>
         </v-card-actions>
       </v-card>
 

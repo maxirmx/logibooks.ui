@@ -182,7 +182,7 @@ function handleMouseEnter(code) {
     <div class="keyword-search-overlay">
       <FeacnCodeSearchByKeyword
         v-model="isKeywordLookupOpen"
-        v-show="isKeywordLookupOpen"
+        v-if="isKeywordLookupOpen"
         @select="handleKeywordLookupSelect"
       />
     </div>

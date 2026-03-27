@@ -327,8 +327,16 @@ describe('FeacnCodeSelectorW', () => {
 
     wrapper = createWrapper()
 
-  await wrapper.findComponent({ name: 'FeacnCodeSearchByKeyword' }).vm.$emit('select', '5555')
-  await wrapper.vm.$nextTick()
+    // Open the keyword lookup so the component is mounted (v-if)
+    const label = wrapper.find('label')
+    await label.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const { default: StubComponent } = await import('@/components/FeacnCodeSearchByKeyword.vue')
+    const lookup = wrapper.findComponent(StubComponent)
+    expect(lookup.exists()).toBe(true)
+    await lookup.vm.$emit('select', '5555')
+    await wrapper.vm.$nextTick()
     expect(mockOnSelect).toHaveBeenCalledWith('5555')
   })
 })

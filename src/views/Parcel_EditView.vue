@@ -56,13 +56,12 @@ onUnmounted(() => {
 <template>
   <div v-if="loading">Загрузка...</div>
   <div v-else-if="error">Ошибка загрузки: {{ error.message }}</div>
-  <Suspense v-else>
+  <Suspense v-else :key="props.id">
     <component 
       v-if="editComponent" 
       :is="editComponent" 
       :register-id="props.registerId" 
       :id="props.id" 
-      :key="props.id" 
     />
     <div v-else>Неизвестный тип компании</div>
   </Suspense>

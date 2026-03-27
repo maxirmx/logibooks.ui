@@ -88,7 +88,6 @@ onMounted(async () => { await keyWordsStore.ensureLoaded() })
 
 <template>
   <div
-    v-if="isOpen"
     class="feacn-code-search"
     data-testid="feacn-keyword-selector"
   >

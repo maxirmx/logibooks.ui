@@ -14,7 +14,7 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
-import { WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ErrorDialog from '@/l2/ErrorDialog.vue'
@@ -84,6 +84,8 @@ const warehouseOptions = computed(() => {
   return [{ id: 0, name: 'Не задано' }, ...available]
 })
 const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
+const isWbrRegister = computed(() => item.value?.registerType === WBR_COMPANY_ID)
+const isWbrOrWbr2Register = computed(() => isWbrRegister.value || isWbr2Register.value)
 const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
 
 const filteredCustomsProcedures = computed(() => {
@@ -243,7 +245,7 @@ onMounted(async () => {
     await airportsStore.getAll()
     if (!isComponentMounted.value) return
 
-    if (isWbr2Register.value) {
+    if (isWbrOrWbr2Register.value) {
       await warehousesStore.ensureLoaded()
       if (!isComponentMounted.value) return
     }
@@ -733,7 +735,7 @@ function getCustomerName(customerId) {
           </div>
         </div>
 
-        <div class="form-row" v-if="isWbr2Register">
+        <div class="form-row" v-if="isWbrOrWbr2Register">
           <div class="form-group">
             <label for="warehouseId" class="label">Склад:</label>
             <Field

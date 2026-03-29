@@ -11,7 +11,7 @@ import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
-import { WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 
@@ -267,7 +267,7 @@ describe('Register_EditDialog', () => {
     expect(countriesStore.ensureLoaded).toHaveBeenCalled()
     expect(registersStore.ensureOpsLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
-    expect(warehousesStore.ensureLoaded).not.toHaveBeenCalled()
+    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
     expect(wrapper.find('#customsProcedureCode').exists()).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
@@ -278,7 +278,7 @@ describe('Register_EditDialog', () => {
     expect(optionTexts).toContain('Шереметьево (SVO)')
     const arrivalSelect = wrapper.find('select#arrivalAirportId')
     expect(arrivalSelect.exists()).toBe(true)
-    expect(wrapper.find('#warehouseId').exists()).toBe(false)
+    expect(wrapper.find('#warehouseId').exists()).toBe(true)
   })
 
   it('enables airport selectors when aviation transport is selected', async () => {
@@ -344,10 +344,35 @@ describe('Register_EditDialog', () => {
     expect(mockItem.value.transportationTypeCode).toBe(0)
   })
 
-  it('renders warehouse selector only for WBR2 register type', async () => {
+  it('renders warehouse selector for WBR2 register type', async () => {
     mockItem.value = {
       ...baseRegisterItem,
       registerType: WBR2_REGISTER_ID
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
+    const warehouseSelect = wrapper.find('select#warehouseId')
+    expect(warehouseSelect.exists()).toBe(true)
+    const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
+    expect(optionTexts).toContain('Не задано')
+    expect(optionTexts).toContain('Main Warehouse')
+  })
+
+  it('renders warehouse selector for WBR register type', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBR_COMPANY_ID
     }
 
     const Parent = {

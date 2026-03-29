@@ -42,6 +42,14 @@ vi.mock('@/lists/Wbr2Parcels_WhList.vue', () => ({
   }
 }))
 
+vi.mock('@/lists/WbrParcels_WhList.vue', () => ({
+  default: {
+    name: 'WbrParcels_WhList',
+    props: ['register-id'],
+    template: '<div data-test="wbr-wh-list">WBR WH: {{ registerId }}</div>'
+  }
+}))
+
 vi.mock('@/lists/GtcParcels_List.vue', () => ({
   default: {
     name: 'GtcParcels_List',
@@ -80,6 +88,25 @@ describe('Parcels_View', () => {
     await nextTick()
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
+  })
+
+  it('renders WbrParcels_WhList when register has WBR registerType in warehouse mode', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 10,
+        mode: OP_MODE_WAREHOUSE
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-test="wbr-wh-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })

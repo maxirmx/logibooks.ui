@@ -11,7 +11,7 @@ import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
-import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 
@@ -373,6 +373,31 @@ describe('Register_EditDialog', () => {
     mockItem.value = {
       ...baseRegisterItem,
       registerType: WBR_COMPANY_ID
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
+    const warehouseSelect = wrapper.find('select#warehouseId')
+    expect(warehouseSelect.exists()).toBe(true)
+    const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
+    expect(optionTexts).toContain('Не задано')
+    expect(optionTexts).toContain('Main Warehouse')
+  })
+
+  it('renders warehouse selector for OZON register type', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: OZON_COMPANY_ID
     }
 
     const Parent = {

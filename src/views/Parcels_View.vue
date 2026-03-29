@@ -5,6 +5,7 @@
 
 import { computed, ref, onMounted } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
+import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
@@ -27,7 +28,9 @@ const error = ref(null)
 const listComponent = computed(() => {
   if (!register.value) return null
   const registerType = register.value.registerType
-  if (registerType === OZON_COMPANY_ID) return OzonParcelsList
+  if (registerType === OZON_COMPANY_ID) {
+    return props.mode === OP_MODE_WAREHOUSE ? OzonParcelsWhList : OzonParcelsList
+  }
   if (registerType === WBR_COMPANY_ID) {
     return props.mode === OP_MODE_WAREHOUSE ? WbrParcelsWhList : WbrParcelsList
   }

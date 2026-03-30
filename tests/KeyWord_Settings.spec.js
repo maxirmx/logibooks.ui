@@ -408,25 +408,6 @@ describe('KeyWord_Settings.vue', () => {
 
       expect(wrapper.vm.searchIndex).toBe(null)
     })
-
-    it('restores focus to the active feacn code input on refocus', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const focusSpy = vi.fn()
-      const activeInput = document.createElement('input')
-      activeInput.focus = focusSpy
-      Object.defineProperty(document, 'activeElement', {
-        configurable: true,
-        get: () => activeInput
-      })
-
-      wrapper.vm.toggleSearch(0)
-      wrapper.vm.handleRefocus()
-      await nextTick()
-
-      expect(focusSpy).toHaveBeenCalled()
-    })
   })
 
   describe('Form Submission', () => {

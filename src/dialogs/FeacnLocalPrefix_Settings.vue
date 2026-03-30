@@ -57,6 +57,7 @@ const { value: comment } = useField('comment')
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
+const lastExceptionSearchIndex = ref(null)
 
 const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
 
@@ -71,16 +72,31 @@ function handleCodeSelect(feacnCode) {
 
 function handleRefocus() {
   nextTick(() => {
+    if (lastExceptionSearchIndex.value !== null) {
+      document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)?.focus()
+      lastExceptionSearchIndex.value = null
+      return
+    }
+
+    if (exceptionSearchIndex.value !== null) {
+      document.getElementById(`exceptions_${exceptionSearchIndex.value}`)?.focus()
+      return
+    }
+
     document.getElementById('code')?.focus()
   })
 }
 
 function toggleExceptionSearch(index) {
+  if (exceptionSearchIndex.value !== index) {
+    lastExceptionSearchIndex.value = index
+  }
   exceptionSearchIndex.value = exceptionSearchIndex.value === index ? null : index
 }
 
 function handleExceptionCodeSelect(code) {
   if (exceptionSearchIndex.value !== null) {
+    lastExceptionSearchIndex.value = exceptionSearchIndex.value
     setFieldValue(`exceptions[${exceptionSearchIndex.value}]`, code)
   }
   exceptionSearchIndex.value = null
@@ -282,4 +298,3 @@ function cancel() {
   z-index: 100;
 }
 </style>
-

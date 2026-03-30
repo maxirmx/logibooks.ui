@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
 
 // Stub FieldArrayWithButtons
@@ -177,5 +177,33 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
   })
-})
 
+  it('refocuses edited exception input after exception search closes', async () => {
+    const wrapper = mountComponent()
+    const codeInput = document.createElement('input')
+    codeInput.id = 'code'
+    const exceptionInput = document.createElement('input')
+    exceptionInput.id = 'exceptions_0'
+
+    const codeFocusSpy = vi.spyOn(codeInput, 'focus')
+    const exceptionFocusSpy = vi.spyOn(exceptionInput, 'focus')
+    document.body.appendChild(codeInput)
+    document.body.appendChild(exceptionInput)
+
+    try {
+      wrapper.vm.toggleExceptionSearch(0)
+      wrapper.vm.handleExceptionCodeSelect('123456')
+      wrapper.vm.handleRefocus()
+
+      await nextTick()
+
+      expect(exceptionFocusSpy).toHaveBeenCalledOnce()
+      expect(codeFocusSpy).not.toHaveBeenCalled()
+    } finally {
+      codeFocusSpy.mockRestore()
+      exceptionFocusSpy.mockRestore()
+      codeInput.remove()
+      exceptionInput.remove()
+    }
+  })
+})

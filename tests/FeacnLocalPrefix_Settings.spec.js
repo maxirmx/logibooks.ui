@@ -205,6 +205,8 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       codeInput.remove()
       exceptionInput.remove()
     }
+  })
+
   it('restores focus to previously active element after code search closes', async () => {
     const wrapper = mountComponent()
     const focusSpy = vi.fn()

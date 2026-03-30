@@ -77,21 +77,19 @@ function handleCodeSelect(feacnCode) {
 
 function handleRefocus() {
   nextTick(() => {
-    if (lastExceptionSearchIndex.value !== null) {
-      document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)?.focus()
-      lastExceptionSearchIndex.value = null
-      return
+    const savedIndex = lastExceptionSearchIndex.value
+    lastExceptionSearchIndex.value = null
+
+    const indexToFocus = savedIndex ?? exceptionSearchIndex.value
+    if (indexToFocus !== null) {
+      const el = document.getElementById(`exceptions_${indexToFocus}`)
+      if (el) {
+        el.focus()
+        return
+      }
     }
 
-    if (exceptionSearchIndex.value !== null) {
-      document.getElementById(`exceptions_${exceptionSearchIndex.value}`)?.focus()
-      return
-    }
-
-    document.getElementById('code')?.focus()
-    const fallbackInput = lastExceptionSearchIndex.value !== null
-      ? document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)
-      : document.getElementById('code')
+    const fallbackInput = document.getElementById('code')
     const target = lastFocusedElement.value || fallbackInput
     target?.focus?.()
   })

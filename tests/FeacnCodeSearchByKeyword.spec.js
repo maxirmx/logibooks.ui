@@ -74,9 +74,12 @@ describe('FeacnCodeSearchByKeyword', () => {
 
   it('focuses search input on mount', async () => {
     const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus')
-    createWrapper()
-    await flushPromises()
-    expect(focusSpy).toHaveBeenCalled()
-    focusSpy.mockRestore()
+    try {
+      createWrapper()
+      await flushPromises()
+      expect(focusSpy).toHaveBeenCalled()
+    } finally {
+      focusSpy.mockRestore()
+    }
   })
 })

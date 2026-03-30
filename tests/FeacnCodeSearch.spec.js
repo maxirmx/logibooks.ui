@@ -279,9 +279,12 @@ describe('FeacnCodeSearch.vue', () => {
 
   it('focuses search input on mount', async () => {
     const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus')
-    createWrapper()
-    await nextTick()
-    expect(focusSpy).toHaveBeenCalled()
-    focusSpy.mockRestore()
+    try {
+      createWrapper()
+      await flushPromises()
+      expect(focusSpy).toHaveBeenCalled()
+    } finally {
+      focusSpy.mockRestore()
+    }
   })
 })

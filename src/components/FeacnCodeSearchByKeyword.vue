@@ -84,9 +84,14 @@ watch(isOpen, async v => {
 })
 
 onMounted(async () => {
-  await keyWordsStore.ensureLoaded()
+  // Start loading keywords, but do not block autofocus on network latency
+  void keyWordsStore.ensureLoaded()
+  // Only auto-focus when the panel is actually open
+  if (!isOpen.value) return
   await nextTick()
-  searchInput.value?.focus?.()
+  // Handles both a plain <input> ref and a component ref wrapping an input
+  const inputEl = searchInput.value?.$el?.querySelector('input') || searchInput.value
+  inputEl?.focus?.()
 })
 </script>
 

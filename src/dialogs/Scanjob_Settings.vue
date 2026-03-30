@@ -15,7 +15,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -131,7 +131,7 @@ const isLookupOperation = computed(() => (
 
 const isLookupOnlyRegisterType = computed(() => {
   const registerType = currentRegister.value?.registerType
-  return registerType !== null && registerType !== undefined && registerType !== WBR2_REGISTER_ID
+  return registerType === GTC_COMPANY_ID
 })
 
 const operationOptions = computed(() => {

@@ -205,5 +205,37 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       codeInput.remove()
       exceptionInput.remove()
     }
+  it('restores focus to previously active element after code search closes', async () => {
+    const wrapper = mountComponent()
+    const focusSpy = vi.fn()
+    const activeInput = document.createElement('input')
+    activeInput.focus = focusSpy
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get: () => activeInput
+    })
+
+    wrapper.vm.toggleCodeSearch()
+    wrapper.vm.handleRefocus()
+    await wrapper.vm.$nextTick()
+
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('restores focus to previously active element after exception search closes', async () => {
+    const wrapper = mountComponent()
+    const focusSpy = vi.fn()
+    const activeInput = document.createElement('input')
+    activeInput.focus = focusSpy
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get: () => activeInput
+    })
+
+    wrapper.vm.toggleExceptionSearch(0)
+    wrapper.vm.handleRefocus()
+    await wrapper.vm.$nextTick()
+
+    expect(focusSpy).toHaveBeenCalled()
   })
 })

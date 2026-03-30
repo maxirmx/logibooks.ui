@@ -57,11 +57,16 @@ const { value: comment } = useField('comment')
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
+const lastFocusedElement = ref(null)
 const lastExceptionSearchIndex = ref(null)
 
 const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
 
 function toggleCodeSearch() {
+  if (!codeSearchActive.value) {
+    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    lastExceptionSearchIndex.value = null
+  }
   codeSearchActive.value = !codeSearchActive.value
 }
 
@@ -84,11 +89,17 @@ function handleRefocus() {
     }
 
     document.getElementById('code')?.focus()
+    const fallbackInput = lastExceptionSearchIndex.value !== null
+      ? document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)
+      : document.getElementById('code')
+    const target = lastFocusedElement.value || fallbackInput
+    target?.focus?.()
   })
 }
 
 function toggleExceptionSearch(index) {
   if (exceptionSearchIndex.value !== index) {
+    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
     lastExceptionSearchIndex.value = index
   }
   exceptionSearchIndex.value = exceptionSearchIndex.value === index ? null : index

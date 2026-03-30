@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { keywordMatchesSearch } from '@/helpers/keywords.filter.js'
 
@@ -9,7 +9,7 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'select'])
+const emit = defineEmits(['update:modelValue', 'select', 'refocus'])
 
 const keyWordsStore = useKeyWordsStore()
 const searchTerm = ref('')
@@ -83,7 +83,20 @@ watch(isOpen, async v => {
   }
 })
 
-onMounted(async () => { await keyWordsStore.ensureLoaded() })
+onBeforeUnmount(() => {
+  emit('refocus')
+})
+
+onMounted(async () => {
+  // Start loading keywords, but do not block autofocus on network latency
+  void keyWordsStore.ensureLoaded()
+  // Only auto-focus when the panel is actually open
+  if (!isOpen.value) return
+  await nextTick()
+  // Handles both a plain <input> ref and a component ref wrapping an input
+  const inputEl = searchInput.value?.$el?.querySelector('input') || searchInput.value
+  inputEl?.focus?.()
+})
 </script>
 
 <template>

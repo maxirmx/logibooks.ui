@@ -21,7 +21,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['overlay-state-changed'])
+const emit = defineEmits(['overlay-state-changed', 'refocus'])
 
 const keyWordsStore = useKeyWordsStore()
 
@@ -184,6 +184,7 @@ function handleMouseEnter(code) {
         v-model="isKeywordLookupOpen"
         v-if="isKeywordLookupOpen"
         @select="handleKeywordLookupSelect"
+        @refocus="emit('refocus')"
       />
     </div>
   </div>

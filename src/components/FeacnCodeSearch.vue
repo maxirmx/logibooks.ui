@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -11,7 +11,7 @@ import { formatFeacnNameFromItem } from '@/helpers/feacn.info.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'refocus'])
 
 const store = useFeacnCodesStore()
 const searchKey = ref('')
@@ -21,6 +21,7 @@ const searching = ref(false)
 const searchError = ref(null)
 
 const treeRef = ref(null)
+const searchInputRef = ref(null)
 
 async function performSearch() {
   const key = searchKey.value.trim()
@@ -123,12 +124,22 @@ function handleSelect(code) {
 function closeDropdown() {
   dropdownVisible.value = false
 }
+
+onBeforeUnmount(() => {
+  emit('refocus')
+})
+
+onMounted(async () => {
+  await nextTick()
+  searchInputRef.value?.focus?.()
+})
 </script>
 
 <template>
   <div class="feacn-code-search">
     <div class="search-bar">
       <input
+        ref="searchInputRef"
         v-model="searchKey"
         @keyup.enter="performSearch"
         @keydown.esc="closeDropdown"

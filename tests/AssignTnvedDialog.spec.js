@@ -29,7 +29,7 @@ vi.mock('@/components/ActionButton.vue', () => ({
 vi.mock('@/components/FeacnCodeSearch.vue', () => ({
   default: {
     name: 'FeacnCodeSearch',
-    emits: ['select'],
+    emits: ['select', 'refocus'],
     template: '<div class="feacn-search-stub" data-testid="feacn-search-stub"></div>'
   }
 }))
@@ -38,7 +38,7 @@ vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({
   default: {
     name: 'FeacnCodeSearchByKeyword',
     props: ['modelValue'],
-    emits: ['update:modelValue', 'select'],
+    emits: ['update:modelValue', 'select', 'refocus'],
     template: '<div class="feacn-keyword-search-stub" data-testid="feacn-keyword-search-stub"></div>'
   }
 }))

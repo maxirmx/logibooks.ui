@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
@@ -84,6 +84,12 @@ function toggleSearch() {
 function handleCodeSelect(feacnCode) {
   setFieldValue('code', feacnCode)
   searchActive.value = false
+}
+
+function handleRefocus() {
+  nextTick(() => {
+    document.getElementById('code')?.focus()
+  })
 }
 
 function handleEscape(event) {
@@ -185,7 +191,7 @@ function cancel() {
                 :disabled="false"
             />
             <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-            <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" />
+            <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" @refocus="handleRefocus" />
         </div>
       </div>
       <div class="form-group">

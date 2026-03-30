@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
@@ -57,10 +57,16 @@ const { value: comment } = useField('comment')
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
+const lastFocusedElement = ref(null)
+const lastExceptionSearchIndex = ref(null)
 
 const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
 
 function toggleCodeSearch() {
+  if (!codeSearchActive.value) {
+    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    lastExceptionSearchIndex.value = null
+  }
   codeSearchActive.value = !codeSearchActive.value
 }
 
@@ -69,7 +75,21 @@ function handleCodeSelect(feacnCode) {
   codeSearchActive.value = false
 }
 
+function handleRefocus() {
+  nextTick(() => {
+    const fallbackInput = lastExceptionSearchIndex.value !== null
+      ? document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)
+      : document.getElementById('code')
+    const target = lastFocusedElement.value || fallbackInput
+    target?.focus?.()
+  })
+}
+
 function toggleExceptionSearch(index) {
+  if (exceptionSearchIndex.value !== index) {
+    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    lastExceptionSearchIndex.value = index
+  }
   exceptionSearchIndex.value = exceptionSearchIndex.value === index ? null : index
 }
 
@@ -189,7 +209,7 @@ function cancel() {
             :disabled="false"
           />
           <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" />
+          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" @refocus="handleRefocus" />
         </div>
       </div>
 
@@ -236,6 +256,7 @@ function cancel() {
           v-if="exceptionSearchIndex !== null"
           class="feacn-overlay"
           @select="handleExceptionCodeSelect"
+          @refocus="handleRefocus"
         />
       </div>
       <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
@@ -275,4 +296,3 @@ function cancel() {
   z-index: 100;
 }
 </style>
-

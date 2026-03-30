@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
@@ -67,6 +67,12 @@ function toggleCodeSearch() {
 function handleCodeSelect(feacnCode) {
   setFieldValue('code', feacnCode)
   codeSearchActive.value = false
+}
+
+function handleRefocus() {
+  nextTick(() => {
+    document.getElementById('code')?.focus()
+  })
 }
 
 function toggleExceptionSearch(index) {
@@ -189,7 +195,7 @@ function cancel() {
             :disabled="false"
           />
           <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" />
+          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" @refocus="handleRefocus" />
         </div>
       </div>
 
@@ -236,6 +242,7 @@ function cancel() {
           v-if="exceptionSearchIndex !== null"
           class="feacn-overlay"
           @select="handleExceptionCodeSelect"
+          @refocus="handleRefocus"
         />
       </div>
       <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>

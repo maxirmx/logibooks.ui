@@ -82,4 +82,10 @@ describe('FeacnCodeSearchByKeyword', () => {
       focusSpy.mockRestore()
     }
   })
+
+  it('emits refocus event on unmount', () => {
+    const wrapper = createWrapper()
+    wrapper.unmount()
+    expect(wrapper.emitted('refocus')).toBeTruthy()
+  })
 })

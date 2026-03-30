@@ -141,6 +141,12 @@ function handleCodeSelect(code) {
   searchIndex.value = null
 }
 
+function handleRefocus() {
+  nextTick(() => {
+    document.getElementById('word')?.focus()
+  })
+}
+
 function handleEscape(event) {
   if (event.key === 'Escape') {
     searchIndex.value = null
@@ -264,6 +270,7 @@ defineExpose({
           v-if="searchIndex !== null"
           class="feacn-overlay"
           @select="handleCodeSelect"
+          @refocus="handleRefocus"
         />
       </div>
       <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>

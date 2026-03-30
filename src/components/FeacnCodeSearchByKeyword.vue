@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { keywordMatchesSearch } from '@/helpers/keywords.filter.js'
 
@@ -9,7 +9,7 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'select'])
+const emit = defineEmits(['update:modelValue', 'select', 'refocus'])
 
 const keyWordsStore = useKeyWordsStore()
 const searchTerm = ref('')
@@ -81,6 +81,10 @@ watch(isOpen, async v => {
     const inputEl = searchInput.value?.$el?.querySelector('input') || searchInput.value
     inputEl?.focus?.()
   }
+})
+
+onBeforeUnmount(() => {
+  emit('refocus')
 })
 
 onMounted(async () => {

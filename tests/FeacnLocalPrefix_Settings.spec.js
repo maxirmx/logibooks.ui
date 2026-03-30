@@ -23,7 +23,7 @@ vi.mock('@/components/FeacnCodeSearch.vue', () => ({
   default: {
     name: 'FeacnCodeSearch',
     props: [],
-    emits: ['select'],
+    emits: ['select', 'refocus'],
     template: '<div data-test="feacn-code-search"></div>'
   }
 }))

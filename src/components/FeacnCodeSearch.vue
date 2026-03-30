@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -11,7 +11,7 @@ import { formatFeacnNameFromItem } from '@/helpers/feacn.info.helpers.js'
 
 defineOptions({ name: 'FeacnCodeSearch' })
 
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'refocus'])
 
 const store = useFeacnCodesStore()
 const searchKey = ref('')
@@ -124,6 +124,10 @@ function handleSelect(code) {
 function closeDropdown() {
   dropdownVisible.value = false
 }
+
+onBeforeUnmount(() => {
+  emit('refocus')
+})
 
 onMounted(async () => {
   await nextTick()

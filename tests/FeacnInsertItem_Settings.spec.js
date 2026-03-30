@@ -13,7 +13,7 @@ import FeacnInsertItem_Settings from '@/dialogs/FeacnInsertItem_Settings.vue'
 vi.mock('@/components/FeacnCodeSearch.vue', () => ({
   default: {
     name: 'FeacnCodeSearch',
-    emits: ['select'],
+    emits: ['select', 'refocus'],
     template: '<div class="feacn-code-search-stub" @click="$emit(\'select\', \'9876543210\')"></div>'
   }
 }))

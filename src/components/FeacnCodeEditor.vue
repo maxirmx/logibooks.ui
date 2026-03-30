@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref, watch, computed, onUnmounted } from 'vue'
+import { ref, watch, computed, nextTick, onUnmounted } from 'vue'
 import { Field, useFormValues } from 'vee-validate'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -159,6 +159,12 @@ function handleTnVedMouseEnter() {
   }
 }
 
+function handleRefocus() {
+  nextTick(() => {
+    document.getElementById('tnVed')?.focus()
+  })
+}
+
 </script>
 
 <template>
@@ -206,6 +212,7 @@ function handleTnVedMouseEnter() {
             v-if="searchActive"
             class="feacn-overlay"
             @select="handleCodeSelect"
+            @refocus="handleRefocus"
             @overlay-state-changed="(val) => { searchActive = val }"
           />
         </div>
@@ -215,6 +222,7 @@ function handleTnVedMouseEnter() {
           :externalSearchOpen="searchActive"
           :disabled="props.disabled"
           @overlay-state-changed="(val) => { if (val) { searchActive = false } }"
+          @refocus="handleRefocus"
         />
     </div>
   </div>

@@ -287,4 +287,11 @@ describe('FeacnCodeSearch.vue', () => {
       focusSpy.mockRestore()
     }
   })
+
+  it('emits refocus event on unmount', async () => {
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+    wrapper.unmount()
+    expect(wrapper.emitted('refocus')).toBeTruthy()
+  })
 })

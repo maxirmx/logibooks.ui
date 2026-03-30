@@ -13,7 +13,7 @@ vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({
   default: {
     name: 'FeacnCodeSearchByKeyword',
     props: ['modelValue'],
-    emits: ['update:modelValue', 'select'],
+    emits: ['update:modelValue', 'select', 'refocus'],
     template: '<div class="feacn-keyword-lookup-stub" :data-open="modelValue"></div>'
   }
 }))

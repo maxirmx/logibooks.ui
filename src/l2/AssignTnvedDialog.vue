@@ -167,6 +167,12 @@ function handleKeywordSearchSelect(code) {
   keywordSearchActive.value = false
 }
 
+function handleRefocus() {
+  nextTick(() => {
+    inputRef.value?.focus()
+  })
+}
+
 watch(() => props.show, (visible) => {
   if (!visible) {
     resetState()
@@ -228,11 +234,11 @@ watch(() => props.show, (visible) => {
       </v-card>
 
       <div v-if="show && searchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-search-overlay">
-        <FeacnCodeSearch @select="handleSearchSelect" />
+        <FeacnCodeSearch @select="handleSearchSelect" @refocus="handleRefocus" />
       </div>
 
       <div v-if="show && keywordSearchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-keyword-overlay">
-        <FeacnCodeSearchByKeyword v-model="keywordSearchActive" @select="handleKeywordSearchSelect" />
+        <FeacnCodeSearchByKeyword v-model="keywordSearchActive" @select="handleKeywordSearchSelect" @refocus="handleRefocus" />
       </div>
     </div>
   </v-dialog>

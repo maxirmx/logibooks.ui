@@ -276,4 +276,12 @@ describe('FeacnCodeSearch.vue', () => {
     expect(mockGetById).toHaveBeenCalledWith(1)
     expect(wrapper.find('.search-error').exists()).toBe(false)
   })
+
+  it('focuses search input on mount', async () => {
+    const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus')
+    createWrapper()
+    await nextTick()
+    expect(focusSpy).toHaveBeenCalled()
+    focusSpy.mockRestore()
+  })
 })

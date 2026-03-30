@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { mount, flushPromises } from '@vue/test-utils'
+import { ref, nextTick } from 'vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
@@ -70,5 +70,13 @@ describe('FeacnCodeSearchByKeyword', () => {
     const events = wrapper.emitted('select')
     expect(events).toBeTruthy()
     expect(events?.[0]).toEqual(['1111'])
+  })
+
+  it('focuses search input on mount', async () => {
+    const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus')
+    createWrapper()
+    await flushPromises()
+    expect(focusSpy).toHaveBeenCalled()
+    focusSpy.mockRestore()
   })
 })

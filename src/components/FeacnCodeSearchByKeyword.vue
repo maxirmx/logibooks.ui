@@ -83,7 +83,11 @@ watch(isOpen, async v => {
   }
 })
 
-onMounted(async () => { await keyWordsStore.ensureLoaded() })
+onMounted(async () => {
+  await keyWordsStore.ensureLoaded()
+  await nextTick()
+  searchInput.value?.focus?.()
+})
 </script>
 
 <template>

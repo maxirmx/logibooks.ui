@@ -367,9 +367,9 @@ describe('Scanjob_Settings.vue', () => {
     expect(wrapper.find('[data-testid="lookup-status-select"]').attributes('disabled')).toBeDefined()
   })
 
-  it('limits operations to lookup for non-Wbr2 registers', async () => {
+  it('limits operations to lookup for GTC registers', async () => {
     getRegisterById.mockImplementation(async () => {
-      registerItem = { id: 22, registerType: 1 }
+      registerItem = { id: 22, registerType: GTC_REGISTER_ID }
       return registerItem
     })
 

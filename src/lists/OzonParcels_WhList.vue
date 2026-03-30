@@ -62,8 +62,9 @@ watch(maxPage, (v) => {
 
 const headers = computed(() => [
   { title: '№', key: 'id', align: 'start' },
-  { title: ozonRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
-  { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', sortable: false },
+  { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
+  { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
+  { title: ozonRegisterColumnTitles.boxCode, key: 'boxCode', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },

@@ -13,7 +13,7 @@ const mockItems = ref([
   {
     id: 1,
     shk: 'SHK-1',
-    sticker: 'STK-1',
+    stickerCode: 'STK-1',
     boxNumber: 'BOX-1',
     weightKg: 2.4,
     quantity: 3,
@@ -146,7 +146,7 @@ describe('WbrParcels_WhList.vue', () => {
     expect(headerKeys).toEqual([
       'id',
       'shk',
-      'sticker',
+      'stickerCode',
       'boxNumber',
       'weightKg',
       'quantity',

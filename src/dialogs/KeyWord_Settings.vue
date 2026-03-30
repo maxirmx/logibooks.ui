@@ -71,6 +71,8 @@ const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 
 const searchIndex = ref(null)
+const lastFocusedElement = ref(null)
+const lastSearchIndex = ref(null)
 
 const searchActive = computed(() => searchIndex.value !== null)
 
@@ -131,6 +133,10 @@ function onCodeInput(event, index) {
 }
 
 function toggleSearch(index) {
+  if (searchIndex.value !== index) {
+    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    lastSearchIndex.value = index
+  }
   searchIndex.value = searchIndex.value === index ? null : index
 }
 
@@ -143,7 +149,11 @@ function handleCodeSelect(code) {
 
 function handleRefocus() {
   nextTick(() => {
-    document.getElementById('word')?.focus()
+    const fallbackInput = lastSearchIndex.value !== null
+      ? document.getElementById(`feacnCodes_${lastSearchIndex.value}`)
+      : document.getElementById('word')
+    const target = lastFocusedElement.value || fallbackInput
+    target?.focus?.()
   })
 }
 

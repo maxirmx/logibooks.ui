@@ -11,6 +11,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import ScanjobSettings from '@/dialogs/Scanjob_Settings.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { resolveAll, vuetifyStubs } from './helpers/test-utils'
+import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+
 
 const vuetify = createVuetify()
 
@@ -369,7 +371,7 @@ describe('Scanjob_Settings.vue', () => {
 
   it('limits operations to lookup for GTC registers', async () => {
     getRegisterById.mockImplementation(async () => {
-      registerItem = { id: 22, registerType: GTC_REGISTER_ID }
+      registerItem = { id: 22, registerType: GTC_COMPANY_ID }
       return registerItem
     })
 

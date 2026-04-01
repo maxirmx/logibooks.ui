@@ -1,22 +1,19 @@
 /* @vitest-environment jsdom */
-// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
-// All rights reserved.
-// This file is a part of Logibooks UI application
+// Copyright (C) 2026
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import Wbr2ParcelsWhList from '@/lists/Wbr2Parcels_WhList.vue'
+import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 const mockItems = ref([
   {
     id: 1,
-    shk: 'SHK-1',
-    stickerCode: 'ST-1',
-    wbSticker: 'WB-1',
-    sellerSticker: 'SL-1',
+    postingNumber: 'POST-1',
+    barcode: 'BAR-1',
+    boxCode: 'BOX-1',
     weightKg: 2.4,
     quantity: 3,
     statusId: 7,
@@ -120,22 +117,21 @@ const globalStubs = {
   }
 }
 
-describe('Wbr2Parcels_WhList.vue', () => {
+describe('OzonParcels_WhList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('renders the required parcel fields in the table', async () => {
-    const wrapper = mount(Wbr2ParcelsWhList, {
+  it('renders projected status, check status, and zone fields in the table', async () => {
+    const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },
       global: { stubs: globalStubs }
     })
 
     const text = wrapper.text()
-    expect(text).toContain('SHK-1')
-    expect(text).toContain('ST-1')
-    expect(text).toContain('WB-1')
-    expect(text).toContain('SL-1')
+    expect(text).toContain('POST-1')
+    expect(text).toContain('BAR-1')
+    expect(text).toContain('BOX-1')
     expect(text).toContain('3')
     expect(text).toContain('Status 7')
     expect(text).toContain('Не проверено')
@@ -143,7 +139,7 @@ describe('Wbr2Parcels_WhList.vue', () => {
   })
 
   it('defines headers only for the warehouse parcel columns', () => {
-    const wrapper = mount(Wbr2ParcelsWhList, {
+    const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },
       global: { stubs: globalStubs }
     })
@@ -151,11 +147,9 @@ describe('Wbr2Parcels_WhList.vue', () => {
     const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual([
       'id',
-      'shk',
-      'stickerCode',
-      'boxNumber',
-      'wbSticker',
-      'sellerSticker',
+      'postingNumber',
+      'barcode',
+      'boxCode',
       'weightKg',
       'quantity',
       'zone',

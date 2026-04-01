@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ParcelsByNumberList from '@/lists/ParcelsByNumber_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 vi.mock('@/router', () => ({
   default: {
@@ -31,6 +32,8 @@ const parcelsBnSortBy = ref([{ key: 'id', order: 'asc' }])
 const mockAlert = ref(null)
 const alertError = vi.fn()
 const alertClear = vi.fn()
+const ensureLoaded = vi.fn().mockResolvedValue()
+const getStatusTitle = vi.fn((id) => `Status ${id}`)
 
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => ({
@@ -38,6 +41,13 @@ vi.mock('@/stores/parcels.store.js', () => ({
     loading: mockLoading,
     error: mockError,
     getByNumber
+  })
+}))
+
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    ensureLoaded,
+    getStatusTitle
   })
 }))
 
@@ -68,6 +78,8 @@ describe('ParcelsByNumber_List.vue', () => {
     parcelsBnPerPage.value = 100
     parcelsBnPage.value = 1
     parcelsBnSortBy.value = [{ key: 'id', order: 'asc' }]
+    ensureLoaded.mockClear()
+    getStatusTitle.mockClear()
     router.push.mockClear()
   })
 
@@ -89,6 +101,7 @@ describe('ParcelsByNumber_List.vue', () => {
       }
     })
     expect(getByNumber).toHaveBeenCalledWith('TEST-001')
+    expect(ensureLoaded).toHaveBeenCalled()
   })
 
   it('triggers load when search button is clicked', async () => {
@@ -140,6 +153,84 @@ describe('ParcelsByNumber_List.vue', () => {
     await wrapper.find('[data-testid="parcels-by-number-cell-registerDealNumber-42"]').trigger('click')
 
     expect(router.push).toHaveBeenCalledWith('/register/edit/7')
+  })
+
+  it('renders projected status and check status text', () => {
+    mockItems.value = [
+      {
+        id: 99,
+        registerId: 5,
+        registerDealNumber: 'D-099',
+        number: 'N-099',
+        productName: 'Projected Product',
+        tnVed: 'TN-099',
+        statusId: 7,
+        checkStatus: CheckStatusCode.NotChecked.value,
+        dTag: 'DT-099',
+        dTagComment: 'Comment-099',
+        previousDTagComment: 'Prev-099'
+      }
+    ]
+
+    const wrapper = mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+
+    expect(getStatusTitle).toHaveBeenCalledWith(7)
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-statusId-99"]').text()).toContain('Status 7')
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain('Не проверено')
+  })
+
+  it('navigates to parcel view when status or check status cells are clicked', async () => {
+    mockItems.value = [
+      {
+        id: 100,
+        registerId: 8,
+        registerDealNumber: 'D-100',
+        number: 'N-100',
+        productName: 'Static Product',
+        tnVed: 'TN-100',
+        statusId: 3,
+        checkStatus: CheckStatusCode.NotChecked.value,
+        dTag: 'DT-100',
+        dTagComment: 'Comment-100',
+        previousDTagComment: 'Prev-100'
+      }
+    ]
+
+    const expectedNavigation = {
+      name: 'Редактирование посылки',
+      params: { id: 100, registerId: 8 },
+      query: {}
+    }
+
+    const wrapper = mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+
+    await wrapper.find('[data-testid="parcels-by-number-cell-statusId-100"]').trigger('click')
+    expect(router.push).toHaveBeenCalledWith(expectedNavigation)
+
+    router.push.mockClear()
+
+    await wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-100"]').trigger('click')
+    expect(router.push).toHaveBeenCalledWith(expectedNavigation)
   })
 
   it('routes to parcel view when any other column is clicked', async () => {

@@ -69,7 +69,7 @@ const headers = computed(() =>[
   { title: wbrRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
-  { title: 'Зона', key: 'zone', align: 'start' },  
+  { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
 

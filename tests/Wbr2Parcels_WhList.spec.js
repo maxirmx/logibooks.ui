@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import Wbr2ParcelsWhList from '@/lists/Wbr2Parcels_WhList.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 const mockItems = ref([
   {
@@ -19,6 +20,7 @@ const mockItems = ref([
     weightKg: 2.4,
     quantity: 3,
     statusId: 7,
+    checkStatus: CheckStatusCode.NotChecked.value,
     zone: 1
   }
 ])
@@ -135,7 +137,9 @@ describe('Wbr2Parcels_WhList.vue', () => {
     expect(text).toContain('WB-1')
     expect(text).toContain('SL-1')
     expect(text).toContain('3')
-    expect(text).toContain('7')
+    expect(text).toContain('Status 7')
+    expect(text).toContain('Не проверено')
+    expect(text).toContain('Зона 1')
   })
 
   it('defines headers only for the warehouse parcel columns', () => {
@@ -154,8 +158,9 @@ describe('Wbr2Parcels_WhList.vue', () => {
       'sellerSticker',
       'weightKg',
       'quantity',
+      'zone',
       'statusId',
-      'zone'
+      'checkStatus'
     ])
   })
 })

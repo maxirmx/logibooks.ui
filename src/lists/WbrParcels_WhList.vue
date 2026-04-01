@@ -14,6 +14,8 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadOrders } from '@/helpers/parcels.list.helpers.js'
+import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -67,8 +69,10 @@ const headers = computed(() =>[
   { title: wbrRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: 'Зона', key: 'zone', align: 'start' },  
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: 'Зона', key: 'zone', align: 'start' }
+  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
+
 ])
 
 const registerHeading = computed(() => {
@@ -160,6 +164,11 @@ onUnmounted(() => {
         </template>
         <template #[`item.statusId`]="{ item }">
           {{ parcelStatusStore.getStatusTitle(item.statusId) }}
+        </template>
+        <template #[`item.checkStatus`]="{ item }">
+          <span :class="`status-cell ${getCheckStatusClass(item.checkStatus)}`">
+            {{ new CheckStatusCode(item.checkStatus).toString() }}
+          </span>
         </template>
         <template #[`item.zone`]="{ item }">
           {{ ops.zones.find(z => z.value === item.zone)?.name || ' ' }}

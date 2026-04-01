@@ -6,8 +6,11 @@
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import router from '@/router'
@@ -16,6 +19,7 @@ import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 
 const parcelsStore = useParcelsStore()
+const parcelStatusStore = useParcelStatusesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
@@ -33,7 +37,9 @@ const headers = [
   { title: 'Код ТН ВЭД', key: 'tnVed', align: 'center', width: '170px' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'center', width: '170px' },
   { title: 'Комментарий', key: 'dTagComment', align: 'center', width: '170px' },
-  { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', align: 'center', width: '170px' }
+  { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', align: 'center', width: '170px' },
+  { title: 'Статус', key: 'statusId', align: 'center', width: '170px' },
+  { title: 'Проверка', key: 'checkStatus', align: 'center', width: '170px' }
 ]
 
 const truncatedKeys = [
@@ -103,6 +109,7 @@ async function loadParcelsByNumber() {
 
 onMounted(async () => {
   parcels_bn_page.value = 1
+  void parcelStatusStore.ensureLoaded()
   if (normalizedNumber()) {
     await loadParcelsByNumber()
   }
@@ -174,6 +181,26 @@ defineExpose({
               <TruncateTooltipCell :text="item[column.key] || ''" />
             </template>
           </ClickableCell>
+        </template>
+
+        <template #[`item.statusId`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
+            cell-class="truncated-cell clickable-cell"
+            :data-testid="`parcels-by-number-cell-statusId-${item.id}`"
+            @click="() => handleCellClick(item, 'statusId')"
+          />
+        </template>
+
+        <template #[`item.checkStatus`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="new CheckStatusCode(item.checkStatus).toString()"
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`"
+            :data-testid="`parcels-by-number-cell-checkStatus-${item.id}`"
+            @click="() => handleCellClick(item, 'checkStatus')"
+          />
         </template>
       </v-data-table>
     </v-card>

@@ -189,7 +189,7 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain('Не проверено')
   })
 
-  it('does not navigate when status or check status cells are clicked', async () => {
+  it('navigates to parcel view when status or check status cells are clicked', async () => {
     mockItems.value = [
       {
         id: 100,
@@ -206,6 +206,12 @@ describe('ParcelsByNumber_List.vue', () => {
       }
     ]
 
+    const expectedNavigation = {
+      name: 'Редактирование посылки',
+      params: { id: 100, registerId: 8 },
+      query: {}
+    }
+
     const wrapper = mount(ParcelsByNumberList, {
       global: {
         stubs: {
@@ -219,9 +225,12 @@ describe('ParcelsByNumber_List.vue', () => {
     })
 
     await wrapper.find('[data-testid="parcels-by-number-cell-statusId-100"]').trigger('click')
-    await wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-100"]').trigger('click')
+    expect(router.push).toHaveBeenCalledWith(expectedNavigation)
 
-    expect(router.push).not.toHaveBeenCalled()
+    router.push.mockClear()
+
+    await wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-100"]').trigger('click')
+    expect(router.push).toHaveBeenCalledWith(expectedNavigation)
   })
 
   it('routes to parcel view when any other column is clicked', async () => {

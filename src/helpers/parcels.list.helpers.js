@@ -287,12 +287,16 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Object} isComponentMounted - Ref indicating if component is mounted
  * @param {Object} alertStore - The alert store instance for error reporting
+ * @param {Object} options - Loading options forwarded to parcelsStore.getAll
  * @returns {Promise<void>}
  */
-export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore) {
+export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore, options = {}) {
   if (isComponentMounted.value) {
     // Get data without updating the reactive store yet
-    const response = await parcelsStore.getAll(registerId, { updateStore: false })
+    const response = await parcelsStore.getAll(registerId, {
+      updateStore: false,
+      ...options
+    })
     
     if (response && response.items && response.items.length > 0) {
       const tnvedCodes = response.items

@@ -70,7 +70,11 @@ export const useParcelsStore = defineStore('parcels', () => {
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
 
-  async function getAll(registerId, options = { updateStore: true }) {
+  async function getAll(registerId, options = {}) {
+    const {
+      updateStore = true,
+      showMarkedByPartner = false
+    } = options
     const authStore = useAuthStore()
     loading.value = true
     error.value = null
@@ -81,10 +85,11 @@ export const useParcelsStore = defineStore('parcels', () => {
         pageSize: authStore.parcels_per_page.toString()
       })
 
-      const response = await fetchWrapper.get(`${baseUrl}?${params.toString()}`)
+      const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
+      const response = await fetchWrapper.get(`${listEndpoint}?${params.toString()}`)
       const responseItems = response.items || []
       
-      if (options.updateStore) {
+      if (updateStore) {
         items.value = responseItems
         totalCount.value = response.pagination?.totalCount || 0
         hasNextPage.value = response.pagination?.hasNextPage || false
@@ -103,7 +108,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       error.value = err
       throw err
     } finally {
-      if (options.updateStore) {
+      if (updateStore) {
         loading.value = false
       }
     }

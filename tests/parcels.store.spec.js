@@ -68,6 +68,18 @@ describe('parcels store', () => {
     )
   })
 
+  it('fetches data from extended endpoint when requested', async () => {
+    fetchWrapper.get.mockResolvedValue({
+      items: [],
+      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+    })
+    const store = useParcelsStore()
+    await store.getAll(1, { showMarkedByPartner: true })
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
+    )
+  })
+
   it('fetches data with custom parameters from auth store', async () => {
     mockAuthStore.parcels_page = 2
     mockAuthStore.parcels_per_page = 50

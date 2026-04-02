@@ -26,12 +26,14 @@ const headers = [
 ]
 
 async function loadItems() {
-  if (!props.registerId) {
+  const registerId = props.registerId
+
+  if (!Number.isFinite(registerId) || !Number.isInteger(registerId) || registerId <= 0) {
     alertStore.error('Некорректный идентификатор реестра')
     return
   }
 
-  const rows = await unregisteredParcelsStore.getAll(props.registerId)
+  const rows = await unregisteredParcelsStore.getAll(registerId)
   if (!rows.length && unregisteredParcelsStore.error) {
     alertStore.error('Ошибка при загрузке незарегистрированных посылок')
   }

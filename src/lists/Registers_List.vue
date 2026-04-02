@@ -718,7 +718,7 @@ defineExpose({
               />
             </div>
            <ActionButton
-              v-if="isWarehouseMode"
+              v-if="hasWhRole && isWarehouseMode"
               :item="item"
               icon="fa-solid fa-rectangle-list"
               :tooltip-text="`Открыть незарегистрированные посылки`"

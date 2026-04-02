@@ -31,15 +31,17 @@ const headers = [
 ]
 
 async function loadItems() {
-  if (!props.registerId) {
+  const registerId = props.registerId
+
+  if (!Number.isFinite(registerId) || !Number.isInteger(registerId) || registerId <= 0) {
     alertStore.error('Некорректный идентификатор реестра')
     return
   }
 
   await parcelStatusStore.ensureLoaded()
   await warehousesStore.ensureOpsLoaded()
+  const rows = await unregisteredParcelsStore.getAll(registerId)
 
-  const rows = await unregisteredParcelsStore.getAll(props.registerId)
   if (!rows.length && unregisteredParcelsStore.error) {
     alertStore.error('Ошибка при загрузке незарегистрированных посылок')
   }

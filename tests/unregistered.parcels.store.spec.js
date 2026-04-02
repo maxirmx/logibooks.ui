@@ -1,0 +1,63 @@
+// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store.js'
+import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { apiUrl } from '@/helpers/config.js'
+
+vi.mock('@/helpers/fetch.wrapper.js', () => ({
+  fetchWrapper: { get: vi.fn() }
+}))
+
+vi.mock('@/helpers/config.js', () => ({
+  apiUrl: 'http://localhost:8080/api'
+}))
+
+describe('unregistered.parcels store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('loads unregistered parcels by register id', async () => {
+    const mockRows = [{ id: 1, registerId: 5, statusId: 2, zone: 9 }]
+    fetchWrapper.get.mockResolvedValue(mockRows)
+
+    const store = useUnregisteredParcelsStore()
+    const result = await store.getAll(5)
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/unregisteredparcels/5`)
+    expect(result).toEqual(mockRows)
+    expect(store.items).toEqual(mockRows)
+    expect(store.error).toBeNull()
+    expect(store.loading).toBe(false)
+  })
+
+  it('normalizes non-array api response to empty list', async () => {
+    fetchWrapper.get.mockResolvedValue({ id: 1 })
+
+    const store = useUnregisteredParcelsStore()
+    const result = await store.getAll(3)
+
+    expect(result).toEqual([])
+    expect(store.items).toEqual([])
+    expect(store.error).toBeNull()
+  })
+
+  it('stores error and returns empty list on failure', async () => {
+    const err = new Error('boom')
+    fetchWrapper.get.mockRejectedValue(err)
+
+    const store = useUnregisteredParcelsStore()
+    const result = await store.getAll(7)
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/unregisteredparcels/7`)
+    expect(result).toEqual([])
+    expect(store.items).toEqual([])
+    expect(store.error).toBe(err)
+    expect(store.loading).toBe(false)
+  })
+})

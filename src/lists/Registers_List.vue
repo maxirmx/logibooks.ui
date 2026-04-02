@@ -368,6 +368,11 @@ async function deleteRegister(item) {
   }
 }
 
+function openUnregisteredParcels(item) {
+  if (!item?.id) return
+  router.push(`/registers/${item.id}/unregistered-parcels`)
+}
+
 function openScanjobCreate(item) {
   if (!item) return
   router.push({
@@ -713,6 +718,14 @@ defineExpose({
               />
             </div>
            <ActionButton
+              v-if="isWarehouseMode"
+              :item="item"
+              icon="fa-solid fa-rectangle-list"
+              :tooltip-text="`Открыть незарегистрированные посылки`"
+              @click="openUnregisteredParcels"
+              :disabled="runningAction || loading"
+            />
+            <ActionButton
               v-if="hasWhRole"
               :item="item"
               icon="fa-solid fa-barcode"

@@ -287,6 +287,25 @@ describe('Registers_List.vue in warehouse mode', () => {
     expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modeWarehouse')
   })
 
+
+  it('navigates to unregistered parcels when rectangle list action is clicked', async () => {
+    mockItems.value = [{ id: 77 }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const unregisteredButton = actionButtons.find(button =>
+      String(button.props('tooltipText') || '').includes('незарегистрированные посылки')
+    )
+
+    expect(unregisteredButton).toBeTruthy()
+
+    const router = (await import('@/router')).default
+    await unregisteredButton.find('button').trigger('click')
+    expect(router.push).toHaveBeenCalledWith('/registers/77/unregistered-parcels')
+  })
+
   it('navigates to create scan job when barcode action is clicked', async () => {
     mockItems.value = [{ id: 7, warehouseId: 12, dealNumber: 'D-77' }]
 

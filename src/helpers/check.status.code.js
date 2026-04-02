@@ -10,6 +10,7 @@ export const SwInheritanceFlag = 0x0080
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
+  NotFound: 0x017D,
   Duplicate: 0x017E,
   MarkedByPartner: 0x01FF
 })
@@ -30,6 +31,7 @@ export const SWCheckStatus = Object.freeze({
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
   Duplicate: WStatusValues.Duplicate,
+  NotFound: WStatusValues.NotFound,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -48,6 +50,7 @@ export const FCCheckStatus = Object.freeze({
   IssueNonexistingFeacn: 0x0101,
   IssueInvalidFeacnFormat: 0x0102,  
   Duplicate: WStatusValues.Duplicate,
+  NotFound: WStatusValues.NotFound,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -60,6 +63,7 @@ const ApprovedWithExciseString = 'Согл. с акцизом'
 const ApprovedWithNotificationString = 'Согл. с нотификацией'
 const IssueStopWordString = 'Стоп слово'
 const DuplicateString = 'Дубликат'
+const NotFoundString = 'Не найдена'
 const MarkedByPartnerString = 'Исключено партнёром'
 const FlagString = '🔖 '
 
@@ -158,8 +162,7 @@ export class CheckStatusCode {
    */
   static hasIssues(value) {
     return (CheckStatusCode.getFC(value) & 0x0100) !== 0 || 
-           (CheckStatusCode.getSW(value) & 0x0100) !== 0 ||
-           CheckStatusCode.isDuplicate(value)
+           (CheckStatusCode.getSW(value) & 0x0100) !== 0
   }
 
   /**
@@ -168,6 +171,14 @@ export class CheckStatusCode {
   static isDuplicate(value) {
     return CheckStatusCode.getFC(value) === FCCheckStatus.Duplicate && 
            CheckStatusCode.getSW(value) === SWCheckStatus.Duplicate
+  }
+
+  /**
+   * Check if the combined status is NotFound
+   */
+  static isNotFound(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.NotFound && 
+           CheckStatusCode.getSW(value) === SWCheckStatus.NotFound
   }
 
   static isInheritedSw(value) {
@@ -220,6 +231,10 @@ export class CheckStatusCode {
 
     if (this.fc === FCCheckStatus.Duplicate && this.sw === SWCheckStatus.Duplicate) {
       return DuplicateString
+    }
+
+    if (this.fc === FCCheckStatus.NotFound && this.sw === SWCheckStatus.NotFound) {
+      return NotFoundString
     }
 
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {

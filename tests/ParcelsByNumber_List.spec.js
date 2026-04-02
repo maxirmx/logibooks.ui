@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ParcelsByNumberList from '@/lists/ParcelsByNumber_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { CheckStatusCode, FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
 
 vi.mock('@/router', () => ({
   default: {
@@ -187,6 +187,38 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(getStatusTitle).toHaveBeenCalledWith(7)
     expect(wrapper.find('[data-testid="parcels-by-number-cell-statusId-99"]').text()).toContain('Status 7')
     expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain('Не проверено')
+  })
+
+  it('renders NotFound check status text', () => {
+    mockItems.value = [
+      {
+        id: 101,
+        registerId: 6,
+        registerDealNumber: 'D-101',
+        number: 'N-101',
+        productName: 'Missing Match Product',
+        tnVed: 'TN-101',
+        statusId: 4,
+        checkStatus: CheckStatusCode.fromParts(FCCheckStatus.NotFound, SWCheckStatus.NotFound).value,
+        dTag: 'DT-101',
+        dTagComment: 'Comment-101',
+        previousDTagComment: 'Prev-101'
+      }
+    ]
+
+    const wrapper = mount(ParcelsByNumberList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: actionButtonStub,
+          TruncateTooltipCell: {
+            template: '<span data-testid="truncate-cell"></span>'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-101"]').text()).toContain('Не найдена')
   })
 
   it('navigates to parcel view when status or check status cells are clicked', async () => {

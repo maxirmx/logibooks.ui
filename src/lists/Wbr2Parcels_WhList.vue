@@ -156,6 +156,7 @@ function closeList() {
           :item="{}"
           icon="fa-solid fa-xmark"
           tooltip-text="Закрыть"
+          aria-label="Закрыть"
           iconSize="2x"
           @click="closeList"
         />

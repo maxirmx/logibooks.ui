@@ -293,9 +293,10 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
 export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore, options = {}) {
   if (isComponentMounted.value) {
     // Get data without updating the reactive store yet
+    const { updateStore, ...safeOptions } = options
     const response = await parcelsStore.getAll(registerId, {
-      updateStore: false,
-      ...options
+      ...safeOptions,
+      updateStore: false
     })
     
     if (response && response.items && response.items.length > 0) {

@@ -61,7 +61,8 @@ import {
   faBroom,
   faClone,
   faArrowDownAZ,
-  faArrowUpZA
+  faArrowUpZA,
+  faRectangleList
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -115,7 +116,8 @@ library.add(
   faBroom,
   faClone,
   faArrowDownAZ,
-  faArrowUpZA
+  faArrowUpZA,
+  faRectangleList
 )
 
 import 'vuetify/styles'

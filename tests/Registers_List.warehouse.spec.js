@@ -296,7 +296,7 @@ describe('Registers_List.vue in warehouse mode', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const unregisteredButton = actionButtons.find(button =>
-      String(button.props('tooltipText') || '').includes('незарегистрированные посылки')
+      String(button.props('tooltipText') || '').includes('Посылки не в реестре')
     )
 
     expect(unregisteredButton).toBeTruthy()

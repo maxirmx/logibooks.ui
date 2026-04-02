@@ -10,10 +10,12 @@ import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
 })
+const emit = defineEmits(['close'])
 
 const parcelStatusStore = useParcelStatusesStore()
 const unregisteredParcelsStore = useUnregisteredParcelsStore()
@@ -48,12 +50,25 @@ async function loadItems() {
 }
 
 onMounted(loadItems)
+
+function closeList() {
+  emit('close')
+}
 </script>
 
 <template>
   <div class="settings table-3" data-testid="unregistered-parcels-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Незарегистрированные посылки</h1>
+      <div class="header-actions header-actions-group">
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-xmark"
+          tooltip-text="Закрыть"
+          iconSize="2x"
+          @click="closeList"
+        />
+      </div>
     </div>
 
     <hr class="hr" />

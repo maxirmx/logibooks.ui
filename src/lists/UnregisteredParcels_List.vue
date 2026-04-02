@@ -5,7 +5,9 @@
 
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
@@ -13,16 +15,19 @@ const props = defineProps({
   registerId: { type: Number, required: true }
 })
 
+const parcelStatusStore = useParcelStatusesStore()
 const unregisteredParcelsStore = useUnregisteredParcelsStore()
+const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 
 const { items, loading, error } = storeToRefs(unregisteredParcelsStore)
+const { ops } = storeToRefs(warehousesStore)
+
 
 const headers = [
-  { title: 'ID', key: 'id', align: 'center', width: '120px' },
-  { title: 'Реестр', key: 'registerId', align: 'center', width: '120px' },
-  { title: 'Статус', key: 'statusId', align: 'center', width: '120px' },
-  { title: 'Зона', key: 'zone', align: 'center', width: '120px' }
+  { title: 'Сканированный код', key: 'scanCode', align: 'center', width: '120px' },
+  { title: 'Зона', key: 'zone', align: 'center', width: '120px' },
+  { title: 'Статус', key: 'statusId', align: 'center', width: '120px' }
 ]
 
 async function loadItems() {
@@ -30,6 +35,9 @@ async function loadItems() {
     alertStore.error('Некорректный идентификатор реестра')
     return
   }
+
+  await parcelStatusStore.ensureLoaded()
+  await warehousesStore.ensureOpsLoaded()
 
   const rows = await unregisteredParcelsStore.getAll(props.registerId)
   if (!rows.length && unregisteredParcelsStore.error) {
@@ -59,7 +67,14 @@ onMounted(loadItems)
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header
-      />
+      >
+        <template #[`item.statusId`]="{ item }">
+          {{ parcelStatusStore.getStatusTitle(item.statusId) }}
+        </template>
+        <template #[`item.zone`]="{ item }">
+          {{ warehousesStore.getOpsLabel(ops.zones, item.zone) }}
+        </template>
+      </v-data-table>
     </v-card>
 
     <div v-if="error" class="text-center m-5">

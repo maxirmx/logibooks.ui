@@ -92,7 +92,9 @@ async function fetchRegister() {
 }
 
 async function loadOrdersWrapper() {
-  await loadOrders(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  await loadOrders(props.registerId, parcelsStore, isComponentMounted, alertStore, {
+    showMarkedByPartner: true
+  })
 }
 
 const watcherStop = watch(

@@ -668,6 +668,29 @@ describe('Parcels List Helpers', () => {
 
       expect(mockParcelsStore.getAll).not.toHaveBeenCalled()
     })
+
+    it('should forward showMarkedByPartner option to parcelsStore.getAll', async () => {
+      const mockResponse = {
+        items: [{ id: 1, tnVed: '' }],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      }
+      const mockParcelsStore = {
+        getAll: vi.fn().mockResolvedValue(mockResponse),
+        updateItems: vi.fn()
+      }
+      const mockIsComponentMounted = { value: true }
+      const mockAlertStore = { error: vi.fn() }
+
+      await loadOrders(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore, {
+        showMarkedByPartner: true
+      })
+
+      expect(mockParcelsStore.getAll).toHaveBeenCalledWith(123, {
+        updateStore: false,
+        showMarkedByPartner: true
+      })
+      expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
+    })
   })
 
 })

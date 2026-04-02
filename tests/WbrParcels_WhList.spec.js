@@ -7,8 +7,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
-import { vuetifyStubs } from './helpers/test-utils.js'
+import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+
+const { loadOrders } = vi.hoisted(() => ({
+  loadOrders: vi.fn().mockResolvedValue()
+}))
 
 const mockItems = ref([
   {
@@ -57,7 +61,7 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
-  loadOrders: vi.fn().mockResolvedValue()
+  loadOrders
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -122,6 +126,23 @@ const globalStubs = {
 describe('WbrParcels_WhList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
+    mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    expect(loadOrders).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
   })
 
   it('renders the required parcel fields in the table', async () => {

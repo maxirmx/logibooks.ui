@@ -665,11 +665,18 @@ defineExpose({
             <ActionButton 
               :item="item" 
               icon="fa-solid fa-list" 
-              tooltip-text="Открыть список посылок" 
+              tooltip-text="Cписок посылок" 
               @click="openParcels" 
               :disabled="runningAction || loading" 
             />
-
+           <ActionButton
+              v-if="hasWhRole && isWarehouseMode"
+              :item="item"
+              icon="fa-solid fa-rectangle-list"
+              :tooltip-text="`Посылки не в реестре`"
+              @click="openUnregisteredParcels"
+              :disabled="runningAction || loading"
+            />
             <ActionButton  v-if="isSrLogistPlus"
               :item="item"
               icon="fa-solid fa-pen"
@@ -717,14 +724,6 @@ defineExpose({
                 @click="() => bulkChangeStatus(item.id)" 
               />
             </div>
-           <ActionButton
-              v-if="hasWhRole && isWarehouseMode"
-              :item="item"
-              icon="fa-solid fa-rectangle-list"
-              :tooltip-text="`Открыть незарегистрированные посылки`"
-              @click="openUnregisteredParcels"
-              :disabled="runningAction || loading"
-            />
             <ActionButton
               v-if="hasWhRole"
               :item="item"

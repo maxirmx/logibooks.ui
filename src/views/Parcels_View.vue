@@ -15,11 +15,13 @@ import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID } fro
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   id: { type: Number, required: true },
   mode: { type: String, default: OP_MODE_PAPERWORK }
 })
+const router = useRouter()
 
 const register = ref(null)
 const loading = ref(true)
@@ -51,13 +53,17 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function closeList() {
+  router.back()
+}
 </script>
 
 <template>
   <div v-if="loading">Загрузка...</div>
   <div v-else-if="error">Ошибка загрузки: {{ error.message }}</div>
   <Suspense v-else>
-    <component v-if="listComponent" :is="listComponent" :register-id="props.id" />
+    <component v-if="listComponent" :is="listComponent" :register-id="props.id" @close="closeList" />
     <div v-else>Неизвестный тип компании</div>
   </Suspense>
 </template>

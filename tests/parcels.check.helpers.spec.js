@@ -376,6 +376,11 @@ describe('parcels.check.helpers', () => {
         expect(getCheckStatusClass(CheckStatusCode.Duplicate.value)).toBe('has-issues')
       })
 
+      it('returns "has-issues" for NotFound status', () => {
+        const notFound = CheckStatusCode.fromParts(FCCheckStatus.NotFound, SWCheckStatus.NotFound)
+        expect(getCheckStatusClass(notFound.value)).toBe('has-issues')
+      })
+
       it('returns "no-issues" as default for other status codes', () => {
         const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
         const swNoIssues = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)

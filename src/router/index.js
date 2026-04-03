@@ -377,6 +377,16 @@ const router = createRouter({
       component: () => import('@/views/ParcelsByNumber_View.vue'),
       meta: { reqLogistOrSrLogist: true }
     },
+
+    {
+      path: '/registers/:registerId/unregistered-parcels',
+      name: 'Незарегистрированные посылки',
+      component: () => import('@/views/UnregisteredParcels_View.vue'),
+      props: (route) => ({
+        registerId: Number(route.params.registerId)
+      }),
+      meta: { reqWhRole: true, hideSidebar: true }
+    },
     {
       path: '/registers/:id/parcels',
       name: 'Посылки',

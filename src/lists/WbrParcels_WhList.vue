@@ -19,11 +19,13 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
 })
+const emit = defineEmits(['close'])
 
 const parcelsStore = useParcelsStore()
 const parcelStatusStore = useParcelStatusesStore()
@@ -134,15 +136,31 @@ onUnmounted(() => {
     watcherStop()
   }
 })
+
+function closeList() {
+  emit('close')
+}
 </script>
 
 <template>
   <div class="settings table-3">
-    <RegisterHeadingWithStats
-      :register-id="props.registerId"
-      :register="registersStore.item"
-      :heading="registerHeading"
-    />
+    <div class="header-with-actions">
+      <RegisterHeadingWithStats
+        :register-id="props.registerId"
+        :register="registersStore.item"
+        :heading="registerHeading"
+      />
+      <div class="header-actions header-actions-group">
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-xmark"
+          tooltip-text="Закрыть"
+          aria-label="Закрыть"
+          iconSize="2x"
+          @click="closeList"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <v-card class="table-card">

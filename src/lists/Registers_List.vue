@@ -665,7 +665,7 @@ defineExpose({
             <ActionButton 
               :item="item" 
               icon="fa-solid fa-list" 
-              tooltip-text="Cписок посылок" 
+              tooltip-text="Список посылок" 
               @click="openParcels" 
               :disabled="runningAction || loading" 
             />

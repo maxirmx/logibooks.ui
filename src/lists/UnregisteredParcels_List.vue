@@ -40,11 +40,15 @@ async function loadItems() {
     return
   }
 
-  await parcelStatusStore.ensureLoaded()
-  await warehousesStore.ensureOpsLoaded()
-  const rows = await unregisteredParcelsStore.getAll(registerId)
+  try {
+    await parcelStatusStore.ensureLoaded()
+    await warehousesStore.ensureOpsLoaded()
+    const rows = await unregisteredParcelsStore.getAll(registerId)
 
-  if (!rows.length && unregisteredParcelsStore.error) {
+    if (!rows.length && unregisteredParcelsStore.error) {
+      alertStore.error('Ошибка при загрузке незарегистрированных посылок')
+    }
+  } catch {
     alertStore.error('Ошибка при загрузке незарегистрированных посылок')
   }
 }

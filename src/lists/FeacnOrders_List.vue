@@ -144,7 +144,7 @@ async function handleToggleOrderEnabled(order) {
   <div class="settings table-3" data-testid="feacn-orders-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-bar">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

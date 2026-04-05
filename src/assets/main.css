@@ -48,6 +48,11 @@ This file is a part of Logibooks ui application
   margin-bottom: 0.5rem;
 }
 
+.header-actions-bar {
+  display: flex;
+  align-items: center;
+}
+
 .header-actions {
   display: flex;
   align-items: center;

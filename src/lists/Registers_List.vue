@@ -427,7 +427,7 @@ defineExpose({
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-bar">
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

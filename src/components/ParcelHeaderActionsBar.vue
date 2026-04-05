@@ -123,7 +123,7 @@ function handleKeydown(e) {
 </script>
 
 <template>
-  <div style="display:flex; align-items:center;">
+  <div class="header-actions-bar">
     <div class="header-actions header-actions-group">
       <ActionButton
         :item="{}"

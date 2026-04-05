@@ -59,6 +59,27 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     ])
   })
 
+  it('downloads all parcels without zone arguments', async () => {
+    const wrapper = mount(RegisterWhHeaderActionBar, {
+      props: {
+        register: { id: 77, fileName: 'register_77.xlsx' },
+        zones: [{ value: 8, name: 'Зона A' }]
+      },
+      global: {
+        stubs: {
+          ActionButton: ActionButtonStub,
+          ActionButton2L: ActionButton2LStub
+        }
+      }
+    })
+
+    const actionButton2L = wrapper.findComponent(ActionButton2LStub)
+    const allParcelsOption = actionButton2L.props('options')[0]
+    await allParcelsOption.action()
+
+    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', undefined, undefined)
+  })
+
   it('downloads selected zone with option label', async () => {
     const wrapper = mount(RegisterWhHeaderActionBar, {
       props: {

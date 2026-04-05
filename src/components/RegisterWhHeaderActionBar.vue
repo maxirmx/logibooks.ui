@@ -50,8 +50,8 @@ const exportOptions = computed(() => {
   return [
     {
       label: 'Все посылки',
-      value: 0,
-      action: () => downloadRegisterForZone(0, 'Все посылки')
+      value: undefined,
+      action: () => downloadRegisterForZone(undefined, undefined)
     },
     ...zoneOptions
   ]

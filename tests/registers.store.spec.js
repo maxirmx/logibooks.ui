@@ -977,7 +977,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
 
-      await store.download(10, 'custom_file.xlsx', 0, 'Все посылки')
+      await store.download(10, 'custom_file.xlsx', 0, '')
 
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/10/download?forZone=0`,

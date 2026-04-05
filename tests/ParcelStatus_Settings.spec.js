@@ -13,7 +13,8 @@ import { resolveAll } from './helpers/test-utils.js'
 // Mock dependencies at the top level
 const mockParcelStatus = {
   id: 1,
-  title: 'Черновик'
+  title: 'Черновик',
+  useAtCustomsProcessing: true
 }
 
 // Mock stores using test-utils
@@ -164,6 +165,7 @@ describe('ParcelStatus_Settings.vue', () => {
 
       // Check that the title form field is present
       expect(wrapper.find('#title').exists()).toBe(true)
+      expect(wrapper.find('#useAtCustomsProcessing').exists()).toBe(true)
     })
 
     it('renders form labels correctly', async () => {
@@ -177,6 +179,7 @@ describe('ParcelStatus_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.text()).toContain('Название статуса:')
+      expect(wrapper.text()).toContain('Включать посылки в таможенное оформление')
     })
 
     it('shows loading fallback initially', async () => {
@@ -212,6 +215,10 @@ describe('ParcelStatus_Settings.vue', () => {
       await form.trigger('submit')
 
       expect(mockParcelStatusesStore.create).toHaveBeenCalled()
+      expect(mockParcelStatusesStore.create).toHaveBeenCalledWith({
+        title: '',
+        useAtCustomsProcessing: false
+      })
     })
 
     it('shows success message and redirects after successful creation', async () => {

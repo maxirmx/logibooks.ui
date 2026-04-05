@@ -28,7 +28,8 @@ const parcelStatusesStore = useParcelStatusesStore()
 const isCreate = computed(() => props.mode === 'create')
 
 let parcelStatus = ref({
-  title: ''
+  title: '',
+  useAtCustomsProcessing: false
 })
 
 if (!isCreate.value) {
@@ -99,6 +100,16 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.title }"
           placeholder="Название статуса"
         />
+      </div>
+
+      <div class="form-group">
+        <Field
+          id="useAtCustomsProcessing"
+          type="checkbox"
+          name="useAtCustomsProcessing"
+          class="checkbox checkbox-styled"
+        />
+        <label for="useAtCustomsProcessing">Включать посылки в таможенное оформление</label>
       </div>
 
       <div class="form-group mt-8">

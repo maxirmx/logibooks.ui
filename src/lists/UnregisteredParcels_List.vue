@@ -89,9 +89,9 @@ function closeList() {
         <div class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
-            icon="fa-solid fa-file-export"
-            tooltip-text="Экспортировать реестр"
-            aria-label="Экспортировать реестр"
+            icon="fa-solid fa-file-invoice"
+            tooltip-text="Сформировать реестр"
+            aria-label="Сформировать реестр"
             iconSize="2x"
             :disabled="loading"
             @click="exportRegister"

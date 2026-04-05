@@ -105,7 +105,7 @@ defineExpose({
   <div class="settings table-2">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коды аэропортов</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
+      <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

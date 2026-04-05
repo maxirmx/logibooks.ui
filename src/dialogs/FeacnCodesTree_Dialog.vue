@@ -51,7 +51,7 @@ async function fileSelected(file) {
   <div class="settings table-2 feacn-codes-tree-container">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коды ТН ВЭД</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-bar">
         <div v-if="uploading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

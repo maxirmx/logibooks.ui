@@ -105,7 +105,7 @@ defineExpose({
   <div class="settings table-2" data-testid="register-statuses-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Статусы партий</h1>
-      <div style="display:flex; align-items:center;" v-if="authStore.isSrLogistPlus">
+      <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

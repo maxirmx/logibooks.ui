@@ -438,7 +438,7 @@ defineExpose({ onSubmit, cancel })
   <div class="settings form-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ getTitle() }}</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-bar">
         <div v-if="authStore.hasWhRole && !isCreate" class="header-actions header-actions-group">
           <ActionButton
             :item="{}"

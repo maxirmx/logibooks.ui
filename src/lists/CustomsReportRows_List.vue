@@ -121,7 +121,7 @@ const pageOptions = computed(() => {
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Отчёт о выпуске для {{ headingLabel }}</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

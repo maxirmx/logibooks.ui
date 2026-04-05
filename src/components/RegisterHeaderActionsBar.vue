@@ -53,7 +53,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
 </script>
 
 <template>
-  <div style="display:flex; align-items:center;">
+  <div class="header-actions-bar">
     <div v-if="loading" class="header-actions header-actions-group">
         <span class="spinner-border spinner-border-m"></span>
     </div>

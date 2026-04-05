@@ -118,4 +118,42 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     await wrapper.get('[data-testid="close-btn"]').trigger('click')
     expect(wrapper.emitted('close')?.length).toBeGreaterThanOrEqual(1)
   })
+
+  it('displays spinner when loading is true', () => {
+    const wrapper = mount(RegisterWhHeaderActionBar, {
+      props: {
+        register: { id: 55, fileName: 'register_55.xlsx' },
+        zones: [],
+        loading: true
+      },
+      global: {
+        stubs: {
+          ActionButton: ActionButtonStub,
+          ActionButton2L: ActionButton2LStub
+        }
+      }
+    })
+
+    const spinner = wrapper.find('.spinner-border')
+    expect(spinner.exists()).toBe(true)
+  })
+
+  it('does not display spinner when loading is false', () => {
+    const wrapper = mount(RegisterWhHeaderActionBar, {
+      props: {
+        register: { id: 55, fileName: 'register_55.xlsx' },
+        zones: [],
+        loading: false
+      },
+      global: {
+        stubs: {
+          ActionButton: ActionButtonStub,
+          ActionButton2L: ActionButton2LStub
+        }
+      }
+    })
+
+    const spinner = wrapper.find('.spinner-border')
+    expect(spinner.exists()).toBe(false)
+  })
 })

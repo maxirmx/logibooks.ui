@@ -154,6 +154,7 @@ function closeList() {
       <RegisterWhHeaderActionBar
         :register="registersStore.item"
         :zones="ops.zones"
+        :loading="registerLoading || isInitializing"
         icon-size="2x"
         @close="closeList"
       />

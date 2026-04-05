@@ -8,7 +8,8 @@ const props = defineProps({
   register: { type: Object, required: true },
   zones: { type: Array, default: () => [] },
   disabled: { type: Boolean, default: false },
-  iconSize: { type: String, default: '2x' }
+  iconSize: { type: String, default: '2x' },
+  loading: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close'])
@@ -59,27 +60,30 @@ const exportOptions = computed(() => {
 </script>
 
 <template>
-  <div class="header-actions">
-    <div class="header-actions-group">
-      <ActionButton2L
-        :item="register"
-        icon="fa-solid fa-file-export"
-        tooltip-text="Экспортировать реестр"
-        :icon-size="iconSize"
-        :disabled="disabled"
-        :options="exportOptions"
-      />
+  <div class="header-actions-bar">
+    <div v-if="loading" class="header-actions header-actions-group">
+        <span class="spinner-border spinner-border-m"></span>
     </div>
-    <div class="header-actions-group">
-      <ActionButton
-        :item="register"
-        icon="fa-solid fa-xmark"
-        tooltip-text="Закрыть"
-        aria-label="Закрыть"
-        :icon-size="iconSize"
-        :disabled="disabled"
-        @click="emit('close')"
-      />
+    <div class="header-actions header-actions-group">
+        <ActionButton2L
+          :item="register"
+          icon="fa-solid fa-file-export"
+          tooltip-text="Экспортировать реестр"
+          :icon-size="iconSize"
+          :disabled="disabled"
+          :options="exportOptions"
+        />
+    </div>
+    <div class="header-actions header-actions-group">
+        <ActionButton
+          :item="register"
+          icon="fa-solid fa-xmark"
+          tooltip-text="Закрыть"
+          aria-label="Закрыть"
+          :icon-size="iconSize"
+          :disabled="disabled"
+          @click="emit('close')"
+        />
     </div>
   </div>
 </template>

@@ -206,7 +206,7 @@ function viewReportRows(report) {
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Отчеты о выпуске</h1>
-      <div style="display:flex; align-items:center;">
+      <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>

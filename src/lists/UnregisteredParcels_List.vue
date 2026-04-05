@@ -31,9 +31,9 @@ const isExporting = ref(false)
 
 
 const headers = [
-  { title: 'Сканированный код', key: 'scanCode', align: 'center', width: '120px' },
-  { title: 'Зона', key: 'zone', align: 'center', width: '120px' },
-  { title: 'Статус', key: 'statusId', align: 'center', width: '120px' }
+  { title: 'Сканированный код', key: 'scanCode', align: 'start', width: '120px' },
+  { title: 'Зона', key: 'zone', align: 'start', width: '120px' },
+  { title: 'Статус', key: 'statusId', align: 'start', width: '120px' }
 ]
 
 async function loadItems() {

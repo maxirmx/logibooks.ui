@@ -343,6 +343,10 @@ describe.each([
 
     await buttons[8].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
+
+    // The close button is the last button (index 11); clicking it should emit 'close' from the list
+    await buttons[11].trigger('click')
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 
   it('wires parcel multi-select composable', async () => {

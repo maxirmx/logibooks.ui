@@ -454,12 +454,8 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   function normalizeDownloadSuffix(forZone, zoneLabel) {
-    if (forZone === null || forZone === undefined) {
+    if (forZone === null || forZone === undefined || forZone === 0) {
       return ''
-    }
-
-    if (forZone === 0) {
-      return '_Без_зоны_или_не_найдены'
     }
 
     const normalizedLabel = (zoneLabel || '').trim().replaceAll(' ', '_')
@@ -481,7 +477,7 @@ export const useRegistersStore = defineStore('registers', () => {
     const baseFilename = filename || `register_${id}.xlsx`
     const suffix = normalizeDownloadSuffix(forZone, zoneLabel)
     const targetFilename = withZoneSuffix(baseFilename, suffix)
-    const query = forZone === null || forZone === undefined
+    const query = (forZone === null || forZone === undefined || forZone === 0)
       ? ''
       : `?forZone=${encodeURIComponent(forZone)}`
 

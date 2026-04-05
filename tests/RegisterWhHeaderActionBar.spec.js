@@ -77,7 +77,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     const allParcelsOption = actionButton2L.props('options')[0]
     await allParcelsOption.action()
 
-    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', undefined, undefined)
+    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 0, undefined)
   })
 
   it('downloads selected zone with option label', async () => {

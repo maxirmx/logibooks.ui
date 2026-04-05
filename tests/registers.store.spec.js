@@ -973,15 +973,15 @@ describe('registers store', () => {
       )
     })
 
-    it('adds forZone query and fallback suffix for zone 0', async () => {
+    it('downloads all parcels when forZone is 0 without query param or suffix', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
 
-      await store.download(10, 'custom_file.xlsx', 0, '')
+      await store.download(10, 'custom_file.xlsx', 0, undefined)
 
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/10/download?forZone=0`,
-        'custom_file_Без_зоны_или_не_найдены.xlsx'
+        `${apiUrl}/registers/10/download`,
+        'custom_file.xlsx'
       )
     })
 

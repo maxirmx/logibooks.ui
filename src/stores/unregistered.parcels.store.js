@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
@@ -30,10 +30,32 @@ export const useUnregisteredParcelsStore = defineStore('unregisteredParcels', ()
     }
   }
 
+
+  function buildFilename(registerId, invoiceNumber) {
+    const hasInvoiceNumber = typeof invoiceNumber === 'string' && invoiceNumber.trim() !== ''
+    const baseName = hasInvoiceNumber ? invoiceNumber.trim() : registerId
+    return `Unregistered_parcels_${baseName}.xlsx`
+  }
+
+  async function download(registerId, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      const filename = buildFilename(registerId, invoiceNumber)
+      return await fetchWrapper.downloadFile(`${baseUrl}/${registerId}/download`, filename)
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+    return null
+  }
+
   return {
     items,
     loading,
     error,
-    getAll
+    getAll,
+    download
   }
 })

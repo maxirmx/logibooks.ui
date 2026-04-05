@@ -3,10 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -19,11 +20,14 @@ const emit = defineEmits(['close'])
 
 const parcelStatusStore = useParcelStatusesStore()
 const unregisteredParcelsStore = useUnregisteredParcelsStore()
+const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 
 const { items, loading, error } = storeToRefs(unregisteredParcelsStore)
 const { ops } = storeToRefs(warehousesStore)
+
+const isExporting = ref(false)
 
 
 const headers = [
@@ -55,6 +59,36 @@ async function loadItems() {
 
 onMounted(loadItems)
 
+async function exportRegister() {
+  const registerId = props.registerId
+
+  if (!Number.isFinite(registerId) || !Number.isInteger(registerId) || registerId <= 0) {
+    alertStore.error('Некорректный идентификатор реестра')
+    return
+  }
+
+  isExporting.value = true
+  try {
+    await registersStore.getById(registerId)
+
+    const register = registersStore.item
+    if (register?.error || !register?.id) {
+      alertStore.error('Ошибка при экспорте реестра')
+      return
+    }
+
+    const invoiceNumber = register.invoiceNumber
+    const ok = await unregisteredParcelsStore.download(registerId, invoiceNumber)
+    if (!ok) {
+      alertStore.error('Ошибка при экспорте реестра')
+    }
+  } catch {
+    alertStore.error('Ошибка при экспорте реестра')
+  } finally {
+    isExporting.value = false
+  }
+}
+
 function closeList() {
   emit('close')
 }
@@ -64,15 +98,31 @@ function closeList() {
   <div class="settings table-3" data-testid="unregistered-parcels-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Незарегистрированные посылки</h1>
-      <div class="header-actions header-actions-group">
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-xmark"
-          tooltip-text="Закрыть"
-          aria-label="Закрыть"
-          iconSize="2x"
-          @click="closeList"
-        />
+      <div style="display:flex; align-items:center;">
+        <div v-if="loading" class="header-actions header-actions-group">
+            <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-invoice"
+            tooltip-text="Сформировать реестр"
+            aria-label="Сформировать реестр"
+            iconSize="2x"
+            :disabled="loading || isExporting"
+            @click="exportRegister"
+          />
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            iconSize="2x"
+            @click="closeList"
+          />
+        </div>
       </div>
     </div>
 

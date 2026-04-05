@@ -453,17 +453,45 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-    async function download(id, filename) {
-    if (!filename) {
-      filename = `register_${id}.xlsx`
+  function normalizeDownloadSuffix(forZone, zoneLabel) {
+    if (forZone === null || forZone === undefined) {
+      return ''
     }
+
+    if (forZone === 0) {
+      return '_Без_зоны_или_не_найдены'
+    }
+
+    const normalizedLabel = (zoneLabel || '').trim().replaceAll(' ', '_')
+    return normalizedLabel ? `_${normalizedLabel}` : ''
+  }
+
+  function withZoneSuffix(filename, suffix) {
+    if (!suffix) return filename
+
+    const dotIndex = filename.lastIndexOf('.')
+    if (dotIndex <= 0) {
+      return `${filename}${suffix}`
+    }
+
+    return `${filename.slice(0, dotIndex)}${suffix}${filename.slice(dotIndex)}`
+  }
+
+  async function download(id, filename, forZone = null, zoneLabel = null) {
+    const baseFilename = filename || `register_${id}.xlsx`
+    const suffix = normalizeDownloadSuffix(forZone, zoneLabel)
+    const targetFilename = withZoneSuffix(baseFilename, suffix)
+    const query = forZone === null || forZone === undefined
+      ? ''
+      : `?forZone=${encodeURIComponent(forZone)}`
+
     loading.value = true
     error.value = null
     try {
       // Use downloadFile helper to trigger browser download
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download`,
-        filename
+        `${baseUrl}/${id}/download${query}`,
+        targetFilename
       )
     } catch (err) {
       error.value = err

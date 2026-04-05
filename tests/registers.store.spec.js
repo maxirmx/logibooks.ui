@@ -972,6 +972,30 @@ describe('registers store', () => {
         'register_10.xlsx'
       )
     })
+
+    it('adds forZone query and fallback suffix for zone 0', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.download(10, 'custom_file.xlsx', 0, 'Все посылки')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download?forZone=0`,
+        'custom_file_Без_зоны_или_не_найдены.xlsx'
+      )
+    })
+
+    it('adds normalized zone label suffix for a specific zone', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.download(10, 'register_10.xlsx', 15, 'Зона 1')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download?forZone=15`,
+        'register_10_Зона_1.xlsx'
+      )
+    })
   })
 
   describe('generate method', () => {

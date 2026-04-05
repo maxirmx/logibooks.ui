@@ -19,7 +19,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
-import ActionButton from '@/components/ActionButton.vue'
+import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps({
@@ -149,16 +149,12 @@ function closeList() {
         :register="registersStore.item"
         :heading="registerHeading"
       />
-      <div class="header-actions header-actions-group">
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-xmark"
-          tooltip-text="Закрыть"
-          aria-label="Закрыть"
-          iconSize="2x"
-          @click="closeList"
-        />
-      </div>
+      <RegisterWhHeaderActionBar
+        :register="registersStore.item"
+        :zones="ops.zones"
+        icon-size="2x"
+        @close="closeList"
+      />
     </div>
     <hr class="hr" />
 

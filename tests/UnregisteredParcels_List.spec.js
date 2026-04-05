@@ -165,6 +165,7 @@ describe('UnregisteredParcels_List.vue', () => {
     expect(exportButton).toBeTruthy()
 
     await exportButton.vm.$emit('click')
+    await resolveAll()
 
     expect(getById).toHaveBeenCalledWith(5)
     expect(download).toHaveBeenCalledWith(5, 'INV-100')
@@ -174,6 +175,9 @@ describe('UnregisteredParcels_List.vue', () => {
   it('shows alert when export fails', async () => {
     getAll.mockResolvedValue([{ id: 1 }])
     download.mockResolvedValue(null)
+    getById.mockImplementation(() => {
+      mockRegisterItem.item = { id: 5, invoiceNumber: 'INV-100' }
+    })
 
     const wrapper = mount(UnregisteredParcelsList, {
       props: { registerId: 5 },
@@ -188,6 +192,29 @@ describe('UnregisteredParcels_List.vue', () => {
     await exportButton.vm.$emit('click')
     await resolveAll()
 
+    expect(alertError).toHaveBeenCalledWith('Ошибка при экспорте реестра')
+  })
+
+  it('shows alert when register fails to load on export', async () => {
+    getAll.mockResolvedValue([])
+    getById.mockImplementation(() => {
+      mockRegisterItem.item = { error: new Error('load error') }
+    })
+
+    const wrapper = mount(UnregisteredParcelsList, {
+      props: { registerId: 5 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
+    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Сформировать реестр')
+
+    await exportButton.vm.$emit('click')
+    await resolveAll()
+
+    expect(download).not.toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Ошибка при экспорте реестра')
   })
 

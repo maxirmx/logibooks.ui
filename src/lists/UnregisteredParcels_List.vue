@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store.js'
@@ -26,6 +26,8 @@ const alertStore = useAlertStore()
 
 const { items, loading, error } = storeToRefs(unregisteredParcelsStore)
 const { ops } = storeToRefs(warehousesStore)
+
+const isExporting = ref(false)
 
 
 const headers = [
@@ -65,15 +67,25 @@ async function exportRegister() {
     return
   }
 
+  isExporting.value = true
   try {
     await registersStore.getById(registerId)
-    const invoiceNumber = registersStore.item?.invoiceNumber
+
+    const register = registersStore.item
+    if (register?.error || !register?.id) {
+      alertStore.error('Ошибка при экспорте реестра')
+      return
+    }
+
+    const invoiceNumber = register.invoiceNumber
     const ok = await unregisteredParcelsStore.download(registerId, invoiceNumber)
     if (!ok) {
       alertStore.error('Ошибка при экспорте реестра')
     }
   } catch {
     alertStore.error('Ошибка при экспорте реестра')
+  } finally {
+    isExporting.value = false
   }
 }
 
@@ -97,7 +109,7 @@ function closeList() {
             tooltip-text="Сформировать реестр"
             aria-label="Сформировать реестр"
             iconSize="2x"
-            :disabled="loading"
+            :disabled="loading || isExporting"
             @click="exportRegister"
           />
         </div>

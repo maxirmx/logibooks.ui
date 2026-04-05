@@ -32,8 +32,8 @@ export const useUnregisteredParcelsStore = defineStore('unregisteredParcels', ()
 
 
   function buildFilename(registerId, invoiceNumber) {
-    const hasInvoiceNumber = invoiceNumber !== null && invoiceNumber !== undefined
-    const baseName = hasInvoiceNumber ? invoiceNumber : registerId
+    const hasInvoiceNumber = typeof invoiceNumber === 'string' && invoiceNumber.trim() !== ''
+    const baseName = hasInvoiceNumber ? invoiceNumber.trim() : registerId
     return `Unregistered_parcels_${baseName}.xlsx`
   }
 

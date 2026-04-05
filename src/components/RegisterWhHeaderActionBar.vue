@@ -70,7 +70,7 @@ const exportOptions = computed(() => {
           icon="fa-solid fa-file-export"
           tooltip-text="Экспортировать реестр"
           :icon-size="iconSize"
-          :disabled="disabled"
+          :disabled="disabled || loading || !register?.id"
           :options="exportOptions"
         />
     </div>

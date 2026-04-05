@@ -120,8 +120,7 @@ const globalStubs = {
   },
   PaginationFooter: {
     template: '<div data-testid="pagination-footer"></div>'
-  }
-,
+  },
   RegisterWhHeaderActionBar: {
     template: '<div data-testid="register-wh-header-action-bar"></div>'
   }

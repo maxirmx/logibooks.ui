@@ -42,7 +42,8 @@ function filterParcelStatuses(value, query, item) {
 // Table headers
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
-  { title: 'Название статуса', key: 'title', sortable: true }
+  { title: 'Название статуса', key: 'title', sortable: true },
+  { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true }
 ]
 
 function openEditDialog(item) {
@@ -170,6 +171,9 @@ defineExpose({
               :disabled="runningAction || loading"
             />
           </div>
+        </template>
+        <template v-slot:[`item.useAtCustomsProcessing`]="{ item }">
+          {{ item.useAtCustomsProcessing ? 'Да' : 'Нет' }}
         </template>
       </v-data-table>
     </v-card>

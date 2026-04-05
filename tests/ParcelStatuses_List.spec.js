@@ -33,9 +33,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockParcelStatuses = ref([
-  { id: 1, title: 'Черновик' },
-  { id: 2, title: 'Подтвержден' },
-  { id: 3, title: 'Выполнен' }
+  { id: 1, title: 'Черновик', useAtCustomsProcessing: true },
+  { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false },
+  { id: 3, title: 'Выполнен', useAtCustomsProcessing: false }
 ])
 
 // Mock stores
@@ -104,9 +104,9 @@ describe('ParcelStatuses_List.vue', () => {
 
     // Reset reactive data
     mockParcelStatuses.value = [
-      { id: 1, title: 'Черновик' },
-      { id: 2, title: 'Подтвержден' },
-      { id: 3, title: 'Выполнен' }
+      { id: 1, title: 'Черновик', useAtCustomsProcessing: true },
+      { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false },
+      { id: 3, title: 'Выполнен', useAtCustomsProcessing: false }
     ]
 
     wrapper = mount(ParcelStatusesList, {
@@ -280,8 +280,15 @@ describe('ParcelStatuses_List.vue', () => {
       const headers = wrapper.vm.headers
       expect(headers).toEqual([
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-        { title: 'Название статуса', key: 'title', sortable: true }
+        { title: 'Название статуса', key: 'title', sortable: true },
+        { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true }
       ])
+    })
+
+    it('shows customs processing values as Да and Нет', () => {
+      const tableText = wrapper.text()
+      expect(tableText).toContain('Да')
+      expect(tableText).toContain('Нет')
     })
   })
 
@@ -352,4 +359,3 @@ describe('ParcelStatuses_List.vue', () => {
     })
   })
 })
-

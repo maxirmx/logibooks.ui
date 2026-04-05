@@ -28,7 +28,8 @@ const parcelStatusesStore = useParcelStatusesStore()
 const isCreate = computed(() => props.mode === 'create')
 
 let parcelStatus = ref({
-  title: ''
+  title: '',
+  useAtCustomsProcessing: false
 })
 
 if (!isCreate.value) {
@@ -101,6 +102,20 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
+      <div class="form-group">
+        <div class="checkbox-item">
+          <Field
+            id="useAtCustomsProcessing"
+            type="checkbox"
+            name="useAtCustomsProcessing"
+            class="checkbox checkbox-styled"
+            :value="true"
+            :unchecked-value="false"
+          />
+          <label for="useAtCustomsProcessing" class="label">Таможенное оформление:</label>
+        </div>
+      </div>
+
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
@@ -122,3 +137,34 @@ function onSubmit(values, { setErrors }) {
     </Form>
   </div>
 </template>
+
+<style scoped>  
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-item label {
+  margin: 0;
+  padding: 0;
+  width: auto;
+  display: inline-block;
+}
+
+/* Override checkbox-styled label width for table */
+.checkbox-item .checkbox-styled + label {
+  width: auto;
+  min-width: 20px;
+}
+
+.checkbox-item .checkbox-styled + label:after {
+  margin-left: 130px;
+  margin-right: 10px;
+}
+
+.checkbox-item .checkbox-styled + label:before {
+  right: 12px;
+}
+
+</style>

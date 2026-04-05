@@ -176,6 +176,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         tooltip-text="Закрыть"
         aria-label="Закрыть"
         :iconSize="iconSize"
+        :disabled="disabled"
         @click="run('close')"
       />
     </div>

@@ -168,6 +168,8 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :disabled="disabled"
         @click="run('download-techdoc')"
       />
+    </div>
+    <div class="header-actions header-actions-group">
       <ActionButton
         :item="item"
         icon="fa-solid fa-xmark"

@@ -82,24 +82,31 @@ function closeList() {
   <div class="settings table-3" data-testid="unregistered-parcels-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Незарегистрированные посылки</h1>
-      <div class="header-actions header-actions-group">
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-file-export"
-          tooltip-text="Экспортировать реестр"
-          aria-label="Экспортировать реестр"
-          iconSize="2x"
-          :disabled="loading"
-          @click="exportRegister"
-        />
-        <ActionButton
-          :item="{}"
-          icon="fa-solid fa-xmark"
-          tooltip-text="Закрыть"
-          aria-label="Закрыть"
-          iconSize="2x"
-          @click="closeList"
-        />
+      <div style="display:flex; align-items:center;">
+        <div v-if="loading" class="header-actions header-actions-group">
+            <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-export"
+            tooltip-text="Экспортировать реестр"
+            aria-label="Экспортировать реестр"
+            iconSize="2x"
+            :disabled="loading"
+            @click="exportRegister"
+          />
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            iconSize="2x"
+            @click="closeList"
+          />
+        </div>
       </div>
     </div>
 

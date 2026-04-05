@@ -7,6 +7,7 @@ import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -19,6 +20,7 @@ const emit = defineEmits(['close'])
 
 const parcelStatusStore = useParcelStatusesStore()
 const unregisteredParcelsStore = useUnregisteredParcelsStore()
+const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 
@@ -64,7 +66,9 @@ async function exportRegister() {
   }
 
   try {
-    const ok = await unregisteredParcelsStore.download(registerId)
+    await registersStore.getById(registerId)
+    const invoiceNumber = registersStore.item?.invoiceNumber
+    const ok = await unregisteredParcelsStore.download(registerId, invoiceNumber)
     if (!ok) {
       alertStore.error('Ошибка при экспорте реестра')
     }

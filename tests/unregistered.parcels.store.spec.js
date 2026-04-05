@@ -61,7 +61,7 @@ describe('unregistered.parcels store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('downloads register export with default filename', async () => {
+  it('downloads register export with default filename using registerId', async () => {
     fetchWrapper.downloadFile.mockResolvedValue(true)
 
     const store = useUnregisteredParcelsStore()
@@ -69,22 +69,22 @@ describe('unregistered.parcels store', () => {
 
     expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
       `${apiUrl}/unregisteredparcels/8/download`,
-      'unregistered_register_8.xlsx'
+      'Unregistered_parcels_8.xlsx'
     )
     expect(result).toBe(true)
     expect(store.error).toBeNull()
     expect(store.loading).toBe(false)
   })
 
-  it('downloads register export with custom filename', async () => {
+  it('downloads register export with invoiceNumber in filename', async () => {
     fetchWrapper.downloadFile.mockResolvedValue(true)
 
     const store = useUnregisteredParcelsStore()
-    const result = await store.download(8, 'custom.xlsx')
+    const result = await store.download(8, 'INV-2025-001')
 
     expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
       `${apiUrl}/unregisteredparcels/8/download`,
-      'custom.xlsx'
+      'Unregistered_parcels_INV-2025-001.xlsx'
     )
     expect(result).toBe(true)
   })

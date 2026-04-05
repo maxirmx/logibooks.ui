@@ -13,6 +13,7 @@ const mockItems = ref([])
 const mockLoading = ref(false)
 const mockError = ref(null)
 const getAll = vi.fn()
+const download = vi.fn()
 const alertError = vi.fn()
 const ensureLoaded = vi.fn().mockResolvedValue()
 const getStatusTitle = vi.fn((id) => `Status ${id}`)
@@ -27,7 +28,8 @@ vi.mock('@/stores/unregistered.parcels.store.js', () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
-    getAll
+    getAll,
+    download
   })
 }))
 
@@ -58,6 +60,7 @@ describe('UnregisteredParcels_List.vue', () => {
     mockItems.value = []
     mockLoading.value = false
     mockError.value = null
+    download.mockReset()
   })
 
   it('loads rows on mount with register id', async () => {
@@ -131,4 +134,65 @@ describe('UnregisteredParcels_List.vue', () => {
     expect(ensureOpsLoaded).toHaveBeenCalled()
     expect(getAll).toHaveBeenCalledWith(12)
   })
+
+  it('exports register when export action is clicked', async () => {
+    getAll.mockResolvedValue([])
+    download.mockResolvedValue(true)
+
+    const wrapper = mount(UnregisteredParcelsList, {
+      props: { registerId: 5 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
+    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Экспортировать реестр')
+
+    expect(exportButton).toBeTruthy()
+
+    await exportButton.vm.$emit('click')
+
+    expect(download).toHaveBeenCalledWith(5)
+    expect(alertError).not.toHaveBeenCalledWith('Ошибка при экспорте реестра')
+  })
+
+  it('shows alert when export fails', async () => {
+    getAll.mockResolvedValue([])
+    download.mockResolvedValue(null)
+
+    const wrapper = mount(UnregisteredParcelsList, {
+      props: { registerId: 5 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
+    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Экспортировать реестр')
+
+    await exportButton.vm.$emit('click')
+
+    expect(alertError).toHaveBeenCalledWith('Ошибка при экспорте реестра')
+  })
+
+  it('does not export and reports invalid register id on export', async () => {
+    getAll.mockResolvedValue([])
+
+    const wrapper = mount(UnregisteredParcelsList, {
+      props: { registerId: 0 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
+    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Экспортировать реестр')
+
+    await exportButton.vm.$emit('click')
+
+    expect(download).not.toHaveBeenCalled()
+    expect(alertError).toHaveBeenCalledWith('Некорректный идентификатор реестра')
+  })
+
 })

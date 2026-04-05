@@ -306,8 +306,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // We added an invoice action (ActionButton2L) which renders an extra button
-    expect(buttons).toHaveLength(11)
+    // Header actions include logist actions + export/download + invoice split button + close button
+    expect(buttons).toHaveLength(12)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -369,8 +369,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // When user lacks logist role the first group of actions is hidden, leaving only the export/download group
-    expect(buttons).toHaveLength(6)
+    // When user lacks logist role the first group is hidden, leaving export/download/invoice/close actions
+    expect(buttons).toHaveLength(7)
   })
 
   it('calls stop handler on unmount', async () => {

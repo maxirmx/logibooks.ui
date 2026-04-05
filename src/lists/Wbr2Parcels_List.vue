@@ -50,6 +50,7 @@ import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
 const props = defineProps({
   registerId: { type: Number, required: true }
 })
+const emit = defineEmits(['close'])
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -396,6 +397,10 @@ function handleFellows(item) {
   handleFellowsClick(item.registerId, item.shk)
 }
 
+function closeList() {
+  emit('close')
+}
+
 // Function to filter headers that need generic templates
 function getGenericTemplateHeaders() {
   return filterGenericTemplateHeadersForParcel(headers.value)
@@ -425,6 +430,7 @@ function getGenericTemplateHeaders() {
         @export-notifications="exportRegisterXmlNotifications"
         @download="downloadRegisterFile"
         @download-techdoc="downloadTechdocFile"
+        @close="closeList"
       />
     </div>
     <hr class="hr" />

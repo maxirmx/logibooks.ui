@@ -30,10 +30,25 @@ export const useUnregisteredParcelsStore = defineStore('unregisteredParcels', ()
     }
   }
 
+
+  async function download(registerId, filename = `unregistered_register_${registerId}.xlsx`) {
+    loading.value = true
+    error.value = null
+    try {
+      return await fetchWrapper.downloadFile(`${baseUrl}/${registerId}/download`, filename)
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+    return null
+  }
+
   return {
     items,
     loading,
     error,
-    getAll
+    getAll,
+    download
   }
 })

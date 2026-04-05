@@ -55,6 +55,24 @@ async function loadItems() {
 
 onMounted(loadItems)
 
+async function exportRegister() {
+  const registerId = props.registerId
+
+  if (!Number.isFinite(registerId) || !Number.isInteger(registerId) || registerId <= 0) {
+    alertStore.error('Некорректный идентификатор реестра')
+    return
+  }
+
+  try {
+    const ok = await unregisteredParcelsStore.download(registerId)
+    if (!ok) {
+      alertStore.error('Ошибка при экспорте реестра')
+    }
+  } catch {
+    alertStore.error('Ошибка при экспорте реестра')
+  }
+}
+
 function closeList() {
   emit('close')
 }
@@ -65,6 +83,15 @@ function closeList() {
     <div class="header-with-actions">
       <h1 class="primary-heading">Незарегистрированные посылки</h1>
       <div class="header-actions header-actions-group">
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-file-export"
+          tooltip-text="Экспортировать реестр"
+          aria-label="Экспортировать реестр"
+          iconSize="2x"
+          :disabled="loading"
+          @click="exportRegister"
+        />
         <ActionButton
           :item="{}"
           icon="fa-solid fa-xmark"

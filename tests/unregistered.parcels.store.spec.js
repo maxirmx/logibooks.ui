@@ -9,7 +9,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn() }
+  fetchWrapper: { get: vi.fn(), downloadFile: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -60,4 +60,45 @@ describe('unregistered.parcels store', () => {
     expect(store.error).toBe(err)
     expect(store.loading).toBe(false)
   })
+
+  it('downloads register export with default filename', async () => {
+    fetchWrapper.downloadFile.mockResolvedValue(true)
+
+    const store = useUnregisteredParcelsStore()
+    const result = await store.download(8)
+
+    expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+      `${apiUrl}/unregisteredparcels/8/download`,
+      'unregistered_register_8.xlsx'
+    )
+    expect(result).toBe(true)
+    expect(store.error).toBeNull()
+    expect(store.loading).toBe(false)
+  })
+
+  it('downloads register export with custom filename', async () => {
+    fetchWrapper.downloadFile.mockResolvedValue(true)
+
+    const store = useUnregisteredParcelsStore()
+    const result = await store.download(8, 'custom.xlsx')
+
+    expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+      `${apiUrl}/unregisteredparcels/8/download`,
+      'custom.xlsx'
+    )
+    expect(result).toBe(true)
+  })
+
+  it('stores error and returns null when export download fails', async () => {
+    const err = new Error('download failed')
+    fetchWrapper.downloadFile.mockRejectedValue(err)
+
+    const store = useUnregisteredParcelsStore()
+    const result = await store.download(8)
+
+    expect(result).toBeNull()
+    expect(store.error).toBe(err)
+    expect(store.loading).toBe(false)
+  })
+
 })

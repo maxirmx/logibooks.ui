@@ -25,7 +25,8 @@ const emit = defineEmits([
   'export-excise',
   'export-notifications',
   'download',
-  'download-techdoc'
+  'download-techdoc',
+  'close',
 ])
 
 const router = useRouter()
@@ -166,6 +167,17 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :iconSize="iconSize"
         :disabled="disabled"
         @click="run('download-techdoc')"
+      />
+    </div>
+    <div class="header-actions header-actions-group">
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-xmark"
+        tooltip-text="Закрыть"
+        aria-label="Закрыть"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('close')"
       />
     </div>
   </div>

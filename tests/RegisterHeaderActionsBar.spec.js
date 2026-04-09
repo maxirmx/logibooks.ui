@@ -50,8 +50,11 @@ describe('RegisterHeaderActionsBar', () => {
     const actionButtons = wrapper.findAllComponents(ActionButton)
     expect(actionButtons.length).toBeGreaterThan(0)
 
-    const invoiceMenu = wrapper.findComponent(ActionButton2L)
-    expect(invoiceMenu.exists()).toBe(true)
+    const actionMenus = wrapper.findAllComponents(ActionButton2L)
+    const invoiceMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Сформировать инвойс-манифест'
+    )
+    expect(invoiceMenu).toBeTruthy()
 
     const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption] = invoiceMenu.props('options')
 
@@ -96,14 +99,48 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
 
-    const invoiceMenu = wrapper.findComponent(ActionButton2L)
-    expect(invoiceMenu.exists()).toBe(true)
+    const actionMenus = wrapper.findAllComponents(ActionButton2L)
+    const invoiceMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Сформировать инвойс-манифест'
+    )
+    expect(invoiceMenu).toBeTruthy()
 
     const [allOption] = invoiceMenu.props('options')
 
     await allOption.action(baseProps.item)
 
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('emits xml export events when corresponding menu options are used', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const actionMenus = wrapper.findAllComponents(ActionButton2L)
+    const exportMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
+    )
+
+    expect(exportMenu).toBeTruthy()
+
+    const options = exportMenu.props('options')
+    const ordinaryOption = options.find((option) => option.label === 'Без акциза и нотификаций')
+    const exciseOption = options.find((option) => option.label === 'С акцизом')
+    const notificationsOption = options.find((option) => option.label === 'С нотификациями')
+
+    expect(ordinaryOption).toBeTruthy()
+    expect(exciseOption).toBeTruthy()
+    expect(notificationsOption).toBeTruthy()
+
+    await ordinaryOption.action(baseProps.item)
+    await exciseOption.action(baseProps.item)
+    await notificationsOption.action(baseProps.item)
+
+    expect(wrapper.emitted('export-ordinary')).toHaveLength(1)
+    expect(wrapper.emitted('export-excise')).toHaveLength(1)
+    expect(wrapper.emitted('export-notifications')).toHaveLength(1)
   })
 
   it('disables historic data actions when noHistoricData is true', () => {

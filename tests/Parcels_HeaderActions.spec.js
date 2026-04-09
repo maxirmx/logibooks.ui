@@ -51,6 +51,7 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlOrdinary: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     exportAllXmlNotifications: vi.fn(),    
+    freezeTnVedOrder: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
@@ -233,6 +234,10 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getRowPropsForParcel: vi.fn(() => ({ class: '' })),
   filterGenericTemplateHeadersForParcel: vi.fn(() => []),
   generateRegisterName: vi.fn(() => 'Реестр'),
+  getFrozenOrderSortDir: vi.fn((sortBy) => {
+    const entry = sortBy?.find((s) => s.key === 'frozenOrder')
+    return entry ? entry.order : null
+  }),
   getFeacnCodesForKeywords: vi.fn(() => []),
   loadOrders: vi.fn((...args) => {
     loadOrdersMock(...args)
@@ -376,6 +381,42 @@ describe.each([
     await resolveAll()
 
     expect(useParcelMultiSelectMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses frozenOrder as the first table header key', async () => {
+    const wrapper = mount(Component, {
+      props: { registerId: 12 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.vm.headers[0]?.key).toBe('frozenOrder')
+  })
+
+  it('refetches parcels after freeze only when frozenOrder sorting is active', async () => {
+    const wrapper = mount(Component, {
+      props: { registerId: 13 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+    loadOrdersMock.mockClear()
+    registerHeaderActionsMock.freezeTnVedOrder.mockClear()
+
+    stores.auth.parcels_sort_by.value = []
+    await resolveAll()
+    const callsBeforeWithoutSort = loadOrdersMock.mock.calls.length
+    await wrapper.vm.freezeTnVedOrderAndRefetch()
+    expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(1)
+    expect(loadOrdersMock.mock.calls.length).toBe(callsBeforeWithoutSort)
+
+    stores.auth.parcels_sort_by.value = [{ key: 'frozenOrder', order: 'asc' }]
+    await resolveAll()
+    const callsBeforeWithSort = loadOrdersMock.mock.calls.length
+    await wrapper.vm.freezeTnVedOrderAndRefetch()
+    expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(2)
+    expect(loadOrdersMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
   })
 
   it('hides header actions when user lacks permissions', async () => {

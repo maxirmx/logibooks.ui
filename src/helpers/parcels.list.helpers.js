@@ -88,6 +88,16 @@ export function filterGenericTemplateHeadersForParcel(headers) {
 }
 
 /**
+ * Returns sort direction for frozen order column.
+ * @param {Array<{key: string, order: 'asc'|'desc'}>} sortBy - Current sort state.
+ * @returns {'asc'|'desc'|null} Sort direction for frozenOrder or null when not sorted by it.
+ */
+export function getFrozenOrderSortDir(sortBy) {
+  const entry = sortBy?.find((s) => s.key === 'frozenOrder')
+  return entry ? entry.order : null
+}
+
+/**
  * Generates register display name based on deal number or filename
  * @param {string} dealNumber - Register deal number
  * @param {string} fileName - Register file name

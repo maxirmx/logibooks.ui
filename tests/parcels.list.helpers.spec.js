@@ -41,6 +41,7 @@ import {
   validateParcelData,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
+  getFrozenOrderSortDir,
   generateRegisterName,
   getFeacnCodesForKeywords,
   getKeywordFeacnPairs,
@@ -270,6 +271,19 @@ describe('Parcels List Helpers', () => {
       expect(result).toEqual([
         { key: 'productName', title: 'Product Name' }
       ])
+    })
+  })
+
+  describe('getFrozenOrderSortDir', () => {
+    it('returns null when frozenOrder is not in sort state', () => {
+      expect(getFrozenOrderSortDir([{ key: 'id', order: 'asc' }])).toBeNull()
+      expect(getFrozenOrderSortDir([])).toBeNull()
+      expect(getFrozenOrderSortDir(null)).toBeNull()
+    })
+
+    it('returns asc or desc when frozenOrder sort is present', () => {
+      expect(getFrozenOrderSortDir([{ key: 'frozenOrder', order: 'asc' }])).toBe('asc')
+      expect(getFrozenOrderSortDir([{ key: 'id', order: 'asc' }, { key: 'frozenOrder', order: 'desc' }])).toBe('desc')
     })
   })
 

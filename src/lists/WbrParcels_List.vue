@@ -29,6 +29,7 @@ import {
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
   getFeacnCodesForKeywords,
+  getFrozenOrderSortDir,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -389,10 +390,7 @@ const headers = computed(() => {
   return baseHeaders
 })
 
-const frozenOrderSortDir = computed(() => {
-  const entry = parcels_sort_by.value?.find(s => s.key === 'frozenOrder')
-  return entry ? entry.order : null
-})
+const frozenOrderSortDir = computed(() => getFrozenOrderSortDir(parcels_sort_by.value))
 
 async function freezeTnVedOrderAndRefetch() {
   await freezeTnVedOrderHeader()

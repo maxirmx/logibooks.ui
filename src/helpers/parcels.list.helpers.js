@@ -80,10 +80,21 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     'weightKg',
     'unitPrice',
     'quantity',
-    'passport'
+    'passport',
+    'frozenOrder'
   ])
   
   return headers.filter(h => !h.key.startsWith('actions') && !excluded.has(h.key))
+}
+
+/**
+ * Returns sort direction for frozen order column based on the effective primary sort.
+ * @param {Array<{key: string, order: 'asc'|'desc'}>} sortBy - Current sort state.
+ * @returns {'asc'|'desc'|null} Sort direction for frozenOrder or null when the first sort is not frozenOrder.
+ */
+export function getFrozenOrderSortDir(sortBy) {
+  const entry = sortBy?.[0]
+  return entry?.key === 'frozenOrder' ? entry.order : null
 }
 
 /**

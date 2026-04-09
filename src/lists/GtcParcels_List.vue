@@ -30,6 +30,7 @@ import {
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
   getFeacnCodesForKeywords,
+  getFrozenOrderSortDir,
   loadOrders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -346,8 +347,8 @@ const headers = computed(() => {
   // const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
 
   const baseHeaders = [
-    // Actions 
-    { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
+    // Frozen order indicator / sorting column
+    { title: '', key: 'frozenOrder', sortable: true, align: 'center', width: '50px' },
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
@@ -393,6 +394,15 @@ const headers = computed(() => {
 
   return baseHeaders
 })
+
+const frozenOrderSortDir = computed(() => getFrozenOrderSortDir(parcels_sort_by.value))
+
+async function freezeTnVedOrderAndRefetch() {
+  await freezeTnVedOrderHeader()
+  if (frozenOrderSortDir.value !== null) {
+    await loadOrdersWrapper()
+  }
+}
 
 function editParcel(item) {
   selectedParcelId.value = item.id
@@ -446,7 +456,7 @@ function formatPassport(item) {
           @export-notifications="exportRegisterXmlNotifications"
           @download="downloadRegisterFile"
           @download-techdoc="downloadTechdocFile"
-          @freeze-tnved-order="freezeTnVedOrderHeader"
+          @freeze-tnved-order="freezeTnVedOrderAndRefetch"
           @close="closeList"
         />
     </div>
@@ -643,7 +653,19 @@ function formatPassport(item) {
           />
         </template>
 
-        <template #[`item.actions`]="{ item }">
+        <template #[`header.frozenOrder`]>
+          <v-tooltip text="Фиксированная сортировка по кодам ТН ВЭД" location="top">
+            <template #activator="{ props: tooltipProps }">
+              <span v-bind="tooltipProps">
+                <font-awesome-icon v-if="frozenOrderSortDir === 'asc'" icon="fa-solid fa-arrow-down-1-9" />
+                <font-awesome-icon v-else-if="frozenOrderSortDir === 'desc'" icon="fa-solid fa-arrow-up-9-1" />
+                <font-awesome-icon v-else icon="fa-solid fa-arrows-to-eye" />
+              </span>
+            </template>
+          </v-tooltip>
+        </template>
+
+        <template #[`item.frozenOrder`]="{ item }">
           <div class="actions-container">
             <ActionButton 
               :item="item" 

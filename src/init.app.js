@@ -62,6 +62,8 @@ import {
   faClone,
   faArrowDownAZ,
   faArrowUpZA,
+  faArrowDown19,
+  faArrowUp91,
   faRectangleList,
   faArrowsToEye
 } from '@fortawesome/free-solid-svg-icons'
@@ -118,6 +120,8 @@ library.add(
   faClone,
   faArrowDownAZ,
   faArrowUpZA,
+  faArrowDown19,
+  faArrowUp91,
   faRectangleList,
   faArrowsToEye
 )

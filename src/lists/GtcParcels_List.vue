@@ -347,7 +347,7 @@ const headers = computed(() => {
   // const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
 
   const baseHeaders = [
-    // Actions 
+    // Frozen order indicator / sorting column
     { title: '', key: 'frozenOrder', sortable: true, align: 'center', width: '50px' },
 
     // Order Identification & Status - Key identifiers and current state
@@ -654,7 +654,7 @@ function formatPassport(item) {
         </template>
 
         <template #[`header.frozenOrder`]>
-          <v-tooltip text="Фиксрованная сортировка по кодам ТН ВЭД" location="top">
+          <v-tooltip text="Фиксированная сортировка по кодам ТН ВЭД" location="top">
             <template #activator="{ props: tooltipProps }">
               <span v-bind="tooltipProps">
                 <font-awesome-icon v-if="frozenOrderSortDir === 'asc'" icon="fa-solid fa-arrow-down-1-9" />

@@ -235,8 +235,8 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   filterGenericTemplateHeadersForParcel: vi.fn(() => []),
   generateRegisterName: vi.fn(() => 'Реестр'),
   getFrozenOrderSortDir: vi.fn((sortBy) => {
-    const entry = sortBy?.find((s) => s.key === 'frozenOrder')
-    return entry ? entry.order : null
+    const entry = sortBy?.[0]
+    return entry?.key === 'frozenOrder' ? entry.order : null
   }),
   getFeacnCodesForKeywords: vi.fn(() => []),
   loadOrders: vi.fn((...args) => {

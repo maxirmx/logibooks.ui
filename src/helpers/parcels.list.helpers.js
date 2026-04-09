@@ -88,13 +88,13 @@ export function filterGenericTemplateHeadersForParcel(headers) {
 }
 
 /**
- * Returns sort direction for frozen order column.
+ * Returns sort direction for frozen order column based on the effective primary sort.
  * @param {Array<{key: string, order: 'asc'|'desc'}>} sortBy - Current sort state.
- * @returns {'asc'|'desc'|null} Sort direction for frozenOrder or null when not sorted by it.
+ * @returns {'asc'|'desc'|null} Sort direction for frozenOrder or null when the first sort is not frozenOrder.
  */
 export function getFrozenOrderSortDir(sortBy) {
-  const entry = sortBy?.find((s) => s.key === 'frozenOrder')
-  return entry ? entry.order : null
+  const entry = sortBy?.[0]
+  return entry?.key === 'frozenOrder' ? entry.order : null
 }
 
 /**

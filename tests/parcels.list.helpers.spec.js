@@ -281,9 +281,13 @@ describe('Parcels List Helpers', () => {
       expect(getFrozenOrderSortDir(null)).toBeNull()
     })
 
-    it('returns asc or desc when frozenOrder sort is present', () => {
+    it('returns asc or desc only when frozenOrder is the primary sort', () => {
       expect(getFrozenOrderSortDir([{ key: 'frozenOrder', order: 'asc' }])).toBe('asc')
-      expect(getFrozenOrderSortDir([{ key: 'id', order: 'asc' }, { key: 'frozenOrder', order: 'desc' }])).toBe('desc')
+      expect(getFrozenOrderSortDir([{ key: 'frozenOrder', order: 'desc' }, { key: 'id', order: 'asc' }])).toBe('desc')
+    })
+
+    it('returns null when frozenOrder is only a secondary sort', () => {
+      expect(getFrozenOrderSortDir([{ key: 'id', order: 'asc' }, { key: 'frozenOrder', order: 'desc' }])).toBeNull()
     })
   })
 

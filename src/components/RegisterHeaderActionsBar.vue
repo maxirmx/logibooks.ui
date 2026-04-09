@@ -26,6 +26,7 @@ const emit = defineEmits([
   'export-notifications',
   'download',
   'download-techdoc',
+  'freeze-tnved-order',
   'close',
 ])
 
@@ -33,6 +34,7 @@ const router = useRouter()
 
 const {
   isSrLogistPlus,
+  isShiftLeadPlus
 } = storeToRefs(authStore)
 
 function run(evt) {
@@ -164,6 +166,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        v-if="isShiftLeadPlus"
+        :item="item"
+        icon="fa-solid fa-arrows-to-eye"
+        tooltip-text="Зафиксировать сортировку по кодам ТН ВЭД"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('freeze-tnved-order')"
+      />
       <ActionButton
         :item="item"
         icon="fa-solid fa-xmark"

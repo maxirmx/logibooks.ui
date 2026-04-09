@@ -7,6 +7,7 @@ export const ACTION_DIALOG_TITLES = {
   'upload-register': 'Загрузка реестра',
   'upload-report': 'Загрузка отчёта',
   'download-invoice': 'Подготовка файла инвойса',
+  'freeze-tnved-order': 'Сортировка',
 }
 
 const DEFAULT_TITLE = 'Пожалуйста, подождите'

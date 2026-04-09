@@ -133,7 +133,8 @@ function setupStores() {
     parcels_number: ref(''),
     parcels_product_name: ref(''),
     selectedParcelId: ref(null),
-    isSrLogistPlus: ref(true)
+    isSrLogistPlus: ref(true),
+    isShiftLeadPlus: ref(true)
   }
 
   stores.alert = {
@@ -170,7 +171,8 @@ vi.mock('pinia', async () => {
             parcels_number: stores.auth.parcels_number,
             parcels_product_name: stores.auth.parcels_product_name,
             selectedParcelId: stores.auth.selectedParcelId,
-            isSrLogistPlus: stores.auth.isSrLogistPlus
+            isSrLogistPlus: stores.auth.isSrLogistPlus,
+            isShiftLeadPlus: stores.auth.isShiftLeadPlus
           }
         case stores.alert:
           return { alert: stores.alert.alert }
@@ -307,7 +309,7 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // Header actions include logist actions + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(10)
+    expect(buttons).toHaveLength(11)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -358,8 +360,8 @@ describe.each([
     await buttons[6].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    // The close button is the last button (index 9); clicking it should emit 'close' from the list
-    await buttons[9].trigger('click')
+    // The close button is the last button (index 10); clicking it should emit 'close' from the list
+    await buttons[10].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 
@@ -378,6 +380,7 @@ describe.each([
 
   it('hides header actions when user lacks permissions', async () => {
     stores.auth.isSrLogistPlus.value = false
+    stores.auth.isShiftLeadPlus.value = false
 
     const wrapper = mount(Component, {
       props: { registerId: 2 },

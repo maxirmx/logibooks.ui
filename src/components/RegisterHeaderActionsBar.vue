@@ -109,18 +109,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :options="[
           {
             label: 'С акцизом',
-            action: () => run('export-excise'),
-            variant: 'orange'
+            action: () => run('export-excise')
           },
           {
             label: 'С нотификациями',
-            action: () => run('export-notifications'),
-            variant: 'magenta'
+            action: () => run('export-notifications')
           },
           {
             label: 'Без акциза и нотификаций',
-            action: () => run('export-ordinary'),
-            variant: 'green'
+            action: () => run('export-ordinary')
           }
         ]"
       />

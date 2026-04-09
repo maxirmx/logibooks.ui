@@ -350,8 +350,7 @@ const headers = computed(() => {
 
   const baseHeaders = [
     // Actions - Always first for easy access
-    { title: '', key: 'actions', sortable: false, align: 'center', width: '200px' },
-
+    { title: '', key: 'frozenOrder', sortable: true, align: 'center', width: '50px' },
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
@@ -389,6 +388,18 @@ const headers = computed(() => {
 
   return baseHeaders
 })
+
+const frozenOrderSortDir = computed(() => {
+  const entry = parcels_sort_by.value?.find(s => s.key === 'frozenOrder')
+  return entry ? entry.order : null
+})
+
+async function freezeTnVedOrderAndRefetch() {
+  await freezeTnVedOrderHeader()
+  if (frozenOrderSortDir.value !== null) {
+    await loadOrdersWrapper()
+  }
+}
 
 function editParcel(item) {
   selectedParcelId.value = item.id
@@ -431,7 +442,7 @@ function getGenericTemplateHeaders() {
         @export-notifications="exportRegisterXmlNotifications"
         @download="downloadRegisterFile"
         @download-techdoc="downloadTechdocFile"
-        @freeze-tnved-order="freezeTnVedOrderHeader"
+        @freeze-tnved-order="freezeTnVedOrderAndRefetch"
         @close="closeList"
       />
     </div>
@@ -600,7 +611,19 @@ function getGenericTemplateHeaders() {
           />
         </template>
 
-        <template #[`item.actions`]="{ item }">
+        <template #[`header.frozenOrder`]>
+          <v-tooltip text="Фиксрованная сортировка по кодам ТН ВЭД" location="top">
+            <template #activator="{ props: tooltipProps }">
+              <span v-bind="tooltipProps">
+                <font-awesome-icon v-if="frozenOrderSortDir === 'asc'" icon="fa-solid fa-arrow-down-1-9" />
+                <font-awesome-icon v-else-if="frozenOrderSortDir === 'desc'" icon="fa-solid fa-arrow-up-9-1" />
+                <font-awesome-icon v-else icon="fa-solid fa-arrows-to-eye" />
+              </span>
+            </template>
+          </v-tooltip>
+        </template>
+        
+        <template #[`item.frozenOrder`]="{ item }">
           <div class="actions-container">
             <ActionButton 
               :item="item" 

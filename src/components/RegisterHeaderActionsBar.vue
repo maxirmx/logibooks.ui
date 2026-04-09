@@ -26,6 +26,7 @@ const emit = defineEmits([
   'export-notifications',
   'download',
   'download-techdoc',
+  'freeze-tnved-order',
   'close',
 ])
 
@@ -164,6 +165,14 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-arrows-to-eye"
+        tooltip-text="Зафиксировать порядок по кодам ТН ВЭД"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('freeze-tnved-order')"
+      />
       <ActionButton
         :item="item"
         icon="fa-solid fa-xmark"

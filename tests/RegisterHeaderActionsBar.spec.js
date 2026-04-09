@@ -169,4 +169,25 @@ describe('RegisterHeaderActionsBar', () => {
     expect(lookupHistoric.props('disabled')).toBe(true)
     expect(stopWords.props('disabled')).toBe(false)
   })
+
+  it('emits freeze tn ved order action from the same group as close', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const freezeButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Зафиксировать порядок по кодам ТН ВЭД'
+    )
+    const closeButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Закрыть'
+    )
+
+    expect(freezeButton).toBeTruthy()
+    expect(closeButton).toBeTruthy()
+
+    freezeButton.vm.$emit('click')
+    expect(wrapper.emitted('freeze-tnved-order')).toHaveLength(1)
+  })
 })

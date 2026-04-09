@@ -47,6 +47,7 @@ describe('useRegisterHeaderActions', () => {
       generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
+      freezeTnVedOrder: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
     }
 
@@ -163,5 +164,34 @@ describe('useRegisterHeaderActions', () => {
     expect(registersStore.cancelLookupFeacnCodes).toHaveBeenCalledWith('handle-ex')
     expect(registersStore.cancelValidation).not.toHaveBeenCalled()
     expect(actions.validationState.show).toBe(false)
+  })
+
+  it('shows action dialog while freeze tn ved order runs', async () => {
+    const deferred = createDeferred()
+    registersStore.freezeTnVedOrder.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadOrders,
+      isComponentMounted
+    })
+
+    const { actionDialog, freezeTnVedOrder } = actions
+
+    const promise = freezeTnVedOrder()
+
+    expect(actionDialog.show).toBe(true)
+    expect(actionDialog.title).toBe('Фиксация порядка кодов ТН ВЭД')
+    expect(registersStore.freezeTnVedOrder).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await promise
+
+    expect(actionDialog.show).toBe(false)
+    expect(actionDialog.title).toBe('')
   })
 })

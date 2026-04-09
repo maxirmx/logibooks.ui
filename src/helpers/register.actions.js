@@ -240,6 +240,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.downloadTechdoc(item.id, item.invoiceNumber)
   }
 
+  async function freezeTnVedOrder(item) {
+    await registersStore.freezeTnVedOrder(item.id)
+  }
+
   function cancelValidationWrapper() {
     const isFeacnLookup =
       validationState.operation === 'lookup-feacn-codes'
@@ -273,6 +277,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     exportAllXmlNotifications,
     downloadRegister,
     downloadTechdoc,
+    freezeTnVedOrder,
     cancelValidation: cancelValidationWrapper,
     stopPolling
   }
@@ -300,6 +305,7 @@ export function useRegisterHeaderActions({
     exportAllXmlNotifications,
     downloadRegister,
     downloadTechdoc,
+    freezeTnVedOrder,
     cancelValidation,
     stopPolling
   } = createRegisterActionHandlers(registersStore, alertStore)
@@ -397,6 +403,10 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(downloadTechdoc, 'download-techdoc')
   }
 
+  const runFreezeTnVedOrder = async () => {
+    await runActionWithDialog(freezeTnVedOrder, 'freeze-tnved-order')
+  }
+
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
@@ -435,6 +445,7 @@ export function useRegisterHeaderActions({
     exportAllXmlNotifications: runExportAllXmlNotifications,    
     downloadRegister: runDownloadRegister,
     downloadTechdoc: runDownloadTechdoc,
+    freezeTnVedOrder: runFreezeTnVedOrder,
     cancelValidation,
     stop
   }

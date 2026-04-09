@@ -1460,4 +1460,29 @@ describe('registers store', () => {
     })
 
   })
+
+  describe('freezeTnVedOrder', () => {
+    it('calls freeze endpoint and resets loading state after success', async () => {
+      fetchWrapper.post.mockResolvedValueOnce(undefined)
+
+      const store = useRegistersStore()
+      await expect(store.freezeTnVedOrder(77)).resolves.toBeUndefined()
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/freeze-tnved-order`)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('stores and rethrows error from freeze endpoint', async () => {
+      const err = new Error('Forbidden')
+      fetchWrapper.post.mockRejectedValueOnce(err)
+
+      const store = useRegistersStore()
+      await expect(store.freezeTnVedOrder(55)).rejects.toThrow('Forbidden')
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/55/freeze-tnved-order`)
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+  })
 })

@@ -66,6 +66,16 @@ vi.mock('@/lists/GtcParcels_List.vue', () => ({
   }
 }))
 
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useRouter: () => ({
+      back: vi.fn()
+    })
+  }
+})
+
 // Mock the fetchWrapper
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {

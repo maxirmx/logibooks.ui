@@ -453,6 +453,19 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function freezeTnVedOrder(id) {
+    loading.value = true
+    error.value = null
+    try {
+      return await fetchWrapper.post(`${baseUrl}/${id}/freeze-tnved-order`)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   function normalizeDownloadSuffix(forZone, zoneLabel) {
     if (forZone === null || forZone === undefined || forZone === 0) {
       return ''
@@ -567,6 +580,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadInvoiceFile,
     download,
     downloadTechdoc,
+    freezeTnVedOrder,
     nextParcels,
     remove,
     uploadFile,

@@ -217,6 +217,7 @@ const {
   exportAllXmlNotifications: exportRegisterXmlNotifications,
   downloadRegister: downloadRegisterFile,
   downloadTechdoc: downloadTechdocFile,
+  freezeTnVedOrder: freezeTnVedOrderHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -445,6 +446,7 @@ function formatPassport(item) {
           @export-notifications="exportRegisterXmlNotifications"
           @download="downloadRegisterFile"
           @download-techdoc="downloadTechdocFile"
+          @freeze-tnved-order="freezeTnVedOrderHeader"
           @close="closeList"
         />
     </div>

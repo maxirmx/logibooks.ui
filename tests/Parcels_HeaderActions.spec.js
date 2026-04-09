@@ -306,8 +306,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // Header actions include logist actions + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(12)
+    // Header actions include logist actions + xml split button + export/download + invoice split button + close button
+    expect(buttons).toHaveLength(10)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -332,20 +332,34 @@ describe.each([
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
     }
 
-    await buttons[5].trigger('click')
+    const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
+    const xmlExportMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
+    )
+    expect(xmlExportMenu).toBeTruthy()
+    const xmlOptions = xmlExportMenu.props('options')
+    const ordinaryOption = xmlOptions.find((option) => option.label === 'Без акциза и нотификаций')
+    const exciseOption = xmlOptions.find((option) => option.label === 'С акцизом')
+    const notificationsOption = xmlOptions.find((option) => option.label === 'С нотификациями')
+
+    expect(ordinaryOption).toBeTruthy()
+    expect(exciseOption).toBeTruthy()
+    expect(notificationsOption).toBeTruthy()
+
+    await ordinaryOption.action()
     expect(registerHeaderActionsMock.exportAllXmlOrdinary).toHaveBeenCalled()
 
-    await buttons[6].trigger('click')
+    await exciseOption.action()
     expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
 
-    await buttons[7].trigger('click')
+    await notificationsOption.action()
     expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
 
-    await buttons[8].trigger('click')
+    await buttons[6].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    // The close button is the last button (index 11); clicking it should emit 'close' from the list
-    await buttons[11].trigger('click')
+    // The close button is the last button (index 9); clicking it should emit 'close' from the list
+    await buttons[9].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 
@@ -373,8 +387,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // When user lacks logist role the first group is hidden, leaving export/download/invoice/close actions
-    expect(buttons).toHaveLength(7)
+    // When user lacks logist role the first group is hidden, leaving xml split + export/download/invoice/close actions
+    expect(buttons).toHaveLength(5)
   })
 
   it('calls stop handler on unmount', async () => {

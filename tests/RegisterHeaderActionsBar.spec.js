@@ -26,7 +26,8 @@ vi.mock('vue-router', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     hasLogistRole: ref(true),
-    isSrLogistPlus: ref(true)
+    isSrLogistPlus: ref(true),
+    isShiftLeadPlus: ref(true)
   })
 }))
 
@@ -178,7 +179,7 @@ describe('RegisterHeaderActionsBar', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const freezeButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Зафиксировать порядок по кодам ТН ВЭД'
+      (button) => button.props('tooltipText') === 'Зафиксировать сортировку по кодам ТН ВЭД'
     )
     const closeButton = actionButtons.find(
       (button) => button.props('tooltipText') === 'Закрыть'

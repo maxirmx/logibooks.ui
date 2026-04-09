@@ -185,7 +185,7 @@ describe('useRegisterHeaderActions', () => {
     const promise = freezeTnVedOrder()
 
     expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Фиксация порядка кодов ТН ВЭД')
+    expect(actionDialog.title).toBe('Сортировка')
     expect(registersStore.freezeTnVedOrder).toHaveBeenCalledWith(1)
 
     deferred.resolve()

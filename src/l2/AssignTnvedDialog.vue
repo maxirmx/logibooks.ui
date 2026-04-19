@@ -7,7 +7,7 @@ import { computed, ref, watch, onUnmounted, nextTick } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { getFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -30,8 +30,6 @@ function handleKeydown(event) {
   }
 }
 
-const feacnCodesStore = useFeacnCodesStore()
-
 const targetTnVed = ref('')
 const searchActive = ref(false)
 const keywordSearchActive = ref(false)
@@ -43,7 +41,9 @@ const hasCorrectFormat = computed(() => /^\d{10}$/.test(normalizedTargetTnVed.va
 const tnvedExists = ref(null)    // null = not checked, true/false = result
 const tnvedChecking = ref(false)
 const tnvedLookupError = ref('')
+const tnvedName = ref('')
 let lookupTimeout = null
+const notFoundMessage = 'Несуществующий код ТН ВЭД'
 
 const isTnVedValid = computed(() => hasCorrectFormat.value && tnvedExists.value === true)
 
@@ -53,7 +53,14 @@ const validationMessage = computed(() => {
   if (!hasCorrectFormat.value) return 'Введите 10 цифр для кода ТН ВЭД'
   if (tnvedChecking.value) return 'Проверка кода ТН ВЭД...'
   if (tnvedLookupError.value) return tnvedLookupError.value
-  if (tnvedExists.value === false) return 'Несуществующий код ТН ВЭД'
+  if (tnvedExists.value === false) return notFoundMessage
+  return ''
+})
+
+const validationMessageClass = computed(() => {
+  if (tnvedName.value) return 'validation-success'
+  if (tnvedChecking.value) return 'validation-info'
+  if (validationMessage.value) return 'validation-error'
   return ''
 })
 
@@ -61,20 +68,22 @@ async function lookupTnVed(code) {
   tnvedChecking.value = true
   tnvedExists.value = null
   tnvedLookupError.value = ''
+  tnvedName.value = ''
   try {
-    const result = await feacnCodesStore.getByCode(code)
+    const { name: fetchedName, found } = await getFeacnInfo(code)
     // Ignore result if user has already changed the code
     if (code !== normalizedTargetTnVed.value) {
       return
     }
-    tnvedExists.value = !!result
+    tnvedExists.value = found === true
+    tnvedName.value = found === true ? fetchedName : ''
   } catch {
     // Ignore error if it relates to an outdated code
     if (code !== normalizedTargetTnVed.value) {
       return
     }
     tnvedExists.value = false
-    tnvedLookupError.value = 'Несуществующий код ТН ВЭД'
+    tnvedLookupError.value = notFoundMessage
   } finally {
     // Only clear the checking flag for the currently active code
     if (code === normalizedTargetTnVed.value) {
@@ -91,6 +100,7 @@ watch(normalizedTargetTnVed, (code) => {
   tnvedExists.value = null
   tnvedLookupError.value = ''
   tnvedChecking.value = false
+  tnvedName.value = ''
 
   if (hasCorrectFormat.value) {
     tnvedChecking.value = true
@@ -134,6 +144,7 @@ function resetState() {
   tnvedExists.value = null
   tnvedChecking.value = false
   tnvedLookupError.value = ''
+  tnvedName.value = ''
   if (lookupTimeout) {
     clearTimeout(lookupTimeout)
     lookupTimeout = null
@@ -222,9 +233,9 @@ watch(() => props.show, (visible) => {
               :iconSize="'1x'"
             />
           </div>
-          <div v-if="validationMessage" class="validation-error" data-testid="target-tnved-error">
+          <div v-if="validationMessage || tnvedName" :class="validationMessageClass" data-testid="target-tnved-message">
             <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
-            {{ validationMessage }}
+            {{ tnvedName || validationMessage }}
           </div>
         </v-card-text>
         <v-card-actions class="justify-end">
@@ -271,8 +282,20 @@ watch(() => props.show, (visible) => {
 .validation-error {
   margin-top: 8px;
   color: #b00020;
-  font-size: 0.85em;
+  font-size: 1em;
 }
+
+.validation-info {
+  margin-top: 8px;
+  color: #616161;
+  font-size: 1em;
+}
+
+.validation-success {
+  margin-top: 8px;
+  color: #1b5e20;
+  font-size: 1em;
+ }
 
 .main-window-overlay {
   position: absolute;

@@ -57,6 +57,13 @@ const validationMessage = computed(() => {
   return ''
 })
 
+const validationMessageClass = computed(() => {
+  if (tnvedName.value) return 'validation-success'
+  if (tnvedChecking.value) return 'validation-info'
+  if (validationMessage.value) return 'validation-error'
+  return ''
+})
+
 async function lookupTnVed(code) {
   tnvedChecking.value = true
   tnvedExists.value = null
@@ -226,7 +233,7 @@ watch(() => props.show, (visible) => {
               :iconSize="'1x'"
             />
           </div>
-          <div v-if="validationMessage || tnvedName" :class="tnvedName ? 'validation-success' : 'validation-error'" data-testid="target-tnved-message">
+          <div v-if="validationMessage || tnvedName" :class="validationMessageClass" data-testid="target-tnved-message">
             <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
             {{ tnvedName || validationMessage }}
           </div>
@@ -275,6 +282,12 @@ watch(() => props.show, (visible) => {
 .validation-error {
   margin-top: 8px;
   color: #b00020;
+  font-size: 1em;
+}
+
+.validation-info {
+  margin-top: 8px;
+  color: #616161;
   font-size: 1em;
 }
 

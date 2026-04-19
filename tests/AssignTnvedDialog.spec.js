@@ -115,7 +115,10 @@ describe('AssignTnvedDialog', () => {
 
     // Still disabled (lookup hasn't resolved)
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Проверка')
+    const message = wrapper.find('[data-testid="target-tnved-message"]')
+    expect(message.text()).toContain('Проверка')
+    expect(message.classes()).toContain('validation-info')
+    expect(message.classes()).not.toContain('validation-error')
   })
 
   it('enables confirm and emits trimmed 10-digit code after successful lookup', async () => {

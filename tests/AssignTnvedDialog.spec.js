@@ -7,14 +7,12 @@ import { mount, flushPromises } from '@vue/test-utils'
 import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
-const mockGetByCode = vi.fn()
+const { mockGetFeacnTooltip } = vi.hoisted(() => ({
+  mockGetFeacnTooltip: vi.fn()
+}))
 
-vi.mock('@/stores/feacn.codes.store.js', () => ({
-  useFeacnCodesStore: () => ({
-    getByCode: mockGetByCode,
-    loading: { value: false },
-    error: { value: null },
-  })
+vi.mock('@/helpers/feacn.info.helpers.js', () => ({
+  getFeacnTooltip: mockGetFeacnTooltip
 }))
 
 vi.mock('@/components/ActionButton.vue', () => ({
@@ -68,8 +66,8 @@ function createWrapper(props = {}) {
 describe('AssignTnvedDialog', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    mockGetByCode.mockReset()
-    mockGetByCode.mockResolvedValue({ code: '1234567890', name: 'Test' })
+    mockGetFeacnTooltip.mockReset()
+    mockGetFeacnTooltip.mockResolvedValue('Тестовое наименование ТН ВЭД')
   })
 
   afterEach(() => {
@@ -92,12 +90,12 @@ describe('AssignTnvedDialog', () => {
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="target-tnved-message"]').exists()).toBe(true)
   })
 
   it('keeps confirm disabled until lookup confirms code exists', async () => {
     // Make lookup slow — never resolve during this test
-    mockGetByCode.mockReturnValue(new Promise(() => {}))
+    mockGetFeacnTooltip.mockReturnValue(new Promise(() => {}))
     const wrapper = createWrapper()
 
     const input = wrapper.find('[data-testid="target-tnved-input"]')
@@ -113,7 +111,7 @@ describe('AssignTnvedDialog', () => {
 
     // Still disabled (lookup hasn't resolved)
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-error"]').text()).toContain('Проверка')
+    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Проверка')
   })
 
   it('enables confirm and emits trimmed 10-digit code after successful lookup', async () => {
@@ -132,26 +130,37 @@ describe('AssignTnvedDialog', () => {
     expect(wrapper.emitted('update:show')).toBeFalsy()
   })
 
+  it('shows FEACN name in success style when code is valid', async () => {
+    const wrapper = createWrapper()
+
+    await setInputAndWaitLookup(wrapper, '1234567890')
+
+    expect(mockGetFeacnTooltip).toHaveBeenCalledWith('1234567890')
+    const message = wrapper.find('[data-testid="target-tnved-message"]')
+    expect(message.text()).toContain('Тестовое наименование ТН ВЭД')
+    expect(message.classes()).toContain('validation-success')
+  })
+
   it('disables confirm when code does not exist in catalog', async () => {
-    mockGetByCode.mockResolvedValue(null)
+    mockGetFeacnTooltip.mockResolvedValue('Несуществующий код ТН ВЭД')
     const wrapper = createWrapper()
 
     await setInputAndWaitLookup(wrapper, '9999999999')
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-error"]').text()).toContain('Несуществующий код ТН ВЭД')
+    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Несуществующий код ТН ВЭД')
   })
 
   it('disables confirm when lookup throws an error', async () => {
-    mockGetByCode.mockRejectedValue(new Error('Network error'))
+    mockGetFeacnTooltip.mockRejectedValue(new Error('Network error'))
     const wrapper = createWrapper()
 
     await setInputAndWaitLookup(wrapper, '1234567890')
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-error"]').text()).toContain('Несуществующий код ТН ВЭД')
+    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Несуществующий код ТН ВЭД')
   })
 
   it('opens FEACN tree search overlay and applies selected code', async () => {
@@ -208,8 +217,8 @@ describe('AssignTnvedDialog', () => {
     await confirmBtn.trigger('click')
 
     expect(wrapper.emitted('confirm')).toBeFalsy()
-    // getByCode should never be called for non-digit input
-    expect(mockGetByCode).not.toHaveBeenCalled()
+    // getFeacnTooltip should never be called for non-digit input
+    expect(mockGetFeacnTooltip).not.toHaveBeenCalled()
   })
 
   it('debounces lookup calls when input changes rapidly', async () => {
@@ -225,7 +234,7 @@ describe('AssignTnvedDialog', () => {
     await flushPromises()
 
     // Only the last value should have triggered a lookup
-    expect(mockGetByCode).toHaveBeenCalledTimes(1)
-    expect(mockGetByCode).toHaveBeenCalledWith('1234567892')
+    expect(mockGetFeacnTooltip).toHaveBeenCalledTimes(1)
+    expect(mockGetFeacnTooltip).toHaveBeenCalledWith('1234567892')
   })
 })

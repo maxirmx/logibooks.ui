@@ -7,7 +7,7 @@ import { computed, ref, watch, onUnmounted, nextTick } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
-import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
+import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -30,8 +30,6 @@ function handleKeydown(event) {
   }
 }
 
-const feacnCodesStore = useFeacnCodesStore()
-
 const targetTnVed = ref('')
 const searchActive = ref(false)
 const keywordSearchActive = ref(false)
@@ -43,7 +41,9 @@ const hasCorrectFormat = computed(() => /^\d{10}$/.test(normalizedTargetTnVed.va
 const tnvedExists = ref(null)    // null = not checked, true/false = result
 const tnvedChecking = ref(false)
 const tnvedLookupError = ref('')
+const tnvedName = ref('')
 let lookupTimeout = null
+const notFoundMessage = 'Несуществующий код ТН ВЭД'
 
 const isTnVedValid = computed(() => hasCorrectFormat.value && tnvedExists.value === true)
 
@@ -61,20 +61,22 @@ async function lookupTnVed(code) {
   tnvedChecking.value = true
   tnvedExists.value = null
   tnvedLookupError.value = ''
+  tnvedName.value = ''
   try {
-    const result = await feacnCodesStore.getByCode(code)
+    const fetchedName = await getFeacnTooltip(code)
     // Ignore result if user has already changed the code
     if (code !== normalizedTargetTnVed.value) {
       return
     }
-    tnvedExists.value = !!result
+    tnvedExists.value = fetchedName !== notFoundMessage
+    tnvedName.value = tnvedExists.value ? fetchedName : ''
   } catch {
     // Ignore error if it relates to an outdated code
     if (code !== normalizedTargetTnVed.value) {
       return
     }
     tnvedExists.value = false
-    tnvedLookupError.value = 'Несуществующий код ТН ВЭД'
+    tnvedLookupError.value = notFoundMessage
   } finally {
     // Only clear the checking flag for the currently active code
     if (code === normalizedTargetTnVed.value) {
@@ -91,6 +93,7 @@ watch(normalizedTargetTnVed, (code) => {
   tnvedExists.value = null
   tnvedLookupError.value = ''
   tnvedChecking.value = false
+  tnvedName.value = ''
 
   if (hasCorrectFormat.value) {
     tnvedChecking.value = true
@@ -134,6 +137,7 @@ function resetState() {
   tnvedExists.value = null
   tnvedChecking.value = false
   tnvedLookupError.value = ''
+  tnvedName.value = ''
   if (lookupTimeout) {
     clearTimeout(lookupTimeout)
     lookupTimeout = null
@@ -222,9 +226,9 @@ watch(() => props.show, (visible) => {
               :iconSize="'1x'"
             />
           </div>
-          <div v-if="validationMessage" class="validation-error" data-testid="target-tnved-error">
+          <div v-if="validationMessage || tnvedName" :class="tnvedName ? 'validation-success' : 'validation-error'" data-testid="target-tnved-message">
             <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
-            {{ validationMessage }}
+            {{ tnvedName || validationMessage }}
           </div>
         </v-card-text>
         <v-card-actions class="justify-end">
@@ -273,6 +277,16 @@ watch(() => props.show, (visible) => {
   color: #b00020;
   font-size: 0.85em;
 }
+
+.validation-success {
+  margin-top: 8px;
+  color: #1b5e20;
+  font-size: 0.85em;
+  background-color: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 4px;
+  padding: 4px 8px;
+ }
 
 .main-window-overlay {
   position: absolute;

@@ -275,17 +275,13 @@ watch(() => props.show, (visible) => {
 .validation-error {
   margin-top: 8px;
   color: #b00020;
-  font-size: 0.85em;
+  font-size: 1em;
 }
 
 .validation-success {
   margin-top: 8px;
   color: #1b5e20;
-  font-size: 0.85em;
-  background-color: #e8f5e9;
-  border: 1px solid #a5d6a7;
-  border-radius: 4px;
-  padding: 4px 8px;
+  font-size: 1em;
  }
 
 .main-window-overlay {

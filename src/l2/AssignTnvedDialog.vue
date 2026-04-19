@@ -7,7 +7,7 @@ import { computed, ref, watch, onUnmounted, nextTick } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
-import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
+import { getFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -53,7 +53,7 @@ const validationMessage = computed(() => {
   if (!hasCorrectFormat.value) return 'Введите 10 цифр для кода ТН ВЭД'
   if (tnvedChecking.value) return 'Проверка кода ТН ВЭД...'
   if (tnvedLookupError.value) return tnvedLookupError.value
-  if (tnvedExists.value === false) return 'Несуществующий код ТН ВЭД'
+  if (tnvedExists.value === false) return notFoundMessage
   return ''
 })
 
@@ -63,13 +63,13 @@ async function lookupTnVed(code) {
   tnvedLookupError.value = ''
   tnvedName.value = ''
   try {
-    const fetchedName = await getFeacnTooltip(code)
+    const { name: fetchedName, found } = await getFeacnInfo(code)
     // Ignore result if user has already changed the code
     if (code !== normalizedTargetTnVed.value) {
       return
     }
-    tnvedExists.value = fetchedName !== notFoundMessage
-    tnvedName.value = tnvedExists.value ? fetchedName : ''
+    tnvedExists.value = found === true
+    tnvedName.value = found === true ? fetchedName : ''
   } catch {
     // Ignore error if it relates to an outdated code
     if (code !== normalizedTargetTnVed.value) {

@@ -7,12 +7,12 @@ import { mount, flushPromises } from '@vue/test-utils'
 import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
-const { mockGetFeacnTooltip } = vi.hoisted(() => ({
-  mockGetFeacnTooltip: vi.fn()
+const { mockGetFeacnInfo } = vi.hoisted(() => ({
+  mockGetFeacnInfo: vi.fn()
 }))
 
 vi.mock('@/helpers/feacn.info.helpers.js', () => ({
-  getFeacnTooltip: mockGetFeacnTooltip
+  getFeacnInfo: mockGetFeacnInfo
 }))
 
 vi.mock('@/components/ActionButton.vue', () => ({
@@ -66,8 +66,12 @@ function createWrapper(props = {}) {
 describe('AssignTnvedDialog', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    mockGetFeacnTooltip.mockReset()
-    mockGetFeacnTooltip.mockResolvedValue('Тестовое наименование ТН ВЭД')
+    mockGetFeacnInfo.mockReset()
+    mockGetFeacnInfo.mockResolvedValue({
+      name: 'Тестовое наименование ТН ВЭД',
+      found: true,
+      loading: false,
+    })
   })
 
   afterEach(() => {
@@ -95,7 +99,7 @@ describe('AssignTnvedDialog', () => {
 
   it('keeps confirm disabled until lookup confirms code exists', async () => {
     // Make lookup slow — never resolve during this test
-    mockGetFeacnTooltip.mockReturnValue(new Promise(() => {}))
+    mockGetFeacnInfo.mockReturnValue(new Promise(() => {}))
     const wrapper = createWrapper()
 
     const input = wrapper.find('[data-testid="target-tnved-input"]')
@@ -135,14 +139,18 @@ describe('AssignTnvedDialog', () => {
 
     await setInputAndWaitLookup(wrapper, '1234567890')
 
-    expect(mockGetFeacnTooltip).toHaveBeenCalledWith('1234567890')
+    expect(mockGetFeacnInfo).toHaveBeenCalledWith('1234567890')
     const message = wrapper.find('[data-testid="target-tnved-message"]')
     expect(message.text()).toContain('Тестовое наименование ТН ВЭД')
     expect(message.classes()).toContain('validation-success')
   })
 
   it('disables confirm when code does not exist in catalog', async () => {
-    mockGetFeacnTooltip.mockResolvedValue('Несуществующий код ТН ВЭД')
+    mockGetFeacnInfo.mockResolvedValue({
+      name: 'Несуществующий код ТН ВЭД',
+      found: false,
+      loading: false,
+    })
     const wrapper = createWrapper()
 
     await setInputAndWaitLookup(wrapper, '9999999999')
@@ -153,7 +161,7 @@ describe('AssignTnvedDialog', () => {
   })
 
   it('disables confirm when lookup throws an error', async () => {
-    mockGetFeacnTooltip.mockRejectedValue(new Error('Network error'))
+    mockGetFeacnInfo.mockRejectedValue(new Error('Network error'))
     const wrapper = createWrapper()
 
     await setInputAndWaitLookup(wrapper, '1234567890')
@@ -217,8 +225,8 @@ describe('AssignTnvedDialog', () => {
     await confirmBtn.trigger('click')
 
     expect(wrapper.emitted('confirm')).toBeFalsy()
-    // getFeacnTooltip should never be called for non-digit input
-    expect(mockGetFeacnTooltip).not.toHaveBeenCalled()
+    // getFeacnInfo should never be called for non-digit input
+    expect(mockGetFeacnInfo).not.toHaveBeenCalled()
   })
 
   it('debounces lookup calls when input changes rapidly', async () => {
@@ -234,7 +242,7 @@ describe('AssignTnvedDialog', () => {
     await flushPromises()
 
     // Only the last value should have triggered a lookup
-    expect(mockGetFeacnTooltip).toHaveBeenCalledTimes(1)
-    expect(mockGetFeacnTooltip).toHaveBeenCalledWith('1234567892')
+    expect(mockGetFeacnInfo).toHaveBeenCalledTimes(1)
+    expect(mockGetFeacnInfo).toHaveBeenCalledWith('1234567892')
   })
 })

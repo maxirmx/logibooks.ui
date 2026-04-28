@@ -5,10 +5,17 @@ import { mount } from '@vue/test-utils'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
 
 const download = vi.fn().mockResolvedValue(true)
+let isWhManagerPlus = true
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     download
+  })
+}))
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({
+    isWhManagerPlus
   })
 }))
 
@@ -31,6 +38,7 @@ const ActionButtonStub = {
 describe('RegisterWhHeaderActionBar.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isWhManagerPlus = true
   })
 
   it('builds export options with "Все посылки" and normalized zone names', () => {
@@ -57,6 +65,45 @@ describe('RegisterWhHeaderActionBar.vue', () => {
       'Зона 1',
       'Без зоны (не найдены)'
     ])
+  })
+
+  it('shows export action when user is warehouse manager plus', () => {
+    isWhManagerPlus = true
+    const wrapper = mount(RegisterWhHeaderActionBar, {
+      props: {
+        register: { id: 77, fileName: 'register_77.xlsx' },
+        zones: []
+      },
+      global: {
+        stubs: {
+          ActionButton: ActionButtonStub,
+          ActionButton2L: ActionButton2LStub
+        }
+      }
+    })
+
+    expect(wrapper.findComponent(ActionButton2LStub).exists()).toBe(true)
+    expect(wrapper.find('[data-testid="export-btn"]').exists()).toBe(true)
+  })
+
+  it('hides export action when user is not warehouse manager plus', () => {
+    isWhManagerPlus = false
+    const wrapper = mount(RegisterWhHeaderActionBar, {
+      props: {
+        register: { id: 77, fileName: 'register_77.xlsx' },
+        zones: []
+      },
+      global: {
+        stubs: {
+          ActionButton: ActionButtonStub,
+          ActionButton2L: ActionButton2LStub
+        }
+      }
+    })
+
+    expect(wrapper.findComponent(ActionButton2LStub).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="close-btn"]').exists()).toBe(true)
   })
 
   it('downloads all parcels without zone arguments', async () => {

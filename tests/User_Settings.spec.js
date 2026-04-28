@@ -9,7 +9,7 @@ import { ref } from 'vue'
 import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
-import { roleLogist } from '@/helpers/user.roles.js'
+import { roleLogist, roleWhManager } from '@/helpers/user.roles.js'
 
 // simple stubs for vee-validate components
 const FormStub = {
@@ -202,6 +202,41 @@ describe('User_Settings.vue real component', () => {
     const args = updateUser.mock.calls[0]
     expect(args[1].roles).toEqual([roleLogist])
     expect(routerPush).toHaveBeenCalledWith('/user/edit/2')
+  })
+
+  it('displays warehouse manager role for non-admin user settings', async () => {
+    mockUser.value.roles = [roleWhManager]
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.text()).toContain('Менеджер склада')
+  })
+
+  it('renders warehouse manager role checkbox for admin edits', async () => {
+    isAdmin = true
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.find('#isWhManager').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Менеджер склада')
   })
 
   // Error handling tests

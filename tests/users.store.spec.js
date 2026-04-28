@@ -12,9 +12,11 @@ import {
   roleAdmin,
   roleLogist,
   roleSrLogist,
+  roleWhManager,
   keyAdmin,
   keyLogist,
-  keySrLogist
+  keySrLogist,
+  keyWhManager
 } from '@/helpers/user.roles.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
@@ -133,6 +135,27 @@ describe('users store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
     })
 
+    it('add translates warehouse manager role when trnslt=true', async () => {
+      fetchWrapper.post.mockResolvedValue({})
+      fetchWrapper.get.mockResolvedValue([])
+
+      const store = useUsersStore()
+      const newUser = {
+        firstName: 'John',
+        lastName: 'Doe',
+        isWhManager: keyWhManager
+      }
+
+      await store.add(newUser, true)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:8080/api/users',
+        expect.objectContaining({
+          roles: [roleWhManager]
+        })
+      )
+    })
+
     it('getAll sets loading state and populates users on success', async () => {
       const users = [{ id: 1, name: 'User 1' }, { id: 2, name: 'User 2' }]
       fetchWrapper.get.mockResolvedValue(users)
@@ -171,7 +194,7 @@ describe('users store', () => {
     })
 
     it('getById translates roles to isAdmin/isLogist when trnslt=true', async () => {
-      const testUser = { id: 5, firstName: 'Jane', roles: [roleAdmin, roleLogist, roleSrLogist] }
+      const testUser = { id: 5, firstName: 'Jane', roles: [roleAdmin, roleLogist, roleSrLogist, roleWhManager] }
       fetchWrapper.get.mockResolvedValue(testUser)
       
       const store = useUsersStore()
@@ -180,6 +203,7 @@ describe('users store', () => {
       expect(store.user.isAdmin).toBe(keyAdmin)
       expect(store.user.isLogist).toBe(keyLogist)
       expect(store.user.isSrLogist).toBe(keySrLogist)
+      expect(store.user.isWhManager).toBe(keyWhManager)
     })
 
     it('update calls API with correct parameters', async () => {

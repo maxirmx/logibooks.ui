@@ -67,6 +67,7 @@ watch(maxPage, (v) => {
 const headers = computed(() =>[
   { title: '№', key: 'id', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
+  { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },

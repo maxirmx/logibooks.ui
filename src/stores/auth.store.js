@@ -13,6 +13,7 @@ import {
   roleShiftLead,
   roleSrLogist,
   roleLogist,
+  roleWhManager,
   roleWhOperator,
   roleAdmin
 } from '@/helpers/user.roles.js'
@@ -37,20 +38,26 @@ export const useAuthStore = defineStore('auth', () => {
   const isWhOperator = computed(() =>
     user.value?.roles?.includes(roleWhOperator)
   )
+  const isWhManager = computed(() =>
+    user.value?.roles?.includes(roleWhManager)
+  )
   const isShiftLeadPlus = computed(() =>
     isAdmin.value || isShiftLead.value 
   )
   const isSrLogistPlus = computed(() =>
     isAdmin.value || isShiftLead.value || isSrLogist.value 
   )
+  const isWhManagerPlus = computed(() =>
+    isAdmin.value || isShiftLead.value || isWhManager.value
+  )
   const hasLogistRole = computed(() =>
     isLogist.value || isSrLogist.value || isShiftLead.value
   )
   const hasWhRole = computed(() =>
-    isAdmin.value || isShiftLead.value || isWhOperator.value
+    isAdmin.value || isShiftLead.value || isWhManager.value || isWhOperator.value
   )
   const hasAnyRole = computed(() =>
-    isAdmin.value || isShiftLead.value || isSrLogist.value || isLogist.value || isWhOperator.value
+    isAdmin.value || isShiftLead.value || isSrLogist.value || isLogist.value || isWhManager.value || isWhOperator.value
   )
 
   const users_per_page = ref(100)
@@ -363,9 +370,11 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isShiftLead,
     isSrLogist,
+    isWhManager,
     isWhOperator,
     isShiftLeadPlus,
     isSrLogistPlus,
+    isWhManagerPlus,
     hasLogistRole,
     isLogist,
     hasWhRole,

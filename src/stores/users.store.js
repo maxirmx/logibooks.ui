@@ -8,11 +8,13 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { apiUrl } from '@/helpers/config.js'
 import {
+  roleWhManager,
   roleWhOperator,
   roleLogist,
   roleSrLogist,
   roleShiftLead,
   roleAdmin,
+  keyWhManager,
   keyWhOperator,
   keyLogist,
   keySrLogist,
@@ -40,6 +42,9 @@ function translate(param) {
   if (param.isWhOperator === keyWhOperator || param.isWhOperator === true) {
     roles.push(roleWhOperator)
   }
+  if (param.isWhManager === keyWhManager || param.isWhManager === true) {
+    roles.push(roleWhManager)
+  }
   if (!roles.length) {
     if (param.roles) {
       roles.push(...param.roles)
@@ -53,6 +58,7 @@ function translate(param) {
   delete res.isSrLogist
   delete res.isLogist
   delete res.isWhOperator
+  delete res.isWhManager
   delete res.password2
   return res
 }
@@ -128,6 +134,8 @@ export const useUsersStore = defineStore('users', () => {
           user.value.roles && user.value.roles.includes(roleLogist) ? keyLogist : keyNone
         user.value.isWhOperator =
           user.value.roles && user.value.roles.includes(roleWhOperator) ? keyWhOperator : keyNone
+        user.value.isWhManager =
+          user.value.roles && user.value.roles.includes(roleWhManager) ? keyWhManager : keyNone
       }
       return response
     } catch (err) {
@@ -194,11 +202,13 @@ export const useUsersStore = defineStore('users', () => {
   return {
     // const
     keyNone,
+    keyWhManager,
     keyWhOperator,
     keyLogist,
     keySrLogist,
     keyShiftLead,
     keyAdmin,
+    roleWhManager,
     roleWhOperator,
     roleLogist,
     roleSrLogist,

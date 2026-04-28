@@ -269,6 +269,7 @@ defineExpose({
               tooltip-text="Начать сканирование"
               @click="startScanjob"
               :disabled="runningAction || loading || item.allowStart !== true"
+              v-if="authStore.isWhManagerPlus"
             />
             <ActionButton
               :item="item"
@@ -276,6 +277,7 @@ defineExpose({
               tooltip-text="Приостановить сканирование"
               @click="pauseScanjob"
               :disabled="runningAction || loading || item.allowPause !== true"
+              v-if="authStore.isWhManagerPlus"
             />
             <ActionButton
               :item="item"
@@ -283,6 +285,7 @@ defineExpose({
               tooltip-text="Завершить сканирование"
               @click="finishScanjob"
               :disabled="runningAction || loading || item.allowFinish !== true"
+              v-if="authStore.isWhManagerPlus"
             />
             <ActionButton
               :item="item"
@@ -290,6 +293,7 @@ defineExpose({
               tooltip-text="Редактировать задание на сканирование"
               @click="openEditDialog"
               :disabled="runningAction || loading"
+              v-if="authStore.isWhManagerPlus"
             />
             <ActionButton
               :item="item"
@@ -304,6 +308,7 @@ defineExpose({
               tooltip-text="Удалить задание на сканирование"
               @click="deleteScanjob"
               :disabled="runningAction || loading"
+              v-if="authStore.isWhManagerPlus"
             />
           </div>
         </template>

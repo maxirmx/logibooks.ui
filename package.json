@@ -29,6 +29,9 @@
     "vuetify-use-dialog": "^0.6.2",
     "yup": "^1.2.0"
   },
+  "overrides": {
+    "glob": "^13.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@mdi/js": "^7.2.96",

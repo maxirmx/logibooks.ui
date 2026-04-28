@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, unref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 
 const props = defineProps({
@@ -15,6 +16,8 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const registersStore = useRegistersStore()
+const authStore = useAuthStore()
+const canExport = computed(() => Boolean(unref(authStore.isWhManagerPlus)))
 
 function normalizeZoneName(name) {
   if (!name || !name.trim()) {
@@ -64,7 +67,7 @@ const exportOptions = computed(() => {
     <div v-if="loading" class="header-actions header-actions-group">
         <span class="spinner-border spinner-border-m"></span>
     </div>
-    <div class="header-actions header-actions-group">
+    <div v-if="canExport" class="header-actions header-actions-group">
         <ActionButton2L
           :item="register"
           icon="fa-solid fa-file-export"

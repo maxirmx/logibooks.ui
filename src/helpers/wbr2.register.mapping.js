@@ -25,7 +25,7 @@ export const wbr2RegisterColumnTitles = {
   checkStatus: 'Проверка',
   boxNumber: 'Номер мешка/коробки',
   stickerCode: 'Код стикера',
-  wbSticker: 'ВБ стикер',
+  wbSticker: 'ВБ стикер (УИН)',
   sellerSticker: 'Стикер продавца'
 }
 

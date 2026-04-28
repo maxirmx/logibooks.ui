@@ -83,6 +83,7 @@ const { registers_per_page,
   registers_page, 
   isShiftLeadPlus, 
   isSrLogistPlus,
+  isWhManagerPlus,
   hasWhRole } = storeToRefs(authStore)
 
 const fileInput = ref(null)
@@ -725,7 +726,7 @@ defineExpose({
               />
             </div>
             <ActionButton
-              v-if="hasWhRole"
+              v-if="isWhManagerPlus"
               :item="item"
               icon="fa-solid fa-barcode"
               :tooltip-text="`Создать задание на сканирование`"

@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
 import { vuetifyStubs } from './helpers/test-utils'
-import { roleAdmin, roleLogist } from '@/helpers/user.roles.js'
+import { roleAdmin, roleLogist, roleWhManager } from '@/helpers/user.roles.js'
 
 // Centralized mock data
 const mockUsers = ref([
@@ -215,6 +215,12 @@ describe('Users_List.vue', () => {
       expect(result).toBe('Логист')
     })
 
+    it('returns correct credentials for warehouse manager role', () => {
+      const userItem = { roles: [roleWhManager] }
+      const result = wrapper.vm.getCredentials(userItem)
+      expect(result).toBe('Менеджер склада')
+    })
+
     it('returns correct credentials for multiple roles', () => {
       const userItem = { roles: [roleAdmin, roleLogist] }
       const result = wrapper.vm.getCredentials(userItem)
@@ -271,6 +277,12 @@ describe('Users_List.vue', () => {
     it('filters users by credentials', () => {
       const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleAdmin] } }
       const result = wrapper.vm.filterUsers(null, 'Администратор', item)
+      expect(result).toBe(true)
+    })
+
+    it('filters users by warehouse manager credentials', () => {
+      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleWhManager] } }
+      const result = wrapper.vm.filterUsers(null, 'Менеджер склада', item)
       expect(result).toBe(true)
     })
 

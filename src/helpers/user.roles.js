@@ -3,12 +3,14 @@
 // This file is a part of Logibooks ui application 
 
 // Shared role and role-key constants for user-related modules
+export const roleWhManager = 'wh-manager'
 export const roleWhOperator = 'wh-operator'
 export const roleLogist = 'logist'
 export const roleSrLogist = 'sr-logist'
 export const roleShiftLead = 'shift-lead'
 export const roleAdmin = 'administrator'
 
+export const keyWhManager = 'WH_MANAGER'
 export const keyWhOperator = 'WH_OPERATOR'
 export const keyLogist = 'LOGIST'
 export const keySrLogist = 'SR_LOGIST'
@@ -21,7 +23,8 @@ export const userRoles = [
   roleShiftLead,
   roleSrLogist,
   roleLogist,
-  roleWhOperator
+  roleWhOperator,
+  roleWhManager
 ]
 
 export const userRoleKeys = {
@@ -30,5 +33,6 @@ export const userRoleKeys = {
   roleSrLogist: keySrLogist,
   roleLogist: keyLogist,
   roleWhOperator: keyWhOperator,
+  roleWhManager: keyWhManager,
   roleNone: keyNone
 }

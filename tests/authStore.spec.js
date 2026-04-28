@@ -7,7 +7,8 @@ import { setActivePinia, createPinia } from 'pinia'
 import {
   roleAdmin,
   roleLogist,
-  roleSrLogist
+  roleSrLogist,
+  roleWhManager
 } from '@/helpers/user.roles.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
@@ -144,6 +145,16 @@ describe('auth store', () => {
       expect(store.isLogist).toBe(false)
       expect(store.isSrLogist).toBe(true)
       expect(store.isAdmin).toBe(true)
+    })
+
+    it('treats warehouse manager as a warehouse role', () => {
+      const store = useAuthStore()
+
+      store.user = { id: 1, roles: [roleWhManager] }
+
+      expect(store.isWhManager).toBe(true)
+      expect(store.hasWhRole).toBe(true)
+      expect(store.hasAnyRole).toBe(true)
     })
 
     it('handles register view parameters correctly', () => {

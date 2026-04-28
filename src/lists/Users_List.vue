@@ -16,6 +16,7 @@ import {
   roleShiftLead,
   roleSrLogist,
   roleLogist,
+  roleWhManager,
   roleWhOperator
 } from '@/helpers/user.roles.js'
 
@@ -53,6 +54,9 @@ function getCredentials(item) {
     }
     if (item.roles && item.roles.includes(roleLogist)) {
       crd.push('Логист')
+    }
+    if (item.roles && item.roles.includes(roleWhManager)) {
+      crd.push('Менеджер склада')
     }
     if (item.roles && item.roles.includes(roleWhOperator)) {
       crd.push('Оператор склада')

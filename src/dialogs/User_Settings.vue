@@ -19,11 +19,13 @@ import {
   roleShiftLead,
   roleSrLogist,
   roleLogist,
+  roleWhManager,
   roleWhOperator,
   keyAdmin,
   keyShiftLead,
   keySrLogist,
   keyLogist,
+  keyWhManager,
   keyWhOperator
 } from '@/helpers/user.roles.js'
 
@@ -121,6 +123,9 @@ function getCredentials() {
     }
     if (user.value.roles && user.value.roles.includes(roleLogist)) {
       crd.push('Логист')
+    }
+    if (user.value.roles && user.value.roles.includes(roleWhManager)) {
+      crd.push('Менеджер склада')
     }
     if (user.value.roles && user.value.roles.includes(roleWhOperator)) {
       crd.push('Оператор склада')
@@ -364,6 +369,17 @@ function onSubmit(values, { setErrors }) {
               :value="keyWhOperator"
             />
             <label for="isWhOperator">Оператор склада</label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isWhManager"
+              type="checkbox"
+              name="isWhManager"
+              class="checkbox checkbox-styled"
+              :value="keyWhManager"
+            />
+            <label for="isWhManager">Менеджер склада</label>
           </div>
         </div>
       </div>

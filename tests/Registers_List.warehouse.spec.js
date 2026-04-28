@@ -79,6 +79,7 @@ vi.mock('pinia', async () => {
         registers_page: ref(1),
         isShiftLeadPlus: ref(true),
         isSrLogistPlus: ref(true),
+        isWhManagerPlus: ref(true),
         hasWhRole: ref(true)
       }
     }

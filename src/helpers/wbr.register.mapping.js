@@ -6,7 +6,7 @@ export const wbrRegisterColumnTitles = {
   rowNumber: 'п/п',
   orderNumber: 'Номер посылки',
   invoiceDate: 'Дата инвойса',
-  sticker: 'Стикер',
+  sticker: 'Стикер (УИН)',
   shk: 'ШК',
   extId: 'ext_id',
   tnVed: 'ТН ВЭД',

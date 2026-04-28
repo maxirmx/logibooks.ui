@@ -18,6 +18,7 @@ const mockItems = ref([
   {
     id: 1,
     shk: 'SHK-1',
+    sticker: 'Sticker-1',
     stickerCode: 'STK-1',
     boxNumber: 'BOX-1',
     weightKg: 2.4,
@@ -156,6 +157,7 @@ describe('WbrParcels_WhList.vue', () => {
 
     const text = wrapper.text()
     expect(text).toContain('SHK-1')
+    expect(text).toContain('Sticker-1')
     expect(text).toContain('STK-1')
     expect(text).toContain('BOX-1')
     expect(text).toContain('3')
@@ -174,6 +176,7 @@ describe('WbrParcels_WhList.vue', () => {
     expect(headerKeys).toEqual([
       'id',
       'shk',
+      'sticker',
       'stickerCode',
       'boxNumber',
       'weightKg',

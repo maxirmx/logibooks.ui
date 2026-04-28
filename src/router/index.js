@@ -120,7 +120,7 @@ const router = createRouter({
       path: '/scanjob/create',
       name: 'Создание задания на сканирование',
       component: () => import('@/views/Scanjob_CreateView.vue'),
-      meta: { reqWhRole: true }
+      meta: { reqWhManagerRole: true }
     },
     {
       path: '/scanjob/edit/:id',
@@ -129,7 +129,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqWhRole: true }
+      meta: { reqWhManagerRole: true }
     },
     {
       path: '/scanjobs/:id/scanned-items',
@@ -519,6 +519,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.reqWhRole && !auth.hasWhRole) {
+      return routeToLogin(to, auth)
+    }
+
+    if (to.meta.reqWhManagerRole && !auth.isWhManagerPlus) {
       return routeToLogin(to, auth)
     }
 

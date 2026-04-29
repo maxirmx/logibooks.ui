@@ -805,6 +805,7 @@ defineExpose({
 /* Bookmark icon placed in table cell: green and aligned to right */
 .bookmark-icon {
   color: #28a745; /* green */
+  margin-right: 0;
   margin-left: 8px;
   margin-top: 2px;
   opacity: 0.95;

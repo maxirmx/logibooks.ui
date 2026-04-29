@@ -1,0 +1,13 @@
+/**
+ * Copyright (C) 2025 Maxim [maxirmx] Samsonov (www.sw.consulting)
+ * All rights reserved.
+ * This file is a part of Logibooks ui application
+ *
+ * Shared styles for bookmark icons (.bookmark-icon class).
+ * Used across list, dialog, and status components to indicate inherited check status.
+ */
+
+.bookmark-icon {
+  font-size: 0.9em;
+  margin-right: 0.5em;
+}

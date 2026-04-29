@@ -672,9 +672,4 @@ async function onLookup(values) {
   opacity: 1;
 }
 
-.bookmark-icon {
-  font-size: 0.9em;
-  margin-right: 6px;
-}
-
 </style>

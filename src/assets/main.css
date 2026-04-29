@@ -5,6 +5,7 @@ This file is a part of Logibooks ui application
 */
 
 @import './base.css';
+@import './styles/bookmark-icon.css';
 
 :root {
   --gtc-color-1: #1976d2;

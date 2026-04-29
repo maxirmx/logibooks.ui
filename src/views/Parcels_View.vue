@@ -55,7 +55,10 @@ onMounted(async () => {
 })
 
 function closeList() {
-  router.back()
+  router.push({
+    path: '/registers',
+    query: { mode: props.mode }
+  })
 }
 </script>
 

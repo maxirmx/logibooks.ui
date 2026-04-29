@@ -48,8 +48,4 @@ function handleClick(event) {
   cursor: not-allowed;
 }
 
-.bookmark-icon {
-  font-size: 0.9em;
-  margin-right: 6px;
-}
 </style>

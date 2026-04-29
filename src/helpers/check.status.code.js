@@ -271,7 +271,9 @@ export class CheckStatusCode {
 
     // Combine non-empty strings with comma
     const parts = [swString, fcString].filter(str => str !== '')
-    return parts.length > 0 ? parts.join(', ') : ''
+    return parts.length > 0
+      ? parts.join(', ')
+      : `Статус 0x${(this._value >>> 0).toString(16).toUpperCase().padStart(8, '0')}`
   }
 
   /**

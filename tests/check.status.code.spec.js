@@ -292,7 +292,7 @@ describe('CheckStatusCode', () => {
 
     it('should handle unknown status values', () => {
       const unknown = CheckStatusCode.fromParts(0x9999, 0x8888)
-      expect(unknown.toString()).toBe('')
+      expect(unknown.toString()).toBe('Статус 0x99998888')
     })
   })
 

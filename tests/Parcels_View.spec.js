@@ -8,7 +8,10 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
-import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+
+const pushMock = vi.hoisted(() => vi.fn())
+const backMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lists/WbrParcels_List.vue', () => ({
   default: {
@@ -71,7 +74,8 @@ vi.mock('vue-router', async (importOriginal) => {
   return {
     ...actual,
     useRouter: () => ({
-      back: vi.fn()
+      back: backMock,
+      push: pushMock
     })
   }
 })
@@ -262,5 +266,48 @@ describe('Parcels_View', () => {
     expect(dynamicComponent.exists()).toBe(true)
     // Check for both kebab-case and camelCase prop names
     expect(dynamicComponent.props('register-id') || dynamicComponent.props('registerId')).toBe(123)
+  })
+
+  it('routes to paperwork registers when selected paperwork list emits close', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 123
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    wrapper.findComponent({ name: 'WbrParcels_List' }).vm.$emit('close')
+
+    expect(pushMock).toHaveBeenCalledWith({
+      path: '/registers',
+      query: { mode: OP_MODE_PAPERWORK }
+    })
+    expect(backMock).not.toHaveBeenCalled()
+  })
+
+  it('routes to warehouse registers when selected warehouse list emits close', async () => {
+    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 321,
+        mode: OP_MODE_WAREHOUSE
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    wrapper.findComponent({ name: 'OzonParcels_WhList' }).vm.$emit('close')
+
+    expect(pushMock).toHaveBeenCalledWith({
+      path: '/registers',
+      query: { mode: OP_MODE_WAREHOUSE }
+    })
+    expect(backMock).not.toHaveBeenCalled()
   })
 })

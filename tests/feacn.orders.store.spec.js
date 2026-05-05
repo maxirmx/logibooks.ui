@@ -188,7 +188,33 @@ describe('feacn.orders store', () => {
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
-  
+
+  it('handles error when enabling order for import', async () => {
+    const testError = new Error('API error')
+    fetchWrapper.post.mockRejectedValue(testError)
+
+    const store = useFeacnOrdersStore()
+    await store.enableForImport(7)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/7/enable-for-import`)
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe(testError)
+  })
+
+  it('handles error when disabling order for import', async () => {
+    const testError = new Error('API error')
+    fetchWrapper.post.mockRejectedValue(testError)
+
+    const store = useFeacnOrdersStore()
+    await store.disableForImport(8)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/8/disable-for-import`)
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe(testError)
+  })
+
   it('ensures orders are loaded only once', async () => {
     const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
     fetchWrapper.get.mockResolvedValue(mockOrders)

@@ -32,7 +32,7 @@ const { alert } = storeToRefs(alertStore)
 const feacnTooltips = useFeacnTooltips()
 
 const procedureFilterItems = [
-  { title: 'Все процедуры', value: 'all' },
+  { title: 'Любая', value: 'all' },
   { title: 'Экспорт из РФ', value: 'export' },
   { title: 'Импорт в РФ', value: 'import' }
 ]
@@ -205,6 +205,15 @@ defineExpose({
     <hr class="hr" />
 
     <div class="prefix-filter-row">
+      <v-select
+        v-model="authStore.feacnlocalprefixes_procedure"
+        :items="procedureFilterItems"
+        label="Таможенная процедура"
+        variant="solo"
+        hide-details
+        :disabled="runningAction || loading"
+        class="procedure-filter"
+      />
       <v-text-field
         v-model="authStore.feacnlocalprefixes_search"
         :append-inner-icon="mdiMagnify"
@@ -212,15 +221,6 @@ defineExpose({
         variant="solo"
         hide-details
         :disabled="runningAction || loading"
-      />
-      <v-select
-        v-model="authStore.feacnlocalprefixes_procedure"
-        :items="procedureFilterItems"
-        label="Процедура"
-        variant="solo"
-        hide-details
-        :disabled="runningAction || loading"
-        class="procedure-filter"
       />
     </div>
 
@@ -344,7 +344,14 @@ defineExpose({
 }
 
 .procedure-filter {
-  flex: 0 0 220px;
+  flex: 0 0 200px !important;
+  width: 200px;
+  max-width: 200px;
+  min-width: 200px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
 }
 
 .reason-line {

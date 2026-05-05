@@ -255,8 +255,9 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     const filters = wrapper.find('.prefix-filter-row')
     expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
     expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+    expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
     expect(wrapper.vm.procedureFilterItems).toEqual([
-      { title: 'Все процедуры', value: 'all' },
+      { title: 'Любая', value: 'all' },
       { title: 'Экспорт из РФ', value: 'export' },
       { title: 'Импорт в РФ', value: 'import' }
     ])

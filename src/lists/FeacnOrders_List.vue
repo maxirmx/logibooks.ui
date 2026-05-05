@@ -40,8 +40,7 @@ watch(
     } else {
       // Only update selectedOrderId if current value is invalid or not set
       if (!selectedOrderId.value || !newOrders.some(o => o.id === selectedOrderId.value)) {
-        // Find first order with Enabled === true
-        const firstEnabled = newOrders.find(o => o.Enabled === true)
+        const firstEnabled = newOrders.find(o => o.enabledForExport || o.enabledForImport)
         const newSelectedId = firstEnabled ? firstEnabled.id : newOrders[0].id
         selectedOrderId.value = newSelectedId
         // Update prefixes when new order is selected
@@ -62,7 +61,7 @@ onMounted(async () => {
   if (orders.value?.length > 0) {
     // Only set selectedOrderId if it's not already set or if the persisted value is invalid
     if (!selectedOrderId.value || !orders.value.some(o => o.id === selectedOrderId.value)) {
-      const firstEnabled = orders.value.find(o => o.Enabled === true)
+      const firstEnabled = orders.value.find(o => o.enabledForExport || o.enabledForImport)
       const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id
       selectedOrderId.value = newSelectedId
     }
@@ -118,7 +117,8 @@ const prefixItems = computed(() =>
 )
 
 const orderHeaders = [
-  { title: '', key: 'action', sortable: false, align: 'center', width: '50px' },
+  { title: 'Экспорт', key: 'enabledForExport', sortable: false, align: 'center', width: '90px' },
+  { title: 'Импорт', key: 'enabledForImport', sortable: false, align: 'center', width: '90px' },
   { title: 'Нормативный документ', key: 'title', align: 'start' },
   { title: 'Ссылка', key: 'url', align: 'start' }
 ]
@@ -129,11 +129,21 @@ const prefixHeaders = [
   { title: 'Исключения', key: 'exceptions', align: 'start' }
 ]
 
-async function handleToggleOrderEnabled(order) {
+async function handleToggleOrderEnabledForExport(order) {
   if (runningAction.value || loading.value) return
   runningAction.value = true
   try {
-    await feacnStore.toggleEnabled(order.id, !order.enabled)
+    await feacnStore.toggleEnabledForExport(order.id, !order.enabledForExport)
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function handleToggleOrderEnabledForImport(order) {
+  if (runningAction.value || loading.value) return
+  runningAction.value = true
+  try {
+    await feacnStore.toggleEnabledForImport(order.id, !order.enabledForImport)
   } finally {
     runningAction.value = false
   }
@@ -187,21 +197,42 @@ async function handleToggleOrderEnabled(order) {
         :row-props="(data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })"
         @click:row="(event, { item }) => { selectedOrderId = item.id }"
       >
-        <template  #[`item.action`]="{ item }">
-          <v-tooltip :text="item.enabled ? 'Не использовать' : 'Использовать'">
+        <template  #[`item.enabledForExport`]="{ item }">
+          <v-tooltip :text="item.enabledForExport ? 'Не использовать для экспорта' : 'Использовать для экспорта'">
             <template v-slot:activator="{ props }">
               <button
                 type="button"
                 class="action-btn"
                 :class="{ 'disabled-btn': runningAction || loading || !isAdmin }"
                 v-bind="props"
-                @click.stop="handleToggleOrderEnabled(item)"
+                @click.stop="handleToggleOrderEnabledForExport(item)"
                 :disabled="runningAction || loading || !isAdmin"
-                data-testid="toggle-order-enabled"
+                data-testid="toggle-order-enabled-for-export"
               >
                 <font-awesome-icon
                   size="1x"
-                  :icon="item.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"
+                  :icon="item.enabledForExport ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"
+                  class="action-btn"
+                />
+              </button>
+            </template>
+          </v-tooltip>
+        </template>
+        <template  #[`item.enabledForImport`]="{ item }">
+          <v-tooltip :text="item.enabledForImport ? 'Не использовать для импорта' : 'Использовать для импорта'">
+            <template v-slot:activator="{ props }">
+              <button
+                type="button"
+                class="action-btn"
+                :class="{ 'disabled-btn': runningAction || loading || !isAdmin }"
+                v-bind="props"
+                @click.stop="handleToggleOrderEnabledForImport(item)"
+                :disabled="runningAction || loading || !isAdmin"
+                data-testid="toggle-order-enabled-for-import"
+              >
+                <font-awesome-icon
+                  size="1x"
+                  :icon="item.enabledForImport ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"
                   class="action-btn"
                 />
               </button>

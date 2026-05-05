@@ -65,11 +65,11 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     }
   }
 
-  async function enable(orderId) {
+  async function setOrderFlag(orderId, flag, enabled) {
     loading.value = true
     error.value = null
     try {
-      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/enable`)
+      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/${enabled ? 'enable' : 'disable'}-for-${flag}`)
       await getOrders()
     } catch (err) {
       error.value = err
@@ -78,31 +78,28 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     }
   }
 
-  async function disable(orderId) {
-    loading.value = true
-    error.value = null
-    try {
-      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/disable`)
-      await getOrders()
-    } catch (err) {
-      error.value = err
-    } finally {
-      loading.value = false
-    }
+  async function enableForExport(orderId) {
+    await setOrderFlag(orderId, 'export', true)
   }
-  async function toggleEnabled(id, en) {
-    try {
-      loading.value = true
-      if (en) {
-        await enable(id)
-      } else {
-        await disable(id)
-      }
-    } finally {
-    loading.value = false
-    await getOrders()
-    loading.value = false
-    }
+
+  async function disableForExport(orderId) {
+    await setOrderFlag(orderId, 'export', false)
+  }
+
+  async function enableForImport(orderId) {
+    await setOrderFlag(orderId, 'import', true)
+  }
+
+  async function disableForImport(orderId) {
+    await setOrderFlag(orderId, 'import', false)
+  }
+
+  async function toggleEnabledForExport(id, enabled) {
+    await setOrderFlag(id, 'export', enabled)
+  }
+
+  async function toggleEnabledForImport(id, enabled) {
+    await setOrderFlag(id, 'import', enabled)
   }
  
   return { 
@@ -114,9 +111,12 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     getOrders, 
     getPrefixes,
     update,
-    enable,
-    disable,
+    enableForExport,
+    disableForExport,
+    enableForImport,
+    disableForImport,
     ensureLoaded,
-    toggleEnabled
+    toggleEnabledForExport,
+    toggleEnabledForImport
   }
 })

@@ -51,8 +51,8 @@ vi.mock('pinia', async () => {
 
 const mockFeacnOrdersStore = createMockStore({
   orders: ref([
-    { id: 1, title: 'Doc1', url: 'http://a' },
-    { id: 2, title: 'Doc2', url: 'http://b' }
+    { id: 1, title: 'Doc1', url: 'http://a', enabledForExport: true, enabledForImport: false },
+    { id: 2, title: 'Doc2', url: 'http://b', enabledForExport: false, enabledForImport: true }
   ]),
   prefixes: ref([]),
   loading: ref(false),
@@ -62,8 +62,8 @@ const mockFeacnOrdersStore = createMockStore({
   getPrefixes: vi.fn(),
   update: vi.fn(),
   ensureLoaded: vi.fn(),
-  enable: vi.fn().mockResolvedValue(),
-  disable: vi.fn().mockResolvedValue()
+  toggleEnabledForExport: vi.fn().mockResolvedValue(),
+  toggleEnabledForImport: vi.fn().mockResolvedValue()
 })
 
 const mockAlertStore = createMockStore({
@@ -126,8 +126,8 @@ describe('FeacnOrders_List.vue', () => {
     
     vi.clearAllMocks()
     mockFeacnOrdersStore.orders.value = [
-      { id: 1, title: 'Doc1', url: 'http://a' },
-      { id: 2, title: 'Doc2', url: 'http://b' }
+      { id: 1, title: 'Doc1', url: 'http://a', enabledForExport: true, enabledForImport: false },
+      { id: 2, title: 'Doc2', url: 'http://b', enabledForExport: false, enabledForImport: true }
     ]
     mockFeacnOrdersStore.loading.value = false
     mockFeacnOrdersStore.error.value = null
@@ -167,6 +167,34 @@ describe('FeacnOrders_List.vue', () => {
     mockFeacnOrdersStore.loading.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
     expect(wrapper.find('.header-actions .spinner-border').exists()).toBe(true)
+  })
+
+  it('renders separate export and import toggle columns', () => {
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+    expect(wrapper.vm.orderHeaders.map(h => h.title)).toEqual([
+      'Экспорт',
+      'Импорт',
+      'Нормативный документ',
+      'Ссылка'
+    ])
+  })
+
+  it('toggles export flag through store', async () => {
+    mockAuthStore.isAdmin.value = true
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+
+    await wrapper.vm.handleToggleOrderEnabledForExport(mockFeacnOrdersStore.orders.value[0])
+
+    expect(mockFeacnOrdersStore.toggleEnabledForExport).toHaveBeenCalledWith(1, false)
+  })
+
+  it('toggles import flag through store', async () => {
+    mockAuthStore.isAdmin.value = true
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+
+    await wrapper.vm.handleToggleOrderEnabledForImport(mockFeacnOrdersStore.orders.value[0])
+
+    expect(mockFeacnOrdersStore.toggleEnabledForImport).toHaveBeenCalledWith(1, true)
   })
 
   describe('filterOrders function', () => {

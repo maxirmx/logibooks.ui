@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
@@ -31,6 +31,12 @@ const { alert } = storeToRefs(alertStore)
 // Shared FEACN info cache
 const feacnTooltips = useFeacnTooltips()
 
+const procedureFilterItems = [
+  { title: 'Любая', value: 'all' },
+  { title: 'Экспорт из РФ', value: 'export' },
+  { title: 'Импорт в РФ', value: 'import' }
+]
+
 // Tooltip width limitation
 const tooltipMaxWidth = computed(() => {
   if (typeof window !== 'undefined') {
@@ -49,9 +55,16 @@ function filterLocalPrefixes(value, query, item) {
     return false
   }
   const q = query.toLocaleUpperCase()
+  const procedureText = getProcedureLabels(i).join(' ')
+  const reasonText = getProhibitionReasonLines(i).join(' ')
 
   return (
     (i.code?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.description?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.explanationForExport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.explanationForImport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    procedureText.toLocaleUpperCase().indexOf(q) !== -1 ||
+    reasonText.toLocaleUpperCase().indexOf(q) !== -1 ||
     (feacnTooltips.value[i.code]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
     (i.exceptions?.some(exc => {
       const exceptionCode = getExceptionCode(exc)
@@ -61,12 +74,24 @@ function filterLocalPrefixes(value, query, item) {
   )
 }
 
+const filteredPrefixes = computed(() => {
+  const procedureFilter = unref(authStore.feacnlocalprefixes_procedure)
+  if (procedureFilter === 'export') {
+    return prefixes.value.filter(p => p.forExport)
+  }
+  if (procedureFilter === 'import') {
+    return prefixes.value.filter(p => p.forImport)
+  }
+  return prefixes.value
+})
+
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false }] : []),
   { title: 'Префикс', key: 'code', align: 'start' },
   { title: 'Описание', key: 'description', align: 'start' },
   { title: 'Исключения', key: 'exceptions', align: 'start' },
-  { title: 'Причина запрета', key: 'comment', align: 'start' }
+  { title: 'Процедура', key: 'procedure', align: 'start' },
+  { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
 ]
 
 onMounted(async () => {
@@ -87,6 +112,20 @@ function getExceptionCode(exception) {
 // Helper function to get unique key for exception items
 function getExceptionKey(exception, index) {
   return typeof exception === 'string' ? exception : `${exception.id || index}-${exception.code}`
+}
+
+function getProcedureLabels(item) {
+  const labels = []
+  if (item?.forExport) labels.push('Экспорт из РФ')
+  if (item?.forImport) labels.push('Импорт в РФ')
+  return labels
+}
+
+function getProhibitionReasonLines(item) {
+  const lines = []
+  if (item?.forExport && item.explanationForExport) lines.push(item.explanationForExport)
+  if (item?.forImport && item.explanationForImport) lines.push(item.explanationForImport)
+  return lines
 }
 
 function openCreateDialog() {
@@ -134,6 +173,10 @@ defineExpose({
   deletePrefix,
   getExceptionCode,
   getExceptionKey,
+  getProcedureLabels,
+  getProhibitionReasonLines,
+  procedureFilterItems,
+  filteredPrefixes,
   filterLocalPrefixes
 })
 </script>
@@ -161,7 +204,16 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div>
+    <div class="prefix-filter-row">
+      <v-select
+        v-model="authStore.feacnlocalprefixes_procedure"
+        :items="procedureFilterItems"
+        label="Таможенная процедура"
+        variant="solo"
+        hide-details
+        :disabled="runningAction || loading"
+        class="procedure-filter"
+      />
       <v-text-field
         v-model="authStore.feacnlocalprefixes_search"
         :append-inner-icon="mdiMagnify"
@@ -180,7 +232,7 @@ defineExpose({
         page-text="{0}-{1} из {2}"
         v-model:page="authStore.feacnlocalprefixes_page"
         :headers="headers"
-        :items="prefixes"
+        :items="filteredPrefixes"
         :search="authStore.feacnlocalprefixes_search"
         v-model:sort-by="authStore.feacnlocalprefixes_sort_by"
         :custom-filter="filterLocalPrefixes"
@@ -191,6 +243,19 @@ defineExpose({
       >
         <template v-slot:[`item.code`]="{ item }">
           <span>{{ item.code }}</span>
+        </template>
+
+        <template v-slot:[`item.procedure`]="{ item }">
+          <span v-if="getProcedureLabels(item).length">
+            <span
+              v-for="procedure in getProcedureLabels(item)"
+              :key="procedure"
+              class="reason-line"
+            >
+              {{ procedure }}
+            </span>
+          </span>
+          <span v-else>-</span>
         </template>
 
         <template v-slot:[`item.description`]="{ item }">
@@ -217,6 +282,19 @@ defineExpose({
                 <span>{{ feacnTooltips[getExceptionCode(exception)]?.name || 'Наведите для загрузки...' }}</span>
               </v-tooltip>
               <span v-if="index < item.exceptions.length - 1">, </span>
+            </span>
+          </span>
+          <span v-else>-</span>
+        </template>
+
+        <template v-slot:[`item.prohibitionReason`]="{ item }">
+          <span v-if="getProhibitionReasonLines(item).length">
+            <span
+              v-for="reason in getProhibitionReasonLines(item)"
+              :key="reason"
+              class="reason-line"
+            >
+              {{ reason }}
             </span>
           </span>
           <span v-else>-</span>
@@ -253,4 +331,40 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.prefix-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.prefix-filter-row .v-text-field-stub,
+.prefix-filter-row :deep(.v-text-field) {
+  flex: 1 1 auto;
+}
+
+.procedure-filter {
+  flex: 0 0 200px !important;
+  width: 200px;
+  max-width: 200px;
+  min-width: 200px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
+}
+
+.reason-line {
+  display: block;
+}
+
+@media (max-width: 700px) {
+  .prefix-filter-row {
+    flex-direction: column;
+  }
+
+  .procedure-filter {
+    flex-basis: auto;
+  }
+}
 </style>

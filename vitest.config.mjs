@@ -40,6 +40,7 @@ export default mergeConfig(
           // Add additional source directories as needed:
           'src/services/**/*.js',
           'src/components/**/*.vue',
+          'src/lists/FeacnLocalPrefixes_List.vue',
           'src/views/**/*.vue'
         ],
         exclude: [

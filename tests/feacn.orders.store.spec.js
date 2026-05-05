@@ -111,58 +111,110 @@ describe('feacn.orders store', () => {
     expect(store.error).toBe(testError)
   })
 
-  it('calls enable endpoint', async () => {
+  it('calls enable-for-export endpoint', async () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
     const store = useFeacnOrdersStore()
-    await store.enable(3)
+    await store.enableForExport(3)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/3/enable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/3/enable-for-export`)
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
   
-  it('handles error when enabling order', async () => {
+  it('handles error when enabling order for export', async () => {
     const testError = new Error('API error')
     fetchWrapper.post.mockRejectedValue(testError)
 
     const store = useFeacnOrdersStore()
-    await store.enable(3)
+    await store.enableForExport(3)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/3/enable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/3/enable-for-export`)
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
   })
 
-  it('calls disable endpoint', async () => {
+  it('calls disable-for-export endpoint', async () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
     const store = useFeacnOrdersStore()
-    await store.disable(4)
+    await store.disableForExport(4)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/4/disable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/4/disable-for-export`)
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
   
-  it('handles error when disabling order', async () => {
+  it('handles error when disabling order for export', async () => {
     const testError = new Error('API error')
     fetchWrapper.post.mockRejectedValue(testError)
 
     const store = useFeacnOrdersStore()
-    await store.disable(4)
+    await store.disableForExport(4)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/4/disable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/4/disable-for-export`)
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
   })
-  
+
+  it('calls enable-for-import endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useFeacnOrdersStore()
+    await store.enableForImport(7)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/7/enable-for-import`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+  })
+
+  it('calls disable-for-import endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useFeacnOrdersStore()
+    await store.disableForImport(8)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/8/disable-for-import`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+  })
+
+  it('handles error when enabling order for import', async () => {
+    const testError = new Error('API error')
+    fetchWrapper.post.mockRejectedValue(testError)
+
+    const store = useFeacnOrdersStore()
+    await store.enableForImport(7)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/7/enable-for-import`)
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe(testError)
+  })
+
+  it('handles error when disabling order for import', async () => {
+    const testError = new Error('API error')
+    fetchWrapper.post.mockRejectedValue(testError)
+
+    const store = useFeacnOrdersStore()
+    await store.disableForImport(8)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/8/disable-for-import`)
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe(testError)
+  })
+
   it('ensures orders are loaded only once', async () => {
     const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
     fetchWrapper.get.mockResolvedValue(mockOrders)
@@ -182,25 +234,47 @@ describe('feacn.orders store', () => {
     expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
   
-  it('toggleEnabled calls enable when en is true', async () => {
+  it('toggleEnabledForExport calls enable-for-export when enabled is true', async () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
     const store = useFeacnOrdersStore()
-    await store.toggleEnabled(5, true)
+    await store.toggleEnabledForExport(5, true)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/5/enable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/5/enable-for-export`)
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
   })
   
-  it('toggleEnabled calls disable when en is false', async () => {
+  it('toggleEnabledForExport calls disable-for-export when enabled is false', async () => {
     fetchWrapper.post.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([])
 
     const store = useFeacnOrdersStore()
-    await store.toggleEnabled(6, false)
+    await store.toggleEnabledForExport(6, false)
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/6/disable`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/6/disable-for-export`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
+  })
+
+  it('toggleEnabledForImport calls enable-for-import when enabled is true', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useFeacnOrdersStore()
+    await store.toggleEnabledForImport(9, true)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/9/enable-for-import`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
+  })
+
+  it('toggleEnabledForImport calls disable-for-import when enabled is false', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([])
+
+    const store = useFeacnOrdersStore()
+    await store.toggleEnabledForImport(10, false)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/10/disable-for-import`)
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
   })
 })

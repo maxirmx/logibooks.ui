@@ -13,7 +13,11 @@ import { resolveAll } from './helpers/test-utils'
 const mockStopWord = {
   id: 1,
   word: 'тест',
-  matchTypeId: 1
+  matchTypeId: 1,
+  explanationForExport: 'export reason',
+  explanationForImport: 'import reason',
+  forExport: true,
+  forImport: true
 }
 
 // Create hoisted mock functions
@@ -98,6 +102,7 @@ describe('StopWord_Settings.vue', () => {
       expect(wrapper.find('h1').text()).toBe('Регистрация стоп слова или фразы')
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
       expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
+      expect(wrapper.findAll('input[type="checkbox"].checkbox-styled')).toHaveLength(2)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -133,6 +138,29 @@ describe('StopWord_Settings.vue', () => {
 
       const radios = wrapper.findAll('input[type="radio"][name="matchTypeId"]')
       expect(radios.length).toBeGreaterThan(0)
+    })
+
+    it('renders styled procedure checkboxes', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      expect(wrapper.find('#forExport').exists()).toBe(true)
+      expect(wrapper.find('#forImport').exists()).toBe(true)
+      expect(wrapper.findAll('input[type="checkbox"].checkbox-styled')).toHaveLength(2)
+    })
+
+    it('hides explanation fields until respective flags are enabled', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      expect(wrapper.find('#explanationForExport').exists()).toBe(false)
+      expect(wrapper.find('#explanationForImport').exists()).toBe(true)
+
+      await wrapper.find('#forExport').setValue(true)
+      expect(wrapper.find('#explanationForExport').exists()).toBe(true)
+
+      await wrapper.find('#forImport').setValue(false)
+      expect(wrapper.find('#explanationForImport').exists()).toBe(false)
     })
 
     it('renders form labels correctly', async () => {
@@ -217,6 +245,9 @@ describe('StopWord_Settings.vue', () => {
       const component = wrapper.vm
       component.word = 'новое'
       component.matchTypeId = 1
+      component.forExport = true
+      component.explanationForExport = ' export text '
+      component.explanationForImport = ' import text '
       
       await wrapper.vm.$nextTick()
       
@@ -226,7 +257,10 @@ describe('StopWord_Settings.vue', () => {
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
         matchTypeId: 1,
-        explanation: ''
+        explanationForExport: 'export text',
+        explanationForImport: 'import text',
+        forExport: true,
+        forImport: true
       })
     })
 
@@ -304,6 +338,10 @@ describe('StopWord_Settings.vue', () => {
       const component = wrapper.vm
       component.word = 'обновленное'
       component.matchTypeId = 41
+      component.forExport = false
+      component.forImport = true
+      component.explanationForExport = ' hidden export reason '
+      component.explanationForImport = ' import update '
       
       await component.onSubmit()
 
@@ -311,7 +349,10 @@ describe('StopWord_Settings.vue', () => {
         id: 1,
         word: 'обновленное',
         matchTypeId: 41,
-        explanation: ''
+        explanationForExport: 'hidden export reason',
+        explanationForImport: 'import update',
+        forExport: false,
+        forImport: true
       })
     })
 
@@ -323,6 +364,10 @@ describe('StopWord_Settings.vue', () => {
       
       const wordInput = wrapper.find('input[name="word"]')
       expect(wordInput.element.value).toBe('тест')
+      expect(wrapper.vm.forExport).toBe(true)
+      expect(wrapper.vm.forImport).toBe(true)
+      expect(wrapper.find('#explanationForExport').element.value).toBe('export reason')
+      expect(wrapper.find('#explanationForImport').element.value).toBe('import reason')
     })
 
     it('handles loading errors', async () => {

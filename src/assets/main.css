@@ -540,6 +540,14 @@ a,
   margin-top: 0.5rem;
 }
 
+.form-group.match-type-group {
+  align-items: flex-start;
+}
+
+.form-group.match-type-group .radio-group {
+  margin-top: 0;
+}
+
 .button:focus {
   outline: none;
   box-shadow: 0px 2px 10px rgba(EE, EE, EE, 0.3);

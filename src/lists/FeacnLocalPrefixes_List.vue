@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
@@ -12,6 +12,13 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import {
+  procedureFilterItems,
+  getProcedureLabels,
+  getProcedureSortOrder,
+  getProcedureRows,
+  getProhibitionReasonLines
+} from '@/helpers/procedure.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 import {
   preloadFeacnInfo,
@@ -49,9 +56,16 @@ function filterLocalPrefixes(value, query, item) {
     return false
   }
   const q = query.toLocaleUpperCase()
+  const procedureText = getProcedureLabels(i).join(' ')
+  const reasonText = getProhibitionReasonLines(i).join(' ')
 
   return (
     (i.code?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.description?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.explanationForExport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.explanationForImport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    procedureText.toLocaleUpperCase().indexOf(q) !== -1 ||
+    reasonText.toLocaleUpperCase().indexOf(q) !== -1 ||
     (feacnTooltips.value[i.code]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
     (i.exceptions?.some(exc => {
       const exceptionCode = getExceptionCode(exc)
@@ -61,12 +75,29 @@ function filterLocalPrefixes(value, query, item) {
   )
 }
 
+const filteredPrefixes = computed(() => {
+  const procedureFilter = unref(authStore.feacnlocalprefixes_procedure)
+  if (procedureFilter === 'export') {
+    return prefixes.value.filter(p => p.forExport)
+  }
+  if (procedureFilter === 'import') {
+    return prefixes.value.filter(p => p.forImport)
+  }
+  return prefixes.value
+})
+
+const tablePrefixes = computed(() => filteredPrefixes.value.map(prefix => ({
+  ...prefix,
+  procedure: getProcedureSortOrder(prefix)
+})))
+
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false }] : []),
   { title: 'Префикс', key: 'code', align: 'start' },
   { title: 'Описание', key: 'description', align: 'start' },
   { title: 'Исключения', key: 'exceptions', align: 'start' },
-  { title: 'Причина запрета', key: 'comment', align: 'start' }
+  { title: 'Процедура', key: 'procedure', align: 'start' },
+  { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
 ]
 
 onMounted(async () => {
@@ -134,6 +165,13 @@ defineExpose({
   deletePrefix,
   getExceptionCode,
   getExceptionKey,
+  getProcedureLabels,
+  getProcedureSortOrder,
+  getProcedureRows,
+  getProhibitionReasonLines,
+  procedureFilterItems,
+  filteredPrefixes,
+  tablePrefixes,
   filterLocalPrefixes
 })
 </script>
@@ -161,7 +199,16 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div>
+    <div class="prefix-filter-row">
+      <v-select
+        v-model="authStore.feacnlocalprefixes_procedure"
+        :items="procedureFilterItems"
+        label="Таможенная процедура"
+        variant="solo"
+        hide-details
+        :disabled="runningAction || loading"
+        class="procedure-filter"
+      />
       <v-text-field
         v-model="authStore.feacnlocalprefixes_search"
         :append-inner-icon="mdiMagnify"
@@ -180,7 +227,7 @@ defineExpose({
         page-text="{0}-{1} из {2}"
         v-model:page="authStore.feacnlocalprefixes_page"
         :headers="headers"
-        :items="prefixes"
+        :items="tablePrefixes"
         :search="authStore.feacnlocalprefixes_search"
         v-model:sort-by="authStore.feacnlocalprefixes_sort_by"
         :custom-filter="filterLocalPrefixes"
@@ -191,6 +238,21 @@ defineExpose({
       >
         <template v-slot:[`item.code`]="{ item }">
           <span>{{ item.code }}</span>
+        </template>
+
+        <template v-slot:[`item.procedure`]="{ item }">
+          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
+              <span
+                v-for="row in procedureRows"
+                :key="row.key"
+                class="procedure-line"
+              >
+                {{ row.label }}
+              </span>
+            </span>
+            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
+          </template>
         </template>
 
         <template v-slot:[`item.description`]="{ item }">
@@ -220,6 +282,22 @@ defineExpose({
             </span>
           </span>
           <span v-else>-</span>
+        </template>
+
+        <template v-slot:[`item.prohibitionReason`]="{ item }">
+          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+            <span v-if="procedureRows.length" class="reason-lines">
+              <span
+                v-for="row in procedureRows"
+                :key="row.key"
+                class="reason-line"
+              >
+                <template v-if="row.reason">{{ row.reason }}</template>
+                <template v-else>&nbsp;</template>
+              </span>
+            </span>
+            <span v-else>-</span>
+          </template>
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
@@ -253,4 +331,44 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.prefix-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.prefix-filter-row .v-text-field-stub,
+.prefix-filter-row :deep(.v-text-field) {
+  flex: 1 1 auto;
+}
+
+.procedure-filter {
+  flex: 0 0 200px !important;
+  width: 200px;
+  max-width: 200px;
+  min-width: 200px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
+}
+
+.procedure-line,
+.reason-line {
+  display: block;
+  min-height: 1.35em;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .prefix-filter-row {
+    flex-direction: column;
+  }
+
+  .procedure-filter {
+    flex-basis: auto;
+  }
+}
 </style>

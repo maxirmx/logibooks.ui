@@ -268,7 +268,7 @@ defineExpose({
       </div>
       <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
       
-      <div class="form-group">
+      <div class="form-group match-type-group">
         <label class="label">Тип соответствия:</label>
         <div class="radio-group" :class="{ 'is-invalid': errors.matchTypeId }">
           <label

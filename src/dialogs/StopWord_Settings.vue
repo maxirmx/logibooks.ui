@@ -45,8 +45,10 @@ const schema = toTypedSchema(Yup.object().shape({
       'Выбранный тип соответствия недоступен для текущего слова/фразы',
       createMatchTypeValidationTest()
     ),
-  explanation: Yup
-    .string()
+  explanationForExport: Yup.string().nullable(),
+  explanationForImport: Yup.string().nullable(),
+  forExport: Yup.boolean(),
+  forImport: Yup.boolean()
 }))
 
 const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
@@ -54,13 +56,19 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   initialValues: {
     word: '',
     matchTypeId: 41,
-    explanation: ''
+    explanationForExport: '',
+    explanationForImport: '',
+    forExport: false,
+    forImport: true
   }
 })
 
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
-const { value: explanation } = useField('explanation')
+const { value: explanationForExport } = useField('explanationForExport')
+const { value: explanationForImport } = useField('explanationForImport')
+const { value: forExport } = useField('forExport')
+const { value: forImport } = useField('forImport')
 
 
 function isOptionDisabled(value) {
@@ -80,7 +88,10 @@ onMounted(async () => {
           values: {
             word: loadedStopWord.word,
             matchTypeId: loadedStopWord.matchTypeId,
-            explanation: loadedStopWord.explanation || ''
+            explanationForExport: loadedStopWord.explanationForExport || '',
+            explanationForImport: loadedStopWord.explanationForImport || '',
+            forExport: !!loadedStopWord.forExport,
+            forImport: !!loadedStopWord.forImport
           }
         })
         await nextTick()
@@ -109,7 +120,10 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
   const stopWordData = {
     word: values.word.trim(),
     matchTypeId: values.matchTypeId,
-    explanation: values.explanation ? values.explanation.trim() : ''
+    explanationForExport: values.explanationForExport ? values.explanationForExport.trim() : '',
+    explanationForImport: values.explanationForImport ? values.explanationForImport.trim() : '',
+    forExport: !!values.forExport,
+    forImport: !!values.forImport
   }
 
   // Include id for updates
@@ -170,20 +184,61 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <label for="explanation" class="label">Причина запрета:</label>
-        <input
-          name="explanation"
-          id="explanation"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.explanation }"
-          placeholder="Причина запрета"
-          v-model="explanation"
-        />
-        <div v-if="errors.explanation" class="invalid-feedback">{{ errors.explanation }}</div>
+        <span class="label">Таможенная процедура:</span>
+        <div class="procedure-grid">
+          <div class="procedure-item">
+            <input
+              id="forExport"
+              type="checkbox"
+              name="forExport"
+              class="checkbox checkbox-styled"
+              v-model="forExport"
+            />
+            <label for="forExport">Экспорт из РФ</label>
+          </div>
+
+          <div class="procedure-item">
+            <input
+              id="forImport"
+              type="checkbox"
+              name="forImport"
+              class="checkbox checkbox-styled"
+              v-model="forImport"
+            />
+            <label for="forImport">Импорт в РФ</label>
+          </div>
+        </div>
       </div>
 
-      <div class="form-group">
+      <div v-if="forExport" class="form-group">
+        <label for="explanationForExport" class="label">Причина запрета экспорта:</label>
+        <input
+          name="explanationForExport"
+          id="explanationForExport"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.explanationForExport }"
+          placeholder="Причина запрета экспорта"
+          v-model="explanationForExport"
+        />
+        <div v-if="errors.explanationForExport" class="invalid-feedback">{{ errors.explanationForExport }}</div>
+      </div>
+
+      <div v-if="forImport" class="form-group">
+        <label for="explanationForImport" class="label">Причина запрета импорта:</label>
+        <input
+          name="explanationForImport"
+          id="explanationForImport"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.explanationForImport }"
+          placeholder="Причина запрета импорта"
+          v-model="explanationForImport"
+        />
+        <div v-if="errors.explanationForImport" class="invalid-feedback">{{ errors.explanationForImport }}</div>
+      </div>
+
+      <div class="form-group match-type-group">
         <label class="label">Тип соответствия:</label>
         <div class="radio-group" :class="{ 'is-invalid': errors.matchTypeId }">
           <label
@@ -232,3 +287,24 @@ defineExpose({
     </div>
   </div>
 </template>
+
+<style scoped>
+.procedure-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.procedure-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 850px) {
+  .procedure-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

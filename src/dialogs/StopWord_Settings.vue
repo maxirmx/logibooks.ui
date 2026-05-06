@@ -208,6 +208,37 @@ defineExpose({
             <label for="forImport">Импорт в РФ</label>
           </div>
         </div>
+<<<<<<< HEAD
+=======
+      </div>
+
+      <div v-if="forExport" class="form-group">
+        <label for="explanationForExport" class="label">Причина запрета экспорта:</label>
+        <input
+          name="explanationForExport"
+          id="explanationForExport"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.explanationForExport }"
+          placeholder="Причина запрета экспорта"
+          v-model="explanationForExport"
+        />
+        <div v-if="errors.explanationForExport" class="invalid-feedback">{{ errors.explanationForExport }}</div>
+      </div>
+
+      <div v-if="forImport" class="form-group">
+        <label for="explanationForImport" class="label">Причина запрета импорта:</label>
+        <input
+          name="explanationForImport"
+          id="explanationForImport"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.explanationForImport }"
+          placeholder="Причина запрета импорта"
+          v-model="explanationForImport"
+        />
+        <div v-if="errors.explanationForImport" class="invalid-feedback">{{ errors.explanationForImport }}</div>
+>>>>>>> b1023cd3189771e36bd6f112bf4944b909864c4b
       </div>
 
       <div v-if="forExport" class="form-group">

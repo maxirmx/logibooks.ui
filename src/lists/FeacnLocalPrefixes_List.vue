@@ -265,8 +265,8 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.procedure`]="{ item }">
-          <template v-for="procedureRows in [getProcedureRows(item)]">
-            <span v-if="procedureRows.length" class="procedure-lines">
+          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
               <span
                 v-for="row in procedureRows"
                 :key="row.key"
@@ -275,7 +275,7 @@ defineExpose({
                 {{ row.label }}
               </span>
             </span>
-            <span v-else>-</span>
+            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
           </template>
         </template>
 

@@ -95,7 +95,7 @@ const filteredCustomsProcedures = computed(() => {
   if (isGtcRegister.value) {
     return all.filter(p => p.isGtc === true)
   }
-  return all.filter(p => !p.isGtc)
+  return all
 })
 
 function getTransportationTypeByValue(typeValue) {
@@ -800,7 +800,7 @@ function getCustomerName(customerId) {
                 :disabled="!isRe"
               />
               <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Для реимпорта использовать предшествующие данные</span>
+              <span class="label custom-checkbox-label">Для реимпорта или реэкспорта использовать предшествующие данные</span>
             </label>
           </div>
         </div>

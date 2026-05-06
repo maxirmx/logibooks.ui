@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted, ref } from 'vue'
+import { onMounted, computed, ref, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -13,6 +13,13 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import {
+  procedureFilterItems,
+  getProcedureLabels,
+  getProcedureSortOrder,
+  getProcedureRows,
+  getProhibitionReasonLines
+} from '@/helpers/procedure.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 
 const stopWordsStore = useStopWordsStore()
@@ -35,18 +42,43 @@ function filterStopWords(value, query, item) {
     return false
   }
   const q = query.toLocaleUpperCase()
+  const procedureText = getProcedureLabels(i).join(' ')
+  const reasonText = getProhibitionReasonLines(i).join(' ')
+  const matchTypeText = getMatchTypeText(i.matchTypeId)
 
   return (
-    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+    (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.explanationForExport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    (i.explanationForImport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
+    procedureText.toLocaleUpperCase().indexOf(q) !== -1 ||
+    reasonText.toLocaleUpperCase().indexOf(q) !== -1 ||
+    matchTypeText.toLocaleUpperCase().indexOf(q) !== -1
   )
 }
+
+const filteredStopWords = computed(() => {
+  const procedureFilter = unref(authStore.stopwords_procedure)
+  if (procedureFilter === 'export') {
+    return stopWords.value.filter(word => word.forExport)
+  }
+  if (procedureFilter === 'import') {
+    return stopWords.value.filter(word => word.forImport)
+  }
+  return stopWords.value
+})
+
+const tableStopWords = computed(() => filteredStopWords.value.map(word => ({
+  ...word,
+  procedure: getProcedureSortOrder(word)
+})))
 
 // Table headers
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
-  { title: 'Причина запрета', key: 'explanation', sortable: true }
+  { title: 'Процедура', key: 'procedure', align: 'start' },
+  { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
 ]
 
 function getMatchTypeText(id) {
@@ -98,8 +130,10 @@ async function deleteStopWord(stopWord) {
 
 // Initialize data
 onMounted(async () => {
-  matchTypesStore.ensureLoaded()
-  await stopWordsStore.getAll()
+  await Promise.all([
+    matchTypesStore.ensureLoaded(),
+    stopWordsStore.getAll()
+  ])
 })
 
 // Expose functions for testing
@@ -107,7 +141,16 @@ defineExpose({
   openCreateDialog,
   openEditDialog,
   deleteStopWord,
-  getMatchTypeText
+  getMatchTypeText,
+  getProcedureLabels,
+  getProcedureSortOrder,
+  getProcedureRows,
+  getProhibitionReasonLines,
+  procedureFilterItems,
+  filteredStopWords,
+  tableStopWords,
+  filterStopWords,
+  headers
 })
 </script>
 
@@ -134,7 +177,16 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div>
+    <div class="stopwords-filter-row">
+      <v-select
+        v-model="authStore.stopwords_procedure"
+        :items="procedureFilterItems"
+        label="Таможенная процедура"
+        variant="solo"
+        hide-details
+        :disabled="runningAction || loading"
+        class="procedure-filter"
+      />
       <v-text-field
         v-model="authStore.stopwords_search"
         :append-inner-icon="mdiMagnify"
@@ -153,7 +205,7 @@ defineExpose({
         page-text="{0}-{1} из {2}"
         v-model:page="authStore.stopwords_page"
         :headers="headers"
-        :items="stopWords"
+        :items="tableStopWords"
         :search="authStore.stopwords_search"
         v-model:sort-by="authStore.stopwords_sort_by"
         :custom-filter="filterStopWords"
@@ -184,6 +236,37 @@ defineExpose({
         <template v-slot:[`item.matchTypeId`]="{ item }">
           {{ getMatchTypeText(item.matchTypeId) }}
         </template>
+
+        <template v-slot:[`item.procedure`]="{ item }">
+          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
+              <span
+                v-for="row in procedureRows"
+                :key="row.key"
+                class="procedure-line"
+              >
+                {{ row.label }}
+              </span>
+            </span>
+            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
+          </template>
+        </template>
+
+        <template v-slot:[`item.prohibitionReason`]="{ item }">
+          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="reason-lines">
+              <span
+                v-for="row in procedureRows"
+                :key="row.key"
+                class="reason-line"
+              >
+                <template v-if="row.reason">{{ row.reason }}</template>
+                <template v-else>&nbsp;</template>
+              </span>
+            </span>
+            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
+          </template>
+        </template>
       </v-data-table>
     </v-card>
 
@@ -198,4 +281,44 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.stopwords-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.stopwords-filter-row .v-text-field-stub,
+.stopwords-filter-row :deep(.v-text-field) {
+  flex: 1 1 auto;
+}
+
+.procedure-filter {
+  flex: 0 0 200px !important;
+  width: 200px;
+  max-width: 200px;
+  min-width: 200px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
+}
+
+.procedure-line,
+.reason-line {
+  display: block;
+  min-height: 1.35em;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .stopwords-filter-row {
+    flex-direction: column;
+  }
+
+  .procedure-filter {
+    flex-basis: auto;
+  }
+}
 </style>

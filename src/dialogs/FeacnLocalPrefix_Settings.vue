@@ -39,7 +39,13 @@ const schema = toTypedSchema(
   Yup.object({
     code: Yup.string().required('Префикс обязателен'),
     exceptions: Yup.array().of(Yup.string()),
-    comment: Yup.string()
+    comment: Yup.string().nullable(),
+    explanationForExport: Yup.string().nullable(),
+    explanationForImport: Yup.string().nullable(),
+    forExport: Yup.boolean(),
+    forImport: Yup.boolean(),
+    description: Yup.string().nullable(),
+    feacnOrderId: Yup.number().nullable()
   })
 )
 
@@ -48,12 +54,21 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
   initialValues: {
     code: '',
     exceptions: [''],
-    comment: ''
+    comment: '',
+    explanationForExport: '',
+    explanationForImport: '',
+    forExport: false,
+    forImport: false,
+    description: null,
+    feacnOrderId: null
   }
 })
 
 const { value: code } = useField('code')
-const { value: comment } = useField('comment')
+const { value: explanationForExport } = useField('explanationForExport')
+const { value: explanationForImport } = useField('explanationForImport')
+const { value: forExport } = useField('forExport')
+const { value: forImport } = useField('forImport')
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
@@ -134,7 +149,13 @@ onMounted(async () => {
           values: {
             code: item.code || '',
             exceptions: exceptionCodes,
-            comment: item.comment || ''
+            comment: item.comment || '',
+            explanationForExport: item.explanationForExport || '',
+            explanationForImport: item.explanationForImport || '',
+            forExport: !!item.forExport,
+            forImport: !!item.forImport,
+            description: item.description ?? null,
+            feacnOrderId: item.feacnOrderId ?? null
           }
         })
       }
@@ -155,7 +176,13 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
       code: values.code,
       // Filter out empty strings and convert to the format expected by CreateDto
       exceptions: values.exceptions.filter(exc => exc && exc.trim() !== ''),
-      comment: values.comment ? values.comment.trim() : ''
+      comment: values.comment ?? '',
+      explanationForExport: values.explanationForExport ? values.explanationForExport.trim() : '',
+      explanationForImport: values.explanationForImport ? values.explanationForImport.trim() : '',
+      forExport: !!values.forExport,
+      forImport: !!values.forImport,
+      description: values.description ?? null,
+      feacnOrderId: values.feacnOrderId ?? null
     }
 
     if (isCreate.value) {
@@ -214,17 +241,58 @@ function cancel() {
       </div>
 
       <div class="form-group">
-        <label for="comment" class="label">Причина запрета:</label>
+        <span class="label">Таможенная процедура:</span>
+        <div class="procedure-grid">
+          <div class="procedure-item">
+            <input
+              id="forExport"
+              type="checkbox"
+              name="forExport"
+              class="checkbox checkbox-styled"
+              v-model="forExport"
+            />
+            <label for="forExport">Экспорт из РФ</label>
+          </div>
+
+          <div class="procedure-item">
+            <input
+              id="forImport"
+              type="checkbox"
+              name="forImport"
+              class="checkbox checkbox-styled"
+              v-model="forImport"
+            />
+            <label for="forImport">Импорт в РФ</label>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="forExport" class="form-group">
+        <label for="explanationForExport" class="label">Причина запрета экспорта:</label>
         <input
-          name="comment"
-          id="comment"
+          name="explanationForExport"
+          id="explanationForExport"
           type="text"
           class="form-control input"
-          :class="{ 'is-invalid': errors.comment }"
-          placeholder="Причина запрета"
-          v-model="comment"
+          :class="{ 'is-invalid': errors.explanationForExport }"
+          placeholder="Причина запрета экспорта"
+          v-model="explanationForExport"
         />
-        <div v-if="errors.comment" class="invalid-feedback">{{ errors.comment }}</div>
+        <div v-if="errors.explanationForExport" class="invalid-feedback">{{ errors.explanationForExport }}</div>
+      </div>
+
+      <div v-if="forImport" class="form-group">
+        <label for="explanationForImport" class="label">Причина запрета импорта:</label>
+        <input
+          name="explanationForImport"
+          id="explanationForImport"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.explanationForImport }"
+          placeholder="Причина запрета импорта"
+          v-model="explanationForImport"
+        />
+        <div v-if="errors.explanationForImport" class="invalid-feedback">{{ errors.explanationForImport }}</div>
       </div>
 
       <div class="feacn-search-wrapper">
@@ -294,5 +362,24 @@ function cancel() {
   left: 0;
   right: 0;
   z-index: 100;
+}
+
+.procedure-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.procedure-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 850px) {
+  .procedure-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

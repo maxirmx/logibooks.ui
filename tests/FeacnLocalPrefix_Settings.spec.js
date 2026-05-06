@@ -91,19 +91,39 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       }
     })
 
+  const expectedCreatePayload = (overrides = {}) => ({
+    code: '',
+    exceptions: [],
+    comment: '',
+    explanationForExport: '',
+    explanationForImport: '',
+    forExport: false,
+    forImport: false,
+    description: null,
+    feacnOrderId: null,
+    ...overrides
+  })
+
   it('renders create mode and submits', async () => {
     create.mockResolvedValue({})
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '0101')
     wrapper.vm.setFieldValue('exceptions', ['111', ''])
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith({ code: '0101', exceptions: ['111'], comment: '' })
+    expect(create).toHaveBeenCalledWith(expectedCreatePayload({ code: '0101', exceptions: ['111'] }))
   })
 
   it('loads data in edit mode and updates', async () => {
     // Mock backend response with FeacnPrefixExceptionDto structure
     getById.mockResolvedValue({ 
       code: '0202', 
+      comment: ' legacy comment ',
+      explanationForExport: 'export reason',
+      explanationForImport: 'import reason',
+      forExport: true,
+      forImport: false,
+      description: 'server description',
+      feacnOrderId: 7,
       exceptions: [{ id: 1, code: '222', feacnPrefixId: 1 }] 
     })
     update.mockResolvedValue({})
@@ -111,7 +131,17 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     await flushPromises()
     await wrapper.vm.onSubmit()
     expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, { code: '0202', exceptions: ['222'], comment: '' })
+    expect(update).toHaveBeenCalledWith(1, {
+      code: '0202',
+      exceptions: ['222'],
+      comment: ' legacy comment ',
+      explanationForExport: 'export reason',
+      explanationForImport: 'import reason',
+      forExport: true,
+      forImport: false,
+      description: 'server description',
+      feacnOrderId: 7
+    })
   })
 
   it('handles mixed exception formats in edit mode', async () => {
@@ -125,7 +155,10 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     await flushPromises()
     await wrapper.vm.onSubmit()
     expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, { code: '0303', exceptions: ['333', '444'], comment: '' })
+    expect(update).toHaveBeenCalledWith(1, expectedCreatePayload({
+      code: '0303',
+      exceptions: ['333', '444']
+    }))
   })
 
   it('filters out empty exception strings on submit', async () => {
@@ -134,7 +167,52 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     wrapper.vm.setFieldValue('code', '0404')
     wrapper.vm.setFieldValue('exceptions', ['555', '', '666', '   '])
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith({ code: '0404', exceptions: ['555', '666'], comment: '' })
+    expect(create).toHaveBeenCalledWith(expectedCreatePayload({ code: '0404', exceptions: ['555', '666'] }))
+  })
+
+  it('renders styled export and import checkboxes', () => {
+    const wrapper = mountComponent()
+    const checkboxes = wrapper.findAll('input[type="checkbox"].checkbox-styled')
+    expect(checkboxes).toHaveLength(2)
+    expect(wrapper.find('#forExport').exists()).toBe(true)
+    expect(wrapper.find('#forImport').exists()).toBe(true)
+  })
+
+  it('hides explanation fields until respective flags are enabled', async () => {
+    const wrapper = mountComponent()
+    expect(wrapper.find('#explanationForExport').exists()).toBe(false)
+    expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+
+    await wrapper.find('#forExport').setValue(true)
+    expect(wrapper.find('#explanationForExport').exists()).toBe(true)
+    expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+
+    await wrapper.find('#forImport').setValue(true)
+    expect(wrapper.find('#explanationForImport').exists()).toBe(true)
+  })
+
+  it('does not render an editable comment input', () => {
+    const wrapper = mountComponent()
+    expect(wrapper.find('#comment').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Причина запрета:')
+  })
+
+  it('submits procedure flags and explanations', async () => {
+    create.mockResolvedValue({})
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0505')
+    wrapper.vm.setFieldValue('forExport', true)
+    wrapper.vm.setFieldValue('forImport', true)
+    wrapper.vm.setFieldValue('explanationForExport', ' export text ')
+    wrapper.vm.setFieldValue('explanationForImport', ' import text ')
+    await wrapper.vm.onSubmit()
+    expect(create).toHaveBeenCalledWith(expectedCreatePayload({
+      code: '0505',
+      explanationForExport: 'export text',
+      explanationForImport: 'import text',
+      forExport: true,
+      forImport: true
+    }))
   })
 
   it('renders FieldArrayWithButtons', () => {

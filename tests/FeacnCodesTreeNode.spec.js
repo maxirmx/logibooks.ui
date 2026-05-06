@@ -167,4 +167,19 @@ describe('FeacnCodesTreeNode.vue', () => {
     expect(wrapper.emitted('select')).toBeTruthy()
     expect(wrapper.emitted('select')[0][0]).toEqual(wrapper.props('node'))
   })
+
+  it('emits select event when selectable leaf icon is clicked', async () => {
+    const wrapper = createWrapper(
+      { code: '0123456789', codeEx: '0123456789', name: 'Leaf Node' },
+      { selectMode: true }
+    )
+
+    const icon = wrapper.find('.leaf-icon')
+    expect(icon.classes()).toContain('clickable')
+
+    await icon.trigger('click')
+
+    expect(wrapper.emitted('select')).toBeTruthy()
+    expect(wrapper.emitted('select')[0][0]).toEqual(wrapper.props('node'))
+  })
 })

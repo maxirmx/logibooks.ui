@@ -34,9 +34,42 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockStopWords = ref([
-  { id: 1, word: 'и', matchTypeId: 41 },
-  { id: 2, word: 'или', matchTypeId: 1 },
-  { id: 3, word: 'но', matchTypeId: 41 }
+  {
+    id: 1,
+    word: 'и',
+    matchTypeId: 41,
+    explanationForExport: 'export stop reason',
+    explanationForImport: '',
+    forExport: true,
+    forImport: false
+  },
+  {
+    id: 2,
+    word: 'или',
+    matchTypeId: 1,
+    explanationForExport: '',
+    explanationForImport: 'import stop reason',
+    forExport: false,
+    forImport: true
+  },
+  {
+    id: 3,
+    word: 'но',
+    matchTypeId: 41,
+    explanationForExport: 'dual export stop reason',
+    explanationForImport: 'dual import stop reason',
+    forExport: true,
+    forImport: true
+  },
+  {
+    id: 4,
+    word: 'кроме',
+    matchTypeId: 1,
+    explanationForExport: '',
+    explanationForImport: 'import only dual stop reason',
+    forExport: true,
+    forImport: true
+  }
 ])
 
 // Mock stores
@@ -64,13 +97,14 @@ vi.mock('@/stores/word.match.types.store.js', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     user: ref({ id: 1, roles: [roleAdmin] }),
-    isAdmin: ref(true),
-    isSrLogist: ref(false),
-    isLogist: ref(false),
-    isSrLogistPlus: ref(true),
-    hasLogistRole: ref(false),
+    isAdmin: true,
+    isSrLogist: false,
+    isLogist: false,
+    isSrLogistPlus: true,
+    hasLogistRole: false,
     stopwords_per_page: ref(10),
     stopwords_search: ref(''),
+    stopwords_procedure: ref('all'),
     stopwords_sort_by: ref(['id']),
     stopwords_page: ref(1)
   })
@@ -107,12 +141,28 @@ const extendedStubs = {
     props: ['elevation']
   },
   'v-data-table': {
-    template: '<div data-testid="v-data-table"><slot name="top"></slot><slot></slot></div>',
+    template: `
+      <div data-testid="v-data-table">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+            <slot :name="'item.' + header.key" :item="item">
+              {{ item[header.key] }}
+            </slot>
+          </div>
+        </div>
+        <slot name="top"></slot>
+        <slot></slot>
+      </div>
+    `,
     props: ['loading', 'headers', 'items', 'search', 'custom-filter', 'items-per-page-options', 'class', 'item-value', 'page', 'v-model:items-per-page', 'items-per-page-text', 'page-text', 'v-model:page', 'v-model:sort-by', 'density']
   },
   'v-text-field': {
     template: '<input data-testid="v-text-field" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     props: ['modelValue', 'append-inner-icon', 'label', 'variant', 'hide-details']
+  },
+  'v-select': {
+    template: '<select data-testid="v-select" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.title }}</option></select>',
+    props: ['modelValue', 'items', 'label', 'variant', 'hide-details', 'disabled']
   },
   'v-tooltip': {
     template: '<div data-testid="v-tooltip"><slot name="activator" :props="{}" /><slot /></div>',
@@ -133,9 +183,42 @@ describe('StopWords_List.vue', () => {
 
     // Reset reactive data
     mockStopWords.value = [
-      { id: 1, word: 'и', matchTypeId: 41 },
-      { id: 2, word: 'или', matchTypeId: 1 },
-      { id: 3, word: 'но', matchTypeId: 41 }
+      {
+        id: 1,
+        word: 'и',
+        matchTypeId: 41,
+        explanationForExport: 'export stop reason',
+        explanationForImport: '',
+        forExport: true,
+        forImport: false
+      },
+      {
+        id: 2,
+        word: 'или',
+        matchTypeId: 1,
+        explanationForExport: '',
+        explanationForImport: 'import stop reason',
+        forExport: false,
+        forImport: true
+      },
+      {
+        id: 3,
+        word: 'но',
+        matchTypeId: 41,
+        explanationForExport: 'dual export stop reason',
+        explanationForImport: 'dual import stop reason',
+        forExport: true,
+        forImport: true
+      },
+      {
+        id: 4,
+        word: 'кроме',
+        matchTypeId: 1,
+        explanationForExport: '',
+        explanationForImport: 'import only dual stop reason',
+        forExport: true,
+        forImport: true
+      }
     ]
 
     wrapper = mount(StopWordsList, {
@@ -176,7 +259,7 @@ describe('StopWords_List.vue', () => {
 
     it('shows warning for non-admin users', () => {
       // Test the isAdmin property of the auth store
-      expect(wrapper.vm.authStore.isAdmin.value).toBe(true) // Our mock user is admin
+      expect(wrapper.vm.authStore.isAdmin).toBe(true) // Our mock user is admin
       
       // For non-admin logic, we would need to change the mock
       // but that would affect other tests, so we just verify the current state
@@ -192,6 +275,17 @@ describe('StopWords_List.vue', () => {
     it('displays search field', () => {
       const searchField = wrapper.find('[data-testid="v-text-field"]')
       expect(searchField.exists()).toBe(true)
+    })
+
+    it('displays customs procedure selector next to search field', () => {
+      const filters = wrapper.find('.stopwords-filter-row')
+      expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+      expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
+      expect(wrapper.vm.procedureFilterItems).toEqual([
+        { title: 'Любая', value: 'all' },
+        { title: 'Экспорт из РФ', value: 'export' },
+        { title: 'Импорт в РФ', value: 'import' }
+      ])
     })
 
     it('shows header with actions', () => {
@@ -302,15 +396,24 @@ describe('StopWords_List.vue', () => {
 
   describe('Search and Filter', () => {
     it('filters stop words by word', () => {
-      const mockItem = { raw: { word: 'и' } }
+      const mockItem = { raw: mockStopWords.value[0] }
       const result = wrapper.vm.filterStopWords(null, 'и', mockItem)
       expect(result).toBe(true)
     })
 
     it('filters stop words by word case insensitive', () => {
-      const mockItem = { raw: { word: 'ИЛИ' } }
+      const mockItem = { raw: { ...mockStopWords.value[1], word: 'ИЛИ' } }
       const result = wrapper.vm.filterStopWords(null, 'или', mockItem)
       expect(result).toBe(true)
+    })
+
+    it('filters stop words by procedure, reason, and match type', () => {
+      const mockItem = { raw: mockStopWords.value[2] }
+      expect(wrapper.vm.filterStopWords(null, 'dual export', mockItem)).toBe(true)
+      expect(wrapper.vm.filterStopWords(null, 'dual import', mockItem)).toBe(true)
+      expect(wrapper.vm.filterStopWords(null, 'Экспорт из РФ', mockItem)).toBe(true)
+      expect(wrapper.vm.filterStopWords(null, 'Импорт в РФ', mockItem)).toBe(true)
+      expect(wrapper.vm.filterStopWords(null, 'Morphology', mockItem)).toBe(true)
     })
 
     it('returns false for non-matching search', () => {
@@ -372,8 +475,52 @@ describe('StopWords_List.vue', () => {
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
         { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
         { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
-        { title: 'Причина запрета', key: 'explanation', sortable: true }
+        { title: 'Процедура', key: 'procedure', align: 'start' },
+        { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
       ])
+    })
+
+    it('filters visible stop words by selected procedure', () => {
+      expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['и', 'или', 'но', 'кроме'])
+
+      wrapper.vm.authStore.stopwords_procedure.value = 'export'
+      expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['и', 'но', 'кроме'])
+
+      wrapper.vm.authStore.stopwords_procedure.value = 'import'
+      expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['или', 'но', 'кроме'])
+    })
+
+    it('uses requested procedure sort order from import and export flags', () => {
+      const combinations = [
+        { forImport: false, forExport: false },
+        { forImport: false, forExport: true },
+        { forImport: true, forExport: true },
+        { forImport: true, forExport: false }
+      ]
+
+      expect(combinations.map(item => wrapper.vm.getProcedureSortOrder(item))).toEqual([0, 1, 2, 3])
+      expect(wrapper.vm.tableStopWords.map(item => item.procedure)).toEqual([1, 3, 2, 2])
+    })
+
+    it('renders procedure and prohibition reason columns', () => {
+      const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
+      expect(rows[0].findAll('.v-data-table-cell')[3].text()).toBe('Экспорт из РФ')
+      expect(rows[1].findAll('.v-data-table-cell')[3].text()).toBe('Импорт в РФ')
+
+      const procedureLines = rows[2].findAll('.v-data-table-cell')[3].findAll('.procedure-line')
+      const reasonLines = rows[2].findAll('.v-data-table-cell')[4].findAll('.reason-line')
+      expect(procedureLines.map(line => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+      expect(reasonLines.map(line => line.text())).toEqual(['dual export stop reason', 'dual import stop reason'])
+    })
+
+    it('keeps import reason aligned with import procedure when export reason is empty', () => {
+      const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
+      const procedureLines = rows[3].findAll('.v-data-table-cell')[3].findAll('.procedure-line')
+      const reasonLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.reason-line')
+      expect(procedureLines.map(line => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+      expect(reasonLines).toHaveLength(2)
+      expect(reasonLines[0].text()).toBe('')
+      expect(reasonLines[1].text()).toBe('import only dual stop reason')
     })
   })
 
@@ -480,7 +627,7 @@ describe('StopWords_List.vue', () => {
   describe('Reactive State', () => {
     it('updates when stop words change', async () => {
       const newStopWords = [
-        { id: 4, word: 'новое', matchTypeId: 1 }
+        { id: 5, word: 'новое', matchTypeId: 1, forExport: false, forImport: true }
       ]
       
       mockStopWords.value = newStopWords

@@ -490,6 +490,18 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['или', 'но', 'кроме'])
     })
 
+    it('uses requested procedure sort order from import and export flags', () => {
+      const combinations = [
+        { forImport: false, forExport: false },
+        { forImport: false, forExport: true },
+        { forImport: true, forExport: true },
+        { forImport: true, forExport: false }
+      ]
+
+      expect(combinations.map(item => wrapper.vm.getProcedureSortOrder(item))).toEqual([0, 1, 2, 3])
+      expect(wrapper.vm.tableStopWords.map(item => item.procedure)).toEqual([1, 3, 2, 2])
+    })
+
     it('renders procedure and prohibition reason columns', () => {
       const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
       expect(rows[0].findAll('.v-data-table-cell')[3].text()).toBe('Экспорт из РФ')

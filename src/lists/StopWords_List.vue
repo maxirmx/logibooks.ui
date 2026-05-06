@@ -66,6 +66,11 @@ const filteredStopWords = computed(() => {
   return stopWords.value
 })
 
+const tableStopWords = computed(() => filteredStopWords.value.map(word => ({
+  ...word,
+  procedure: getProcedureSortOrder(word)
+})))
+
 // Table headers
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
@@ -84,6 +89,13 @@ function getProcedureLabels(item) {
   if (item?.forExport) labels.push('Экспорт из РФ')
   if (item?.forImport) labels.push('Импорт в РФ')
   return labels
+}
+
+function getProcedureSortOrder(item) {
+  if (!item?.forImport && !item?.forExport) return 0
+  if (!item?.forImport && item?.forExport) return 1
+  if (item?.forImport && item?.forExport) return 2
+  return 3
 }
 
 function getProcedureRows(item) {
@@ -169,10 +181,12 @@ defineExpose({
   deleteStopWord,
   getMatchTypeText,
   getProcedureLabels,
+  getProcedureSortOrder,
   getProcedureRows,
   getProhibitionReasonLines,
   procedureFilterItems,
   filteredStopWords,
+  tableStopWords,
   filterStopWords,
   headers
 })
@@ -229,7 +243,7 @@ defineExpose({
         page-text="{0}-{1} из {2}"
         v-model:page="authStore.stopwords_page"
         :headers="headers"
-        :items="filteredStopWords"
+        :items="tableStopWords"
         :search="authStore.stopwords_search"
         v-model:sort-by="authStore.stopwords_sort_by"
         :custom-filter="filterStopWords"

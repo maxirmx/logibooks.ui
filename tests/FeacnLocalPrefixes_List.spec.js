@@ -166,6 +166,18 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(rows[2].findAll('.v-data-table-cell')[4].findAll('.procedure-line')).toHaveLength(2)
   })
 
+  it('uses requested procedure sort order from import and export flags', () => {
+    const combinations = [
+      { forImport: false, forExport: false },
+      { forImport: false, forExport: true },
+      { forImport: true, forExport: true },
+      { forImport: true, forExport: false }
+    ]
+
+    expect(combinations.map(item => wrapper.vm.getProcedureSortOrder(item))).toEqual([0, 1, 2, 3])
+    expect(wrapper.vm.tablePrefixes.map(item => item.procedure)).toEqual([1, 3, 2, 2])
+  })
+
   it('renders export and import prohibition reasons on separate lines', () => {
     const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
     const reasonCell = rows[2].findAll('.v-data-table-cell')[5]

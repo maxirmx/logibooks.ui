@@ -85,6 +85,11 @@ const filteredPrefixes = computed(() => {
   return prefixes.value
 })
 
+const tablePrefixes = computed(() => filteredPrefixes.value.map(prefix => ({
+  ...prefix,
+  procedure: getProcedureSortOrder(prefix)
+})))
+
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false }] : []),
   { title: 'Префикс', key: 'code', align: 'start' },
@@ -119,6 +124,13 @@ function getProcedureLabels(item) {
   if (item?.forExport) labels.push('Экспорт из РФ')
   if (item?.forImport) labels.push('Импорт в РФ')
   return labels
+}
+
+function getProcedureSortOrder(item) {
+  if (!item?.forImport && !item?.forExport) return 0
+  if (!item?.forImport && item?.forExport) return 1
+  if (item?.forImport && item?.forExport) return 2
+  return 3
 }
 
 function getProcedureRows(item) {
@@ -192,10 +204,12 @@ defineExpose({
   getExceptionCode,
   getExceptionKey,
   getProcedureLabels,
+  getProcedureSortOrder,
   getProcedureRows,
   getProhibitionReasonLines,
   procedureFilterItems,
   filteredPrefixes,
+  tablePrefixes,
   filterLocalPrefixes
 })
 </script>
@@ -251,7 +265,7 @@ defineExpose({
         page-text="{0}-{1} из {2}"
         v-model:page="authStore.feacnlocalprefixes_page"
         :headers="headers"
-        :items="filteredPrefixes"
+        :items="tablePrefixes"
         :search="authStore.feacnlocalprefixes_search"
         v-model:sort-by="authStore.feacnlocalprefixes_sort_by"
         :custom-filter="filterLocalPrefixes"

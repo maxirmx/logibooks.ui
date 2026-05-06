@@ -13,6 +13,13 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import {
+  procedureFilterItems,
+  getProcedureLabels,
+  getProcedureSortOrder,
+  getProcedureRows,
+  getProhibitionReasonLines
+} from '@/helpers/procedure.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 
 const stopWordsStore = useStopWordsStore()
@@ -24,12 +31,6 @@ const confirm = useConfirm()
 const { stopWords, loading } = storeToRefs(stopWordsStore)
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
-
-const procedureFilterItems = [
-  { title: 'Любая', value: 'all' },
-  { title: 'Экспорт из РФ', value: 'export' },
-  { title: 'Импорт в РФ', value: 'import' }
-]
 
 // Custom filter function for v-data-table
 function filterStopWords(value, query, item) {
@@ -82,45 +83,6 @@ const headers = [
 
 function getMatchTypeText(id) {
   return matchTypesStore.getName(id)
-}
-
-function getProcedureLabels(item) {
-  const labels = []
-  if (item?.forExport) labels.push('Экспорт из РФ')
-  if (item?.forImport) labels.push('Импорт в РФ')
-  return labels
-}
-
-function getProcedureSortOrder(item) {
-  if (!item?.forImport && !item?.forExport) return 0
-  if (!item?.forImport && item?.forExport) return 1
-  if (item?.forImport && item?.forExport) return 2
-  return 3
-}
-
-function getProcedureRows(item) {
-  const rows = []
-  if (item?.forExport) {
-    rows.push({
-      key: 'export',
-      label: 'Экспорт из РФ',
-      reason: item.explanationForExport || ''
-    })
-  }
-  if (item?.forImport) {
-    rows.push({
-      key: 'import',
-      label: 'Импорт в РФ',
-      reason: item.explanationForImport || ''
-    })
-  }
-  return rows
-}
-
-function getProhibitionReasonLines(item) {
-  return getProcedureRows(item)
-    .map(row => row.reason)
-    .filter(Boolean)
 }
 
 function openEditDialog(item) {

@@ -12,6 +12,13 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import {
+  procedureFilterItems,
+  getProcedureLabels,
+  getProcedureSortOrder,
+  getProcedureRows,
+  getProhibitionReasonLines
+} from '@/helpers/procedure.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 import {
   preloadFeacnInfo,
@@ -30,12 +37,6 @@ const { alert } = storeToRefs(alertStore)
 
 // Shared FEACN info cache
 const feacnTooltips = useFeacnTooltips()
-
-const procedureFilterItems = [
-  { title: 'Любая', value: 'all' },
-  { title: 'Экспорт из РФ', value: 'export' },
-  { title: 'Импорт в РФ', value: 'import' }
-]
 
 // Tooltip width limitation
 const tooltipMaxWidth = computed(() => {
@@ -117,45 +118,6 @@ function getExceptionCode(exception) {
 // Helper function to get unique key for exception items
 function getExceptionKey(exception, index) {
   return typeof exception === 'string' ? exception : `${exception.id || index}-${exception.code}`
-}
-
-function getProcedureLabels(item) {
-  const labels = []
-  if (item?.forExport) labels.push('Экспорт из РФ')
-  if (item?.forImport) labels.push('Импорт в РФ')
-  return labels
-}
-
-function getProcedureSortOrder(item) {
-  if (!item?.forImport && !item?.forExport) return 0
-  if (!item?.forImport && item?.forExport) return 1
-  if (item?.forImport && item?.forExport) return 2
-  return 3
-}
-
-function getProcedureRows(item) {
-  const rows = []
-  if (item?.forExport) {
-    rows.push({
-      key: 'export',
-      label: 'Экспорт из РФ',
-      reason: item.explanationForExport || ''
-    })
-  }
-  if (item?.forImport) {
-    rows.push({
-      key: 'import',
-      label: 'Импорт в РФ',
-      reason: item.explanationForImport || ''
-    })
-  }
-  return rows
-}
-
-function getProhibitionReasonLines(item) {
-  return getProcedureRows(item)
-    .map(row => row.reason)
-    .filter(Boolean)
 }
 
 function openCreateDialog() {

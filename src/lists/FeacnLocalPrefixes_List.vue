@@ -121,11 +121,29 @@ function getProcedureLabels(item) {
   return labels
 }
 
+function getProcedureRows(item) {
+  const rows = []
+  if (item?.forExport) {
+    rows.push({
+      key: 'export',
+      label: 'Экспорт из РФ',
+      reason: item.explanationForExport || ''
+    })
+  }
+  if (item?.forImport) {
+    rows.push({
+      key: 'import',
+      label: 'Импорт в РФ',
+      reason: item.explanationForImport || ''
+    })
+  }
+  return rows
+}
+
 function getProhibitionReasonLines(item) {
-  const lines = []
-  if (item?.forExport && item.explanationForExport) lines.push(item.explanationForExport)
-  if (item?.forImport && item.explanationForImport) lines.push(item.explanationForImport)
-  return lines
+  return getProcedureRows(item)
+    .map(row => row.reason)
+    .filter(Boolean)
 }
 
 function openCreateDialog() {
@@ -174,6 +192,7 @@ defineExpose({
   getExceptionCode,
   getExceptionKey,
   getProcedureLabels,
+  getProcedureRows,
   getProhibitionReasonLines,
   procedureFilterItems,
   filteredPrefixes,
@@ -246,13 +265,13 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.procedure`]="{ item }">
-          <span v-if="getProcedureLabels(item).length">
+          <span v-if="getProcedureRows(item).length" class="procedure-lines">
             <span
-              v-for="procedure in getProcedureLabels(item)"
-              :key="procedure"
-              class="reason-line"
+              v-for="row in getProcedureRows(item)"
+              :key="row.key"
+              class="procedure-line"
             >
-              {{ procedure }}
+              {{ row.label }}
             </span>
           </span>
           <span v-else>-</span>
@@ -288,13 +307,14 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
-          <span v-if="getProhibitionReasonLines(item).length">
+          <span v-if="getProcedureRows(item).length" class="reason-lines">
             <span
-              v-for="reason in getProhibitionReasonLines(item)"
-              :key="reason"
+              v-for="row in getProcedureRows(item)"
+              :key="row.key"
               class="reason-line"
             >
-              {{ reason }}
+              <template v-if="row.reason">{{ row.reason }}</template>
+              <template v-else>&nbsp;</template>
             </span>
           </span>
           <span v-else>-</span>
@@ -354,8 +374,12 @@ defineExpose({
   min-width: 0;
 }
 
+.procedure-line,
 .reason-line {
   display: block;
+  min-height: 1.35em;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 @media (max-width: 700px) {

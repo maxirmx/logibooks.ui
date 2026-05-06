@@ -62,6 +62,16 @@ const mockPrefixes = ref([
     forExport: true,
     forImport: true,
     exceptions: ['333']
+  },
+  {
+    id: 4,
+    code: '0404',
+    description: 'd4',
+    explanationForExport: null,
+    explanationForImport: 'import only dual reason',
+    forExport: true,
+    forImport: true,
+    exceptions: []
   }
 ])
 
@@ -69,6 +79,7 @@ const mockFeacnInfo = ref({
   '0101': { name: 'Derived 0101' },
   '0202': { name: 'Derived 0202' },
   '0303': { name: 'Derived 0303' },
+  '0404': { name: 'Derived 0404' },
   '111': { name: 'Exception 111' },
   '333': { name: 'Exception 333' }
 })
@@ -136,12 +147,12 @@ describe('FeacnLocalPrefixes_List.vue', () => {
 
   it('fetches prefixes and preloads FEACN info on mount', () => {
     expect(getAllPrefixes).toHaveBeenCalled()
-    expect(preloadFeacnInfo).toHaveBeenCalledWith(['0101', '0202', '0303', '111', '333'])
+    expect(preloadFeacnInfo).toHaveBeenCalledWith(['0101', '0202', '0303', '0404', '111', '333'])
   })
 
   it('renders prefixes using derived description', () => {
     const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    expect(rows.length).toBe(3)
+    expect(rows.length).toBe(4)
     const firstRowCells = rows[0].findAll('.v-data-table-cell')
     expect(firstRowCells[2].text()).toBe('Derived 0101')
   })
@@ -152,7 +163,7 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(rows[1].findAll('.v-data-table-cell')[4].text()).toBe('Импорт в РФ')
     expect(rows[2].findAll('.v-data-table-cell')[4].text()).toContain('Экспорт из РФ')
     expect(rows[2].findAll('.v-data-table-cell')[4].text()).toContain('Импорт в РФ')
-    expect(rows[2].findAll('.v-data-table-cell')[4].findAll('.reason-line')).toHaveLength(2)
+    expect(rows[2].findAll('.v-data-table-cell')[4].findAll('.procedure-line')).toHaveLength(2)
   })
 
   it('renders export and import prohibition reasons on separate lines', () => {
@@ -160,6 +171,17 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     const reasonCell = rows[2].findAll('.v-data-table-cell')[5]
     const lines = reasonCell.findAll('.reason-line')
     expect(lines.map(line => line.text())).toEqual(['dual export reason', 'dual import reason'])
+  })
+
+  it('keeps import reason aligned with import procedure when export reason is empty', () => {
+    const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
+    const procedureLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
+    const reasonLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.reason-line')
+
+    expect(procedureLines.map(line => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+    expect(reasonLines).toHaveLength(2)
+    expect(reasonLines[0].text()).toBe('')
+    expect(reasonLines[1].text()).toBe('import only dual reason')
   })
 
   it('does not call loadFeacnTooltipOnHover when hovering code', async () => {
@@ -238,17 +260,17 @@ describe('FeacnLocalPrefixes_List.vue', () => {
   })
 
   it('filters visible prefixes by selected procedure', async () => {
-    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0101', '0202', '0303'])
+    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0101', '0202', '0303', '0404'])
 
     wrapper.unmount()
     mockAuthStore.feacnlocalprefixes_procedure = 'export'
     wrapper = mountList()
-    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0101', '0303'])
+    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0101', '0303', '0404'])
 
     wrapper.unmount()
     mockAuthStore.feacnlocalprefixes_procedure = 'import'
     wrapper = mountList()
-    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0202', '0303'])
+    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0202', '0303', '0404'])
   })
 
   it('renders global procedure selector next to search field', () => {

@@ -97,11 +97,11 @@ vi.mock('@/stores/word.match.types.store.js', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     user: ref({ id: 1, roles: [roleAdmin] }),
-    isAdmin: ref(true),
-    isSrLogist: ref(false),
-    isLogist: ref(false),
-    isSrLogistPlus: ref(true),
-    hasLogistRole: ref(false),
+    isAdmin: true,
+    isSrLogist: false,
+    isLogist: false,
+    isSrLogistPlus: true,
+    hasLogistRole: false,
     stopwords_per_page: ref(10),
     stopwords_search: ref(''),
     stopwords_procedure: ref('all'),
@@ -259,7 +259,7 @@ describe('StopWords_List.vue', () => {
 
     it('shows warning for non-admin users', () => {
       // Test the isAdmin property of the auth store
-      expect(wrapper.vm.authStore.isAdmin.value).toBe(true) // Our mock user is admin
+      expect(wrapper.vm.authStore.isAdmin).toBe(true) // Our mock user is admin
       
       // For non-admin logic, we would need to change the mock
       // but that would affect other tests, so we just verify the current state

@@ -53,7 +53,7 @@ function isLeafNode(node) {
           'clickable': (selectMode || !isLeafNode(node)) && !disabled,
           'disabled': disabled
         }"
-        @click="!disabled ? handleClick() : null"
+        @click.stop="handleClick"
       >
         {{ node.codeEx }}
       </div>
@@ -64,6 +64,8 @@ function isLeafNode(node) {
         <span 
           v-if="isLeafNode(node)"
           class="leaf-icon"
+          :class="{ 'clickable': selectMode && !disabled }"
+          @click.stop="handleClick"
         >
           <font-awesome-icon icon="fa-solid fa-check" />
         </span>
@@ -84,7 +86,7 @@ function isLeafNode(node) {
           v-else
           class="toggle-icon"
           :class="{ 'disabled': disabled }"
-          @click="!disabled ? handleClick() : null"
+          @click.stop="handleClick"
         >
           <font-awesome-icon
             :icon="node.expanded ? 'fa-solid fa-minus' : 'fa-solid fa-plus'"
@@ -98,7 +100,7 @@ function isLeafNode(node) {
             'clickable': (selectMode || !isLeafNode(node)) && !disabled,
             'disabled': disabled
           }"
-          @click="!disabled ? handleClick() : null"
+          @click.stop="handleClick"
         >
           {{ node.name }}
         </span>
@@ -203,6 +205,10 @@ function isLeafNode(node) {
   width: 1.2em;
   font-size: 0.875rem;
   color: #666;
+}
+
+.leaf-icon.clickable {
+  cursor: pointer;
 }
 
 .node-label {

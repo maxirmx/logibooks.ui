@@ -43,6 +43,7 @@ const alertStore = useAlertStore()
 const formValues = useFormValues()
 
 const searchActive = ref(false)
+const searchWrapperRef = ref(null)
 const tnVedClassValue = ref('')
 const feacnTooltips = useFeacnTooltips()
 
@@ -79,15 +80,7 @@ watch([() => formValues.value.tnVed, () => props.item?.tnVed, () => props.item?.
 
 function toggleSearch() {
   if (props.disabled) return
-  // open/close main search; if opening main search, ensure keyword panel is closed by emitting overlay state
-  const next = !searchActive.value
-  searchActive.value = next
-  if (next) {
-    // notify parent/consumers that main search opened
-    emit('overlay-state-changed', { mainOpen: true })
-  } else {
-    emit('overlay-state-changed', { mainOpen: false })
-  }
+  searchActive.value = !searchActive.value
 }
 
 function handleEscape(event) {
@@ -97,9 +90,7 @@ function handleEscape(event) {
 }
 
 function handleClickOutside(event) {
-  // Get the wrapper element
-  const wrapper = document.querySelector('.feacn-search-wrapper')
-  // Close if click is outside the wrapper
+  const wrapper = searchWrapperRef.value
   if (wrapper && !wrapper.contains(event.target)) {
     searchActive.value = false
   }
@@ -171,7 +162,7 @@ function handleRefocus() {
   <!-- Feacn Code Section -->
   <div class="form-section">
     <div class="form-row">
-        <div class="form-group feacn-search-wrapper">
+        <div ref="searchWrapperRef" class="form-group feacn-search-wrapper">
           <label for="tnVed" class="label" 
                  :title="getFieldTooltip('tnVed', props.columnTitles, props.columnTooltips)" 
                  @dblclick="toggleSearch">{{ props.columnTitles.tnVed }}:

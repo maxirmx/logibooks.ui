@@ -35,14 +35,9 @@ export default mergeConfig(
         provider: 'v8',
         reporter: ['text', 'html', 'lcov', 'json'], // Added lcov format for Codecov
         include: [
-          'src/helpers/**/*.js',
-          'src/stores/**/*.js',
-          // Add additional source directories as needed:
-          'src/services/**/*.js',
-          'src/components/**/*.vue',
-          'src/lists/**/*.vue',
-          'src/views/**/*.vue'
-        ],
+          'src/**/*.js',
+          'src/**/*.vue',
+          ],
         exclude: [
           '**/node_modules/**',
           '**/dist/**',

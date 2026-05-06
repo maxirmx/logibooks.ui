@@ -307,7 +307,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
-          <template v-for="procedureRows in [getProcedureRows(item)]" :key="item.code">
+          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
             <span v-if="procedureRows.length" class="reason-lines">
               <span
                 v-for="row in procedureRows"

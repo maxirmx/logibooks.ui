@@ -156,8 +156,10 @@ async function deleteStopWord(stopWord) {
 
 // Initialize data
 onMounted(async () => {
-  matchTypesStore.ensureLoaded()
-  await stopWordsStore.getAll()
+  await Promise.all([
+    matchTypesStore.ensureLoaded(),
+    stopWordsStore.getAll()
+  ])
 })
 
 // Expose functions for testing

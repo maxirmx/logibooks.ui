@@ -456,7 +456,7 @@ async function onSubmit(values) {
           item.value.registerType,
           item.value.customsProcedureCode,
           Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
-          Boolean(values.lookupForReimport)
+          Boolean(values.transfer2Re)
         )
         if (!isComponentMounted.value) return
         if (result?.success) {
@@ -789,11 +789,11 @@ function getCustomerName(customerId) {
           </div>
 
           <div class="form-group" v-if="props.mode === OP_MODE_PAPERWORK">
-            <label for="lookupForReimport" class="custom-checkbox" :class="{ 'disabled': !isRe }">
+            <label for="transfer2Re" class="custom-checkbox" :class="{ 'disabled': !isRe }">
               <Field
-                id="lookupForReimport"
+                id="transfer2Re"
                 type="checkbox"
-                name="lookupForReimport"
+                name="transfer2Re"
                 :value="true"
                 :unchecked-value="false"
                 class="custom-checkbox-input"

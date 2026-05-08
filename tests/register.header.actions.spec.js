@@ -114,7 +114,7 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.title).toBe('')
   })
 
-  it('hides action dialog when download fails', async () => {
+  it('reports download errors and hides action dialog when download fails', async () => {
     const error = new Error('Download failed')
     registersStore.download.mockRejectedValueOnce(error)
 
@@ -134,10 +134,33 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(true)
 
-    await expect(promise).rejects.toThrow(error)
+    await expect(promise).resolves.toBeUndefined()
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+    expect(alertStore.error).toHaveBeenCalledWith('Download failed')
+  })
+
+  it('reports export errors through alertStore without rejecting', async () => {
+    const error = new Error('Export failed')
+    registersStore.generateOrdinary.mockRejectedValueOnce(error)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadOrders,
+      isComponentMounted
+    })
+
+    await expect(actions.exportAllXmlOrdinary()).resolves.toBeUndefined()
+
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1')
+    expect(alertStore.error).toHaveBeenCalledWith('Export failed')
+    expect(actions.actionDialog.show).toBe(false)
+    expect(runningAction.value).toBe(false)
   })
 
   it('cancels extended FEACN lookup via cancelLookupFeacnCodes', async () => {

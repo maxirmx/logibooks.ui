@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import {
   toggleBulkStatusEditMode,
   cancelBulkStatusChange,
@@ -102,7 +102,7 @@ localSearch.value = registers_search.value || ''
 const uploadMenuOptions = computed(() => {
   if (!companies.value) return []
   return companies.value
-    .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID)
+    .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID || company.id == GTC_COMPANY_ID)
     .map((company) => ({
       label: getCustomerName(company.id),
       action: () => startRegisterUpload(company.id)

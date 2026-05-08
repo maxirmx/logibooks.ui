@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import router from '@/router'
 
@@ -535,35 +535,34 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    describe('uploadCustomers computed property', () => {
-      it('returns filtered customers for upload', () => {
+    describe('uploadMenuOptions computed property', () => {
+      it('returns filtered menu options for upload', () => {
         mockCompanies.value = [
           { id: OZON_COMPANY_ID, name: 'ООО "Интернет решения"', shortName: 'Озон' },
           { id: WBR_COMPANY_ID, name: 'ООО "РВБ"', shortName: 'РВБ' },
           { id: 3, name: 'Other Company', shortName: 'Other' }
         ]
 
-        const uploadCustomers = wrapper.vm.uploadCustomers
+        const options = wrapper.vm.uploadMenuOptions
 
-        expect(uploadCustomers).toHaveLength(4)
-        expect(uploadCustomers).toEqual([
-          { id: OZON_COMPANY_ID, name: 'Озон' },
-          { id: WBR_COMPANY_ID, name: 'РВБ' },
-          { id: WBR2_REGISTER_ID, name: 'РВБ (Грузия, Таджикистан)' },
-          { id: GTC_COMPANY_ID, name: 'Импорт' }
+        expect(options).toHaveLength(2)
+        expect(options.map((option) => option.label)).toEqual([
+          'Озон',
+          'РВБ'
         ])
+        expect(options.every((option) => typeof option.action === 'function')).toBe(true)
       })
 
       it('returns empty array when no companies loaded', () => {
         mockCompanies.value = []
-        const uploadCustomers = wrapper.vm.uploadCustomers
-        expect(uploadCustomers).toEqual([])
+        const options = wrapper.vm.uploadMenuOptions
+        expect(options).toEqual([])
       })
 
       it('returns empty array when companies is null', () => {
         mockCompanies.value = null
-        const uploadCustomers = wrapper.vm.uploadCustomers
-        expect(uploadCustomers).toEqual([])
+        const options = wrapper.vm.uploadMenuOptions
+        expect(options).toEqual([])
       })
 
       it('provides menu options that trigger upload', async () => {
@@ -579,7 +578,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(4)
+        expect(options).toHaveLength(2)
 
         const [firstOption] = options
         expect(firstOption.label).toBe('Озон')

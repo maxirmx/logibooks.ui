@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import {
   toggleBulkStatusEditMode,
   cancelBulkStatusChange,
@@ -99,37 +99,15 @@ const bulkStatusState = reactive({})
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
 
-// Available customers for register upload
-const uploadCustomers = computed(() => {
+const uploadMenuOptions = computed(() => {
   if (!companies.value) return []
-  const list = companies.value
+  return companies.value
     .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID)
     .map((company) => ({
-      id: company.id,
-      name: getCustomerName(company.id)
+      label: getCustomerName(company.id),
+      action: () => startRegisterUpload(company.id)
     }))
-
-  // Add extra WBR2 register option (Wildberries format 2 for TJ, GE)
-  if (list.find((c) => c.id === WBR_COMPANY_ID)) {
-    list.push({
-      id: WBR2_REGISTER_ID,
-      name: getCustomerName(WBR_COMPANY_ID) + ' (Грузия, Таджикистан)'
-    })
-    list.push({
-      id: GTC_COMPANY_ID,
-      name: 'Импорт'
-    })
-  }
-
-  return list
 })
-
-const uploadMenuOptions = computed(() =>
-  uploadCustomers.value.map((customer) => ({
-    label: customer.name,
-    action: () => startRegisterUpload(customer.id)
-  }))
-)
 
 const isUploadDisabled = computed(() => uploadMenuOptions.value.length === 0)
 

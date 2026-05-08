@@ -800,7 +800,7 @@ function getCustomerName(customerId) {
                 :disabled="!isRe"
               />
               <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Для реимпорта или реэкспорта использовать предшествующие данные</span>
+              <span class="label custom-checkbox-label">Для реимпорта и реэкспорта использовать предшествующие данные</span>
             </label>
           </div>
         </div>

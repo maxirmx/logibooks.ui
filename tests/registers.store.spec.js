@@ -573,7 +573,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -591,14 +591,14 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&checkForDuplicates=true&transfer2Reimport=false`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&checkForDuplicates=true&transfer2Re=false`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
       expect(formData.get('file')).toBe(file)
     })
 
-    it('uploads file with transfer2Reimport flag', async () => {
+    it('uploads file with transfer2Re flag', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
       const customsProcedure = 1
@@ -609,7 +609,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Reimport=true`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -627,7 +627,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&checkForDuplicates=true&transfer2Reimport=true`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&checkForDuplicates=true&transfer2Re=true`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)

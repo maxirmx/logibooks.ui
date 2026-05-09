@@ -146,7 +146,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function upload(file, registerType, customsProcedure, checkForDuplicates, transfer2Reimport = false) {
+  async function upload(file, registerType, customsProcedure, checkForDuplicates, transfer2Re = false) {
     loading.value = true
     error.value = null
     try {
@@ -161,7 +161,7 @@ export const useRegistersStore = defineStore('registers', () => {
       params.append('registerType', registerType)
       params.append('customsProcedure', customsProcedure)
       params.append('checkForDuplicates', checkForDuplicates ? 'true' : 'false')
-      params.append('transfer2Reimport', transfer2Reimport ? 'true' : 'false')
+      params.append('transfer2Re', transfer2Re ? 'true' : 'false')
       
       const url = `${baseUrl}/upload?${params.toString()}`
       

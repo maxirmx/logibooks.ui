@@ -59,7 +59,7 @@ const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
     explanationForExport: '',
     explanationForImport: '',
     forExport: false,
-    forImport: true
+    forImport: false
   }
 })
 

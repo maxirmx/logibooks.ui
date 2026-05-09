@@ -346,6 +346,8 @@ export function useRegisterHeaderActions({
 
     try {
       await action(register)
+    } catch (err) {
+      alertStore.error(err?.message || String(err))
     } finally {
       if (lock) {
         runningActionRef.value = false

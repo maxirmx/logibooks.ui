@@ -999,7 +999,7 @@ describe('Register_EditDialog', () => {
     expect(optionTexts).not.toContain('Экспорт')
   })
 
-  it('does not hide GTC procedures when registerType is not GTC_COMPANY_ID', async () => {
+  it('hides GTC procedures when registerType is not GTC_COMPANY_ID', async () => {
     mockItem.value = {
       ...baseRegisterItem,
       registerType: 2,
@@ -1023,7 +1023,7 @@ describe('Register_EditDialog', () => {
 
     expect(optionTexts).toContain('Импорт')
     expect(optionTexts).toContain('Экспорт')
-    expect(optionTexts).toContain('ГТК Импорт')
+    expect(optionTexts).not.toContain('ГТК Импорт')
   })
 
   it('defaults to first filtered procedure for GTC register in create mode', async () => {

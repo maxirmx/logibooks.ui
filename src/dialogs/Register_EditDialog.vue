@@ -95,7 +95,10 @@ const filteredCustomsProcedures = computed(() => {
   if (isGtcRegister.value) {
     return all.filter(p => p.isGtc === true)
   }
-  return all
+  else {
+    return all.filter(p => p.isGtc !== true)
+  }
+
 })
 
 function getTransportationTypeByValue(typeValue) {
@@ -456,7 +459,7 @@ async function onSubmit(values) {
           item.value.registerType,
           item.value.customsProcedureCode,
           Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
-          Boolean(values.lookupForReimport)
+          Boolean(isRe.value && values.transfer2Re)
         )
         if (!isComponentMounted.value) return
         if (result?.success) {
@@ -789,18 +792,18 @@ function getCustomerName(customerId) {
           </div>
 
           <div class="form-group" v-if="props.mode === OP_MODE_PAPERWORK">
-            <label for="lookupForReimport" class="custom-checkbox" :class="{ 'disabled': !isRe }">
+            <label for="transfer2Re" class="custom-checkbox" :class="{ 'disabled': !isRe }">
               <Field
-                id="lookupForReimport"
+                id="transfer2Re"
                 type="checkbox"
-                name="lookupForReimport"
+                name="transfer2Re"
                 :value="true"
                 :unchecked-value="false"
                 class="custom-checkbox-input"
                 :disabled="!isRe"
               />
               <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Для реимпорта или реэкспорта использовать предшествующие данные</span>
+              <span class="label custom-checkbox-label">Для реимпорта и реэкспорта использовать предшествующие данные</span>
             </label>
           </div>
         </div>

@@ -154,13 +154,13 @@ describe('StopWord_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('#explanationForExport').exists()).toBe(false)
-      expect(wrapper.find('#explanationForImport').exists()).toBe(true)
+      expect(wrapper.find('#explanationForImport').exists()).toBe(false)
 
       await wrapper.find('#forExport').setValue(true)
       expect(wrapper.find('#explanationForExport').exists()).toBe(true)
 
-      await wrapper.find('#forImport').setValue(false)
-      expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+      await wrapper.find('#forImport').setValue(true)
+      expect(wrapper.find('#explanationForImport').exists()).toBe(true)
     })
 
     it('renders form labels correctly', async () => {
@@ -260,7 +260,7 @@ describe('StopWord_Settings.vue', () => {
         explanationForExport: 'export text',
         explanationForImport: 'import text',
         forExport: true,
-        forImport: true
+        forImport: false
       })
     })
 

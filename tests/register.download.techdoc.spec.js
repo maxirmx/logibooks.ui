@@ -210,7 +210,7 @@ describe('Technical Documentation Download Feature', () => {
       expect(registersStore.downloadTechdoc).not.toHaveBeenCalled()
     })
 
-    it('should hide action dialog when techdoc download fails', async () => {
+    it('should report errors and hide action dialog when techdoc download fails', async () => {
       const error = new Error('Download failed')
       registersStore.downloadTechdoc.mockRejectedValueOnce(error)
 
@@ -230,10 +230,11 @@ describe('Technical Documentation Download Feature', () => {
 
       expect(actionDialog.show).toBe(true)
 
-      await expect(promise).rejects.toThrow(error)
+      await expect(promise).resolves.toBeUndefined()
 
       expect(actionDialog.show).toBe(false)
       expect(actionDialog.title).toBe('')
+      expect(alertStore.error).toHaveBeenCalledWith('Download failed')
     })
 
     it('should handle techdoc download when register is not ready', async () => {

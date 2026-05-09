@@ -535,35 +535,37 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    describe('uploadCustomers computed property', () => {
-      it('returns filtered customers for upload', () => {
+    describe('uploadMenuOptions computed property', () => {
+      it('returns filtered menu options for upload', () => {
         mockCompanies.value = [
           { id: OZON_COMPANY_ID, name: 'ООО "Интернет решения"', shortName: 'Озон' },
           { id: WBR_COMPANY_ID, name: 'ООО "РВБ"', shortName: 'РВБ' },
           { id: 3, name: 'Other Company', shortName: 'Other' }
         ]
 
-        const uploadCustomers = wrapper.vm.uploadCustomers
+        const options = wrapper.vm.uploadMenuOptions
 
-        expect(uploadCustomers).toHaveLength(4)
-        expect(uploadCustomers).toEqual([
-          { id: OZON_COMPANY_ID, name: 'Озон' },
-          { id: WBR_COMPANY_ID, name: 'РВБ' },
-          { id: WBR2_REGISTER_ID, name: 'РВБ (Грузия, Таджикистан)' },
-          { id: GTC_COMPANY_ID, name: 'Импорт' }
+        expect(options).toHaveLength(3)
+        expect(options.map((option) => option.label)).toEqual([
+          'Озон',
+          'РВБ',
+          'Импорт и реэкспорт (тест)'
         ])
+        expect(options.every((option) => typeof option.action === 'function')).toBe(true)
       })
 
-      it('returns empty array when no companies loaded', () => {
+      it('returns static import/re-export option when no companies loaded', () => {
         mockCompanies.value = []
-        const uploadCustomers = wrapper.vm.uploadCustomers
-        expect(uploadCustomers).toEqual([])
+        const options = wrapper.vm.uploadMenuOptions
+        expect(options).toHaveLength(1)
+        expect(options[0].label).toBe('Импорт и реэкспорт (тест)')
+        expect(typeof options[0].action).toBe('function')
       })
 
       it('returns empty array when companies is null', () => {
         mockCompanies.value = null
-        const uploadCustomers = wrapper.vm.uploadCustomers
-        expect(uploadCustomers).toEqual([])
+        const options = wrapper.vm.uploadMenuOptions
+        expect(options).toEqual([])
       })
 
       it('provides menu options that trigger upload', async () => {
@@ -579,7 +581,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(4)
+        expect(options).toHaveLength(3)
 
         const [firstOption] = options
         expect(firstOption.label).toBe('Озон')
@@ -590,11 +592,27 @@ describe('Registers_List.vue', () => {
         expect(mockClick).toHaveBeenCalled()
       })
 
-      it('disables upload when there are no available customers', async () => {
+      it('provides static import/re-export menu option that triggers upload', async () => {
+        const mockClick = vi.fn()
+        wrapper.vm.fileInput = { click: mockClick }
+        mockCompanies.value = []
+
+        await wrapper.vm.$nextTick()
+
+        const [option] = wrapper.vm.uploadMenuOptions
+        expect(option.label).toBe('Импорт и реэкспорт (тест)')
+
+        await option.action()
+
+        expect(wrapper.vm.selectedRegisterType).toBe(GTC_COMPANY_ID)
+        expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('keeps upload enabled when only the static import/re-export option is available', async () => {
         mockCompanies.value = []
         await wrapper.vm.$nextTick()
 
-        expect(wrapper.vm.isUploadDisabled).toBe(true)
+        expect(wrapper.vm.isUploadDisabled).toBe(false)
       })
     })
   })

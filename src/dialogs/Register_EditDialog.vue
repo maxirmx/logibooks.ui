@@ -459,7 +459,7 @@ async function onSubmit(values) {
           item.value.registerType,
           item.value.customsProcedureCode,
           Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
-          Boolean(values.transfer2Re)
+          Boolean(isRe.value && values.transfer2Re)
         )
         if (!isComponentMounted.value) return
         if (result?.success) {

@@ -95,7 +95,10 @@ const filteredCustomsProcedures = computed(() => {
   if (isGtcRegister.value) {
     return all.filter(p => p.isGtc === true)
   }
-  return all
+  else {
+    return all.filter(p => p.isGtc !== true)
+  }
+
 })
 
 function getTransportationTypeByValue(typeValue) {

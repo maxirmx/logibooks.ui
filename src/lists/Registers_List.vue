@@ -101,12 +101,19 @@ localSearch.value = registers_search.value || ''
 
 const uploadMenuOptions = computed(() => {
   if (!companies.value) return []
-  return companies.value
-    .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID || company.id == GTC_COMPANY_ID)
+  const list = companies.value
+    .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID)
     .map((company) => ({
       label: getCustomerName(company.id),
       action: () => startRegisterUpload(company.id)
     }))
+
+  list.push({
+    label: 'Импорт и реэкспорт (тест)',
+    action: () => startRegisterUpload(GTC_COMPANY_ID)
+  })
+
+  return list
 })
 
 const isUploadDisabled = computed(() => uploadMenuOptions.value.length === 0)

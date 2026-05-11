@@ -1,6 +1,10 @@
 {
   "name": "logibooks-ui",
+<<<<<<< HEAD
   "version": "1.10.3",
+=======
+  "version": "1.10.2",
+>>>>>>> 04c97eb (feat: rework feacn local prefix editing)
   "private": true,
   "type": "module",
   "scripts": {

@@ -42,9 +42,13 @@ vi.mock('@/components/ActionButton.vue', () => ({
 const getById = vi.fn()
 const create = vi.fn()
 const update = vi.fn()
+const ensureLoaded = vi.fn()
+let mockPrefixes = []
 
 vi.mock('@/stores/feacn.prefixes.store.js', () => ({
   useFeacnPrefixesStore: () => ({
+    prefixes: mockPrefixes,
+    ensureLoaded,
     getById,
     create,
     update
@@ -81,6 +85,8 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockPrefixes = []
+    ensureLoaded.mockResolvedValue()
   })
 
   const mountComponent = (props = { mode: 'create' }) =>
@@ -111,6 +117,12 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     wrapper.vm.setFieldValue('exceptions', ['111', ''])
     await wrapper.vm.onSubmit()
     expect(create).toHaveBeenCalledWith(expectedCreatePayload({ code: '0101', exceptions: ['111'] }))
+  })
+
+  it('calls ensureLoaded on mount', async () => {
+    mountComponent()
+    await flushPromises()
+    expect(ensureLoaded).toHaveBeenCalledOnce()
   })
 
   it('loads data in edit mode and updates', async () => {
@@ -176,6 +188,52 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(checkboxes).toHaveLength(2)
     expect(wrapper.find('#forExport').exists()).toBe(true)
     expect(wrapper.find('#forImport').exists()).toBe(true)
+  })
+
+  it('disables save button when no procedure flag is selected', async () => {
+    const wrapper = mountComponent()
+    const saveButton = wrapper.find('button.primary')
+    expect(saveButton.attributes('disabled')).toBeDefined()
+
+    await wrapper.find('#forExport').setValue(true)
+    expect(saveButton.attributes('disabled')).toBeUndefined()
+  })
+
+  it('disables unchecked procedure checkboxes when the same code already has that flag in the store', async () => {
+    mockPrefixes = [
+      { id: 1, code: '0505', forExport: true, forImport: false },
+      { id: 2, code: '0505', forExport: false, forImport: true }
+    ]
+    const wrapper = mountComponent()
+
+    wrapper.vm.setFieldValue('code', '0505')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('#forExport').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#forImport').attributes('disabled')).toBeDefined()
+
+    wrapper.vm.setFieldValue('forExport', true)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('#forExport').attributes('disabled')).toBeUndefined()
+  })
+
+  it('does not disable checked procedure flags for the prefix currently being edited', async () => {
+    mockPrefixes = [
+      { id: 1, code: '0606', forExport: true, forImport: true }
+    ]
+    getById.mockResolvedValue({
+      id: 1,
+      code: '0606',
+      forExport: true,
+      forImport: false,
+      exceptions: []
+    })
+    const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
+    await flushPromises()
+
+    expect(wrapper.find('#forExport').element.checked).toBe(true)
+    expect(wrapper.find('#forExport').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('#forImport').attributes('disabled')).toBeUndefined()
   })
 
   it('hides explanation fields until respective flags are enabled', async () => {

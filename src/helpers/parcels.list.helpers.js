@@ -293,7 +293,7 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
 }
 
 /**
- * Loads orders/parcels for a register with FEACN info preloading
+ * Loads parcels for a register with FEACN info preloading
  * @param {number} registerId - The register ID
  * @param {Object} parcelsStore - The parcels store instance
  * @param {Object} isComponentMounted - Ref indicating if component is mounted
@@ -301,7 +301,7 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
  * @param {Object} options - Loading options forwarded to parcelsStore.getAll
  * @returns {Promise<void>}
  */
-export async function loadOrders(registerId, parcelsStore, isComponentMounted, alertStore, options = {}) {
+export async function loadParcels(registerId, parcelsStore, isComponentMounted, alertStore, options = {}) {
   if (isComponentMounted.value) {
     // Get data without updating the reactive store yet
     const safeOptions = { ...options }

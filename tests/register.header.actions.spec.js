@@ -24,7 +24,7 @@ describe('useRegisterHeaderActions', () => {
   let runningAction
   let tableLoading
   let registerLoading
-  let loadOrders
+  let loadParcels
   let isComponentMounted
 
   beforeEach(() => {
@@ -55,7 +55,7 @@ describe('useRegisterHeaderActions', () => {
     runningAction = ref(false)
     tableLoading = ref(false)
     registerLoading = ref(false)
-    loadOrders = vi.fn().mockResolvedValue()
+    loadParcels = vi.fn().mockResolvedValue()
     isComponentMounted = ref(true)
   })
 
@@ -70,7 +70,7 @@ describe('useRegisterHeaderActions', () => {
       runningAction,
       tableLoading,
       registerLoading,
-      loadOrders,
+      loadParcels,
       isComponentMounted
     })
 
@@ -95,7 +95,7 @@ describe('useRegisterHeaderActions', () => {
       runningAction,
       tableLoading,
       registerLoading,
-      loadOrders,
+      loadParcels,
       isComponentMounted
     })
 
@@ -124,7 +124,7 @@ describe('useRegisterHeaderActions', () => {
       runningAction,
       tableLoading,
       registerLoading,
-      loadOrders,
+      loadParcels,
       isComponentMounted
     })
 
@@ -151,7 +151,7 @@ describe('useRegisterHeaderActions', () => {
       runningAction,
       tableLoading,
       registerLoading,
-      loadOrders,
+      loadParcels,
       isComponentMounted
     })
 
@@ -174,7 +174,7 @@ describe('useRegisterHeaderActions', () => {
       runningAction,
       tableLoading,
       registerLoading,
-      loadOrders,
+      loadParcels,
       isComponentMounted
     })
 
@@ -199,7 +199,7 @@ describe('useRegisterHeaderActions', () => {
       runningAction,
       tableLoading,
       registerLoading,
-      loadOrders,
+      loadParcels,
       isComponentMounted
     })
 

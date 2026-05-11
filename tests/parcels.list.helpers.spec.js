@@ -48,7 +48,7 @@ import {
   getFeacnCodeItemClass,
   getTnVedCellClass,
   updateParcelTnVed,
-  loadOrders
+  loadParcels
 } from '../src/helpers/parcels.list.helpers.js'
 
 // Import mocked FEACN info helpers
@@ -673,8 +673,8 @@ describe('Parcels List Helpers', () => {
     })
   })
 
-  describe('loadOrders', () => {
-    it('should not load orders when component is not mounted', async () => {
+  describe('loadParcels', () => {
+    it('should not load parcels when component is not mounted', async () => {
       const mockParcelsStore = {
         getAll: vi.fn(),
         items: []
@@ -682,7 +682,7 @@ describe('Parcels List Helpers', () => {
       const mockIsComponentMounted = { value: false }
       const mockAlertStore = { error: vi.fn() }
 
-      await loadOrders(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore)
+      await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore)
 
       expect(mockParcelsStore.getAll).not.toHaveBeenCalled()
     })
@@ -699,7 +699,7 @@ describe('Parcels List Helpers', () => {
       const mockIsComponentMounted = { value: true }
       const mockAlertStore = { error: vi.fn() }
 
-      await loadOrders(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore, {
+      await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore, {
         showMarkedByPartner: true
       })
 

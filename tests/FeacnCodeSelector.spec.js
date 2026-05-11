@@ -64,7 +64,7 @@ const vuetify = createVuetify({
 })
 
 // Mock the inject value
-const mockLoadOrders = vi.fn()
+const mockLoadParcels = vi.fn()
 
 describe('FeacnCodeSelector', () => {
   const defaultProps = {
@@ -119,7 +119,7 @@ describe('FeacnCodeSelector', () => {
         plugins: [vuetify],
         components: globalComponents,
         provide: {
-          loadOrders: mockLoadOrders
+          loadParcels: mockLoadParcels
         }
       }
     })

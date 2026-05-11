@@ -31,7 +31,7 @@ import {
   filterGenericTemplateHeadersForParcel,
   getFeacnCodesForKeywords,
   getFrozenOrderSortDir,
-  loadOrders,
+  loadParcels,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -129,7 +129,7 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
     selectedParcelIds.value = new Set()
     selectedParcelId.value = null
     lastClickedId.value = null
-    await loadOrdersWrapper()
+    await loadParcelsWrapper()
   } finally {
     runningAction.value = false
   }
@@ -194,12 +194,12 @@ async function fetchRegister() {
   }
 }
 
-async function loadOrdersWrapper() {
-  await loadOrders(props.registerId, parcelsStore, isComponentMounted, alertStore)
+async function loadParcelsWrapper() {
+  await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
 }
 
-// Provide the loadOrders function for child components
-provide('loadOrders', loadOrdersWrapper)
+// Provide the loadParcels function for child components
+provide('loadParcels', loadParcelsWrapper)
 
 // refreshAfterReportUpload handler removed per request
 
@@ -227,7 +227,7 @@ const {
   runningAction,
   tableLoading: loading,
   registerLoading,
-  loadOrders: loadOrdersWrapper,
+  loadParcels: loadParcelsWrapper,
   isComponentMounted
 })
 
@@ -237,7 +237,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
     { local: localParcelNumberSearch, store: parcels_number },
     { local: localProductNameSearch, store: parcels_product_name }
   ],
-  loadFn: loadOrdersWrapper,
+  loadFn: loadParcelsWrapper,
   isComponentMounted
 })
 
@@ -400,7 +400,7 @@ const frozenOrderSortDir = computed(() => getFrozenOrderSortDir(parcels_sort_by.
 async function freezeTnVedOrderAndRefetch() {
   await freezeTnVedOrderHeader()
   if (frozenOrderSortDir.value !== null) {
-    await loadOrdersWrapper()
+    await loadParcelsWrapper()
   }
 }
 

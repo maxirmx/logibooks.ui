@@ -25,7 +25,7 @@ describe('Technical Documentation Download Feature', () => {
   let runningAction
   let tableLoading
   let registerLoading
-  let loadOrders
+  let loadParcels
   let isComponentMounted
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('Technical Documentation Download Feature', () => {
     runningAction = ref(false)
     tableLoading = ref(false)
     registerLoading = ref(false)
-    loadOrders = vi.fn().mockResolvedValue()
+    loadParcels = vi.fn().mockResolvedValue()
     isComponentMounted = ref(true)
   })
 
@@ -106,7 +106,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -123,7 +123,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -156,7 +156,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -175,7 +175,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -200,7 +200,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction: ref(true), // Set running action to disable general actions
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -220,7 +220,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -249,7 +249,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -271,7 +271,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -291,7 +291,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -316,7 +316,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -335,7 +335,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -376,7 +376,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 
@@ -397,7 +397,7 @@ describe('Technical Documentation Download Feature', () => {
         runningAction,
         tableLoading,
         registerLoading,
-        loadOrders,
+        loadParcels,
         isComponentMounted
       })
 

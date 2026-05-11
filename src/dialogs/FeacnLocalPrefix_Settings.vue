@@ -76,6 +76,26 @@ const lastFocusedElement = ref(null)
 const lastExceptionSearchIndex = ref(null)
 
 const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
+const normalizedCode = computed(() => (code.value || '').trim())
+const sameCodePrefixes = computed(() => {
+  if (!normalizedCode.value) {
+    return []
+  }
+
+  return prefixesStore.prefixes.filter(prefix => {
+    const isCurrentPrefix = props.prefixId !== undefined && String(prefix.id) === String(props.prefixId)
+    return !isCurrentPrefix && (prefix.code || '').trim() === normalizedCode.value
+  })
+})
+const forExportDisabled = computed(() =>
+  !forExport.value && sameCodePrefixes.value.some(prefix => prefix.forExport)
+)
+const forImportDisabled = computed(() =>
+  !forImport.value && sameCodePrefixes.value.some(prefix => prefix.forImport)
+)
+const saveDisabled = computed(() =>
+  saving.value || searchActive.value || (!forExport.value && !forImport.value)
+)
 
 function toggleCodeSearch() {
   if (!codeSearchActive.value) {
@@ -137,7 +157,11 @@ onUnmounted(() => {
 onMounted(async () => {
   if (!isCreate.value) {
     loading.value = true
-    try {
+  }
+  try {
+    await prefixesStore.ensureLoaded()
+
+    if (!isCreate.value) {
       const item = await prefixesStore.getById(props.prefixId)
       if (item) {
         // Convert FeacnPrefixExceptionDto[] to string[] for UI display
@@ -159,10 +183,12 @@ onMounted(async () => {
           }
         })
       }
-    } catch {
-      alertStore.error('Ошибка при загрузке данных префикса')
-      router.push('/feacn/prefixes')
-    } finally {
+    }
+  } catch {
+    alertStore.error('Ошибка при загрузке данных префикса')
+    router.push('/feacn/prefixes')
+  } finally {
+    if (!isCreate.value) {
       loading.value = false
     }
   }
@@ -250,6 +276,7 @@ function cancel() {
               name="forExport"
               class="checkbox checkbox-styled"
               v-model="forExport"
+              :disabled="forExportDisabled"
             />
             <label for="forExport">Экспорт из РФ</label>
           </div>
@@ -261,6 +288,7 @@ function cancel() {
               name="forImport"
               class="checkbox checkbox-styled"
               v-model="forImport"
+              :disabled="forImportDisabled"
             />
             <label for="forImport">Импорт в РФ</label>
           </div>
@@ -330,7 +358,7 @@ function cancel() {
       <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
 
       <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saving || searchActive">
+        <button class="button primary" type="submit" :disabled="saveDisabled">
           <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ isCreate ? 'Создать' : 'Сохранить' }}

@@ -75,7 +75,6 @@ const headers = computed(() =>[
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
-
 ])
 
 const registerHeading = computed(() => {

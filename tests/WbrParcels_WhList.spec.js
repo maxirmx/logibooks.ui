@@ -10,8 +10,8 @@ import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-const { loadOrders } = vi.hoisted(() => ({
-  loadOrders: vi.fn().mockResolvedValue()
+const { loadParcels } = vi.hoisted(() => ({
+  loadParcels: vi.fn().mockResolvedValue()
 }))
 
 const mockItems = ref([
@@ -62,7 +62,7 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
-  loadOrders
+  loadParcels
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -140,7 +140,7 @@ describe('WbrParcels_WhList.vue', () => {
 
     await resolveAll()
 
-    expect(loadOrders).toHaveBeenCalledWith(
+    expect(loadParcels).toHaveBeenCalledWith(
       1,
       expect.any(Object),
       expect.objectContaining({ value: true }),

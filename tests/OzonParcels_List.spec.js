@@ -46,7 +46,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
   const actual = await vi.importActual('@/helpers/parcels.list.helpers.js')
   return {
     ...actual,
-    loadOrders: vi.fn().mockResolvedValue(),
+    loadParcels: vi.fn().mockResolvedValue(),
     getRowPropsForParcel: vi.fn(() => ({ class: '' })),
     navigateToEditParcel: vi.fn(),
     validateParcelData: vi.fn().mockResolvedValue(),
@@ -350,7 +350,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
   })
 
   it('assigns tnved in bulk and reloads rows on confirm', async () => {
-    const { loadOrders } = await import('@/helpers/parcels.list.helpers.js')
+    const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
     wrapper.vm.showAssignTnvedDialog = true
     wrapper.vm.selectedParcelIds.add(1)
     wrapper.vm.selectedParcelIds.add(3)
@@ -358,7 +358,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await wrapper.vm.handleAssignTnvedConfirm([1, 3], '1234567890')
 
     expect(mockBulkAssignTnved).toHaveBeenCalledWith([1, 3], '1234567890')
-    expect(loadOrders).toHaveBeenCalled()
+    expect(loadParcels).toHaveBeenCalled()
     expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
     expect(wrapper.vm.selectedParcelIds.size).toBe(0)
   })

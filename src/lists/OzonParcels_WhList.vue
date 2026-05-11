@@ -13,7 +13,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { loadOrders } from '@/helpers/parcels.list.helpers.js'
+import { loadParcels } from '@/helpers/parcels.list.helpers.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
@@ -92,15 +92,15 @@ async function fetchRegister() {
   }
 }
 
-async function loadOrdersWrapper() {
-  await loadOrders(props.registerId, parcelsStore, isComponentMounted, alertStore, {
+async function loadParcelsWrapper() {
+  await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
     showMarkedByPartner: true
   })
 }
 
 const watcherStop = watch(
   [parcels_page, parcels_per_page, parcels_sort_by],
-  () => loadOrdersWrapper(),
+  () => loadParcelsWrapper(),
   { immediate: false }
 )
 
@@ -116,7 +116,7 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
 
     await fetchRegister()
-    await loadOrdersWrapper()
+    await loadParcelsWrapper()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при инициализации компонента')

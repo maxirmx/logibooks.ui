@@ -289,7 +289,7 @@ export function useRegisterHeaderActions({
   runningAction,
   tableLoading,
   registerLoading,
-  loadOrders,
+  loadParcels,
   isComponentMounted
 }) {
   const {
@@ -412,10 +412,10 @@ export function useRegisterHeaderActions({
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
-    const canReloadOrders = typeof loadOrders === 'function'
+    const canReloadParcels = typeof loadParcels === 'function'
 
-    if (dialogClosed && componentMounted && canReloadOrders) {
-      Promise.resolve(loadOrders()).catch(() => {})
+    if (dialogClosed && componentMounted && canReloadParcels) {
+      Promise.resolve(loadParcels()).catch(() => {})
     }
   }
 

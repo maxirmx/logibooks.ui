@@ -54,7 +54,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
   const actual = await vi.importActual('@/helpers/parcels.list.helpers.js')
   return {
     ...actual,
-    loadOrders: vi.fn().mockResolvedValue()
+    loadParcels: vi.fn().mockResolvedValue()
   }
 })
 

@@ -24,7 +24,7 @@ vi.mock('vue-router', () => ({
 
 const stores = {}
 let registerHeaderActionsMock
-const loadOrdersMock = vi.fn()
+const loadParcelsMock = vi.fn()
 const useParcelMultiSelectMock = vi.fn(() => ({
   selectedParcelIds: ref(new Set()),
   lastClickedId: ref(null),
@@ -239,8 +239,8 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
     return entry?.key === 'frozenOrder' ? entry.order : null
   }),
   getFeacnCodesForKeywords: vi.fn(() => []),
-  loadOrders: vi.fn((...args) => {
-    loadOrdersMock(...args)
+  loadParcels: vi.fn((...args) => {
+    loadParcelsMock(...args)
     return Promise.resolve()
   })
 }))
@@ -300,7 +300,7 @@ describe.each([
   beforeEach(() => {
     vi.clearAllMocks()
     setupStores()
-    loadOrdersMock.mockClear()
+    loadParcelsMock.mockClear()
     registerHeaderActionsMock = createRegisterHeaderActionsMock()
   })
 
@@ -401,22 +401,22 @@ describe.each([
     })
 
     await resolveAll()
-    loadOrdersMock.mockClear()
+    loadParcelsMock.mockClear()
     registerHeaderActionsMock.freezeTnVedOrder.mockClear()
 
     stores.auth.parcels_sort_by.value = []
     await resolveAll()
-    const callsBeforeWithoutSort = loadOrdersMock.mock.calls.length
+    const callsBeforeWithoutSort = loadParcelsMock.mock.calls.length
     await wrapper.vm.freezeTnVedOrderAndRefetch()
     expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(1)
-    expect(loadOrdersMock.mock.calls.length).toBe(callsBeforeWithoutSort)
+    expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithoutSort)
 
     stores.auth.parcels_sort_by.value = [{ key: 'frozenOrder', order: 'asc' }]
     await resolveAll()
-    const callsBeforeWithSort = loadOrdersMock.mock.calls.length
+    const callsBeforeWithSort = loadParcelsMock.mock.calls.length
     await wrapper.vm.freezeTnVedOrderAndRefetch()
     expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(2)
-    expect(loadOrdersMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
+    expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
   })
 
   it('hides header actions when user lacks permissions', async () => {

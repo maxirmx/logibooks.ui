@@ -22,8 +22,8 @@ const props = defineProps({
 const keyWordsStore = useKeyWordsStore()
 const parcelsStore = useParcelsStore()
 
-// Get the loadOrders function from parent component
-const loadOrders = inject('loadOrders')
+// Get the loadParcels function from parent component
+const loadParcels = inject('loadParcels')
 
 // Local tooltip cache for this component
 const tooltipCache = ref({})
@@ -53,7 +53,7 @@ async function selectCode(event, code) {
     return
   }
   if (code !== props.item.tnVed) {
-    await updateParcelTnVed(props.item, code, parcelsStore, loadOrders)
+    await updateParcelTnVed(props.item, code, parcelsStore, loadParcels)
   }
 }
 

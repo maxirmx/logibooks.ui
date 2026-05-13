@@ -17,9 +17,9 @@ const mockAlert = vi.hoisted(() => ({
 }))
 const mockScanjob = vi.hoisted(() => ({
   __v_isRef: true,
-  value: { id: 42, name: 'Scanjob A' }
+  value: { id: 42, name: 'Scanjob A', type: 30, status: 15 }
 }))
-const getById = vi.hoisted(() => vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A' }))
+const getById = vi.hoisted(() => vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15 }))
 const monitorLoading = vi.hoisted(() => ({
   __v_isRef: true,
   value: false
@@ -160,6 +160,8 @@ describe('Scanjob_Monitor.vue', () => {
     monitorLoading.value = false
     monitorError.value = null
     monitorClosed.value = null
+    mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15 }
+    getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15 })
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
     startMonitor.mockResolvedValue(true)
     clearMonitor.mockResolvedValue(true)
@@ -291,5 +293,47 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(stopMonitor).toHaveBeenCalled()
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
+  })
+
+  it('loads monitor snapshot without subscription when scanjob is not active', async () => {
+    const inactiveScanjob = { id: 42, name: 'Scanjob A', type: 30, status: 20 }
+    mockScanjob.value = inactiveScanjob
+    getById.mockResolvedValueOnce(inactiveScanjob)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 0, boxId: null })
+    expect(startMonitor).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="scanjob-monitor-status-only"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('BOX-7')
+  })
+
+  it('loads monitor snapshot with subscription when scanjob type is parcel and active', async () => {
+    const parcelScanjob = { id: 42, name: 'Scanjob A', type: 10, status: 15 }
+    mockScanjob.value = parcelScanjob
+    getById.mockResolvedValueOnce(parcelScanjob)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 0, boxId: null })
+    expect(startMonitor).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        area: 0,
+        boxId: null,
+        onSnapshot: expect.any(Function)
+      })
+    )
+    expect(wrapper.text()).toContain('BOX-7')
   })
 })

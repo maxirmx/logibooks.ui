@@ -18,11 +18,12 @@ const props = defineProps({
 const MODE_REGISTER = 'register'
 const MODE_BOX = 'box'
 const MONITOR_THROTTLE_MS = 150
+const SCAN_JOB_STATUS_IN_PROGRESS = 15
 
 const scanJobsStore = useScanjobsStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
-const { monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
+const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
 const isComponentMounted = ref(true)
 const { scanjobHeading, loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
 
@@ -31,10 +32,25 @@ const selectedBoxId = ref(null)
 const visibleSnapshot = ref(null)
 const closedStatus = ref(null)
 const switchingScope = ref(false)
+const monitorStatusOnly = ref(false)
 const scopeVersion = ref(0)
 
 let pendingSnapshot = null
 let throttleTimer = null
+
+const boxHeaders = [
+  { title: 'Коробка', key: 'boxCode', align: 'start' },
+  { title: 'Стикер коробки', key: 'boxStickerScanned', align: 'start' },
+  { title: 'Посылки', key: 'parcelsProgress', align: 'start' },
+  { title: 'Не сканировано', key: 'parcelsWithStickerNotScanned', align: 'start' }
+]
+
+const parcelHeaders = [
+  { title: 'Посылка', key: 'parcelNumber', align: 'start' },
+  { title: 'Стикер', key: 'stickerScanned', align: 'start' },
+  { title: 'Зона', key: 'zoneName', align: 'start' },
+  { title: 'Статус', key: 'statusTitle', align: 'start' }
+]
 
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
@@ -43,6 +59,7 @@ const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
 const selectedParcels = computed(() => selectedBox.value?.parcels ?? [])
 const closedInfo = computed(() => closedStatus.value || monitorClosed.value)
+const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
 
 const aggregateCards = computed(() => {
   const snapshot = visibleSnapshot.value
@@ -69,6 +86,25 @@ const aggregateCards = computed(() => {
 
 function close() {
   router.back()
+}
+
+function canSubscribeToMonitor(job) {
+  return Number(job?.status) === SCAN_JOB_STATUS_IN_PROGRESS
+}
+
+function getScanJobStatusText(status) {
+  switch (Number(status)) {
+    case 10:
+      return 'Создано'
+    case 15:
+      return 'Выполняется'
+    case 18:
+      return 'Приостановлено'
+    case 20:
+      return 'Завершено'
+    default:
+      return status == null ? 'Неизвестно' : String(status)
+  }
 }
 
 function formatCount(value) {
@@ -168,11 +204,12 @@ function getMonitorErrorMessage(error) {
   return error?.message || 'Ошибка при загрузке монитора сканирования'
 }
 
-async function observeScope(scope) {
+async function observeScope(scope, { subscribe = true } = {}) {
   const version = scopeVersion.value + 1
   scopeVersion.value = version
   switchingScope.value = true
   closedStatus.value = null
+  monitorStatusOnly.value = false
   visibleSnapshot.value = null
   clearPendingSnapshot()
 
@@ -182,11 +219,13 @@ async function observeScope(scope) {
     const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, scope)
     applySnapshot(snapshot, { version, immediate: true })
 
-    await scanJobsStore.startMonitor(props.scanjobId, {
-      ...scope,
-      onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version }),
-      onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version)
-    })
+    if (subscribe) {
+      await scanJobsStore.startMonitor(props.scanjobId, {
+        ...scope,
+        onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version }),
+        onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version)
+      })
+    }
   } catch (error) {
     if (isComponentMounted.value && version === scopeVersion.value) {
       alertStore.error(getMonitorErrorMessage(error))
@@ -198,10 +237,10 @@ async function observeScope(scope) {
   }
 }
 
-async function openRegisterMonitor() {
+async function openRegisterMonitor({ subscribe = canSubscribeToMonitor(scanjob.value) } = {}) {
   mode.value = MODE_REGISTER
   selectedBoxId.value = null
-  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Boxes))
+  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Boxes), { subscribe })
 }
 
 async function openBoxMonitor(box) {
@@ -211,13 +250,17 @@ async function openBoxMonitor(box) {
 
   mode.value = MODE_BOX
   selectedBoxId.value = box.boxId
-  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Box, box.boxId))
+  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Box, box.boxId), {
+    subscribe: canSubscribeToMonitor(scanjob.value)
+  })
 }
 
 onMounted(async () => {
-  await loadScanjob()
-  if (isComponentMounted.value) {
-    await openRegisterMonitor()
+  const loaded = await loadScanjob()
+  if (isComponentMounted.value && loaded) {
+    await openRegisterMonitor({ subscribe: canSubscribeToMonitor(loaded) })
+  } else if (isComponentMounted.value) {
+    monitorStatusOnly.value = true
   }
 })
 
@@ -266,6 +309,10 @@ defineExpose({
         Мониторинг остановлен. Задание больше не выполняется.
       </div>
 
+      <div v-else-if="monitorStatusOnly" class="monitor-empty monitor-closed" data-testid="scanjob-monitor-status-only">
+        Задание сканирования: {{ scanjobStatusText }}. Онлайн-обновления отключены.
+      </div>
+
       <div v-else-if="monitorError && !visibleSnapshot" class="monitor-empty" data-testid="scanjob-monitor-unavailable">
         {{ getMonitorErrorMessage(monitorError) }}
       </div>
@@ -289,42 +336,41 @@ defineExpose({
               Коробки не найдены
             </div>
 
-            <div v-else class="monitor-table-wrap">
-              <table class="monitor-table" data-testid="scanjob-monitor-boxes-table">
-                <thead>
-                  <tr>
-                    <th>Коробка</th>
-                    <th>Стикер коробки</th>
-                    <th>Посылки</th>
-                    <th>Не сканировано</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="box in boxes" :key="box.boxId">
-                    <td>
-                      <button
-                        type="button"
-                        class="monitor-link-button"
-                        data-testid="scanjob-monitor-box-row"
-                        @click="openBoxMonitor(box)"
-                        :disabled="isLoading"
-                      >
-                        {{ box.boxCode }}
-                      </button>
-                    </td>
-                    <td>
-                      <span :class="stickerClass(box.boxStickerScanned)">
-                        {{ stickerText(box.boxStickerScanned) }}
-                      </span>
-                    </td>
-                    <td>
-                      {{ formatCount(box.parcelsWithStickerScanned) }} / {{ formatCount(box.totalParcels) }}
-                    </td>
-                    <td>{{ formatCount(box.parcelsWithStickerNotScanned) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <v-data-table
+              v-else
+              :headers="boxHeaders"
+              :items="boxes"
+              :loading="isLoading"
+              density="compact"
+              class="elevation-1 interlaced-table"
+              data-testid="scanjob-monitor-boxes-table"
+            >
+              <template #[`item.boxCode`]="{ item }">
+                <button
+                  type="button"
+                  class="monitor-link-button"
+                  data-testid="scanjob-monitor-box-row"
+                  @click="openBoxMonitor(item)"
+                  :disabled="isLoading"
+                >
+                  {{ item.boxCode }}
+                </button>
+              </template>
+
+              <template #[`item.boxStickerScanned`]="{ item }">
+                <span :class="stickerClass(item.boxStickerScanned)">
+                  {{ stickerText(item.boxStickerScanned) }}
+                </span>
+              </template>
+
+              <template #[`item.parcelsProgress`]="{ item }">
+                {{ formatCount(item.parcelsWithStickerScanned) }} / {{ formatCount(item.totalParcels) }}
+              </template>
+
+              <template #[`item.parcelsWithStickerNotScanned`]="{ item }">
+                {{ formatCount(item.parcelsWithStickerNotScanned) }}
+              </template>
+            </v-data-table>
           </v-card>
         </div>
 
@@ -358,30 +404,21 @@ defineExpose({
               В коробке нет посылок
             </div>
 
-            <div v-else class="monitor-table-wrap">
-              <table class="monitor-table" data-testid="scanjob-monitor-parcels-table">
-                <thead>
-                  <tr>
-                    <th>Посылка</th>
-                    <th>Стикер</th>
-                    <th>Зона</th>
-                    <th>Статус</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="parcel in selectedParcels" :key="parcel.parcelId || parcel.parcelNumber">
-                    <td>{{ parcel.parcelNumber }}</td>
-                    <td>
-                      <span :class="stickerClass(parcel.stickerScanned)">
-                        {{ stickerText(parcel.stickerScanned) }}
-                      </span>
-                    </td>
-                    <td>{{ parcel.zoneName }}</td>
-                    <td>{{ parcel.statusTitle }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <v-data-table
+              v-else
+              :headers="parcelHeaders"
+              :items="selectedParcels"
+              :loading="isLoading"
+              density="compact"
+              class="elevation-1 interlaced-table"
+              data-testid="scanjob-monitor-parcels-table"
+            >
+              <template #[`item.stickerScanned`]="{ item }">
+                <span :class="stickerClass(item.stickerScanned)">
+                  {{ stickerText(item.stickerScanned) }}
+                </span>
+              </template>
+            </v-data-table>
           </v-card>
         </div>
       </template>
@@ -445,29 +482,6 @@ defineExpose({
 .monitor-section-heading h2 {
   margin: 0;
   font-size: 1.2rem;
-}
-
-.monitor-table-wrap {
-  overflow-x: auto;
-}
-
-.monitor-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.monitor-table th,
-.monitor-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: left;
-  vertical-align: middle;
-}
-
-.monitor-table th {
-  font-weight: 700;
-  color: #374151;
-  background: #f8fafc;
 }
 
 .monitor-link-button,

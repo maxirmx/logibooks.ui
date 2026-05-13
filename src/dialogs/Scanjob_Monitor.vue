@@ -287,6 +287,8 @@ defineExpose({
             icon="fa-solid fa-xmark"
             icon-size="2x"
             tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            title="Закрыть"
             data-testid="scanjob-monitor-close-action"
             @click="close"
           />

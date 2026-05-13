@@ -336,4 +336,333 @@ describe('Scanjob_Monitor.vue', () => {
     )
     expect(wrapper.text()).toContain('BOX-7')
   })
+
+  it('shows status-only panel when scanjob fails to load', async () => {
+    getById.mockResolvedValueOnce(null)
+    mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15 }
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="scanjob-monitor-status-only"]').exists()).toBe(true)
+  })
+
+  it('displays correct status text for each scanjob status in status-only mode', async () => {
+    const statusCases = [
+      { status: 10, text: 'Создано' },
+      { status: 15, text: 'Выполняется' },
+      { status: 18, text: 'Приостановлено' },
+      { status: 20, text: 'Завершено' },
+      { status: null, text: 'Неизвестно' },
+      { status: 99, text: '99' }
+    ]
+
+    for (const { status, text } of statusCases) {
+      vi.clearAllMocks()
+      getById.mockResolvedValueOnce(null)
+      mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status }
+      loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
+      startMonitor.mockResolvedValue(true)
+      clearMonitor.mockResolvedValue(true)
+      stopMonitor.mockResolvedValue(true)
+
+      const wrapper = mount(ScanjobMonitor, {
+        props: { scanjobId: 42 },
+        global: { stubs: defaultGlobalStubs }
+      })
+
+      await flushPromises()
+
+      const panel = wrapper.find('[data-testid="scanjob-monitor-status-only"]')
+      expect(panel.exists()).toBe(true)
+      expect(panel.text()).toContain(text)
+      wrapper.unmount()
+    }
+  })
+
+  it('shows monitor-unavailable panel when loadMonitorSnapshot fails', async () => {
+    loadMonitorSnapshot.mockImplementationOnce(() => {
+      monitorError.value = {}
+      return Promise.reject({})
+    })
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const panel = wrapper.find('[data-testid="scanjob-monitor-unavailable"]')
+    expect(panel.exists()).toBe(true)
+    expect(panel.text()).toContain('Ошибка при загрузке монитора сканирования')
+  })
+
+  it('shows specific message for status-400 monitor error', async () => {
+    loadMonitorSnapshot.mockImplementationOnce(() => {
+      monitorError.value = { status: 400 }
+      return Promise.reject({ status: 400, message: '' })
+    })
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const panel = wrapper.find('[data-testid="scanjob-monitor-unavailable"]')
+    expect(panel.exists()).toBe(true)
+    expect(panel.text()).toContain(
+      'Монитор доступен только для активного задания сканирования коробок и посылок'
+    )
+  })
+
+  it('shows empty-boxes message when register snapshot has no boxes', async () => {
+    const emptyBoxesSnapshot = { ...registerSnapshot, boxes: [] }
+    loadMonitorSnapshot.mockResolvedValue(emptyBoxesSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scanjob-monitor-empty-boxes"]').exists()).toBe(true)
+  })
+
+  it('shows empty-parcels message when box has no parcels', async () => {
+    const emptyParcelsBoxSnapshot = {
+      ...registerSnapshot,
+      area: 1,
+      boxes: [],
+      box: {
+        boxId: 7,
+        boxCode: 'BOX-7',
+        boxStickerScanned: true,
+        totalParcels: 0,
+        parcelsWithStickerScanned: 0,
+        parcelsWithStickerNotScanned: 0,
+        parcels: []
+      }
+    }
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(emptyParcelsBoxSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scanjob-monitor-empty-parcels"]').exists()).toBe(true)
+  })
+
+  it('ignores applySnapshot with stale scope version', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    // Apply snapshot with stale version 0 (current scopeVersion is 1 after mount)
+    const staleSnapshot = {
+      ...registerSnapshot,
+      boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'STALE-BOX' }]
+    }
+    wrapper.vm.applySnapshot(staleSnapshot, { version: 0, immediate: true })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('STALE-BOX')
+    expect(wrapper.text()).toContain('BOX-7')
+  })
+
+  it('ignores applySnapshot with wrong scanJobId', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const wrongJobSnapshot = {
+      ...registerSnapshot,
+      scanJobId: 999,
+      boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'WRONG-BOX' }]
+    }
+    wrapper.vm.applySnapshot(wrongJobSnapshot, { immediate: true })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('WRONG-BOX')
+  })
+
+  it('ignores handleMonitorClosed when scanJobId does not match', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onClosed = startMonitor.mock.calls[0][1].onClosed
+    onClosed(999, 2)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(true)
+  })
+
+  it('shows loading state during initial snapshot load', async () => {
+    let resolveSnapshot
+    loadMonitorSnapshot.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSnapshot = resolve
+      })
+    )
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scanjob-monitor-loading"]').exists()).toBe(true)
+
+    resolveSnapshot(registerSnapshot)
+    await flushPromises()
+    startMonitor.mockResolvedValue(true)
+    await flushPromises()
+  })
+
+  it('renders aggregate cards with null/undefined snapshot fields using ?? 0 fallback', async () => {
+    const sparseSnapshot = {
+      scanJobId: 42,
+      area: 0,
+      totalBoxes: null,
+      boxesWithStickerScanned: undefined,
+      boxesWithStickerNotScanned: null,
+      totalParcels: undefined,
+      parcelsWithStickerScanned: null,
+      parcelsWithStickerNotScanned: undefined,
+      scannedItemsNotInRegister: null,
+      boxes: [],
+      box: null
+    }
+    loadMonitorSnapshot.mockResolvedValue(sparseSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const summary = wrapper.find('[data-testid="scanjob-monitor-summary"]')
+    expect(summary.exists()).toBe(true)
+    expect(summary.text()).toContain('0 / 0')
+  })
+
+  it('formatCount handles null/undefined value via ?? 0', async () => {
+    const snapshotWithNullParcels = {
+      ...registerSnapshot,
+      boxes: [
+        {
+          boxId: 7,
+          boxCode: 'BOX-7',
+          boxStickerScanned: true,
+          totalParcels: null,
+          parcelsWithStickerScanned: undefined,
+          parcelsWithStickerNotScanned: null
+        }
+      ]
+    }
+    loadMonitorSnapshot.mockResolvedValue(snapshotWithNullParcels)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    // Boxes are rendered; table shows with null-count fields defaulting to 0
+    expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(true)
+    // The formatCount(null/undefined) via ?? 0 renders as '0'
+    expect(wrapper.text()).toContain('BOX-7')
+  })
+
+  it('clears pending throttled snapshot when switching scope', async () => {
+    vi.useFakeTimers()
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+
+    // Dispatch a non-immediate snapshot (starts a throttle timer)
+    onSnapshot({ ...registerSnapshot, boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'PENDING-BOX' }] })
+
+    // Snapshot is pending (not yet applied)
+    expect(wrapper.text()).not.toContain('PENDING-BOX')
+
+    // Switch scope via openRegisterMonitor (calls clearPendingSnapshot while timer is active)
+    loadMonitorSnapshot.mockResolvedValue({
+      ...registerSnapshot,
+      boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'FRESH-BOX' }]
+    })
+    clearMonitor.mockResolvedValue(true)
+    startMonitor.mockResolvedValue(true)
+
+    const switchPromise = wrapper.vm.openRegisterMonitor()
+    vi.runAllTimers()
+    await switchPromise
+    await flushPromises()
+
+    // Pending snapshot was cleared; fresh snapshot from new scope is shown
+    expect(wrapper.text()).not.toContain('PENDING-BOX')
+  })
+
+  it('clears pending throttled snapshot on handleMonitorClosed', async () => {
+    vi.useFakeTimers()
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const { onSnapshot, onClosed } = startMonitor.mock.calls[0][1]
+
+    // Build up pending snapshot in throttle timer
+    onSnapshot({ ...registerSnapshot, boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'CANCELLABLE' }] })
+    expect(wrapper.text()).not.toContain('CANCELLABLE')
+
+    // Close the monitor before the timer fires
+    onClosed(42, 20)
+    await flushPromises()
+
+    vi.runAllTimers()
+    await flushPromises()
+
+    // Monitor closed; pending snapshot should have been discarded
+    expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('CANCELLABLE')
+  })
 })

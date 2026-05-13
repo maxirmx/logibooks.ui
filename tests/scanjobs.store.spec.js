@@ -139,6 +139,45 @@ describe('scanjobs store', () => {
       expect(store.error).toBeNull()
     })
 
+    it('falls back to empty items array and 0 totalCount when response has no items/pagination', async () => {
+      fetchWrapper.get.mockResolvedValue({})
+      const store = useScanjobsStore()
+
+      await store.getAll()
+
+      expect(store.items).toEqual([])
+      expect(store.totalCount).toBe(0)
+    })
+
+    it('uses id/desc fallbacks when sort_by is empty', async () => {
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.scanjobs_sort_by = []
+
+      await store.getAll()
+
+      const calledUrl = fetchWrapper.get.mock.calls[0][0]
+      const urlParams = new URL(calledUrl).searchParams
+      expect(urlParams.get('sortBy')).toBe('id')
+      expect(urlParams.get('sortOrder')).toBe('desc')
+    })
+
+    it('appends search param when scanjobs_search is set', async () => {
+      const paginatedResponse = { items: mockScanjobs, pagination: { totalCount: 2 } }
+      fetchWrapper.get.mockResolvedValue(paginatedResponse)
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.scanjobs_search = 'Приемка'
+
+      await store.getAll()
+
+      const calledUrl = fetchWrapper.get.mock.calls[0][0]
+      const urlParams = new URL(calledUrl).searchParams
+      expect(urlParams.has('search')).toBe(true)
+      expect(decodeURIComponent(urlParams.get('search'))).toBe('Приемка')
+    })
+
     it('handles fetch error', async () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -184,6 +223,30 @@ describe('scanjobs store', () => {
       expect(url.searchParams.get('search')).toBe('CODE')
       expect(store.scannedItems).toEqual(paginatedResponse.items)
       expect(store.scannedItemsTotalCount).toBe(1)
+    })
+
+    it('falls back to empty items and 0 totalCount when response has no items/pagination', async () => {
+      fetchWrapper.get.mockResolvedValue({})
+      const store = useScanjobsStore()
+
+      await store.getScannedItems(5)
+
+      expect(store.scannedItems).toEqual([])
+      expect(store.scannedItemsTotalCount).toBe(0)
+    })
+
+    it('uses scanTime/desc fallbacks when scanneditems_sort_by is empty', async () => {
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.scanneditems_sort_by = []
+
+      await store.getScannedItems(5)
+
+      const calledUrl = fetchWrapper.get.mock.calls[0][0]
+      const url = new URL(calledUrl)
+      expect(url.searchParams.get('sortBy')).toBe('scanTime')
+      expect(url.searchParams.get('sortOrder')).toBe('desc')
     })
 
     it('handles errors when fetching scanned items', async () => {
@@ -547,6 +610,40 @@ describe('scanjobs store', () => {
       expect(onSnapshot).toHaveBeenCalledWith(monitorSnapshot)
     })
 
+    it('getMonitorAccessToken returns user token via accessTokenFactory', async () => {
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.user = { token: 'test-token-xyz' }
+
+      await store.startMonitor(42, { area: 0 })
+
+      const accessTokenFactory = signalRWithUrl.mock.calls[0][1].accessTokenFactory
+      expect(typeof accessTokenFactory).toBe('function')
+      expect(accessTokenFactory()).toBe('test-token-xyz')
+    })
+
+    it('getMonitorAccessToken returns empty string when user has no token', async () => {
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.user = null
+
+      await store.startMonitor(42, { area: 0 })
+
+      const accessTokenFactory = signalRWithUrl.mock.calls[0][1].accessTokenFactory
+      expect(accessTokenFactory()).toBe('')
+    })
+
+    it('startMonitor throws and sets monitorError when invoke fails', async () => {
+      const invokeError = new Error('Invoke ObserveScanJob failed')
+      signalRConnection.invoke.mockRejectedValueOnce(invokeError)
+
+      const store = useScanjobsStore()
+
+      await expect(store.startMonitor(42, { area: 0 })).rejects.toThrow('Invoke ObserveScanJob failed')
+      expect(store.monitorError).toBe(invokeError)
+      expect(store.monitorLoading).toBe(false)
+    })
+
     it('records closed monitor event', async () => {
       const onClosed = vi.fn()
       const store = useScanjobsStore()
@@ -566,6 +663,123 @@ describe('scanjobs store', () => {
       await store.stopMonitor()
 
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobMonitor')
+      expect(signalRConnection.stop).toHaveBeenCalled()
+    })
+
+    it('clearMonitor returns false when no connection exists', async () => {
+      const store = useScanjobsStore()
+
+      const result = await store.clearMonitor()
+      expect(result).toBe(false)
+    })
+
+    it('clearMonitor returns false when connection is disconnected', async () => {
+      const store = useScanjobsStore()
+
+      // Build connection without connecting
+      await store.startMonitor(42, { area: 0 })
+      await store.stopMonitor()
+
+      // A new store instance has no connection
+      setActivePinia(createPinia())
+      const freshStore = useScanjobsStore()
+      const result = await freshStore.clearMonitor()
+      expect(result).toBe(false)
+    })
+
+    it('stopMonitor returns false when there is no connection', async () => {
+      const store = useScanjobsStore()
+
+      const result = await store.stopMonitor()
+      expect(result).toBe(false)
+    })
+
+    it('stopMonitor throws and sets monitorError when stop fails', async () => {
+      const stopError = new Error('Stop failed')
+      signalRConnection.stop.mockRejectedValueOnce(stopError)
+
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0 })
+
+      await expect(store.stopMonitor()).rejects.toThrow('Stop failed')
+      expect(store.monitorError).toBe(stopError)
+    })
+
+    it('ensureMonitorStarted reuses existing Connected connection without calling start again', async () => {
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 0 })
+      expect(signalRConnection.start).toHaveBeenCalledTimes(1)
+
+      await store.startMonitor(42, { area: 1, boxId: 5 })
+      expect(signalRConnection.start).toHaveBeenCalledTimes(1)
+    })
+
+    it('loadMonitorSnapshot throws and sets monitorError on failure', async () => {
+      const fetchError = new Error('Snapshot error')
+      fetchWrapper.get.mockRejectedValue(fetchError)
+
+      const store = useScanjobsStore()
+
+      await expect(store.loadMonitorSnapshot(42, { area: 0 })).rejects.toThrow('Snapshot error')
+      expect(store.monitorError).toBe(fetchError)
+      expect(store.monitorLoading).toBe(false)
+    })
+
+    it('clearMonitor throws and sets monitorError when invoke fails', async () => {
+      const invokeError = new Error('Invoke failed')
+
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0 })
+
+      signalRConnection.invoke.mockRejectedValueOnce(invokeError)
+
+      await expect(store.clearMonitor()).rejects.toThrow('Invoke failed')
+      expect(store.monitorError).toBe(invokeError)
+    })
+
+    it('sets monitorError when connection closes with an error', async () => {
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0 })
+
+      const closeError = new Error('Connection dropped')
+      signalRHandlers.onclose(closeError)
+
+      expect(store.monitorError).toBe(closeError)
+    })
+
+    it('does not set monitorError when connection closes cleanly', async () => {
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0 })
+
+      signalRHandlers.onclose(null)
+
+      expect(store.monitorError).toBeNull()
+    })
+
+    it('buildMonitorRequest omits boxId for Boxes area', async () => {
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0, boxId: 7 })
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
+        scanJobId: 42,
+        area: 0
+      })
+    })
+
+    it('stopMonitor does not invoke ClearScanJobMonitor when connection is disconnected', async () => {
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0 })
+
+      // Manually set the state to Disconnected
+      signalRConnection.state = 'Disconnected'
+      signalRConnection.invoke.mockClear()
+
+      const result = await store.stopMonitor()
+
+      expect(result).toBe(true)
+      // ClearScanJobMonitor should not be invoked when disconnected
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ClearScanJobMonitor')
       expect(signalRConnection.stop).toHaveBeenCalled()
     })
   })

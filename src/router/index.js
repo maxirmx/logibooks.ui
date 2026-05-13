@@ -141,6 +141,15 @@ const router = createRouter({
       meta: { reqWhRole: true }
     },
     {
+      path: '/scanjobs/:id/monitor',
+      name: 'Монитор сканирования',
+      component: () => import('@/views/Scanjob_Monitor_View.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqWhRole: true }
+    },
+    {
       path: '/notification/create',
       name: 'Создание нотификации',
       component: () => import('@/views/Notification_CreateView.vue'),

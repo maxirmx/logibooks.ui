@@ -39,6 +39,7 @@ const mockScanjobs = ref([
     registerStatusIdAfter: 31,
     parcelFoundStatusIdAfter: 41,
     parcelNotFoundStatusIdAfter: 42,
+    registerId: 22,
     warehouseId: 10
   }
 ])
@@ -259,6 +260,7 @@ describe('Scanjobs_List.vue', () => {
         registerStatusIdAfter: 31,
         parcelFoundStatusIdAfter: 41,
         parcelNotFoundStatusIdAfter: 42,
+        registerId: 22,
         warehouseId: 10
       }
     ]
@@ -292,6 +294,18 @@ describe('Scanjobs_List.vue', () => {
   it('maps warehouse name', async () => {
     expect(mockGetWarehouseName(10)).toBe('Основной склад')
     expect(mockGetWarehouseName(20)).toBe('20')
+  })
+
+  it('routes to scanjob monitor with scanjob id', async () => {
+    const wrapper = mount(ScanjobsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    wrapper.vm.openScanjobMonitor({ id: 7, registerId: 22 })
+
+    expect(mockPush).toHaveBeenCalledWith('/scanjobs/7/monitor')
   })
 
   it('calls delete function when delete button is clicked', async () => {

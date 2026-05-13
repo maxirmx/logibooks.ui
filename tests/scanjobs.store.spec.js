@@ -9,6 +9,34 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
+const signalRHandlers = vi.hoisted(() => ({}))
+const signalRConnection = vi.hoisted(() => ({
+  state: 'Disconnected',
+  start: vi.fn(() => {
+    signalRConnection.state = 'Connected'
+    return Promise.resolve()
+  }),
+  invoke: vi.fn(() => Promise.resolve()),
+  stop: vi.fn(() => {
+    signalRConnection.state = 'Disconnected'
+    return Promise.resolve()
+  }),
+  on: vi.fn((eventName, handler) => {
+    signalRHandlers[eventName] = handler
+  }),
+  onclose: vi.fn((handler) => {
+    signalRHandlers.onclose = handler
+  })
+}))
+const signalRBuild = vi.hoisted(() => vi.fn(() => signalRConnection))
+const signalRWithUrl = vi.hoisted(() => vi.fn(function withUrl() { return this }))
+const signalRWithAutomaticReconnect = vi.hoisted(() => vi.fn(function withAutomaticReconnect() { return this }))
+const signalRBuilder = vi.hoisted(() => vi.fn(() => ({
+  withUrl: signalRWithUrl,
+  withAutomaticReconnect: signalRWithAutomaticReconnect,
+  build: signalRBuild
+})))
+
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
@@ -20,6 +48,14 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
 
 vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
+}))
+
+vi.mock('@microsoft/signalr', () => ({
+  HubConnectionBuilder: signalRBuilder,
+  HubConnectionState: {
+    Connected: 'Connected',
+    Disconnected: 'Disconnected'
+  }
 }))
 
 const mockScanjobs = [
@@ -56,6 +92,8 @@ describe('scanjobs store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    Object.keys(signalRHandlers).forEach((key) => delete signalRHandlers[key])
+    signalRConnection.state = 'Disconnected'
   })
 
   it('initializes with default values', () => {
@@ -71,6 +109,10 @@ describe('scanjobs store', () => {
       modes: [],
       statuses: []
     })
+    expect(store.monitorSnapshot).toBeNull()
+    expect(store.monitorLoading).toBe(false)
+    expect(store.monitorError).toBeNull()
+    expect(store.monitorClosed).toBeNull()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -449,6 +491,82 @@ describe('scanjobs store', () => {
       expect(store.getOpsLabel(store.ops.modes, 999)).toBe('999')
       // null/undefined list -> fallback
       expect(store.getOpsLabel(null, 5)).toBe('5')
+    })
+  })
+
+  describe('monitor', () => {
+    const monitorSnapshot = {
+      scanJobId: 42,
+      area: 0,
+      boxes: [],
+      box: null
+    }
+
+    it('loads monitor snapshot', async () => {
+      fetchWrapper.get.mockResolvedValue(monitorSnapshot)
+      const store = useScanjobsStore()
+
+      const result = await store.loadMonitorSnapshot(42, { area: 0 })
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=0`)
+      expect(result).toEqual(monitorSnapshot)
+      expect(store.monitorSnapshot).toEqual(monitorSnapshot)
+      expect(store.monitorLoading).toBe(false)
+      expect(store.monitorError).toBeNull()
+    })
+
+    it('loads box monitor snapshot with box id', async () => {
+      fetchWrapper.get.mockResolvedValue({ ...monitorSnapshot, area: 1 })
+      const store = useScanjobsStore()
+
+      await store.loadMonitorSnapshot(42, { area: 1, boxId: 7 })
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=1&boxId=7`)
+    })
+
+    it('starts SignalR monitor and forwards snapshots', async () => {
+      const onSnapshot = vi.fn()
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 1, boxId: 7, onSnapshot })
+
+      expect(signalRWithUrl).toHaveBeenCalledWith('http://localhost:8080/hubs/scan-jobs', {
+        accessTokenFactory: expect.any(Function),
+        withCredentials: false
+      })
+      expect(signalRConnection.start).toHaveBeenCalled()
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
+        scanJobId: 42,
+        area: 1,
+        boxId: 7
+      })
+
+      signalRHandlers.ScanJobMonitorSnapshot(monitorSnapshot)
+
+      expect(store.monitorSnapshot).toEqual(monitorSnapshot)
+      expect(onSnapshot).toHaveBeenCalledWith(monitorSnapshot)
+    })
+
+    it('records closed monitor event', async () => {
+      const onClosed = vi.fn()
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 0, onClosed })
+      signalRHandlers.ScanJobMonitorClosed(42, 2)
+
+      expect(store.monitorClosed).toEqual({ scanJobId: 42, status: 2 })
+      expect(onClosed).toHaveBeenCalledWith(42, 2)
+    })
+
+    it('clears and stops monitor connection', async () => {
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 0 })
+      await store.clearMonitor()
+      await store.stopMonitor()
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobMonitor')
+      expect(signalRConnection.stop).toHaveBeenCalled()
     })
   })
 })

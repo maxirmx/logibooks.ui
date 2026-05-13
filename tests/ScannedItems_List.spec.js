@@ -34,6 +34,11 @@ const getById = vi.fn().mockResolvedValue({ id: 7, name: 'Scanjob A' })
 const alertRef = ref(null)
 const alertError = vi.fn()
 const alertClear = vi.fn()
+const mockBack = vi.hoisted(() => vi.fn())
+
+vi.mock('@/router', () => ({
+  default: { back: mockBack }
+}), { virtual: true })
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -123,5 +128,16 @@ describe('ScannedItems_List.vue', () => {
 
     const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual(['code', 'userName', 'scanTime', 'number'])
+  })
+
+  it('closes via header action', async () => {
+    const wrapper = mount(ScannedItemsList, {
+      props: { scanjobId: 7 },
+      global: { stubs: globalStubs }
+    })
+
+    await wrapper.get('[data-testid="scanned-items-close-action"]').trigger('click')
+
+    expect(mockBack).toHaveBeenCalled()
   })
 })

@@ -36,7 +36,7 @@ const localSearch = ref('')
 localSearch.value = scanjobs_search.value || ''
 
 const headers = [
-  ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '140px' }] : []),
 //  { title: 'Номер', key: 'id', sortable: true },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
@@ -53,6 +53,10 @@ function openEditDialog(scanJob) {
 
 function openScannedItems(scanJob) {
   router.push(`/scanjobs/${scanJob.id}/scanned-items`)
+}
+
+function openScanjobMonitor(scanJob) {
+  router.push(`/scanjobs/${scanJob.id}/monitor`)
 }
 
 async function deleteScanjob(scanJob) {
@@ -193,6 +197,7 @@ onUnmounted(() => {
 defineExpose({
   openEditDialog,
   openScannedItems,
+  openScanjobMonitor,
   deleteScanjob,
   startScanjob,
   pauseScanjob,
@@ -300,6 +305,13 @@ defineExpose({
               icon="fa-solid fa-list"
               tooltip-text="Результаты сканирования"
               @click="openScannedItems"
+              :disabled="runningAction || loading"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-bed-pulse"
+              tooltip-text="Монитор сканирования"
+              @click="openScanjobMonitor"
               :disabled="runningAction || loading"
             />
             <ActionButton

@@ -4,11 +4,18 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import * as signalR from '@microsoft/signalr'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
+const scanJobMonitorHubUrl = `${apiUrl.replace(/\/api\/?$/i, '')}/hubs/scan-jobs`
+
+const scanJobMonitorArea = {
+  Boxes: 0,
+  Box: 1
+}
 
 export const useScanjobsStore = defineStore('scanjobs', () => {
   const items = ref([])
@@ -28,9 +35,17 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   })
   const opsLoading = ref(false)
   const opsError = ref(null)
+  const monitorSnapshot = ref(null)
+  const monitorLoading = ref(false)
+  const monitorError = ref(null)
+  const monitorClosed = ref(null)
 
   let opsInitialized = false
   let opsPromise = null
+  let monitorConnection = null
+  let monitorStartPromise = null
+  let monitorSnapshotHandler = null
+  let monitorClosedHandler = null
 
 
   function getOpsLabel(list, value) {
@@ -95,6 +110,160 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       scannedItemsError.value = err
     } finally {
       scannedItemsLoading.value = false
+    }
+  }
+
+  function getMonitorAccessToken() {
+    const authStore = useAuthStore()
+    return authStore.user?.token ?? ''
+  }
+
+  function buildMonitorRequest(scanJobId, area, boxId) {
+    const request = {
+      scanJobId: Number(scanJobId),
+      area: Number(area)
+    }
+
+    if (request.area === scanJobMonitorArea.Box && boxId != null) {
+      request.boxId = Number(boxId)
+    }
+
+    return request
+  }
+
+  function ensureMonitorConnection() {
+    if (monitorConnection) {
+      return monitorConnection
+    }
+
+    monitorConnection = new signalR.HubConnectionBuilder()
+      .withUrl(scanJobMonitorHubUrl, {
+        accessTokenFactory: getMonitorAccessToken,
+        withCredentials: false
+      })
+      .withAutomaticReconnect()
+      .build()
+
+    monitorConnection.on('ScanJobMonitorSnapshot', (snapshot) => {
+      monitorSnapshot.value = snapshot
+      if (monitorSnapshotHandler) {
+        monitorSnapshotHandler(snapshot)
+      }
+    })
+
+    monitorConnection.on('ScanJobMonitorClosed', (scanJobId, status) => {
+      monitorClosed.value = { scanJobId, status }
+      if (monitorClosedHandler) {
+        monitorClosedHandler(scanJobId, status)
+      }
+    })
+
+    monitorConnection.onclose((err) => {
+      if (err) {
+        monitorError.value = err
+      }
+    })
+
+    return monitorConnection
+  }
+
+  async function ensureMonitorStarted() {
+    const connection = ensureMonitorConnection()
+
+    if (connection.state === signalR.HubConnectionState.Connected) {
+      return connection
+    }
+
+    if (!monitorStartPromise) {
+      monitorStartPromise = connection.start().finally(() => {
+        monitorStartPromise = null
+      })
+    }
+
+    await monitorStartPromise
+    return connection
+  }
+
+  async function loadMonitorSnapshot(scanJobId, { area = scanJobMonitorArea.Boxes, boxId = null } = {}) {
+    monitorLoading.value = true
+    monitorError.value = null
+    monitorClosed.value = null
+
+    try {
+      const params = new URLSearchParams({ area: String(area) })
+      if (Number(area) === scanJobMonitorArea.Box && boxId != null) {
+        params.append('boxId', String(boxId))
+      }
+
+      const snapshot = await fetchWrapper.get(`${baseUrl}/${scanJobId}/monitor?${params.toString()}`)
+      monitorSnapshot.value = snapshot
+      return snapshot
+    } catch (err) {
+      monitorError.value = err
+      throw err
+    } finally {
+      monitorLoading.value = false
+    }
+  }
+
+  async function startMonitor(scanJobId, {
+    area = scanJobMonitorArea.Boxes,
+    boxId = null,
+    onSnapshot = null,
+    onClosed = null
+  } = {}) {
+    monitorLoading.value = true
+    monitorError.value = null
+    monitorClosed.value = null
+    monitorSnapshotHandler = onSnapshot
+    monitorClosedHandler = onClosed
+
+    try {
+      const connection = await ensureMonitorStarted()
+      await connection.invoke('ObserveScanJob', buildMonitorRequest(scanJobId, area, boxId))
+      return true
+    } catch (err) {
+      monitorError.value = err
+      throw err
+    } finally {
+      monitorLoading.value = false
+    }
+  }
+
+  async function clearMonitor() {
+    if (!monitorConnection || monitorConnection.state !== signalR.HubConnectionState.Connected) {
+      return false
+    }
+
+    try {
+      await monitorConnection.invoke('ClearScanJobMonitor')
+      return true
+    } catch (err) {
+      monitorError.value = err
+      throw err
+    }
+  }
+
+  async function stopMonitor() {
+    monitorSnapshotHandler = null
+    monitorClosedHandler = null
+
+    if (!monitorConnection) {
+      return false
+    }
+
+    const connection = monitorConnection
+
+    try {
+      if (connection.state === signalR.HubConnectionState.Connected) {
+        await connection.invoke('ClearScanJobMonitor')
+      }
+      await connection.stop()
+      monitorConnection = null
+      return true
+    } catch (err) {
+      monitorError.value = err
+      throw err
     }
   }
 
@@ -245,6 +414,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     ops,
     opsLoading,
     opsError,
+    monitorSnapshot,
+    monitorLoading,
+    monitorError,
+    monitorClosed,
     getAll,
     getById,
     create,
@@ -257,5 +430,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     getOps,
     ensureOpsLoaded,
     getOpsLabel,
+    loadMonitorSnapshot,
+    startMonitor,
+    clearMonitor,
+    stopMonitor,
+    scanJobMonitorArea,
   }
 })

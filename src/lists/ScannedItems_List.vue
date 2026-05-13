@@ -4,13 +4,16 @@
 // This file is a part of Logibooks UI application
 
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
+import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
 import { mdiMagnify } from '@mdi/js'
 
 const props = defineProps({
@@ -21,7 +24,7 @@ const scanjobsStore = useScanjobsStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
-const { scannedItems, scannedItemsLoading, scannedItemsError, scannedItemsTotalCount, scanjob } =
+const { scannedItems, scannedItemsLoading, scannedItemsError, scannedItemsTotalCount } =
   storeToRefs(scanjobsStore)
 const { alert } = storeToRefs(alertStore)
 const {
@@ -33,7 +36,7 @@ const {
 
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
-const scanjobLoading = ref(true)
+const { scanjobHeading, loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
 
 const localSearch = ref('')
 localSearch.value = scanneditems_search.value || ''
@@ -70,12 +73,6 @@ const headers = computed(() => [
   { title: 'Номер посылки', key: 'number', align: 'start' }
 ])
 
-const scanjobHeading = computed(() => {
-  if (scanjobLoading.value) return 'Загрузка задания на сканирование...'
-  if (scanjob.value?.name) return `${scanjob.value.name}`
-  return 'Результаты сканирования'
-})
-
 function formatScanTime(value) {
   if (!value) return ''
   const date = new Date(value)
@@ -86,6 +83,10 @@ function formatScanTime(value) {
   const hh = String(date.getHours()).padStart(2, '0')
   const min = String(date.getMinutes()).padStart(2, '0')
   return `${dd}.${mm}.${yyyy} ${hh}:${min}`
+}
+
+function close() {
+  router.back()
 }
 
 async function loadScannedItems() {
@@ -107,11 +108,7 @@ const watcherStop = watch(
 
 onMounted(async () => {
   try {
-    const loaded = await scanjobsStore.getById(props.scanjobId)
-    if (!loaded && isComponentMounted.value) {
-      alertStore.error('Не удалось загрузить задание на сканирование')
-    }
-    if (isComponentMounted.value) scanjobLoading.value = false
+    await loadScanjob()
     await loadScannedItems()
   } catch {
     if (isComponentMounted.value) {
@@ -120,7 +117,6 @@ onMounted(async () => {
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
-      scanjobLoading.value = false
     }
   }
 })
@@ -138,8 +134,20 @@ onUnmounted(() => {
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ scanjobHeading }}</h1>
-      <div class="header-actions" v-if="scannedItemsLoading || isInitializing">
-        <span class="spinner-border spinner-border-m"></span>
+      <div class="header-actions-bar">
+        <div class="header-actions header-actions-group">
+          <span v-if="scannedItemsLoading || isInitializing" class="spinner-border spinner-border-m"></span>
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            title="Закрыть"
+            data-testid="scanned-items-close-action"
+            @click="close"
+          />
+        </div>
       </div>
     </div>
 

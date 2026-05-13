@@ -80,6 +80,12 @@ export const useAuthStore = defineStore('auth', () => {
   const scanneditems_search = ref('')
   const scanneditems_sort_by = ref([{ key: 'scanTime', order: 'desc' }])
   const scanneditems_page = ref(1)
+  const scanjobmonitor_boxes_per_page = ref(100)
+  const scanjobmonitor_boxes_sort_by = ref([{ key: 'boxCode', order: 'asc' }])
+  const scanjobmonitor_boxes_page = ref(1)
+  const scanjobmonitor_parcels_per_page = ref(100)
+  const scanjobmonitor_parcels_sort_by = ref([{ key: 'parcelNumber', order: 'asc' }])
+  const scanjobmonitor_parcels_page = ref(1)
   const notifications_per_page = ref(100)
   const notifications_search = ref('')
   const notifications_sort_by = ref(['id'])
@@ -288,6 +294,12 @@ export const useAuthStore = defineStore('auth', () => {
     scanneditems_search,
     scanneditems_sort_by,
     scanneditems_page,
+    scanjobmonitor_boxes_per_page,
+    scanjobmonitor_boxes_sort_by,
+    scanjobmonitor_boxes_page,
+    scanjobmonitor_parcels_per_page,
+    scanjobmonitor_parcels_sort_by,
+    scanjobmonitor_parcels_page,
     notifications_per_page,
     notifications_search,
     notifications_sort_by,

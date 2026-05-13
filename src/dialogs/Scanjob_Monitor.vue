@@ -7,9 +7,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
 import ActionButton from '@/components/ActionButton.vue'
+import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
 const props = defineProps({
   scanjobId: { type: Number, required: true }
@@ -21,9 +23,18 @@ const MONITOR_THROTTLE_MS = 150
 const SCAN_JOB_STATUS_IN_PROGRESS = 15
 
 const scanJobsStore = useScanjobsStore()
+const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
+const {
+  scanjobmonitor_boxes_per_page,
+  scanjobmonitor_boxes_sort_by,
+  scanjobmonitor_boxes_page,
+  scanjobmonitor_parcels_per_page,
+  scanjobmonitor_parcels_sort_by,
+  scanjobmonitor_parcels_page
+} = storeToRefs(authStore)
 const isComponentMounted = ref(true)
 const { scanjobHeading, loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
 
@@ -335,9 +346,15 @@ defineExpose({
             </div>
 
             <v-data-table
+              v-model:items-per-page="scanjobmonitor_boxes_per_page"
+              v-model:page="scanjobmonitor_boxes_page"
+              v-model:sort-by="scanjobmonitor_boxes_sort_by"
               v-else
               :headers="boxHeaders"
               :items="boxes"
+              :items-per-page-options="itemsPerPageOptions"
+              items-per-page-text="Коробок на странице"
+              page-text="{0}-{1} из {2}"
               :loading="isLoading"
               density="compact"
               class="elevation-1 interlaced-table"
@@ -400,9 +417,15 @@ defineExpose({
             </div>
 
             <v-data-table
+              v-model:items-per-page="scanjobmonitor_parcels_per_page"
+              v-model:page="scanjobmonitor_parcels_page"
+              v-model:sort-by="scanjobmonitor_parcels_sort_by"
               v-else
               :headers="parcelHeaders"
               :items="selectedParcels"
+              :items-per-page-options="itemsPerPageOptions"
+              items-per-page-text="Посылок на странице"
+              page-text="{0}-{1} из {2}"
               :loading="isLoading"
               density="compact"
               class="elevation-1 interlaced-table"

@@ -36,6 +36,30 @@ const loadMonitorSnapshot = vi.hoisted(() => vi.fn())
 const startMonitor = vi.hoisted(() => vi.fn())
 const clearMonitor = vi.hoisted(() => vi.fn())
 const stopMonitor = vi.hoisted(() => vi.fn())
+const monitorBoxesPerPage = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: 25
+}))
+const monitorBoxesSortBy = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: [{ key: 'boxCode', order: 'desc' }]
+}))
+const monitorBoxesPage = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: 2
+}))
+const monitorParcelsPerPage = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: 50
+}))
+const monitorParcelsSortBy = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: [{ key: 'parcelNumber', order: 'desc' }]
+}))
+const monitorParcelsPage = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: 3
+}))
 
 const registerSnapshot = {
   scanJobId: 42,
@@ -135,6 +159,17 @@ vi.mock('@/stores/alert.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({
+    scanjobmonitor_boxes_per_page: monitorBoxesPerPage,
+    scanjobmonitor_boxes_sort_by: monitorBoxesSortBy,
+    scanjobmonitor_boxes_page: monitorBoxesPage,
+    scanjobmonitor_parcels_per_page: monitorParcelsPerPage,
+    scanjobmonitor_parcels_sort_by: monitorParcelsSortBy,
+    scanjobmonitor_parcels_page: monitorParcelsPage
+  })
+}))
+
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return {
@@ -152,6 +187,39 @@ vi.mock('pinia', async () => {
   }
 })
 
+const monitorGlobalStubs = {
+  ...defaultGlobalStubs,
+  'v-data-table': {
+    name: 'v-data-table',
+    template: `
+      <div class="v-data-table-stub" data-testid="v-data-table" v-bind="$attrs">
+        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
+            <slot :name="'item.' + header.key" :item="item">
+              {{ item[header.key] }}
+            </slot>
+          </div>
+        </div>
+        <slot></slot>
+      </div>
+    `,
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsPerPage',
+      'page',
+      'sortBy',
+      'itemsPerPageOptions',
+      'itemsPerPageText',
+      'pageText',
+      'density',
+      'class'
+    ],
+    inheritAttrs: false
+  }
+}
+
 describe('Scanjob_Monitor.vue', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -160,6 +228,12 @@ describe('Scanjob_Monitor.vue', () => {
     monitorLoading.value = false
     monitorError.value = null
     monitorClosed.value = null
+    monitorBoxesPerPage.value = 25
+    monitorBoxesSortBy.value = [{ key: 'boxCode', order: 'desc' }]
+    monitorBoxesPage.value = 2
+    monitorParcelsPerPage.value = 50
+    monitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
+    monitorParcelsPage.value = 3
     mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15 }
     getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15 })
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
@@ -171,7 +245,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('loads and renders register monitor on mount', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -194,12 +268,18 @@ describe('Scanjob_Monitor.vue', () => {
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
     expect(registerSection.text()).toContain('BOX-7')
     expect(registerSection.text()).toContain('3 / 2 / 1')
+
+    const boxesTable = wrapper.findComponent({ name: 'v-data-table' })
+    expect(boxesTable.exists()).toBe(true)
+    expect(boxesTable.props('itemsPerPage')).toBe(25)
+    expect(boxesTable.props('page')).toBe(2)
+    expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
   })
 
   it('closes via header action', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await wrapper.vm.close()
@@ -212,7 +292,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -225,6 +305,12 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('P-70')
     expect(wrapper.text()).toContain('P-71')
+
+    const parcelsTable = wrapper.findComponent({ name: 'v-data-table' })
+    expect(parcelsTable.exists()).toBe(true)
+    expect(parcelsTable.props('itemsPerPage')).toBe(50)
+    expect(parcelsTable.props('page')).toBe(3)
+    expect(parcelsTable.props('sortBy')).toEqual([{ key: 'parcelNumber', order: 'desc' }])
   })
 
   it('returns from box monitor to register monitor', async () => {

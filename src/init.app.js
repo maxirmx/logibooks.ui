@@ -65,7 +65,8 @@ import {
   faArrowDown19,
   faArrowUp91,
   faRectangleList,
-  faArrowsToEye
+  faArrowsToEye,
+  faBedPulse
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -123,7 +124,8 @@ library.add(
   faArrowDown19,
   faArrowUp91,
   faRectangleList,
-  faArrowsToEye
+  faArrowsToEye,
+  faBedPulse
 )
 
 import 'vuetify/styles'

@@ -705,6 +705,22 @@ describe('scanjobs store', () => {
       expect(store.monitorError).toBe(stopError)
     })
 
+    it('stopMonitor retains monitorConnection reference when stop throws (allows retry)', async () => {
+      const stopError = new Error('Stop failed')
+      signalRConnection.stop.mockRejectedValueOnce(stopError)
+      signalRConnection.stop.mockResolvedValueOnce(undefined)
+
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 0 })
+
+      // First attempt fails — connection should still be accessible for a retry
+      await expect(store.stopMonitor()).rejects.toThrow('Stop failed')
+
+      // Second attempt should succeed now that stop resolves
+      const result = await store.stopMonitor()
+      expect(result).toBe(true)
+    })
+
     it('ensureMonitorStarted reuses existing Connected connection without calling start again', async () => {
       const store = useScanjobsStore()
 

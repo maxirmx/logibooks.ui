@@ -253,13 +253,13 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
 
     const connection = monitorConnection
-    monitorConnection = null
 
     try {
       if (connection.state === signalR.HubConnectionState.Connected) {
         await connection.invoke('ClearScanJobMonitor')
       }
       await connection.stop()
+      monitorConnection = null
       return true
     } catch (err) {
       monitorError.value = err

@@ -40,9 +40,8 @@ let throttleTimer = null
 
 const boxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
-  { title: 'Коробка', key: 'boxCode', align: 'start' },
-  { title: 'Посылки', key: 'parcelsProgress', align: 'start' },
-  { title: 'Не сканировано', key: 'parcelsWithStickerNotScanned', align: 'start' }
+  { title: 'Коробка', key: 'boxCode', align: 'center' },
+  { title: 'Посылки всего / сканировано / не сканировано', key: 'parcelsProgress', align: 'center' }
 ]
 
 const parcelHeaders = [
@@ -361,12 +360,9 @@ defineExpose({
               </template>
 
               <template #[`item.parcelsProgress`]="{ item }">
-                {{ formatCount(item.parcelsWithStickerScanned) }} / {{ formatCount(item.totalParcels) }}
+                {{ formatCount(item.totalParcels) }} / {{ formatCount(item.parcelsWithStickerScanned) }} / {{ formatCount(item.parcelsWithStickerNotScanned) }}
               </template>
 
-              <template #[`item.parcelsWithStickerNotScanned`]="{ item }">
-                {{ formatCount(item.parcelsWithStickerNotScanned) }}
-              </template>
             </v-data-table>
           </v-card>
         </div>

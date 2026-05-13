@@ -182,7 +182,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.text()).toContain('Scanjob A')
     expect(wrapper.text()).toContain('BOX-7')
     expect(wrapper.text()).toContain('1 / 2')
-    expect(wrapper.text()).toContain('3 / 5')
+    expect(wrapper.text()).toContain('5 / 3 / 2')
   })
 
   it('closes via header action', async () => {

@@ -39,15 +39,15 @@ let pendingSnapshot = null
 let throttleTimer = null
 
 const boxHeaders = [
+  { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Коробка', key: 'boxCode', align: 'start' },
-  { title: 'Стикер коробки', key: 'boxStickerScanned', align: 'start' },
   { title: 'Посылки', key: 'parcelsProgress', align: 'start' },
   { title: 'Не сканировано', key: 'parcelsWithStickerNotScanned', align: 'start' }
 ]
 
 const parcelHeaders = [
+  { title: '', key: 'stickerScanned', align: 'start' },
   { title: 'Посылка', key: 'parcelNumber', align: 'start' },
-  { title: 'Стикер', key: 'stickerScanned', align: 'start' },
   { title: 'Зона', key: 'zoneName', align: 'start' },
   { title: 'Статус', key: 'statusTitle', align: 'start' }
 ]
@@ -67,19 +67,16 @@ const aggregateCards = computed(() => {
 
   return [
     {
-      label: 'Коробки',
-      value: `${snapshot.boxesWithStickerScanned ?? 0} / ${snapshot.totalBoxes ?? 0}`,
-      hint: `Не сканировано: ${snapshot.boxesWithStickerNotScanned ?? 0}`
+      label: 'Коробки всего / сканировано / не сканировано',
+      value: `${snapshot.totalBoxes ?? 0} / ${snapshot.boxesWithStickerScanned ?? 0} / ${snapshot.boxesWithStickerNotScanned ?? 0}`,
     },
     {
-      label: 'Посылки',
-      value: `${snapshot.parcelsWithStickerScanned ?? 0} / ${snapshot.totalParcels ?? 0}`,
-      hint: `Не сканировано: ${snapshot.parcelsWithStickerNotScanned ?? 0}`
+      label: 'Посылки всего / сканировано / не сканировано',
+      value: `${snapshot.totalParcels ?? 0} / ${snapshot.parcelsWithStickerScanned ?? 0} / ${snapshot.parcelsWithStickerNotScanned ?? 0}`,
     },
     {
-      label: 'Не в реестре',
+      label: 'Посылки не в реестре',
       value: String(snapshot.scannedItemsNotInRegister ?? 0),
-      hint: 'Сканированные вне реестра'
     }
   ]
 })
@@ -115,8 +112,9 @@ function stickerText(scanned) {
   return scanned ? 'Сканирована' : 'Не сканирована'
 }
 
-function stickerClass(scanned) {
-  return scanned ? 'monitor-status monitor-status-ok' : 'monitor-status monitor-status-wait'
+function stickerClass(scanned, notFound = false) {
+  if (notFound) return 'monitor-status monitor-status-not-found'
+  return scanned ? 'monitor-status monitor-status-scanned' : 'monitor-status monitor-status-waiting'
 }
 
 function buildScope(area, boxId = null) {
@@ -322,7 +320,6 @@ defineExpose({
           <div v-for="card in aggregateCards" :key="card.label" class="monitor-summary-item">
             <div class="monitor-summary-label">{{ card.label }}</div>
             <div class="monitor-summary-value">{{ card.value }}</div>
-            <div class="monitor-summary-hint">{{ card.hint }}</div>
           </div>
         </div>
 
@@ -438,7 +435,7 @@ defineExpose({
 
 .monitor-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -451,20 +448,14 @@ defineExpose({
 }
 
 .monitor-summary-label {
-  font-size: 0.82rem;
-  color: #5f6b7a;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .monitor-summary-value {
   margin-top: 4px;
   font-size: 1.35rem;
   font-weight: 700;
-}
-
-.monitor-summary-hint {
-  margin-top: 2px;
-  font-size: 0.82rem;
-  color: #6b7280;
 }
 
 .monitor-section {
@@ -518,14 +509,22 @@ defineExpose({
   font-weight: 700;
 }
 
-.monitor-status-ok {
-  color: #166534;
-  background: #dcfce7;
+.monitor-status-scanned {
+  background-color: rgba(76, 175, 80, 0.25);
+  color: #2e7d32;
+  border: 1px solid rgba(76, 175, 80, 0.5);
 }
 
-.monitor-status-wait {
-  color: #92400e;
-  background: #fef3c7;
+.monitor-status-waiting {
+  background-color: rgba(33, 150, 243, 0.25);
+  color: #1976d2;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.monitor-status-not-found {
+  background-color: rgba(244, 67, 54, 0.25);
+  color: #d32f2f;
+  border: 1px solid rgba(201, 17, 4, 0.3);
 }
 
 .monitor-empty {

@@ -180,9 +180,20 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 0, boxId: null })
     expect(startMonitor).toHaveBeenCalledWith(42, expect.objectContaining({ area: 0, boxId: null }))
     expect(wrapper.text()).toContain('Scanjob A')
-    expect(wrapper.text()).toContain('BOX-7')
-    expect(wrapper.text()).toContain('1 / 2')
-    expect(wrapper.text()).toContain('5 / 3 / 2')
+
+    const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
+      label: item.find('.monitor-summary-label').text(),
+      value: item.find('.monitor-summary-value').text()
+    }))
+    expect(summaryItems).toEqual([
+      { label: 'Коробки всего / сканировано / не сканировано', value: '2 / 1 / 1' },
+      { label: 'Посылки всего / сканировано / не сканировано', value: '5 / 3 / 2' },
+      { label: 'Посылки не в реестре', value: '1' }
+    ])
+
+    const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
+    expect(registerSection.text()).toContain('BOX-7')
+    expect(registerSection.text()).toContain('3 / 2 / 1')
   })
 
   it('closes via header action', async () => {

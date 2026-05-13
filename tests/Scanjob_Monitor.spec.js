@@ -76,6 +76,9 @@ const registerSnapshot = {
       boxId: 7,
       boxCode: 'BOX-7',
       boxStickerScanned: true,
+      boxScannedSticker: 'BOX-7-ACTUAL',
+      boxScannedUserName: 'Иванов Иван',
+      boxScannedTime: '2026-01-02T09:30:00',
       totalParcels: 3,
       parcelsWithStickerScanned: 2,
       parcelsWithStickerNotScanned: 1
@@ -84,6 +87,9 @@ const registerSnapshot = {
       boxId: 8,
       boxCode: 'BOX-8',
       boxStickerScanned: false,
+      boxScannedSticker: null,
+      boxScannedUserName: '',
+      boxScannedTime: null,
       totalParcels: 2,
       parcelsWithStickerScanned: 1,
       parcelsWithStickerNotScanned: 1
@@ -107,6 +113,9 @@ const boxSnapshot = {
     boxId: 7,
     boxCode: 'BOX-7',
     boxStickerScanned: true,
+    boxScannedSticker: 'BOX-7-ACTUAL',
+    boxScannedUserName: 'Иванов Иван',
+    boxScannedTime: '2026-01-02T09:30:00',
     totalParcels: 3,
     parcelsWithStickerScanned: 2,
     parcelsWithStickerNotScanned: 1,
@@ -115,6 +124,9 @@ const boxSnapshot = {
         parcelId: 70,
         parcelNumber: 'P-70',
         stickerScanned: true,
+        scannedSticker: 'P-70-SCAN',
+        scannedUserName: 'Петров Петр',
+        scannedTime: '2026-01-02T10:10:00',
         zoneName: 'Green',
         statusTitle: 'На складе'
       },
@@ -122,6 +134,9 @@ const boxSnapshot = {
         parcelId: 71,
         parcelNumber: 'P-71',
         stickerScanned: false,
+        scannedSticker: null,
+        scannedUserName: '',
+        scannedTime: null,
         zoneName: 'Red',
         statusTitle: 'Ожидается'
       }
@@ -267,6 +282,9 @@ describe('Scanjob_Monitor.vue', () => {
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
     expect(registerSection.text()).toContain('BOX-7')
+    expect(registerSection.text()).toContain('BOX-7-ACTUAL')
+    expect(registerSection.text()).toContain('Иванов Иван')
+    expect(registerSection.text()).toContain('02.01.2026 09:30')
     expect(registerSection.text()).toContain('3 / 2 / 1')
 
     const boxesTable = wrapper.findComponent({ name: 'v-data-table' })
@@ -304,6 +322,9 @@ describe('Scanjob_Monitor.vue', () => {
     expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 1, boxId: 7 }))
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('P-70')
+    expect(wrapper.text()).toContain('P-70-SCAN')
+    expect(wrapper.text()).toContain('Петров Петр')
+    expect(wrapper.text()).toContain('02.01.2026 10:10')
     expect(wrapper.text()).toContain('P-71')
 
     const parcelsTable = wrapper.findComponent({ name: 'v-data-table' })

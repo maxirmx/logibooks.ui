@@ -52,12 +52,18 @@ let throttleTimer = null
 const boxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Коробка', key: 'boxCode', align: 'center' },
+  { title: 'Стикер', key: 'boxScannedSticker', align: 'center' },
+  { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
+  { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
   { title: 'Посылки всего / сканировано / не сканировано', key: 'parcelsProgress', align: 'center' }
 ]
 
 const parcelHeaders = [
   { title: '', key: 'stickerScanned', align: 'start' },
   { title: 'Посылка', key: 'parcelNumber', align: 'start' },
+  { title: 'Стикер', key: 'scannedSticker', align: 'start' },
+  { title: 'Пользователь', key: 'scannedUserName', align: 'start' },
+  { title: 'Время сканирования', key: 'scannedTime', align: 'start' },
   { title: 'Зона', key: 'zoneName', align: 'start' },
   { title: 'Статус', key: 'statusTitle', align: 'start' }
 ]
@@ -116,6 +122,18 @@ function getScanJobStatusText(status) {
 
 function formatCount(value) {
   return Number(value ?? 0).toLocaleString('ru-RU')
+}
+
+function formatScanTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const yyyy = date.getFullYear()
+  const hh = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${dd}.${mm}.${yyyy} ${hh}:${min}`
 }
 
 function stickerText(scanned) {
@@ -378,6 +396,18 @@ defineExpose({
                 </span>
               </template>
 
+              <template #[`item.boxScannedSticker`]="{ item }">
+                {{ item.boxScannedSticker || '-' }}
+              </template>
+
+              <template #[`item.boxScannedUserName`]="{ item }">
+                {{ item.boxScannedUserName || '-' }}
+              </template>
+
+              <template #[`item.boxScannedTime`]="{ item }">
+                {{ formatScanTime(item.boxScannedTime) || '-' }}
+              </template>
+
               <template #[`item.parcelsProgress`]="{ item }">
                 {{ formatCount(item.totalParcels) }} / {{ formatCount(item.parcelsWithStickerScanned) }} / {{ formatCount(item.parcelsWithStickerNotScanned) }}
               </template>
@@ -435,6 +465,18 @@ defineExpose({
                 <span :class="stickerClass(item.stickerScanned)">
                   {{ stickerText(item.stickerScanned) }}
                 </span>
+              </template>
+
+              <template #[`item.scannedSticker`]="{ item }">
+                {{ item.scannedSticker || '-' }}
+              </template>
+
+              <template #[`item.scannedUserName`]="{ item }">
+                {{ item.scannedUserName || '-' }}
+              </template>
+
+              <template #[`item.scannedTime`]="{ item }">
+                {{ formatScanTime(item.scannedTime) || '-' }}
               </template>
             </v-data-table>
           </v-card>

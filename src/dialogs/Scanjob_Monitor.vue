@@ -82,10 +82,21 @@ const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
 const selectedParcels = computed(() => selectedBox.value?.parcels ?? [])
 const closedInfo = computed(() => closedStatus.value || monitorClosed.value)
 const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
-const registerId = computed(() => scanjob.value?.registerId ?? registersStore.item?.id ?? null)
+const registerId = computed(() => scanjob.value?.registerId ?? null)
+const activeRegisterItem = computed(() => {
+  const currentRegisterId = scanjob.value?.registerId
+  const storeRegister = registersStore.item
+
+  if (!currentRegisterId) return null
+  if (!storeRegister || storeRegister.loading || storeRegister.error) return null
+  if (storeRegister.id !== currentRegisterId) return null
+
+  return storeRegister
+})
 const basicHeading = computed(() => {
-  if (registerLoading.value) return 'Загрузка реестра...'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
+  if (!registerId.value) return 'Реестр не указан'
+  if (registerLoading.value || !activeRegisterItem.value) return 'Загрузка реестра...'
+  return buildParcelListHeading(activeRegisterItem.value, (id) => registersStore.getTransportationDocument(id))
 })
 const scopeHeading = computed(() => {
   if (isBoxMode.value) {

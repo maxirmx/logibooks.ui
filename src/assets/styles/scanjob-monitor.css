@@ -1,0 +1,83 @@
+.monitor-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.monitor-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d8dde6;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.monitor-summary-content {
+  min-width: 0;
+}
+
+.monitor-summary-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.monitor-summary-value {
+  margin-top: 4px;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.monitor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.monitor-status {
+  display: inline-flex;
+  align-items: center;
+  min-width: 112px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.monitor-status-scanned {
+  background-color: rgba(76, 175, 80, 0.25);
+  color: #2e7d32;
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.monitor-status-waiting {
+  background-color: rgba(33, 150, 243, 0.25);
+  color: #1976d2;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.monitor-status-not-found {
+  background-color: rgba(244, 67, 54, 0.25);
+  color: #d32f2f;
+  border: 1px solid rgba(201, 17, 4, 0.3);
+}
+
+.monitor-empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #5f6b7a;
+  text-align: center;
+}
+
+.monitor-closed {
+  border: 1px solid #d8dde6;
+  border-radius: 6px;
+  background: #f8fafc;
+}

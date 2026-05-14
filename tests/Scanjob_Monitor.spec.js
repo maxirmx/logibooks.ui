@@ -417,6 +417,16 @@ describe('Scanjob_Monitor.vue', () => {
     expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 1, boxId: 7 }))
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
     expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7')
+
+    const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
+      label: item.find('.monitor-summary-label').text(),
+      value: item.find('.monitor-summary-value').text()
+    }))
+    expect(summaryItems).toEqual([
+      { label: 'Статус сканирования коробки', value: 'Сканирована' },
+      { label: 'Посылки всего / сканировано / не сканировано', value: '3 / 2 / 1' }
+    ])
+
     expect(wrapper.text()).toContain('P-70')
     expect(wrapper.text()).toContain('P-70-SCAN')
     expect(wrapper.text()).toContain('Петров Петр')

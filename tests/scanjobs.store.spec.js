@@ -587,6 +587,15 @@ describe('scanjobs store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=1&boxId=7`)
     })
 
+    it('loads unassigned monitor snapshot with bucket index', async () => {
+      fetchWrapper.get.mockResolvedValue({ ...monitorSnapshot, area: 2 })
+      const store = useScanjobsStore()
+
+      await store.loadMonitorSnapshot(42, { area: 2, bucketIndex: 3 })
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=2&bucketIndex=3`)
+    })
+
     it('starts SignalR monitor and forwards snapshots', async () => {
       const onSnapshot = vi.fn()
       const store = useScanjobsStore()
@@ -780,6 +789,17 @@ describe('scanjobs store', () => {
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
         scanJobId: 42,
         area: 0
+      })
+    })
+
+    it('buildMonitorRequest includes bucketIndex for Unassigned area', async () => {
+      const store = useScanjobsStore()
+      await store.startMonitor(42, { area: 2, bucketIndex: 4 })
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
+        scanJobId: 42,
+        area: 2,
+        bucketIndex: 4
       })
     })
 

@@ -12,9 +12,9 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
   formatCount,
   formatScanTime,
+  monitorBoxStickerClass,
+  monitorBoxStickerText,
   scanjobBoxHeaders,
-  stickerClass,
-  stickerText,
   valueOrDash
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
@@ -103,8 +103,8 @@ function openBox(item) {
         <template #[`item.boxStickerScanned`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="stickerText(item.boxStickerScanned)"
-            :cell-class="`${stickerClass(item.boxStickerScanned)} clickable-cell`"
+            :display-value="monitorBoxStickerText(item)"
+            :cell-class="`${monitorBoxStickerClass(item)} clickable-cell`"
             :disabled="props.loading"
             @click="openBox(item)"
           />

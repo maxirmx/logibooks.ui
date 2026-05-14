@@ -66,6 +66,12 @@
   border: 1px solid rgba(201, 17, 4, 0.3);
 }
 
+.monitor-status-neutral {
+  background-color: rgba(96, 125, 139, 0.16);
+  color: #455a64;
+  border: 1px solid rgba(96, 125, 139, 0.28);
+}
+
 .monitor-empty {
   min-height: 120px;
   display: flex;

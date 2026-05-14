@@ -183,6 +183,58 @@ const boxSnapshotForBox8 = {
   }
 }
 
+const unassignedBucketRow = {
+  area: 2,
+  boxId: null,
+  bucketIndex: 1,
+  boxCode: 'Без коробки 2',
+  boxStickerScanned: false,
+  boxScannedSticker: null,
+  boxScannedUserName: '',
+  boxScannedTime: null,
+  totalParcels: 2,
+  parcelsWithStickerScanned: 1,
+  parcelsWithStickerNotScanned: 1
+}
+
+const registerSnapshotWithUnassignedBucket = {
+  ...registerSnapshot,
+  boxes: [
+    ...registerSnapshot.boxes,
+    unassignedBucketRow
+  ]
+}
+
+const unassignedBucketSnapshot = {
+  ...boxSnapshot,
+  area: 2,
+  box: {
+    ...unassignedBucketRow,
+    parcels: [
+      {
+        parcelId: 90,
+        parcelNumber: 'PU-90',
+        stickerScanned: true,
+        scannedSticker: 'PU-90-SCAN',
+        scannedUserName: 'Николаев Николай',
+        scannedTime: '2026-01-02T12:00:00',
+        zoneName: 'Yellow',
+        statusTitle: 'Без коробки'
+      },
+      {
+        parcelId: 91,
+        parcelNumber: 'PU-91',
+        stickerScanned: false,
+        scannedSticker: null,
+        scannedUserName: '',
+        scannedTime: null,
+        zoneName: 'Yellow',
+        statusTitle: 'Без коробки'
+      }
+    ]
+  }
+}
+
 vi.mock('@/router', () => ({
   default: { back: mockBack, push: mockPush, currentRoute: mockCurrentRoute }
 }), { virtual: true })
@@ -195,7 +247,9 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     monitorClosed,
     scanJobMonitorArea: {
       Boxes: 0,
-      Box: 1
+      Box: 1,
+      Unassigned: 2,
+      NotInRegister: 3
     },
     getById,
     loadMonitorSnapshot,
@@ -440,6 +494,47 @@ describe('Scanjob_Monitor.vue', () => {
     expect(parcelsTable.props('sortBy')).toEqual([{ key: 'parcelNumber', order: 'desc' }])
   })
 
+  it('switches to unassigned bucket monitor and renders bucket parcels', async () => {
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshotWithUnassignedBucket)
+      .mockResolvedValueOnce(unassignedBucketSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.findAll('[data-testid="scanjob-monitor-box-row"]').at(2).trigger('click')
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, {
+      area: 2,
+      boxId: null,
+      bucketIndex: 1
+    })
+    expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({
+      area: 2,
+      boxId: null,
+      bucketIndex: 1
+    }))
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Без коробки 2')
+
+    const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
+      label: item.find('.monitor-summary-label').text(),
+      value: item.find('.monitor-summary-value').text()
+    }))
+    expect(summaryItems).toEqual([
+      { label: 'Группа посылок', value: 'Без коробки' },
+      { label: 'Посылки всего / сканировано / не сканировано', value: '2 / 1 / 1' }
+    ])
+
+    expect(wrapper.text()).toContain('PU-90')
+    expect(wrapper.text()).toContain('PU-90-SCAN')
+    expect(wrapper.text()).toContain('PU-91')
+  })
+
   it('makes every boxes table cell clickable to open the box monitor', async () => {
     loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
 
@@ -581,6 +676,46 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 8 })
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+  })
+
+  it('auto-follows to unassigned bucket when an unboxed parcel sticker is scanned', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshotWithUnassignedBucket)
+      .mockResolvedValueOnce(unassignedBucketSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+    onSnapshot({
+      ...registerSnapshotWithUnassignedBucket,
+      parcelsWithStickerScanned: 4,
+      parcelsWithStickerNotScanned: 1,
+      boxes: registerSnapshotWithUnassignedBucket.boxes.map((box) =>
+        box.bucketIndex === 1
+          ? {
+              ...box,
+              parcelsWithStickerScanned: 2,
+              parcelsWithStickerNotScanned: 0
+            }
+          : box
+      )
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, {
+      area: 2,
+      boxId: null,
+      bucketIndex: 1
+    })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toContain('Без коробки 2')
   })
 
   it('does not auto-follow live scans when auto-follow is disabled', async () => {

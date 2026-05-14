@@ -9,6 +9,10 @@ import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 
 const mockBack = vi.hoisted(() => vi.fn())
+const mockPush = vi.hoisted(() => vi.fn())
+const mockCurrentRoute = vi.hoisted(() => ({
+  value: { fullPath: '/scanjobs/42/monitor' }
+}))
 const clearAlert = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
 const mockAlert = vi.hoisted(() => ({
@@ -17,9 +21,17 @@ const mockAlert = vi.hoisted(() => ({
 }))
 const mockScanjob = vi.hoisted(() => ({
   __v_isRef: true,
-  value: { id: 42, name: 'Scanjob A', type: 30, status: 15 }
+  value: { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
 }))
-const getById = vi.hoisted(() => vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15 }))
+const getById = vi.hoisted(() => vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }))
+const mockRegisterItem = vi.hoisted(() => ({
+  id: 101,
+  dealNumber: 'DEAL-101',
+  invoiceNumber: 'INV-101',
+  transportationTypeCode: 1
+}))
+const registerGetById = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const getTransportationDocument = vi.hoisted(() => vi.fn(() => 'Авианакладная'))
 const monitorLoading = vi.hoisted(() => ({
   __v_isRef: true,
   value: false
@@ -145,7 +157,7 @@ const boxSnapshot = {
 }
 
 vi.mock('@/router', () => ({
-  default: { back: mockBack }
+  default: { back: mockBack, push: mockPush, currentRoute: mockCurrentRoute }
 }), { virtual: true })
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
@@ -171,6 +183,14 @@ vi.mock('@/stores/alert.store.js', () => ({
     alert: mockAlert,
     error: alertError,
     clear: clearAlert
+  })
+}))
+
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: () => ({
+    item: mockRegisterItem,
+    getById: registerGetById,
+    getTransportationDocument
   })
 }))
 
@@ -249,8 +269,10 @@ describe('Scanjob_Monitor.vue', () => {
     monitorParcelsPerPage.value = 50
     monitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
     monitorParcelsPage.value = 3
-    mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15 }
-    getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15 })
+    mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
+    getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
+    registerGetById.mockResolvedValue(true)
+    getTransportationDocument.mockReturnValue('Авианакладная')
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
     startMonitor.mockResolvedValue(true)
     clearMonitor.mockResolvedValue(true)
@@ -267,8 +289,9 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(getById).toHaveBeenCalledWith(42)
     expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 0, boxId: null })
+    expect(registerGetById).toHaveBeenCalledWith(101)
     expect(startMonitor).toHaveBeenCalledWith(42, expect.objectContaining({ area: 0, boxId: null }))
-    expect(wrapper.text()).toContain('Scanjob A')
+    expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробки')
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
       label: item.find('.monitor-summary-label').text(),
@@ -300,9 +323,27 @@ describe('Scanjob_Monitor.vue', () => {
       global: { stubs: monitorGlobalStubs }
     })
 
-    await wrapper.vm.close()
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-close-action"]').trigger('click')
 
     expect(mockBack).toHaveBeenCalled()
+  })
+
+  it('opens unregistered parcels from summary action with return url', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-unregistered-action"]').trigger('click')
+
+    expect(mockPush).toHaveBeenCalledWith({
+      path: '/registers/101/unregistered-parcels',
+      query: {
+        returnUrl: '/scanjobs/42/monitor'
+      }
+    })
   })
 
   it('switches to box monitor and renders parcels', async () => {
@@ -321,6 +362,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
     expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 1, boxId: 7 }))
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7')
     expect(wrapper.text()).toContain('P-70')
     expect(wrapper.text()).toContain('P-70-SCAN')
     expect(wrapper.text()).toContain('Петров Петр')
@@ -334,7 +376,27 @@ describe('Scanjob_Monitor.vue', () => {
     expect(parcelsTable.props('sortBy')).toEqual([{ key: 'parcelNumber', order: 'desc' }])
   })
 
-  it('returns from box monitor to register monitor', async () => {
+  it('makes every boxes table cell clickable to open the box monitor', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
+    expect(registerSection.findAll('.clickable-cell')).toHaveLength(registerSnapshot.boxes.length * 6)
+
+    await registerSection.find('.monitor-status').trigger('click')
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+  })
+
+  it('returns from box monitor to register monitor via close action', async () => {
     loadMonitorSnapshot
       .mockResolvedValueOnce(registerSnapshot)
       .mockResolvedValueOnce(boxSnapshot)
@@ -348,9 +410,10 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
     await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
     await flushPromises()
-    await wrapper.find('[data-testid="scanjob-monitor-back-action"]').trigger('click')
+    await wrapper.find('[data-testid="scanjob-monitor-close-action"]').trigger('click')
     await flushPromises()
 
+    expect(mockBack).not.toHaveBeenCalled()
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 0, boxId: null })
     expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 0, boxId: null }))
     expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(true)
@@ -414,7 +477,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('loads monitor snapshot without subscription when scanjob is not active', async () => {
-    const inactiveScanjob = { id: 42, name: 'Scanjob A', type: 30, status: 20 }
+    const inactiveScanjob = { id: 42, name: 'Scanjob A', type: 30, status: 20, registerId: 101 }
     mockScanjob.value = inactiveScanjob
     getById.mockResolvedValueOnce(inactiveScanjob)
 
@@ -432,7 +495,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('loads monitor snapshot with subscription when scanjob type is parcel and active', async () => {
-    const parcelScanjob = { id: 42, name: 'Scanjob A', type: 10, status: 15 }
+    const parcelScanjob = { id: 42, name: 'Scanjob A', type: 10, status: 15, registerId: 101 }
     mockScanjob.value = parcelScanjob
     getById.mockResolvedValueOnce(parcelScanjob)
 

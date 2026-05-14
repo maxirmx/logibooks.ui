@@ -21,6 +21,13 @@ export const scanjobParcelHeaders = [
   { title: 'Статус', key: 'statusTitle', align: 'start' }
 ]
 
+export const scanjobMonitorArea = {
+  Boxes: 0,
+  Box: 1,
+  Unassigned: 2,
+  NotInRegister: 3
+}
+
 const dateTimeRuFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: '2-digit',
   month: '2-digit',
@@ -52,4 +59,19 @@ export function stickerText(scanned) {
 export function stickerClass(scanned, notFound = false) {
   if (notFound) return 'monitor-status monitor-status-not-found'
   return scanned ? 'monitor-status monitor-status-scanned' : 'monitor-status monitor-status-waiting'
+}
+
+export function isUnassignedMonitorBox(box) {
+  return Number(box?.area) === scanjobMonitorArea.Unassigned
+    || (box?.boxId == null && box?.bucketIndex != null)
+}
+
+export function monitorBoxStickerText(box) {
+  return isUnassignedMonitorBox(box) ? 'Без коробки' : stickerText(box?.boxStickerScanned)
+}
+
+export function monitorBoxStickerClass(box) {
+  return isUnassignedMonitorBox(box)
+    ? 'monitor-status monitor-status-neutral'
+    : stickerClass(box?.boxStickerScanned)
 }

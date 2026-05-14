@@ -12,7 +12,10 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
   formatCount,
   formatScanTime,
+  isUnassignedMonitorBox,
   scanjobParcelHeaders,
+  monitorBoxStickerClass,
+  monitorBoxStickerText,
   stickerClass,
   stickerText,
   valueOrDash
@@ -39,13 +42,14 @@ const parcels = computed(() => props.box?.parcels ?? [])
 const summaryCards = computed(() => {
   const box = props.box
   if (!box) return []
+  const isUnassigned = isUnassignedMonitorBox(box)
 
   return [
     {
       key: 'boxStatus',
-      label: 'Статус сканирования коробки',
-      value: stickerText(box.boxStickerScanned),
-      valueClass: stickerClass(box.boxStickerScanned)
+      label: isUnassigned ? 'Группа посылок' : 'Статус сканирования коробки',
+      value: monitorBoxStickerText(box),
+      valueClass: monitorBoxStickerClass(box)
     },
     {
       key: 'boxParcels',
@@ -54,6 +58,10 @@ const summaryCards = computed(() => {
     }
   ]
 })
+
+const emptyText = computed(() => (
+  isUnassignedMonitorBox(props.box) ? 'В группе нет посылок' : 'В коробке нет посылок'
+))
 
 function editParcel(item) {
   emit('edit-parcel', item)
@@ -67,7 +75,7 @@ function editParcel(item) {
     <div class="monitor-section">
     <v-card class="table-card">
       <div v-if="parcels.length === 0" class="monitor-empty" data-testid="scanjob-monitor-empty-parcels">
-        В коробке нет посылок
+        {{ emptyText }}
       </div>
 
       <v-data-table

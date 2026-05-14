@@ -16,6 +16,7 @@ const mockItems = ref([
   {
     id: 1,
     postingNumber: 'POST-1',
+    productName: 'Very long Ozon product name that must remain on one line',
     barcode: 'BAR-1',
     boxNumber: 'BOX-1',
     weightKg: 2.4,
@@ -154,6 +155,7 @@ describe('OzonParcels_WhList.vue', () => {
 
     const text = wrapper.text()
     expect(text).toContain('POST-1')
+    expect(text).toContain('Very long Ozon product name that must remain on one line')
     expect(text).toContain('BAR-1')
     expect(text).toContain('BOX-1')
     expect(text).toContain('3')
@@ -174,11 +176,23 @@ describe('OzonParcels_WhList.vue', () => {
       'postingNumber',
       'barcode',
       'boxNumber',
+      'productName',
       'weightKg',
       'quantity',
       'zone',
       'statusId',
       'checkStatus'
     ])
+  })
+
+  it('renders product name in a non-wrapping truncated cell', () => {
+    const wrapper = mount(OzonParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    const productName = wrapper.get('.warehouse-product-name-cell')
+    expect(productName.text()).toBe('Very long Ozon product name that must remain on one line')
+    expect(productName.attributes('title')).toBe('Very long Ozon product name that must remain on one line')
   })
 })

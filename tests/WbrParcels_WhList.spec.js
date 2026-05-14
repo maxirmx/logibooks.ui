@@ -18,6 +18,7 @@ const mockItems = ref([
   {
     id: 1,
     shk: 'SHK-1',
+    productName: 'Very long WBR product name that must remain on one line',
     sticker: 'Sticker-1',
     stickerCode: 'STK-1',
     boxNumber: 'BOX-1',
@@ -157,6 +158,7 @@ describe('WbrParcels_WhList.vue', () => {
 
     const text = wrapper.text()
     expect(text).toContain('SHK-1')
+    expect(text).toContain('Very long WBR product name that must remain on one line')
     expect(text).toContain('Sticker-1')
     expect(text).toContain('STK-1')
     expect(text).toContain('BOX-1')
@@ -179,11 +181,23 @@ describe('WbrParcels_WhList.vue', () => {
       'sticker',
       'stickerCode',
       'boxNumber',
+      'productName',
       'weightKg',
       'quantity',
       'zone',
       'statusId',
       'checkStatus'
     ])
+  })
+
+  it('renders product name in a non-wrapping truncated cell', () => {
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    const productName = wrapper.get('.warehouse-product-name-cell')
+    expect(productName.text()).toBe('Very long WBR product name that must remain on one line')
+    expect(productName.attributes('title')).toBe('Very long WBR product name that must remain on one line')
   })
 })

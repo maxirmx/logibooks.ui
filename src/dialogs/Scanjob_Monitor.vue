@@ -36,7 +36,7 @@ const isComponentMounted = ref(true)
 const { loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
 
 const mode = ref(MODE_REGISTER)
-const selectedArea = ref(scanJobsStore.scanJobMonitorArea.Boxes)
+const selectedArea = ref(scanJobsStore.scanjobMonitorArea.Boxes)
 const selectedBoxId = ref(null)
 const selectedBucketIndex = ref(null)
 const visibleSnapshot = ref(null)
@@ -76,7 +76,7 @@ const basicHeading = computed(() => {
 const scopeHeading = computed(() => {
   if (isBoxMode.value) {
     if (
-      Number(selectedArea.value) === scanJobsStore.scanJobMonitorArea.Unassigned
+      Number(selectedArea.value) === scanJobsStore.scanjobMonitorArea.Unassigned
       || isUnassignedMonitorBox(selectedBox.value)
     ) {
       return selectedBox.value?.boxCode || 'Без коробки'
@@ -203,11 +203,11 @@ function snapshotMatchesScope(snapshot) {
     return false
   }
 
-  if (Number(currentArea()) === scanJobsStore.scanJobMonitorArea.Box) {
+  if (Number(currentArea()) === scanJobsStore.scanjobMonitorArea.Box) {
     return Number(snapshot.box?.boxId) === Number(selectedBoxId.value)
   }
 
-  if (Number(currentArea()) === scanJobsStore.scanJobMonitorArea.Unassigned) {
+  if (Number(currentArea()) === scanJobsStore.scanjobMonitorArea.Unassigned) {
     return Number(snapshot.box?.bucketIndex ?? 0) === Number(selectedBucketIndex.value ?? 0)
   }
 
@@ -322,13 +322,13 @@ function runAutoFollow(previousSnapshot, nextSnapshot, source) {
 
   if (target.mode === MODE_BOX && target.box) {
     const targetArea = isUnassignedMonitorBox(target.box)
-      ? scanJobsStore.scanJobMonitorArea.Unassigned
-      : Number(target.box.area ?? scanJobsStore.scanJobMonitorArea.Box)
+      ? scanJobsStore.scanjobMonitorArea.Unassigned
+      : Number(target.box.area ?? scanJobsStore.scanjobMonitorArea.Box)
     const targetBoxId = toNumberOrNull(target.box.boxId)
     const targetBucketIndex = toNumberOrNull(target.box.bucketIndex) ?? 0
-    const sameRealBox = targetArea === scanJobsStore.scanJobMonitorArea.Box
+    const sameRealBox = targetArea === scanJobsStore.scanjobMonitorArea.Box
       && Number(selectedBoxId.value) === Number(targetBoxId)
-    const sameUnassignedBucket = targetArea === scanJobsStore.scanJobMonitorArea.Unassigned
+    const sameUnassignedBucket = targetArea === scanJobsStore.scanjobMonitorArea.Unassigned
       && Number(selectedBucketIndex.value ?? 0) === Number(targetBucketIndex)
 
     if (isBoxMode.value && Number(selectedArea.value) === targetArea && (sameRealBox || sameUnassignedBucket)) {
@@ -431,10 +431,10 @@ async function observeScope(scope, { subscribe = true } = {}) {
 
 async function openRegisterMonitor({ subscribe = canSubscribeToMonitor(scanjob.value) } = {}) {
   mode.value = MODE_REGISTER
-  selectedArea.value = scanJobsStore.scanJobMonitorArea.Boxes
+  selectedArea.value = scanJobsStore.scanjobMonitorArea.Boxes
   selectedBoxId.value = null
   selectedBucketIndex.value = null
-  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Boxes), { subscribe })
+  await observeScope(buildScope(scanJobsStore.scanjobMonitorArea.Boxes), { subscribe })
 }
 
 async function openBoxMonitor(box) {
@@ -452,8 +452,8 @@ async function openBoxMonitor(box) {
 
   mode.value = MODE_BOX
   selectedArea.value = isUnassigned
-    ? scanJobsStore.scanJobMonitorArea.Unassigned
-    : scanJobsStore.scanJobMonitorArea.Box
+    ? scanJobsStore.scanjobMonitorArea.Unassigned
+    : scanJobsStore.scanjobMonitorArea.Box
   selectedBoxId.value = isUnassigned ? null : boxId
   selectedBucketIndex.value = isUnassigned ? bucketIndex : null
   await observeScope(buildScope(selectedArea.value, selectedBoxId.value, selectedBucketIndex.value), {

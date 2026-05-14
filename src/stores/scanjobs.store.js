@@ -7,7 +7,7 @@ import { ref } from 'vue'
 import * as signalR from '@microsoft/signalr'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { scanJobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
+import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
@@ -120,11 +120,11 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       area: Number(area)
     }
 
-    if (request.area === scanJobMonitorArea.Box && boxId != null) {
+    if (request.area === scanjobMonitorArea.Box && boxId != null) {
       request.boxId = Number(boxId)
     }
 
-    if (request.area === scanJobMonitorArea.Unassigned) {
+    if (request.area === scanjobMonitorArea.Unassigned) {
       request.bucketIndex = Number(bucketIndex ?? 0)
     }
 
@@ -185,7 +185,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   }
 
   async function loadMonitorSnapshot(scanJobId, {
-    area = scanJobMonitorArea.Boxes,
+    area = scanjobMonitorArea.Boxes,
     boxId = null,
     bucketIndex = null
   } = {}) {
@@ -195,10 +195,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
     try {
       const params = new URLSearchParams({ area: String(area) })
-      if (Number(area) === scanJobMonitorArea.Box && boxId != null) {
+      if (Number(area) === scanjobMonitorArea.Box && boxId != null) {
         params.append('boxId', String(boxId))
       }
-      if (Number(area) === scanJobMonitorArea.Unassigned) {
+      if (Number(area) === scanjobMonitorArea.Unassigned) {
         params.append('bucketIndex', String(bucketIndex ?? 0))
       }
 
@@ -214,7 +214,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   }
 
   async function startMonitor(scanJobId, {
-    area = scanJobMonitorArea.Boxes,
+    area = scanjobMonitorArea.Boxes,
     boxId = null,
     bucketIndex = null,
     onSnapshot = null,
@@ -442,6 +442,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     startMonitor,
     clearMonitor,
     stopMonitor,
-    scanJobMonitorArea,
+    scanjobMonitorArea,
   }
 })

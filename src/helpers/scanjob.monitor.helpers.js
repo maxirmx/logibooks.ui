@@ -21,7 +21,7 @@ export const scanjobParcelHeaders = [
   { title: 'Статус', key: 'statusTitle', align: 'start' }
 ]
 
-export const scanJobMonitorArea = {
+export const scanjobMonitorArea = {
   Boxes: 0,
   Box: 1,
   Unassigned: 2,
@@ -62,7 +62,7 @@ export function stickerClass(scanned, notFound = false) {
 }
 
 export function isUnassignedMonitorBox(box) {
-  return Number(box?.area) === scanJobMonitorArea.Unassigned
+  return Number(box?.area) === scanjobMonitorArea.Unassigned
     || (box?.boxId == null && box?.bucketIndex != null)
 }
 

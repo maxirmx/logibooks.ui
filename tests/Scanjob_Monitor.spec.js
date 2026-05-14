@@ -245,7 +245,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     monitorLoading,
     monitorError,
     monitorClosed,
-    scanJobMonitorArea: {
+    scanjobMonitorArea: {
       Boxes: 0,
       Box: 1,
       Unassigned: 2,

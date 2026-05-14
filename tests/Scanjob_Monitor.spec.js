@@ -307,7 +307,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(registerSection.text()).toContain('BOX-7')
     expect(registerSection.text()).toContain('BOX-7-ACTUAL')
     expect(registerSection.text()).toContain('Иванов Иван')
-    expect(registerSection.text()).toContain('02.01.2026 09:30')
+    expect(registerSection.text()).toContain('02.01.2026, 09:30')
     expect(registerSection.text()).toContain('3 / 2 / 1')
 
     const boxesTable = wrapper.findComponent({ name: 'v-data-table' })
@@ -366,7 +366,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.text()).toContain('P-70')
     expect(wrapper.text()).toContain('P-70-SCAN')
     expect(wrapper.text()).toContain('Петров Петр')
-    expect(wrapper.text()).toContain('02.01.2026 10:10')
+    expect(wrapper.text()).toContain('02.01.2026, 10:10')
     expect(wrapper.text()).toContain('P-71')
 
     const parcelsTable = wrapper.findComponent({ name: 'v-data-table' })

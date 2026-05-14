@@ -7,15 +7,11 @@ import { ref } from 'vue'
 import * as signalR from '@microsoft/signalr'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 const scanJobMonitorHubUrl = `${apiUrl.replace(/\/api\/?$/i, '')}/hubs/scan-jobs`
-
-const scanJobMonitorArea = {
-  Boxes: 0,
-  Box: 1
-}
 
 export const useScanjobsStore = defineStore('scanjobs', () => {
   const items = ref([])
@@ -118,14 +114,18 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return authStore.user?.token ?? ''
   }
 
-  function buildMonitorRequest(scanJobId, area, boxId) {
+  function buildMonitorRequest(scanJobId, area, boxId, bucketIndex) {
     const request = {
       scanJobId: Number(scanJobId),
       area: Number(area)
     }
 
-    if (request.area === scanJobMonitorArea.Box && boxId != null) {
+    if (request.area === scanjobMonitorArea.Box && boxId != null) {
       request.boxId = Number(boxId)
+    }
+
+    if (request.area === scanjobMonitorArea.Unassigned) {
+      request.bucketIndex = Number(bucketIndex ?? 0)
     }
 
     return request
@@ -184,15 +184,22 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return connection
   }
 
-  async function loadMonitorSnapshot(scanJobId, { area = scanJobMonitorArea.Boxes, boxId = null } = {}) {
+  async function loadMonitorSnapshot(scanJobId, {
+    area = scanjobMonitorArea.Boxes,
+    boxId = null,
+    bucketIndex = null
+  } = {}) {
     monitorLoading.value = true
     monitorError.value = null
     monitorClosed.value = null
 
     try {
       const params = new URLSearchParams({ area: String(area) })
-      if (Number(area) === scanJobMonitorArea.Box && boxId != null) {
+      if (Number(area) === scanjobMonitorArea.Box && boxId != null) {
         params.append('boxId', String(boxId))
+      }
+      if (Number(area) === scanjobMonitorArea.Unassigned) {
+        params.append('bucketIndex', String(bucketIndex ?? 0))
       }
 
       const snapshot = await fetchWrapper.get(`${baseUrl}/${scanJobId}/monitor?${params.toString()}`)
@@ -207,8 +214,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   }
 
   async function startMonitor(scanJobId, {
-    area = scanJobMonitorArea.Boxes,
+    area = scanjobMonitorArea.Boxes,
     boxId = null,
+    bucketIndex = null,
     onSnapshot = null,
     onClosed = null
   } = {}) {
@@ -220,7 +228,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
     try {
       const connection = await ensureMonitorStarted()
-      await connection.invoke('ObserveScanJob', buildMonitorRequest(scanJobId, area, boxId))
+      await connection.invoke('ObserveScanJob', buildMonitorRequest(scanJobId, area, boxId, bucketIndex))
       return true
     } catch (err) {
       monitorError.value = err
@@ -434,6 +442,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     startMonitor,
     clearMonitor,
     stopMonitor,
-    scanJobMonitorArea,
+    scanjobMonitorArea,
   }
 })

@@ -15,6 +15,7 @@ import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { isUnassignedMonitorBox } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
 const props = defineProps({
@@ -35,7 +36,9 @@ const isComponentMounted = ref(true)
 const { loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
 
 const mode = ref(MODE_REGISTER)
+const selectedArea = ref(scanJobsStore.scanjobMonitorArea.Boxes)
 const selectedBoxId = ref(null)
+const selectedBucketIndex = ref(null)
 const visibleSnapshot = ref(null)
 const closedStatus = ref(null)
 const switchingScope = ref(false)
@@ -72,6 +75,13 @@ const basicHeading = computed(() => {
 })
 const scopeHeading = computed(() => {
   if (isBoxMode.value) {
+    if (
+      Number(selectedArea.value) === scanJobsStore.scanjobMonitorArea.Unassigned
+      || isUnassignedMonitorBox(selectedBox.value)
+    ) {
+      return selectedBox.value?.boxCode || 'Без коробки'
+    }
+
     return `Коробка ${selectedBox.value?.boxCode || ''}`.trim()
   }
 
@@ -169,17 +179,19 @@ function editParcel(item) {
   )
 }
 
-function buildScope(area, boxId = null) {
-  return {
+function buildScope(area, boxId = null, bucketIndex = null) {
+  const scope = {
     area,
     boxId
   }
+  if (bucketIndex != null) {
+    scope.bucketIndex = bucketIndex
+  }
+  return scope
 }
 
 function currentArea() {
-  return isBoxMode.value
-    ? scanJobsStore.scanJobMonitorArea.Box
-    : scanJobsStore.scanJobMonitorArea.Boxes
+  return selectedArea.value
 }
 
 function snapshotMatchesScope(snapshot) {
@@ -191,8 +203,12 @@ function snapshotMatchesScope(snapshot) {
     return false
   }
 
-  if (isBoxMode.value) {
+  if (Number(currentArea()) === scanJobsStore.scanjobMonitorArea.Box) {
     return Number(snapshot.box?.boxId) === Number(selectedBoxId.value)
+  }
+
+  if (Number(currentArea()) === scanJobsStore.scanjobMonitorArea.Unassigned) {
+    return Number(snapshot.box?.bucketIndex ?? 0) === Number(selectedBucketIndex.value ?? 0)
   }
 
   return true
@@ -224,20 +240,94 @@ function getSnapshotBoxes(snapshot) {
   return Array.isArray(snapshot?.boxes) ? snapshot.boxes : []
 }
 
+function getSnapshotMonitorBoxes(snapshot) {
+  const boxes = getSnapshotBoxes(snapshot)
+  return snapshot?.box ? [...boxes, snapshot.box] : boxes
+}
+
+function getMonitorBoxKey(box) {
+  if (isUnassignedMonitorBox(box)) {
+    return `unassigned:${Number(box?.bucketIndex ?? 0)}`
+  }
+
+  const boxId = toNumberOrNull(box?.boxId)
+  return boxId == null ? null : `box:${boxId}`
+}
+
 function getBoxMap(snapshot) {
   const map = new Map()
   getSnapshotBoxes(snapshot).forEach((box) => {
-    const boxId = toNumberOrNull(box?.boxId)
-    if (boxId != null) {
-      map.set(boxId, box)
+    const key = getMonitorBoxKey(box)
+    if (key != null) {
+      map.set(key, box)
     }
   })
   return map
 }
 
+function getLatestScanId(snapshot) {
+  return toNumberOrNull(snapshot?.latestScan?.scanCodeId)
+}
+
+function findLatestScanBox(snapshot, predicate) {
+  return getSnapshotMonitorBoxes(snapshot).find(predicate) ?? null
+}
+
+function resolveLatestScanTarget(latestScan, snapshot) {
+  const latestScanArea = toNumberOrNull(latestScan?.area)
+  if (latestScanArea === scanJobsStore.scanjobMonitorArea.Box) {
+    const boxId = toNumberOrNull(latestScan?.boxId)
+    if (boxId == null) {
+      return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
+    }
+
+    const box = findLatestScanBox(snapshot, (candidate) => {
+      return toNumberOrNull(candidate?.boxId) === boxId
+    }) ?? {
+      area: scanJobsStore.scanjobMonitorArea.Box,
+      boxId
+    }
+
+    return { mode: MODE_BOX, box, hasDecision: true }
+  }
+
+  if (latestScanArea === scanJobsStore.scanjobMonitorArea.Unassigned) {
+    const bucketIndex = toNumberOrNull(latestScan?.bucketIndex) ?? 0
+    const box = findLatestScanBox(snapshot, (candidate) => {
+      return isUnassignedMonitorBox(candidate)
+        && Number(toNumberOrNull(candidate?.bucketIndex) ?? 0) === Number(bucketIndex)
+    }) ?? {
+      area: scanJobsStore.scanjobMonitorArea.Unassigned,
+      boxId: null,
+      bucketIndex,
+      boxCode: `Без коробки ${bucketIndex + 1}`
+    }
+
+    return { mode: MODE_BOX, box, hasDecision: true }
+  }
+
+  if (
+    latestScanArea === scanJobsStore.scanjobMonitorArea.NotInRegister
+    || latestScanArea === scanJobsStore.scanjobMonitorArea.Boxes
+  ) {
+    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
+  }
+
+  return null
+}
+
 function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
   if (!autoFollowEnabled.value || !previousSnapshot || !nextSnapshot) {
     return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
+  }
+
+  const previousLatestScanId = getLatestScanId(previousSnapshot)
+  const nextLatestScanId = getLatestScanId(nextSnapshot)
+  if (nextLatestScanId != null && nextLatestScanId !== previousLatestScanId) {
+    const latestScanTarget = resolveLatestScanTarget(nextSnapshot.latestScan, nextSnapshot)
+    if (latestScanTarget?.hasDecision) {
+      return latestScanTarget
+    }
   }
 
   const prevUnregistered = toNumberOrZero(previousSnapshot.scannedItemsNotInRegister)
@@ -255,32 +345,24 @@ function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
       continue
     }
 
-    const previousBox = previousBoxesById.get(boxId)
+    const previousBox = previousBoxesById.get(`box:${boxId}`)
     if (!previousBox?.boxStickerScanned) {
-      return { mode: MODE_BOX, boxId, hasDecision: true }
+      return { mode: MODE_BOX, box, hasDecision: true }
     }
   }
 
-  let parcelBoxId = null
-  let parcelProgressDetected = false
   for (const box of nextBoxes) {
-    const boxId = toNumberOrNull(box?.boxId)
-    if (boxId == null) {
+    const boxKey = getMonitorBoxKey(box)
+    if (boxKey == null) {
       continue
     }
 
-    const previousBox = previousBoxesById.get(boxId)
+    const previousBox = previousBoxesById.get(boxKey)
     const previousScannedParcels = toNumberOrZero(previousBox?.parcelsWithStickerScanned)
     const nextScannedParcels = toNumberOrZero(box?.parcelsWithStickerScanned)
     if (nextScannedParcels > previousScannedParcels) {
-      parcelProgressDetected = true
-      parcelBoxId = boxId
-      break
+      return { mode: MODE_BOX, box, hasDecision: true }
     }
-  }
-
-  if (parcelProgressDetected && parcelBoxId != null) {
-    return { mode: MODE_BOX, boxId: parcelBoxId, hasDecision: true }
   }
 
   const hasBoxesSnapshotContext = nextBoxes.length > 0 || previousBoxesById.size > 0
@@ -303,14 +385,22 @@ function runAutoFollow(previousSnapshot, nextSnapshot, source) {
     return
   }
 
-  if (target.mode === MODE_BOX && target.boxId != null) {
-    if (isBoxMode.value && Number(selectedBoxId.value) === Number(target.boxId)) {
+  if (target.mode === MODE_BOX && target.box) {
+    const targetArea = isUnassignedMonitorBox(target.box)
+      ? scanJobsStore.scanjobMonitorArea.Unassigned
+      : Number(target.box.area ?? scanJobsStore.scanjobMonitorArea.Box)
+    const targetBoxId = toNumberOrNull(target.box.boxId)
+    const targetBucketIndex = toNumberOrNull(target.box.bucketIndex) ?? 0
+    const sameRealBox = targetArea === scanJobsStore.scanjobMonitorArea.Box
+      && Number(selectedBoxId.value) === Number(targetBoxId)
+    const sameUnassignedBucket = targetArea === scanJobsStore.scanjobMonitorArea.Unassigned
+      && Number(selectedBucketIndex.value ?? 0) === Number(targetBucketIndex)
+
+    if (isBoxMode.value && Number(selectedArea.value) === targetArea && (sameRealBox || sameUnassignedBucket)) {
       return
     }
 
-    const box = getSnapshotBoxes(nextSnapshot).find((item) => Number(item?.boxId) === Number(target.boxId))
-      || { boxId: target.boxId }
-    void openBoxMonitor(box)
+    void openBoxMonitor(target.box)
     return
   }
 
@@ -406,18 +496,32 @@ async function observeScope(scope, { subscribe = true } = {}) {
 
 async function openRegisterMonitor({ subscribe = canSubscribeToMonitor(scanjob.value) } = {}) {
   mode.value = MODE_REGISTER
+  selectedArea.value = scanJobsStore.scanjobMonitorArea.Boxes
   selectedBoxId.value = null
-  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Boxes), { subscribe })
+  selectedBucketIndex.value = null
+  await observeScope(buildScope(scanJobsStore.scanjobMonitorArea.Boxes), { subscribe })
 }
 
 async function openBoxMonitor(box) {
-  if (!box?.boxId || isLoading.value) {
+  if (!box || isLoading.value) {
+    return
+  }
+
+  const isUnassigned = isUnassignedMonitorBox(box)
+  const boxId = toNumberOrNull(box.boxId)
+  const bucketIndex = toNumberOrNull(box.bucketIndex) ?? 0
+
+  if (!isUnassigned && boxId == null) {
     return
   }
 
   mode.value = MODE_BOX
-  selectedBoxId.value = box.boxId
-  await observeScope(buildScope(scanJobsStore.scanJobMonitorArea.Box, box.boxId), {
+  selectedArea.value = isUnassigned
+    ? scanJobsStore.scanjobMonitorArea.Unassigned
+    : scanJobsStore.scanjobMonitorArea.Box
+  selectedBoxId.value = isUnassigned ? null : boxId
+  selectedBucketIndex.value = isUnassigned ? bucketIndex : null
+  await observeScope(buildScope(selectedArea.value, selectedBoxId.value, selectedBucketIndex.value), {
     subscribe: canSubscribeToMonitor(scanjob.value)
   })
 }

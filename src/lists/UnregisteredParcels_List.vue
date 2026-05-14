@@ -97,7 +97,7 @@ function closeList() {
 <template>
   <div class="settings table-3" data-testid="unregistered-parcels-list">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Незарегистрированные посылки</h1>
+      <h1 class="primary-heading">Посылки не в реестре</h1>
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
             <span class="spinner-border spinner-border-m"></span>

@@ -358,9 +358,10 @@ function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
     return { mode: MODE_BOX, boxId: parcelBoxId, hasDecision: true }
   }
 
+  const hasBoxesSnapshotContext = nextBoxes.length > 0 || previousBoxesById.size > 0
   const prevTotalScannedParcels = toNumberOrZero(previousSnapshot.parcelsWithStickerScanned)
   const nextTotalScannedParcels = toNumberOrZero(nextSnapshot.parcelsWithStickerScanned)
-  if (nextTotalScannedParcels > prevTotalScannedParcels) {
+  if (hasBoxesSnapshotContext && nextTotalScannedParcels > prevTotalScannedParcels) {
     return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
   }
 

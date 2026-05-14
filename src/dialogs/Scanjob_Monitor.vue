@@ -240,6 +240,11 @@ function getSnapshotBoxes(snapshot) {
   return Array.isArray(snapshot?.boxes) ? snapshot.boxes : []
 }
 
+function getSnapshotMonitorBoxes(snapshot) {
+  const boxes = getSnapshotBoxes(snapshot)
+  return snapshot?.box ? [...boxes, snapshot.box] : boxes
+}
+
 function getMonitorBoxKey(box) {
   if (isUnassignedMonitorBox(box)) {
     return `unassigned:${Number(box?.bucketIndex ?? 0)}`
@@ -260,9 +265,69 @@ function getBoxMap(snapshot) {
   return map
 }
 
+function getLatestScanId(snapshot) {
+  return toNumberOrNull(snapshot?.latestScan?.scanCodeId)
+}
+
+function findLatestScanBox(snapshot, predicate) {
+  return getSnapshotMonitorBoxes(snapshot).find(predicate) ?? null
+}
+
+function resolveLatestScanTarget(latestScan, snapshot) {
+  const latestScanArea = toNumberOrNull(latestScan?.area)
+  if (latestScanArea === scanJobsStore.scanjobMonitorArea.Box) {
+    const boxId = toNumberOrNull(latestScan?.boxId)
+    if (boxId == null) {
+      return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
+    }
+
+    const box = findLatestScanBox(snapshot, (candidate) => {
+      return toNumberOrNull(candidate?.boxId) === boxId
+    }) ?? {
+      area: scanJobsStore.scanjobMonitorArea.Box,
+      boxId
+    }
+
+    return { mode: MODE_BOX, box, hasDecision: true }
+  }
+
+  if (latestScanArea === scanJobsStore.scanjobMonitorArea.Unassigned) {
+    const bucketIndex = toNumberOrNull(latestScan?.bucketIndex) ?? 0
+    const box = findLatestScanBox(snapshot, (candidate) => {
+      return isUnassignedMonitorBox(candidate)
+        && Number(toNumberOrNull(candidate?.bucketIndex) ?? 0) === Number(bucketIndex)
+    }) ?? {
+      area: scanJobsStore.scanjobMonitorArea.Unassigned,
+      boxId: null,
+      bucketIndex,
+      boxCode: `Без коробки ${bucketIndex + 1}`
+    }
+
+    return { mode: MODE_BOX, box, hasDecision: true }
+  }
+
+  if (
+    latestScanArea === scanJobsStore.scanjobMonitorArea.NotInRegister
+    || latestScanArea === scanJobsStore.scanjobMonitorArea.Boxes
+  ) {
+    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
+  }
+
+  return null
+}
+
 function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
   if (!autoFollowEnabled.value || !previousSnapshot || !nextSnapshot) {
     return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
+  }
+
+  const previousLatestScanId = getLatestScanId(previousSnapshot)
+  const nextLatestScanId = getLatestScanId(nextSnapshot)
+  if (nextLatestScanId != null && nextLatestScanId !== previousLatestScanId) {
+    const latestScanTarget = resolveLatestScanTarget(nextSnapshot.latestScan, nextSnapshot)
+    if (latestScanTarget?.hasDecision) {
+      return latestScanTarget
+    }
   }
 
   const prevUnregistered = toNumberOrZero(previousSnapshot.scannedItemsNotInRegister)

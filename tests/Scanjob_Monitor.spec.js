@@ -643,6 +643,39 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('.primary-heading').text()).toContain('Коробка BOX-8')
   })
 
+  it('auto-follows repeated registered scans from latest scan metadata', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+    onSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9001,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        code: 'P-70-SCAN',
+        scanTime: '2026-01-02T10:10:00'
+      }
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toContain('Коробка BOX-7')
+  })
+
   it('auto-follows to parcel view when a parcel sticker is scanned in a box', async () => {
     vi.useFakeTimers()
     loadMonitorSnapshot
@@ -705,6 +738,43 @@ describe('Scanjob_Monitor.vue', () => {
             }
           : box
       )
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, {
+      area: 2,
+      boxId: null,
+      bucketIndex: 1
+    })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toContain('Без коробки 2')
+  })
+
+  it('auto-follows repeated unassigned parcel scans from latest scan metadata', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshotWithUnassignedBucket)
+      .mockResolvedValueOnce(unassignedBucketSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+    onSnapshot({
+      ...registerSnapshotWithUnassignedBucket,
+      latestScan: {
+        scanCodeId: 9002,
+        area: 2,
+        boxId: null,
+        bucketIndex: 1,
+        code: 'PU-90-SCAN',
+        scanTime: '2026-01-02T12:00:00'
+      }
     })
     vi.advanceTimersByTime(150)
     await flushPromises()

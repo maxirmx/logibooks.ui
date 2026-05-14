@@ -51,6 +51,7 @@ const switchingScope = ref(false)
 const monitorStatusOnly = ref(false)
 const scopeVersion = ref(0)
 const registerLoading = ref(true)
+const autoFollowEnabled = ref(true)
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -280,18 +281,130 @@ function clearPendingSnapshot() {
   }
 }
 
-function applySnapshot(snapshot, { version = scopeVersion.value, immediate = false } = {}) {
+function toNumberOrZero(value) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function toNumberOrNull(value) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function getSnapshotBoxes(snapshot) {
+  return Array.isArray(snapshot?.boxes) ? snapshot.boxes : []
+}
+
+function getBoxMap(snapshot) {
+  const map = new Map()
+  getSnapshotBoxes(snapshot).forEach((box) => {
+    const boxId = toNumberOrNull(box?.boxId)
+    if (boxId != null) {
+      map.set(boxId, box)
+    }
+  })
+  return map
+}
+
+function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
+  if (!autoFollowEnabled.value || !previousSnapshot || !nextSnapshot) {
+    return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
+  }
+
+  const prevUnregistered = toNumberOrZero(previousSnapshot.scannedItemsNotInRegister)
+  const nextUnregistered = toNumberOrZero(nextSnapshot.scannedItemsNotInRegister)
+  if (nextUnregistered > prevUnregistered) {
+    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
+  }
+
+  const previousBoxesById = getBoxMap(previousSnapshot)
+  const nextBoxes = getSnapshotBoxes(nextSnapshot)
+
+  for (const box of nextBoxes) {
+    const boxId = toNumberOrNull(box?.boxId)
+    if (boxId == null || !box?.boxStickerScanned) {
+      continue
+    }
+
+    const previousBox = previousBoxesById.get(boxId)
+    if (!previousBox?.boxStickerScanned) {
+      return { mode: MODE_BOX, boxId, hasDecision: true }
+    }
+  }
+
+  let parcelBoxId = null
+  let parcelProgressDetected = false
+  for (const box of nextBoxes) {
+    const boxId = toNumberOrNull(box?.boxId)
+    if (boxId == null) {
+      continue
+    }
+
+    const previousBox = previousBoxesById.get(boxId)
+    const previousScannedParcels = toNumberOrZero(previousBox?.parcelsWithStickerScanned)
+    const nextScannedParcels = toNumberOrZero(box?.parcelsWithStickerScanned)
+    if (nextScannedParcels > previousScannedParcels) {
+      parcelProgressDetected = true
+      parcelBoxId = boxId
+      break
+    }
+  }
+
+  if (parcelProgressDetected && parcelBoxId != null) {
+    return { mode: MODE_BOX, boxId: parcelBoxId, hasDecision: true }
+  }
+
+  const prevTotalScannedParcels = toNumberOrZero(previousSnapshot.parcelsWithStickerScanned)
+  const nextTotalScannedParcels = toNumberOrZero(nextSnapshot.parcelsWithStickerScanned)
+  if (nextTotalScannedParcels > prevTotalScannedParcels) {
+    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
+  }
+
+  return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
+}
+
+function runAutoFollow(previousSnapshot, nextSnapshot, source) {
+  if (source !== 'live' || switchingScope.value || isLoading.value) {
+    return
+  }
+
+  const target = resolveAutoFollowTarget(previousSnapshot, nextSnapshot)
+  if (!target.hasDecision) {
+    return
+  }
+
+  if (target.mode === MODE_BOX && target.boxId != null) {
+    if (isBoxMode.value && Number(selectedBoxId.value) === Number(target.boxId)) {
+      return
+    }
+
+    const box = getSnapshotBoxes(nextSnapshot).find((item) => Number(item?.boxId) === Number(target.boxId))
+      || { boxId: target.boxId }
+    void openBoxMonitor(box)
+    return
+  }
+
+  if (isRegisterMode.value) {
+    return
+  }
+
+  void openRegisterMonitor()
+}
+
+function applySnapshot(snapshot, { version = scopeVersion.value, immediate = false, source = 'manual' } = {}) {
   if (!isComponentMounted.value || version !== scopeVersion.value || !snapshotMatchesScope(snapshot)) {
     return
   }
 
   if (immediate) {
+    const previousSnapshot = visibleSnapshot.value
     clearPendingSnapshot()
     visibleSnapshot.value = snapshot
+    runAutoFollow(previousSnapshot, snapshot, source)
     return
   }
 
-  pendingSnapshot = snapshot
+  pendingSnapshot = { snapshot, source }
   if (throttleTimer) {
     return
   }
@@ -300,8 +413,8 @@ function applySnapshot(snapshot, { version = scopeVersion.value, immediate = fal
     const nextSnapshot = pendingSnapshot
     pendingSnapshot = null
     throttleTimer = null
-    if (nextSnapshot) {
-      applySnapshot(nextSnapshot, { version, immediate: true })
+    if (nextSnapshot?.snapshot) {
+      applySnapshot(nextSnapshot.snapshot, { version, immediate: true, source: nextSnapshot.source })
     }
   }, MONITOR_THROTTLE_MS)
 }
@@ -341,12 +454,12 @@ async function observeScope(scope, { subscribe = true } = {}) {
     await scanJobsStore.clearMonitor().catch(() => {})
 
     const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, scope)
-    applySnapshot(snapshot, { version, immediate: true })
+    applySnapshot(snapshot, { version, immediate: true, source: 'initial' })
 
     if (subscribe) {
       await scanJobsStore.startMonitor(props.scanjobId, {
         ...scope,
-        onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version }),
+        onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version, source: 'live' }),
         onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version)
       })
     }

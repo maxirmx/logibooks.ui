@@ -7,15 +7,15 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
 import ActionButton from '@/components/ActionButton.vue'
-import ClickableCell from '@/components/ClickableCell.vue'
+import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
+import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
-import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import '@/assets/styles/scanjob-monitor.css'
 
 const props = defineProps({
   scanjobId: { type: Number, required: true }
@@ -28,18 +28,9 @@ const SCAN_JOB_STATUS_IN_PROGRESS = 15
 
 const scanJobsStore = useScanjobsStore()
 const registersStore = useRegistersStore()
-const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
-const {
-  scanjobmonitor_boxes_per_page,
-  scanjobmonitor_boxes_sort_by,
-  scanjobmonitor_boxes_page,
-  scanjobmonitor_parcels_per_page,
-  scanjobmonitor_parcels_sort_by,
-  scanjobmonitor_parcels_page
-} = storeToRefs(authStore)
 const isComponentMounted = ref(true)
 const { loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
 
@@ -56,31 +47,11 @@ const autoFollowEnabled = ref(true)
 let pendingSnapshot = null
 let throttleTimer = null
 
-const boxHeaders = [
-  { title: '', key: 'boxStickerScanned', align: 'start' },
-  { title: 'Номер коробки', key: 'boxCode', align: 'center' },
-  { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' },
-  { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
-  { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
-  { title: 'Посылки всего / сканировано / не сканировано', key: 'parcelsProgress', align: 'center', sortable: false }
-]
-
-const parcelHeaders = [
-  { title: '', key: 'stickerScanned', align: 'start' },
-  { title: 'Посылка', key: 'parcelNumber', align: 'start' },
-  { title: 'Сканированный код', key: 'scannedSticker', align: 'start' },
-  { title: 'Пользователь', key: 'scannedUserName', align: 'start' },
-  { title: 'Время сканирования', key: 'scannedTime', align: 'start' },
-  { title: 'Зона', key: 'zoneName', align: 'start' },
-  { title: 'Статус', key: 'statusTitle', align: 'start' }
-]
-
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
 const isLoading = computed(() => monitorLoading.value || switchingScope.value)
 const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
-const selectedParcels = computed(() => selectedBox.value?.parcels ?? [])
 const closedInfo = computed(() => closedStatus.value || monitorClosed.value)
 const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
 const registerId = computed(() => scanjob.value?.registerId ?? null)
@@ -113,29 +84,6 @@ const autoFollowActionIcon = computed(() => (
 const autoFollowActionTooltip = computed(() => (
   autoFollowEnabled.value ? 'Отключить автослежение' : 'Включить автослежение'
 ))
-
-const aggregateCards = computed(() => {
-  const snapshot = visibleSnapshot.value
-  if (!snapshot) return []
-
-  return [
-    {
-      key: 'boxes',
-      label: 'Коробки всего / сканировано / не сканировано',
-      value: `${snapshot.totalBoxes ?? 0} / ${snapshot.boxesWithStickerScanned ?? 0} / ${snapshot.boxesWithStickerNotScanned ?? 0}`,
-    },
-    {
-      key: 'parcels',
-      label: 'Посылки всего / сканировано / не сканировано',
-      value: `${snapshot.totalParcels ?? 0} / ${snapshot.parcelsWithStickerScanned ?? 0} / ${snapshot.parcelsWithStickerNotScanned ?? 0}`,
-    },
-    {
-      key: 'unregistered',
-      label: 'Посылки не в реестре',
-      value: String(snapshot.scannedItemsNotInRegister ?? 0),
-    }
-  ]
-})
 
 function close() {
   router.back()
@@ -205,39 +153,6 @@ function getScanJobStatusText(status) {
     default:
       return status == null ? 'Неизвестно' : String(status)
   }
-}
-
-function formatCount(value) {
-  return Number(value ?? 0).toLocaleString('ru-RU')
-}
-
-function valueOrDash(value) {
-  return value || '-'
-}
-
-const dateTimeRuFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false
-})
-
-function formatScanTime(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return dateTimeRuFormatter.format(date)
-}
-
-function stickerText(scanned) {
-  return scanned ? 'Сканирована' : 'Не сканирована'
-}
-
-function stickerClass(scanned, notFound = false) {
-  if (notFound) return 'monitor-status monitor-status-not-found'
-  return scanned ? 'monitor-status monitor-status-scanned' : 'monitor-status monitor-status-waiting'
 }
 
 function editParcel(item) {
@@ -608,205 +523,20 @@ defineExpose({
       </div>
 
       <template v-else>
-        <div class="monitor-summary" data-testid="scanjob-monitor-summary">
-          <div v-for="card in aggregateCards" :key="card.key" class="monitor-summary-item">
-            <div class="monitor-summary-content">
-              <div class="monitor-summary-label">{{ card.label }}</div>
-              <div class="monitor-summary-value">{{ card.value }}</div>
-            </div>
-          </div>
-        </div>
+        <ScanjobBoxesMonitor
+          v-if="isRegisterMode"
+          :snapshot="visibleSnapshot"
+          :boxes="boxes"
+          :loading="isLoading"
+          @open-box="openBoxMonitor"
+        />
 
-        <div v-if="isRegisterMode" class="monitor-section" data-testid="scanjob-monitor-register">
-          <v-card class="table-card">
-            <div v-if="boxes.length === 0" class="monitor-empty" data-testid="scanjob-monitor-empty-boxes">
-              Коробки не найдены
-            </div>
-
-            <v-data-table
-              v-model:items-per-page="scanjobmonitor_boxes_per_page"
-              v-model:page="scanjobmonitor_boxes_page"
-              v-model:sort-by="scanjobmonitor_boxes_sort_by"
-              v-else
-              :headers="boxHeaders"
-              :items="boxes"
-              :items-per-page-options="itemsPerPageOptions"
-              items-per-page-text="Коробок на странице"
-              page-text="{0}-{1} из {2}"
-              :loading="isLoading"
-              density="compact"
-              class="elevation-1 interlaced-table"
-              data-testid="scanjob-monitor-boxes-table"
-            >
-              <template #[`item.boxCode`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="item.boxCode"
-                  cell-class="clickable-cell"
-                  data-testid="scanjob-monitor-box-row"
-                  :disabled="isLoading"
-                  @click="openBoxMonitor(item)"
-                />
-              </template>
-
-              <template #[`item.boxStickerScanned`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="stickerText(item.boxStickerScanned)"
-                  :cell-class="`${stickerClass(item.boxStickerScanned)} clickable-cell`"
-                  :disabled="isLoading"
-                  @click="openBoxMonitor(item)"
-                />
-              </template>
-
-              <template #[`item.boxScannedSticker`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.boxScannedSticker)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="openBoxMonitor(item)"
-                />
-              </template>
-
-              <template #[`item.boxScannedUserName`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.boxScannedUserName)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="openBoxMonitor(item)"
-                />
-              </template>
-
-              <template #[`item.boxScannedTime`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(formatScanTime(item.boxScannedTime))"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="openBoxMonitor(item)"
-                />
-              </template>
-
-              <template #[`item.parcelsProgress`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="`${formatCount(item.totalParcels)} / ${formatCount(item.parcelsWithStickerScanned)} / ${formatCount(item.parcelsWithStickerNotScanned)}`"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="openBoxMonitor(item)"
-                />
-              </template>
-
-            </v-data-table>
-          </v-card>
-        </div>
-
-        <div v-if="isBoxMode" class="monitor-section" data-testid="scanjob-monitor-box">
-          <div v-if="selectedBox" class="monitor-box-summary">
-            <span :class="stickerClass(selectedBox.boxStickerScanned)">
-              {{ stickerText(selectedBox.boxStickerScanned) }}
-            </span>
-            <span>
-              Посылки: {{ formatCount(selectedBox.parcelsWithStickerScanned) }} /
-              {{ formatCount(selectedBox.totalParcels) }}
-            </span>
-            <span>Не сканировано: {{ formatCount(selectedBox.parcelsWithStickerNotScanned) }}</span>
-          </div>
-
-          <v-card class="table-card">
-            <div v-if="selectedParcels.length === 0" class="monitor-empty" data-testid="scanjob-monitor-empty-parcels">
-              В коробке нет посылок
-            </div>
-
-            <v-data-table
-              v-model:items-per-page="scanjobmonitor_parcels_per_page"
-              v-model:page="scanjobmonitor_parcels_page"
-              v-model:sort-by="scanjobmonitor_parcels_sort_by"
-              v-else
-              :headers="parcelHeaders"
-              :items="selectedParcels"
-              :items-per-page-options="itemsPerPageOptions"
-              items-per-page-text="Посылок на странице"
-              page-text="{0}-{1} из {2}"
-              :loading="isLoading"
-              density="compact"
-              class="elevation-1 interlaced-table"
-              data-testid="scanjob-monitor-parcels-table"
-            >
-              <template #[`item.stickerScanned`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="stickerText(item.stickerScanned)"
-                  :cell-class="`${stickerClass(item.stickerScanned)} clickable-cell`"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-
-              <template #[`item.scannedSticker`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.scannedSticker)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-
-              <template #[`item.scannedUserName`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.scannedUserName)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-
-              <template #[`item.scannedTime`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(formatScanTime(item.scannedTime))"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-
-              <template #[`item.parcelNumber`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.parcelNumber)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-
-              <template #[`item.zoneName`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.zoneName)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-
-              <template #[`item.statusTitle`]="{ item }">
-                <ClickableCell
-                  :item="item"
-                  :display-value="valueOrDash(item.statusTitle)"
-                  cell-class="clickable-cell"
-                  :disabled="isLoading"
-                  @click="editParcel(item)"
-                />
-              </template>
-            </v-data-table>
-          </v-card>
-        </div>
+        <ScanjobParcelsMonitor
+          v-if="isBoxMode"
+          :box="selectedBox"
+          :loading="isLoading"
+          @edit-parcel="editParcel"
+        />
       </template>
     </div>
 
@@ -822,100 +552,8 @@ defineExpose({
   min-height: 320px;
 }
 
-.monitor-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.monitor-summary-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid #d8dde6;
-  border-radius: 6px;
-  padding: 12px 14px;
-  background: #fff;
-}
-
-.monitor-summary-content {
-  min-width: 0;
-}
-
 .monitor-summary-action {
   margin-left: auto;
   flex: 0 0 auto;
-}
-
-.monitor-summary-label {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.monitor-summary-value {
-  margin-top: 4px;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.monitor-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.monitor-status {
-  display: inline-flex;
-  align-items: center;
-  min-width: 112px;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.monitor-status-scanned {
-  background-color: rgba(76, 175, 80, 0.25);
-  color: #2e7d32;
-  border: 1px solid rgba(76, 175, 80, 0.5);
-}
-
-.monitor-status-waiting {
-  background-color: rgba(33, 150, 243, 0.25);
-  color: #1976d2;
-  border: 1px solid rgba(33, 150, 243, 0.3);
-}
-
-.monitor-status-not-found {
-  background-color: rgba(244, 67, 54, 0.25);
-  color: #d32f2f;
-  border: 1px solid rgba(201, 17, 4, 0.3);
-}
-
-.monitor-empty {
-  min-height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #5f6b7a;
-  text-align: center;
-}
-
-.monitor-closed {
-  border: 1px solid #d8dde6;
-  border-radius: 6px;
-  background: #f8fafc;
-}
-
-.monitor-box-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  color: #374151;
 }
 </style>

@@ -6,6 +6,7 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 
 const mockBack = vi.hoisted(() => vi.fn())
@@ -156,6 +157,32 @@ const boxSnapshot = {
   }
 }
 
+const boxSnapshotForBox8 = {
+  ...boxSnapshot,
+  box: {
+    ...boxSnapshot.box,
+    boxId: 8,
+    boxCode: 'BOX-8',
+    boxStickerScanned: true,
+    boxScannedSticker: 'BOX-8-ACTUAL',
+    totalParcels: 2,
+    parcelsWithStickerScanned: 1,
+    parcelsWithStickerNotScanned: 1,
+    parcels: [
+      {
+        parcelId: 80,
+        parcelNumber: 'P-80',
+        stickerScanned: true,
+        scannedSticker: 'P-80-SCAN',
+        scannedUserName: 'Сидоров Сидор',
+        scannedTime: '2026-01-02T11:00:00',
+        zoneName: 'Blue',
+        statusTitle: 'На складе'
+      }
+    ]
+  }
+}
+
 vi.mock('@/router', () => ({
   default: { back: mockBack, push: mockPush, currentRoute: mockCurrentRoute }
 }), { virtual: true })
@@ -255,6 +282,12 @@ const monitorGlobalStubs = {
   }
 }
 
+function getAutoFollowAction(wrapper) {
+  return wrapper
+    .findAllComponents(ActionButton)
+    .find((button) => ['fa-solid fa-link', 'fa-solid fa-link-slash'].includes(button.props('icon')))
+}
+
 describe('Scanjob_Monitor.vue', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -344,6 +377,27 @@ describe('Scanjob_Monitor.vue', () => {
         returnUrl: '/scanjobs/42/monitor'
       }
     })
+  })
+
+  it('toggles auto-follow from the header action and switches icon', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link-slash')
+    expect(getAutoFollowAction(wrapper).props('tooltipText')).toBe('Отключить автослежение')
+
+    await wrapper.find('[data-testid="scanjob-monitor-auto-follow-action"]').trigger('click')
+
+    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link')
+    expect(getAutoFollowAction(wrapper).props('tooltipText')).toBe('Включить автослежение')
+
+    await wrapper.find('[data-testid="scanjob-monitor-auto-follow-action"]').trigger('click')
+
+    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link-slash')
   })
 
   it('switches to box monitor and renders parcels', async () => {
@@ -446,6 +500,169 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(wrapper.text()).toContain('BOX-LATEST')
     expect(wrapper.text()).not.toContain('BOX-OLD')
+  })
+
+  it('auto-follows to parcel view when a box sticker is scanned', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshotForBox8)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+    onSnapshot({
+      ...registerSnapshot,
+      boxes: registerSnapshot.boxes.map((box) =>
+        box.boxId === 8
+          ? {
+              ...box,
+              boxStickerScanned: true,
+              boxScannedSticker: 'BOX-8-ACTUAL',
+              boxScannedUserName: 'Сидоров Сидор',
+              boxScannedTime: '2026-01-02T11:00:00'
+            }
+          : box
+      )
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 8 })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toContain('Коробка BOX-8')
+  })
+
+  it('auto-follows to parcel view when a parcel sticker is scanned in a box', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshotForBox8)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+    onSnapshot({
+      ...registerSnapshot,
+      parcelsWithStickerScanned: 4,
+      parcelsWithStickerNotScanned: 1,
+      boxes: registerSnapshot.boxes.map((box) =>
+        box.boxId === 8
+          ? {
+              ...box,
+              parcelsWithStickerScanned: 2,
+              parcelsWithStickerNotScanned: 0
+            }
+          : box
+      )
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 8 })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+  })
+
+  it('does not auto-follow live scans when auto-follow is disabled', async () => {
+    vi.useFakeTimers()
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-auto-follow-action"]').trigger('click')
+
+    const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
+    onSnapshot({
+      ...registerSnapshot,
+      boxes: registerSnapshot.boxes.map((box) =>
+        box.boxId === 8
+          ? {
+              ...box,
+              boxStickerScanned: true,
+              boxScannedSticker: 'BOX-8-ACTUAL',
+              boxScannedUserName: 'Сидоров Сидор',
+              boxScannedTime: '2026-01-02T11:00:00'
+            }
+          : box
+      )
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(false)
+  })
+
+  it('stays in box mode when a registered parcel scan arrives for the currently open box', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[1][1].onSnapshot
+    onSnapshot({
+      ...boxSnapshot,
+      parcelsWithStickerScanned: boxSnapshot.parcelsWithStickerScanned + 1,
+      parcelsWithStickerNotScanned: boxSnapshot.parcelsWithStickerNotScanned - 1,
+      scannedItemsNotInRegister: boxSnapshot.scannedItemsNotInRegister
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(false)
+  })
+
+  it('switches to boxes view when unregistered parcel scan arrives in box mode', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+      .mockResolvedValueOnce(registerSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[1][1].onSnapshot
+    onSnapshot({
+      ...boxSnapshot,
+      scannedItemsNotInRegister: 2
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 0, boxId: null })
+    expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(true)
   })
 
   it('clears and stops monitor on unmount', async () => {

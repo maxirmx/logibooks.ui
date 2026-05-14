@@ -107,6 +107,12 @@ const scopeHeading = computed(() => {
   return 'Коробки'
 })
 const monitorHeading = computed(() => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`)
+const autoFollowActionIcon = computed(() => (
+  autoFollowEnabled.value ? 'fa-solid fa-link-slash' : 'fa-solid fa-link'
+))
+const autoFollowActionTooltip = computed(() => (
+  autoFollowEnabled.value ? 'Отключить автослежение' : 'Включить автослежение'
+))
 
 const aggregateCards = computed(() => {
   const snapshot = visibleSnapshot.value
@@ -159,6 +165,10 @@ function openUnregisteredParcels() {
       returnUrl: router.currentRoute.value.fullPath
     }
   })
+}
+
+function toggleAutoFollow() {
+  autoFollowEnabled.value = !autoFollowEnabled.value
 }
 
 async function loadRegister(scanjobData) {
@@ -533,6 +543,18 @@ defineExpose({
       <div class="header-actions-bar">
         <div v-if="isLoading" class="header-actions header-actions-group">
             <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            :icon="autoFollowActionIcon"
+            icon-size="2x"
+            :tooltip-text="autoFollowActionTooltip"
+            :aria-label="autoFollowActionTooltip"
+            :title="autoFollowActionTooltip"
+            data-testid="scanjob-monitor-auto-follow-action"
+            @click="toggleAutoFollow"
+          />
         </div>
         <div v-if="!isBoxMode" class="header-actions header-actions-group">
           <ActionButton           

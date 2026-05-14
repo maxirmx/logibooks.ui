@@ -545,6 +545,41 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
   })
 
+  it('stays in box mode when a registered parcel scan arrives for the currently open box', async () => {
+    vi.useFakeTimers()
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+      .mockResolvedValueOnce({
+        ...boxSnapshot,
+        parcelsWithStickerScanned: boxSnapshot.parcelsWithStickerScanned + 1,
+        parcelsWithStickerNotScanned: boxSnapshot.parcelsWithStickerNotScanned - 1
+      })
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    const onSnapshot = startMonitor.mock.calls[1][1].onSnapshot
+    onSnapshot({
+      ...boxSnapshot,
+      parcelsWithStickerScanned: boxSnapshot.parcelsWithStickerScanned + 1,
+      parcelsWithStickerNotScanned: boxSnapshot.parcelsWithStickerNotScanned - 1,
+      scannedItemsNotInRegister: boxSnapshot.scannedItemsNotInRegister
+    })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 8 })
+    expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(false)
+  })
+
   it('switches to boxes view when unregistered parcel scan arrives in box mode', async () => {
     vi.useFakeTimers()
     loadMonitorSnapshot

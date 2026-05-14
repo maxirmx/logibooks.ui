@@ -720,6 +720,7 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="scanjob-monitor-loading"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="scanjob-monitor-close-action"]').attributes('disabled')).toBeDefined()
 
     resolveSnapshot(registerSnapshot)
     await flushPromises()

@@ -134,9 +134,13 @@ function close() {
   router.back()
 }
 
-function handleCloseAction() {
+async function handleCloseAction() {
+  if (isLoading.value) {
+    return
+  }
+
   if (isBoxMode.value) {
-    openRegisterMonitor()
+    await openRegisterMonitor()
     return
   }
 
@@ -436,6 +440,7 @@ defineExpose({
             aria-label="Закрыть"
             title="Закрыть"
             data-testid="scanjob-monitor-close-action"
+            :disabled="isLoading"
             @click="handleCloseAction"
           />
         </div>

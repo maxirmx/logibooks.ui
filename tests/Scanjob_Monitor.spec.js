@@ -73,9 +73,11 @@ const monitorParcelsPage = vi.hoisted(() => ({
   __v_isRef: true,
   value: 3
 }))
+const WBR2_REGISTER_TYPE = 1024 * 1024 + 2
 
 const registerSnapshot = {
   scanJobId: 42,
+  registerType: WBR2_REGISTER_TYPE,
   area: 0,
   totalBoxes: 2,
   boxesWithStickerScanned: 1,
@@ -113,6 +115,7 @@ const registerSnapshot = {
 
 const boxSnapshot = {
   scanJobId: 42,
+  registerType: WBR2_REGISTER_TYPE,
   area: 1,
   totalBoxes: 2,
   boxesWithStickerScanned: 1,
@@ -134,24 +137,42 @@ const boxSnapshot = {
     parcelsWithStickerNotScanned: 1,
     parcels: [
       {
+        id: 70,
         parcelId: 70,
         parcelNumber: 'P-70',
+        shk: 'P-70',
+        stickerCode: 'CODE-70',
+        wbSticker: 'WB-70',
+        sellerSticker: 'SELLER-70',
+        productName: 'Product 70',
+        weightKg: 1.2,
+        quantity: 1,
         stickerScanned: true,
         scannedSticker: 'P-70-SCAN',
         scannedUserName: 'Петров Петр',
         scannedTime: '2026-01-02T10:10:00',
         zoneName: 'Green',
-        statusTitle: 'На складе'
+        statusTitle: 'На складе',
+        checkStatus: 0
       },
       {
+        id: 71,
         parcelId: 71,
         parcelNumber: 'P-71',
+        shk: 'P-71',
+        stickerCode: 'CODE-71',
+        wbSticker: 'WB-71',
+        sellerSticker: 'SELLER-71',
+        productName: 'Product 71',
+        weightKg: 2.3,
+        quantity: 2,
         stickerScanned: false,
         scannedSticker: null,
         scannedUserName: '',
         scannedTime: null,
         zoneName: 'Red',
-        statusTitle: 'Ожидается'
+        statusTitle: 'Ожидается',
+        checkStatus: 0
       }
     ]
   }
@@ -170,14 +191,23 @@ const boxSnapshotForBox8 = {
     parcelsWithStickerNotScanned: 1,
     parcels: [
       {
+        id: 80,
         parcelId: 80,
         parcelNumber: 'P-80',
+        shk: 'P-80',
+        stickerCode: 'CODE-80',
+        wbSticker: 'WB-80',
+        sellerSticker: 'SELLER-80',
+        productName: 'Product 80',
+        weightKg: 3.4,
+        quantity: 1,
         stickerScanned: true,
         scannedSticker: 'P-80-SCAN',
         scannedUserName: 'Сидоров Сидор',
         scannedTime: '2026-01-02T11:00:00',
         zoneName: 'Blue',
-        statusTitle: 'На складе'
+        statusTitle: 'На складе',
+        checkStatus: 0
       }
     ]
   }
@@ -212,24 +242,42 @@ const unassignedBucketSnapshot = {
     ...unassignedBucketRow,
     parcels: [
       {
+        id: 90,
         parcelId: 90,
         parcelNumber: 'PU-90',
+        shk: 'PU-90',
+        stickerCode: 'CODE-90',
+        wbSticker: 'WB-90',
+        sellerSticker: 'SELLER-90',
+        productName: 'Product U90',
+        weightKg: 4.5,
+        quantity: 1,
         stickerScanned: true,
         scannedSticker: 'PU-90-SCAN',
         scannedUserName: 'Николаев Николай',
         scannedTime: '2026-01-02T12:00:00',
         zoneName: 'Yellow',
-        statusTitle: 'Без коробки'
+        statusTitle: 'Без коробки',
+        checkStatus: 0
       },
       {
+        id: 91,
         parcelId: 91,
         parcelNumber: 'PU-91',
+        shk: 'PU-91',
+        stickerCode: 'CODE-91',
+        wbSticker: 'WB-91',
+        sellerSticker: 'SELLER-91',
+        productName: 'Product U91',
+        weightKg: 5.6,
+        quantity: 3,
         stickerScanned: false,
         scannedSticker: null,
         scannedUserName: '',
         scannedTime: null,
         zoneName: 'Yellow',
-        statusTitle: 'Без коробки'
+        statusTitle: 'Без коробки',
+        checkStatus: 0
       }
     ]
   }
@@ -471,6 +519,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 1, boxId: 7 }))
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
     expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7')
+    expect(wrapper.findComponent({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' }).exists()).toBe(true)
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
       label: item.find('.monitor-summary-label').text(),
@@ -483,6 +532,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(wrapper.text()).toContain('P-70')
     expect(wrapper.text()).toContain('P-70-SCAN')
+    expect(wrapper.text()).toContain('Product 70')
     expect(wrapper.text()).toContain('Петров Петр')
     expect(wrapper.text()).toContain('02.01.2026, 10:10')
     expect(wrapper.text()).toContain('P-71')
@@ -532,6 +582,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(wrapper.text()).toContain('PU-90')
     expect(wrapper.text()).toContain('PU-90-SCAN')
+    expect(wrapper.text()).toContain('Product U90')
     expect(wrapper.text()).toContain('PU-91')
   })
 

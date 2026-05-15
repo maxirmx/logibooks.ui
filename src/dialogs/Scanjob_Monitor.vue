@@ -638,6 +638,7 @@ defineExpose({
         <ScanjobParcelsMonitor
           v-if="isBoxMode"
           :box="selectedBox"
+          :register-type="visibleSnapshot?.registerType ?? 0"
           :loading="isLoading"
           @edit-parcel="editParcel"
         />

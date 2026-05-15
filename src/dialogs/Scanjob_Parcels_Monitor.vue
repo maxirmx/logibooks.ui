@@ -4,21 +4,18 @@
 // This file is a part of Logibooks ui application
 
 import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useAuthStore } from '@/stores/auth.store.js'
-import ClickableCell from '@/components/ClickableCell.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
-import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
+import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
+import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor_Table.vue'
+import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monitor_Table.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import {
   formatCount,
-  formatScanTime,
   isUnassignedMonitorBox,
   scanjobParcelHeaders,
   monitorBoxStickerClass,
-  monitorBoxStickerText,
-  stickerClass,
-  stickerText,
-  valueOrDash
+  monitorBoxStickerText
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
@@ -26,19 +23,30 @@ defineOptions({ name: 'Scanjob_Parcels_Monitor' })
 
 const props = defineProps({
   box: { type: Object, default: null },
+  registerType: { type: Number, default: 0 },
   loading: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['edit-parcel'])
 
-const authStore = useAuthStore()
-const {
-  scanjobmonitor_parcels_per_page,
-  scanjobmonitor_parcels_sort_by,
-  scanjobmonitor_parcels_page
-} = storeToRefs(authStore)
-
 const parcels = computed(() => props.box?.parcels ?? [])
+const hasRegisteredParcels = computed(() => parcels.value.some((parcel) => parcel?.isInRegister !== false))
+const typedTableComponent = computed(() => {
+  if (!hasRegisteredParcels.value) {
+    return null
+  }
+
+  switch (Number(props.registerType)) {
+    case OZON_COMPANY_ID:
+      return ScanjobOzonParcelsMonitorTable
+    case WBR_COMPANY_ID:
+      return ScanjobWbrParcelsMonitorTable
+    case WBR2_REGISTER_ID:
+      return ScanjobWbr2ParcelsMonitorTable
+    default:
+      return null
+  }
+})
 const summaryCards = computed(() => {
   const box = props.box
   if (!box) return []
@@ -73,97 +81,27 @@ function editParcel(item) {
     <ScanjobMonitorSummary :cards="summaryCards" />
 
     <div class="monitor-section">
-    <v-card class="table-card">
-      <div v-if="parcels.length === 0" class="monitor-empty" data-testid="scanjob-monitor-empty-parcels">
-        {{ emptyText }}
-      </div>
+      <v-card class="table-card">
+        <div v-if="parcels.length === 0" class="monitor-empty" data-testid="scanjob-monitor-empty-parcels">
+          {{ emptyText }}
+        </div>
 
-      <v-data-table
-        v-model:items-per-page="scanjobmonitor_parcels_per_page"
-        v-model:page="scanjobmonitor_parcels_page"
-        v-model:sort-by="scanjobmonitor_parcels_sort_by"
-        v-else
-        :headers="scanjobParcelHeaders"
-        :items="parcels"
-        :items-per-page-options="itemsPerPageOptions"
-        items-per-page-text="Посылок на странице"
-        page-text="{0}-{1} из {2}"
-        :loading="props.loading"
-        density="compact"
-        class="elevation-1 interlaced-table"
-        data-testid="scanjob-monitor-parcels-table"
-      >
-        <template #[`item.stickerScanned`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="stickerText(item.stickerScanned)"
-            :cell-class="`${stickerClass(item.stickerScanned)} clickable-cell`"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
+        <component
+          :is="typedTableComponent"
+          v-else-if="typedTableComponent"
+          :parcels="parcels"
+          :loading="props.loading"
+          @edit-parcel="editParcel"
+        />
 
-        <template #[`item.scannedSticker`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="valueOrDash(item.scannedSticker)"
-            cell-class="clickable-cell"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
-
-        <template #[`item.scannedUserName`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="valueOrDash(item.scannedUserName)"
-            cell-class="clickable-cell"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
-
-        <template #[`item.scannedTime`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="valueOrDash(formatScanTime(item.scannedTime))"
-            cell-class="clickable-cell"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
-
-        <template #[`item.parcelNumber`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="valueOrDash(item.parcelNumber)"
-            cell-class="clickable-cell"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
-
-        <template #[`item.zoneName`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="valueOrDash(item.zoneName)"
-            cell-class="clickable-cell"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
-
-        <template #[`item.statusTitle`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="valueOrDash(item.statusTitle)"
-            cell-class="clickable-cell"
-            :disabled="props.loading"
-            @click="editParcel(item)"
-          />
-        </template>
-      </v-data-table>
-    </v-card>
+        <ScanjobParcelsMonitorTable
+          v-else
+          :headers="scanjobParcelHeaders"
+          :parcels="parcels"
+          :loading="props.loading"
+          @edit-parcel="editParcel"
+        />
+      </v-card>
     </div>
   </div>
 </template>

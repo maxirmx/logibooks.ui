@@ -87,3 +87,20 @@
   border-radius: 6px;
   background: #f8fafc;
 }
+
+.scanjob-monitor-product-name-cell {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.scanjob-monitor-product-name-cell.clickable-cell {
+  cursor: pointer;
+}
+
+.scanjob-monitor-product-name-cell.clickable-cell-disabled {
+  cursor: not-allowed;
+}

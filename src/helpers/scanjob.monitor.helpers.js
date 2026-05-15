@@ -2,6 +2,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
+import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
+import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
+
 export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
@@ -9,6 +13,13 @@ export const scanjobBoxHeaders = [
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
   { title: 'Посылки всего / сканировано / не сканировано', key: 'parcelsProgress', align: 'center', sortable: false }
+]
+
+export const scanjobParcelScanHeaders = [
+  { title: '', key: 'stickerScanned', align: 'start' },
+  { title: 'Сканированный код', key: 'scannedSticker', align: 'start' },
+  { title: 'Пользователь', key: 'scannedUserName', align: 'start' },
+  { title: 'Время сканирования', key: 'scannedTime', align: 'start' }
 ]
 
 export const scanjobParcelHeaders = [
@@ -19,6 +30,48 @@ export const scanjobParcelHeaders = [
   { title: 'Время сканирования', key: 'scannedTime', align: 'start' },
   { title: 'Зона', key: 'zoneName', align: 'start' },
   { title: 'Статус', key: 'statusTitle', align: 'start' }
+]
+
+export const scanjobOzonParcelHeaders = [
+  ...scanjobParcelScanHeaders,
+  { title: '№', key: 'id', align: 'start' },
+  { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
+  { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
+  { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false, width: '260px' },
+  { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
+  { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: 'Зона', key: 'zone', align: 'start' },
+  { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
+  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
+]
+
+export const scanjobWbrParcelHeaders = [
+  ...scanjobParcelScanHeaders,
+  { title: '№', key: 'id', align: 'start' },
+  { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
+  { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
+  { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
+  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '260px' },
+  { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
+  { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: 'Зона', key: 'zone', align: 'start' },
+  { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
+  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
+]
+
+export const scanjobWbr2ParcelHeaders = [
+  ...scanjobParcelScanHeaders,
+  { title: wbr2RegisterColumnTitles.id, key: 'id', align: 'start' },
+  { title: wbr2RegisterColumnTitles.shk, key: 'shk', align: 'start' },
+  { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '260px' },
+  { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: 'Зона', key: 'zone', align: 'start' },
+  { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
+  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
 ]
 
 export const scanjobMonitorArea = {

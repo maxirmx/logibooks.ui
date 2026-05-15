@@ -73,6 +73,10 @@ const monitorParcelsPage = vi.hoisted(() => ({
   __v_isRef: true,
   value: 3
 }))
+const hasLogistRole = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: true
+}))
 const WBR2_REGISTER_TYPE = 1024 * 1024 + 2
 
 const registerSnapshot = {
@@ -330,7 +334,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     scanjobmonitor_boxes_page: monitorBoxesPage,
     scanjobmonitor_parcels_per_page: monitorParcelsPerPage,
     scanjobmonitor_parcels_sort_by: monitorParcelsSortBy,
-    scanjobmonitor_parcels_page: monitorParcelsPage
+    scanjobmonitor_parcels_page: monitorParcelsPage,
+    hasLogistRole
   })
 }))
 
@@ -404,6 +409,7 @@ describe('Scanjob_Monitor.vue', () => {
     monitorParcelsPerPage.value = 50
     monitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
     monitorParcelsPage.value = 3
+    hasLogistRole.value = true
     mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
     getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
     registerGetById.mockResolvedValue(true)

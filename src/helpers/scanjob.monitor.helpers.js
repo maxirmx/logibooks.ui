@@ -34,7 +34,6 @@ export const scanjobParcelHeaders = [
 
 export const scanjobOzonParcelHeaders = [
   ...scanjobParcelScanHeaders,
-  { title: '№', key: 'id', align: 'start' },
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false, width: '260px' },
@@ -47,7 +46,6 @@ export const scanjobOzonParcelHeaders = [
 
 export const scanjobWbrParcelHeaders = [
   ...scanjobParcelScanHeaders,
-  { title: '№', key: 'id', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
@@ -61,7 +59,6 @@ export const scanjobWbrParcelHeaders = [
 
 export const scanjobWbr2ParcelHeaders = [
   ...scanjobParcelScanHeaders,
-  { title: wbr2RegisterColumnTitles.id, key: 'id', align: 'start' },
   { title: wbr2RegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start', sortable: false },

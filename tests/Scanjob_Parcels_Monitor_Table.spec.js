@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
@@ -15,12 +15,14 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 const scanjobmonitorParcelsPerPage = ref(50)
 const scanjobmonitorParcelsSortBy = ref([{ key: 'id', order: 'asc' }])
 const scanjobmonitorParcelsPage = ref(1)
+const hasLogistRole = ref(true)
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     scanjobmonitor_parcels_per_page: scanjobmonitorParcelsPerPage,
     scanjobmonitor_parcels_sort_by: scanjobmonitorParcelsSortBy,
-    scanjobmonitor_parcels_page: scanjobmonitorParcelsPage
+    scanjobmonitor_parcels_page: scanjobmonitorParcelsPage,
+    hasLogistRole
   })
 }))
 
@@ -44,11 +46,14 @@ vi.mock('pinia', async () => {
 const global = { stubs: vuetifyStubs }
 
 describe('Scanjob parcel monitor typed tables', () => {
+  beforeEach(() => {
+    hasLogistRole.value = true
+  })
+
   it('renders Ozon scan and WH columns without box number', () => {
     const wrapper = mount(ScanjobOzonParcelsMonitorTable, {
       props: {
         parcels: [{
-          id: 11,
           stickerScanned: true,
           scannedSticker: 'SCAN-11',
           scannedUserName: 'Operator',
@@ -72,7 +77,6 @@ describe('Scanjob parcel monitor typed tables', () => {
       'scannedSticker',
       'scannedUserName',
       'scannedTime',
-      'id',
       'postingNumber',
       'barcode',
       'productName',
@@ -93,7 +97,6 @@ describe('Scanjob parcel monitor typed tables', () => {
     const wrapper = mount(ScanjobWbrParcelsMonitorTable, {
       props: {
         parcels: [{
-          id: 21,
           stickerScanned: false,
           shk: 'SHK-21',
           sticker: 'STICKER-21',
@@ -115,7 +118,6 @@ describe('Scanjob parcel monitor typed tables', () => {
       'scannedSticker',
       'scannedUserName',
       'scannedTime',
-      'id',
       'shk',
       'sticker',
       'stickerCode',
@@ -136,7 +138,6 @@ describe('Scanjob parcel monitor typed tables', () => {
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
         parcels: [{
-          id: 31,
           stickerScanned: true,
           shk: 'SHK-31',
           stickerCode: 'CODE-31',
@@ -159,7 +160,6 @@ describe('Scanjob parcel monitor typed tables', () => {
       'scannedSticker',
       'scannedUserName',
       'scannedTime',
-      'id',
       'shk',
       'stickerCode',
       'wbSticker',
@@ -196,5 +196,28 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))
+  })
+
+  it('does not make parcel cells clickable without parcel edit route permission', async () => {
+    hasLogistRole.value = false
+
+    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+      props: {
+        parcels: [{
+          id: 41,
+          stickerScanned: true,
+          productName: 'Very long product name that should not wrap',
+          checkStatus: 0
+        }]
+      },
+      global
+    })
+
+    const productCell = wrapper.get('.scanjob-monitor-product-name-cell')
+    expect(productCell.classes()).not.toContain('clickable-cell')
+    expect(productCell.attributes('aria-disabled')).toBe('true')
+
+    await productCell.trigger('click')
+    expect(wrapper.emitted('edit-parcel')).toBeFalsy()
   })
 })

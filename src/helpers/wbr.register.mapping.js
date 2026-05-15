@@ -38,7 +38,7 @@ export const wbrRegisterColumnTitles = {
   pinfl: 'Пинфл',
   recipientAddress: 'Адрес получателя физического лица',
   contactPhone: 'Контактный номер',
-  boxNumber: 'Номер мешка/коробки',
+  boxNumber: 'Номер коробки',
   stickerCode: 'Код стикера',
   supplier: 'Поставщик',
   supplierInn: 'ИНН Поставщика',

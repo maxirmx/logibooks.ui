@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -31,11 +32,26 @@ const authStore = useAuthStore()
 const {
   scanjobmonitor_parcels_per_page,
   scanjobmonitor_parcels_sort_by,
-  scanjobmonitor_parcels_page
+  scanjobmonitor_parcels_page,
+  hasLogistRole
 } = storeToRefs(authStore)
 
+const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
+const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
+
 function editParcel(item) {
+  if (isParcelCellDisabled.value) {
+    return
+  }
+
   emit('edit-parcel', item)
+}
+
+function parcelCellClass(baseClass = '') {
+  return [
+    baseClass,
+    canFollowParcelEditRoute.value ? 'clickable-cell' : ''
+  ].filter(Boolean).join(' ')
 }
 
 function checkStatusText(value) {
@@ -43,7 +59,7 @@ function checkStatusText(value) {
 }
 
 function onProductNameClick(item, event) {
-  if (props.loading || event.shiftKey || event.ctrlKey || event.metaKey) {
+  if (isParcelCellDisabled.value || event.shiftKey || event.ctrlKey || event.metaKey) {
     return
   }
   editParcel(item)
@@ -69,64 +85,60 @@ function onProductNameClick(item, event) {
       <ClickableCell
         :item="item"
         :display-value="stickerText(item.stickerScanned)"
-        :cell-class="`${stickerClass(item.stickerScanned)} clickable-cell`"
-        :disabled="props.loading"
+        :cell-class="parcelCellClass(stickerClass(item.stickerScanned))"
+        :disabled="isParcelCellDisabled"
         @click="editParcel(item)"
       />
     </template>
 
     <template #[`item.scannedSticker`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.scannedSticker)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.scannedSticker)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.scannedUserName`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.scannedUserName)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.scannedUserName)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.scannedTime`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(formatScanTime(item.scannedTime))" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(formatScanTime(item.scannedTime))" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.parcelNumber`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.parcelNumber)" :disabled="props.loading" @click="editParcel(item)" />
-    </template>
-
-    <template #[`item.id`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.id)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.parcelNumber)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.shk`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.shk)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.shk)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.sticker`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.sticker)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.sticker)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.wbSticker`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.wbSticker)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.wbSticker)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.sellerSticker`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.sellerSticker)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.sellerSticker)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.stickerCode`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.stickerCode)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.stickerCode)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.postingNumber`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.postingNumber)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.postingNumber)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.barcode`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.barcode)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.barcode)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.productName`]="{ item }">
       <span
-        :class="['scanjob-monitor-product-name-cell', 'clickable-cell', props.loading ? 'clickable-cell-disabled' : '']"
-        :aria-disabled="props.loading ? 'true' : undefined"
+        :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
+        :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
         :title="item.productName || ''"
         @click="onProductNameClick(item, $event)"
       >
@@ -135,35 +147,35 @@ function onProductNameClick(item, event) {
     </template>
 
     <template #[`item.weightKg`]="{ item }">
-      <ClickableCell :item="item" :display-value="formatWeight(item.weightKg)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="formatWeight(item.weightKg)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.quantity`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.quantity)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.quantity)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.zone`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.zoneName)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.zoneName)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.zoneName`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.zoneName)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.zoneName)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.statusId`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.statusTitle)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.statusTitle)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.statusTitle`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.statusTitle)" :disabled="props.loading" @click="editParcel(item)" />
+      <ClickableCell :item="item" :display-value="valueOrDash(item.statusTitle)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
     <template #[`item.checkStatus`]="{ item }">
       <ClickableCell
         :item="item"
         :display-value="checkStatusText(item.checkStatus)"
-        :cell-class="`status-cell ${getCheckStatusClass(item.checkStatus)} clickable-cell`"
-        :disabled="props.loading"
+        :cell-class="parcelCellClass(`status-cell ${getCheckStatusClass(item.checkStatus)}`)"
+        :disabled="isParcelCellDisabled"
         @click="editParcel(item)"
       />
     </template>

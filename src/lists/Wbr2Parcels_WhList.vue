@@ -71,6 +71,7 @@ const headers = computed(() =>[
   { title: wbr2RegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
   { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
@@ -177,6 +178,9 @@ function closeList() {
         hide-default-footer
         class="elevation-1 single-line-table interlaced-table wbr-parcels-table"
       >
+        <template #[`item.productName`]="{ item }">
+          <span class="warehouse-product-name-cell" :title="item.productName || ''">{{ item.productName || ' ' }}</span>
+        </template>
         <template #[`item.weightKg`]="{ item }">
           <span class="numeric-panel">{{ formatWeight(item.weightKg) }}</span>
         </template>

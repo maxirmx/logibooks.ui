@@ -912,6 +912,15 @@ a,
   table-layout: fixed;
 }
 
+.warehouse-product-name-cell {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
 .truncated-cell {
   white-space: nowrap;
   overflow: hidden;

@@ -69,6 +69,7 @@ const headers = computed(() => [
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
+  { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
@@ -175,6 +176,9 @@ function closeList() {
         hide-default-footer
         class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
       >
+        <template #[`item.productName`]="{ item }">
+          <span class="warehouse-product-name-cell" :title="item.productName || ''">{{ item.productName || ' ' }}</span>
+        </template>
         <template #[`item.weightKg`]="{ item }">
           <span class="numeric-panel">{{ formatWeight(item.weightKg) }}</span>
         </template>

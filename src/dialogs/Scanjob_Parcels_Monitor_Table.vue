@@ -164,32 +164,6 @@ function productDescriptionText(item) {
       </span>
     </template>
 
-    <template #[`item.productDescription`]="{ item }">
-      <v-tooltip v-if="productDescriptionText(item)" location="top" open-delay="150">
-        <template #activator="{ props: tooltipProps }">
-          <span
-            v-bind="tooltipProps"
-            :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
-            :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
-            @click="onProductNameClick(item, $event)"
-          >
-            {{ valueOrDash(item.productDescription) }}
-          </span>
-        </template>
-        <template #default>
-          <div style="white-space: pre-line">{{ productDescriptionText(item) }}</div>
-        </template>
-      </v-tooltip>
-      <span
-        v-else
-        :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
-        :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
-        @click="onProductNameClick(item, $event)"
-      >
-        {{ valueOrDash(item.productDescription) }}
-      </span>
-    </template>
-
     <template #[`item.weightKg`]="{ item }">
       <ClickableCell :item="item" :display-value="formatWeight(item.weightKg)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>

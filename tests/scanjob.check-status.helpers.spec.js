@@ -12,9 +12,9 @@ import {
 
 describe('scanjob.check-status.helpers', () => {
   it('maps projected statuses to scan-job classes', () => {
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.NotChecked })).toBe('scanjob-status-not-checked')
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Restriction })).toBe('scanjob-status-restriction')
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Checked })).toBe('scanjob-status-checked')
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.NotChecked })).toBe('not-checked')
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Restriction })).toBe('has-issues')
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Checked })).toBe('no-issues')
     expect(getScanjobCheckStatusClass(null)).toBe('')
   })
 

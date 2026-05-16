@@ -177,15 +177,19 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(wrapper.text()).toContain('SELLER-31')
     expect(wrapper.text()).toContain('Запрет')
     expect(wrapper.text()).toContain('Причина запрета')
+
+    const statusCell = wrapper.get('.status-cell.has-issues')
+    expect(statusCell.text()).toBe('Запрет')
   })
 
-  it('renders product name as a non-wrapping titled cell and keeps click editing', async () => {
+  it('renders product name as a non-wrapping tooltip cell and keeps click editing', async () => {
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
         parcels: [{
           id: 41,
           stickerScanned: true,
           productName: 'Very long product name that should not wrap',
+          productDescription: 'Full product description for tooltip',
           checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
         }]
       },
@@ -194,7 +198,10 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const productCell = wrapper.get('.scanjob-monitor-product-name-cell')
     expect(productCell.text()).toBe('Very long product name that should not wrap')
-    expect(productCell.attributes('title')).toBe('Very long product name that should not wrap')
+    expect(productCell.attributes('title')).toBeUndefined()
+    expect(wrapper.findAll('[data-testid="v-tooltip"]').some((tooltip) => (
+      tooltip.text().includes('Full product description for tooltip')
+    ))).toBe(true)
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))

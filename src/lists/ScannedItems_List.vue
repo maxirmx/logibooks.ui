@@ -193,13 +193,24 @@ onUnmounted(() => {
         </template>
 
         <template #[`item.checkStatusProjection`]="{ item }">
+          <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
+            <template #activator="{ props: tooltipProps }">
+              <span
+                v-bind="tooltipProps"
+                :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+              >
+                {{ scanjobCheckStatusText(item.checkStatusProjection) }}
+              </span>
+            </template>
+            <template #default>
+              <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
+            </template>
+          </v-tooltip>
           <span
-            :class="`status-cell scanjob-projected-status ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+            v-else
+            :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
           >
-            <span class="scanjob-projected-status-title">{{ scanjobCheckStatusText(item.checkStatusProjection) }}</span>
-            <span v-if="scanjobCheckStatusReason(item.checkStatusProjection)" class="scanjob-projected-status-reason">
-              {{ scanjobCheckStatusReason(item.checkStatusProjection) }}
-            </span>
+            {{ scanjobCheckStatusText(item.checkStatusProjection) }}
           </span>
         </template>
       </v-data-table-server>

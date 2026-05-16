@@ -63,6 +63,10 @@ function onProductNameClick(item, event) {
   }
   editParcel(item)
 }
+
+function productDescriptionText(item) {
+  return item.productDescription || item.productName || ''
+}
 </script>
 
 <template>
@@ -135,13 +139,54 @@ function onProductNameClick(item, event) {
     </template>
 
     <template #[`item.productName`]="{ item }">
+      <v-tooltip v-if="productDescriptionText(item)" location="top" open-delay="150">
+        <template #activator="{ props: tooltipProps }">
+          <span
+            v-bind="tooltipProps"
+            :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
+            :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
+            @click="onProductNameClick(item, $event)"
+          >
+            {{ valueOrDash(item.productName) }}
+          </span>
+        </template>
+        <template #default>
+          <div style="white-space: pre-line">{{ productDescriptionText(item) }}</div>
+        </template>
+      </v-tooltip>
       <span
+        v-else
         :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
         :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
-        :title="item.productName || ''"
         @click="onProductNameClick(item, $event)"
       >
         {{ valueOrDash(item.productName) }}
+      </span>
+    </template>
+
+    <template #[`item.productDescription`]="{ item }">
+      <v-tooltip v-if="productDescriptionText(item)" location="top" open-delay="150">
+        <template #activator="{ props: tooltipProps }">
+          <span
+            v-bind="tooltipProps"
+            :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
+            :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
+            @click="onProductNameClick(item, $event)"
+          >
+            {{ valueOrDash(item.productDescription) }}
+          </span>
+        </template>
+        <template #default>
+          <div style="white-space: pre-line">{{ productDescriptionText(item) }}</div>
+        </template>
+      </v-tooltip>
+      <span
+        v-else
+        :class="['scanjob-monitor-product-name-cell', canFollowParcelEditRoute ? 'clickable-cell' : '', isParcelCellDisabled ? 'clickable-cell-disabled' : '']"
+        :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
+        @click="onProductNameClick(item, $event)"
+      >
+        {{ valueOrDash(item.productDescription) }}
       </span>
     </template>
 
@@ -170,15 +215,28 @@ function onProductNameClick(item, event) {
     </template>
 
     <template #[`item.checkStatusProjection`]="{ item }">
+      <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
+        <template #activator="{ props: tooltipProps }">
+          <span
+            v-bind="tooltipProps"
+            :class="parcelCellClass(`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`)"
+            :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
+            @click="editParcel(item)"
+          >
+            {{ scanjobCheckStatusText(item.checkStatusProjection) }}
+          </span>
+        </template>
+        <template #default>
+          <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
+        </template>
+      </v-tooltip>
       <span
-        :class="parcelCellClass(`status-cell scanjob-projected-status ${getScanjobCheckStatusClass(item.checkStatusProjection)}`)"
+        v-else
+        :class="parcelCellClass(`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`)"
         :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
         @click="editParcel(item)"
       >
-        <span class="scanjob-projected-status-title">{{ scanjobCheckStatusText(item.checkStatusProjection) }}</span>
-        <span v-if="scanjobCheckStatusReason(item.checkStatusProjection)" class="scanjob-projected-status-reason">
-          {{ scanjobCheckStatusReason(item.checkStatusProjection) }}
-        </span>
+        {{ scanjobCheckStatusText(item.checkStatusProjection) }}
       </span>
     </template>
   </v-data-table>

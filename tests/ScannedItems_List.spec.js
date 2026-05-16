@@ -125,6 +125,9 @@ describe('ScannedItems_List.vue', () => {
     expect(text).toContain('02.01.2024')
     expect(text).toContain('Запрет')
     expect(text).toContain('Стоп-слово')
+
+    const statusCell = wrapper.get('.status-cell.has-issues')
+    expect(statusCell.text()).toBe('Запрет')
   })
 
   it('defines headers for scanned item columns', () => {

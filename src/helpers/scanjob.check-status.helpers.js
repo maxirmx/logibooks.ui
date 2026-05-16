@@ -21,11 +21,11 @@ export function scanjobCheckStatusReason(projection) {
 export function getScanjobCheckStatusClass(projection) {
   switch (Number(projection?.kind)) {
     case scanjobCheckStatusProjectionKind.NotChecked:
-      return 'scanjob-status-not-checked'
+      return 'not-checked'
     case scanjobCheckStatusProjectionKind.Restriction:
-      return 'scanjob-status-restriction'
+      return 'has-issues'
     case scanjobCheckStatusProjectionKind.Checked:
-      return 'scanjob-status-checked'
+      return 'no-issues'
     default:
       return ''
   }

@@ -844,8 +844,9 @@ describe('scanjobs store', () => {
       const store = useScanjobsStore()
 
       await store.startScanJobsListMonitor({ onChanged: vi.fn() })
-      await store.stopScanJobsListMonitor()
+      const result = await store.stopScanJobsListMonitor()
 
+      expect(result).toBe(true)
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobs')
       expect(signalRConnection.stop).toHaveBeenCalled()
     })
@@ -873,7 +874,7 @@ describe('scanjobs store', () => {
       expect(onClosed).toHaveBeenCalledWith(closeError)
     })
 
-    it('re-observes list monitor on reconnect and stores invoke error', async () => {
+    it('stores error when re-observing list monitor fails on reconnect', async () => {
       const reconnectError = new Error('Observe on reconnect failed')
       const store = useScanjobsStore()
       await store.startScanJobsListMonitor({ onChanged: vi.fn() })

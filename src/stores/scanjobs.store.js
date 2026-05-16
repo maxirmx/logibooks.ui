@@ -42,6 +42,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   let monitorStartPromise = null
   let monitorSnapshotHandler = null
   let monitorClosedHandler = null
+  let scanJobsListConnection = null
+  let scanJobsListStartPromise = null
+  let scanJobsListChangedHandler = null
+  let scanJobsListClosedHandler = null
 
 
   function getOpsLabel(list, value) {
@@ -275,6 +279,92 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  function ensureScanJobsListConnection() {
+    if (scanJobsListConnection) {
+      return scanJobsListConnection
+    }
+
+    scanJobsListConnection = new signalR.HubConnectionBuilder()
+      .withUrl(scanJobMonitorHubUrl, {
+        accessTokenFactory: getMonitorAccessToken,
+        withCredentials: false
+      })
+      .withAutomaticReconnect()
+      .build()
+
+    scanJobsListConnection.on('ScanJobsChanged', () => {
+      if (scanJobsListChangedHandler) {
+        scanJobsListChangedHandler()
+      }
+    })
+
+    scanJobsListConnection.onclose((err) => {
+      if (scanJobsListClosedHandler) {
+        scanJobsListClosedHandler(err)
+      }
+    })
+
+    scanJobsListConnection.onreconnected?.(() => {
+      scanJobsListConnection.invoke('ObserveScanJobs').catch((err) => {
+        error.value = err
+      })
+    })
+
+    return scanJobsListConnection
+  }
+
+  async function ensureScanJobsListStarted() {
+    const connection = ensureScanJobsListConnection()
+
+    if (connection.state === signalR.HubConnectionState.Connected) {
+      return connection
+    }
+
+    if (!scanJobsListStartPromise) {
+      scanJobsListStartPromise = connection.start().finally(() => {
+        scanJobsListStartPromise = null
+      })
+    }
+
+    await scanJobsListStartPromise
+    return connection
+  }
+
+  async function startScanJobsListMonitor({
+    onChanged = null,
+    onClosed = null
+  } = {}) {
+    scanJobsListChangedHandler = onChanged
+    scanJobsListClosedHandler = onClosed
+
+    const connection = await ensureScanJobsListStarted()
+    await connection.invoke('ObserveScanJobs')
+    return true
+  }
+
+  async function stopScanJobsListMonitor() {
+    scanJobsListChangedHandler = null
+    scanJobsListClosedHandler = null
+
+    if (!scanJobsListConnection) {
+      return false
+    }
+
+    const connection = scanJobsListConnection
+
+    try {
+      if (connection.state === signalR.HubConnectionState.Connected) {
+        await connection.invoke('ClearScanJobs')
+      }
+      await connection.stop()
+      scanJobsListConnection = null
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   async function getById(id) {
     loading.value = true
     error.value = null
@@ -442,6 +532,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     startMonitor,
     clearMonitor,
     stopMonitor,
+    startScanJobsListMonitor,
+    stopScanJobsListMonitor,
     scanjobMonitorArea,
   }
 })

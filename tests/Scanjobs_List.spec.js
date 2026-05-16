@@ -74,6 +74,8 @@ const deleteScanjobFn = vi.hoisted(() => vi.fn())
 const startScanjobFn = vi.hoisted(() => vi.fn())
 const pauseScanjobFn = vi.hoisted(() => vi.fn())
 const finishScanjobFn = vi.hoisted(() => vi.fn())
+const startScanJobsListMonitorFn = vi.hoisted(() => vi.fn())
+const stopScanJobsListMonitorFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
 const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const mockPush = vi.hoisted(() => vi.fn())
@@ -142,7 +144,9 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     pause: pauseScanjobFn,
     finish: finishScanjobFn,
     ensureOpsLoaded,
-    getOpsLabel: mockGetOpsLabel
+    getOpsLabel: mockGetOpsLabel,
+    startScanJobsListMonitor: startScanJobsListMonitorFn,
+    stopScanJobsListMonitor: stopScanJobsListMonitorFn
   })
 }))
 
@@ -220,6 +224,8 @@ vi.mock('@mdi/js', () => ({
 describe('Scanjobs_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    startScanJobsListMonitorFn.mockResolvedValue(true)
+    stopScanJobsListMonitorFn.mockResolvedValue(true)
   })
 
   afterEach(() => {
@@ -238,6 +244,9 @@ describe('Scanjobs_List.vue', () => {
 
     expect(ensureOpsLoaded).toHaveBeenCalled()
     expect(getAllWarehouses).toHaveBeenCalled()
+    expect(startScanJobsListMonitorFn).toHaveBeenCalledWith({
+      onChanged: expect.any(Function)
+    })
     expect(wrapper.exists()).toBe(true)
   })
 

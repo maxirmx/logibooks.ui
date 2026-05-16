@@ -175,6 +175,13 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await warehousesStore.ensureLoaded()
+    try {
+      await scanJobsStore.startScanJobsListMonitor({
+        onChanged: triggerLoad
+      })
+    } catch {
+      // The list remains usable through explicit REST refreshes when live updates are unavailable.
+    }
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при загрузке данных: ' + (error?.message || 'Неизвестная ошибка'))
@@ -192,6 +199,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  scanJobsStore.stopScanJobsListMonitor().catch(() => {})
 })
 
 defineExpose({

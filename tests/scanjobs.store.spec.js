@@ -818,5 +818,33 @@ describe('scanjobs store', () => {
       expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ClearScanJobMonitor')
       expect(signalRConnection.stop).toHaveBeenCalled()
     })
+
+    it('starts scan jobs list monitor and forwards change notifications', async () => {
+      const onChanged = vi.fn()
+      const store = useScanjobsStore()
+
+      await store.startScanJobsListMonitor({ onChanged })
+
+      expect(signalRWithUrl).toHaveBeenCalledWith('http://localhost:8080/hubs/scan-jobs', {
+        accessTokenFactory: expect.any(Function),
+        withCredentials: false
+      })
+      expect(signalRConnection.start).toHaveBeenCalled()
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
+
+      signalRHandlers.ScanJobsChanged()
+
+      expect(onChanged).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops scan jobs list monitor', async () => {
+      const store = useScanjobsStore()
+
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      await store.stopScanJobsListMonitor()
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobs')
+      expect(signalRConnection.stop).toHaveBeenCalled()
+    })
   })
 })

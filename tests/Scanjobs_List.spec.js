@@ -250,6 +250,25 @@ describe('Scanjobs_List.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
+  it('continues initialization when live list monitor cannot be started', async () => {
+    startScanJobsListMonitorFn.mockRejectedValueOnce(new Error('SignalR unavailable'))
+
+    const wrapper = mount(ScanjobsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(ensureOpsLoaded).toHaveBeenCalled()
+    expect(getAllWarehouses).toHaveBeenCalled()
+    expect(startScanJobsListMonitorFn).toHaveBeenCalled()
+    expect(errorFn).not.toHaveBeenCalled()
+    expect(wrapper.exists()).toBe(true)
+  })
+
   it('handles empty scanjobs array', async () => {
     mockScanjobs.value = []
     const wrapper = mount(ScanjobsList, {
@@ -355,6 +374,20 @@ describe('Scanjobs_List.vue', () => {
 
     expect(confirmMock).toHaveBeenCalled()
     expect(deleteScanjobFn).not.toHaveBeenCalled()
+  })
+
+  it('stops live monitor on unmount and swallows stop errors', async () => {
+    stopScanJobsListMonitorFn.mockRejectedValueOnce(new Error('Stop failed'))
+
+    const wrapper = mount(ScanjobsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    expect(() => wrapper.unmount()).not.toThrow()
+    expect(stopScanJobsListMonitorFn).toHaveBeenCalledTimes(1)
   })
 
   describe('startScanjob', () => {

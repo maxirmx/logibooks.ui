@@ -26,6 +26,9 @@ const signalRConnection = vi.hoisted(() => ({
   }),
   onclose: vi.fn((handler) => {
     signalRHandlers.onclose = handler
+  }),
+  onreconnected: vi.fn((handler) => {
+    signalRHandlers.onreconnected = handler
   })
 }))
 const signalRBuild = vi.hoisted(() => vi.fn(() => signalRConnection))
@@ -845,6 +848,60 @@ describe('scanjobs store', () => {
 
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobs')
       expect(signalRConnection.stop).toHaveBeenCalled()
+    })
+
+    it('reuses existing scan jobs list connection and skips restart when already connected', async () => {
+      const store = useScanjobsStore()
+
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      signalRConnection.start.mockClear()
+
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+
+      expect(signalRConnection.start).not.toHaveBeenCalled()
+      expect(signalRWithUrl).toHaveBeenCalledTimes(1)
+    })
+
+    it('forwards scan jobs list close notifications', async () => {
+      const onClosed = vi.fn()
+      const closeError = new Error('List monitor disconnected')
+      const store = useScanjobsStore()
+
+      await store.startScanJobsListMonitor({ onClosed })
+      signalRHandlers.onclose(closeError)
+
+      expect(onClosed).toHaveBeenCalledWith(closeError)
+    })
+
+    it('re-observes list monitor on reconnect and stores invoke error', async () => {
+      const reconnectError = new Error('Observe on reconnect failed')
+      const store = useScanjobsStore()
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      signalRConnection.invoke.mockRejectedValueOnce(reconnectError)
+
+      signalRHandlers.onreconnected()
+      await Promise.resolve()
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
+      expect(store.error).toBe(reconnectError)
+    })
+
+    it('stopScanJobsListMonitor returns false when list monitor was never started', async () => {
+      const store = useScanjobsStore()
+
+      const result = await store.stopScanJobsListMonitor()
+
+      expect(result).toBe(false)
+    })
+
+    it('stopScanJobsListMonitor throws and stores error when stop fails', async () => {
+      const stopError = new Error('Stop list monitor failed')
+      const store = useScanjobsStore()
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      signalRConnection.stop.mockRejectedValueOnce(stopError)
+
+      await expect(store.stopScanJobsListMonitor()).rejects.toThrow('Stop list monitor failed')
+      expect(store.error).toBe(stopError)
     })
   })
 })

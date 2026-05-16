@@ -104,3 +104,45 @@
 .scanjob-monitor-product-name-cell.clickable-cell-disabled {
   cursor: not-allowed;
 }
+
+.scanjob-projected-status {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  min-width: 96px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.2;
+}
+
+.scanjob-projected-status-title {
+  font-weight: 700;
+}
+
+.scanjob-projected-status-reason {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.78;
+  overflow-wrap: anywhere;
+}
+
+.status-cell.scanjob-status-not-checked {
+  background-color: rgba(33, 150, 243, 0.18);
+  color: #0d47a1;
+  border: 1px solid #1565c0;
+}
+
+.status-cell.scanjob-status-restriction {
+  background-color: rgba(244, 67, 54, 0.14);
+  color: #b71c1c;
+  border: 1px solid #c62828;
+}
+
+.status-cell.scanjob-status-checked {
+  background-color: rgba(76, 175, 80, 0.18);
+  color: #1b5e20;
+  border: 1px solid #2e7d32;
+}

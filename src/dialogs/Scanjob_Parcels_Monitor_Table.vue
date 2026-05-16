@@ -9,8 +9,11 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import {
+  getScanjobCheckStatusClass,
+  scanjobCheckStatusReason,
+  scanjobCheckStatusText
+} from '@/helpers/scanjob.check-status.helpers.js'
 import {
   formatScanTime,
   stickerClass,
@@ -52,10 +55,6 @@ function parcelCellClass(baseClass = '') {
     baseClass,
     canFollowParcelEditRoute.value ? 'clickable-cell' : ''
   ].filter(Boolean).join(' ')
-}
-
-function checkStatusText(value) {
-  return value == null ? '-' : new CheckStatusCode(value).toString()
 }
 
 function onProductNameClick(item, event) {
@@ -170,14 +169,17 @@ function onProductNameClick(item, event) {
       <ClickableCell :item="item" :display-value="valueOrDash(item.statusTitle)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
-    <template #[`item.checkStatus`]="{ item }">
-      <ClickableCell
-        :item="item"
-        :display-value="checkStatusText(item.checkStatus)"
-        :cell-class="parcelCellClass(`status-cell ${getCheckStatusClass(item.checkStatus)}`)"
-        :disabled="isParcelCellDisabled"
+    <template #[`item.checkStatusProjection`]="{ item }">
+      <span
+        :class="parcelCellClass(`status-cell scanjob-projected-status ${getScanjobCheckStatusClass(item.checkStatusProjection)}`)"
+        :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
         @click="editParcel(item)"
-      />
+      >
+        <span class="scanjob-projected-status-title">{{ scanjobCheckStatusText(item.checkStatusProjection) }}</span>
+        <span v-if="scanjobCheckStatusReason(item.checkStatusProjection)" class="scanjob-projected-status-reason">
+          {{ scanjobCheckStatusReason(item.checkStatusProjection) }}
+        </span>
+      </span>
     </template>
   </v-data-table>
 </template>

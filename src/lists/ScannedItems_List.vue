@@ -14,7 +14,13 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
+import {
+  getScanjobCheckStatusClass,
+  scanjobCheckStatusReason,
+  scanjobCheckStatusText
+} from '@/helpers/scanjob.check-status.helpers.js'
 import { mdiMagnify } from '@mdi/js'
+import '@/assets/styles/scanjob-monitor.css'
 
 const props = defineProps({
   scanjobId: { type: Number, required: true }
@@ -70,7 +76,8 @@ const headers = computed(() => [
   { title: 'Отсканированный код', key: 'code', align: 'start' },
   { title: 'Пользователь', key: 'userName', align: 'start' },
   { title: 'Время сканирования', key: 'scanTime', align: 'start' },
-  { title: 'Номер посылки', key: 'number', align: 'start' }
+  { title: 'Номер посылки', key: 'number', align: 'start' },
+  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
 ])
 
 function formatScanTime(value) {
@@ -183,6 +190,17 @@ onUnmounted(() => {
       >
         <template #[`item.scanTime`]="{ item }">
           {{ formatScanTime(item.scanTime) }}
+        </template>
+
+        <template #[`item.checkStatusProjection`]="{ item }">
+          <span
+            :class="`status-cell scanjob-projected-status ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+          >
+            <span class="scanjob-projected-status-title">{{ scanjobCheckStatusText(item.checkStatusProjection) }}</span>
+            <span v-if="scanjobCheckStatusReason(item.checkStatusProjection)" class="scanjob-projected-status-reason">
+              {{ scanjobCheckStatusReason(item.checkStatusProjection) }}
+            </span>
+          </span>
         </template>
       </v-data-table-server>
 

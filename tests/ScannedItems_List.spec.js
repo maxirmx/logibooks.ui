@@ -15,7 +15,12 @@ const mockItems = ref([
     code: 'CODE-1',
     scanTime: '2024-01-02T09:30:00',
     userName: 'Operator',
-    number: 'N-100'
+    number: 'N-100',
+    checkStatusProjection: {
+      kind: 20,
+      title: 'Запрет',
+      restrictionReason: 'Стоп-слово'
+    }
   }
 ])
 const mockLoading = ref(false)
@@ -118,6 +123,8 @@ describe('ScannedItems_List.vue', () => {
     expect(text).toContain('Operator')
     expect(text).toContain('N-100')
     expect(text).toContain('02.01.2024')
+    expect(text).toContain('Запрет')
+    expect(text).toContain('Стоп-слово')
   })
 
   it('defines headers for scanned item columns', () => {
@@ -127,7 +134,7 @@ describe('ScannedItems_List.vue', () => {
     })
 
     const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toEqual(['code', 'userName', 'scanTime', 'number'])
+    expect(headerKeys).toEqual(['code', 'userName', 'scanTime', 'number', 'checkStatusProjection'])
   })
 
   it('closes via header action', async () => {

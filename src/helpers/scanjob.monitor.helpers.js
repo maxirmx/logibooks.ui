@@ -41,7 +41,7 @@ export const scanjobOzonParcelHeaders = [
   { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
+  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
 ]
 
 export const scanjobWbrParcelHeaders = [
@@ -54,7 +54,7 @@ export const scanjobWbrParcelHeaders = [
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
+  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
 ]
 
 export const scanjobWbr2ParcelHeaders = [
@@ -68,7 +68,7 @@ export const scanjobWbr2ParcelHeaders = [
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' }
+  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
 ]
 
 export const scanjobMonitorArea = {

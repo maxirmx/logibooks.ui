@@ -158,7 +158,7 @@ const boxSnapshot = {
         scannedTime: '2026-01-02T10:10:00',
         zoneName: 'Green',
         statusTitle: 'На складе',
-        checkStatus: 0
+        checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
       },
       {
         id: 71,
@@ -177,7 +177,7 @@ const boxSnapshot = {
         scannedTime: null,
         zoneName: 'Red',
         statusTitle: 'Ожидается',
-        checkStatus: 0
+        checkStatusProjection: { kind: 30, title: 'Проверено', restrictionReason: null }
       }
     ]
   }
@@ -212,7 +212,7 @@ const boxSnapshotForBox8 = {
         scannedTime: '2026-01-02T11:00:00',
         zoneName: 'Blue',
         statusTitle: 'На складе',
-        checkStatus: 0
+        checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
       }
     ]
   }
@@ -263,7 +263,7 @@ const unassignedBucketSnapshot = {
         scannedTime: '2026-01-02T12:00:00',
         zoneName: 'Yellow',
         statusTitle: 'Без коробки',
-        checkStatus: 0
+        checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
       },
       {
         id: 91,
@@ -282,7 +282,7 @@ const unassignedBucketSnapshot = {
         scannedTime: null,
         zoneName: 'Yellow',
         statusTitle: 'Без коробки',
-        checkStatus: 0
+        checkStatusProjection: { kind: 30, title: 'Проверено', restrictionReason: null }
       }
     ]
   }

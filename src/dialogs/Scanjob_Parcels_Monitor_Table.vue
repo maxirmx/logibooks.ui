@@ -64,9 +64,6 @@ function onProductNameClick(item, event) {
   editParcel(item)
 }
 
-function productDescriptionText(item) {
-  return item.productDescription || item.productName || ''
-}
 </script>
 
 <template>
@@ -139,7 +136,7 @@ function productDescriptionText(item) {
     </template>
 
     <template #[`item.productName`]="{ item }">
-      <v-tooltip v-if="productDescriptionText(item)" location="top" open-delay="150">
+      <v-tooltip v-if="item.productName" location="top" open-delay="150">
         <template #activator="{ props: tooltipProps }">
           <span
             v-bind="tooltipProps"
@@ -151,7 +148,7 @@ function productDescriptionText(item) {
           </span>
         </template>
         <template #default>
-          <div style="white-space: pre-line">{{ productDescriptionText(item) }}</div>
+          <div style="white-space: pre-line">{{ item.productName }}</div>
         </template>
       </v-tooltip>
       <span

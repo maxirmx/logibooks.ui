@@ -189,7 +189,6 @@ describe('Scanjob parcel monitor typed tables', () => {
           id: 41,
           stickerScanned: true,
           productName: 'Very long product name that should not wrap',
-          productDescription: 'Full product description for tooltip',
           checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
         }]
       },
@@ -200,7 +199,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(productCell.text()).toBe('Very long product name that should not wrap')
     expect(productCell.attributes('title')).toBeUndefined()
     expect(wrapper.findAll('[data-testid="v-tooltip"]').some((tooltip) => (
-      tooltip.text().includes('Full product description for tooltip')
+      tooltip.text().includes('Very long product name that should not wrap')
     ))).toBe(true)
 
     await productCell.trigger('click')

@@ -78,6 +78,13 @@ export const scanjobMonitorArea = {
   NotInRegister: 3
 }
 
+export const scannedItemSource = {
+  Unknown: 0,
+  ParcelSticker: 10,
+  BoxSticker: 20,
+  NotInRegister: 30
+}
+
 const dateTimeRuFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: '2-digit',
   month: '2-digit',

@@ -7,6 +7,7 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { scannedItemSource } from '@/helpers/scanjob.monitor.helpers.js'
 import { defaultGlobalStubs } from './helpers/test-utils'
 
 const mockBack = vi.hoisted(() => vi.fn())
@@ -722,7 +723,11 @@ describe('Scanjob_Monitor.vue', () => {
         boxId: 7,
         bucketIndex: null,
         code: 'P-70-SCAN',
-        scanTime: '2026-01-02T10:10:00'
+        scanTime: '2026-01-02T10:10:00',
+        parcelCount: 1,
+        boxCount: 0,
+        scanSource: scannedItemSource.ParcelSticker,
+        itemNumbers: ['P-70']
       }
     })
     vi.advanceTimersByTime(150)
@@ -830,7 +835,11 @@ describe('Scanjob_Monitor.vue', () => {
         boxId: null,
         bucketIndex: 1,
         code: 'PU-90-SCAN',
-        scanTime: '2026-01-02T12:00:00'
+        scanTime: '2026-01-02T12:00:00',
+        parcelCount: 1,
+        boxCount: 0,
+        scanSource: scannedItemSource.ParcelSticker,
+        itemNumbers: ['PU-90']
       }
     })
     vi.advanceTimersByTime(150)

@@ -362,7 +362,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     try {
       if (connection.state === signalR.HubConnectionState.Connected && scanJobsListObserving) {
         await connection.invoke('ClearScanJobs')
-        scanJobsListObserving = false
       }
       await connection.stop()
       scanJobsListConnection = null

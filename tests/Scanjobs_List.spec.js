@@ -269,6 +269,26 @@ describe('Scanjobs_List.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
+  it('does not start live list monitor after unmount during warehouses loading', async () => {
+    let resolveWarehousesLoad
+    getAllWarehouses.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveWarehousesLoad = resolve
+    }))
+
+    const wrapper = mount(ScanjobsList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+    wrapper.unmount()
+    resolveWarehousesLoad()
+    await Promise.resolve()
+
+    expect(startScanJobsListMonitorFn).not.toHaveBeenCalled()
+  })
+
   it('handles empty scanjobs array', async () => {
     mockScanjobs.value = []
     const wrapper = mount(ScanjobsList, {

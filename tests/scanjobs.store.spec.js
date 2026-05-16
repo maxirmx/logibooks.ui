@@ -856,11 +856,24 @@ describe('scanjobs store', () => {
 
       await store.startScanJobsListMonitor({ onChanged: vi.fn() })
       signalRConnection.start.mockClear()
+      signalRConnection.invoke.mockClear()
 
       await store.startScanJobsListMonitor({ onChanged: vi.fn() })
 
       expect(signalRConnection.start).not.toHaveBeenCalled()
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveScanJobs')
       expect(signalRWithUrl).toHaveBeenCalledTimes(1)
+    })
+
+    it('observes scan jobs list again after stop and restart', async () => {
+      const store = useScanjobsStore()
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      await store.stopScanJobsListMonitor()
+      signalRConnection.invoke.mockClear()
+
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
     })
 
     it('forwards scan jobs list close notifications', async () => {

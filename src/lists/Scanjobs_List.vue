@@ -175,6 +175,7 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
     
     await warehousesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
     try {
       await scanJobsStore.startScanJobsListMonitor({
         onChanged: triggerLoad

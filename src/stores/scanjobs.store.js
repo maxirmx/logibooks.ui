@@ -44,6 +44,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   let monitorClosedHandler = null
   let scanJobsListConnection = null
   let scanJobsListStartPromise = null
+  let scanJobsListObserving = false
   let scanJobsListChangedHandler = null
   let scanJobsListClosedHandler = null
 
@@ -305,6 +306,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     })
 
     scanJobsListConnection.onreconnected?.(() => {
+      if (!scanJobsListObserving) {
+        return
+      }
       scanJobsListConnection.invoke('ObserveScanJobs').catch((err) => {
         error.value = err
       })
@@ -338,7 +342,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     scanJobsListClosedHandler = onClosed
 
     const connection = await ensureScanJobsListStarted()
-    await connection.invoke('ObserveScanJobs')
+    if (!scanJobsListObserving) {
+      await connection.invoke('ObserveScanJobs')
+      scanJobsListObserving = true
+    }
     return true
   }
 
@@ -353,11 +360,13 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     const connection = scanJobsListConnection
 
     try {
-      if (connection.state === signalR.HubConnectionState.Connected) {
+      if (connection.state === signalR.HubConnectionState.Connected && scanJobsListObserving) {
         await connection.invoke('ClearScanJobs')
+        scanJobsListObserving = false
       }
       await connection.stop()
       scanJobsListConnection = null
+      scanJobsListObserving = false
       return true
     } catch (err) {
       error.value = err

@@ -212,6 +212,16 @@ defineExpose({
   pauseScanjob,
   finishScanjob
 })
+
+/*
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-list"
+              tooltip-text="Результаты сканирования"
+              @click="openScannedItems"
+              :disabled="runningAction || loading"
+            />
+*/
 </script>
 
 <template>
@@ -308,13 +318,6 @@ defineExpose({
               @click="openEditDialog"
               :disabled="runningAction || loading"
               v-if="authStore.isWhManagerPlus"
-            />
-            <ActionButton
-              :item="item"
-              icon="fa-solid fa-list"
-              tooltip-text="Результаты сканирования"
-              @click="openScannedItems"
-              :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"

@@ -65,7 +65,7 @@ describe('Scanjob parcel monitor typed tables', () => {
           quantity: 2,
           zoneName: 'Green',
           statusTitle: 'Ready',
-          checkStatus: 0
+          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
         }]
       },
       global
@@ -84,7 +84,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       'quantity',
       'zone',
       'statusId',
-      'checkStatus'
+      'checkStatusProjection'
     ])
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
     expect(wrapper.text()).toContain('POST-11')
@@ -106,7 +106,7 @@ describe('Scanjob parcel monitor typed tables', () => {
           quantity: 4,
           zoneName: 'Red',
           statusTitle: 'Waiting',
-          checkStatus: 0
+          checkStatusProjection: { kind: 30, title: 'Проверено', restrictionReason: null }
         }]
       },
       global
@@ -126,7 +126,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       'quantity',
       'zone',
       'statusId',
-      'checkStatus'
+      'checkStatusProjection'
     ])
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
     expect(wrapper.text()).toContain('SHK-21')
@@ -148,7 +148,7 @@ describe('Scanjob parcel monitor typed tables', () => {
           quantity: 8,
           zoneName: 'Yellow',
           statusTitle: 'Done',
-          checkStatus: 0
+          checkStatusProjection: { kind: 20, title: 'Запрет', restrictionReason: 'Причина запрета' }
         }]
       },
       global
@@ -169,22 +169,28 @@ describe('Scanjob parcel monitor typed tables', () => {
       'quantity',
       'zone',
       'statusId',
-      'checkStatus'
+      'checkStatusProjection'
     ])
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
     expect(wrapper.text()).toContain('SHK-31')
     expect(wrapper.text()).toContain('WB-31')
     expect(wrapper.text()).toContain('SELLER-31')
+    expect(wrapper.text()).toContain('Запрет')
+    expect(wrapper.text()).toContain('Причина запрета')
+
+    const statusCell = wrapper.get('.status-cell.has-issues')
+    expect(statusCell.text()).toBe('Запрет')
   })
 
-  it('renders product name as a non-wrapping titled cell and keeps click editing', async () => {
+  it('renders product name as a non-wrapping tooltip cell and keeps click editing', async () => {
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
         parcels: [{
           id: 41,
           stickerScanned: true,
           productName: 'Very long product name that should not wrap',
-          checkStatus: 0
+          productDescription: 'Full product description for tooltip',
+          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
         }]
       },
       global
@@ -192,7 +198,10 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const productCell = wrapper.get('.scanjob-monitor-product-name-cell')
     expect(productCell.text()).toBe('Very long product name that should not wrap')
-    expect(productCell.attributes('title')).toBe('Very long product name that should not wrap')
+    expect(productCell.attributes('title')).toBeUndefined()
+    expect(wrapper.findAll('[data-testid="v-tooltip"]').some((tooltip) => (
+      tooltip.text().includes('Full product description for tooltip')
+    ))).toBe(true)
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))
@@ -207,7 +216,7 @@ describe('Scanjob parcel monitor typed tables', () => {
           id: 41,
           stickerScanned: true,
           productName: 'Very long product name that should not wrap',
-          checkStatus: 0
+          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
         }]
       },
       global

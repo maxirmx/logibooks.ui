@@ -14,7 +14,13 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
+import {
+  getScanjobCheckStatusClass,
+  scanjobCheckStatusReason,
+  scanjobCheckStatusText
+} from '@/helpers/scanjob.check-status.helpers.js'
 import { mdiMagnify } from '@mdi/js'
+import '@/assets/styles/scanjob-monitor.css'
 
 const props = defineProps({
   scanjobId: { type: Number, required: true }
@@ -70,7 +76,8 @@ const headers = computed(() => [
   { title: 'Отсканированный код', key: 'code', align: 'start' },
   { title: 'Пользователь', key: 'userName', align: 'start' },
   { title: 'Время сканирования', key: 'scanTime', align: 'start' },
-  { title: 'Номер посылки', key: 'number', align: 'start' }
+  { title: 'Номер посылки', key: 'number', align: 'start' },
+  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
 ])
 
 function formatScanTime(value) {
@@ -183,6 +190,28 @@ onUnmounted(() => {
       >
         <template #[`item.scanTime`]="{ item }">
           {{ formatScanTime(item.scanTime) }}
+        </template>
+
+        <template #[`item.checkStatusProjection`]="{ item }">
+          <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
+            <template #activator="{ props: tooltipProps }">
+              <span
+                v-bind="tooltipProps"
+                :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+              >
+                {{ scanjobCheckStatusText(item.checkStatusProjection) }}
+              </span>
+            </template>
+            <template #default>
+              <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
+            </template>
+          </v-tooltip>
+          <span
+            v-else
+            :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+          >
+            {{ scanjobCheckStatusText(item.checkStatusProjection) }}
+          </span>
         </template>
       </v-data-table-server>
 

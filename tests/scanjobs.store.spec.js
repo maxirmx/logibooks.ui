@@ -853,16 +853,21 @@ describe('scanjobs store', () => {
 
     it('reuses existing scan jobs list connection and skips restart when already connected', async () => {
       const store = useScanjobsStore()
+      const firstChangedHandler = vi.fn()
+      const secondChangedHandler = vi.fn()
 
-      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      await store.startScanJobsListMonitor({ onChanged: firstChangedHandler })
       signalRConnection.start.mockClear()
       signalRConnection.invoke.mockClear()
 
-      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      await store.startScanJobsListMonitor({ onChanged: secondChangedHandler })
+      signalRHandlers.ScanJobsChanged()
 
       expect(signalRConnection.start).not.toHaveBeenCalled()
       expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveScanJobs')
       expect(signalRWithUrl).toHaveBeenCalledTimes(1)
+      expect(firstChangedHandler).not.toHaveBeenCalled()
+      expect(secondChangedHandler).toHaveBeenCalledTimes(1)
     })
 
     it('observes scan jobs list again after stop and restart', async () => {
@@ -898,6 +903,17 @@ describe('scanjobs store', () => {
 
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
       expect(store.error).toBe(reconnectError)
+    })
+
+    it('does not re-observe list monitor on reconnect when observation is inactive', async () => {
+      const store = useScanjobsStore()
+      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
+      await store.stopScanJobsListMonitor()
+      signalRConnection.invoke.mockClear()
+
+      signalRHandlers.onreconnected()
+
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveScanJobs')
     })
 
     it('stopScanJobsListMonitor returns false when list monitor was never started', async () => {

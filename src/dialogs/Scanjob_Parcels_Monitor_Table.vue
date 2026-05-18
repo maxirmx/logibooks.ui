@@ -15,7 +15,7 @@ import {
   scanjobCheckStatusText
 } from '@/helpers/scanjob.check-status.helpers.js'
 import {
-  formatScanTime,
+  formatScannedInfoLines,
   stickerClass,
   stickerText,
   valueOrDash
@@ -78,9 +78,13 @@ function onProductNameClick(item, event) {
     page-text="{0}-{1} из {2}"
     :loading="props.loading"
     density="compact"
-    class="elevation-1 interlaced-table single-line-table"
+    class="elevation-1 interlaced-table single-line-table scanjob-monitor-parcels-table"
     data-testid="scanjob-monitor-parcels-table"
   >
+    <template #[`header.scannedInfo`]="{ column }">
+      <span class="scanjob-monitor-scanned-info-header">{{ column.title }}</span>
+    </template>
+
     <template #[`item.stickerScanned`]="{ item }">
       <ClickableCell
         :item="item"
@@ -91,16 +95,12 @@ function onProductNameClick(item, event) {
       />
     </template>
 
-    <template #[`item.scannedSticker`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.scannedSticker)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
-    </template>
-
-    <template #[`item.scannedUserName`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(item.scannedUserName)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
-    </template>
-
-    <template #[`item.scannedTime`]="{ item }">
-      <ClickableCell :item="item" :display-value="valueOrDash(formatScanTime(item.scannedTime))" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
+    <template #[`item.scannedInfo`]="{ item }">
+      <ClickableCell :item="item" :display-value="''" :cell-class="parcelCellClass('scanjob-monitor-scanned-info-cell')" :disabled="isParcelCellDisabled" @click="editParcel(item)">
+        <span class="scanjob-monitor-scanned-info">
+          <span v-for="(line, index) in formatScannedInfoLines(item)" :key="index">{{ line }}</span>
+        </span>
+      </ClickableCell>
     </template>
 
     <template #[`item.parcelNumber`]="{ item }">

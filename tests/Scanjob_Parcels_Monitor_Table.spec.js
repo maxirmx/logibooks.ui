@@ -74,19 +74,25 @@ describe('Scanjob parcel monitor typed tables', () => {
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
       'stickerScanned',
-      'scannedSticker',
-      'scannedUserName',
-      'scannedTime',
+      'checkStatusProjection',
+      'zone',
+      'statusId',
+      'scannedInfo',
       'postingNumber',
       'barcode',
       'productName',
       'weightKg',
-      'quantity',
-      'zone',
-      'statusId',
-      'checkStatusProjection'
+      'quantity'
     ])
+    expect(headers.find((header) => header.key === 'scannedInfo')?.title).toBe('Пользователь\nВремя\nСканированный код')
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
+    const scannedInfo = wrapper.get('.scanjob-monitor-scanned-info')
+    expect(scannedInfo.findAll('span').map((line) => line.text())).toEqual([
+      'Operator',
+      '10:00 02.01',
+      'SCAN-11'
+    ])
+    expect(scannedInfo.text()).not.toContain('/')
     expect(wrapper.text()).toContain('POST-11')
     expect(wrapper.text()).toContain('BAR-11')
     expect(wrapper.text()).toContain('Ready')
@@ -115,18 +121,16 @@ describe('Scanjob parcel monitor typed tables', () => {
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
       'stickerScanned',
-      'scannedSticker',
-      'scannedUserName',
-      'scannedTime',
+      'checkStatusProjection',
+      'zone',
+      'statusId',
+      'scannedInfo',
       'shk',
       'sticker',
       'stickerCode',
       'productName',
       'weightKg',
-      'quantity',
-      'zone',
-      'statusId',
-      'checkStatusProjection'
+      'quantity'
     ])
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
     expect(wrapper.text()).toContain('SHK-21')
@@ -157,19 +161,17 @@ describe('Scanjob parcel monitor typed tables', () => {
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
       'stickerScanned',
-      'scannedSticker',
-      'scannedUserName',
-      'scannedTime',
+      'checkStatusProjection',
+      'zone',
+      'statusId',
+      'scannedInfo',
       'shk',
       'stickerCode',
       'wbSticker',
       'sellerSticker',
       'productName',
       'weightKg',
-      'quantity',
-      'zone',
-      'statusId',
-      'checkStatusProjection'
+      'quantity'
     ])
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
     expect(wrapper.text()).toContain('SHK-31')

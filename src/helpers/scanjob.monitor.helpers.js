@@ -53,6 +53,7 @@ export const scanjobWbrParcelHeaders = [
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start' },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
+  { title: wbrRegisterColumnTitles.barcode, key: 'barcode', align: 'start' },
   { title: wbrRegisterColumnTitles.productName, key: 'productName', align: 'start' },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start' }

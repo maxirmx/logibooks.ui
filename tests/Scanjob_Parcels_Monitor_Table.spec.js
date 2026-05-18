@@ -107,6 +107,7 @@ describe('Scanjob parcel monitor typed tables', () => {
           shk: 'SHK-21',
           sticker: 'STICKER-21',
           stickerCode: 'CODE-21',
+          barcode: 'BAR-21',
           productName: 'Very long WBR product name',
           weightKg: 3.45,
           quantity: 4,
@@ -128,6 +129,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       'shk',
       'sticker',
       'stickerCode',
+      'barcode',
       'productName',
       'weightKg',
       'quantity'
@@ -136,6 +138,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(wrapper.text()).toContain('SHK-21')
     expect(wrapper.text()).toContain('STICKER-21')
     expect(wrapper.text()).toContain('CODE-21')
+    expect(wrapper.text()).toContain('BAR-21')
   })
 
   it('renders WBR2 scan and WH columns without box number', () => {

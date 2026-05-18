@@ -9,7 +9,7 @@ export const ozonRegisterColumnTitles = {
   postingNumber: 'Номер отправления',
   shipmentWeightKg: 'Вес отправления',
   placesCount: 'Кол-во мест',
-  barcode: 'Штрих код',
+  barcode: 'Штрихкод',
   article: 'Артикул',
   manufacturer: 'Производитель',
   countryCode: 'Страна',

@@ -3,6 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
+import { scanjobCheckStatusText } from '@/helpers/scanjob.check-status.helpers.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 
@@ -19,7 +20,12 @@ export const scanjobBoxHeaders = [
 
 export const scanjobParcelScanHeaders = [
   { title: '', key: 'stickerScanned', align: 'start' },
-  { title: 'Проверка', key: 'checkStatusProjection', align: 'center' },
+  {
+    title: 'Проверка',
+    key: 'checkStatusProjection',
+    align: 'center',
+    sort: compareScanjobCheckStatusProjection
+  },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: 'Статус', key: 'statusId', align: 'start' },
   { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false }
@@ -128,6 +134,12 @@ export function formatScannedInfoLines(item) {
 
 export function stickerText(scanned) {
   return scanned ? 'Сканирована' : 'Не сканирована'
+}
+
+export function compareScanjobCheckStatusProjection(a, b) {
+  return scanjobCheckStatusText(a).localeCompare(scanjobCheckStatusText(b), 'ru', {
+    sensitivity: 'accent'
+  })
 }
 
 export function stickerClass(scanned, notFound = false) {

@@ -36,10 +36,10 @@ export const scanjobParcelHeaders = [
 export const scanjobOzonParcelHeaders = [
   ...scanjobParcelScanHeaders,
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
-  { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
-  { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false },
-  { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
-  { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start' },
+  { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start' },
+  { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
+  { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start' },
 ]
 
 export const scanjobWbrParcelHeaders = [
@@ -47,9 +47,9 @@ export const scanjobWbrParcelHeaders = [
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start' },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
-  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName' },
-  { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
-  { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: wbrRegisterColumnTitles.productName, key: 'productName', align: 'start' },
+  { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
+  { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start' },
 ]
 
 export const scanjobWbr2ParcelHeaders = [
@@ -58,9 +58,9 @@ export const scanjobWbr2ParcelHeaders = [
   { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
   { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start' },
   { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start' },
-  { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
-  { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
-  { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.productName, key: 'productName', align: 'start' },
+  { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
+  { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start' },
 ]
 
 export const scanjobMonitorArea = {

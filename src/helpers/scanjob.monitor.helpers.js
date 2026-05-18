@@ -10,11 +10,11 @@ export const scanjobParcelsProgressTitle = 'Посылки всего / скан
 
 export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
+  { title: '', key: 'parcelsProgress', align: 'start', sortable: false },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
   { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' },
-  { title: '', key: 'parcelsProgress', align: 'start', sortable: false }
 ]
 
 export const scanjobParcelScanHeaders = [
@@ -39,7 +39,7 @@ export const scanjobOzonParcelHeaders = [
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start' },
   { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start' },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
-  { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start' },
+  { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start' }
 ]
 
 export const scanjobWbrParcelHeaders = [
@@ -49,7 +49,7 @@ export const scanjobWbrParcelHeaders = [
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
   { title: wbrRegisterColumnTitles.productName, key: 'productName', align: 'start' },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
-  { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start' },
+  { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start' }
 ]
 
 export const scanjobWbr2ParcelHeaders = [
@@ -60,7 +60,7 @@ export const scanjobWbr2ParcelHeaders = [
   { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start' },
   { title: wbr2RegisterColumnTitles.productName, key: 'productName', align: 'start' },
   { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
-  { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start' },
+  { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start' }
 ]
 
 export const scanjobMonitorArea = {

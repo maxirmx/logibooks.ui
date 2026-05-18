@@ -121,6 +121,7 @@
   flex-direction: column;
   gap: 0;
   white-space: normal;
+  font-size: 85%;
 }
 
 .scanjob-monitor-parcels-table .v-data-table__td,

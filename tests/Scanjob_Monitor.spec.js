@@ -448,7 +448,7 @@ describe('Scanjob_Monitor.vue', () => {
     }))
     expect(summaryItems).toEqual([
       { label: 'Коробки всего / сканировано / не сканировано', value: '2 / 1 / 1' },
-      { label: 'Посылки всего / сканировано / не сканировано / изъятий', value: '5 / 3 / 2 / 2' },
+      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '5 / 3 / 2 / 2' },
       { label: 'Посылки не в реестре', value: '1' }
     ])
 
@@ -456,13 +456,26 @@ describe('Scanjob_Monitor.vue', () => {
     expect(registerSection.text()).toContain('BOX-7')
     expect(registerSection.text()).toContain('BOX-7-ACTUAL')
     expect(registerSection.text()).toContain('Иванов Иван')
-    expect(registerSection.text()).toContain('02.01.2026, 09:30')
-    expect(registerSection.text()).toContain('3 / 2 / 1 / 1')
+    expect(registerSection.text()).toContain('09:30 02.01')
+    const parcelProgressPanel = registerSection.get('.scanjob-monitor-parcel-progress-panel')
+    expect(parcelProgressPanel.findAll('.scanjob-monitor-parcel-progress-label').map((label) => label.text())).toEqual([
+      'Посылки всего',
+      'Сканировано',
+      'Запретов',
+      'Не сканировано'
+    ])
+    expect(parcelProgressPanel.findAll('.scanjob-monitor-parcel-progress-value').map((value) => value.text())).toEqual([
+      '3',
+      '2',
+      '1',
+      '1'
+    ])
+    expect(parcelProgressPanel.get('.scanjob-monitor-parcel-progress-restricted').text()).toContain('Запретов')
 
     const boxesTable = wrapper.findComponent({ name: 'v-data-table' })
     expect(boxesTable.exists()).toBe(true)
     expect(boxesTable.props('headers').find((header) => header.key === 'parcelsProgress')?.title)
-      .toBe('Посылки всего / сканировано / не сканировано / изъятий')
+      .toBe('')
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
@@ -543,14 +556,14 @@ describe('Scanjob_Monitor.vue', () => {
     }))
     expect(summaryItems).toEqual([
       { label: 'Статус сканирования коробки', value: 'Сканирована' },
-      { label: 'Посылки всего / сканировано / не сканировано / изъятий', value: '3 / 2 / 1 / 1' }
+      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '3 / 2 / 1 / 1' }
     ])
 
     expect(wrapper.text()).toContain('P-70')
     expect(wrapper.text()).toContain('P-70-SCAN')
     expect(wrapper.text()).toContain('Product 70')
     expect(wrapper.text()).toContain('Петров Петр')
-    expect(wrapper.text()).toContain('02.01.2026, 10:10')
+    expect(wrapper.text()).toContain('10:10 02.01')
     expect(wrapper.text()).toContain('P-71')
 
     const parcelsTable = wrapper.findComponent({ name: 'v-data-table' })
@@ -593,7 +606,7 @@ describe('Scanjob_Monitor.vue', () => {
     }))
     expect(summaryItems).toEqual([
       { label: 'Группа посылок', value: 'Без коробки' },
-      { label: 'Посылки всего / сканировано / не сканировано / изъятий', value: '2 / 1 / 1 / 1' }
+      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '2 / 1 / 1 / 1' }
     ])
 
     expect(wrapper.text()).toContain('PU-90')

@@ -6,30 +6,29 @@ import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 
-export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / изъятий'
+export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / запретов'
 
 export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
-  { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
-  { title: scanjobParcelsProgressTitle, key: 'parcelsProgress', align: 'center', sortable: false }
+  { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' },
+  { title: '', key: 'parcelsProgress', align: 'start', sortable: false }
 ]
 
 export const scanjobParcelScanHeaders = [
   { title: '', key: 'stickerScanned', align: 'start' },
-  { title: 'Сканированный код', key: 'scannedSticker', align: 'start' },
-  { title: 'Пользователь', key: 'scannedUserName', align: 'start' },
-  { title: 'Время сканирования', key: 'scannedTime', align: 'start' }
+  { title: 'Проверка', key: 'checkStatusProjection', align: 'center' },
+  { title: 'Зона', key: 'zone', align: 'start' },
+  { title: 'Статус', key: 'statusId', align: 'start' },
+  { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false }
 ]
 
 export const scanjobParcelHeaders = [
   { title: '', key: 'stickerScanned', align: 'start' },
   { title: 'Посылка', key: 'parcelNumber', align: 'start' },
-  { title: 'Сканированный код', key: 'scannedSticker', align: 'start' },
-  { title: 'Пользователь', key: 'scannedUserName', align: 'start' },
-  { title: 'Время сканирования', key: 'scannedTime', align: 'start' },
+  { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false },
   { title: 'Зона', key: 'zoneName', align: 'start' },
   { title: 'Статус', key: 'statusTitle', align: 'start' }
 ]
@@ -41,36 +40,27 @@ export const scanjobOzonParcelHeaders = [
   { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
-  { title: 'Зона', key: 'zone', align: 'start' },
-  { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', sortable: false }
 ]
 
 export const scanjobWbrParcelHeaders = [
   ...scanjobParcelScanHeaders,
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
-  { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
-  { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
-  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
+  { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start' },
+  { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
+  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName' },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
-  { title: 'Зона', key: 'zone', align: 'start' },
-  { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', sortable: false }
 ]
 
 export const scanjobWbr2ParcelHeaders = [
   ...scanjobParcelScanHeaders,
   { title: wbr2RegisterColumnTitles.shk, key: 'shk', align: 'start' },
-  { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
-  { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start', sortable: false },
-  { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start', sortable: false },
+  { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
+  { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start' },
+  { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start' },
   { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
   { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
-  { title: 'Зона', key: 'zone', align: 'start' },
-  { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', sortable: false }
 ]
 
 export const scanjobMonitorArea = {
@@ -87,15 +77,6 @@ export const scannedItemSource = {
   NotInRegister: 30
 }
 
-const dateTimeRuFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false
-})
-
 export function formatCount(value) {
   return Number(value ?? 0).toLocaleString('ru-RU')
 }
@@ -109,6 +90,19 @@ export function formatParcelProgress(item) {
   ].map(formatCount).join(' / ')
 }
 
+export function getParcelProgressStats(item) {
+  return [
+    { label: 'Посылки всего', value: formatCount(item?.totalParcels) },
+    { label: 'Сканировано', value: formatCount(item?.parcelsWithStickerScanned) },
+    {
+      label: 'Запретов',
+      value: formatCount(item?.restrictedParcels),
+      isRestricted: Number(item?.restrictedParcels ?? 0) !== 0
+    },
+    { label: 'Не сканировано', value: formatCount(item?.parcelsWithStickerNotScanned) }
+  ]
+}
+
 export function valueOrDash(value) {
   return value || '-'
 }
@@ -117,7 +111,19 @@ export function formatScanTime(value) {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return dateTimeRuFormatter.format(date)
+  const hh = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  return `${hh}:${min} ${dd}.${mm}`
+}
+
+export function formatScannedInfoLines(item) {
+  return [
+    valueOrDash(item?.scannedUserName),
+    valueOrDash(formatScanTime(item?.scannedTime)),
+    valueOrDash(item?.scannedSticker)
+  ]
 }
 
 export function stickerText(scanned) {

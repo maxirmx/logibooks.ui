@@ -12,6 +12,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
   formatParcelProgress,
   formatScanTime,
+  getParcelProgressStats,
   monitorBoxStickerClass,
   monitorBoxStickerText,
   scanjobBoxHeaders,
@@ -144,11 +145,22 @@ function openBox(item) {
         <template #[`item.parcelsProgress`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatParcelProgress(item)"
+            :display-value="''"
             cell-class="clickable-cell"
             :disabled="props.loading"
             @click="openBox(item)"
-          />
+          >
+            <span class="scanjob-monitor-parcel-progress-panel">
+              <span
+                v-for="stat in getParcelProgressStats(item)"
+                :key="stat.label"
+                :class="['scanjob-monitor-parcel-progress-item', stat.isRestricted ? 'scanjob-monitor-parcel-progress-restricted' : '']"
+              >
+                <span class="scanjob-monitor-parcel-progress-label">{{ stat.label }}</span>
+                <span class="scanjob-monitor-parcel-progress-value">{{ stat.value }}</span>
+              </span>
+            </span>
+          </ClickableCell>
         </template>
       </v-data-table>
     </v-card>

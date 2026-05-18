@@ -104,3 +104,72 @@
 .scanjob-monitor-product-name-cell.clickable-cell-disabled {
   cursor: not-allowed;
 }
+
+.scanjob-monitor-scanned-info-header {
+  display: inline-block;
+  white-space: pre-line;
+}
+
+.scanjob-monitor-scanned-info-cell {
+  display: inline-flex;
+  align-items: flex-start;
+  white-space: normal;
+}
+
+.scanjob-monitor-scanned-info {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0;
+  white-space: normal;
+}
+
+.scanjob-monitor-parcels-table .v-data-table__td,
+.scanjob-monitor-parcels-table .v-data-table__th {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.scanjob-monitor-parcels-table .v-data-table__tr {
+  height: 32px !important;
+}
+
+.scanjob-monitor-parcels-table .v-data-table__thead .v-data-table__tr {
+  height: 36px !important;
+}
+
+.scanjob-monitor-parcel-progress-panel {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  column-gap: 18px;
+  row-gap: 4px;
+  min-width: 270px;
+  padding: 6px 8px;
+  border: 1px solid rgba(25, 118, 210, 0.18);
+  border-radius: 6px;
+  background: rgba(25, 118, 210, 0.04);
+  line-height: 1.15;
+}
+
+.scanjob-monitor-parcel-progress-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.scanjob-monitor-parcel-progress-label {
+  color: #4f5b67;
+}
+
+.scanjob-monitor-parcel-progress-value {
+  font-weight: inherit;
+  text-align: right;
+}
+
+.scanjob-monitor-parcel-progress-restricted {
+  color: #c62828;
+  font-weight: 700;
+}
+
+.scanjob-monitor-parcel-progress-restricted .scanjob-monitor-parcel-progress-label {
+  color: inherit;
+}

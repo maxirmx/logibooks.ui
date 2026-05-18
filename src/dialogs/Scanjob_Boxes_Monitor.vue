@@ -10,11 +10,12 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
-  formatCount,
+  formatParcelProgress,
   formatScanTime,
   monitorBoxStickerClass,
   monitorBoxStickerText,
   scanjobBoxHeaders,
+  scanjobParcelsProgressTitle,
   valueOrDash
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
@@ -48,8 +49,8 @@ const summaryCards = computed(() => {
     },
     {
       key: 'parcels',
-      label: 'Посылки всего / сканировано / не сканировано',
-      value: `${snapshot.totalParcels ?? 0} / ${snapshot.parcelsWithStickerScanned ?? 0} / ${snapshot.parcelsWithStickerNotScanned ?? 0}`,
+      label: scanjobParcelsProgressTitle,
+      value: formatParcelProgress(snapshot),
     },
     {
       key: 'unregistered',
@@ -143,7 +144,7 @@ function openBox(item) {
         <template #[`item.parcelsProgress`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="`${formatCount(item.totalParcels)} / ${formatCount(item.parcelsWithStickerScanned)} / ${formatCount(item.parcelsWithStickerNotScanned)}`"
+            :display-value="formatParcelProgress(item)"
             cell-class="clickable-cell"
             :disabled="props.loading"
             @click="openBox(item)"

@@ -6,13 +6,15 @@ import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 
+export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / изъятий'
+
 export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
   { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
-  { title: 'Посылки всего / сканировано / не сканировано', key: 'parcelsProgress', align: 'center', sortable: false }
+  { title: scanjobParcelsProgressTitle, key: 'parcelsProgress', align: 'center', sortable: false }
 ]
 
 export const scanjobParcelScanHeaders = [
@@ -36,12 +38,12 @@ export const scanjobOzonParcelHeaders = [
   ...scanjobParcelScanHeaders,
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
-  { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false, width: '260px' },
+  { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
+  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', sortable: false }
 ]
 
 export const scanjobWbrParcelHeaders = [
@@ -49,12 +51,12 @@ export const scanjobWbrParcelHeaders = [
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
-  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '260px' },
+  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
+  { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', sortable: false }
 ]
 
 export const scanjobWbr2ParcelHeaders = [
@@ -63,12 +65,12 @@ export const scanjobWbr2ParcelHeaders = [
   { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.wbSticker, key: 'wbSticker', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.sellerSticker, key: 'sellerSticker', align: 'start', sortable: false },
-  { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '260px' },
+  { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
   { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', width: '180px', sortable: false }
+  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatusProjection', align: 'center', sortable: false }
 ]
 
 export const scanjobMonitorArea = {
@@ -96,6 +98,15 @@ const dateTimeRuFormatter = new Intl.DateTimeFormat('ru-RU', {
 
 export function formatCount(value) {
   return Number(value ?? 0).toLocaleString('ru-RU')
+}
+
+export function formatParcelProgress(item) {
+  return [
+    item?.totalParcels,
+    item?.parcelsWithStickerScanned,
+    item?.parcelsWithStickerNotScanned,
+    item?.restrictedParcels
+  ].map(formatCount).join(' / ')
 }
 
 export function valueOrDash(value) {

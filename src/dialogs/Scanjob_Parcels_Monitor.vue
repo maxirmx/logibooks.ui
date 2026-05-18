@@ -11,11 +11,12 @@ import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor
 import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monitor_Table.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import {
-  formatCount,
+  formatParcelProgress,
   isUnassignedMonitorBox,
   scanjobParcelHeaders,
   monitorBoxStickerClass,
-  monitorBoxStickerText
+  monitorBoxStickerText,
+  scanjobParcelsProgressTitle
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
@@ -61,8 +62,8 @@ const summaryCards = computed(() => {
     },
     {
       key: 'boxParcels',
-      label: 'Посылки всего / сканировано / не сканировано',
-      value: `${formatCount(box.totalParcels)} / ${formatCount(box.parcelsWithStickerScanned)} / ${formatCount(box.parcelsWithStickerNotScanned)}`
+      label: scanjobParcelsProgressTitle,
+      value: formatParcelProgress(box)
     }
   ]
 })

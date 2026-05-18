@@ -15,7 +15,7 @@ export const scanjobBoxHeaders = [
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
-  { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' },
+  { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' }
 ]
 
 export const scanjobParcelScanHeaders = [

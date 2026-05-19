@@ -10,7 +10,7 @@ export const SwInheritanceFlag = 0x0080
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
-  NotFound: 0x017D,
+  Defect: 0x017D,
   Duplicate: 0x017E,
   MarkedByPartner: 0x01FF
 })
@@ -31,7 +31,7 @@ export const SWCheckStatus = Object.freeze({
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
   Duplicate: WStatusValues.Duplicate,
-  NotFound: WStatusValues.NotFound,
+  Defect: WStatusValues.Defect,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -50,7 +50,7 @@ export const FCCheckStatus = Object.freeze({
   IssueNonexistingFeacn: 0x0101,
   IssueInvalidFeacnFormat: 0x0102,  
   Duplicate: WStatusValues.Duplicate,
-  NotFound: WStatusValues.NotFound,
+  Defect: WStatusValues.Defect,
   MarkedByPartner: WStatusValues.MarkedByPartner
 })
 
@@ -63,7 +63,7 @@ const ApprovedWithExciseString = 'Согл. с акцизом'
 const ApprovedWithNotificationString = 'Согл. с нотификацией'
 const IssueStopWordString = 'Стоп слово'
 const DuplicateString = 'Дубликат'
-const NotFoundString = 'Не найдена'
+const DefectString = 'Брак'
 const MarkedByPartnerString = 'Исключено партнёром'
 const FlagString = '🔖 '
 
@@ -174,11 +174,19 @@ export class CheckStatusCode {
   }
 
   /**
-   * Check if the combined status is NotFound
+   * Check if the combined status is Defect
    */
-  static isNotFound(value) {
-    return CheckStatusCode.getFC(value) === FCCheckStatus.NotFound && 
-           CheckStatusCode.getSW(value) === SWCheckStatus.NotFound
+  static isDefect(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.Defect && 
+           CheckStatusCode.getSW(value) === SWCheckStatus.Defect
+  }
+
+  /**
+   * Check if the combined status is MarkedByPartner
+   */
+  static isMarkedByPartner(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.MarkedByPartner &&
+           CheckStatusCode.getSW(value) === SWCheckStatus.MarkedByPartner
   }
 
   static isInheritedSw(value) {
@@ -233,8 +241,8 @@ export class CheckStatusCode {
       return DuplicateString
     }
 
-    if (this.fc === FCCheckStatus.NotFound && this.sw === SWCheckStatus.NotFound) {
-      return NotFoundString
+    if (this.fc === FCCheckStatus.Defect && this.sw === SWCheckStatus.Defect) {
+      return DefectString
     }
 
     if (this.fc === FCCheckStatus.MarkedByPartner && this.sw === SWCheckStatus.MarkedByPartner) {
@@ -323,6 +331,10 @@ export class CheckStatusCode {
 
   static get Duplicate() {
     return CheckStatusCode.fromParts(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate)
+  }
+
+  static get Defect() {
+    return CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
   }
 
   static get MarkedByPartner() {

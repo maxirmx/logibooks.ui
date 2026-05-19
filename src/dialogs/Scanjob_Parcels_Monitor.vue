@@ -28,7 +28,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['edit-parcel'])
+const emit = defineEmits(['edit-parcel', 'set-defect'])
 
 const parcels = computed(() => props.box?.parcels ?? [])
 const hasRegisteredParcels = computed(() => parcels.value.some((parcel) => parcel?.isInRegister !== false))
@@ -75,6 +75,10 @@ const emptyText = computed(() => (
 function editParcel(item) {
   emit('edit-parcel', item)
 }
+
+function setDefect(item) {
+  emit('set-defect', item)
+}
 </script>
 
 <template>
@@ -93,6 +97,7 @@ function editParcel(item) {
           :parcels="parcels"
           :loading="props.loading"
           @edit-parcel="editParcel"
+          @set-defect="setDefect"
         />
 
         <ScanjobParcelsMonitorTable
@@ -101,6 +106,7 @@ function editParcel(item) {
           :parcels="parcels"
           :loading="props.loading"
           @edit-parcel="editParcel"
+          @set-defect="setDefect"
         />
       </v-card>
     </div>

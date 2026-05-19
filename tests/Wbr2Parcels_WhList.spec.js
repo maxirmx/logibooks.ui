@@ -10,8 +10,9 @@ import Wbr2ParcelsWhList from '@/lists/Wbr2Parcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-const { loadParcels } = vi.hoisted(() => ({
-  loadParcels: vi.fn().mockResolvedValue()
+const { loadParcels, setDefect } = vi.hoisted(() => ({
+  loadParcels: vi.fn().mockResolvedValue(),
+  setDefect: vi.fn().mockResolvedValue(true)
 }))
 
 const mockItems = ref([
@@ -36,6 +37,8 @@ const mockTotalCount = ref(1)
 const parcelsPerPage = ref(10)
 const parcelsSortBy = ref([])
 const parcelsPage = ref(1)
+const isAdmin = ref(false)
+const isWhManager = ref(false)
 
 const registerItem = ref({ dealNumber: 'D-1' })
 
@@ -71,7 +74,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
-    totalCount: mockTotalCount
+    totalCount: mockTotalCount,
+    setDefect
   })
 }))
 
@@ -96,7 +100,9 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     parcels_per_page: parcelsPerPage,
     parcels_sort_by: parcelsSortBy,
-    parcels_page: parcelsPage
+    parcels_page: parcelsPage,
+    isAdmin,
+    isWhManager
   })
 }))
 
@@ -131,6 +137,21 @@ const globalStubs = {
 describe('Wbr2Parcels_WhList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isAdmin.value = false
+    isWhManager.value = false
+    mockItems.value = [{
+      id: 1,
+      shk: 'SHK-1',
+      productName: 'Very long WBR2 product name that must remain on one line',
+      stickerCode: 'ST-1',
+      wbSticker: 'WB-1',
+      sellerSticker: 'SL-1',
+      weightKg: 2.4,
+      quantity: 3,
+      statusId: 7,
+      checkStatus: CheckStatusCode.NotChecked.value,
+      zone: 1
+    }]
   })
 
   it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
@@ -176,6 +197,7 @@ describe('Wbr2Parcels_WhList.vue', () => {
 
     const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual([
+      'actions',
       'id',
       'shk',
       'stickerCode',
@@ -189,6 +211,37 @@ describe('Wbr2Parcels_WhList.vue', () => {
       'statusId',
       'checkStatus'
     ])
+  })
+
+  it('sets defect from row action for warehouse manager and reloads parcels', async () => {
+    isWhManager.value = true
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+    await resolveAll()
+
+    await wrapper.get('[data-testid="warehouse-set-defect-1"]').trigger('click')
+    await resolveAll()
+
+    expect(setDefect).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledTimes(2)
+  })
+
+  it('disables set defect action for duplicate or marked-by-partner parcels', () => {
+    isAdmin.value = true
+    mockItems.value = [
+      { ...mockItems.value[0], id: 1, checkStatus: CheckStatusCode.Duplicate.value },
+      { ...mockItems.value[0], id: 2, checkStatus: CheckStatusCode.MarkedByPartner.value }
+    ]
+
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    expect(wrapper.get('[data-testid="warehouse-set-defect-1"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="warehouse-set-defect-2"]').attributes('disabled')).toBeDefined()
   })
 
   it('renders product name in a non-wrapping truncated cell', () => {

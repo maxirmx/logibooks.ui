@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
@@ -28,6 +29,7 @@ const MONITOR_THROTTLE_MS = 150
 const SCAN_JOB_STATUS_IN_PROGRESS = 15
 
 const scanJobsStore = useScanjobsStore()
+const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -46,6 +48,7 @@ const monitorStatusOnly = ref(false)
 const scopeVersion = ref(0)
 const registerLoading = ref(true)
 const autoFollowEnabled = ref(true)
+const settingDefect = ref(false)
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -177,6 +180,28 @@ function editParcel(item) {
     'Редактирование посылки',
     { registerId: registerId.value }
   )
+}
+
+async function setDefect(item) {
+  const parcelId = item?.id ?? item?.parcelId
+  if (!parcelId || isLoading.value || settingDefect.value) {
+    return
+  }
+
+  settingDefect.value = true
+  try {
+    await parcelsStore.setDefect(parcelId)
+    await observeScope(buildScope(selectedArea.value, selectedBoxId.value, selectedBucketIndex.value), {
+      subscribe: canSubscribeToMonitor(scanjob.value)
+    })
+  } catch (error) {
+    const message = error?.response?.data?.message || error?.message || 'Ошибка при установке признака брака'
+    alertStore.error(message)
+  } finally {
+    if (isComponentMounted.value) {
+      settingDefect.value = false
+    }
+  }
 }
 
 function buildScope(area, boxId = null, bucketIndex = null) {
@@ -639,8 +664,9 @@ defineExpose({
           v-if="isBoxMode"
           :box="selectedBox"
           :register-type="visibleSnapshot?.registerType ?? 0"
-          :loading="isLoading"
+          :loading="isLoading || settingDefect"
           @edit-parcel="editParcel"
+          @set-defect="setDefect"
         />
       </template>
     </div>

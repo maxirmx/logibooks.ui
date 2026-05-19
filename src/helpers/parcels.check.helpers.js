@@ -165,3 +165,10 @@ export function getCheckStatusClass(checkStatus) {
   return 'no-issues'
 }
 
+export function isSetDefectCheckStatusBlocked(checkStatus) {
+  if (checkStatus === undefined || checkStatus === null) {
+    return false
+  }
+
+  return CheckStatusCode.isDuplicate(checkStatus) || CheckStatusCode.isMarkedByPartner(checkStatus)
+}

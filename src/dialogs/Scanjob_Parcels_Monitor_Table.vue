@@ -6,9 +6,11 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
+import { isSetDefectCheckStatusBlocked } from '@/helpers/parcels.check.helpers.js'
 import {
   getScanjobCheckStatusClass,
   scanjobCheckStatusReason,
@@ -29,18 +31,21 @@ const props = defineProps({
   loading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['edit-parcel'])
+const emit = defineEmits(['edit-parcel', 'set-defect'])
 
 const authStore = useAuthStore()
 const {
   scanjobmonitor_parcels_per_page,
   scanjobmonitor_parcels_sort_by,
   scanjobmonitor_parcels_page,
-  hasLogistRole
+  hasLogistRole,
+  isAdmin,
+  isWhManager
 } = storeToRefs(authStore)
 
 const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
 const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
+const canSetDefectByRole = computed(() => isAdmin?.value === true || isWhManager?.value === true)
 
 function editParcel(item) {
   if (isParcelCellDisabled.value) {
@@ -48,6 +53,31 @@ function editParcel(item) {
   }
 
   emit('edit-parcel', item)
+}
+
+function isSetDefectDisabled(item) {
+  return !(item?.id ?? item?.parcelId)
+    || props.loading
+    || !canSetDefectByRole.value
+    || isSetDefectCheckStatusBlocked(item?.checkStatus)
+    || isSetDefectProjectionBlocked(item)
+}
+
+function setDefect(item) {
+  if (isSetDefectDisabled(item)) {
+    return
+  }
+
+  emit('set-defect', item)
+}
+
+function isSetDefectProjectionBlocked(item) {
+  const statusText = [
+    item?.checkStatusProjection?.title,
+    item?.checkStatusProjection?.restrictionReason
+  ].filter(Boolean).join(' ').toLocaleLowerCase('ru-RU')
+
+  return statusText.includes('дубликат') || statusText.includes('исключено партн')
 }
 
 function parcelCellClass(baseClass = '') {
@@ -83,6 +113,18 @@ function onProductNameClick(item, event) {
   >
     <template #[`header.scannedInfo`]="{ column }">
       <span class="scanjob-monitor-scanned-info-header">{{ column.title }}</span>
+    </template>
+
+    <template #[`item.actions`]="{ item }">
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-person-circle-xmark"
+        tooltip-text="Брак"
+        variant="red"
+        :disabled="isSetDefectDisabled(item)"
+        :data-testid="`scanjob-parcel-set-defect-${item.id ?? item.parcelId}`"
+        @click="setDefect"
+      />
     </template>
 
     <template #[`item.stickerScanned`]="{ item }">

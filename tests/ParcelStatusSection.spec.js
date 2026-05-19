@@ -55,7 +55,7 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('#statusId').exists()).toBe(true)
     expect(wrapper.findAll('option')).toHaveLength(2)
-    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(7)
+    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(8)
   })
 
   it('renders current check status and computed class', () => {
@@ -77,30 +77,32 @@ describe('ParcelStatusSection', () => {
     await buttons[4].vm.$emit('click')
     await buttons[5].vm.$emit('click')
     await buttons[6].vm.$emit('click')
+    await buttons[7].vm.$emit('click')
 
     expect(wrapper.emitted('validate-sw')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('validate-sw-ex')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('validate-fc')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('clear-check-status')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('clear-defect')?.[0]).toEqual([defaultProps.values])
+    expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve')?.[0]).toEqual([defaultProps.values])
     expect(wrapper.emitted('approve-excise')?.[0]).toEqual([defaultProps.values])
-    expect(wrapper.emitted('clear-check-status')?.[0]).toEqual([defaultProps.values])
-    expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([defaultProps.values])
   })
 
-  it('passes disabled state to each action button except clear-check-status', () => {
+  it('passes disabled state to each action button except independent status actions', () => {
     const wrapper = createWrapper({ disabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // button order: validate-sw, validate-sw-ex, validate-fc, clear-check-status, check-for-duplicate, approve, approve-excise
-    // All buttons except clear-check-status (index 3) use the disabled prop
+    // button order: validate-sw, validate-sw-ex, validate-fc, clear-check-status, clear-defect, check-for-duplicate, approve, approve-excise
+    // clear-check-status and clear-defect use their own disabled props
     expect(buttons[0].props('disabled')).toBe(true)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(true)
-    // clear-check-status uses clearCheckStatusDisabled (defaults to false)
     expect(buttons[3].props('disabled')).toBe(false)
-    expect(buttons[4].props('disabled')).toBe(true)
+    expect(buttons[4].props('disabled')).toBe(false)
     expect(buttons[5].props('disabled')).toBe(true)
     expect(buttons[6].props('disabled')).toBe(true)
+    expect(buttons[7].props('disabled')).toBe(true)
   })
 
   it('disables clear-check-status button via clearCheckStatusDisabled prop', () => {
@@ -113,8 +115,18 @@ describe('ParcelStatusSection', () => {
     expect(buttons[4].props('disabled')).toBe(false)
   })
 
-  it('disables all buttons when disabled and clearCheckStatusDisabled are both true', () => {
-    const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: true })
+  it('disables clear-defect button via clearDefectDisabled prop', () => {
+    const wrapper = createWrapper({ clearDefectDisabled: true })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    expect(buttons[0].props('disabled')).toBe(false)
+    expect(buttons[3].props('disabled')).toBe(false)
+    expect(buttons[4].props('disabled')).toBe(true)
+    expect(buttons[5].props('disabled')).toBe(false)
+  })
+
+  it('disables all buttons when disabled and independent status actions are disabled', () => {
+    const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: true, clearDefectDisabled: true })
 
     wrapper.findAllComponents(ActionButton).forEach((button) => {
       expect(button.props('disabled')).toBe(true)
@@ -131,10 +143,11 @@ describe('ParcelStatusSection', () => {
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(true)
     expect(buttons[3].props('disabled')).toBe(false)
-    expect(buttons[4].props('disabled')).toBe(true)
-
+    expect(buttons[4].props('disabled')).toBe(false)
     expect(buttons[5].props('disabled')).toBe(true)
+
     expect(buttons[6].props('disabled')).toBe(true)
+    expect(buttons[7].props('disabled')).toBe(true)
   })
 
   it('shows bookmark icon for inherited stopwords status', () => {
@@ -174,7 +187,7 @@ describe('ParcelStatusSection', () => {
     const wrapper = createWrapper({ noHistoricData: true, disabled: false })
     const buttons = wrapper.findAllComponents(ActionButton)
 
-    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
+    // button order: validate-sw, validate-sw-ex, validate-fc, clear-check-status, clear-defect, check-for-duplicate, approve, approve-excise
     expect(buttons[0].props('disabled')).toBe(false)
     expect(buttons[1].props('disabled')).toBe(true)
     expect(buttons[2].props('disabled')).toBe(false)
@@ -182,10 +195,11 @@ describe('ParcelStatusSection', () => {
     expect(buttons[4].props('disabled')).toBe(false)
     expect(buttons[5].props('disabled')).toBe(false)
     expect(buttons[6].props('disabled')).toBe(false)
+    expect(buttons[7].props('disabled')).toBe(false)
   })
 
   it('disables all buttons when disabled, clearCheckStatusDisabled, and noHistoricData are true', () => {
-    const wrapper = createWrapper({ noHistoricData: true, disabled: true, clearCheckStatusDisabled: true })
+    const wrapper = createWrapper({ noHistoricData: true, disabled: true, clearCheckStatusDisabled: true, clearDefectDisabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
 
     buttons.forEach((button) => {

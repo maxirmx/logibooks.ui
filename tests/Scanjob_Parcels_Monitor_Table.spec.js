@@ -16,13 +16,17 @@ const scanjobmonitorParcelsPerPage = ref(50)
 const scanjobmonitorParcelsSortBy = ref([{ key: 'id', order: 'asc' }])
 const scanjobmonitorParcelsPage = ref(1)
 const hasLogistRole = ref(true)
+const isAdmin = ref(false)
+const isWhManager = ref(false)
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     scanjobmonitor_parcels_per_page: scanjobmonitorParcelsPerPage,
     scanjobmonitor_parcels_sort_by: scanjobmonitorParcelsSortBy,
     scanjobmonitor_parcels_page: scanjobmonitorParcelsPage,
-    hasLogistRole
+    hasLogistRole,
+    isAdmin,
+    isWhManager
   })
 }))
 
@@ -48,6 +52,8 @@ const global = { stubs: vuetifyStubs }
 describe('Scanjob parcel monitor typed tables', () => {
   beforeEach(() => {
     hasLogistRole.value = true
+    isAdmin.value = false
+    isWhManager.value = false
   })
 
   it('renders Ozon scan and WH columns without box number', () => {
@@ -73,6 +79,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
+      'actions',
       'stickerScanned',
       'checkStatusProjection',
       'zone',
@@ -121,6 +128,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
+      'actions',
       'stickerScanned',
       'checkStatusProjection',
       'zone',
@@ -163,6 +171,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
+      'actions',
       'stickerScanned',
       'checkStatusProjection',
       'zone',
@@ -232,5 +241,42 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')).toBeFalsy()
+  })
+
+  it('emits set-defect from row action for warehouse manager', async () => {
+    isWhManager.value = true
+
+    const wrapper = mount(ScanjobParcelsMonitorTable, {
+      props: {
+        headers: [{ title: '', key: 'actions', sortable: false }],
+        parcels: [{
+          id: 41,
+          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+        }]
+      },
+      global
+    })
+
+    await wrapper.get('[data-testid="scanjob-parcel-set-defect-41"]').trigger('click')
+
+    expect(wrapper.emitted('set-defect')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))
+  })
+
+  it('disables set-defect action for duplicate or marked-by-partner parcels', () => {
+    isAdmin.value = true
+
+    const wrapper = mount(ScanjobParcelsMonitorTable, {
+      props: {
+        headers: [{ title: '', key: 'actions', sortable: false }],
+        parcels: [
+          { id: 41, checkStatus: 0x017E017E },
+          { id: 42, checkStatus: 0x01FF01FF }
+        ]
+      },
+      global
+    })
+
+    expect(wrapper.get('[data-testid="scanjob-parcel-set-defect-41"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="scanjob-parcel-set-defect-42"]').attributes('disabled')).toBeDefined()
   })
 })

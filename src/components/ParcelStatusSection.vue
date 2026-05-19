@@ -40,6 +40,10 @@ defineProps({
     type: Boolean,
     default: false
   },
+  clearDefectDisabled: {
+    type: Boolean,
+    default: false
+  },
   noHistoricData: {
     type: Boolean,
     default: false
@@ -53,6 +57,7 @@ defineEmits([
   'approve',
   'approve-excise',
   'clear-check-status',
+  'clear-defect',
   'check-for-duplicate'
 ])
 </script>
@@ -113,6 +118,14 @@ defineEmits([
             tooltip-text="Очистить статус"
             :disabled="clearCheckStatusDisabled"
             @click="$emit('clear-check-status', values)"
+            :iconSize="'2x'"
+          />
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-person-circle-check"
+            tooltip-text="Отменить брак"
+            :disabled="clearDefectDisabled"
+            @click="$emit('clear-defect', values)"
             :iconSize="'2x'"
           />
           <ActionButton

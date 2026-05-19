@@ -181,6 +181,14 @@ export class CheckStatusCode {
            CheckStatusCode.getSW(value) === SWCheckStatus.Defect
   }
 
+  /**
+   * Check if the combined status is MarkedByPartner
+   */
+  static isMarkedByPartner(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.MarkedByPartner &&
+           CheckStatusCode.getSW(value) === SWCheckStatus.MarkedByPartner
+  }
+
   static isInheritedSw(value) {
     return (CheckStatusCode.getSW(value) & SwInheritanceFlag) !== 0
   }

@@ -9,7 +9,7 @@ defineProps({
   loading: { type: Boolean, default: false }
 })
 
-defineEmits(['edit-parcel'])
+defineEmits(['edit-parcel', 'set-defect'])
 </script>
 
 <template>
@@ -18,5 +18,6 @@ defineEmits(['edit-parcel'])
     :parcels="parcels"
     :loading="loading"
     @edit-parcel="$emit('edit-parcel', $event)"
+    @set-defect="$emit('set-defect', $event)"
   />
 </template>

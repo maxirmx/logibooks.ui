@@ -17,6 +17,7 @@ const mockCurrentRoute = vi.hoisted(() => ({
 }))
 const clearAlert = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
+const setDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const mockAlert = vi.hoisted(() => ({
   __v_isRef: true,
   value: null
@@ -324,6 +325,12 @@ vi.mock('@/stores/alert.store.js', () => ({
     alert: mockAlert,
     error: alertError,
     clear: clearAlert
+  })
+}))
+
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({
+    setDefect
   })
 }))
 

@@ -19,6 +19,7 @@ export const scanjobBoxHeaders = [
 ]
 
 export const scanjobParcelScanHeaders = [
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '52px' },
   { title: '', key: 'stickerScanned', align: 'start' },
   {
     title: 'Проверка',
@@ -32,6 +33,7 @@ export const scanjobParcelScanHeaders = [
 ]
 
 export const scanjobParcelHeaders = [
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '52px' },
   { title: '', key: 'stickerScanned', align: 'start' },
   { title: 'Посылка', key: 'parcelNumber', align: 'start' },
   { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false },

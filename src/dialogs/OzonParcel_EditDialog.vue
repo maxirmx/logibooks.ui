@@ -455,12 +455,14 @@ async function onLookup(values) {
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
         :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)"
         :clear-check-status-disabled="isSubmitting || runningAction || loading"
+        :clear-defect-disabled="isSubmitting || runningAction || loading || authStore.isShiftLeadPlus !== true"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
         @validate-fc="(vals) => validateParcel(vals, false)"
         @approve="approveParcel"
         @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
         @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
+        @clear-defect="(vals) => runCheckStatusAction(vals, parcelsStore.clearDefect)"
         @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
       />
       <!-- Feacn Code Section -->

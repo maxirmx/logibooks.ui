@@ -14,12 +14,13 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
-import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { getCheckStatusClass, isSetDefectCheckStatusBlocked } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps({
@@ -36,14 +37,16 @@ const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
-const { parcels_per_page, parcels_sort_by, parcels_page } = storeToRefs(authStore)
+const { parcels_per_page, parcels_sort_by, parcels_page, isAdmin, isWhManager } = storeToRefs(authStore)
 const { ops } = storeToRefs(warehousesStore)
 
 const registerLoading = ref(true)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
+const settingDefect = ref(false)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const canSetDefectByRole = computed(() => isAdmin?.value === true || isWhManager?.value === true)
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
@@ -65,6 +68,7 @@ watch(maxPage, (v) => {
 })
 
 const headers = computed(() => [
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '52px' },
   { title: '№', key: 'id', align: 'start' },
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
@@ -140,6 +144,32 @@ onUnmounted(() => {
 function closeList() {
   emit('close')
 }
+
+function isSetDefectDisabled(item) {
+  return !item?.id
+    || loading.value
+    || isInitializing.value
+    || settingDefect.value
+    || !canSetDefectByRole.value
+    || isSetDefectCheckStatusBlocked(item?.checkStatus)
+}
+
+async function setDefect(item) {
+  if (!item?.id || isSetDefectDisabled(item)) {
+    return
+  }
+
+  settingDefect.value = true
+  try {
+    await parcelsStore.setDefect(item.id)
+    await loadParcelsWrapper()
+  } catch (err) {
+    const message = err?.response?.data?.message || err?.message || 'Ошибка при установке признака брака'
+    alertStore.error(message)
+  } finally {
+    settingDefect.value = false
+  }
+}
 </script>
 
 <template>
@@ -176,6 +206,17 @@ function closeList() {
         hide-default-footer
         class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
       >
+        <template #[`item.actions`]="{ item }">
+          <ActionButton
+            :item="item"
+            icon="fa-solid fa-person-circle-xmark"
+            tooltip-text="Брак"
+            variant="red"
+            :disabled="isSetDefectDisabled(item)"
+            :data-testid="`warehouse-set-defect-${item.id}`"
+            @click="setDefect"
+          />
+        </template>
         <template #[`item.productName`]="{ item }">
           <span class="warehouse-product-name-cell" :title="item.productName || ''">{{ item.productName || ' ' }}</span>
         </template>

@@ -68,7 +68,9 @@ import {
   faArrowsToEye,
   faBedPulse,
   faLink,
-  faLinkSlash
+  faLinkSlash,
+  faPersonCircleXmark,
+  faPersonCircleCheck
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -129,7 +131,9 @@ library.add(
   faArrowsToEye,
   faBedPulse,
   faLink,
-  faLinkSlash
+  faLinkSlash,
+  faPersonCircleXmark,
+  faPersonCircleCheck
 )
 
 import 'vuetify/styles'

@@ -791,11 +791,12 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(getById).toHaveBeenLastCalledWith(43)
+    expect(stopMonitor).toHaveBeenCalled()
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(43, { area: 0, boxId: null })
     expect(startMonitor).toHaveBeenLastCalledWith(43, expect.objectContaining({ area: 0, boxId: null }))
   })
 
-  it('shows status-only panel when scanjob id changes and the new scanjob is unavailable', async () => {
+  it('shows status-only panel when scanjob id changes and ignores closed state from the previous scanjob', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
       global: { stubs: defaultGlobalStubs }
@@ -805,11 +806,14 @@ describe('Scanjob_Monitor.vue', () => {
 
     loadMonitorSnapshot.mockClear()
     getById.mockResolvedValueOnce(null)
+    monitorClosed.value = { scanJobId: 42, status: 2 }
 
     await wrapper.setProps({ scanjobId: 43, monitorScope: registerMonitorScope })
     await flushPromises()
 
+    expect(stopMonitor).toHaveBeenCalled()
     expect(loadMonitorSnapshot).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="scanjob-monitor-status-only"]').exists()).toBe(true)
   })
 

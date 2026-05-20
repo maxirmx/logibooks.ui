@@ -76,7 +76,15 @@ const isBoxMode = computed(() => mode.value === MODE_BOX)
 const isLoading = computed(() => monitorLoading.value || switchingScope.value)
 const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
-const closedInfo = computed(() => closedStatus.value || monitorClosed.value)
+const closedInfo = computed(() => {
+  if (closedStatus.value) {
+    return closedStatus.value
+  }
+
+  return Number(monitorClosed.value?.scanJobId) === Number(props.scanjobId)
+    ? monitorClosed.value
+    : null
+})
 const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
 const registerId = computed(() => scanjob.value?.registerId ?? null)
 const activeRegisterItem = computed(() => {
@@ -353,6 +361,14 @@ function clearPendingSnapshot() {
     clearTimeout(throttleTimer)
     throttleTimer = null
   }
+}
+
+async function resetMonitorObservation() {
+  scopeVersion.value += 1
+  clearPendingSnapshot()
+  closedStatus.value = null
+  visibleSnapshot.value = null
+  await scanJobsStore.stopMonitor().catch(() => {})
 }
 
 function toNumberOrZero(value) {
@@ -747,6 +763,7 @@ watch(
 
     if (Number(loadedScanjobId.value) !== Number(props.scanjobId)) {
       scanjobLoaded.value = false
+      await resetMonitorObservation()
       const loaded = await loadScanjobAndRegister()
       if (loaded) {
         await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })

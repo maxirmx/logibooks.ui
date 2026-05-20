@@ -9,29 +9,56 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const signalRHandlers = vi.hoisted(() => ({}))
-const signalRConnection = vi.hoisted(() => ({
-  state: 'Disconnected',
-  start: vi.fn(() => {
-    signalRConnection.state = 'Connected'
-    return Promise.resolve()
-  }),
-  invoke: vi.fn(() => Promise.resolve()),
-  stop: vi.fn(() => {
-    signalRConnection.state = 'Disconnected'
-    return Promise.resolve()
-  }),
-  on: vi.fn((eventName, handler) => {
-    signalRHandlers[eventName] = handler
-  }),
-  onclose: vi.fn((handler) => {
-    signalRHandlers.onclose = handler
-  }),
-  onreconnected: vi.fn((handler) => {
-    signalRHandlers.onreconnected = handler
+const signalRTestState = vi.hoisted(() => {
+  const handlers = {}
+  const connections = []
+
+  function createConnection(mirrorHandlers = null) {
+    const connection = {
+      state: 'Disconnected',
+      handlers: mirrorHandlers ?? {},
+      start: vi.fn(() => {
+        connection.state = 'Connected'
+        return Promise.resolve()
+      }),
+      invoke: vi.fn(() => Promise.resolve()),
+      stop: vi.fn(() => {
+        connection.state = 'Disconnected'
+        return Promise.resolve()
+      }),
+      on: vi.fn((eventName, handler) => {
+        connection.handlers[eventName] = handler
+      }),
+      onclose: vi.fn((handler) => {
+        connection.handlers.onclose = handler
+      }),
+      onreconnected: vi.fn((handler) => {
+        connection.handlers.onreconnected = handler
+      })
+    }
+    return connection
+  }
+
+  const firstConnection = createConnection(handlers)
+  const build = vi.fn(() => {
+    const connection = connections.length === 0 || firstConnection.state === 'Disconnected'
+      ? firstConnection
+      : createConnection()
+    connections.push(connection)
+    return connection
   })
-}))
-const signalRBuild = vi.hoisted(() => vi.fn(() => signalRConnection))
+
+  return {
+    handlers,
+    connections,
+    firstConnection,
+    build
+  }
+})
+const signalRHandlers = signalRTestState.handlers
+const signalRConnections = signalRTestState.connections
+const signalRConnection = signalRTestState.firstConnection
+const signalRBuild = signalRTestState.build
 const signalRWithUrl = vi.hoisted(() => vi.fn(function withUrl() { return this }))
 const signalRWithAutomaticReconnect = vi.hoisted(() => vi.fn(function withAutomaticReconnect() { return this }))
 const signalRBuilder = vi.hoisted(() => vi.fn(() => ({
@@ -96,6 +123,7 @@ describe('scanjobs store', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     Object.keys(signalRHandlers).forEach((key) => delete signalRHandlers[key])
+    signalRConnections.length = 0
     signalRConnection.state = 'Disconnected'
   })
 
@@ -549,6 +577,47 @@ describe('scanjobs store', () => {
       expect(onSnapshot).toHaveBeenCalledWith(monitorSnapshot)
     })
 
+    it('starts autofollow monitor on a separate connection without replacing the visible snapshot', async () => {
+      const onSnapshot = vi.fn()
+      const store = useScanjobsStore()
+      const visibleSnapshot = { ...monitorSnapshot, area: 1, box: { boxId: 7 } }
+      const autoFollowSnapshot = { ...monitorSnapshot, area: 0, boxes: [{ boxId: 8 }] }
+
+      await store.startMonitor(42, { area: 1, boxId: 7 })
+      signalRConnections[0].handlers.ScanJobMonitorSnapshot(visibleSnapshot)
+
+      await store.startMonitorAutoFollow(42, { onSnapshot })
+
+      expect(signalRConnections).toHaveLength(2)
+      expect(signalRConnections[1].start).toHaveBeenCalled()
+      expect(signalRConnections[1].invoke).toHaveBeenCalledWith('ObserveScanJob', {
+        scanJobId: 42,
+        area: 0
+      })
+
+      signalRConnections[1].handlers.ScanJobMonitorSnapshot(autoFollowSnapshot)
+
+      expect(onSnapshot).toHaveBeenCalledWith(autoFollowSnapshot)
+      expect(store.monitorSnapshot).toEqual(visibleSnapshot)
+    })
+
+    it('stops autofollow monitor independently from the visible monitor', async () => {
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 1, boxId: 7 })
+      await store.startMonitorAutoFollow(42)
+
+      await store.stopMonitorAutoFollow()
+
+      expect(signalRConnections[1].invoke).toHaveBeenCalledWith('ClearScanJobMonitor')
+      expect(signalRConnections[1].stop).toHaveBeenCalled()
+      expect(signalRConnections[0].stop).not.toHaveBeenCalled()
+
+      await store.stopMonitor()
+
+      expect(signalRConnections[0].stop).toHaveBeenCalled()
+    })
+
     it('getMonitorAccessToken returns user token via accessTokenFactory', async () => {
       const store = useScanjobsStore()
       const authStore = useAuthStore()
@@ -592,6 +661,34 @@ describe('scanjobs store', () => {
 
       expect(store.monitorClosed).toEqual({ scanJobId: 42, status: 2 })
       expect(onClosed).toHaveBeenCalledWith(42, 2)
+    })
+
+    it('re-observes monitor on reconnect with the last request', async () => {
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 1, boxId: 7 })
+      signalRConnection.invoke.mockClear()
+
+      signalRHandlers.onreconnected()
+      await Promise.resolve()
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
+        scanJobId: 42,
+        area: 1,
+        boxId: 7
+      })
+    })
+
+    it('does not re-observe monitor on reconnect after clearMonitor', async () => {
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 0 })
+      await store.clearMonitor()
+      signalRConnection.invoke.mockClear()
+
+      signalRHandlers.onreconnected()
+
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveScanJob', expect.anything())
     })
 
     it('clears and stops monitor connection', async () => {
@@ -658,6 +755,26 @@ describe('scanjobs store', () => {
       // Second attempt should succeed now that stop resolves
       const result = await store.stopMonitor()
       expect(result).toBe(true)
+    })
+
+    it('allows an in-flight monitor start to finish after stopMonitor clears the shared start reference', async () => {
+      let resolveStart
+      signalRConnection.start.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveStart = () => {
+          signalRConnection.state = 'Connected'
+          resolve()
+        }
+      }))
+
+      const store = useScanjobsStore()
+      const startPromise = store.startMonitor(42, { area: 0 })
+      await Promise.resolve()
+
+      const stopPromise = store.stopMonitor()
+      resolveStart()
+
+      await expect(startPromise).resolves.toBe(true)
+      await expect(stopPromise).resolves.toBe(true)
     })
 
     it('ensureMonitorStarted reuses existing Connected connection without calling start again', async () => {

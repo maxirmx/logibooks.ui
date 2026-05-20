@@ -11,18 +11,25 @@ import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor
 import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monitor_Table.vue'
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 const scanjobmonitorParcelsPerPage = ref(50)
 const scanjobmonitorParcelsSortBy = ref([{ key: 'id', order: 'asc' }])
 const scanjobmonitorParcelsPage = ref(1)
 const hasLogistRole = ref(true)
+const isAdmin = ref(false)
+const isWhManager = ref(false)
+const isShiftLead = ref(false)
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     scanjobmonitor_parcels_per_page: scanjobmonitorParcelsPerPage,
     scanjobmonitor_parcels_sort_by: scanjobmonitorParcelsSortBy,
     scanjobmonitor_parcels_page: scanjobmonitorParcelsPage,
-    hasLogistRole
+    hasLogistRole,
+    isAdmin,
+    isWhManager,
+    isShiftLead
   })
 }))
 
@@ -48,6 +55,9 @@ const global = { stubs: vuetifyStubs }
 describe('Scanjob parcel monitor typed tables', () => {
   beforeEach(() => {
     hasLogistRole.value = true
+    isAdmin.value = false
+    isWhManager.value = false
+    isShiftLead.value = false
   })
 
   it('renders Ozon scan and WH columns without box number', () => {
@@ -73,6 +83,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
+      'actions',
       'stickerScanned',
       'checkStatusProjection',
       'zone',
@@ -121,6 +132,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
+      'actions',
       'stickerScanned',
       'checkStatusProjection',
       'zone',
@@ -163,6 +175,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
     expect(headers.map((header) => header.key)).toEqual([
+      'actions',
       'stickerScanned',
       'checkStatusProjection',
       'zone',
@@ -232,5 +245,55 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')).toBeFalsy()
+  })
+
+  it('emits set-defect for warehouse manager when parcel status allows it', async () => {
+    isWhManager.value = true
+
+    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+      props: {
+        parcels: [{
+          id: 41,
+          stickerScanned: true,
+          productName: 'Product',
+          checkStatus: CheckStatusCode.NotChecked.value,
+          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+        }]
+      },
+      global
+    })
+
+    const setButton = wrapper.get('[data-testid="scanjob-set-defect-action"]')
+    const clearButton = wrapper.get('[data-testid="scanjob-clear-defect-action"]')
+    expect(setButton.attributes('disabled')).toBeUndefined()
+    expect(clearButton.attributes('disabled')).toBeDefined()
+
+    await setButton.trigger('click')
+    expect(wrapper.emitted('set-defect')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))
+  })
+
+  it('emits clear-defect for shift lead only when parcel is defect', async () => {
+    isShiftLead.value = true
+
+    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+      props: {
+        parcels: [{
+          id: 42,
+          stickerScanned: true,
+          productName: 'Product',
+          checkStatus: CheckStatusCode.Defect.value,
+          checkStatusProjection: { kind: 20, title: 'Брак', restrictionReason: null }
+        }]
+      },
+      global
+    })
+
+    const setButton = wrapper.get('[data-testid="scanjob-set-defect-action"]')
+    const clearButton = wrapper.get('[data-testid="scanjob-clear-defect-action"]')
+    expect(setButton.attributes('disabled')).toBeDefined()
+    expect(clearButton.attributes('disabled')).toBeUndefined()
+
+    await clearButton.trigger('click')
+    expect(wrapper.emitted('clear-defect')?.[0][0]).toEqual(expect.objectContaining({ id: 42 }))
   })
 })

@@ -10,8 +10,10 @@ import Wbr2ParcelsWhList from '@/lists/Wbr2Parcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-const { loadParcels } = vi.hoisted(() => ({
-  loadParcels: vi.fn().mockResolvedValue()
+const { loadParcels, setDefect, clearDefect } = vi.hoisted(() => ({
+  loadParcels: vi.fn().mockResolvedValue(),
+  setDefect: vi.fn().mockResolvedValue(true),
+  clearDefect: vi.fn().mockResolvedValue(true)
 }))
 
 const mockItems = ref([
@@ -36,6 +38,9 @@ const mockTotalCount = ref(1)
 const parcelsPerPage = ref(10)
 const parcelsSortBy = ref([])
 const parcelsPage = ref(1)
+const isAdmin = ref(false)
+const isWhManager = ref(false)
+const isShiftLead = ref(false)
 
 const registerItem = ref({ dealNumber: 'D-1' })
 
@@ -71,7 +76,9 @@ vi.mock('@/stores/parcels.store.js', () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
-    totalCount: mockTotalCount
+    totalCount: mockTotalCount,
+    setDefect,
+    clearDefect
   })
 }))
 
@@ -96,7 +103,10 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     parcels_per_page: parcelsPerPage,
     parcels_sort_by: parcelsSortBy,
-    parcels_page: parcelsPage
+    parcels_page: parcelsPage,
+    isAdmin,
+    isWhManager,
+    isShiftLead
   })
 }))
 
@@ -131,6 +141,9 @@ const globalStubs = {
 describe('Wbr2Parcels_WhList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isAdmin.value = false
+    isWhManager.value = false
+    isShiftLead.value = false
   })
 
   it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
@@ -176,6 +189,7 @@ describe('Wbr2Parcels_WhList.vue', () => {
 
     const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual([
+      'actions',
       'id',
       'shk',
       'stickerCode',

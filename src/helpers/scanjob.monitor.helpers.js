@@ -9,6 +9,8 @@ import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 
 export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / запретов'
 
+const scanjobParcelActionsHeader = { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' }
+
 export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: '', key: 'parcelsProgress', align: 'start', sortable: false },
@@ -19,6 +21,7 @@ export const scanjobBoxHeaders = [
 ]
 
 export const scanjobParcelScanHeaders = [
+  scanjobParcelActionsHeader,
   { title: '', key: 'stickerScanned', align: 'start' },
   {
     title: 'Проверка',
@@ -32,6 +35,7 @@ export const scanjobParcelScanHeaders = [
 ]
 
 export const scanjobParcelHeaders = [
+  scanjobParcelActionsHeader,
   { title: '', key: 'stickerScanned', align: 'start' },
   { title: 'Посылка', key: 'parcelNumber', align: 'start' },
   { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false },

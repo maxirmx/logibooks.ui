@@ -156,9 +156,15 @@ async function runDefectAction(item, action, getErrorMessage) {
   runningAction.value = true
   try {
     await action(item.id)
-    await loadParcelsWrapper()
   } catch (error) {
     alertStore.error(getErrorMessage(error))
+    return
+  }
+
+  try {
+    await loadParcelsWrapper()
+  } catch {
+    alertStore.error('Ошибка при обновлении данных')
   } finally {
     runningAction.value = false
   }
@@ -215,6 +221,8 @@ async function clearParcelDefect(item) {
               :item="item"
               icon="fa-solid fa-person-circle-xmark"
               tooltip-text="Брак"
+              aria-label="Брак"
+              title="Брак"
               data-testid="set-defect-action"
               @click="setParcelDefect"
               :disabled="runningAction || loading || !canSetParcelDefect(item, authStore)"
@@ -223,6 +231,8 @@ async function clearParcelDefect(item) {
               :item="item"
               icon="fa-solid fa-person-circle-check"
               tooltip-text="Отменить брак"
+              aria-label="Отменить брак"
+              title="Отменить брак"
               data-testid="clear-defect-action"
               @click="clearParcelDefect"
               :disabled="runningAction || loading || !canClearParcelDefect(item, authStore)"

@@ -624,6 +624,30 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 1, boxId: 7 })
   })
 
+  it('shows reload error message when snapshot refresh fails after defect update', async () => {
+    isWhManager.value = true
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+      .mockRejectedValueOnce(new Error('refresh failed'))
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    loadMonitorSnapshot.mockClear()
+    await wrapper.get('[data-testid="scanjob-set-defect-action"]').trigger('click')
+    await flushPromises()
+
+    expect(setDefect).toHaveBeenCalledWith(70)
+    expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
+  })
+
   it('switches to unassigned bucket monitor and renders bucket parcels', async () => {
     loadMonitorSnapshot
       .mockResolvedValueOnce(registerSnapshotWithUnassignedBucket)

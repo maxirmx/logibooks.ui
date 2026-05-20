@@ -240,7 +240,11 @@ describe('WbrParcels_WhList.vue', () => {
     await resolveAll()
     loadParcels.mockClear()
 
-    await wrapper.get('[data-testid="set-defect-action"]').trigger('click')
+    const setDefectAction = wrapper.get('[data-testid="set-defect-action"]')
+    expect(setDefectAction.attributes('aria-label')).toBe('Брак')
+    expect(setDefectAction.attributes('title')).toBe('Брак')
+
+    await setDefectAction.trigger('click')
     await resolveAll()
 
     expect(setDefect).toHaveBeenCalledWith(1)
@@ -264,7 +268,11 @@ describe('WbrParcels_WhList.vue', () => {
     await resolveAll()
     loadParcels.mockClear()
 
-    await wrapper.get('[data-testid="clear-defect-action"]').trigger('click')
+    const clearDefectAction = wrapper.get('[data-testid="clear-defect-action"]')
+    expect(clearDefectAction.attributes('aria-label')).toBe('Отменить брак')
+    expect(clearDefectAction.attributes('title')).toBe('Отменить брак')
+
+    await clearDefectAction.trigger('click')
     await resolveAll()
 
     expect(clearDefect).toHaveBeenCalledWith(1)
@@ -275,6 +283,23 @@ describe('WbrParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
+  })
+
+  it('shows reload error message when refresh fails after setting defect', async () => {
+    isWhManager.value = true
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockRejectedValueOnce(new Error('refresh failed'))
+
+    await wrapper.get('[data-testid="set-defect-action"]').trigger('click')
+    await resolveAll()
+
+    expect(setDefect).toHaveBeenCalledWith(1)
+    expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
   })
 
   it('disables set defect action for duplicate and partner-marked projection statuses', async () => {

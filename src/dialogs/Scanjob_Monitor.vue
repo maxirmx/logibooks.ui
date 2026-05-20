@@ -204,10 +204,18 @@ async function runParcelDefectAction(item, action, getErrorMessage) {
   defectActionRunning.value = true
   try {
     await action(parcelId)
-    await refreshCurrentScopeSnapshot()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(getErrorMessage(error))
+    }
+    return
+  }
+
+  try {
+    await refreshCurrentScopeSnapshot()
+  } catch {
+    if (isComponentMounted.value) {
+      alertStore.error('Ошибка при обновлении данных')
     }
   } finally {
     if (isComponentMounted.value) {

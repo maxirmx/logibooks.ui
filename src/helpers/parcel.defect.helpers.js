@@ -77,7 +77,21 @@ export function canClearParcelDefect(item, authStore) {
   return hasRole && isParcelDefect(item)
 }
 
+function getErrorStatus(error) {
+  const status = error?.status ?? error?.response?.status
+  if (status !== null && status !== undefined && status !== '') {
+    return String(status)
+  }
+
+  return null
+}
+
 function errorIncludes(error, text) {
+  const status = getErrorStatus(error)
+  if (status !== null) {
+    return status === text
+  }
+
   return String(error?.message || error || '').includes(text)
 }
 

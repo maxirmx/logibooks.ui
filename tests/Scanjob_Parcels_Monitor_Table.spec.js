@@ -266,6 +266,10 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const setButton = wrapper.get('[data-testid="scanjob-set-defect-action"]')
     const clearButton = wrapper.get('[data-testid="scanjob-clear-defect-action"]')
+    expect(setButton.attributes('aria-label')).toBe('Брак')
+    expect(setButton.attributes('title')).toBe('Брак')
+    expect(clearButton.attributes('aria-label')).toBe('Отменить брак')
+    expect(clearButton.attributes('title')).toBe('Отменить брак')
     expect(setButton.attributes('disabled')).toBeUndefined()
     expect(clearButton.attributes('disabled')).toBeDefined()
 

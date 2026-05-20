@@ -5,6 +5,7 @@
 export const scanjobCheckStatusProjectionKind = Object.freeze({
   NotChecked: 10,
   Restriction: 20,
+  Defect: 25,
   Checked: 30
 })
 
@@ -23,6 +24,7 @@ export function getScanjobCheckStatusClass(projection) {
     case scanjobCheckStatusProjectionKind.NotChecked:
       return 'not-checked'
     case scanjobCheckStatusProjectionKind.Restriction:
+    case scanjobCheckStatusProjectionKind.Defect:
       return 'has-issues'
     case scanjobCheckStatusProjectionKind.Checked:
       return 'no-issues'

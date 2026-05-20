@@ -189,7 +189,7 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain('Не проверено')
   })
 
-  it('renders NotFound check status text', () => {
+  it('renders Defect check status text', () => {
     mockItems.value = [
       {
         id: 101,
@@ -199,7 +199,7 @@ describe('ParcelsByNumber_List.vue', () => {
         productName: 'Missing Match Product',
         tnVed: 'TN-101',
         statusId: 4,
-        checkStatus: CheckStatusCode.fromParts(FCCheckStatus.NotFound, SWCheckStatus.NotFound).value,
+        checkStatus: CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect).value,
         dTag: 'DT-101',
         dTagComment: 'Comment-101',
         previousDTagComment: 'Prev-101'
@@ -218,7 +218,7 @@ describe('ParcelsByNumber_List.vue', () => {
       }
     })
 
-    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-101"]').text()).toContain('Не найдена')
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-101"]').text()).toContain('Брак')
   })
 
   it('navigates to parcel view when status or check status cells are clicked', async () => {

@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
@@ -15,6 +16,10 @@ import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import {
+  getClearParcelDefectErrorMessage,
+  getSetParcelDefectErrorMessage
+} from '@/helpers/parcel.defect.helpers.js'
 import { isUnassignedMonitorBox } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
@@ -28,6 +33,7 @@ const MONITOR_THROTTLE_MS = 150
 const SCAN_JOB_STATUS_IN_PROGRESS = 15
 
 const scanJobsStore = useScanjobsStore()
+const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -46,6 +52,7 @@ const monitorStatusOnly = ref(false)
 const scopeVersion = ref(0)
 const registerLoading = ref(true)
 const autoFollowEnabled = ref(true)
+const defectActionRunning = ref(false)
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -177,6 +184,52 @@ function editParcel(item) {
     'Редактирование посылки',
     { registerId: registerId.value }
   )
+}
+
+function getCurrentScope() {
+  return buildScope(selectedArea.value, selectedBoxId.value, selectedBucketIndex.value)
+}
+
+async function refreshCurrentScopeSnapshot() {
+  const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, getCurrentScope())
+  applySnapshot(snapshot, { immediate: true, source: 'manual' })
+}
+
+async function runParcelDefectAction(item, action, getErrorMessage) {
+  const parcelId = item?.id ?? item?.parcelId
+  if (defectActionRunning.value || isLoading.value || !parcelId) {
+    return
+  }
+
+  defectActionRunning.value = true
+  try {
+    await action(parcelId)
+  } catch (error) {
+    if (isComponentMounted.value) {
+      alertStore.error(getErrorMessage(error))
+    }
+    return
+  }
+
+  try {
+    await refreshCurrentScopeSnapshot()
+  } catch {
+    if (isComponentMounted.value) {
+      alertStore.error('Ошибка при обновлении данных')
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      defectActionRunning.value = false
+    }
+  }
+}
+
+async function setParcelDefect(item) {
+  await runParcelDefectAction(item, parcelsStore.setDefect, getSetParcelDefectErrorMessage)
+}
+
+async function clearParcelDefect(item) {
+  await runParcelDefectAction(item, parcelsStore.clearDefect, getClearParcelDefectErrorMessage)
 }
 
 function buildScope(area, boxId = null, bucketIndex = null) {
@@ -640,7 +693,10 @@ defineExpose({
           :box="selectedBox"
           :register-type="visibleSnapshot?.registerType ?? 0"
           :loading="isLoading"
+          :defect-action-loading="defectActionRunning"
           @edit-parcel="editParcel"
+          @set-defect="setParcelDefect"
+          @clear-defect="clearParcelDefect"
         />
       </template>
     </div>

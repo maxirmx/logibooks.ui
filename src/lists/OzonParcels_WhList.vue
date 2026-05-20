@@ -20,6 +20,13 @@ import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
+import ActionButton from '@/components/ActionButton.vue'
+import {
+  canClearParcelDefect,
+  canSetParcelDefect,
+  getClearParcelDefectErrorMessage,
+  getSetParcelDefectErrorMessage
+} from '@/helpers/parcel.defect.helpers.js'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps({
@@ -42,6 +49,7 @@ const { ops } = storeToRefs(warehousesStore)
 const registerLoading = ref(true)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
+const runningAction = ref(false)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
 
@@ -65,6 +73,7 @@ watch(maxPage, (v) => {
 })
 
 const headers = computed(() => [
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
   { title: '№', key: 'id', align: 'start' },
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
@@ -140,6 +149,36 @@ onUnmounted(() => {
 function closeList() {
   emit('close')
 }
+
+async function runDefectAction(item, action, getErrorMessage) {
+  if (runningAction.value || loading.value || !item?.id) return
+
+  runningAction.value = true
+  try {
+    await action(item.id)
+  } catch (error) {
+    alertStore.error(getErrorMessage(error))
+    return
+  }
+
+  try {
+    await loadParcelsWrapper()
+  } catch {
+    alertStore.error('Ошибка при обновлении данных')
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function setParcelDefect(item) {
+  if (!canSetParcelDefect(item, authStore)) return
+  await runDefectAction(item, parcelsStore.setDefect, getSetParcelDefectErrorMessage)
+}
+
+async function clearParcelDefect(item) {
+  if (!canClearParcelDefect(item, authStore)) return
+  await runDefectAction(item, parcelsStore.clearDefect, getClearParcelDefectErrorMessage)
+}
 </script>
 
 <template>
@@ -176,6 +215,30 @@ function closeList() {
         hide-default-footer
         class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
       >
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-person-circle-xmark"
+              tooltip-text="Брак"
+              aria-label="Брак"
+              title="Брак"
+              data-testid="set-defect-action"
+              @click="setParcelDefect"
+              :disabled="runningAction || loading || !canSetParcelDefect(item, authStore)"
+            />
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-person-circle-check"
+              tooltip-text="Отменить брак"
+              aria-label="Отменить брак"
+              title="Отменить брак"
+              data-testid="clear-defect-action"
+              @click="clearParcelDefect"
+              :disabled="runningAction || loading || !canClearParcelDefect(item, authStore)"
+            />
+          </div>
+        </template>
         <template #[`item.productName`]="{ item }">
           <span class="warehouse-product-name-cell" :title="item.productName || ''">{{ item.productName || ' ' }}</span>
         </template>

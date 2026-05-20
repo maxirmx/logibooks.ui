@@ -243,7 +243,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
           await currentConnection.invoke('ClearScanJobMonitor')
         }
         await currentConnection.stop()
-        connection = null
         return true
       } catch (err) {
         if (!connection) {

@@ -104,8 +104,6 @@ describe('scanjobs store', () => {
     expect(store.items).toEqual([])
     expect(store.scanjob).toBeNull()
     expect(store.totalCount).toBe(0)
-    expect(store.scannedItems).toEqual([])
-    expect(store.scannedItemsTotalCount).toBe(0)
     expect(store.ops).toEqual({
       types: [],
       operations: [],
@@ -191,77 +189,6 @@ describe('scanjobs store', () => {
       expect(store.items).toEqual([])
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
-    })
-  })
-
-  describe('getScannedItems', () => {
-    it('fetches scanned items with filters and pagination', async () => {
-      const paginatedResponse = {
-        items: [
-          { id: 11, code: 'CODE-1', scanTime: '2024-01-02T10:00:00', userName: 'User', number: 'N1' }
-        ],
-        pagination: {
-          totalCount: 1,
-          hasNextPage: false,
-          hasPreviousPage: false
-        }
-      }
-      fetchWrapper.get.mockResolvedValue(paginatedResponse)
-      const store = useScanjobsStore()
-      const authStore = useAuthStore()
-      authStore.scanneditems_page = 2
-      authStore.scanneditems_per_page = 5
-      authStore.scanneditems_sort_by = [{ key: 'scanTime', order: 'asc' }]
-      authStore.scanneditems_search = 'CODE'
-
-      await store.getScannedItems(5)
-
-      const calledUrl = fetchWrapper.get.mock.calls[0][0]
-      const url = new URL(calledUrl)
-      expect(url.pathname).toBe('/api/scanjobs/5/scanned-items')
-      expect(url.searchParams.get('page')).toBe('2')
-      expect(url.searchParams.get('pageSize')).toBe('5')
-      expect(url.searchParams.get('sortBy')).toBe('scanTime')
-      expect(url.searchParams.get('sortOrder')).toBe('asc')
-      expect(url.searchParams.get('search')).toBe('CODE')
-      expect(store.scannedItems).toEqual(paginatedResponse.items)
-      expect(store.scannedItemsTotalCount).toBe(1)
-    })
-
-    it('falls back to empty items and 0 totalCount when response has no items/pagination', async () => {
-      fetchWrapper.get.mockResolvedValue({})
-      const store = useScanjobsStore()
-
-      await store.getScannedItems(5)
-
-      expect(store.scannedItems).toEqual([])
-      expect(store.scannedItemsTotalCount).toBe(0)
-    })
-
-    it('uses scanTime/desc fallbacks when scanneditems_sort_by is empty', async () => {
-      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
-      const store = useScanjobsStore()
-      const authStore = useAuthStore()
-      authStore.scanneditems_sort_by = []
-
-      await store.getScannedItems(5)
-
-      const calledUrl = fetchWrapper.get.mock.calls[0][0]
-      const url = new URL(calledUrl)
-      expect(url.searchParams.get('sortBy')).toBe('scanTime')
-      expect(url.searchParams.get('sortOrder')).toBe('desc')
-    })
-
-    it('handles errors when fetching scanned items', async () => {
-      const error = new Error('Network error')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useScanjobsStore()
-
-      await store.getScannedItems(3)
-
-      expect(store.scannedItems).toEqual([])
-      expect(store.scannedItemsError).toBe(error)
-      expect(store.scannedItemsLoading).toBe(false)
     })
   })
 

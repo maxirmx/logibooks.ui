@@ -6,10 +6,11 @@ defineOptions({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' })
 
 defineProps({
   parcels: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  defectActionLoading: { type: Boolean, default: false }
 })
 
-defineEmits(['edit-parcel'])
+defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
 </script>
 
 <template>
@@ -17,6 +18,9 @@ defineEmits(['edit-parcel'])
     :headers="scanjobWbr2ParcelHeaders"
     :parcels="parcels"
     :loading="loading"
+    :defect-action-loading="defectActionLoading"
     @edit-parcel="$emit('edit-parcel', $event)"
+    @set-defect="$emit('set-defect', $event)"
+    @clear-defect="$emit('clear-defect', $event)"
   />
 </template>

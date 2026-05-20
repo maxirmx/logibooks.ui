@@ -50,6 +50,8 @@ const loadMonitorSnapshot = vi.hoisted(() => vi.fn())
 const startMonitor = vi.hoisted(() => vi.fn())
 const clearMonitor = vi.hoisted(() => vi.fn())
 const stopMonitor = vi.hoisted(() => vi.fn())
+const setDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const clearDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const monitorBoxesPerPage = vi.hoisted(() => ({
   __v_isRef: true,
   value: 25
@@ -77,6 +79,18 @@ const monitorParcelsPage = vi.hoisted(() => ({
 const hasLogistRole = vi.hoisted(() => ({
   __v_isRef: true,
   value: true
+}))
+const isAdmin = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: false
+}))
+const isWhManager = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: false
+}))
+const isShiftLead = vi.hoisted(() => ({
+  __v_isRef: true,
+  value: false
 }))
 const WBR2_REGISTER_TYPE = 1024 * 1024 + 2
 
@@ -327,6 +341,13 @@ vi.mock('@/stores/alert.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/parcels.store.js', () => ({
+  useParcelsStore: () => ({
+    setDefect,
+    clearDefect
+  })
+}))
+
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     item: mockRegisterItem,
@@ -343,7 +364,10 @@ vi.mock('@/stores/auth.store.js', () => ({
     scanjobmonitor_parcels_per_page: monitorParcelsPerPage,
     scanjobmonitor_parcels_sort_by: monitorParcelsSortBy,
     scanjobmonitor_parcels_page: monitorParcelsPage,
-    hasLogistRole
+    hasLogistRole,
+    isAdmin,
+    isWhManager,
+    isShiftLead
   })
 }))
 
@@ -418,6 +442,9 @@ describe('Scanjob_Monitor.vue', () => {
     monitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
     monitorParcelsPage.value = 3
     hasLogistRole.value = true
+    isAdmin.value = false
+    isWhManager.value = false
+    isShiftLead.value = false
     mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
     getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
     registerGetById.mockResolvedValue(true)
@@ -571,6 +598,54 @@ describe('Scanjob_Monitor.vue', () => {
     expect(parcelsTable.props('itemsPerPage')).toBe(50)
     expect(parcelsTable.props('page')).toBe(3)
     expect(parcelsTable.props('sortBy')).toEqual([{ key: 'parcelNumber', order: 'desc' }])
+  })
+
+  it('sets parcel defect from box monitor and refreshes current scope', async () => {
+    isWhManager.value = true
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    loadMonitorSnapshot.mockClear()
+    await wrapper.get('[data-testid="scanjob-set-defect-action"]').trigger('click')
+    await flushPromises()
+
+    expect(setDefect).toHaveBeenCalledWith(70)
+    expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 1, boxId: 7 })
+  })
+
+  it('shows reload error message when snapshot refresh fails after defect update', async () => {
+    isWhManager.value = true
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce(boxSnapshot)
+      .mockRejectedValueOnce(new Error('refresh failed'))
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="scanjob-monitor-box-row"]').trigger('click')
+    await flushPromises()
+
+    loadMonitorSnapshot.mockClear()
+    await wrapper.get('[data-testid="scanjob-set-defect-action"]').trigger('click')
+    await flushPromises()
+
+    expect(setDefect).toHaveBeenCalledWith(70)
+    expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
   })
 
   it('switches to unassigned bucket monitor and renders bucket parcels', async () => {

@@ -231,6 +231,16 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
+  async function setDefect(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/set-defect`)
+    return true
+  }
+
+  async function clearDefect(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/clear-defect`)
+    return true
+  }
+
   async function bulkAssignTnved(parcelIds, tnVed) {
     await fetchWrapper.post(`${baseUrl}/assign-tnved`, {
       tnVed,
@@ -288,6 +298,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     lookupFeacnCode,
     clearCheckStatus,
     checkForDuplicate,
+    setDefect,
+    clearDefect,
     bulkAssignTnved,
     getImageProcessingUrl,
     getImageBlob,

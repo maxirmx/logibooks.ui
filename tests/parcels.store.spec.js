@@ -237,6 +237,26 @@ describe('parcels store', () => {
     expect(result).toBe(true)
   })
 
+  it('sets parcel defect status', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+
+    const result = await store.setDefect(12)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/set-defect`)
+    expect(result).toBe(true)
+  })
+
+  it('clears parcel defect status', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+
+    const result = await store.clearDefect(12)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/clear-defect`)
+    expect(result).toBe(true)
+  })
+
   describe('bulkAssignTnved method', () => {
     it('calls assign-tnved endpoint with payload', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)

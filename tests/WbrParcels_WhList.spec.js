@@ -10,8 +10,10 @@ import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-const { loadParcels } = vi.hoisted(() => ({
-  loadParcels: vi.fn().mockResolvedValue()
+const { loadParcels, setDefect, clearDefect } = vi.hoisted(() => ({
+  loadParcels: vi.fn().mockResolvedValue(),
+  setDefect: vi.fn().mockResolvedValue(true),
+  clearDefect: vi.fn().mockResolvedValue(true)
 }))
 
 const mockItems = ref([
@@ -36,6 +38,9 @@ const mockTotalCount = ref(1)
 const parcelsPerPage = ref(10)
 const parcelsSortBy = ref([])
 const parcelsPage = ref(1)
+const isAdmin = ref(false)
+const isWhManager = ref(false)
+const isShiftLead = ref(false)
 
 const registerItem = ref({ dealNumber: 'D-1' })
 
@@ -71,7 +76,9 @@ vi.mock('@/stores/parcels.store.js', () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
-    totalCount: mockTotalCount
+    totalCount: mockTotalCount,
+    setDefect,
+    clearDefect
   })
 }))
 
@@ -96,7 +103,10 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     parcels_per_page: parcelsPerPage,
     parcels_sort_by: parcelsSortBy,
-    parcels_page: parcelsPage
+    parcels_page: parcelsPage,
+    isAdmin,
+    isWhManager,
+    isShiftLead
   })
 }))
 
@@ -131,6 +141,24 @@ const globalStubs = {
 describe('WbrParcels_WhList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockItems.value = [
+      {
+        id: 1,
+        shk: 'SHK-1',
+        productName: 'Very long WBR product name that must remain on one line',
+        sticker: 'Sticker-1',
+        stickerCode: 'STK-1',
+        boxNumber: 'BOX-1',
+        weightKg: 2.4,
+        quantity: 3,
+        statusId: 7,
+        checkStatus: CheckStatusCode.NotChecked.value,
+        zone: 1
+      }
+    ]
+    isAdmin.value = false
+    isWhManager.value = false
+    isShiftLead.value = false
   })
 
   it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
@@ -176,6 +204,7 @@ describe('WbrParcels_WhList.vue', () => {
 
     const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual([
+      'actions',
       'id',
       'shk',
       'sticker',
@@ -199,5 +228,105 @@ describe('WbrParcels_WhList.vue', () => {
     const productName = wrapper.get('.warehouse-product-name-cell')
     expect(productName.text()).toBe('Very long WBR product name that must remain on one line')
     expect(productName.attributes('title')).toBe('Very long WBR product name that must remain on one line')
+  })
+
+  it('sets defect from row action and reloads parcels for warehouse manager', async () => {
+    isWhManager.value = true
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockClear()
+
+    const setDefectAction = wrapper.get('[data-testid="set-defect-action"]')
+    expect(setDefectAction.attributes('aria-label')).toBe('Брак')
+    expect(setDefectAction.attributes('title')).toBe('Брак')
+
+    await setDefectAction.trigger('click')
+    await resolveAll()
+
+    expect(setDefect).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
+  })
+
+  it('clears defect from row action and reloads parcels for shift lead', async () => {
+    isShiftLead.value = true
+    mockItems.value = [{ ...mockItems.value[0], checkStatus: CheckStatusCode.Defect.value }]
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockClear()
+
+    const clearDefectAction = wrapper.get('[data-testid="clear-defect-action"]')
+    expect(clearDefectAction.attributes('aria-label')).toBe('Отменить брак')
+    expect(clearDefectAction.attributes('title')).toBe('Отменить брак')
+
+    await clearDefectAction.trigger('click')
+    await resolveAll()
+
+    expect(clearDefect).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
+  })
+
+  it('shows reload error message when refresh fails after setting defect', async () => {
+    isWhManager.value = true
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockRejectedValueOnce(new Error('refresh failed'))
+
+    await wrapper.get('[data-testid="set-defect-action"]').trigger('click')
+    await resolveAll()
+
+    expect(setDefect).toHaveBeenCalledWith(1)
+    expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
+  })
+
+  it('disables set defect action for duplicate and partner-marked projection statuses', async () => {
+    isWhManager.value = true
+    mockItems.value = [
+      {
+        ...mockItems.value[0],
+        checkStatus: null,
+        checkStatusProjection: { title: 'Дубликат' }
+      },
+      {
+        ...mockItems.value[0],
+        id: 2,
+        checkStatus: null,
+        checkStatusProjection: { title: 'Исключено партнёром' }
+      }
+    ]
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    const setDefectButtons = wrapper.findAll('[data-testid="set-defect-action"]')
+    expect(setDefectButtons).toHaveLength(2)
+    expect(setDefectButtons[0].attributes('disabled')).toBeDefined()
+    expect(setDefectButtons[1].attributes('disabled')).toBeDefined()
   })
 })

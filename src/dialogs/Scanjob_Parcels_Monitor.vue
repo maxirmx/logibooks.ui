@@ -25,10 +25,11 @@ defineOptions({ name: 'Scanjob_Parcels_Monitor' })
 const props = defineProps({
   box: { type: Object, default: null },
   registerType: { type: Number, default: 0 },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  defectActionLoading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['edit-parcel'])
+const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
 
 const parcels = computed(() => props.box?.parcels ?? [])
 const hasRegisteredParcels = computed(() => parcels.value.some((parcel) => parcel?.isInRegister !== false))
@@ -75,6 +76,14 @@ const emptyText = computed(() => (
 function editParcel(item) {
   emit('edit-parcel', item)
 }
+
+function setDefect(item) {
+  emit('set-defect', item)
+}
+
+function clearDefect(item) {
+  emit('clear-defect', item)
+}
 </script>
 
 <template>
@@ -92,7 +101,10 @@ function editParcel(item) {
           v-else-if="typedTableComponent"
           :parcels="parcels"
           :loading="props.loading"
+          :defect-action-loading="props.defectActionLoading"
           @edit-parcel="editParcel"
+          @set-defect="setDefect"
+          @clear-defect="clearDefect"
         />
 
         <ScanjobParcelsMonitorTable
@@ -100,7 +112,10 @@ function editParcel(item) {
           :headers="scanjobParcelHeaders"
           :parcels="parcels"
           :loading="props.loading"
+          :defect-action-loading="props.defectActionLoading"
           @edit-parcel="editParcel"
+          @set-defect="setDefect"
+          @clear-defect="clearDefect"
         />
       </v-card>
     </div>

@@ -111,8 +111,8 @@ describe('CheckStatusCode', () => {
       expect(CheckStatusCode.hasIssues(CheckStatusCode.Duplicate.value)).toBe(true)
     })
 
-    it('should detect NotFound status as having issues', () => {
-      const value = CheckStatusCode.compose(FCCheckStatus.NotFound, SWCheckStatus.NotFound)
+    it('should detect Defect status as having issues', () => {
+      const value = CheckStatusCode.compose(FCCheckStatus.Defect, SWCheckStatus.Defect)
       expect(CheckStatusCode.hasIssues(value)).toBe(true)
     })
   })
@@ -156,25 +156,25 @@ describe('CheckStatusCode', () => {
     })
   })
 
-  describe('isNotFound method', () => {
-    it('should return true for NotFound status', () => {
-      const value = CheckStatusCode.compose(FCCheckStatus.NotFound, SWCheckStatus.NotFound)
-      expect(CheckStatusCode.isNotFound(value)).toBe(true)
+  describe('isDefect method', () => {
+    it('should return true for Defect status', () => {
+      const value = CheckStatusCode.compose(FCCheckStatus.Defect, SWCheckStatus.Defect)
+      expect(CheckStatusCode.isDefect(value)).toBe(true)
     })
 
-    it('should return false for non-NotFound statuses', () => {
-      expect(CheckStatusCode.isNotFound(CheckStatusCode.NotChecked.value)).toBe(false)
-      expect(CheckStatusCode.isNotFound(CheckStatusCode.NoIssues.value)).toBe(false)
-      expect(CheckStatusCode.isNotFound(CheckStatusCode.Duplicate.value)).toBe(false)
-      expect(CheckStatusCode.isNotFound(CheckStatusCode.MarkedByPartner.value)).toBe(false)
+    it('should return false for non-Defect statuses', () => {
+      expect(CheckStatusCode.isDefect(CheckStatusCode.NotChecked.value)).toBe(false)
+      expect(CheckStatusCode.isDefect(CheckStatusCode.NoIssues.value)).toBe(false)
+      expect(CheckStatusCode.isDefect(CheckStatusCode.Duplicate.value)).toBe(false)
+      expect(CheckStatusCode.isDefect(CheckStatusCode.MarkedByPartner.value)).toBe(false)
     })
 
-    it('should return false when only one component is NotFound', () => {
-      const onlyFc = CheckStatusCode.compose(FCCheckStatus.NotFound, SWCheckStatus.NotChecked)
-      const onlySw = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.NotFound)
+    it('should return false when only one component is Defect', () => {
+      const onlyFc = CheckStatusCode.compose(FCCheckStatus.Defect, SWCheckStatus.NotChecked)
+      const onlySw = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.Defect)
 
-      expect(CheckStatusCode.isNotFound(onlyFc)).toBe(false)
-      expect(CheckStatusCode.isNotFound(onlySw)).toBe(false)
+      expect(CheckStatusCode.isDefect(onlyFc)).toBe(false)
+      expect(CheckStatusCode.isDefect(onlySw)).toBe(false)
     })
   })
 
@@ -225,8 +225,8 @@ describe('CheckStatusCode', () => {
       const duplicate = CheckStatusCode.Duplicate
       expect(duplicate.toString()).toBe('Дубликат')
 
-      const notFound = CheckStatusCode.fromParts(FCCheckStatus.NotFound, SWCheckStatus.NotFound)
-      expect(notFound.toString()).toBe('Не найдена')
+      const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
+      expect(defect.toString()).toBe('Брак')
     })
 
     it('should format individual statuses correctly', () => {
@@ -508,46 +508,46 @@ describe('Integration tests', () => {
     expect(CheckStatusHelper.hasIssues(duplicate.value)).toBe(true)
   })
 
-  it('should correctly handle NotFound status in all operations', () => {
-    const notFound = CheckStatusCode.fromParts(FCCheckStatus.NotFound, SWCheckStatus.NotFound)
+  it('should correctly handle Defect status in all operations', () => {
+    const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
 
-    expect(notFound.fc).toBe(FCCheckStatus.NotFound)
-    expect(notFound.sw).toBe(SWCheckStatus.NotFound)
-    expect(CheckStatusCode.hasIssues(notFound.value)).toBe(true)
-    expect(CheckStatusCode.isNotFound(notFound.value)).toBe(true)
-    expect(notFound.toString()).toBe('Не найдена')
+    expect(defect.fc).toBe(FCCheckStatus.Defect)
+    expect(defect.sw).toBe(SWCheckStatus.Defect)
+    expect(CheckStatusCode.hasIssues(defect.value)).toBe(true)
+    expect(CheckStatusCode.isDefect(defect.value)).toBe(true)
+    expect(defect.toString()).toBe('Брак')
 
-    const decomposed = CheckStatusHelper.decompose(notFound.value)
-    expect(decomposed.fc).toBe(FCCheckStatus.NotFound)
-    expect(decomposed.sw).toBe(SWCheckStatus.NotFound)
-    expect(CheckStatusHelper.hasIssues(notFound.value)).toBe(true)
+    const decomposed = CheckStatusHelper.decompose(defect.value)
+    expect(decomposed.fc).toBe(FCCheckStatus.Defect)
+    expect(decomposed.sw).toBe(SWCheckStatus.Defect)
+    expect(CheckStatusHelper.hasIssues(defect.value)).toBe(true)
   })
 
   it('should distinguish Duplicate from other issue statuses', () => {
     const duplicate = CheckStatusCode.Duplicate
-    const notFound = CheckStatusCode.fromParts(FCCheckStatus.NotFound, SWCheckStatus.NotFound)
+    const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
     const markedByPartner = CheckStatusCode.MarkedByPartner
     const issueStatus = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.IssueStopWord)
     
     // All are issues
     expect(CheckStatusCode.hasIssues(duplicate.value)).toBe(true)
-    expect(CheckStatusCode.hasIssues(notFound.value)).toBe(true)
+    expect(CheckStatusCode.hasIssues(defect.value)).toBe(true)
     expect(CheckStatusCode.hasIssues(markedByPartner.value)).toBe(true)
     expect(CheckStatusCode.hasIssues(issueStatus.value)).toBe(true)
     
-    // Duplicate and NotFound have dedicated detectors
+    // Duplicate and Defect have dedicated detectors
     expect(CheckStatusCode.isDuplicate(duplicate.value)).toBe(true)
-    expect(CheckStatusCode.isNotFound(duplicate.value)).toBe(false)
-    expect(CheckStatusCode.isDuplicate(notFound.value)).toBe(false)
-    expect(CheckStatusCode.isNotFound(notFound.value)).toBe(true)
+    expect(CheckStatusCode.isDefect(duplicate.value)).toBe(false)
+    expect(CheckStatusCode.isDuplicate(defect.value)).toBe(false)
+    expect(CheckStatusCode.isDefect(defect.value)).toBe(true)
     expect(CheckStatusCode.isDuplicate(markedByPartner.value)).toBe(false)
-    expect(CheckStatusCode.isNotFound(markedByPartner.value)).toBe(false)
+    expect(CheckStatusCode.isDefect(markedByPartner.value)).toBe(false)
     expect(CheckStatusCode.isDuplicate(issueStatus.value)).toBe(false)
-    expect(CheckStatusCode.isNotFound(issueStatus.value)).toBe(false)
+    expect(CheckStatusCode.isDefect(issueStatus.value)).toBe(false)
     
     // All have different string representations
     expect(duplicate.toString()).toBe('Дубликат')
-    expect(notFound.toString()).toBe('Не найдена')
+    expect(defect.toString()).toBe('Брак')
     expect(markedByPartner.toString()).toBe('Исключено партнёром')
     expect(issueStatus.toString()).not.toBe('Дубликат')
   })

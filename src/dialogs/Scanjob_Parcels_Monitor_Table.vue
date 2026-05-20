@@ -6,9 +6,14 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
+import {
+  canClearParcelDefect,
+  canSetParcelDefect
+} from '@/helpers/parcel.defect.helpers.js'
 import {
   getScanjobCheckStatusClass,
   scanjobCheckStatusReason,
@@ -26,10 +31,11 @@ defineOptions({ name: 'Scanjob_Parcels_Monitor_Table' })
 const props = defineProps({
   headers: { type: Array, required: true },
   parcels: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  defectActionLoading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['edit-parcel'])
+const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
 
 const authStore = useAuthStore()
 const {
@@ -41,6 +47,7 @@ const {
 
 const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
 const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
+const areDefectActionsBusy = computed(() => props.loading || props.defectActionLoading)
 
 function editParcel(item) {
   if (isParcelCellDisabled.value) {
@@ -64,6 +71,24 @@ function onProductNameClick(item, event) {
   editParcel(item)
 }
 
+function isSetDefectDisabled(item) {
+  return areDefectActionsBusy.value || !canSetParcelDefect(item, authStore)
+}
+
+function isClearDefectDisabled(item) {
+  return areDefectActionsBusy.value || !canClearParcelDefect(item, authStore)
+}
+
+function setDefect(item) {
+  if (isSetDefectDisabled(item)) return
+  emit('set-defect', item)
+}
+
+function clearDefect(item) {
+  if (isClearDefectDisabled(item)) return
+  emit('clear-defect', item)
+}
+
 </script>
 
 <template>
@@ -81,6 +106,31 @@ function onProductNameClick(item, event) {
     class="elevation-1 interlaced-table single-line-table scanjob-monitor-parcels-table"
     data-testid="scanjob-monitor-parcels-table"
   >
+    <template #[`item.actions`]="{ item }">
+      <div class="actions-container">
+        <ActionButton
+          :item="item"
+          icon="fa-solid fa-person-circle-xmark"
+          tooltip-text="Брак"
+          aria-label="Брак"
+          title="Брак"
+          data-testid="scanjob-set-defect-action"
+          @click="setDefect"
+          :disabled="isSetDefectDisabled(item)"
+        />
+        <ActionButton
+          :item="item"
+          icon="fa-solid fa-person-circle-check"
+          tooltip-text="Отменить брак"
+          aria-label="Отменить брак"
+          title="Отменить брак"
+          data-testid="scanjob-clear-defect-action"
+          @click="clearDefect"
+          :disabled="isClearDefectDisabled(item)"
+        />
+      </div>
+    </template>
+
     <template #[`header.scannedInfo`]="{ column }">
       <span class="scanjob-monitor-scanned-info-header">{{ column.title }}</span>
     </template>

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import {
   canClearParcelDefect,
   canSetParcelDefect,
@@ -16,15 +16,8 @@ import {
 } from '@/helpers/parcel.defect.helpers.js'
 
 describe('parcel defect helpers', () => {
-  it('detects special statuses from numeric check status values and numeric strings', () => {
-    expect(isParcelDefect({ checkStatus: CheckStatusCode.Defect.value })).toBe(true)
-    expect(isParcelDefect({ checkStatus: String(CheckStatusCode.Defect.value) })).toBe(true)
-    expect(isParcelDuplicate({ checkStatus: CheckStatusCode.Duplicate.value })).toBe(true)
-    expect(isParcelMarkedByPartner({ checkStatus: CheckStatusCode.MarkedByPartner.value })).toBe(true)
-  })
-
-  it('uses projection text when numeric check status is absent', () => {
-    expect(isParcelDefect({ checkStatusProjection: { title: 'Брак' } })).toBe(true)
+  it('detects special statuses from projection only', () => {
+    expect(isParcelDefect({ checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' } })).toBe(true)
     expect(isParcelDuplicate({ checkStatusProjection: { restrictionReason: 'Дубликат' } })).toBe(true)
     expect(isParcelMarkedByPartner({ checkStatusProjection: { title: 'Исключено партнёром' } })).toBe(true)
   })
@@ -35,33 +28,41 @@ describe('parcel defect helpers', () => {
     expect(isParcelMarkedByPartner({ checkStatusProjection: { title: 'Исключено партнером' } })).toBe(true)
   })
 
-  it('returns false for unrelated statuses and invalid numeric values', () => {
-    expect(isParcelDefect({ checkStatus: 'invalid' })).toBe(false)
+  it('returns false for unrelated projections', () => {
     expect(isParcelDefect({ checkStatusProjection: { title: 'Не проверено' } })).toBe(false)
     expect(isParcelDuplicate({ checkStatusProjection: { title: 'Проверено' } })).toBe(false)
     expect(isParcelMarkedByPartner({ checkStatusProjection: { restrictionReason: 'Нет ограничений' } })).toBe(false)
   })
 
   it('allows setting defect only for administrator or warehouse manager on regular parcels', () => {
-    const parcel = { checkStatus: CheckStatusCode.NotChecked.value }
+    const parcel = {
+      checkStatusProjection: {
+        kind: scanjobCheckStatusProjectionKind.NotChecked,
+        title: 'Не проверено'
+      }
+    }
 
     expect(canSetParcelDefect(parcel, { isAdmin: true, isWhManager: false })).toBe(true)
     expect(canSetParcelDefect(parcel, { isAdmin: ref(false), isWhManager: ref(true) })).toBe(true)
     expect(canSetParcelDefect(parcel, { isAdmin: false, isWhManager: false })).toBe(false)
-    expect(canSetParcelDefect({ checkStatus: CheckStatusCode.Defect.value }, { isAdmin: true })).toBe(false)
-    expect(canSetParcelDefect({ checkStatus: CheckStatusCode.Duplicate.value }, { isAdmin: true })).toBe(false)
-    expect(canSetParcelDefect({ checkStatus: CheckStatusCode.MarkedByPartner.value }, { isAdmin: true })).toBe(false)
+    expect(canSetParcelDefect({}, { isAdmin: true })).toBe(false)
+    expect(canSetParcelDefect({ checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' } }, { isAdmin: true })).toBe(false)
     expect(canSetParcelDefect({ checkStatusProjection: { title: 'Дубликат' } }, { isAdmin: true })).toBe(false)
     expect(canSetParcelDefect({ checkStatusProjection: { title: 'Исключено партнёром' } }, { isAdmin: true })).toBe(false)
   })
 
   it('allows clearing defect only for administrator or shift lead on defect parcels', () => {
-    const parcel = { checkStatus: CheckStatusCode.Defect.value }
+    const parcel = {
+      checkStatusProjection: {
+        kind: scanjobCheckStatusProjectionKind.Defect,
+        title: 'Брак'
+      }
+    }
 
     expect(canClearParcelDefect(parcel, { isAdmin: ref(true), isShiftLead: ref(false) })).toBe(true)
     expect(canClearParcelDefect(parcel, { isAdmin: ref(false), isShiftLead: ref(true) })).toBe(true)
     expect(canClearParcelDefect(parcel, { isAdmin: ref(false), isShiftLead: ref(false) })).toBe(false)
-    expect(canClearParcelDefect({ checkStatus: CheckStatusCode.NotChecked.value }, { isAdmin: true })).toBe(false)
+    expect(canClearParcelDefect({ checkStatusProjection: { title: 'Не проверено' } }, { isAdmin: true })).toBe(false)
     expect(canClearParcelDefect({ checkStatusProjection: { title: 'Брак' } }, { isShiftLead: true })).toBe(true)
   })
 

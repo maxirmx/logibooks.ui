@@ -14,8 +14,10 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
-import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import {
+  getScanjobCheckStatusClass,
+  scanjobCheckStatusReason
+} from '@/helpers/scanjob.check-status.helpers.js'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -75,6 +77,9 @@ watch(maxPage, (v) => {
 const headers = computed(() =>[
   { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
   { title: wbr2RegisterColumnTitles.id, key: 'id', align: 'start' },
+  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: true },
+  { title: 'Зона', key: 'zone', align: 'start' },
+  { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: wbr2RegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbr2RegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
@@ -83,9 +88,6 @@ const headers = computed(() =>[
   { title: wbr2RegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
   { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
-  { title: 'Зона', key: 'zone', align: 'start' },
-  { title: wbr2RegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbr2RegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' },
 ])
 
 const registerHeading = computed(() => {
@@ -160,6 +162,7 @@ async function runDefectAction(item, action, getErrorMessage) {
     await action(item.id)
   } catch (error) {
     alertStore.error(getErrorMessage(error))
+    runningAction.value = false
     return
   }
 
@@ -250,9 +253,25 @@ async function clearParcelDefect(item) {
         <template #[`item.statusId`]="{ item }">
           {{ parcelStatusStore.getStatusTitle(item.statusId) }}
         </template>
-        <template #[`item.checkStatus`]="{ item }">
-          <span :class="`status-cell ${getCheckStatusClass(item.checkStatus)}`">
-            {{ new CheckStatusCode(item.checkStatus).toString() }}
+        <template #[`item.checkStatusProjection`]="{ item }">
+          <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
+            <template #activator="{ props: tooltipProps }">
+              <span
+                v-bind="tooltipProps"
+                :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+              >
+                {{ item.checkStatusProjection?.title }}
+              </span>
+            </template>
+            <template #default>
+              <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
+            </template>
+          </v-tooltip>
+          <span
+            v-else
+            :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+          >
+            {{ item.checkStatusProjection?.title }}
           </span>
         </template>
         <template #[`item.zone`]="{ item }">

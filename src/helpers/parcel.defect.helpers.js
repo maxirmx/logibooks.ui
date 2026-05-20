@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 
 function unrefValue(value) {
   return value && typeof value === 'object' && 'value' in value ? value.value : value
@@ -12,23 +12,26 @@ function isTruthy(value) {
   return Boolean(unrefValue(value))
 }
 
-function getNumericCheckStatus(item) {
-  if (item?.checkStatus === null || item?.checkStatus === undefined || item?.checkStatus === '') {
-    return null
-  }
-
-  const status = Number(item.checkStatus)
-  return Number.isFinite(status) ? status : null
-}
-
 function normalizeStatusText(value) {
   return String(value || '').toLocaleLowerCase('ru-RU')
 }
 
+function getProjection(item) {
+  return item?.checkStatusProjection && typeof item.checkStatusProjection === 'object'
+    ? item.checkStatusProjection
+    : null
+}
+
+function getProjectionKind(item) {
+  const kind = Number(getProjection(item)?.kind)
+  return Number.isFinite(kind) ? kind : null
+}
+
 function getProjectionText(item) {
+  const projection = getProjection(item)
   return [
-    item?.checkStatusProjection?.title,
-    item?.checkStatusProjection?.restrictionReason
+    projection?.title,
+    projection?.restrictionReason
   ].filter(Boolean).map(normalizeStatusText).join('\n')
 }
 
@@ -38,35 +41,22 @@ function projectionIncludes(item, values) {
 }
 
 export function isParcelDefect(item) {
-  const checkStatus = getNumericCheckStatus(item)
-  if (checkStatus !== null) {
-    return CheckStatusCode.isDefect(checkStatus)
-  }
-
-  return projectionIncludes(item, ['Брак'])
+  return getProjectionKind(item) === scanjobCheckStatusProjectionKind.Defect ||
+    projectionIncludes(item, ['Брак'])
 }
 
 export function isParcelDuplicate(item) {
-  const checkStatus = getNumericCheckStatus(item)
-  if (checkStatus !== null) {
-    return CheckStatusCode.isDuplicate(checkStatus)
-  }
-
   return projectionIncludes(item, ['Дубликат'])
 }
 
 export function isParcelMarkedByPartner(item) {
-  const checkStatus = getNumericCheckStatus(item)
-  if (checkStatus !== null) {
-    return checkStatus === CheckStatusCode.MarkedByPartner.value
-  }
-
   return projectionIncludes(item, ['Исключено партнёром', 'Исключено партнером'])
 }
 
 export function canSetParcelDefect(item, authStore) {
   const hasRole = isTruthy(authStore?.isAdmin) || isTruthy(authStore?.isWhManager)
   return hasRole
+    && getProjection(item) !== null
     && !isParcelDefect(item)
     && !isParcelDuplicate(item)
     && !isParcelMarkedByPartner(item)

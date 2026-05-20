@@ -454,7 +454,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(registerSection.text()).toContain('09:30 02.01')
     const parcelProgressPanel = registerSection.get('.scanjob-monitor-parcel-progress-panel')
     expect(parcelProgressPanel.findAll('.scanjob-monitor-parcel-progress-label').map((label) => label.text())).toEqual([
-      'Посылки всего',
+      'Всего',
       'Сканировано',
       'Запретов',
       'Не сканировано'
@@ -470,7 +470,7 @@ describe('Scanjob_Monitor.vue', () => {
     const boxesTable = wrapper.findComponent({ name: 'v-data-table' })
     expect(boxesTable.exists()).toBe(true)
     expect(boxesTable.props('headers').find((header) => header.key === 'parcelsProgress')?.title)
-      .toBe('')
+      .toBe('Посылки')
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])

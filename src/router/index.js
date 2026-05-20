@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
@@ -142,10 +143,43 @@ const router = createRouter({
     },
     {
       path: '/scanjobs/:id/monitor',
-      name: 'Монитор сканирования',
+      name: 'scanjob-monitor-register',
       component: () => import('@/views/Scanjob_Monitor_View.vue'),
       props: (route) => ({
-        id: Number(route.params.id)
+        id: Number(route.params.id),
+        monitorScope: {
+          area: scanjobMonitorArea.Boxes,
+          boxId: null,
+          bucketIndex: null
+        }
+      }),
+      meta: { reqWhRole: true }
+    },
+    {
+      path: '/scanjobs/:id/monitor/boxes/:boxId',
+      name: 'scanjob-monitor-box',
+      component: () => import('@/views/Scanjob_Monitor_View.vue'),
+      props: (route) => ({
+        id: Number(route.params.id),
+        monitorScope: {
+          area: scanjobMonitorArea.Box,
+          boxId: Number(route.params.boxId),
+          bucketIndex: null
+        }
+      }),
+      meta: { reqWhRole: true }
+    },
+    {
+      path: '/scanjobs/:id/monitor/unassigned/:bucketIndex',
+      name: 'scanjob-monitor-unassigned',
+      component: () => import('@/views/Scanjob_Monitor_View.vue'),
+      props: (route) => ({
+        id: Number(route.params.id),
+        monitorScope: {
+          area: scanjobMonitorArea.Unassigned,
+          boxId: null,
+          bucketIndex: Number(route.params.bucketIndex)
+        }
       }),
       meta: { reqWhRole: true }
     },

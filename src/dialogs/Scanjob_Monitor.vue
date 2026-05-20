@@ -71,6 +71,8 @@ const loadedScanjobId = ref(null)
 
 let pendingSnapshot = null
 let throttleTimer = null
+let autoFollowSnapshot = null
+let autoFollowObservationVersion = 0
 
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
@@ -375,6 +377,7 @@ function clearPendingSnapshot() {
 async function resetMonitorObservation() {
   scopeVersion.value += 1
   clearPendingSnapshot()
+  await stopAutoFollowMonitor()
   closedStatus.value = null
   visibleSnapshot.value = null
   await scanJobsStore.stopMonitor().catch(() => {})
@@ -578,6 +581,55 @@ function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
   return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
 }
 
+async function stopAutoFollowMonitor() {
+  autoFollowObservationVersion += 1
+  autoFollowSnapshot = null
+  await scanJobsStore.stopMonitorAutoFollow().catch(() => {})
+}
+
+function applyAutoFollowSnapshot(snapshot, version) {
+  if (
+    !isComponentMounted.value ||
+    version !== autoFollowObservationVersion ||
+    Number(snapshot?.scanJobId) !== Number(props.scanjobId) ||
+    Number(snapshot?.area) !== scanjobMonitorArea.Boxes
+  ) {
+    return
+  }
+
+  const previousSnapshot = autoFollowSnapshot
+  autoFollowSnapshot = snapshot
+
+  if (!previousSnapshot) {
+    return
+  }
+
+  runAutoFollow(previousSnapshot, snapshot, 'live')
+}
+
+async function startAutoFollowMonitor(scope, { subscribe = true, version = scopeVersion.value } = {}) {
+  await stopAutoFollowMonitor()
+
+  const normalized = normalizeMonitorScope(scope)
+  if (!subscribe || !autoFollowEnabled.value || normalized.area === scanjobMonitorArea.Boxes) {
+    return
+  }
+
+  const nextAutoFollowVersion = autoFollowObservationVersion + 1
+  autoFollowObservationVersion = nextAutoFollowVersion
+  autoFollowSnapshot = null
+
+  try {
+    await scanJobsStore.startMonitorAutoFollow(props.scanjobId, {
+      onSnapshot: (nextSnapshot) => applyAutoFollowSnapshot(nextSnapshot, nextAutoFollowVersion)
+    })
+  } catch (error) {
+    if (isComponentMounted.value && version === scopeVersion.value) {
+      alertStore.error(getMonitorErrorMessage(error))
+    }
+  }
+}
+
 function runAutoFollow(previousSnapshot, nextSnapshot, source) {
   if (source !== 'live' || switchingScope.value || isLoading.value) {
     return
@@ -653,6 +705,7 @@ function handleMonitorClosed(scanJobId, status, version) {
 
   closedStatus.value = { scanJobId, status }
   clearPendingSnapshot()
+  stopAutoFollowMonitor().catch(() => {})
   scanJobsStore.stopMonitor().catch(() => {})
 }
 
@@ -674,6 +727,7 @@ async function observeScope(scope, { subscribe = true } = {}) {
   clearPendingSnapshot()
 
   try {
+    await stopAutoFollowMonitor()
     await scanJobsStore.clearMonitor().catch(() => {})
 
     const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, scope)
@@ -685,6 +739,7 @@ async function observeScope(scope, { subscribe = true } = {}) {
         onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version, source: 'live' }),
         onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version)
       })
+      await startAutoFollowMonitor(scope, { subscribe, version })
     }
   } catch (error) {
     if (isComponentMounted.value && version === scopeVersion.value) {
@@ -787,10 +842,32 @@ watch(
   }
 )
 
+watch(
+  autoFollowEnabled,
+  async (enabled) => {
+    if (!scanjobLoaded.value || !isComponentMounted.value || switchingScope.value) {
+      return
+    }
+
+    if (!enabled) {
+      await stopAutoFollowMonitor()
+      return
+    }
+
+    if (isBoxMode.value) {
+      await startAutoFollowMonitor(getCurrentScope(), {
+        subscribe: canSubscribeToMonitor(scanjob.value),
+        version: scopeVersion.value
+      })
+    }
+  }
+)
+
 onUnmounted(() => {
   isComponentMounted.value = false
   scopeVersion.value += 1
   clearPendingSnapshot()
+  stopAutoFollowMonitor().catch(() => {})
   scanJobsStore.stopMonitor().catch(() => {})
 })
 

@@ -13,7 +13,7 @@ const scanjobParcelActionsHeader = { title: '', key: 'actions', align: 'center',
 
 export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
-  { title: '', key: 'parcelsProgress', align: 'start', sortable: false },
+  { title: 'Посылки', key: 'parcelsProgress', align: 'start', sortable: false },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
@@ -103,7 +103,7 @@ export function formatParcelProgress(item) {
 
 export function getParcelProgressStats(item) {
   return [
-    { label: 'Посылки всего', value: formatCount(item?.totalParcels) },
+    { label: 'Всего', value: formatCount(item?.totalParcels) },
     { label: 'Сканировано', value: formatCount(item?.parcelsWithStickerScanned) },
     {
       label: 'Запретов',

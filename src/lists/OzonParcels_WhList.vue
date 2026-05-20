@@ -14,8 +14,10 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
-import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import {
+  getScanjobCheckStatusClass,
+  scanjobCheckStatusReason
+} from '@/helpers/scanjob.check-status.helpers.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -75,15 +77,15 @@ watch(maxPage, (v) => {
 const headers = computed(() => [
   { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
   { title: '№', key: 'id', align: 'start' },
+  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: true },
+  { title: 'Зона', key: 'zone', align: 'start' },
+  { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
-  { title: 'Зона', key: 'zone', align: 'start' },
-  { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'center', width: '170px' },
 ])
 
 const registerHeading = computed(() => {
@@ -248,9 +250,25 @@ async function clearParcelDefect(item) {
         <template #[`item.statusId`]="{ item }">
           {{ parcelStatusStore.getStatusTitle(item.statusId) }}
         </template>
-        <template #[`item.checkStatus`]="{ item }">
-          <span :class="`status-cell ${getCheckStatusClass(item.checkStatus)}`">
-            {{ new CheckStatusCode(item.checkStatus).toString() }}
+        <template #[`item.checkStatusProjection`]="{ item }">
+          <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
+            <template #activator="{ props: tooltipProps }">
+              <span
+                v-bind="tooltipProps"
+                :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+              >
+                {{ item.checkStatusProjection?.title }}
+              </span>
+            </template>
+            <template #default>
+              <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
+            </template>
+          </v-tooltip>
+          <span
+            v-else
+            :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+          >
+            {{ item.checkStatusProjection?.title }}
           </span>
         </template>
         <template #[`item.zone`]="{ item }">

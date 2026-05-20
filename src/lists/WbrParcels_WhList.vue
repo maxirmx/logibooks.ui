@@ -77,7 +77,7 @@ watch(maxPage, (v) => {
 const headers = computed(() =>[
   { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
   { title: '№', key: 'id', align: 'start' },
-  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: false },
+  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: true },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },

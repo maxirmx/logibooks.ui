@@ -226,6 +226,7 @@ describe('Wbr2Parcels_WhList.vue', () => {
       'weightKg',
       'quantity'
     ])
+    expect(wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable).toBe(true)
   })
 
   it('renders product name in a non-wrapping truncated cell', () => {

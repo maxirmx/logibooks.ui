@@ -219,6 +219,7 @@ describe('OzonParcels_WhList.vue', () => {
       'weightKg',
       'quantity'
     ])
+    expect(wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable).toBe(true)
   })
 
   it('sets defect from row action and reloads parcels for warehouse manager', async () => {

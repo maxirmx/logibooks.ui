@@ -51,6 +51,8 @@ const loadMonitorSnapshot = vi.hoisted(() => vi.fn())
 const startMonitor = vi.hoisted(() => vi.fn())
 const clearMonitor = vi.hoisted(() => vi.fn())
 const stopMonitor = vi.hoisted(() => vi.fn())
+const startMonitorAutoFollow = vi.hoisted(() => vi.fn())
+const stopMonitorAutoFollow = vi.hoisted(() => vi.fn())
 const setDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const clearDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const monitorBoxesPerPage = vi.hoisted(() => ({
@@ -297,7 +299,9 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     loadMonitorSnapshot,
     startMonitor,
     clearMonitor,
-    stopMonitor
+    stopMonitor,
+    startMonitorAutoFollow,
+    stopMonitorAutoFollow
   })
 }))
 
@@ -395,6 +399,11 @@ function getAutoFollowAction(wrapper) {
     .find((button) => ['fa-solid fa-link', 'fa-solid fa-link-slash'].includes(button.props('icon')))
 }
 
+function getAutoFollowSnapshotHandler() {
+  const call = startMonitorAutoFollow.mock.calls[startMonitorAutoFollow.mock.calls.length - 1]
+  return call?.[1]?.onSnapshot
+}
+
 describe('Scanjob_Monitor.vue', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -421,6 +430,8 @@ describe('Scanjob_Monitor.vue', () => {
     startMonitor.mockResolvedValue(true)
     clearMonitor.mockResolvedValue(true)
     stopMonitor.mockResolvedValue(true)
+    startMonitorAutoFollow.mockResolvedValue(true)
+    stopMonitorAutoFollow.mockResolvedValue(true)
   })
 
   it('loads and renders register monitor on mount', async () => {
@@ -474,6 +485,17 @@ describe('Scanjob_Monitor.vue', () => {
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
+  })
+
+  it('does not start a separate autofollow observer for the register panel', async () => {
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(startMonitorAutoFollow).not.toHaveBeenCalled()
   })
 
   it('closes via header action', async () => {
@@ -1170,6 +1192,233 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(mockReplace).not.toHaveBeenCalled()
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+  })
+
+  it('starts register autofollow observer while a box panel is open', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    expect(startMonitor).toHaveBeenCalledWith(42, expect.objectContaining({
+      area: 1,
+      boxId: 7
+    }))
+    expect(startMonitorAutoFollow).toHaveBeenCalledWith(42, {
+      onSnapshot: expect.any(Function)
+    })
+  })
+
+  it('uses first register autofollow snapshot as baseline only', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    getAutoFollowSnapshotHandler()({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9010,
+        area: 1,
+        boxId: 8,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    await flushPromises()
+
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('auto-follows from an open box to another box when register stream reports a parcel scan', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onAutoFollowSnapshot = getAutoFollowSnapshotHandler()
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9010,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9011,
+        area: 1,
+        boxId: 8,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    await flushPromises()
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      name: 'scanjob-monitor-box',
+      params: { id: 42, boxId: 8 }
+    })
+  })
+
+  it('keeps an open box when register stream reports another scan in the same box', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onAutoFollowSnapshot = getAutoFollowSnapshotHandler()
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9010,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9011,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    await flushPromises()
+
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('auto-follows from an open box to an unassigned bucket from register stream metadata', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onAutoFollowSnapshot = getAutoFollowSnapshotHandler()
+    onAutoFollowSnapshot({
+      ...registerSnapshotWithUnassignedBucket,
+      latestScan: {
+        scanCodeId: 9010,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    onAutoFollowSnapshot({
+      ...registerSnapshotWithUnassignedBucket,
+      latestScan: {
+        scanCodeId: 9011,
+        area: 2,
+        boxId: null,
+        bucketIndex: 1,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    await flushPromises()
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      name: 'scanjob-monitor-unassigned',
+      params: { id: 42, bucketIndex: 1 }
+    })
+  })
+
+  it('auto-follows from an open box back to register for not-in-register scans', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onAutoFollowSnapshot = getAutoFollowSnapshotHandler()
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9010,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9011,
+        area: 3,
+        boxId: null,
+        bucketIndex: null,
+        scanSource: scannedItemSource.NotInRegister
+      }
+    })
+    await flushPromises()
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      name: 'scanjob-monitor-register',
+      params: { id: 42 }
+    })
+  })
+
+  it('ignores register autofollow snapshots after auto-follow is disabled', async () => {
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: defaultGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const onAutoFollowSnapshot = getAutoFollowSnapshotHandler()
+    await wrapper.find('[data-testid="scanjob-monitor-auto-follow-action"]').trigger('click')
+    await flushPromises()
+
+    onAutoFollowSnapshot({
+      ...registerSnapshot,
+      latestScan: {
+        scanCodeId: 9011,
+        area: 1,
+        boxId: 8,
+        bucketIndex: null,
+        scanSource: scannedItemSource.ParcelSticker
+      }
+    })
+    await flushPromises()
+
+    expect(stopMonitorAutoFollow).toHaveBeenCalled()
+    expect(mockReplace).not.toHaveBeenCalled()
   })
 
   it('switches to boxes view when unregistered parcel scan arrives in box mode', async () => {

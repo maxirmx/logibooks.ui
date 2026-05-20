@@ -6,7 +6,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 
 const { loadParcels, setDefect, clearDefect } = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
@@ -24,7 +24,11 @@ const mockItems = ref([
     weightKg: 2.4,
     quantity: 3,
     statusId: 7,
-    checkStatus: CheckStatusCode.NotChecked.value,
+    checkStatusProjection: {
+      kind: scanjobCheckStatusProjectionKind.NotChecked,
+      title: 'Не проверено',
+      restrictionReason: null
+    },
     zone: 1
   }
 ])
@@ -148,7 +152,11 @@ describe('OzonParcels_WhList.vue', () => {
         weightKg: 2.4,
         quantity: 3,
         statusId: 7,
-        checkStatus: CheckStatusCode.NotChecked.value,
+        checkStatusProjection: {
+          kind: scanjobCheckStatusProjectionKind.NotChecked,
+          title: 'Не проверено',
+          restrictionReason: null
+        },
         zone: 1
       }
     ]
@@ -201,15 +209,15 @@ describe('OzonParcels_WhList.vue', () => {
     expect(headerKeys).toEqual([
       'actions',
       'id',
+      'checkStatusProjection',
+      'zone',
+      'statusId',
       'postingNumber',
       'barcode',
       'boxNumber',
       'productName',
       'weightKg',
-      'quantity',
-      'zone',
-      'statusId',
-      'checkStatus'
+      'quantity'
     ])
   })
 
@@ -242,7 +250,14 @@ describe('OzonParcels_WhList.vue', () => {
 
   it('clears defect from row action and reloads parcels for shift lead', async () => {
     isShiftLead.value = true
-    mockItems.value = [{ ...mockItems.value[0], checkStatus: CheckStatusCode.Defect.value }]
+    mockItems.value = [{
+      ...mockItems.value[0],
+      checkStatusProjection: {
+        kind: scanjobCheckStatusProjectionKind.Defect,
+        title: 'Брак',
+        restrictionReason: 'Брак'
+      }
+    }]
     const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },
       global: { stubs: globalStubs }
@@ -290,13 +305,11 @@ describe('OzonParcels_WhList.vue', () => {
     mockItems.value = [
       {
         ...mockItems.value[0],
-        checkStatus: null,
         checkStatusProjection: { title: 'Дубликат' }
       },
       {
         ...mockItems.value[0],
         id: 2,
-        checkStatus: null,
         checkStatusProjection: { title: 'Исключено партнёром' }
       }
     ]

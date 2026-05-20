@@ -199,7 +199,7 @@ function monitorRouteForScope(scope) {
 function updateMonitorRoute(scope, { replace = false } = {}) {
   const route = monitorRouteForScope(scope)
   const navigate = replace ? router.replace(route) : router.push(route)
-  return navigate.catch(error => {
+  return Promise.resolve(navigate).catch(error => {
     if (isNavigationFailure(error, NavigationFailureType.duplicated)) {
       return false
     }

@@ -157,14 +157,16 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
 
       if (!startPromise || startPromise.connection !== currentConnection) {
-        startPromise = {
+        const pendingStart = {
           connection: currentConnection,
-          promise: currentConnection.start().finally(() => {
-            if (startPromise?.connection === currentConnection) {
-              startPromise = null
-            }
-          })
+          promise: null
         }
+        pendingStart.promise = currentConnection.start().finally(() => {
+          if (startPromise === pendingStart) {
+              startPromise = null
+          }
+        })
+        startPromise = pendingStart
       }
 
       await startPromise.promise
@@ -231,6 +233,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
 
       const currentConnection = connection
+      connection = null
       if (startPromise?.connection === currentConnection) {
         startPromise = null
       }
@@ -243,6 +246,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         connection = null
         return true
       } catch (err) {
+        if (!connection) {
+          connection = currentConnection
+        }
         if (syncErrors) {
           monitorError.value = err
         }

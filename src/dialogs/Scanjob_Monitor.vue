@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -20,11 +20,22 @@ import {
   getClearParcelDefectErrorMessage,
   getSetParcelDefectErrorMessage
 } from '@/helpers/parcel.defect.helpers.js'
-import { isUnassignedMonitorBox } from '@/helpers/scanjob.monitor.helpers.js'
+import {
+  isUnassignedMonitorBox,
+  scanjobMonitorArea
+} from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
 const props = defineProps({
-  scanjobId: { type: Number, required: true }
+  scanjobId: { type: Number, required: true },
+  monitorScope: {
+    type: Object,
+    default: () => ({
+      area: scanjobMonitorArea.Boxes,
+      boxId: null,
+      bucketIndex: null
+    })
+  }
 })
 
 const MODE_REGISTER = 'register'
@@ -39,7 +50,8 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
 const isComponentMounted = ref(true)
-const { loadScanjob } = useScanjobHeading(props.scanjobId, { isComponentMounted })
+const scanjobIdRef = computed(() => props.scanjobId)
+const { loadScanjob } = useScanjobHeading(scanjobIdRef, { isComponentMounted })
 
 const mode = ref(MODE_REGISTER)
 const selectedArea = ref(scanJobsStore.scanjobMonitorArea.Boxes)
@@ -53,6 +65,8 @@ const scopeVersion = ref(0)
 const registerLoading = ref(true)
 const autoFollowEnabled = ref(true)
 const defectActionRunning = ref(false)
+const scanjobLoaded = ref(false)
+const loadedScanjobId = ref(null)
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -112,7 +126,7 @@ async function handleCloseAction() {
   }
 
   if (isBoxMode.value) {
-    await openRegisterMonitor()
+    await navigateToRegisterMonitor({ replace: true })
     return
   }
 
@@ -134,6 +148,72 @@ function openUnregisteredParcels() {
 
 function toggleAutoFollow() {
   autoFollowEnabled.value = !autoFollowEnabled.value
+}
+
+function monitorScopeKey(scope = props.monitorScope) {
+  const normalized = normalizeMonitorScope(scope)
+  return [
+    normalized.area,
+    normalized.boxId ?? '',
+    normalized.bucketIndex ?? ''
+  ].join(':')
+}
+
+function monitorRouteKey() {
+  return `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`
+}
+
+function monitorRouteForScope(scope) {
+  const normalized = normalizeMonitorScope(scope)
+  const params = { id: props.scanjobId }
+
+  if (normalized.area === scanjobMonitorArea.Box) {
+    return {
+      name: 'scanjob-monitor-box',
+      params: { ...params, boxId: normalized.boxId }
+    }
+  }
+
+  if (normalized.area === scanjobMonitorArea.Unassigned) {
+    return {
+      name: 'scanjob-monitor-unassigned',
+      params: { ...params, bucketIndex: normalized.bucketIndex ?? 0 }
+    }
+  }
+
+  return {
+    name: 'scanjob-monitor-register',
+    params
+  }
+}
+
+function updateMonitorRoute(scope, { replace = false } = {}) {
+  const route = monitorRouteForScope(scope)
+  return replace ? router.replace(route) : router.push(route)
+}
+
+function navigateToRegisterMonitor({ replace = false } = {}) {
+  return updateMonitorRoute({ area: scanjobMonitorArea.Boxes }, { replace })
+}
+
+function navigateToBoxMonitor(box, { replace = false } = {}) {
+  if (!box || isLoading.value) {
+    return Promise.resolve(false)
+  }
+
+  const isUnassigned = isUnassignedMonitorBox(box)
+  const boxId = toNumberOrNull(box.boxId)
+  const bucketIndex = toNumberOrNull(box.bucketIndex) ?? 0
+
+  if (!isUnassigned && boxId == null) {
+    return Promise.resolve(false)
+  }
+
+  return updateMonitorRoute({
+    area: isUnassigned ? scanjobMonitorArea.Unassigned : scanjobMonitorArea.Box,
+    boxId: isUnassigned ? null : boxId,
+    bucketIndex: isUnassigned ? bucketIndex : null
+  }, { replace })
 }
 
 async function loadRegister(scanjobData) {
@@ -287,6 +367,51 @@ function toNumberOrNull(value) {
 
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+async function loadScanjobAndRegister() {
+  const loaded = await loadScanjob()
+  if (!isComponentMounted.value || !loaded) {
+    return null
+  }
+
+  await loadRegister(loaded)
+  if (!isComponentMounted.value) {
+    return null
+  }
+
+  loadedScanjobId.value = props.scanjobId
+  scanjobLoaded.value = true
+  return loaded
+}
+
+function normalizeMonitorScope(scope = {}) {
+  const area = toNumberOrNull(scope?.area)
+
+  if (area === scanjobMonitorArea.Box) {
+    const boxId = toNumberOrNull(scope?.boxId)
+    if (boxId != null) {
+      return {
+        area: scanjobMonitorArea.Box,
+        boxId,
+        bucketIndex: null
+      }
+    }
+  }
+
+  if (area === scanjobMonitorArea.Unassigned) {
+    return {
+      area: scanjobMonitorArea.Unassigned,
+      boxId: null,
+      bucketIndex: toNumberOrNull(scope?.bucketIndex) ?? 0
+    }
+  }
+
+  return {
+    area: scanjobMonitorArea.Boxes,
+    boxId: null,
+    bucketIndex: null
+  }
 }
 
 function getSnapshotBoxes(snapshot) {
@@ -453,7 +578,7 @@ function runAutoFollow(previousSnapshot, nextSnapshot, source) {
       return
     }
 
-    void openBoxMonitor(target.box)
+    void navigateToBoxMonitor(target.box, { replace: true })
     return
   }
 
@@ -461,7 +586,7 @@ function runAutoFollow(previousSnapshot, nextSnapshot, source) {
     return
   }
 
-  void openRegisterMonitor()
+  void navigateToRegisterMonitor({ replace: true })
 }
 
 function applySnapshot(snapshot, { version = scopeVersion.value, immediate = false, source = 'manual' } = {}) {
@@ -579,19 +704,62 @@ async function openBoxMonitor(box) {
   })
 }
 
+async function openMonitorScope(scope, { subscribe = canSubscribeToMonitor(scanjob.value) } = {}) {
+  const normalized = normalizeMonitorScope(scope)
+
+  if (normalized.area === scanjobMonitorArea.Box) {
+    mode.value = MODE_BOX
+    selectedArea.value = scanjobMonitorArea.Box
+    selectedBoxId.value = normalized.boxId
+    selectedBucketIndex.value = null
+    await observeScope(buildScope(selectedArea.value, selectedBoxId.value), { subscribe })
+    return
+  }
+
+  if (normalized.area === scanjobMonitorArea.Unassigned) {
+    mode.value = MODE_BOX
+    selectedArea.value = scanjobMonitorArea.Unassigned
+    selectedBoxId.value = null
+    selectedBucketIndex.value = normalized.bucketIndex
+    await observeScope(buildScope(selectedArea.value, null, selectedBucketIndex.value), { subscribe })
+    return
+  }
+
+  await openRegisterMonitor({ subscribe })
+}
+
 onMounted(async () => {
-  const loaded = await loadScanjob()
-  if (isComponentMounted.value && loaded) {
-    await loadRegister(loaded)
-    if (!isComponentMounted.value) {
-      return
-    }
-    await openRegisterMonitor({ subscribe: canSubscribeToMonitor(loaded) })
+  const loaded = await loadScanjobAndRegister()
+  if (loaded) {
+    await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })
   } else if (isComponentMounted.value) {
     registerLoading.value = false
     monitorStatusOnly.value = true
   }
 })
+
+watch(
+  () => monitorRouteKey(),
+  async () => {
+    if (!scanjobLoaded.value || !isComponentMounted.value) {
+      return
+    }
+
+    if (Number(loadedScanjobId.value) !== Number(props.scanjobId)) {
+      scanjobLoaded.value = false
+      const loaded = await loadScanjobAndRegister()
+      if (loaded) {
+        await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })
+      } else if (isComponentMounted.value) {
+        registerLoading.value = false
+        monitorStatusOnly.value = true
+      }
+      return
+    }
+
+    await openMonitorScope(props.monitorScope)
+  }
+)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -604,6 +772,7 @@ defineExpose({
   close,
   openRegisterMonitor,
   openBoxMonitor,
+  openMonitorScope,
   applySnapshot
 })
 </script>
@@ -685,7 +854,7 @@ defineExpose({
           :snapshot="visibleSnapshot"
           :boxes="boxes"
           :loading="isLoading"
-          @open-box="openBoxMonitor"
+          @open-box="navigateToBoxMonitor"
         />
 
         <ScanjobParcelsMonitor

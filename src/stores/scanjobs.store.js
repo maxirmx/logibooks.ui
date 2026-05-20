@@ -156,13 +156,18 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         return currentConnection
       }
 
-      if (!startPromise) {
-        startPromise = currentConnection.start().finally(() => {
-          startPromise = null
-        })
+      if (!startPromise || startPromise.connection !== currentConnection) {
+        startPromise = {
+          connection: currentConnection,
+          promise: currentConnection.start().finally(() => {
+            if (startPromise?.connection === currentConnection) {
+              startPromise = null
+            }
+          })
+        }
       }
 
-      await startPromise
+      await startPromise.promise
       return currentConnection
     }
 
@@ -226,6 +231,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
 
       const currentConnection = connection
+      if (startPromise?.connection === currentConnection) {
+        startPromise = null
+      }
 
       try {
         if (currentConnection.state === signalR.HubConnectionState.Connected) {

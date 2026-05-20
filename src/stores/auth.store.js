@@ -76,10 +76,6 @@ export const useAuthStore = defineStore('auth', () => {
   const scanjobs_search = ref('')
   const scanjobs_sort_by = ref([{ key: 'id', order: 'desc' }])
   const scanjobs_page = ref(1)
-  const scanneditems_per_page = ref(100)
-  const scanneditems_search = ref('')
-  const scanneditems_sort_by = ref([{ key: 'scanTime', order: 'desc' }])
-  const scanneditems_page = ref(1)
   const scanjobmonitor_boxes_per_page = ref(100)
   const scanjobmonitor_boxes_sort_by = ref([{ key: 'boxCode', order: 'asc' }])
   const scanjobmonitor_boxes_page = ref(1)
@@ -290,10 +286,6 @@ export const useAuthStore = defineStore('auth', () => {
     scanjobs_search,
     scanjobs_sort_by,
     scanjobs_page,
-    scanneditems_per_page,
-    scanneditems_search,
-    scanneditems_sort_by,
-    scanneditems_page,
     scanjobmonitor_boxes_per_page,
     scanjobmonitor_boxes_sort_by,
     scanjobmonitor_boxes_page,

@@ -303,6 +303,7 @@ async function runParcelDefectAction(item, action, getErrorMessage) {
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(getErrorMessage(error))
+      defectActionRunning.value = false
     }
     return
   }

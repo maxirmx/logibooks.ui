@@ -160,6 +160,7 @@ async function runDefectAction(item, action, getErrorMessage) {
     await action(item.id)
   } catch (error) {
     alertStore.error(getErrorMessage(error))
+    runningAction.value = false
     return
   }
 

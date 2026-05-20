@@ -12,6 +12,7 @@ import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monit
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 
 const scanjobmonitorParcelsPerPage = ref(50)
 const scanjobmonitorParcelsSortBy = ref([{ key: 'id', order: 'asc' }])
@@ -282,7 +283,7 @@ describe('Scanjob parcel monitor typed tables', () => {
           stickerScanned: true,
           productName: 'Product',
           checkStatus: CheckStatusCode.Defect.value,
-          checkStatusProjection: { kind: 20, title: 'Брак', restrictionReason: null }
+          checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак', restrictionReason: null }
         }]
       },
       global
@@ -292,6 +293,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     const clearButton = wrapper.get('[data-testid="scanjob-clear-defect-action"]')
     expect(setButton.attributes('disabled')).toBeDefined()
     expect(clearButton.attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('.status-cell.has-issues').text()).toBe('Брак')
 
     await clearButton.trigger('click')
     expect(wrapper.emitted('clear-defect')?.[0][0]).toEqual(expect.objectContaining({ id: 42 }))

@@ -141,6 +141,21 @@ const globalStubs = {
 describe('Wbr2Parcels_WhList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockItems.value = [
+      {
+        id: 1,
+        shk: 'SHK-1',
+        productName: 'Very long WBR2 product name that must remain on one line',
+        stickerCode: 'ST-1',
+        wbSticker: 'WB-1',
+        sellerSticker: 'SL-1',
+        weightKg: 2.4,
+        quantity: 3,
+        statusId: 7,
+        checkStatus: CheckStatusCode.NotChecked.value,
+        zone: 1
+      }
+    ]
     isAdmin.value = false
     isWhManager.value = false
     isShiftLead.value = false
@@ -214,5 +229,80 @@ describe('Wbr2Parcels_WhList.vue', () => {
     const productName = wrapper.get('.warehouse-product-name-cell')
     expect(productName.text()).toBe('Very long WBR2 product name that must remain on one line')
     expect(productName.attributes('title')).toBe('Very long WBR2 product name that must remain on one line')
+  })
+
+  it('sets defect from row action and reloads parcels for warehouse manager', async () => {
+    isWhManager.value = true
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockClear()
+
+    await wrapper.get('[data-testid="set-defect-action"]').trigger('click')
+    await resolveAll()
+
+    expect(setDefect).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
+  })
+
+  it('clears defect from row action and reloads parcels for shift lead', async () => {
+    isShiftLead.value = true
+    mockItems.value = [{ ...mockItems.value[0], checkStatus: CheckStatusCode.Defect.value }]
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockClear()
+
+    await wrapper.get('[data-testid="clear-defect-action"]').trigger('click')
+    await resolveAll()
+
+    expect(clearDefect).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
+  })
+
+  it('disables set defect action for duplicate and partner-marked projection statuses', async () => {
+    isWhManager.value = true
+    mockItems.value = [
+      {
+        ...mockItems.value[0],
+        checkStatus: null,
+        checkStatusProjection: { title: 'Дубликат' }
+      },
+      {
+        ...mockItems.value[0],
+        id: 2,
+        checkStatus: null,
+        checkStatusProjection: { title: 'Исключено партнёром' }
+      }
+    ]
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    const setDefectButtons = wrapper.findAll('[data-testid="set-defect-action"]')
+    expect(setDefectButtons).toHaveLength(2)
+    expect(setDefectButtons[0].attributes('disabled')).toBeDefined()
+    expect(setDefectButtons[1].attributes('disabled')).toBeDefined()
   })
 })

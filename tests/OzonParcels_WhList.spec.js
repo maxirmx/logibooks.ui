@@ -236,6 +236,58 @@ describe('OzonParcels_WhList.vue', () => {
     )
   })
 
+  it('clears defect from row action and reloads parcels for shift lead', async () => {
+    isShiftLead.value = true
+    mockItems.value = [{ ...mockItems.value[0], checkStatus: CheckStatusCode.Defect.value }]
+    const wrapper = mount(OzonParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockClear()
+
+    await wrapper.get('[data-testid="clear-defect-action"]').trigger('click')
+    await resolveAll()
+
+    expect(clearDefect).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
+  })
+
+  it('disables set defect action for duplicate and partner-marked projection statuses', async () => {
+    isWhManager.value = true
+    mockItems.value = [
+      {
+        ...mockItems.value[0],
+        checkStatus: null,
+        checkStatusProjection: { title: 'Дубликат' }
+      },
+      {
+        ...mockItems.value[0],
+        id: 2,
+        checkStatus: null,
+        checkStatusProjection: { title: 'Исключено партнёром' }
+      }
+    ]
+    const wrapper = mount(OzonParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    const setDefectButtons = wrapper.findAll('[data-testid="set-defect-action"]')
+    expect(setDefectButtons).toHaveLength(2)
+    expect(setDefectButtons[0].attributes('disabled')).toBeDefined()
+    expect(setDefectButtons[1].attributes('disabled')).toBeDefined()
+  })
+
   it('renders product name in a non-wrapping truncated cell', () => {
     const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },

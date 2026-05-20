@@ -155,4 +155,35 @@ describe('useScanjobHeading', () => {
 
     expect(result).toEqual(mockResult)
   })
+
+  it('resets loading state before a subsequent load finishes', async () => {
+    const firstResult = { id: 5, name: 'Job Five' }
+    mockScanjob.value = firstResult
+    getById.mockResolvedValueOnce(firstResult)
+
+    const { scanjobHeading, scanjobLoading, loadScanjob } = useScanjobHeading(ref(5))
+
+    await loadScanjob()
+    expect(scanjobLoading.value).toBe(false)
+    expect(scanjobHeading.value).toBe('Job Five')
+
+    let resolveScanjob
+    getById.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveScanjob = resolve
+      })
+    )
+
+    const pendingLoad = loadScanjob()
+
+    expect(scanjobLoading.value).toBe(true)
+    expect(scanjobHeading.value).toBe('Загрузка задания на сканирование...')
+
+    resolveScanjob({ id: 6, name: 'Job Six' })
+    mockScanjob.value = { id: 6, name: 'Job Six' }
+    await pendingLoad
+
+    expect(scanjobLoading.value).toBe(false)
+    expect(scanjobHeading.value).toBe('Job Six')
+  })
 })

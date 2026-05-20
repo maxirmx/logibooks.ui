@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 
 let authStore
 const alertClear = vi.fn()
@@ -394,6 +395,50 @@ describe('router guards', () => {
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels/edit/2')
+  })
+
+  describe('scanjob monitor route props', () => {
+    it('maps register monitor route params to props', () => {
+      const routeRecord = router.getRoutes().find((route) => route.name === 'scanjob-monitor-register')
+      const props = routeRecord.props.default({ params: { id: '42' } })
+
+      expect(props).toEqual({
+        id: 42,
+        monitorScope: {
+          area: scanjobMonitorArea.Boxes,
+          boxId: null,
+          bucketIndex: null
+        }
+      })
+    })
+
+    it('maps box monitor route params to props', () => {
+      const routeRecord = router.getRoutes().find((route) => route.name === 'scanjob-monitor-box')
+      const props = routeRecord.props.default({ params: { id: '42', boxId: '7' } })
+
+      expect(props).toEqual({
+        id: 42,
+        monitorScope: {
+          area: scanjobMonitorArea.Box,
+          boxId: 7,
+          bucketIndex: null
+        }
+      })
+    })
+
+    it('maps unassigned monitor route params to props', () => {
+      const routeRecord = router.getRoutes().find((route) => route.name === 'scanjob-monitor-unassigned')
+      const props = routeRecord.props.default({ params: { id: '42', bucketIndex: '1' } })
+
+      expect(props).toEqual({
+        id: 42,
+        monitorScope: {
+          area: scanjobMonitorArea.Unassigned,
+          boxId: null,
+          bucketIndex: 1
+        }
+      })
+    })
   })
 
   describe('root path redirects', () => {

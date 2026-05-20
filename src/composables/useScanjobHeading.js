@@ -23,6 +23,10 @@ export function useScanjobHeading(scanjobId, options = {}) {
   })
 
   async function loadScanjob() {
+    if (isActive()) {
+      scanjobLoading.value = true
+    }
+
     try {
       const loaded = await scanjobsStore.getById(unref(scanjobId))
       if (!loaded && isActive()) {

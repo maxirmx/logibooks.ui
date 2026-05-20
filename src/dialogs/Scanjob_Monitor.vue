@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -197,7 +198,14 @@ function monitorRouteForScope(scope) {
 
 function updateMonitorRoute(scope, { replace = false } = {}) {
   const route = monitorRouteForScope(scope)
-  return replace ? router.replace(route) : router.push(route)
+  const navigate = replace ? router.replace(route) : router.push(route)
+  return navigate.catch(error => {
+    if (isNavigationFailure(error, NavigationFailureType.duplicated)) {
+      return false
+    }
+
+    throw error
+  })
 }
 
 function navigateToRegisterMonitor({ replace = false } = {}) {

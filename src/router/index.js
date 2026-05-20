@@ -133,15 +133,6 @@ const router = createRouter({
       meta: { reqWhManagerRole: true }
     },
     {
-      path: '/scanjobs/:id/scanned-items',
-      name: 'Сканированные позиции',
-      component: () => import('@/views/ScannedItems_View.vue'),
-      props: (route) => ({
-        id: Number(route.params.id)
-      }),
-      meta: { reqWhRole: true }
-    },
-    {
       path: '/scanjobs/:id/monitor',
       name: 'scanjob-monitor-register',
       component: () => import('@/views/Scanjob_Monitor_View.vue'),

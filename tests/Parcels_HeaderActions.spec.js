@@ -317,7 +317,7 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // Header actions include logist actions + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(11)
+    expect(buttons).toHaveLength(10)
 
     const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
     const stopWordsMenu = actionMenus.find(
@@ -344,10 +344,21 @@ describe.each([
     await buttons[1].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
 
-    await buttons[2].trigger('click')
+    const lookupMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Подбор кодов ТН ВЭД'
+    )
+    expect(lookupMenu).toBeTruthy()
+    const [lookupHistoricOption, lookupOption] = lookupMenu.props('options')
+
+    await lookupOption.action()
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
-    await buttons[3].trigger('click')
+    if (capabilities.hasHistoricActions) {
+      expect(lookupHistoricOption.disabled).toBe(false)
+      await lookupHistoricOption.action()
+    } else {
+      expect(lookupHistoricOption.disabled).toBe(true)
+    }
     if (capabilities.hasHistoricActions) {
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
     } else {
@@ -376,14 +387,14 @@ describe.each([
     await notificationsOption.action()
     expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
 
-    await buttons[5].trigger('click')
+    await buttons[4].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    await buttons[8].trigger('click')
+    await buttons[7].trigger('click')
     expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
 
-    // The close button is the last button (index 10); clicking it should emit 'close' from the list
-    await buttons[10].trigger('click')
+    // The close button is the last button (index 9); clicking it should emit 'close' from the list
+    await buttons[9].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 

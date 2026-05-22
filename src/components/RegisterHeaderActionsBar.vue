@@ -88,21 +88,23 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :disabled="disabled"
         @click="run('validate-fc')"
       />
-      <ActionButton
+      <ActionButton2L
         :item="item"
         icon="fa-solid fa-magnifying-glass"
         tooltip-text="Подбор кодов ТН ВЭД"
         :iconSize="iconSize"
         :disabled="disabled"
-        @click="run('lookup')"
-      />
-      <ActionButton
-        :item="item"
-        icon="fa-solid fa-book-skull"
-        tooltip-text="Подбор кодов ТН ВЭД с учётом исторических данных"
-        :iconSize="iconSize"
-        :disabled="disabled || noHistoricData"
-        @click="run('lookup-ex')"
+        :options="[
+          {
+            label: 'С учётом исторических данных',
+            action: () => run('lookup-ex'),
+            disabled: noHistoricData
+          },
+          {
+            label: 'Без учёта исторических данных',
+            action: () => run('lookup')
+          }
+        ]"
       />
     </div>
     <div class="header-actions header-actions-group">

@@ -12,7 +12,6 @@ const props = defineProps({
   parcelsCheckStatusSw: { type: [String, Number], default: null },
   parcelsCheckStatusFc: { type: [String, Number], default: null },
   parcelsHideLegacyRestrictions: { type: Boolean, default: false },
-  parcelsHideLegacyRestrictionsEnabled: { type: Boolean, default: true },
   localTnvedSearch: { type: String, default: '' },
   localParcelNumberSearch: { type: String, default: '' },
   localProductNameSearch: { type: String, default: '' },
@@ -59,9 +58,17 @@ const parcelsHideLegacyRestrictionsOptions = [
   { title: 'Скрыть', value: true },
 ]
 
+function normalizeLegacyRestrictionsValue(value) {
+  if (value && typeof value === 'object' && 'value' in value) {
+    return normalizeLegacyRestrictionsValue(value.value)
+  }
+
+  return value === true || value === 'true'
+}
+
 const parcelsHideLegacyRestrictionsModel = computed({
-  get: () => props.parcelsHideLegacyRestrictions,
-  set: (value) => emit('update:parcelsHideLegacyRestrictions', value),
+  get: () => normalizeLegacyRestrictionsValue(props.parcelsHideLegacyRestrictions),
+  set: (value) => emit('update:parcelsHideLegacyRestrictions', normalizeLegacyRestrictionsValue(value)),
 })
 
 const localTnvedSearchModel = computed({
@@ -85,6 +92,8 @@ const localProductNameSearchModel = computed({
     <v-select
       v-model="parcelsStatusModel"
       :items="statusOptions"
+      item-title="title"
+      item-value="value"
       label="Статус"
       density="compact"
       style="min-width: 250px"
@@ -93,6 +102,8 @@ const localProductNameSearchModel = computed({
     <v-select
       v-model="parcelsCheckStatusSwModel"
       :items="checkStatusOptionsSw"
+      item-title="title"
+      item-value="value"
       label="Статус проверки по стоп-словам"
       density="compact"
       style="min-width: 250px"
@@ -102,6 +113,8 @@ const localProductNameSearchModel = computed({
     <v-select
       v-model="parcelsCheckStatusFcModel"
       :items="checkStatusOptionsFc"
+      item-title="title"
+      item-value="value"
       label="Статус проверки по ТН ВЭД"
       density="compact"
       style="min-width: 250px"
@@ -110,10 +123,12 @@ const localProductNameSearchModel = computed({
     <v-select
       v-model="parcelsHideLegacyRestrictionsModel"
       :items="parcelsHideLegacyRestrictionsOptions"
+      item-title="title"
+      item-value="value"
       label="Применённые запреты"
       density="compact"
       style="min-width: 200px"
-      :disabled="disabledState.selectsDisabled || !parcelsHideLegacyRestrictionsEnabled"
+      :disabled="disabledState.selectsDisabled"
     />
     <v-text-field
       v-model="localTnvedSearchModel"

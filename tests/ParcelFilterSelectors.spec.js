@@ -26,8 +26,8 @@ describe('ParcelFilterSelectors', () => {
       stubs: {
         'v-select': {
           name: 'v-select',
-          props: ['disabled', 'label'],
-          template: '<div class="v-select-stub" :data-label="label" :data-disabled="String(disabled)"></div>',
+          props: ['disabled', 'itemTitle', 'itemValue', 'label'],
+          template: '<div class="v-select-stub" :data-label="label" :data-disabled="String(disabled)" :data-item-title="itemTitle" :data-item-value="itemValue"></div>',
         },
         'v-text-field': {
           name: 'v-text-field',
@@ -96,20 +96,35 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:localParcelNumberSearch')?.[0]).toEqual(['ABC'])
     expect(wrapper.emitted('update:localProductNameSearch')?.[0]).toEqual(['Product X'])
   })
+
+  it('normalizes legacy restrictions select values to booleans', async () => {
+    const wrapper = mountComponent()
+
+    wrapper.vm.parcelsHideLegacyRestrictionsModel = { title: 'Скрыть', value: true }
+    wrapper.vm.parcelsHideLegacyRestrictionsModel = { title: 'Показать', value: false }
+    wrapper.vm.parcelsHideLegacyRestrictionsModel = 'true'
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('update:parcelsHideLegacyRestrictions')).toEqual([
+      [true],
+      [false],
+      [true]
+    ])
+  })
+
+  it('uses explicit item mapping for all select controls', () => {
+    const wrapper = mountComponent()
+
+    wrapper.findAll('.v-select-stub').forEach((select) => {
+      expect(select.attributes('data-item-title')).toBe('title')
+      expect(select.attributes('data-item-value')).toBe('value')
+    })
+  })
+
   it('keeps controls disabled when multiple blocking flags are active', () => {
     const wrapper = mountComponent({ runningAction: true, loading: true, isInitializing: true })
     assertDisabledState(wrapper, true, true)
   })
 
-  it('disables only the legacy restrictions selector when the register has no changed parcels', () => {
-    const wrapper = mountComponent({ parcelsHideLegacyRestrictionsEnabled: false })
-    const selectNodes = wrapper.findAll('.v-select-stub')
-
-    expect(selectNodes).toHaveLength(4)
-    expect(selectNodes[0].attributes('data-disabled')).toBe('false')
-    expect(selectNodes[1].attributes('data-disabled')).toBe('false')
-    expect(selectNodes[2].attributes('data-disabled')).toBe('false')
-    expect(selectNodes[3].attributes('data-label')).toBe('Применённые запреты')
-    expect(selectNodes[3].attributes('data-disabled')).toBe('true')
-  })
 })

@@ -179,15 +179,6 @@ const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка реестра...'
   return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
 })
-const parcelsHideLegacyRestrictionsEnabled = computed(() =>
-  Number(registersStore.item?.parcelsChangedSinceCheckStatusFreeze || 0) > 0
-)
-
-watch(parcelsHideLegacyRestrictionsEnabled, (enabled) => {
-  if (!enabled && parcels_hide_legacy_restrictions.value) {
-    parcels_hide_legacy_restrictions.value = false
-  }
-}, { immediate: true })
 
 async function fetchRegister() {
   if (!isComponentMounted.value) return
@@ -465,7 +456,6 @@ function getGenericTemplateHeaders() {
         :status-options="statusOptions"
         :check-status-options-sw="checkStatusOptionsSw"
         :check-status-options-fc="checkStatusOptionsFc"
-        :parcels-hide-legacy-restrictions-enabled="parcelsHideLegacyRestrictionsEnabled"
         :running-action="runningAction"
         :loading="loading"
         :is-initializing="isInitializing"

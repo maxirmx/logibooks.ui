@@ -12,7 +12,6 @@ const props = defineProps({
   parcelsCheckStatusSw: { type: [String, Number], default: null },
   parcelsCheckStatusFc: { type: [String, Number], default: null },
   parcelsHideLegacyRestrictions: { type: Boolean, default: false },
-  parcelsHideLegacyRestrictionsEnabled: { type: Boolean, default: true },
   localTnvedSearch: { type: String, default: '' },
   localParcelNumberSearch: { type: String, default: '' },
   localProductNameSearch: { type: String, default: '' },

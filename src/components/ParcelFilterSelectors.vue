@@ -113,7 +113,7 @@ const localProductNameSearchModel = computed({
       label="Применённые запреты"
       density="compact"
       style="min-width: 200px"
-      :disabled="disabledState.selectsDisabled || !parcelsHideLegacyRestrictionsEnabled"
+      :disabled="disabledState.selectsDisabled"
     />
     <v-text-field
       v-model="localTnvedSearchModel"

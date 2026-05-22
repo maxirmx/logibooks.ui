@@ -101,15 +101,4 @@ describe('ParcelFilterSelectors', () => {
     assertDisabledState(wrapper, true, true)
   })
 
-  it('disables only the legacy restrictions selector when the register has no changed parcels', () => {
-    const wrapper = mountComponent({ parcelsHideLegacyRestrictionsEnabled: false })
-    const selectNodes = wrapper.findAll('.v-select-stub')
-
-    expect(selectNodes).toHaveLength(4)
-    expect(selectNodes[0].attributes('data-disabled')).toBe('false')
-    expect(selectNodes[1].attributes('data-disabled')).toBe('false')
-    expect(selectNodes[2].attributes('data-disabled')).toBe('false')
-    expect(selectNodes[3].attributes('data-label')).toBe('Применённые запреты')
-    expect(selectNodes[3].attributes('data-disabled')).toBe('true')
-  })
 })

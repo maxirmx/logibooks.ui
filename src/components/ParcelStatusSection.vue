@@ -84,7 +84,7 @@ defineEmits([
           <ActionButton
             :item="item"
             icon="fa-solid fa-spell-check"
-            tooltip-text="Сохранить и проверить стоп слова"
+            tooltip-text="Сохранить и проверить по стоп-словам"
             :disabled="disabled"
             @click="$emit('validate-sw', values)"
             :iconSize="'2x'"
@@ -92,7 +92,7 @@ defineEmits([
           <ActionButton
             :item="item"
             icon="fa-solid fa-book-journal-whills"
-            tooltip-text="Сохранить и проверить стоп слова с учётом исторических данных"
+            tooltip-text="Сохранить и проверить по стоп-словам с учётом исторических данных"
             :disabled="disabled || noHistoricData"
             @click="$emit('validate-sw-ex', values)"
             :iconSize="'2x'"
@@ -100,7 +100,7 @@ defineEmits([
           <ActionButton
             :item="item"
             icon="fa-solid fa-anchor-circle-check"
-            tooltip-text="Сохранить и проверить коды ТН ВЭД"
+            tooltip-text="Сохранить и проверить по кодам ТН ВЭД"
             :disabled="disabled"
             @click="$emit('validate-fc', values)"
             :iconSize="'2x'"

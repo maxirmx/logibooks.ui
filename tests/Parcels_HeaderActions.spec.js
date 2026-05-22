@@ -317,32 +317,43 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // Header actions include logist actions + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(12)
+    expect(buttons).toHaveLength(11)
 
-    await buttons[0].trigger('click')
+    const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
+    const stopWordsMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Проверить по стоп-словам'
+    )
+    expect(stopWordsMenu).toBeTruthy()
+    const [stopWordsHistoricOption, stopWordsOption] = stopWordsMenu.props('options')
+
+    await stopWordsOption.action()
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
 
-    await buttons[1].trigger('click')
+    if (capabilities.hasHistoricActions) {
+      expect(stopWordsHistoricOption.disabled).toBe(false)
+      await stopWordsHistoricOption.action()
+    } else {
+      expect(stopWordsHistoricOption.disabled).toBe(true)
+    }
     if (capabilities.hasHistoricActions) {
       expect(registerHeaderActionsMock.validateRegisterSwEx).toHaveBeenCalled()
     } else {
       expect(registerHeaderActionsMock.validateRegisterSwEx).not.toHaveBeenCalled()
     }
 
-    await buttons[2].trigger('click')
+    await buttons[1].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
 
-    await buttons[3].trigger('click')
+    await buttons[2].trigger('click')
     expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
 
-    await buttons[4].trigger('click')
+    await buttons[3].trigger('click')
     if (capabilities.hasHistoricActions) {
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
     } else {
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
     }
 
-    const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
     const xmlExportMenu = actionMenus.find(
       (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
     )
@@ -365,14 +376,14 @@ describe.each([
     await notificationsOption.action()
     expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
 
-    await buttons[6].trigger('click')
+    await buttons[5].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    await buttons[9].trigger('click')
+    await buttons[8].trigger('click')
     expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
 
-    // The close button is the last button (index 11); clicking it should emit 'close' from the list
-    await buttons[11].trigger('click')
+    // The close button is the last button (index 10); clicking it should emit 'close' from the list
+    await buttons[10].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 

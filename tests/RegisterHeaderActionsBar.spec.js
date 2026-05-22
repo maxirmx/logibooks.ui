@@ -144,6 +144,29 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('export-notifications')).toHaveLength(1)
   })
 
+  it('emits stop-word validation events when corresponding menu options are used', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const actionMenus = wrapper.findAllComponents(ActionButton2L)
+    const stopWordsMenu = actionMenus.find(
+      (component) => component.props('tooltipText') === 'Проверить по стоп-словам'
+    )
+
+    expect(stopWordsMenu).toBeTruthy()
+    expect(stopWordsMenu.props('icon')).toBe('fa-solid fa-spell-check')
+
+    const [historicOption, ordinaryOption] = stopWordsMenu.props('options')
+
+    await ordinaryOption.action(baseProps.item)
+    await historicOption.action(baseProps.item)
+
+    expect(wrapper.emitted('validate-sw')).toHaveLength(1)
+    expect(wrapper.emitted('validate-sw-ex')).toHaveLength(1)
+  })
+
   it('disables historic data actions when noHistoricData is true', () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, noHistoricData: true },
@@ -151,24 +174,24 @@ describe('RegisterHeaderActionsBar', () => {
     })
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
+    const actionMenus = wrapper.findAllComponents(ActionButton2L)
     const getButtonByTooltip = (tooltipText) =>
       actionButtons.find((button) => button.props('tooltipText') === tooltipText)
+    const getMenuByTooltip = (tooltipText) =>
+      actionMenus.find((button) => button.props('tooltipText') === tooltipText)
 
-    const stopWordsHistoric = getButtonByTooltip(
-      'Проверить по стоп-словам с учётом исторических данных'
-    )
+    const stopWords = getMenuByTooltip('Проверить по стоп-словам')
     const lookupHistoric = getButtonByTooltip(
       'Подбор кодов ТН ВЭД с учётом исторических данных'
     )
-    const stopWords = getButtonByTooltip('Проверить по стоп-словам')
 
-    expect(stopWordsHistoric).toBeTruthy()
-    expect(lookupHistoric).toBeTruthy()
     expect(stopWords).toBeTruthy()
+    expect(lookupHistoric).toBeTruthy()
 
-    expect(stopWordsHistoric.props('disabled')).toBe(true)
-    expect(lookupHistoric.props('disabled')).toBe(true)
     expect(stopWords.props('disabled')).toBe(false)
+    expect(stopWords.props('options')[0].disabled).toBe(true)
+    expect(stopWords.props('options')[1].disabled).toBeUndefined()
+    expect(lookupHistoric.props('disabled')).toBe(true)
   })
 
   it('emits freeze tn ved order action from the same group as close', async () => {

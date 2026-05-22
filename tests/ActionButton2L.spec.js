@@ -161,4 +161,20 @@ describe('ActionButton2L', () => {
 
     expect(exposed(wrapper).isMenuOpen.value).toBe(false)
   })
+
+  it('closes menu on outside click without selecting an option', async () => {
+    const wrapper = createWrapper()
+
+    await wrapper.find('button').trigger('click')
+    await settle(wrapper)
+    expect(exposed(wrapper).isMenuOpen.value).toBe(true)
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await settle(wrapper)
+
+    expect(exposed(wrapper).isMenuOpen.value).toBe(false)
+    expect(options[0].action).not.toHaveBeenCalled()
+    expect(options[1].action).not.toHaveBeenCalled()
+    expect(options[2].action).not.toHaveBeenCalled()
+  })
 })

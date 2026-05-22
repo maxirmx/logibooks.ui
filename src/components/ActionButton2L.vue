@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import ActionButton from './ActionButton.vue'
 import { actionButtonProps } from './actionButtonShared'
 
@@ -68,7 +68,7 @@ async function openMenu() {
   }
 }
 
-function closeMenu() {
+function closeMenu({ restoreFocus = true } = {}) {
   if (!isMenuOpen.value) {
     return
   }
@@ -76,10 +76,12 @@ function closeMenu() {
   isMenuOpen.value = false
   emit('close')
   resetFocus()
-  nextTick(() => {
-    const buttonEl = rootRef.value?.querySelector('button')
-    buttonEl?.focus()
-  })
+  if (restoreFocus) {
+    nextTick(() => {
+      const buttonEl = rootRef.value?.querySelector('button')
+      buttonEl?.focus()
+    })
+  }
 }
 
 function toggleMenu() {
@@ -150,6 +152,15 @@ function handleOptionClick(index) {
   activateOption(index)
 }
 
+function handleDocumentClick(event) {
+  const root = rootRef.value
+  if (!root || root.contains(event.target)) {
+    return
+  }
+
+  closeMenu({ restoreFocus: false })
+}
+
 function handleKeydown(event) {
   if (effectiveDisabled.value) {
     return
@@ -191,6 +202,18 @@ watch(() => props.disabled, value => {
   if (value) {
     closeMenu()
   }
+})
+
+watch(isMenuOpen, value => {
+  if (value) {
+    document.addEventListener('click', handleDocumentClick)
+  } else {
+    document.removeEventListener('click', handleDocumentClick)
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
 })
 
 defineExpose({

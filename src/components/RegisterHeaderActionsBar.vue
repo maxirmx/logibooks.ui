@@ -62,21 +62,23 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         <span class="spinner-border spinner-border-m"></span>
     </div>
     <div v-if="isSrLogistPlus" class="header-actions header-actions-group">
-      <ActionButton
+      <ActionButton2L
         :item="item"
         icon="fa-solid fa-spell-check"
         tooltip-text="Проверить по стоп-словам"
         :iconSize="iconSize"
         :disabled="disabled"
-        @click="run('validate-sw')"
-      />
-      <ActionButton
-        :item="item"
-        icon="fa-solid fa-book-journal-whills"
-        tooltip-text="Проверить по стоп-словам с учётом исторических данных"
-        :iconSize="iconSize"
-        :disabled="disabled || noHistoricData"
-        @click="run('validate-sw-ex')"
+        :options="[
+          {
+            label: 'С учётом исторических данных',
+            action: () => run('validate-sw-ex'),
+            disabled: noHistoricData
+          },
+          {
+            label: 'Без учёта исторических данных',
+            action: () => run('validate-sw')
+          }
+        ]"
       />
       <ActionButton
         :item="item"

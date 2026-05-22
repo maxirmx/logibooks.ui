@@ -531,6 +531,7 @@ describe('auth store', () => {
         parcels_status: 'active',
         parcels_check_status_sw: 'checked',
         parcels_check_status_fc: 'verified',
+        parcels_hide_legacy_restrictions: true,
         parcels_tnved: '1234567890',
         parcels_number: 'TEST-123',
         parcels_product_name: 'Phone',
@@ -552,6 +553,7 @@ describe('auth store', () => {
       expect(store.parcels_status).toBe(snapshot.parcels_status)
       expect(store.parcels_check_status_sw).toBe(snapshot.parcels_check_status_sw)
       expect(store.parcels_check_status_fc).toBe(snapshot.parcels_check_status_fc)
+      expect(store.parcels_hide_legacy_restrictions).toBe(snapshot.parcels_hide_legacy_restrictions)
       expect(store.parcels_tnved).toBe(snapshot.parcels_tnved)
       expect(store.parcels_number).toBe(snapshot.parcels_number)
       expect(store.parcels_product_name).toBe(snapshot.parcels_product_name)
@@ -590,6 +592,7 @@ describe('auth store', () => {
       // Verify default values are used
       expect(store.parcels_sort_by).toEqual([{ key: 'id', order: 'asc' }])
       expect(store.parcels_status).toBeNull()
+      expect(store.parcels_hide_legacy_restrictions).toBe(false)
       expect(store.parcels_page).toBe(1)
       expect(store.parcels_per_page).toBe(100)
     })

@@ -244,6 +244,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.freezeTnVedOrder(item.id)
   }
 
+  async function freezeCheckStatus(item) {
+    await registersStore.freezeCheckStatus(item.id)
+  }
+
   function cancelValidationWrapper() {
     const isFeacnLookup =
       validationState.operation === 'lookup-feacn-codes'
@@ -277,6 +281,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     exportAllXmlNotifications,
     downloadRegister,
     downloadTechdoc,
+    freezeCheckStatus,
     freezeTnVedOrder,
     cancelValidation: cancelValidationWrapper,
     stopPolling
@@ -305,6 +310,7 @@ export function useRegisterHeaderActions({
     exportAllXmlNotifications,
     downloadRegister,
     downloadTechdoc,
+    freezeCheckStatus,
     freezeTnVedOrder,
     cancelValidation,
     stopPolling
@@ -409,6 +415,10 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(freezeTnVedOrder, 'freeze-tnved-order')
   }
 
+  const runFreezeCheckStatus = async () => {
+    await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
+  }
+
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
@@ -447,6 +457,7 @@ export function useRegisterHeaderActions({
     exportAllXmlNotifications: runExportAllXmlNotifications,    
     downloadRegister: runDownloadRegister,
     downloadTechdoc: runDownloadTechdoc,
+    freezeCheckStatus: runFreezeCheckStatus,
     freezeTnVedOrder: runFreezeTnVedOrder,
     cancelValidation,
     stop

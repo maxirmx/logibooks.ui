@@ -67,6 +67,7 @@ function handleSelectClick() {
       parcels_status: authStore.parcels_status?.value ?? authStore.parcels_status,
       parcels_check_status_sw: authStore.parcels_check_status_sw?.value ?? authStore.parcels_check_status_sw,
       parcels_check_status_fc: authStore.parcels_check_status_fc?.value ?? authStore.parcels_check_status_fc,
+      parcels_hide_legacy_restrictions: authStore.parcels_hide_legacy_restrictions?.value ?? authStore.parcels_hide_legacy_restrictions,
       parcels_tnved: authStore.parcels_tnved?.value ?? authStore.parcels_tnved,
       parcels_number: authStore.parcels_number?.value ?? authStore.parcels_number,
       parcels_product_name: authStore.parcels_product_name?.value ?? authStore.parcels_product_name,

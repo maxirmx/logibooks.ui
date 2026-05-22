@@ -51,6 +51,7 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlOrdinary: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     exportAllXmlNotifications: vi.fn(),    
+    freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     cancelValidation: vi.fn(),
@@ -130,6 +131,7 @@ function setupStores() {
     parcels_status: ref(null),
     parcels_check_status_sw: ref(null),
     parcels_check_status_fc: ref(null),
+    parcels_hide_legacy_restrictions: ref(false),
     parcels_tnved: ref(''),
     parcels_number: ref(''),
     parcels_product_name: ref(''),
@@ -168,6 +170,7 @@ vi.mock('pinia', async () => {
             parcels_status: stores.auth.parcels_status,
             parcels_check_status_sw: stores.auth.parcels_check_status_sw,
             parcels_check_status_fc: stores.auth.parcels_check_status_fc,
+            parcels_hide_legacy_restrictions: stores.auth.parcels_hide_legacy_restrictions,
             parcels_tnved: stores.auth.parcels_tnved,
             parcels_number: stores.auth.parcels_number,
             parcels_product_name: stores.auth.parcels_product_name,
@@ -314,7 +317,7 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // Header actions include logist actions + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(11)
+    expect(buttons).toHaveLength(12)
 
     await buttons[0].trigger('click')
     expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
@@ -365,8 +368,11 @@ describe.each([
     await buttons[6].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    // The close button is the last button (index 10); clicking it should emit 'close' from the list
-    await buttons[10].trigger('click')
+    await buttons[9].trigger('click')
+    expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
+
+    // The close button is the last button (index 11); clicking it should emit 'close' from the list
+    await buttons[11].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 
@@ -417,6 +423,24 @@ describe.each([
     await wrapper.vm.freezeTnVedOrderAndRefetch()
     expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(2)
     expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
+  })
+
+  it('refetches register and parcels after check status freeze', async () => {
+    const wrapper = mount(Component, {
+      props: { registerId: 14 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+    loadParcelsMock.mockClear()
+    stores.registers.getById.mockClear()
+    registerHeaderActionsMock.freezeCheckStatus.mockClear()
+
+    await wrapper.vm.freezeCheckStatusAndRefetch()
+
+    expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalledTimes(1)
+    expect(stores.registers.getById).toHaveBeenCalledWith(14)
+    expect(loadParcelsMock).toHaveBeenCalledTimes(1)
   })
 
   it('hides header actions when user lacks permissions', async () => {

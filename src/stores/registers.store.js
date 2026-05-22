@@ -466,6 +466,19 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function freezeCheckStatus(id) {
+    loading.value = true
+    error.value = null
+    try {
+      return await fetchWrapper.post(`${baseUrl}/${id}/freeze-check-status`)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   function normalizeDownloadSuffix(forZone, zoneLabel) {
     if (forZone === null || forZone === undefined || forZone === 0) {
       return ''
@@ -580,6 +593,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadInvoiceFile,
     download,
     downloadTechdoc,
+    freezeCheckStatus,
     freezeTnVedOrder,
     nextParcels,
     remove,

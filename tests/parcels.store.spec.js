@@ -31,6 +31,7 @@ const mockAuthStore = {
   parcels_status: null,
   parcels_check_status_sw: null,
   parcels_check_status_fc: null,
+  parcels_hide_legacy_restrictions: false,
   parcels_tnved: '',
   parcels_number: '',
   parcels_product_name: ''
@@ -51,6 +52,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_status = null
     mockAuthStore.parcels_check_status_sw = null
     mockAuthStore.parcels_check_status_fc = null
+    mockAuthStore.parcels_hide_legacy_restrictions = false
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
     mockAuthStore.parcels_product_name = ''
@@ -116,6 +118,17 @@ describe('parcels store', () => {
     await store.getAll(3)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels?registerId=3&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=2&checkStatusFc=4&tnVed=BB`
+    )
+  })
+
+  it('fetches data with hidden legacy restrictions filter', async () => {
+    mockAuthStore.parcels_hide_legacy_restrictions = true
+
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+    await store.getAll(1)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&hideLegacyRestrictions=true`
     )
   })
 

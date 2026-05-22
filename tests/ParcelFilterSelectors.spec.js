@@ -16,6 +16,7 @@ describe('ParcelFilterSelectors', () => {
       parcelsStatus: null,
       parcelsCheckStatusSw: null,
       parcelsCheckStatusFc: null,
+      parcelsHideLegacyRestrictions: false,
       localTnvedSearch: '',
       localParcelNumberSearch: '',
       localProductNameSearch: '',
@@ -41,7 +42,7 @@ describe('ParcelFilterSelectors', () => {
     const selectNodes = wrapper.findAll('.v-select-stub')
     const textFieldNodes = wrapper.findAll('.v-text-field-stub')
 
-    expect(selectNodes).toHaveLength(3)
+    expect(selectNodes).toHaveLength(4)
     expect(textFieldNodes).toHaveLength(3)
 
     selectNodes.forEach((node) => {
@@ -80,6 +81,7 @@ describe('ParcelFilterSelectors', () => {
     wrapper.vm.parcelsStatusModel = 'status'
     wrapper.vm.parcelsCheckStatusSwModel = 'sw'
     wrapper.vm.parcelsCheckStatusFcModel = 'fc'
+    wrapper.vm.parcelsHideLegacyRestrictionsModel = true
     wrapper.vm.localTnvedSearchModel = '1234'
     wrapper.vm.localParcelNumberSearchModel = 'ABC'
     wrapper.vm.localProductNameSearchModel = 'Product X'
@@ -89,6 +91,7 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:parcelsStatus')?.[0]).toEqual(['status'])
     expect(wrapper.emitted('update:parcelsCheckStatusSw')?.[0]).toEqual(['sw'])
     expect(wrapper.emitted('update:parcelsCheckStatusFc')?.[0]).toEqual(['fc'])
+    expect(wrapper.emitted('update:parcelsHideLegacyRestrictions')?.[0]).toEqual([true])
     expect(wrapper.emitted('update:localTnvedSearch')?.[0]).toEqual(['1234'])
     expect(wrapper.emitted('update:localParcelNumberSearch')?.[0]).toEqual(['ABC'])
     expect(wrapper.emitted('update:localProductNameSearch')?.[0]).toEqual(['Product X'])
@@ -96,5 +99,17 @@ describe('ParcelFilterSelectors', () => {
   it('keeps controls disabled when multiple blocking flags are active', () => {
     const wrapper = mountComponent({ runningAction: true, loading: true, isInitializing: true })
     assertDisabledState(wrapper, true, true)
+  })
+
+  it('disables only the legacy restrictions selector when the register has no changed parcels', () => {
+    const wrapper = mountComponent({ parcelsHideLegacyRestrictionsEnabled: false })
+    const selectNodes = wrapper.findAll('.v-select-stub')
+
+    expect(selectNodes).toHaveLength(4)
+    expect(selectNodes[0].attributes('data-disabled')).toBe('false')
+    expect(selectNodes[1].attributes('data-disabled')).toBe('false')
+    expect(selectNodes[2].attributes('data-disabled')).toBe('false')
+    expect(selectNodes[3].attributes('data-label')).toBe('Применённые запреты')
+    expect(selectNodes[3].attributes('data-disabled')).toBe('true')
   })
 })

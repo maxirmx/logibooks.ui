@@ -47,6 +47,7 @@ describe('useRegisterHeaderActions', () => {
       generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
+      freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
     }
@@ -210,6 +211,35 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.show).toBe(true)
     expect(actionDialog.title).toBe('Сортировка')
     expect(registersStore.freezeTnVedOrder).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await promise
+
+    expect(actionDialog.show).toBe(false)
+    expect(actionDialog.title).toBe('')
+  })
+
+  it('shows action dialog while freeze check status runs', async () => {
+    const deferred = createDeferred()
+    registersStore.freezeCheckStatus.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const { actionDialog, freezeCheckStatus } = actions
+
+    const promise = freezeCheckStatus()
+
+    expect(actionDialog.show).toBe(true)
+    expect(actionDialog.title).toBe('Применение запретов')
+    expect(registersStore.freezeCheckStatus).toHaveBeenCalledWith(1)
 
     deferred.resolve()
     await promise

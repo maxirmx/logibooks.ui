@@ -27,6 +27,7 @@ const emit = defineEmits([
   'export-notifications',
   'download',
   'download-techdoc',
+  'freeze-check-status',
   'freeze-tnved-order',
   'close',
 ])
@@ -167,6 +168,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        v-if="isShiftLeadPlus"
+        :item="item"
+        icon="fa-solid fa-xmarks-lines"
+        tooltip-text="Применить запреты"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('freeze-check-status')"
+      />
       <ActionButton
         v-if="isShiftLeadPlus"
         :item="item"

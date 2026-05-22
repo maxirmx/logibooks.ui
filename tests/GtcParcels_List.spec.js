@@ -93,6 +93,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     parcels_status: ref(null),
     parcels_check_status_sw: ref(null),
     parcels_check_status_fc: ref(null),
+    parcels_hide_legacy_restrictions: ref(false),
     parcels_tnved: ref(''),
     parcels_number: ref(''),
     parcels_product_name: ref(''),

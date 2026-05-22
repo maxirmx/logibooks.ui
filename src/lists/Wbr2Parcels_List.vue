@@ -74,6 +74,7 @@ const {
   parcels_status,
   parcels_check_status_sw,
   parcels_check_status_fc,
+  parcels_hide_legacy_restrictions,
   parcels_tnved,
   parcels_number,
   parcels_product_name,
@@ -176,6 +177,15 @@ const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка реестра...'
   return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
 })
+const parcelsHideLegacyRestrictionsEnabled = computed(() =>
+  Number(registersStore.item?.parcelsChangedSinceCheckStatusFreeze || 0) > 0
+)
+
+watch(parcelsHideLegacyRestrictionsEnabled, (enabled) => {
+  if (!enabled && parcels_hide_legacy_restrictions.value) {
+    parcels_hide_legacy_restrictions.value = false
+  }
+}, { immediate: true })
 
 async function fetchRegister() {
   if (!isComponentMounted.value) return
@@ -216,6 +226,7 @@ const {
   exportAllXmlNotifications: exportRegisterXmlNotifications,
   downloadRegister: downloadRegisterFile,
   downloadTechdoc: downloadTechdocFile,
+  freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
@@ -240,7 +251,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_hide_legacy_restrictions],
   () => triggerLoad(),
   { immediate: false }
 )
@@ -399,6 +410,12 @@ async function freezeTnVedOrderAndRefetch() {
   }
 }
 
+async function freezeCheckStatusAndRefetch() {
+  await freezeCheckStatusHeader()
+  await fetchRegister()
+  await loadParcelsWrapper()
+}
+
 function editParcel(item) {
   selectedParcelId.value = item.id
   navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
@@ -441,6 +458,7 @@ function getGenericTemplateHeaders() {
         @export-notifications="exportRegisterXmlNotifications"
         @download="downloadRegisterFile"
         @download-techdoc="downloadTechdocFile"
+        @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
         @close="closeList"
       />
@@ -453,12 +471,14 @@ function getGenericTemplateHeaders() {
         v-model:parcels-status="parcels_status"
         v-model:parcels-check-status-sw="parcels_check_status_sw"
         v-model:parcels-check-status-fc="parcels_check_status_fc"
+        v-model:parcels-hide-legacy-restrictions="parcels_hide_legacy_restrictions"
         v-model:local-tnved-search="localTnvedSearch"
         v-model:local-parcel-number-search="localParcelNumberSearch"
         v-model:local-product-name-search="localProductNameSearch"
         :status-options="statusOptions"
         :check-status-options-sw="checkStatusOptionsSw"
         :check-status-options-fc="checkStatusOptionsFc"
+        :parcels-hide-legacy-restrictions-enabled="parcelsHideLegacyRestrictionsEnabled"
         :running-action="runningAction"
         :loading="loading"
         :is-initializing="isInitializing"

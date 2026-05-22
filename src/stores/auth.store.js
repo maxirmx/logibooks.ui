@@ -106,6 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
   const parcels_status = ref(null)
   const parcels_check_status_sw = ref(null)
   const parcels_check_status_fc = ref(null)
+  const parcels_hide_legacy_restrictions = ref(false)
   const parcels_tnved = ref('')
   const parcels_number = ref('')
   const parcels_product_name = ref('')
@@ -252,6 +253,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (snap.parcels_status != null) parcels_status.value = snap.parcels_status
         if (snap.parcels_check_status_sw != null) parcels_check_status_sw.value = snap.parcels_check_status_sw
         if (snap.parcels_check_status_fc != null) parcels_check_status_fc.value = snap.parcels_check_status_fc
+        if (snap.parcels_hide_legacy_restrictions != null) parcels_hide_legacy_restrictions.value = snap.parcels_hide_legacy_restrictions
         if (snap.parcels_tnved != null) parcels_tnved.value = snap.parcels_tnved
         if (snap.parcels_number != null) parcels_number.value = snap.parcels_number
         if (snap.parcels_product_name != null) parcels_product_name.value = snap.parcels_product_name
@@ -314,6 +316,7 @@ export const useAuthStore = defineStore('auth', () => {
     parcels_status,
     parcels_check_status_sw,
     parcels_check_status_fc,
+    parcels_hide_legacy_restrictions,
     parcels_tnved,
     parcels_number,
     parcels_product_name,

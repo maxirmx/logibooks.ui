@@ -11,6 +11,8 @@ const props = defineProps({
   parcelsStatus: { type: [String, Number], default: null },
   parcelsCheckStatusSw: { type: [String, Number], default: null },
   parcelsCheckStatusFc: { type: [String, Number], default: null },
+  parcelsHideLegacyRestrictions: { type: Boolean, default: false },
+  parcelsHideLegacyRestrictionsEnabled: { type: Boolean, default: true },
   localTnvedSearch: { type: String, default: '' },
   localParcelNumberSearch: { type: String, default: '' },
   localProductNameSearch: { type: String, default: '' },
@@ -20,6 +22,7 @@ const emit = defineEmits([
   'update:parcelsStatus',
   'update:parcelsCheckStatusSw',
   'update:parcelsCheckStatusFc',
+  'update:parcelsHideLegacyRestrictions',
   'update:localTnvedSearch',
   'update:localParcelNumberSearch',
   'update:localProductNameSearch',
@@ -49,6 +52,16 @@ const parcelsCheckStatusSwModel = computed({
 const parcelsCheckStatusFcModel = computed({
   get: () => props.parcelsCheckStatusFc,
   set: (value) => emit('update:parcelsCheckStatusFc', value),
+})
+
+const parcelsHideLegacyRestrictionsOptions = [
+  { title: 'Показать', value: false },
+  { title: 'Скрыть', value: true },
+]
+
+const parcelsHideLegacyRestrictionsModel = computed({
+  get: () => props.parcelsHideLegacyRestrictions,
+  set: (value) => emit('update:parcelsHideLegacyRestrictions', value),
 })
 
 const localTnvedSearchModel = computed({
@@ -93,6 +106,14 @@ const localProductNameSearchModel = computed({
       density="compact"
       style="min-width: 250px"
       :disabled="disabledState.selectsDisabled"
+    />
+    <v-select
+      v-model="parcelsHideLegacyRestrictionsModel"
+      :items="parcelsHideLegacyRestrictionsOptions"
+      label="Применённые запреты"
+      density="compact"
+      style="min-width: 200px"
+      :disabled="disabledState.selectsDisabled || !parcelsHideLegacyRestrictionsEnabled"
     />
     <v-text-field
       v-model="localTnvedSearchModel"

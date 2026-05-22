@@ -1485,4 +1485,29 @@ describe('registers store', () => {
       expect(store.loading).toBe(false)
     })
   })
+
+  describe('freezeCheckStatus', () => {
+    it('calls freeze check status endpoint and resets loading state after success', async () => {
+      fetchWrapper.post.mockResolvedValueOnce(undefined)
+
+      const store = useRegistersStore()
+      await expect(store.freezeCheckStatus(77)).resolves.toBeUndefined()
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/freeze-check-status`)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('stores and rethrows error from freeze check status endpoint', async () => {
+      const err = new Error('Forbidden')
+      fetchWrapper.post.mockRejectedValueOnce(err)
+
+      const store = useRegistersStore()
+      await expect(store.freezeCheckStatus(55)).rejects.toThrow('Forbidden')
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/55/freeze-check-status`)
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+  })
 })

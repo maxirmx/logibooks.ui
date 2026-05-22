@@ -178,6 +178,9 @@ describe('RegisterHeaderActionsBar', () => {
     })
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
+    const freezeCheckStatusButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Применить запреты'
+    )
     const freezeButton = actionButtons.find(
       (button) => button.props('tooltipText') === 'Зафиксировать сортировку по кодам ТН ВЭД'
     )
@@ -185,8 +188,15 @@ describe('RegisterHeaderActionsBar', () => {
       (button) => button.props('tooltipText') === 'Закрыть'
     )
 
+    expect(freezeCheckStatusButton).toBeTruthy()
     expect(freezeButton).toBeTruthy()
     expect(closeButton).toBeTruthy()
+    expect(actionButtons.indexOf(freezeCheckStatusButton)).toBeLessThan(
+      actionButtons.indexOf(freezeButton)
+    )
+
+    freezeCheckStatusButton.vm.$emit('click')
+    expect(wrapper.emitted('freeze-check-status')).toHaveLength(1)
 
     freezeButton.vm.$emit('click')
     expect(wrapper.emitted('freeze-tnved-order')).toHaveLength(1)

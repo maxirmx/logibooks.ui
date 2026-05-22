@@ -30,6 +30,10 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
     params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
   }
+
+  if (authStore.parcels_hide_legacy_restrictions === true) {
+    params.append('hideLegacyRestrictions', 'true')
+  }
   
   if (authStore.parcels_tnved) {
     params.append('tnVed', authStore.parcels_tnved)

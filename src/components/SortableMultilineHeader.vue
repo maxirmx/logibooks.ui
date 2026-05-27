@@ -35,10 +35,14 @@ const sortIcon = computed(() => {
     ? props.getSortIcon(props.column)
     : null
 })
+
+const alignmentClass = computed(() => {
+  return props.column?.align ? `sortable-multiline-header--${props.column.align}` : null
+})
 </script>
 
 <template>
-  <div class="sortable-multiline-header v-data-table-header__content">
+  <div class="sortable-multiline-header v-data-table-header__content" :class="alignmentClass">
     <span class="multiline-header">
       <span v-for="line in lines" :key="line">{{ line }}</span>
     </span>
@@ -64,7 +68,22 @@ const sortIcon = computed(() => {
   line-height: 1.15;
 }
 
+.multiline-header > span {
+  white-space: nowrap;
+}
+
 .register-sort-icon {
   flex: 0 0 auto;
+}
+
+.sortable-multiline-header--end {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.sortable-multiline-header--center {
+  justify-content: center;
+  text-align: center;
 }
 </style>

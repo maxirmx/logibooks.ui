@@ -223,6 +223,7 @@ describe('Registers_List.vue in warehouse mode', () => {
       'invoice',
       'countries',
       'senderRecipient',
+      'parcelsTotal',
       "statusId",
       "warehouseId",
       "warehouseArrivalDate"
@@ -233,6 +234,7 @@ describe('Registers_List.vue in warehouse mode', () => {
       'ТСД',
       'Страны',
       'Отправитель/Получатель',
+      'Товаров/Посылок',
       'Статус',
       'Склад',
       'Дата прибытия'
@@ -252,9 +254,20 @@ describe('Registers_List.vue in warehouse mode', () => {
     expect(sortableByKey.invoice).toBe(true)
     expect(sortableByKey.countries).toBe(true)
     expect(sortableByKey.senderRecipient).toBe(true)
+    expect(sortableByKey.parcelsTotal).toBe(true)
     expect(sortableByKey.statusId).toBe(true)
     expect(sortableByKey.warehouseId).toBe(true)
     expect(sortableByKey.warehouseArrivalDate).toBe(true)
+  })
+
+  it('aligns warehouse parcels header with numeric cells', async () => {
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const parcelsHeader = wrapper.vm.headers.find(header => header.key === 'parcelsTotal')
+
+    expect(parcelsHeader.align).toBe('end')
+    expect(parcelsHeader.width).toBe('150px')
   })
 
   it('shows a sort icon for warehouse custom multiline headers', async () => {

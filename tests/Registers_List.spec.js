@@ -741,6 +741,25 @@ describe('Registers_List.vue', () => {
       expect(sortableByKey.date).toBe(true)
     })
 
+    it('aligns numeric headers with numeric cells', () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const headersByKey = Object.fromEntries(
+        wrapper.vm.headers.map(header => [header.key, header])
+      )
+
+      expect(headersByKey.parcelsTotal.align).toBe('end')
+      expect(headersByKey.weight.align).toBe('end')
+      expect(headersByKey.price.align).toBe('end')
+      expect(headersByKey.parcelsTotal.width).toBe('150px')
+      expect(headersByKey.weight.width).toBe('220px')
+      expect(headersByKey.price.width).toBe('240px')
+    })
+
     it('passes the current sort model to the server table', async () => {
       const wrapper = mount(RegistersList, {
         global: {

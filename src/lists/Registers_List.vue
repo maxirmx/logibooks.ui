@@ -384,9 +384,9 @@ const defaultHeaders = [
   { title: 'ТСД', key: 'invoice', sortable: true },
   { title: 'Страны', key: 'countries', sortable: true },
   { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true },
-  { title: 'Вес, кг, общий / К оформлению', key: 'weight', sortable: true, minWidth: '180px', width: '180px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, minWidth: '200px', width: '200px' },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
+  { title: 'Вес, кг, общий / К оформлению', key: 'weight', sortable: true, align: 'end', minWidth: '220px', width: '220px' },
+  { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
   { title: 'Дата загрузки', key: 'date', sortable: true }
 ]
 
@@ -396,6 +396,7 @@ const warehouseHeaders = [
   { title: 'ТСД', key: 'invoice', sortable: true },
   { title: 'Страны', key: 'countries', sortable: true },
   { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
   { title: 'Статус', key: 'statusId', sortable: true },
   { title: 'Склад', key: 'warehouseId', sortable: true },
   { title: 'Дата прибытия', key: 'warehouseArrivalDate', sortable: true }

@@ -9,6 +9,9 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
@@ -21,7 +24,6 @@ import {
   roleWhOperator
 } from '@/helpers/user.roles.js'
 
-import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
@@ -31,14 +33,9 @@ const runningAction = ref(false)
 usersStore.ensureLoaded()
 warehousesStore.ensureLoaded()
 
-const warehousesStore = useWarehousesStore()
-warehousesStore.ensureLoaded()
-
-import { useAlertStore } from '@/stores/alert.store.js'
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
-import { useConfirm } from 'vuetify-use-dialog'
 const confirm = useConfirm()
 
 function userSettings(item) {

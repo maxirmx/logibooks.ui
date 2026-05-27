@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import {
   roleAdmin,
   roleShiftLead,
@@ -123,6 +124,10 @@ function getButton() {
   return isRegister() ? 'Зарегистрировать' + (asAdmin() ? '' : 'ся') : 'Сохранить'
 }
 
+function onCancel() {
+  router.push(getHomeRoute(true))
+}
+
 function showCredentials() {
   return !isRegister() && !asAdmin()
 }
@@ -229,15 +234,36 @@ function onSubmit(values, { setErrors }) {
 </script>
 
 <template>
-  <div class="settings form-2">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
-    <hr class="hr" />
+  <div class="settings form-3">
     <Form
       @submit="onSubmit"
       :initial-values="user"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, isSubmitting, handleSubmit }"
     >
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ getTitle() }}</h1>
+        <div class="header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            icon-size="2x"
+            :tooltip-text="getButton()"
+            :disabled="isSubmitting"
+            @click="handleSubmit(onSubmit)()"
+          />
+          <ActionButton
+            v-if="asAdmin()"
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            @click="onCancel"
+          />
+        </div>
+      </div>
+      <hr class="hr" />
       <div class="form-group">
         <label for="lastName" class="label">Фамилия:</label>
         <Field
@@ -436,6 +462,21 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="schemeId" class="label">Схема настройки клавиатуры:</label>
+        <Field
+          name="schemeId"
+          id="schemeId"
+          as="select"
+          class="form-control input"
+        >
+          <option :value="0">Без схемы</option>
+          <option v-for="scheme in hotKeyActionSchemes" :key="scheme.id" :value="scheme.id">
+            {{ scheme.name }}
+          </option>
+        </Field>
+      </div>
+
       <div v-if="showWarehouseAssociations()" class="form-group warehouse-associations">
         <span class="label">Склады:</span>
         <div class="warehouse-associations-table">
@@ -475,39 +516,6 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="schemeId" class="label">Схема настройки клавиатуры:</label>
-        <Field
-          name="schemeId"
-          id="schemeId"
-          as="select"
-          class="form-control input"
-        >
-          <option :value="0">Без схемы</option>
-          <option v-for="scheme in hotKeyActionSchemes" :key="scheme.id" :value="scheme.id">
-            {{ scheme.name }}
-          </option>
-        </Field>
-      </div>
-
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButton() }}
-        </button>
-        <button
-          v-if="asAdmin()"
-          class="button secondary"
-          type="button"
-          @click="
-            $router.push(getHomeRoute(true))
-          "
-        >
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
-      </div>
       <div v-if="errors.lastName" class="alert alert-danger mt-3 mb-0">{{ errors.lastName }}</div>
       <div v-if="errors.firstName" class="alert alert-danger mt-3 mb-0">{{ errors.firstName }}</div>
       <div v-if="errors.patronymic" class="alert alert-danger mt-3 mb-0">

@@ -14,7 +14,12 @@ import { roleLogist, roleWhManager } from '@/helpers/user.roles.js'
 // simple stubs for vee-validate components
 const FormStub = {
   name: 'Form',
-  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
+  methods: {
+    handleSubmit(callback) {
+      return () => callback({}, { setErrors: setErrorsMock })
+    }
+  },
+  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" /></form>'
 }
 const FieldStub = {
   name: 'Field',

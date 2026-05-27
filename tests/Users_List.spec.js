@@ -32,7 +32,7 @@ const mockUsersStore = {
 }
 
 const mockWarehousesStore = {
-  ensureLoaded: vi.fn(),
+  ensureLoaded: vi.fn().mockResolvedValue(undefined),
   getWarehouseName: vi.fn((id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id)))
 }
 
@@ -126,7 +126,7 @@ describe('Users_List.vue', () => {
     confirmMock.mockResolvedValue(true)
     mockUsersStore.getAll = vi.fn()
     mockUsersStore.delete = vi.fn().mockResolvedValue()
-    mockWarehousesStore.ensureLoaded = vi.fn()
+    mockWarehousesStore.ensureLoaded = vi.fn().mockResolvedValue(undefined)
     mockWarehousesStore.getWarehouseName = vi.fn((id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id)))
     mockAlertStore.error = vi.fn()
     mockAlertStore.clear = vi.fn()

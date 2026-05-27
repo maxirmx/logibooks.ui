@@ -22,12 +22,11 @@ const authStore = useAuthStore()
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
 const warehousesStore = useWarehousesStore()
-const runningAction = ref(false)
-usersStore.ensureLoaded()
-warehousesStore.ensureLoaded()
-
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
+usersStore.ensureLoaded()
+warehousesStore.ensureLoaded().catch((error) => alertStore.error(error))
 
 const confirm = useConfirm()
 

@@ -8,31 +8,26 @@ import router from '@/router'
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import {
-  roleAdmin,
-  roleShiftLead,
-  roleSrLogist,
-  roleLogist,
-  roleWhManager,
-  roleWhOperator
-} from '@/helpers/user.roles.js'
+import { getCredentials, hasAllWarehouseAccess } from '@/helpers/user.roles.js'
 
-import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
-const runningAction = ref(false)
-usersStore.ensureLoaded()
-
-import { useAlertStore } from '@/stores/alert.store.js'
+const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+const runningAction = ref(false)
+usersStore.ensureLoaded()
+warehousesStore.ensureLoaded().catch((error) => alertStore.error(error))
 
-import { useConfirm } from 'vuetify-use-dialog'
 const confirm = useConfirm()
 
 function userSettings(item) {
@@ -40,29 +35,14 @@ function userSettings(item) {
   router.push('user/edit/' + id)
 }
 
-function getCredentials(item) {
-  const crd = []
-  if (item) {
-    if (item.roles && item.roles.includes(roleAdmin)) {
-      crd.push('Администратор')
-    }
-    if (item.roles && item.roles.includes(roleShiftLead)) {
-      crd.push('Старший смены')
-    }
-    if (item.roles && item.roles.includes(roleSrLogist)) {
-      crd.push('Старший логист')
-    }
-    if (item.roles && item.roles.includes(roleLogist)) {
-      crd.push('Логист')
-    }
-    if (item.roles && item.roles.includes(roleWhManager)) {
-      crd.push('Менеджер склада')
-    }
-    if (item.roles && item.roles.includes(roleWhOperator)) {
-      crd.push('Оператор склада')
-    }
+function getWarehouseNames(item) {
+  if (hasAllWarehouseAccess(item)) {
+    return ['Все']
   }
-  return crd.join(', ')
+
+  return (item?.warehouseIds ?? [])
+    .map((warehouseId) => warehousesStore.getWarehouseName(warehouseId))
+    .filter((name) => name)
 }
 
 function filterUsers(value, query, item) {
@@ -86,6 +66,10 @@ function filterUsers(value, query, item) {
 
   const crd = getCredentials(i)
   if (crd.toLocaleUpperCase().indexOf(q) !== -1) {
+    return true
+  }
+
+  if (getWarehouseNames(i).some((name) => name.toLocaleUpperCase().indexOf(q) !== -1)) {
     return true
   }
   return false
@@ -130,7 +114,8 @@ const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
   { title: 'Пользователь', align: 'start', key: 'id' },
   { title: 'E-mail', align: 'start', key: 'email' },
-  { title: 'Права', align: 'start', key: 'credentials', sortable: false }
+  { title: 'Права', align: 'start', key: 'credentials', sortable: false },
+  { title: 'Доступ к складам', align: 'start', key: 'warehouses', sortable: false }
 ]
 </script>
 
@@ -191,6 +176,12 @@ const headers = [
 
         <template v-slot:[`item.credentials`]="{ item }">
           <span v-html="getCredentials(item)"></span>
+        </template>
+
+        <template v-slot:[`item.warehouses`]="{ item }">
+          <div v-for="(warehouseName, warehouseIndex) in getWarehouseNames(item)" :key="`${item.id}-${warehouseIndex}`">
+            {{ warehouseName }}
+          </div>
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">

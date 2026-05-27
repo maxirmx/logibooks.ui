@@ -73,6 +73,13 @@ export const vuetifyStubs = {
   'v-data-table': {
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
+        <div class="v-data-table-header-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-header-cell">
+            <slot :name="'header.' + header.key" :header="header" :column="header">
+              {{ header.title }}
+            </slot>
+          </div>
+        </div>
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
           <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
             <slot :name="'item.' + header.key" :item="item">

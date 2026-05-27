@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -14,19 +14,18 @@ import { useUsersStore } from '@/stores/users.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import {
-  roleAdmin,
-  roleShiftLead,
-  roleSrLogist,
   roleLogist,
-  roleWhManager,
-  roleWhOperator,
   keyAdmin,
   keyShiftLead,
   keySrLogist,
   keyLogist,
   keyWhManager,
-  keyWhOperator
+  keyWhOperator,
+  getCredentials,
+  hasOnlyWarehouseRoles
 } from '@/helpers/user.roles.js'
 
 const props = defineProps({
@@ -43,9 +42,14 @@ const props = defineProps({
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
+const warehousesStore = useWarehousesStore()
 const { hotKeyActionSchemes } = storeToRefs(hotKeyActionSchemesStore)
+const { warehouses, loading: warehousesLoading } = storeToRefs(warehousesStore)
 
-await hotKeyActionSchemesStore.ensureLoaded()
+await Promise.all([
+  hotKeyActionSchemesStore.ensureLoaded(),
+  warehousesStore.ensureLoaded()
+])
 
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
@@ -71,9 +75,11 @@ const schema = Yup.object().shape({
 
 const showPassword = ref(false)
 const showPassword2 = ref(false)
+const selectedWarehouseIds = ref([])
 
 let user = ref({
-  schemeId: 0
+  schemeId: 0,
+  warehouseIds: []
 })
 
 if (!isRegister()) {
@@ -83,7 +89,21 @@ if (!isRegister()) {
   if (user.value.schemeId == null) {
     user.value.schemeId = 0
   }
+  selectedWarehouseIds.value = [...(user.value.warehouseIds ?? [])]
 }
+
+const warehouseHeaders = [
+  { title: '', key: 'selected', sortable: false, width: '56px' },
+  { title: 'Склад', key: 'name' },
+  { title: 'Город', key: 'city' }
+]
+
+const displayedWarehouses = computed(() => warehouses.value ?? [])
+
+const allWarehousesSelected = computed(() => {
+  return displayedWarehouses.value.length > 0
+    && displayedWarehouses.value.every((warehouse) => selectedWarehouseIds.value.includes(warehouse.id))
+})
 
 function isRegister() {
   return props.register
@@ -101,6 +121,10 @@ function getButton() {
   return isRegister() ? 'Зарегистрировать' + (asAdmin() ? '' : 'ся') : 'Сохранить'
 }
 
+function onCancel() {
+  router.push(getHomeRoute(true))
+}
+
 function showCredentials() {
   return !isRegister() && !asAdmin()
 }
@@ -109,32 +133,37 @@ function showAndEditCredentials() {
   return asAdmin()
 }
 
-function getCredentials() {
-  const crd = []
-  if (user.value) {
-    if (user.value.roles && user.value.roles.includes(roleAdmin)) {
-      crd.push('Администратор')
+function showWarehouseAssociations(values = user.value) {
+  return hasOnlyWarehouseRoles(values)
+}
+
+function isWarehouseSelected(warehouseId) {
+  return selectedWarehouseIds.value.includes(warehouseId)
+}
+
+function toggleWarehouse(warehouseId, selected) {
+  if (selected) {
+    if (!selectedWarehouseIds.value.includes(warehouseId)) {
+      selectedWarehouseIds.value = [...selectedWarehouseIds.value, warehouseId]
     }
-    if (user.value.roles && user.value.roles.includes(roleShiftLead)) {
-      crd.push('Старший смены')
-    }
-    if (user.value.roles && user.value.roles.includes(roleSrLogist)) {
-      crd.push('Старший логист')
-    }
-    if (user.value.roles && user.value.roles.includes(roleLogist)) {
-      crd.push('Логист')
-    }
-    if (user.value.roles && user.value.roles.includes(roleWhManager)) {
-      crd.push('Менеджер склада')
-    }
-    if (user.value.roles && user.value.roles.includes(roleWhOperator)) {
-      crd.push('Оператор склада')
-    }
+  } else {
+    selectedWarehouseIds.value = selectedWarehouseIds.value.filter((id) => id !== warehouseId)
   }
-  return crd.join(', ')
+}
+
+function toggleAllWarehouses(selected) {
+  selectedWarehouseIds.value = selected
+    ? displayedWarehouses.value.map((warehouse) => warehouse.id)
+    : []
 }
 
 function onSubmit(values, { setErrors }) {
+  if (asAdmin()) {
+    values.warehouseIds = [...selectedWarehouseIds.value]
+  } else {
+    delete values.warehouseIds
+  }
+
   if (isRegister()) {
     if (asAdmin()) {
       return usersStore
@@ -177,15 +206,36 @@ function onSubmit(values, { setErrors }) {
 </script>
 
 <template>
-  <div class="settings form-2">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
-    <hr class="hr" />
+  <div class="settings form-3">
     <Form
       @submit="onSubmit"
       :initial-values="user"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, isSubmitting, handleSubmit, values }"
     >
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ getTitle() }}</h1>
+        <div class="header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            icon-size="2x"
+            :tooltip-text="getButton()"
+            :disabled="isSubmitting"
+            @click="handleSubmit(onSubmit)()"
+          />
+          <ActionButton
+            v-if="asAdmin() || !isRegister()"
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            @click="onCancel"
+          />
+        </div>
+      </div>
+      <hr class="hr" />
       <div class="form-group">
         <label for="lastName" class="label">Фамилия:</label>
         <Field
@@ -309,7 +359,7 @@ function onSubmit(values, { setErrors }) {
       <div v-if="showCredentials()" class="form-group">
         <span class="label">Права:</span>
         <span
-          ><em>{{ getCredentials() }}</em></span
+          ><em>{{ getCredentials(user) }}</em></span
         >
       </div>
 
@@ -362,17 +412,6 @@ function onSubmit(values, { setErrors }) {
 
           <div class="role-item">
             <Field
-              id="isWhOperator"
-              type="checkbox"
-              name="isWhOperator"
-              class="checkbox checkbox-styled"
-              :value="keyWhOperator"
-            />
-            <label for="isWhOperator">Оператор склада</label>
-          </div>
-
-          <div class="role-item">
-            <Field
               id="isWhManager"
               type="checkbox"
               name="isWhManager"
@@ -380,6 +419,17 @@ function onSubmit(values, { setErrors }) {
               :value="keyWhManager"
             />
             <label for="isWhManager">Менеджер склада</label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isWhOperator"
+              type="checkbox"
+              name="isWhOperator"
+              class="checkbox checkbox-styled"
+              :value="keyWhOperator"
+            />
+            <label for="isWhOperator">Оператор склада</label>
           </div>
         </div>
       </div>
@@ -399,24 +449,43 @@ function onSubmit(values, { setErrors }) {
         </Field>
       </div>
 
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButton() }}
-        </button>
-        <button
-          v-if="asAdmin()"
-          class="button secondary"
-          type="button"
-          @click="
-            $router.push(getHomeRoute(true))
-          "
-        >
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
+      <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
+        <h2 class="label">Доступ к складам:</h2>
+        <div class="warehouse-associations-table">
+          <v-data-table
+            :headers="warehouseHeaders"
+            :items="displayedWarehouses"
+            :loading="warehousesLoading"
+            density="compact"
+            class="elevation-1 interlaced-table"
+            hide-default-footer
+            :items-per-page="-1"
+          >
+            <template v-slot:[`header.selected`]>
+              <div v-if="showAndEditCredentials()" data-testid="warehouse-select-all">
+                <v-checkbox
+                  :model-value="allWarehousesSelected"
+                  aria-label="Выбрать все склады"
+                  :disabled="warehousesLoading || displayedWarehouses.length === 0"
+                  density="compact"
+                  hide-details
+                  @update:model-value="toggleAllWarehouses"
+                />
+              </div>
+            </template>
+            <template v-slot:[`item.selected`]="{ item }">
+              <v-checkbox
+                :model-value="isWarehouseSelected(item.id)"
+                :disabled="!showAndEditCredentials()"
+                density="compact"
+                hide-details
+                @update:model-value="(selected) => toggleWarehouse(item.id, selected)"
+              />
+            </template>
+          </v-data-table>
+        </div>
       </div>
+
       <div v-if="errors.lastName" class="alert alert-danger mt-3 mb-0">{{ errors.lastName }}</div>
       <div v-if="errors.firstName" class="alert alert-danger mt-3 mb-0">{{ errors.firstName }}</div>
       <div v-if="errors.patronymic" class="alert alert-danger mt-3 mb-0">
@@ -447,6 +516,16 @@ function onSubmit(values, { setErrors }) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.warehouse-associations {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.warehouse-associations-table {
+  width: 100%;
+  min-width: 0;
+  margin-top: 24px;
 }
 @media (max-width: 850px) {
   .roles-grid {

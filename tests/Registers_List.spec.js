@@ -718,6 +718,83 @@ describe('Registers_List.vue', () => {
     })
   })
 
+  describe('sortable headers', () => {
+    it('marks paperwork visible columns as sortable', () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const sortableByKey = Object.fromEntries(
+        wrapper.vm.headers.map(header => [header.key, header.sortable])
+      )
+
+      expect(sortableByKey.actions).toBe(false)
+      expect(sortableByKey.dealNumber).toBe(true)
+      expect(sortableByKey.invoice).toBe(true)
+      expect(sortableByKey.countries).toBe(true)
+      expect(sortableByKey.senderRecipient).toBe(true)
+      expect(sortableByKey.parcelsTotal).toBe(true)
+      expect(sortableByKey.weight).toBe(true)
+      expect(sortableByKey.price).toBe(true)
+      expect(sortableByKey.date).toBe(true)
+    })
+
+    it('aligns numeric headers with numeric cells', () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const headersByKey = Object.fromEntries(
+        wrapper.vm.headers.map(header => [header.key, header])
+      )
+
+      expect(headersByKey.parcelsTotal.align).toBe('end')
+      expect(headersByKey.weight.align).toBe('end')
+      expect(headersByKey.price.align).toBe('end')
+      expect(headersByKey.parcelsTotal.width).toBe('150px')
+      expect(headersByKey.weight.width).toBe('220px')
+      expect(headersByKey.price.width).toBe('240px')
+    })
+
+    it('passes the current sort model to the server table', async () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      expect(wrapper.findComponent({ name: 'v-data-table-server' }).props('sortBy')).toEqual([
+        { key: 'id', order: 'asc' }
+      ])
+
+      wrapper.vm.registers_sort_by = [{ key: 'price', order: 'desc' }]
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.findComponent({ name: 'v-data-table-server' }).props('sortBy')).toEqual([
+        { key: 'price', order: 'desc' }
+      ])
+    })
+
+    it('shows a sort icon for sorted custom multiline headers', async () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      wrapper.vm.registers_sort_by = [{ key: 'weight', order: 'desc' }]
+      await wrapper.vm.$nextTick()
+
+      const icon = wrapper.find('[data-testid="v-icon"][data-icon="$sortDesc"]')
+      expect(icon.exists()).toBe(true)
+      expect(icon.classes()).toContain('register-sort-icon')
+    })
+  })
+
   describe('component lifecycle', () => {
     it('cleans up polling on unmount', () => {
       const wrapper = mount(RegistersList, {

@@ -239,6 +239,34 @@ describe('Registers_List.vue in warehouse mode', () => {
     ])
   })
 
+  it('marks warehouse visible columns as sortable', async () => {
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const sortableByKey = Object.fromEntries(
+      wrapper.vm.headers.map(header => [header.key, header.sortable])
+    )
+
+    expect(sortableByKey.actions).toBe(false)
+    expect(sortableByKey.dealNumber).toBe(true)
+    expect(sortableByKey.invoice).toBe(true)
+    expect(sortableByKey.countries).toBe(true)
+    expect(sortableByKey.senderRecipient).toBe(true)
+    expect(sortableByKey.statusId).toBe(true)
+    expect(sortableByKey.warehouseId).toBe(true)
+    expect(sortableByKey.warehouseArrivalDate).toBe(true)
+  })
+
+  it('shows a sort icon for warehouse custom multiline headers', async () => {
+    const wrapper = createWrapper()
+    wrapper.vm.registers_sort_by = [{ key: 'warehouseArrivalDate', order: 'asc' }]
+    await wrapper.vm.$nextTick()
+
+    const icon = wrapper.find('[data-testid="v-icon"][data-icon="$sortAsc"]')
+    expect(icon.exists()).toBe(true)
+    expect(icon.classes()).toContain('register-sort-icon')
+  })
+
   it('uses warehouse-specific items-per-page text', async () => {
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()

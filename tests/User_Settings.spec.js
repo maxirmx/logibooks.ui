@@ -9,17 +9,18 @@ import { ref } from 'vue'
 import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
-import { roleLogist, roleWhManager } from '@/helpers/user.roles.js'
+import { roleLogist, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 
 // simple stubs for vee-validate components
 const FormStub = {
   name: 'Form',
+  props: ['initialValues'],
   methods: {
     handleSubmit(callback) {
       return () => callback({}, { setErrors: setErrorsMock })
     }
   },
-  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" /></form>'
+  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" :values="initialValues" /></form>'
 }
 const FieldStub = {
   name: 'Field',
@@ -364,14 +365,14 @@ describe('User_Settings.vue real component', () => {
     expect(ensureWarehousesLoaded).toHaveBeenCalled()
   })
 
-  it('renders warehouse association table for admin edits', async () => {
+  it('renders warehouse association table for warehouse-only admin edits', async () => {
     isAdmin = true
     mockUser.value = {
       id: 1,
       firstName: 'John',
       lastName: 'Doe',
       email: 'john@example.com',
-      roles: [roleLogist],
+      roles: [roleWhManager],
       warehouseIds: [2]
     }
     const wrapper = mount(Parent, {
@@ -386,10 +387,36 @@ describe('User_Settings.vue real component', () => {
     })
     await resolveAll()
 
-    expect(wrapper.text()).toContain('Склады')
+    expect(wrapper.text()).not.toContain('Склады:')
     expect(wrapper.text()).toContain('Warehouse 1')
     expect(wrapper.text()).toContain('Warehouse 2')
     expect(wrapper.find('[data-testid="warehouse-select-all"]').exists()).toBe(true)
+  })
+
+  it('does not render warehouse association table for mixed warehouse and non-warehouse roles', async () => {
+    isAdmin = true
+    mockUser.value = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      roles: [roleLogist, roleWhOperator],
+      warehouseIds: [2]
+    }
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub
+        }
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.text()).not.toContain('Warehouse 1')
+    expect(wrapper.find('[data-testid="warehouse-select-all"]').exists()).toBe(false)
   })
 
   it('submits selected warehouse ids when updating as admin', async () => {
@@ -399,7 +426,7 @@ describe('User_Settings.vue real component', () => {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john@example.com',
-      roles: [roleLogist],
+      roles: [roleWhOperator],
       warehouseIds: [2]
     }
     const wrapper = mount(Parent, {

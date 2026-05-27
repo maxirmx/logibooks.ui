@@ -97,7 +97,7 @@ if (!isRegister()) {
 
 const warehouseHeaders = [
   { title: '', key: 'selected', sortable: false, width: '56px' },
-  { title: 'Склад', key: 'name' },
+  { title: 'Cклад', key: 'name' },
   { title: 'Город', key: 'city' }
 ]
 
@@ -107,6 +107,22 @@ const allWarehousesSelected = computed(() => {
   return displayedWarehouses.value.length > 0
     && displayedWarehouses.value.every((warehouse) => selectedWarehouseIds.value.includes(warehouse.id))
 })
+
+const roleFieldNames = ['isAdmin', 'isShiftLead', 'isSrLogist', 'isLogist', 'isWhManager', 'isWhOperator']
+
+function hasRoleFields(values) {
+  return roleFieldNames.some((fieldName) => Object.prototype.hasOwnProperty.call(values ?? {}, fieldName))
+}
+
+function hasRoleSelection(values, fieldName, key, role) {
+  if (hasRoleFields(values)) {
+    return values?.[fieldName] === key || values?.[fieldName] === true
+  }
+
+  return values?.[fieldName] === key
+    || values?.[fieldName] === true
+    || values?.roles?.includes(role)
+}
 
 function isRegister() {
   return props.register
@@ -136,8 +152,24 @@ function showAndEditCredentials() {
   return asAdmin()
 }
 
-function showWarehouseAssociations() {
-  return asAdmin() || (!isRegister() && (user.value?.warehouseIds?.length ?? 0) > 0)
+function hasOnlyWarehouseRoles(values = user.value) {
+  const hasWarehouseRole = hasRoleSelection(values, 'isWhManager', keyWhManager, roleWhManager)
+    || hasRoleSelection(values, 'isWhOperator', keyWhOperator, roleWhOperator)
+
+  if (!hasWarehouseRole) {
+    return false
+  }
+
+  return !(
+    hasRoleSelection(values, 'isAdmin', keyAdmin, roleAdmin)
+    || hasRoleSelection(values, 'isShiftLead', keyShiftLead, roleShiftLead)
+    || hasRoleSelection(values, 'isSrLogist', keySrLogist, roleSrLogist)
+    || hasRoleSelection(values, 'isLogist', keyLogist, roleLogist)
+  )
+}
+
+function showWarehouseAssociations(values = user.value) {
+  return hasOnlyWarehouseRoles(values)
 }
 
 function isWarehouseSelected(warehouseId) {
@@ -239,7 +271,7 @@ function onSubmit(values, { setErrors }) {
       @submit="onSubmit"
       :initial-values="user"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting, handleSubmit }"
+      v-slot="{ errors, isSubmitting, handleSubmit, values }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ getTitle() }}</h1>
@@ -477,23 +509,8 @@ function onSubmit(values, { setErrors }) {
         </Field>
       </div>
 
-      <div v-if="showWarehouseAssociations()" class="form-group warehouse-associations">
-        <span class="label">Склады:</span>
+      <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
         <div class="warehouse-associations-table">
-          <div
-            v-if="showAndEditCredentials()"
-            class="warehouse-select-all"
-            data-testid="warehouse-select-all"
-          >
-            <v-checkbox
-              :model-value="allWarehousesSelected"
-              label="Выбрать все"
-              :disabled="warehousesLoading || displayedWarehouses.length === 0"
-              density="compact"
-              hide-details
-              @update:model-value="toggleAllWarehouses"
-            />
-          </div>
           <v-data-table
             :headers="warehouseHeaders"
             :items="displayedWarehouses"
@@ -503,6 +520,18 @@ function onSubmit(values, { setErrors }) {
             hide-default-footer
             :items-per-page="-1"
           >
+            <template v-slot:[`header.selected`]>
+              <div v-if="showAndEditCredentials()" data-testid="warehouse-select-all">
+                <v-checkbox
+                  :model-value="allWarehousesSelected"
+                  aria-label="Выбрать все склады"
+                  :disabled="warehousesLoading || displayedWarehouses.length === 0"
+                  density="compact"
+                  hide-details
+                  @update:model-value="toggleAllWarehouses"
+                />
+              </div>
+            </template>
             <template v-slot:[`item.selected`]="{ item }">
               <v-checkbox
                 :model-value="isWarehouseSelected(item.id)"
@@ -548,14 +577,12 @@ function onSubmit(values, { setErrors }) {
   gap: 8px;
 }
 .warehouse-associations {
-  align-items: flex-start;
+  width: 100%;
+  margin-top: 8px;
 }
 .warehouse-associations-table {
-  flex: 1;
+  width: 100%;
   min-width: 0;
-}
-.warehouse-select-all {
-  margin-bottom: 4px;
 }
 @media (max-width: 850px) {
   .roles-grid {

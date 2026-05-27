@@ -208,7 +208,7 @@ const headers = [
         </template>
 
         <template v-slot:[`item.warehouses`]="{ item }">
-          <div v-for="warehouseName in getWarehouseNames(item)" :key="warehouseName">
+          <div v-for="(warehouseName, warehouseIndex) in getWarehouseNames(item)" :key="`${item.id}-${warehouseIndex}`">
             {{ warehouseName }}
           </div>
         </template>

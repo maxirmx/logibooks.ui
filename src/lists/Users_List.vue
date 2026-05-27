@@ -144,7 +144,7 @@ const headers = [
   { title: 'Пользователь', align: 'start', key: 'id' },
   { title: 'E-mail', align: 'start', key: 'email' },
   { title: 'Права', align: 'start', key: 'credentials', sortable: false },
-  { title: 'Склады', align: 'start', key: 'warehouses', sortable: false }
+  { title: 'Доступ к складам', align: 'start', key: 'warehouses', sortable: false }
 ]
 </script>
 

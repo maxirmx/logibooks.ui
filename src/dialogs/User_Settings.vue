@@ -472,17 +472,6 @@ function onSubmit(values, { setErrors }) {
 
           <div class="role-item">
             <Field
-              id="isWhOperator"
-              type="checkbox"
-              name="isWhOperator"
-              class="checkbox checkbox-styled"
-              :value="keyWhOperator"
-            />
-            <label for="isWhOperator">Оператор склада</label>
-          </div>
-
-          <div class="role-item">
-            <Field
               id="isWhManager"
               type="checkbox"
               name="isWhManager"
@@ -490,6 +479,17 @@ function onSubmit(values, { setErrors }) {
               :value="keyWhManager"
             />
             <label for="isWhManager">Менеджер склада</label>
+          </div>
+
+          <div class="role-item">
+            <Field
+              id="isWhOperator"
+              type="checkbox"
+              name="isWhOperator"
+              class="checkbox checkbox-styled"
+              :value="keyWhOperator"
+            />
+            <label for="isWhOperator">Оператор склада</label>
           </div>
         </div>
       </div>
@@ -510,6 +510,7 @@ function onSubmit(values, { setErrors }) {
       </div>
 
       <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
+        <h2 class="label">Доступ к складам:</h2>
         <div class="warehouse-associations-table">
           <v-data-table
             :headers="warehouseHeaders"
@@ -578,11 +579,13 @@ function onSubmit(values, { setErrors }) {
 }
 .warehouse-associations {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 24px;
 }
+
 .warehouse-associations-table {
   width: 100%;
   min-width: 0;
+  margin-top: 24px;
 }
 @media (max-width: 850px) {
   .roles-grid {

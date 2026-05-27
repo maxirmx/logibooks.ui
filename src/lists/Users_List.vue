@@ -31,6 +31,9 @@ const runningAction = ref(false)
 usersStore.ensureLoaded()
 warehousesStore.ensureLoaded()
 
+const warehousesStore = useWarehousesStore()
+warehousesStore.ensureLoaded()
+
 import { useAlertStore } from '@/stores/alert.store.js'
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)

@@ -9,12 +9,18 @@ import { ref } from 'vue'
 import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
-import { roleLogist, roleWhManager } from '@/helpers/user.roles.js'
+import { roleLogist, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 
 // simple stubs for vee-validate components
 const FormStub = {
   name: 'Form',
-  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
+  props: ['initialValues'],
+  methods: {
+    handleSubmit(callback) {
+      return () => callback({}, { setErrors: setErrorsMock })
+    }
+  },
+  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" :values="initialValues" /></form>'
 }
 const FieldStub = {
   name: 'Field',
@@ -28,11 +34,16 @@ const mockHotKeyActionSchemes = ref([
   { id: 1, name: 'Scheme 1' },
   { id: 2, name: 'Scheme 2' }
 ])
+const mockWarehouses = ref([
+  { id: 1, name: 'Warehouse 1', city: 'City 1' },
+  { id: 2, name: 'Warehouse 2', city: 'City 2' }
+])
 const getById = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const addUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const updateUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const registerUser = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const ensureLoaded = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const ensureWarehousesLoaded = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const routerPush = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const successAlert = vi.hoisted(() => vi.fn())
 const setErrorsMock = vi.hoisted(() => vi.fn())
@@ -45,6 +56,9 @@ vi.mock('pinia', async () => {
       // Return hotkey schemes store refs if it has the hotKeyActionSchemes property
       if (store && 'hotKeyActionSchemes' in store) {
         return { hotKeyActionSchemes: mockHotKeyActionSchemes }
+      }
+      if (store && 'warehouses' in store) {
+        return { warehouses: mockWarehouses, loading: ref(false) }
       }
       // Otherwise return user store refs
       return { user: mockUser }
@@ -82,6 +96,15 @@ vi.mock('@/stores/hotkey.action.schemes.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/warehouses.store.js', () => ({
+  useWarehousesStore: () => createMockStore({
+    warehouses: mockWarehouses,
+    loading: ref(false),
+    error: ref(null),
+    ensureLoaded: ensureWarehousesLoaded
+  })
+}))
+
 vi.mock('@/router', () => ({
   default: { push: routerPush }
 }))
@@ -99,6 +122,10 @@ beforeEach(() => {
   mockHotKeyActionSchemes.value = [
     { id: 1, name: 'Scheme 1' },
     { id: 2, name: 'Scheme 2' }
+  ]
+  mockWarehouses.value = [
+    { id: 1, name: 'Warehouse 1', city: 'City 1' },
+    { id: 2, name: 'Warehouse 2', city: 'City 2' }
   ]
 })
 
@@ -159,6 +186,7 @@ describe('User_Settings.vue real component', () => {
     await child.vm.$.setupState.onSubmit({ firstName: 'B' }, { setErrors: vi.fn() })
     await resolveAll()
     expect(addUser).toHaveBeenCalledWith(expect.any(Object), true)
+    expect(addUser.mock.calls[0][0].warehouseIds).toEqual([])
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
 
@@ -179,6 +207,7 @@ describe('User_Settings.vue real component', () => {
     await child.vm.$.setupState.onSubmit({ firstName: 'C' }, { setErrors: vi.fn() })
     await resolveAll()
     expect(updateUser).toHaveBeenCalledWith(7, expect.any(Object), true)
+    expect(updateUser.mock.calls[0][1].warehouseIds).toEqual([])
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
 
@@ -333,6 +362,116 @@ describe('User_Settings.vue real component', () => {
     })
     await resolveAll()
     expect(ensureLoaded).toHaveBeenCalled()
+    expect(ensureWarehousesLoaded).toHaveBeenCalled()
+  })
+
+  it('renders warehouse association table for warehouse-only admin edits', async () => {
+    isAdmin = true
+    mockUser.value = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      roles: [roleWhManager],
+      warehouseIds: [2]
+    }
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.text()).not.toContain('Склады:')
+    expect(wrapper.text()).toContain('Warehouse 1')
+    expect(wrapper.text()).toContain('Warehouse 2')
+    expect(wrapper.find('[data-testid="warehouse-select-all"]').exists()).toBe(true)
+  })
+
+  it('does not render warehouse association table for mixed warehouse and non-warehouse roles', async () => {
+    isAdmin = true
+    mockUser.value = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      roles: [roleLogist, roleWhOperator],
+      warehouseIds: [2]
+    }
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub
+        }
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.text()).not.toContain('Warehouse 1')
+    expect(wrapper.find('[data-testid="warehouse-select-all"]').exists()).toBe(false)
+  })
+
+  it('submits selected warehouse ids when updating as admin', async () => {
+    isAdmin = true
+    mockUser.value = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      roles: [roleWhOperator],
+      warehouseIds: [2]
+    }
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 5 },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+
+    child.vm.$.setupState.toggleWarehouse(1, true)
+    child.vm.$.setupState.toggleWarehouse(2, false)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(updateUser).toHaveBeenCalledWith(5, expect.objectContaining({ warehouseIds: [1] }), true)
+  })
+
+  it('selects and clears all warehouses', async () => {
+    isAdmin = true
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+
+    child.vm.$.setupState.toggleAllWarehouses(true)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
+    expect(addUser.mock.calls[0][0].warehouseIds).toEqual([1, 2])
+
+    child.vm.$.setupState.toggleAllWarehouses(false)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test2' }, { setErrors: vi.fn() })
+    expect(addUser.mock.calls[1][0].warehouseIds).toEqual([])
   })
 
   it('renders schemeId selector with default option', async () => {

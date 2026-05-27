@@ -8,12 +8,12 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
 import { vuetifyStubs } from './helpers/test-utils'
-import { roleAdmin, roleLogist, roleWhManager } from '@/helpers/user.roles.js'
+import { roleAdmin, roleLogist, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 
 // Centralized mock data
 const mockUsers = ref([
-  { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin] },
-  { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist] },
+  { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin], warehouseIds: [1] },
+  { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist], warehouseIds: [] },
   { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: [roleAdmin, roleLogist] },
   { id: 4, firstName: 'Alice', lastName: 'Brown', patronymic: '', email: 'alice@example.com', roles: [] }
 ])
@@ -29,6 +29,11 @@ const mockUsersStore = {
   getAll: vi.fn(),
   delete: vi.fn(),
   ensureLoaded: vi.fn()
+}
+
+const mockWarehousesStore = {
+  ensureLoaded: vi.fn().mockResolvedValue(undefined),
+  getWarehouseName: vi.fn((id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id)))
 }
 
 const mockAlertStore = {
@@ -87,6 +92,10 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => mockAuthStore
 }))
 
+vi.mock('@/stores/warehouses.store.js', () => ({
+  useWarehousesStore: () => mockWarehousesStore
+}))
+
 vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
@@ -104,8 +113,8 @@ describe('Users_List.vue', () => {
     
     // Reset mock data
     mockUsers.value = [
-      { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin] },
-      { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist] },
+      { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin], warehouseIds: [1] },
+      { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist], warehouseIds: [] },
       { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: [roleAdmin, roleLogist] },
       { id: 4, firstName: 'Alice', lastName: 'Brown', patronymic: '', email: 'alice@example.com', roles: [] }
     ]
@@ -117,6 +126,8 @@ describe('Users_List.vue', () => {
     confirmMock.mockResolvedValue(true)
     mockUsersStore.getAll = vi.fn()
     mockUsersStore.delete = vi.fn().mockResolvedValue()
+    mockWarehousesStore.ensureLoaded = vi.fn().mockResolvedValue(undefined)
+    mockWarehousesStore.getWarehouseName = vi.fn((id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id)))
     mockAlertStore.error = vi.fn()
     mockAlertStore.clear = vi.fn()
   })
@@ -149,6 +160,7 @@ describe('Users_List.vue', () => {
     it('renders correctly and calls ensureLoaded on mount', () => {
       createWrapper()
       expect(mockUsersStore.ensureLoaded).toHaveBeenCalled()
+      expect(mockWarehousesStore.ensureLoaded).toHaveBeenCalled()
       expect(wrapper.exists()).toBe(true)
       expect(wrapper.find('h1').text()).toBe('Пользователи')
     })
@@ -243,6 +255,22 @@ describe('Users_List.vue', () => {
       const result = wrapper.vm.getCredentials(userItem)
       expect(result).toBe('')
     })
+
+    it('returns warehouse names for warehouse-only users with associated warehouse ids', () => {
+      const result = wrapper.vm.getWarehouseNames({ roles: [roleWhManager], warehouseIds: [1, 2] })
+      expect(result).toEqual(['Warehouse One', 'Warehouse Two'])
+    })
+
+    it('returns all warehouses marker for users with non-warehouse roles', () => {
+      expect(wrapper.vm.getWarehouseNames({ roles: [roleAdmin], warehouseIds: [1] })).toEqual(['Все'])
+      expect(wrapper.vm.getWarehouseNames({ roles: [roleWhOperator, roleLogist], warehouseIds: [1] })).toEqual(['Все'])
+    })
+
+    it('returns empty warehouse names for users without associations', () => {
+      expect(wrapper.vm.getWarehouseNames({ warehouseIds: [] })).toEqual([])
+      expect(wrapper.vm.getWarehouseNames({})).toEqual([])
+      expect(wrapper.vm.getWarehouseNames(null)).toEqual([])
+    })
   })
 
   describe('Search Filtering', () => {
@@ -283,6 +311,12 @@ describe('Users_List.vue', () => {
     it('filters users by warehouse manager credentials', () => {
       const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleWhManager] } }
       const result = wrapper.vm.filterUsers(null, 'Менеджер склада', item)
+      expect(result).toBe(true)
+    })
+
+    it('filters users by associated warehouse name', () => {
+      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleWhOperator], warehouseIds: [2] } }
+      const result = wrapper.vm.filterUsers(null, 'Warehouse Two', item)
       expect(result).toBe(true)
     })
 
@@ -419,6 +453,12 @@ describe('Users_List.vue', () => {
       expect(credentials).toBe('Администратор')
     })
 
+    it('displays warehouse names in data table item slot', () => {
+      const testUser = { roles: [roleWhManager], warehouseIds: [1] }
+      const warehouses = wrapper.vm.getWarehouseNames(testUser)
+      expect(warehouses).toEqual(['Warehouse One'])
+    })
+
     it('tests data table item actions for edit user', () => {
       const testUser = { id: 123 }
       wrapper.vm.userSettings(testUser)
@@ -465,6 +505,7 @@ describe('Users_List.vue', () => {
       // Test that all functions are accessible
       expect(typeof wrapper.vm.userSettings).toBe('function')
       expect(typeof wrapper.vm.getCredentials).toBe('function')
+      expect(typeof wrapper.vm.getWarehouseNames).toBe('function')
       expect(typeof wrapper.vm.filterUsers).toBe('function')
       expect(typeof wrapper.vm.deleteUser).toBe('function')
     })

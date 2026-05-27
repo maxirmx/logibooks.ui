@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -14,6 +14,7 @@ import { useUsersStore } from '@/stores/users.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import {
   roleAdmin,
   roleShiftLead,
@@ -43,9 +44,14 @@ const props = defineProps({
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
+const warehousesStore = useWarehousesStore()
 const { hotKeyActionSchemes } = storeToRefs(hotKeyActionSchemesStore)
+const { warehouses, loading: warehousesLoading } = storeToRefs(warehousesStore)
 
-await hotKeyActionSchemesStore.ensureLoaded()
+await Promise.all([
+  hotKeyActionSchemesStore.ensureLoaded(),
+  warehousesStore.ensureLoaded()
+])
 
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
@@ -71,9 +77,11 @@ const schema = Yup.object().shape({
 
 const showPassword = ref(false)
 const showPassword2 = ref(false)
+const selectedWarehouseIds = ref([])
 
 let user = ref({
-  schemeId: 0
+  schemeId: 0,
+  warehouseIds: []
 })
 
 if (!isRegister()) {
@@ -83,7 +91,21 @@ if (!isRegister()) {
   if (user.value.schemeId == null) {
     user.value.schemeId = 0
   }
+  selectedWarehouseIds.value = [...(user.value.warehouseIds ?? [])]
 }
+
+const warehouseHeaders = [
+  { title: '', key: 'selected', sortable: false, width: '56px' },
+  { title: 'Склад', key: 'name' },
+  { title: 'Город', key: 'city' }
+]
+
+const displayedWarehouses = computed(() => warehouses.value ?? [])
+
+const allWarehousesSelected = computed(() => {
+  return displayedWarehouses.value.length > 0
+    && displayedWarehouses.value.every((warehouse) => selectedWarehouseIds.value.includes(warehouse.id))
+})
 
 function isRegister() {
   return props.register
@@ -107,6 +129,30 @@ function showCredentials() {
 
 function showAndEditCredentials() {
   return asAdmin()
+}
+
+function showWarehouseAssociations() {
+  return asAdmin() || (!isRegister() && (user.value?.warehouseIds?.length ?? 0) > 0)
+}
+
+function isWarehouseSelected(warehouseId) {
+  return selectedWarehouseIds.value.includes(warehouseId)
+}
+
+function toggleWarehouse(warehouseId, selected) {
+  if (selected) {
+    if (!selectedWarehouseIds.value.includes(warehouseId)) {
+      selectedWarehouseIds.value = [...selectedWarehouseIds.value, warehouseId]
+    }
+  } else {
+    selectedWarehouseIds.value = selectedWarehouseIds.value.filter((id) => id !== warehouseId)
+  }
+}
+
+function toggleAllWarehouses(selected) {
+  selectedWarehouseIds.value = selected
+    ? displayedWarehouses.value.map((warehouse) => warehouse.id)
+    : []
 }
 
 function getCredentials() {
@@ -135,6 +181,12 @@ function getCredentials() {
 }
 
 function onSubmit(values, { setErrors }) {
+  if (asAdmin()) {
+    values.warehouseIds = [...selectedWarehouseIds.value]
+  } else {
+    delete values.warehouseIds
+  }
+
   if (isRegister()) {
     if (asAdmin()) {
       return usersStore
@@ -384,6 +436,45 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
+      <div v-if="showWarehouseAssociations()" class="form-group warehouse-associations">
+        <span class="label">Склады:</span>
+        <div class="warehouse-associations-table">
+          <div
+            v-if="showAndEditCredentials()"
+            class="warehouse-select-all"
+            data-testid="warehouse-select-all"
+          >
+            <v-checkbox
+              :model-value="allWarehousesSelected"
+              label="Выбрать все"
+              :disabled="warehousesLoading || displayedWarehouses.length === 0"
+              density="compact"
+              hide-details
+              @update:model-value="toggleAllWarehouses"
+            />
+          </div>
+          <v-data-table
+            :headers="warehouseHeaders"
+            :items="displayedWarehouses"
+            :loading="warehousesLoading"
+            density="compact"
+            class="elevation-1 interlaced-table"
+            hide-default-footer
+            :items-per-page="-1"
+          >
+            <template v-slot:[`item.selected`]="{ item }">
+              <v-checkbox
+                :model-value="isWarehouseSelected(item.id)"
+                :disabled="!showAndEditCredentials()"
+                density="compact"
+                hide-details
+                @update:model-value="(selected) => toggleWarehouse(item.id, selected)"
+              />
+            </template>
+          </v-data-table>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="schemeId" class="label">Схема настройки клавиатуры:</label>
         <Field
@@ -447,6 +538,16 @@ function onSubmit(values, { setErrors }) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.warehouse-associations {
+  align-items: flex-start;
+}
+.warehouse-associations-table {
+  flex: 1;
+  min-width: 0;
+}
+.warehouse-select-all {
+  margin-bottom: 4px;
 }
 @media (max-width: 850px) {
   .roles-grid {

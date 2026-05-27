@@ -8,6 +8,7 @@ import router from '@/router'
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
@@ -25,8 +26,10 @@ const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
+const warehousesStore = useWarehousesStore()
 const runningAction = ref(false)
 usersStore.ensureLoaded()
+warehousesStore.ensureLoaded()
 
 import { useAlertStore } from '@/stores/alert.store.js'
 const alertStore = useAlertStore()
@@ -65,6 +68,12 @@ function getCredentials(item) {
   return crd.join(', ')
 }
 
+function getWarehouseNames(item) {
+  return (item?.warehouseIds ?? [])
+    .map((warehouseId) => warehousesStore.getWarehouseName(warehouseId))
+    .filter((name) => name)
+}
+
 function filterUsers(value, query, item) {
   if (query === null || item === null) {
     return false
@@ -86,6 +95,10 @@ function filterUsers(value, query, item) {
 
   const crd = getCredentials(i)
   if (crd.toLocaleUpperCase().indexOf(q) !== -1) {
+    return true
+  }
+
+  if (getWarehouseNames(i).some((name) => name.toLocaleUpperCase().indexOf(q) !== -1)) {
     return true
   }
   return false
@@ -130,7 +143,8 @@ const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
   { title: 'Пользователь', align: 'start', key: 'id' },
   { title: 'E-mail', align: 'start', key: 'email' },
-  { title: 'Права', align: 'start', key: 'credentials', sortable: false }
+  { title: 'Права', align: 'start', key: 'credentials', sortable: false },
+  { title: 'Склады', align: 'start', key: 'warehouses', sortable: false }
 ]
 </script>
 
@@ -191,6 +205,12 @@ const headers = [
 
         <template v-slot:[`item.credentials`]="{ item }">
           <span v-html="getCredentials(item)"></span>
+        </template>
+
+        <template v-slot:[`item.warehouses`]="{ item }">
+          <div v-for="warehouseName in getWarehouseNames(item)" :key="warehouseName">
+            {{ warehouseName }}
+          </div>
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">

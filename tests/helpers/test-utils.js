@@ -94,8 +94,22 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-data-table-server': {
+    name: 'v-data-table-server',
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
+        <div class="v-data-table-header-row">
+          <div v-for="header in headers" :key="header.key" class="v-data-table-header-cell">
+            <slot
+              :name="'header.' + header.key"
+              :column="header"
+              :sort-by="sortBy"
+              :is-sorted="isSorted"
+              :get-sort-icon="getSortIcon"
+            >
+              {{ header.title }}
+            </slot>
+          </div>
+        </div>
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
           <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
             <slot :name="'item.' + header.key" :item="item">
@@ -107,6 +121,17 @@ export const vuetifyStubs = {
       </div>
     `,
     props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'style'],
+    methods: {
+      isSorted(header) {
+        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+      },
+      getSortIcon(header) {
+        const item = Array.isArray(this.sortBy)
+          ? this.sortBy.find(item => item.key === header.key)
+          : null
+        return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
+      }
+    },
     inheritAttrs: false
   },
   'v-card': {
@@ -222,6 +247,11 @@ export const vuetifyStubs = {
   },
   'font-awesome-icon': {
     template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
+    props: ['icon', 'size', 'color', 'style'],
+    inheritAttrs: false
+  },
+  'v-icon': {
+    template: '<i class="v-icon-stub" data-testid="v-icon" :data-icon="icon" v-bind="$attrs"></i>',
     props: ['icon', 'size', 'color', 'style'],
     inheritAttrs: false
   }

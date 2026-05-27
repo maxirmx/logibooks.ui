@@ -36,6 +36,7 @@ import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
 
 const props = defineProps({
@@ -379,25 +380,26 @@ function formatInvoiceInfo(item) {
 
 const defaultHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber' },
-  { title: 'ТСД', key: 'invoice' },
-  { title: 'Страны', key: 'countries' },
-  { title: 'Отправитель/Получатель', key: 'senderRecipient' },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal' },
-  { title: 'Вес, кг, общий / К оформлению', key: 'weight', minWidth: '180px', width: '180px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', minWidth: '200px', width: '200px' },
-  { title: 'Дата загрузки', key: 'date' }
+  { title: 'Номер сделки', key: 'dealNumber', sortable: true },
+  { title: 'ТСД', key: 'invoice', sortable: true },
+  { title: 'Страны', key: 'countries', sortable: true },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
+  { title: 'Вес, кг, общий / К оформлению', key: 'weight', sortable: true, align: 'end', minWidth: '220px', width: '220px' },
+  { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
+  { title: 'Дата загрузки', key: 'date', sortable: true }
 ]
 
 const warehouseHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber' },
-  { title: 'ТСД', key: 'invoice' },
-  { title: 'Страны', key: 'countries' },
-  { title: 'Отправитель/Получатель', key: 'senderRecipient' },
-  { title: 'Статус', key: 'statusId' },
-  { title: 'Склад', key: 'warehouseId' },
-  { title: 'Дата прибытия', key: 'warehouseArrivalDate' }
+  { title: 'Номер сделки', key: 'dealNumber', sortable: true },
+  { title: 'ТСД', key: 'invoice', sortable: true },
+  { title: 'Страны', key: 'countries', sortable: true },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
+  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
+  { title: 'Статус', key: 'statusId', sortable: true },
+  { title: 'Склад', key: 'warehouseId', sortable: true },
+  { title: 'Дата прибытия', key: 'warehouseArrivalDate', sortable: true }
 ]
 
 const headers = computed(() => (isWarehouseMode.value ? warehouseHeaders : defaultHeaders))
@@ -597,53 +599,67 @@ defineExpose({
           </ClickableCell>
         </template>
 
-        <template #[`header.dealNumber`]>
-          <div class="multiline-header">
-            <div>Номер</div>
-            <div>сделки</div>
-          </div>
+        <template #[`header.dealNumber`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Номер', 'сделки']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
-        <template #[`header.senderRecipient`]>
-          <div class="multiline-header">
-            <div>Отправитель</div>
-            <div>Получатель</div>
-          </div>
+        <template #[`header.senderRecipient`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Отправитель', 'Получатель']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
-        <template #[`header.parcelsTotal`]>
-          <div class="multiline-header">
-            <div>Товаров</div>
-            <div>Посылок</div>
-          </div>
+        <template #[`header.parcelsTotal`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Товаров', 'Посылок']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
-        <template #[`header.weight`]>
-          <div class="multiline-header">
-            <div>Вес, кг, общий</div>
-            <div>К оформлению</div>
-          </div>
+        <template #[`header.weight`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Вес, кг, общий', 'К оформлению']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
-        <template #[`header.price`]>
-          <div class="multiline-header">
-            <div>Стоимость общая</div>
-            <div>К оформлению</div>
-          </div>
+        <template #[`header.price`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Стоимость общая', 'К оформлению']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
-        <template #[`header.date`]>
-          <div class="multiline-header">
-            <div>Дата</div>
-            <div>загрузки</div>
-          </div>
+        <template #[`header.date`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Дата', 'загрузки']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
-        <template #[`header.warehouseArrivalDate`]>
-          <div class="multiline-header">
-            <div>Дата</div>
-            <div>прибытия</div>
-          </div>
+        <template #[`header.warehouseArrivalDate`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Дата', 'прибытия']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
 
         <template #[`item.actions`]="{ item }">

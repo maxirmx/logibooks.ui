@@ -26,7 +26,7 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 usersStore.ensureLoaded()
-warehousesStore.ensureLoaded().catch((error) => alertStore.error(error))
+warehousesStore.ensureLoaded().catch((error) => alertStore.error(error?.message || String(error)))
 
 const confirm = useConfirm()
 

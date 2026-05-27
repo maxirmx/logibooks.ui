@@ -94,7 +94,7 @@ if (!isRegister()) {
 
 const warehouseHeaders = [
   { title: '', key: 'selected', sortable: false, width: '56px' },
-  { title: 'Cклад', key: 'name' },
+  { title: 'Склад', key: 'name' },
   { title: 'Город', key: 'city' }
 ]
 

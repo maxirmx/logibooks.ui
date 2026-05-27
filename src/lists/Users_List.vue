@@ -15,14 +15,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import {
-  roleAdmin,
-  roleShiftLead,
-  roleSrLogist,
-  roleLogist,
-  roleWhManager,
-  roleWhOperator
-} from '@/helpers/user.roles.js'
+import { getCredentials, hasAllWarehouseAccess } from '@/helpers/user.roles.js'
 
 const authStore = useAuthStore()
 
@@ -43,32 +36,11 @@ function userSettings(item) {
   router.push('user/edit/' + id)
 }
 
-function getCredentials(item) {
-  const crd = []
-  if (item) {
-    if (item.roles && item.roles.includes(roleAdmin)) {
-      crd.push('Администратор')
-    }
-    if (item.roles && item.roles.includes(roleShiftLead)) {
-      crd.push('Старший смены')
-    }
-    if (item.roles && item.roles.includes(roleSrLogist)) {
-      crd.push('Старший логист')
-    }
-    if (item.roles && item.roles.includes(roleLogist)) {
-      crd.push('Логист')
-    }
-    if (item.roles && item.roles.includes(roleWhManager)) {
-      crd.push('Менеджер склада')
-    }
-    if (item.roles && item.roles.includes(roleWhOperator)) {
-      crd.push('Оператор склада')
-    }
-  }
-  return crd.join(', ')
-}
-
 function getWarehouseNames(item) {
+  if (hasAllWarehouseAccess(item)) {
+    return ['Все']
+  }
+
   return (item?.warehouseIds ?? [])
     .map((warehouseId) => warehousesStore.getWarehouseName(warehouseId))
     .filter((name) => name)

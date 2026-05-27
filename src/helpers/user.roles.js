@@ -36,3 +36,64 @@ export const userRoleKeys = {
   roleWhManager: keyWhManager,
   roleNone: keyNone
 }
+
+const roleLabels = [
+  { role: roleAdmin, label: 'Администратор' },
+  { role: roleShiftLead, label: 'Старший смены' },
+  { role: roleSrLogist, label: 'Старший логист' },
+  { role: roleLogist, label: 'Логист' },
+  { role: roleWhManager, label: 'Менеджер склада' },
+  { role: roleWhOperator, label: 'Оператор склада' }
+]
+
+const roleFields = [
+  { fieldName: 'isAdmin', key: keyAdmin, role: roleAdmin },
+  { fieldName: 'isShiftLead', key: keyShiftLead, role: roleShiftLead },
+  { fieldName: 'isSrLogist', key: keySrLogist, role: roleSrLogist },
+  { fieldName: 'isLogist', key: keyLogist, role: roleLogist },
+  { fieldName: 'isWhManager', key: keyWhManager, role: roleWhManager },
+  { fieldName: 'isWhOperator', key: keyWhOperator, role: roleWhOperator }
+]
+
+const warehouseOnlyRoles = [roleWhManager, roleWhOperator]
+
+export function hasRoleFields(user) {
+  return roleFields.some(({ fieldName }) => Object.prototype.hasOwnProperty.call(user ?? {}, fieldName))
+}
+
+export function hasRoleSelection(user, fieldName, key, role) {
+  if (hasRoleFields(user)) {
+    return user?.[fieldName] === key || user?.[fieldName] === true
+  }
+
+  return user?.[fieldName] === key
+    || user?.[fieldName] === true
+    || user?.roles?.includes(role)
+}
+
+export function getCredentials(user) {
+  return roleLabels
+    .filter(({ role }) => user?.roles?.includes(role))
+    .map(({ label }) => label)
+    .join(', ')
+}
+
+export function hasOnlyWarehouseRoles(user) {
+  const hasWarehouseRole = hasRoleSelection(user, 'isWhManager', keyWhManager, roleWhManager)
+    || hasRoleSelection(user, 'isWhOperator', keyWhOperator, roleWhOperator)
+
+  if (!hasWarehouseRole) {
+    return false
+  }
+
+  return !(
+    hasRoleSelection(user, 'isAdmin', keyAdmin, roleAdmin)
+    || hasRoleSelection(user, 'isShiftLead', keyShiftLead, roleShiftLead)
+    || hasRoleSelection(user, 'isSrLogist', keySrLogist, roleSrLogist)
+    || hasRoleSelection(user, 'isLogist', keyLogist, roleLogist)
+  )
+}
+
+export function hasAllWarehouseAccess(user) {
+  return (user?.roles ?? []).some((role) => !warehouseOnlyRoles.includes(role))
+}

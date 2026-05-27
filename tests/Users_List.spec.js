@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
 import { vuetifyStubs } from './helpers/test-utils'
-import { roleAdmin, roleLogist, roleWhManager } from '@/helpers/user.roles.js'
+import { roleAdmin, roleLogist, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 
 // Centralized mock data
 const mockUsers = ref([
@@ -256,9 +256,14 @@ describe('Users_List.vue', () => {
       expect(result).toBe('')
     })
 
-    it('returns warehouse names for associated warehouse ids', () => {
-      const result = wrapper.vm.getWarehouseNames({ warehouseIds: [1, 2] })
+    it('returns warehouse names for warehouse-only users with associated warehouse ids', () => {
+      const result = wrapper.vm.getWarehouseNames({ roles: [roleWhManager], warehouseIds: [1, 2] })
       expect(result).toEqual(['Warehouse One', 'Warehouse Two'])
+    })
+
+    it('returns all warehouses marker for users with non-warehouse roles', () => {
+      expect(wrapper.vm.getWarehouseNames({ roles: [roleAdmin], warehouseIds: [1] })).toEqual(['Все'])
+      expect(wrapper.vm.getWarehouseNames({ roles: [roleWhOperator, roleLogist], warehouseIds: [1] })).toEqual(['Все'])
     })
 
     it('returns empty warehouse names for users without associations', () => {
@@ -310,7 +315,7 @@ describe('Users_List.vue', () => {
     })
 
     it('filters users by associated warehouse name', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [], warehouseIds: [2] } }
+      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleWhOperator], warehouseIds: [2] } }
       const result = wrapper.vm.filterUsers(null, 'Warehouse Two', item)
       expect(result).toBe(true)
     })
@@ -449,7 +454,7 @@ describe('Users_List.vue', () => {
     })
 
     it('displays warehouse names in data table item slot', () => {
-      const testUser = { warehouseIds: [1] }
+      const testUser = { roles: [roleWhManager], warehouseIds: [1] }
       const warehouses = wrapper.vm.getWarehouseNames(testUser)
       expect(warehouses).toEqual(['Warehouse One'])
     })

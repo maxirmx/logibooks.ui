@@ -17,18 +17,15 @@ import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.stor
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import {
-  roleAdmin,
-  roleShiftLead,
-  roleSrLogist,
   roleLogist,
-  roleWhManager,
-  roleWhOperator,
   keyAdmin,
   keyShiftLead,
   keySrLogist,
   keyLogist,
   keyWhManager,
-  keyWhOperator
+  keyWhOperator,
+  getCredentials,
+  hasOnlyWarehouseRoles
 } from '@/helpers/user.roles.js'
 
 const props = defineProps({
@@ -108,22 +105,6 @@ const allWarehousesSelected = computed(() => {
     && displayedWarehouses.value.every((warehouse) => selectedWarehouseIds.value.includes(warehouse.id))
 })
 
-const roleFieldNames = ['isAdmin', 'isShiftLead', 'isSrLogist', 'isLogist', 'isWhManager', 'isWhOperator']
-
-function hasRoleFields(values) {
-  return roleFieldNames.some((fieldName) => Object.prototype.hasOwnProperty.call(values ?? {}, fieldName))
-}
-
-function hasRoleSelection(values, fieldName, key, role) {
-  if (hasRoleFields(values)) {
-    return values?.[fieldName] === key || values?.[fieldName] === true
-  }
-
-  return values?.[fieldName] === key
-    || values?.[fieldName] === true
-    || values?.roles?.includes(role)
-}
-
 function isRegister() {
   return props.register
 }
@@ -152,22 +133,6 @@ function showAndEditCredentials() {
   return asAdmin()
 }
 
-function hasOnlyWarehouseRoles(values = user.value) {
-  const hasWarehouseRole = hasRoleSelection(values, 'isWhManager', keyWhManager, roleWhManager)
-    || hasRoleSelection(values, 'isWhOperator', keyWhOperator, roleWhOperator)
-
-  if (!hasWarehouseRole) {
-    return false
-  }
-
-  return !(
-    hasRoleSelection(values, 'isAdmin', keyAdmin, roleAdmin)
-    || hasRoleSelection(values, 'isShiftLead', keyShiftLead, roleShiftLead)
-    || hasRoleSelection(values, 'isSrLogist', keySrLogist, roleSrLogist)
-    || hasRoleSelection(values, 'isLogist', keyLogist, roleLogist)
-  )
-}
-
 function showWarehouseAssociations(values = user.value) {
   return hasOnlyWarehouseRoles(values)
 }
@@ -190,31 +155,6 @@ function toggleAllWarehouses(selected) {
   selectedWarehouseIds.value = selected
     ? displayedWarehouses.value.map((warehouse) => warehouse.id)
     : []
-}
-
-function getCredentials() {
-  const crd = []
-  if (user.value) {
-    if (user.value.roles && user.value.roles.includes(roleAdmin)) {
-      crd.push('Администратор')
-    }
-    if (user.value.roles && user.value.roles.includes(roleShiftLead)) {
-      crd.push('Старший смены')
-    }
-    if (user.value.roles && user.value.roles.includes(roleSrLogist)) {
-      crd.push('Старший логист')
-    }
-    if (user.value.roles && user.value.roles.includes(roleLogist)) {
-      crd.push('Логист')
-    }
-    if (user.value.roles && user.value.roles.includes(roleWhManager)) {
-      crd.push('Менеджер склада')
-    }
-    if (user.value.roles && user.value.roles.includes(roleWhOperator)) {
-      crd.push('Оператор склада')
-    }
-  }
-  return crd.join(', ')
 }
 
 function onSubmit(values, { setErrors }) {
@@ -285,7 +225,7 @@ function onSubmit(values, { setErrors }) {
             @click="handleSubmit(onSubmit)()"
           />
           <ActionButton
-            v-if="asAdmin()"
+            v-if="asAdmin() || !isRegister()"
             :item="{}"
             icon="fa-solid fa-xmark"
             icon-size="2x"
@@ -419,7 +359,7 @@ function onSubmit(values, { setErrors }) {
       <div v-if="showCredentials()" class="form-group">
         <span class="label">Права:</span>
         <span
-          ><em>{{ getCredentials() }}</em></span
+          ><em>{{ getCredentials(user) }}</em></span
         >
       </div>
 

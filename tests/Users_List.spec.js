@@ -260,6 +260,12 @@ describe('Users_List.vue', () => {
       const result = wrapper.vm.getWarehouseNames({ warehouseIds: [1, 2] })
       expect(result).toEqual(['Warehouse One', 'Warehouse Two'])
     })
+
+    it('returns empty warehouse names for users without associations', () => {
+      expect(wrapper.vm.getWarehouseNames({ warehouseIds: [] })).toEqual([])
+      expect(wrapper.vm.getWarehouseNames({})).toEqual([])
+      expect(wrapper.vm.getWarehouseNames(null)).toEqual([])
+    })
   })
 
   describe('Search Filtering', () => {
@@ -303,9 +309,9 @@ describe('Users_List.vue', () => {
       expect(result).toBe(true)
     })
 
-    it('filters users by associated warehouse', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [], warehouseIds: [1] } }
-      const result = wrapper.vm.filterUsers(null, 'Warehouse One', item)
+    it('filters users by associated warehouse name', () => {
+      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [], warehouseIds: [2] } }
+      const result = wrapper.vm.filterUsers(null, 'Warehouse Two', item)
       expect(result).toBe(true)
     })
 
@@ -442,6 +448,12 @@ describe('Users_List.vue', () => {
       expect(credentials).toBe('Администратор')
     })
 
+    it('displays warehouse names in data table item slot', () => {
+      const testUser = { warehouseIds: [1] }
+      const warehouses = wrapper.vm.getWarehouseNames(testUser)
+      expect(warehouses).toEqual(['Warehouse One'])
+    })
+
     it('tests data table item actions for edit user', () => {
       const testUser = { id: 123 }
       wrapper.vm.userSettings(testUser)
@@ -488,6 +500,7 @@ describe('Users_List.vue', () => {
       // Test that all functions are accessible
       expect(typeof wrapper.vm.userSettings).toBe('function')
       expect(typeof wrapper.vm.getCredentials).toBe('function')
+      expect(typeof wrapper.vm.getWarehouseNames).toBe('function')
       expect(typeof wrapper.vm.filterUsers).toBe('function')
       expect(typeof wrapper.vm.deleteUser).toBe('function')
     })

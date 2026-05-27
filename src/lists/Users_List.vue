@@ -26,8 +26,10 @@ const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
 const { users, loading, error } = storeToRefs(usersStore)
+const warehousesStore = useWarehousesStore()
 const runningAction = ref(false)
 usersStore.ensureLoaded()
+warehousesStore.ensureLoaded()
 
 const warehousesStore = useWarehousesStore()
 warehousesStore.ensureLoaded()
@@ -70,8 +72,8 @@ function getCredentials(item) {
 }
 
 function getWarehouseNames(item) {
-  return (item?.warehouseIds || [])
-    .map((id) => warehousesStore.getWarehouseName(id))
+  return (item?.warehouseIds ?? [])
+    .map((warehouseId) => warehousesStore.getWarehouseName(warehouseId))
     .filter((name) => name)
 }
 
@@ -99,11 +101,9 @@ function filterUsers(value, query, item) {
     return true
   }
 
-  const warehouseNames = getWarehouseNames(i).join(' ')
-  if (warehouseNames.toLocaleUpperCase().indexOf(q) !== -1) {
+  if (getWarehouseNames(i).some((name) => name.toLocaleUpperCase().indexOf(q) !== -1)) {
     return true
   }
-
   return false
 }
 
@@ -211,8 +211,8 @@ const headers = [
         </template>
 
         <template v-slot:[`item.warehouses`]="{ item }">
-          <div v-for="warehouse in getWarehouseNames(item)" :key="warehouse">
-            {{ warehouse }}
+          <div v-for="warehouseName in getWarehouseNames(item)" :key="warehouseName">
+            {{ warehouseName }}
           </div>
         </template>
 

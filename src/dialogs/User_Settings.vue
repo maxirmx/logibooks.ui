@@ -91,27 +91,20 @@ if (!isRegister()) {
   if (user.value.schemeId == null) {
     user.value.schemeId = 0
   }
-  selectedWarehouseIds.value = [...(user.value.warehouseIds || [])]
+  selectedWarehouseIds.value = [...(user.value.warehouseIds ?? [])]
 }
 
 const warehouseHeaders = [
-  { title: '', align: 'center', key: 'selected', sortable: false, width: '56px' },
-  { title: 'Склад', align: 'start', key: 'name' },
-  { title: 'Город', align: 'start', key: 'city' }
+  { title: '', key: 'selected', sortable: false, width: '56px' },
+  { title: 'Склад', key: 'name' },
+  { title: 'Город', key: 'city' }
 ]
 
-const displayedWarehouses = computed(() => {
-  if (showAndEditCredentials()) {
-    return warehouses.value || []
-  }
-
-  const selected = new Set(selectedWarehouseIds.value)
-  return (warehouses.value || []).filter((warehouse) => selected.has(warehouse.id))
-})
+const displayedWarehouses = computed(() => warehouses.value ?? [])
 
 const allWarehousesSelected = computed(() => {
-  const ids = (warehouses.value || []).map((warehouse) => warehouse.id)
-  return ids.length > 0 && ids.every((id) => selectedWarehouseIds.value.includes(id))
+  return displayedWarehouses.value.length > 0
+    && displayedWarehouses.value.every((warehouse) => selectedWarehouseIds.value.includes(warehouse.id))
 })
 
 function isRegister() {
@@ -139,7 +132,7 @@ function showAndEditCredentials() {
 }
 
 function showWarehouseAssociations() {
-  return asAdmin() || (!isRegister() && selectedWarehouseIds.value.length > 0)
+  return asAdmin() || (!isRegister() && (user.value?.warehouseIds?.length ?? 0) > 0)
 }
 
 function isWarehouseSelected(warehouseId) {
@@ -147,20 +140,18 @@ function isWarehouseSelected(warehouseId) {
 }
 
 function toggleWarehouse(warehouseId, selected) {
-  if (!showAndEditCredentials()) return
-
   if (selected) {
-    selectedWarehouseIds.value = [...new Set([...selectedWarehouseIds.value, warehouseId])]
+    if (!selectedWarehouseIds.value.includes(warehouseId)) {
+      selectedWarehouseIds.value = [...selectedWarehouseIds.value, warehouseId]
+    }
   } else {
     selectedWarehouseIds.value = selectedWarehouseIds.value.filter((id) => id !== warehouseId)
   }
 }
 
 function toggleAllWarehouses(selected) {
-  if (!showAndEditCredentials()) return
-
   selectedWarehouseIds.value = selected
-    ? (warehouses.value || []).map((warehouse) => warehouse.id)
+    ? displayedWarehouses.value.map((warehouse) => warehouse.id)
     : []
 }
 
@@ -456,7 +447,7 @@ function onSubmit(values, { setErrors }) {
             <v-checkbox
               :model-value="allWarehousesSelected"
               label="Выбрать все"
-              :disabled="warehousesLoading || warehouses.length === 0"
+              :disabled="warehousesLoading || displayedWarehouses.length === 0"
               density="compact"
               hide-details
               @update:model-value="toggleAllWarehouses"

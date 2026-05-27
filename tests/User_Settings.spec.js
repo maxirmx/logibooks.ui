@@ -371,12 +371,12 @@ describe('User_Settings.vue real component', () => {
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: {
-        stubs: {
+      global: { 
+        stubs: { 
           ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
       }
     })
     await resolveAll()
@@ -399,20 +399,47 @@ describe('User_Settings.vue real component', () => {
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 5 },
-      global: {
-        stubs: {
+      global: { 
+        stubs: { 
           ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
       }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
+
+    child.vm.$.setupState.toggleWarehouse(1, true)
+    child.vm.$.setupState.toggleWarehouse(2, false)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(updateUser).toHaveBeenCalledWith(5, expect.objectContaining({ warehouseIds: [2] }), true)
+    expect(updateUser).toHaveBeenCalledWith(5, expect.objectContaining({ warehouseIds: [1] }), true)
+  })
+
+  it('selects and clears all warehouses', async () => {
+    isAdmin = true
+    const wrapper = mount(Parent, {
+      props: { register: true },
+      global: { 
+        stubs: { 
+          ...defaultGlobalStubs,
+          Form: FormStub, 
+          Field: FieldStub 
+        } 
+      }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+
+    child.vm.$.setupState.toggleAllWarehouses(true)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
+    expect(addUser.mock.calls[0][0].warehouseIds).toEqual([1, 2])
+
+    child.vm.$.setupState.toggleAllWarehouses(false)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Test2' }, { setErrors: vi.fn() })
+    expect(addUser.mock.calls[1][0].warehouseIds).toEqual([])
   })
 
   it('renders schemeId selector with default option', async () => {

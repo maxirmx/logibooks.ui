@@ -42,6 +42,13 @@ const mockTotalCount = ref(1)
 const parcelsPerPage = ref(10)
 const parcelsSortBy = ref([])
 const parcelsPage = ref(1)
+const parcelsWhStatus = ref(null)
+const parcelsWhCheckStatusProjection = ref(null)
+const parcelsWhZone = ref(null)
+const parcelsWhNumber = ref('')
+const parcelsWhBoxNumber = ref('')
+const parcelsWhSticker = ref('')
+const parcelsWhProductName = ref('')
 const isAdmin = ref(false)
 const isWhManager = ref(false)
 const isShiftLead = ref(false)
@@ -89,6 +96,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
+    parcelStatuses: [],
     getStatusTitle: vi.fn(id => `Status ${id}`)
   })
 }))
@@ -108,6 +116,13 @@ vi.mock('@/stores/auth.store.js', () => ({
     parcels_per_page: parcelsPerPage,
     parcels_sort_by: parcelsSortBy,
     parcels_page: parcelsPage,
+    parcels_wh_status: parcelsWhStatus,
+    parcels_wh_check_status_projection: parcelsWhCheckStatusProjection,
+    parcels_wh_zone: parcelsWhZone,
+    parcels_wh_number: parcelsWhNumber,
+    parcels_wh_box_number: parcelsWhBoxNumber,
+    parcels_wh_sticker: parcelsWhSticker,
+    parcels_wh_product_name: parcelsWhProductName,
     isAdmin,
     isWhManager,
     isShiftLead
@@ -167,6 +182,13 @@ describe('WbrParcels_WhList.vue', () => {
     isAdmin.value = false
     isWhManager.value = false
     isShiftLead.value = false
+    parcelsWhStatus.value = null
+    parcelsWhCheckStatusProjection.value = null
+    parcelsWhZone.value = null
+    parcelsWhNumber.value = ''
+    parcelsWhBoxNumber.value = ''
+    parcelsWhSticker.value = ''
+    parcelsWhProductName.value = ''
   })
 
   it('loads warehouse parcels with showMarkedByPartner enabled', async () => {

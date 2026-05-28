@@ -48,6 +48,7 @@ const monitorClosed = vi.hoisted(() => ({
   value: null
 }))
 const loadMonitorSnapshot = vi.hoisted(() => vi.fn())
+const resolveMonitorTarget = vi.hoisted(() => vi.fn())
 const startMonitor = vi.hoisted(() => vi.fn())
 const clearMonitor = vi.hoisted(() => vi.fn())
 const stopMonitor = vi.hoisted(() => vi.fn())
@@ -297,6 +298,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     },
     getById,
     loadMonitorSnapshot,
+    resolveMonitorTarget,
     startMonitor,
     clearMonitor,
     stopMonitor,
@@ -366,7 +368,11 @@ const monitorGlobalStubs = {
     name: 'v-data-table',
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table" v-bind="$attrs">
-        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+        <div
+          v-for="(item, i) in items"
+          :key="i"
+          :class="['v-data-table-row', rowProps ? rowProps({ item })?.class : '']"
+        >
           <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
             <slot :name="'item.' + header.key" :item="item">
               {{ item[header.key] }}
@@ -387,7 +393,8 @@ const monitorGlobalStubs = {
       'itemsPerPageText',
       'pageText',
       'density',
-      'class'
+      'class',
+      'rowProps'
     ],
     inheritAttrs: false
   }
@@ -427,6 +434,7 @@ describe('Scanjob_Monitor.vue', () => {
     registerGetById.mockResolvedValue(true)
     getTransportationDocument.mockReturnValue('Авианакладная')
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
+    resolveMonitorTarget.mockResolvedValue({ kind: 0, number: 'MISSING' })
     startMonitor.mockResolvedValue(true)
     clearMonitor.mockResolvedValue(true)
     stopMonitor.mockResolvedValue(true)
@@ -485,6 +493,110 @@ describe('Scanjob_Monitor.vue', () => {
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump"]').text()).toContain('Перейти к посылке или коробке по номеру:')
+  })
+
+  it('navigates to resolved box by number', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 1,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: null,
+      number: 'BOX-7',
+      boxCode: 'BOX-7',
+      parcelNumber: null
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue(' BOX-7 ')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(resolveMonitorTarget).toHaveBeenCalledWith(42, 'BOX-7')
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'scanjob-monitor-box',
+      params: { id: 42, boxId: 7 }
+    })
+  })
+
+  it('navigates to resolved unassigned parcel bucket', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 2,
+      area: 2,
+      boxId: null,
+      bucketIndex: 1,
+      parcelId: 90,
+      number: 'PU-90',
+      boxCode: 'Без коробки 2',
+      parcelNumber: 'PU-90'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('PU-90')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'scanjob-monitor-unassigned',
+      params: { id: 42, bucketIndex: 1 }
+    })
+  })
+
+  it('marks and scrolls resolved parcel in current box', async () => {
+    const scrollIntoView = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 2,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: 71,
+      number: 'P-71',
+      boxCode: 'BOX-7',
+      parcelNumber: 'P-71'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+    expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'nearest'
+    })
+  })
+
+  it('alerts when jump target is not found', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({ kind: 0, area: null, number: 'MISSING' })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('MISSING')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «MISSING» не найдена')
   })
 
   it('does not start a separate autofollow observer for the register panel', async () => {

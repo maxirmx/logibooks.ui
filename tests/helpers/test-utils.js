@@ -80,7 +80,11 @@ export const vuetifyStubs = {
             </slot>
           </div>
         </div>
-        <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
+        <div
+          v-for="(item, i) in items"
+          :key="i"
+          :class="['v-data-table-row', rowProps ? rowProps({ item })?.class : '']"
+        >
           <div v-for="header in headers" :key="header.key" class="v-data-table-cell">
             <slot :name="'item.' + header.key" :item="item">
               {{ item[header.key] }}
@@ -90,7 +94,7 @@ export const vuetifyStubs = {
         <slot></slot>
       </div>
     `,
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density', 'style'],
+    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density', 'style', 'rowProps'],
     inheritAttrs: false
   },
   'v-data-table-server': {

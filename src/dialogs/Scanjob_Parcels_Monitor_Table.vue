@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -32,7 +32,8 @@ const props = defineProps({
   headers: { type: Array, required: true },
   parcels: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
-  defectActionLoading: { type: Boolean, default: false }
+  defectActionLoading: { type: Boolean, default: false },
+  selectedParcelId: { type: [Number, String], default: null }
 })
 
 const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
@@ -48,6 +49,8 @@ const {
 const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
 const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
 const areDefectActionsBusy = computed(() => props.loading || props.defectActionLoading)
+const selectedParcelIdNumber = computed(() => toNumberOrNull(props.selectedParcelId))
+const dataTableRef = ref(null)
 
 function editParcel(item) {
   if (isParcelCellDisabled.value) {
@@ -89,15 +92,133 @@ function clearDefect(item) {
   emit('clear-defect', item)
 }
 
+function toNumberOrNull(value) {
+  if (value == null || value === '') {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function getParcelId(item) {
+  return toNumberOrNull(item?.parcelId ?? item?.id)
+}
+
+function comparePrimitiveValues(left, right) {
+  if (left == null && right == null) return 0
+  if (left == null) return -1
+  if (right == null) return 1
+
+  if (typeof left === 'number' && typeof right === 'number') {
+    return left - right
+  }
+
+  return String(left).localeCompare(String(right), 'ru', {
+    numeric: true,
+    sensitivity: 'accent'
+  })
+}
+
+function getSortedParcels() {
+  const sortRules = Array.isArray(scanjobmonitor_parcels_sort_by.value)
+    ? scanjobmonitor_parcels_sort_by.value
+    : []
+
+  if (sortRules.length === 0) {
+    return props.parcels
+  }
+
+  const headersByKey = new Map(props.headers.map((header) => [header.key, header]))
+  return [...props.parcels].sort((left, right) => {
+    for (const rule of sortRules) {
+      const key = rule?.key
+      if (!key) {
+        continue
+      }
+
+      const header = headersByKey.get(key)
+      const customSort = typeof header?.sort === 'function'
+        ? header.sort(left?.[key], right?.[key])
+        : comparePrimitiveValues(left?.[key], right?.[key])
+
+      if (customSort !== 0) {
+        return rule.order === 'desc' ? -customSort : customSort
+      }
+    }
+
+    return comparePrimitiveValues(getParcelId(left), getParcelId(right))
+  })
+}
+
+function moveToSelectedParcelPage() {
+  const selectedId = selectedParcelIdNumber.value
+  if (selectedId == null) {
+    return
+  }
+
+  const perPage = Number(scanjobmonitor_parcels_per_page.value)
+  if (!Number.isFinite(perPage) || perPage <= 0) {
+    return
+  }
+
+  const selectedIndex = getSortedParcels().findIndex((parcel) => getParcelId(parcel) === selectedId)
+  if (selectedIndex < 0) {
+    return
+  }
+
+  scanjobmonitor_parcels_page.value = Math.floor(selectedIndex / perPage) + 1
+}
+
+async function scrollToSelectedParcel() {
+  const selectedId = selectedParcelIdNumber.value
+  if (selectedId == null) {
+    return
+  }
+
+  await nextTick()
+  const tableElement = dataTableRef.value?.$el ?? dataTableRef.value
+  const selectedRows = tableElement?.querySelectorAll?.('.selected-parcel-row')
+  const selectedRow = selectedRows?.[selectedRows.length - 1]
+  selectedRow?.scrollIntoView?.({
+    behavior: 'smooth',
+    block: 'center',
+    inline: 'nearest'
+  })
+}
+
+function getRowProps(data) {
+  const item = data?.item ?? data
+  return getParcelId(item) === selectedParcelIdNumber.value
+    ? { class: 'selected-parcel-row' }
+    : {}
+}
+
+watch(
+  () => [
+    props.selectedParcelId,
+    props.parcels,
+    scanjobmonitor_parcels_per_page.value,
+    scanjobmonitor_parcels_sort_by.value
+  ],
+  async () => {
+    moveToSelectedParcelPage()
+    await scrollToSelectedParcel()
+  },
+  { immediate: true, deep: true }
+)
+
 </script>
 
 <template>
   <v-data-table
+    ref="dataTableRef"
     v-model:items-per-page="scanjobmonitor_parcels_per_page"
     v-model:page="scanjobmonitor_parcels_page"
     v-model:sort-by="scanjobmonitor_parcels_sort_by"
     :headers="props.headers"
     :items="props.parcels"
+    :row-props="getRowProps"
     :items-per-page-options="itemsPerPageOptions"
     items-per-page-text="Посылок на странице"
     page-text="{0}-{1} из {2}"

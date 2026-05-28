@@ -81,6 +81,12 @@ export const scanjobMonitorArea = {
   NotInRegister: 3
 }
 
+export const scanjobMonitorTargetKind = {
+  None: 0,
+  Box: 1,
+  Parcel: 2
+}
+
 export const scannedItemSource = {
   Unknown: 0,
   ParcelSticker: 10,

@@ -23,7 +23,8 @@ import {
 } from '@/helpers/parcel.defect.helpers.js'
 import {
   isUnassignedMonitorBox,
-  scanjobMonitorArea
+  scanjobMonitorArea,
+  scanjobMonitorTargetKind
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
@@ -68,6 +69,9 @@ const autoFollowEnabled = ref(true)
 const defectActionRunning = ref(false)
 const scanjobLoaded = ref(false)
 const loadedScanjobId = ref(null)
+const jumpNumber = ref('')
+const jumpLoading = ref(false)
+const selectedParcelId = ref(null)
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -125,6 +129,9 @@ const autoFollowActionIcon = computed(() => (
 ))
 const autoFollowActionTooltip = computed(() => (
   autoFollowEnabled.value ? 'Отключить автослежение' : 'Включить автослежение'
+))
+const isJumpDisabled = computed(() => (
+  isLoading.value || jumpLoading.value || !jumpNumber.value.trim()
 ))
 
 function close() {
@@ -211,6 +218,7 @@ function updateMonitorRoute(scope, { replace = false } = {}) {
 }
 
 function navigateToRegisterMonitor({ replace = false } = {}) {
+  selectedParcelId.value = null
   return updateMonitorRoute({ area: scanjobMonitorArea.Boxes }, { replace })
 }
 
@@ -227,6 +235,7 @@ function navigateToBoxMonitor(box, { replace = false } = {}) {
     return Promise.resolve(false)
   }
 
+  selectedParcelId.value = null
   return updateMonitorRoute({
     area: isUnassigned ? scanjobMonitorArea.Unassigned : scanjobMonitorArea.Box,
     boxId: isUnassigned ? null : boxId,
@@ -342,6 +351,14 @@ function buildScope(area, boxId = null, bucketIndex = null) {
   return scope
 }
 
+function scopesAreEqual(left, right) {
+  const normalizedLeft = normalizeMonitorScope(left)
+  const normalizedRight = normalizeMonitorScope(right)
+  return Number(normalizedLeft.area) === Number(normalizedRight.area)
+    && toNumberOrNull(normalizedLeft.boxId) === toNumberOrNull(normalizedRight.boxId)
+    && (toNumberOrNull(normalizedLeft.bucketIndex) ?? null) === (toNumberOrNull(normalizedRight.bucketIndex) ?? null)
+}
+
 function currentArea() {
   return selectedArea.value
 }
@@ -439,6 +456,86 @@ function normalizeMonitorScope(scope = {}) {
     area: scanjobMonitorArea.Boxes,
     boxId: null,
     bucketIndex: null
+  }
+}
+
+function getMonitorTargetErrorMessage(error) {
+  return error?.message || 'Ошибка при поиске посылки или коробки'
+}
+
+async function navigateToResolvedScope(scope, { reloadIfSame = false } = {}) {
+  const normalizedScope = normalizeMonitorScope(scope)
+
+  if (scopesAreEqual(normalizedScope, getCurrentScope())) {
+    if (reloadIfSame) {
+      await refreshCurrentScopeSnapshot()
+    }
+    return false
+  }
+
+  return updateMonitorRoute(normalizedScope)
+}
+
+async function handleJumpToNumber() {
+  if (jumpLoading.value || isLoading.value) {
+    return
+  }
+
+  const number = jumpNumber.value.trim()
+  if (!number) {
+    alertStore.error('Введите номер посылки или коробки')
+    return
+  }
+
+  jumpLoading.value = true
+  try {
+    const target = await scanJobsStore.resolveMonitorTarget(props.scanjobId, number)
+    const kind = Number(target?.kind)
+
+    if (kind === scanjobMonitorTargetKind.Box) {
+      const boxId = toNumberOrNull(target?.boxId)
+      if (boxId == null) {
+        alertStore.error(`Посылка или коробка с номером «${number}» не найдена`)
+        return
+      }
+
+      selectedParcelId.value = null
+      await navigateToResolvedScope({
+        area: scanjobMonitorArea.Box,
+        boxId,
+        bucketIndex: null
+      })
+      return
+    }
+
+    if (kind === scanjobMonitorTargetKind.Parcel) {
+      const parcelId = toNumberOrNull(target?.parcelId)
+      const targetScope = normalizeMonitorScope({
+        area: target?.area,
+        boxId: target?.boxId,
+        bucketIndex: target?.bucketIndex
+      })
+
+      if (parcelId == null || targetScope.area === scanjobMonitorArea.Boxes) {
+        alertStore.error(`Посылка или коробка с номером «${number}» не найдена`)
+        return
+      }
+
+      selectedParcelId.value = parcelId
+      await navigateToResolvedScope(targetScope, { reloadIfSame: true })
+      return
+    }
+
+    selectedParcelId.value = null
+    alertStore.error(`Посылка или коробка с номером «${number}» не найдена`)
+  } catch (error) {
+    if (isComponentMounted.value) {
+      alertStore.error(getMonitorTargetErrorMessage(error))
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      jumpLoading.value = false
+    }
   }
 }
 
@@ -933,6 +1030,33 @@ defineExpose({
 
     <hr class="hr" />
 
+    <form class="scanjob-monitor-jump" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
+      <label class="scanjob-monitor-jump-label" for="scanjob-monitor-jump-input">
+        Перейти к посылке или коробке по номеру:
+      </label>
+      <input
+        id="scanjob-monitor-jump-input"
+        v-model="jumpNumber"
+        class="form-control scanjob-monitor-jump-input"
+        type="text"
+        autocomplete="off"
+        data-testid="scanjob-monitor-jump-input"
+        :disabled="isLoading || jumpLoading"
+      />
+      <ActionButton
+        :item="{}"
+        icon="fa-solid fa-check-double"
+        icon-size="2x"
+        tooltip-text="Перейти"
+        aria-label="Перейти"
+        title="Перейти"
+        data-testid="scanjob-monitor-jump-action"
+        :disabled="isJumpDisabled"
+        @click="handleJumpToNumber"
+      />
+      <span v-if="jumpLoading" class="spinner-border spinner-border-m" data-testid="scanjob-monitor-jump-loading"></span>
+    </form>
+
     <div class="scanjob-monitor-panel">
       <div v-if="isLoading && !visibleSnapshot" class="monitor-empty" data-testid="scanjob-monitor-loading">
         <span class="spinner-border spinner-border-m"></span>
@@ -966,6 +1090,7 @@ defineExpose({
           :register-type="visibleSnapshot?.registerType ?? 0"
           :loading="isLoading"
           :defect-action-loading="defectActionRunning"
+          :selected-parcel-id="selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setParcelDefect"
           @clear-defect="clearParcelDefect"
@@ -983,6 +1108,25 @@ defineExpose({
 <style scoped>
 .scanjob-monitor-panel {
   min-height: 320px;
+}
+
+.scanjob-monitor-jump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.scanjob-monitor-jump-label {
+  flex: 0 1 auto;
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
+.scanjob-monitor-jump-input {
+  flex: 1 1 220px;
+  max-width: 360px;
 }
 
 .monitor-summary-action {

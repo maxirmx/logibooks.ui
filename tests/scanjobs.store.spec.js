@@ -568,6 +568,18 @@ describe('scanjobs store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=2&bucketIndex=3`)
     })
 
+    it('resolves monitor target by number', async () => {
+      const target = { kind: 1, area: 1, boxId: 7, number: 'BOX-7' }
+      fetchWrapper.get.mockResolvedValue(target)
+      const store = useScanjobsStore()
+
+      const result = await store.resolveMonitorTarget(42, 'BOX-7')
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor/resolve?number=BOX-7`)
+      expect(result).toEqual(target)
+      expect(store.monitorError).toBeNull()
+    })
+
     it('starts SignalR monitor and forwards snapshots', async () => {
       const onSnapshot = vi.fn()
       const store = useScanjobsStore()

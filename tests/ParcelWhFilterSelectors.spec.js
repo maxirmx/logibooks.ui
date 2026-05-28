@@ -73,7 +73,7 @@ describe('ParcelWhFilterSelectors.vue', () => {
     expect(text).toContain('ШК')
     expect(text).toContain('Номер коробки')
     expect(text).toContain('Любой из стикеров')
-    expect(text).toContain('Описание')
+    expect(text).toContain('Товар')
   })
 
   it('emits debounced text filter model updates to the parent refs', async () => {

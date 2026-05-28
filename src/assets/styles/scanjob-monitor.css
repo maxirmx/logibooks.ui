@@ -138,6 +138,11 @@
   height: 36px !important;
 }
 
+.scanjob-monitor-parcels-table .selected-parcel-row > td,
+.scanjob-monitor-parcels-table .selected-parcel-row .v-data-table__td {
+  background-color: #b7d5fe !important;
+}
+
 .scanjob-monitor-parcel-progress-panel {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(120px, 1fr));

@@ -19,7 +19,7 @@ export const ozonRegisterColumnTitles = {
   currency: 'Валюта',
   unitPrice: 'Цена единицы',
   quantity: 'Количество',
-  productLink: 'Ссылка на страницу интернет-магазина',
+  productLink: 'Ссылка на страницу',
   tnVed: 'ТН ВЭД',
   lastName: 'Фамилия',
   firstName: 'Имя',

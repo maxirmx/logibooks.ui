@@ -15,6 +15,7 @@ import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
 import {
+  scanjobCheckStatusProjectionKind,
   getScanjobCheckStatusClass,
   scanjobCheckStatusReason
 } from '@/helpers/scanjob.check-status.helpers.js'
@@ -22,6 +23,7 @@ import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
+import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import {
   canClearParcelDefect,
@@ -30,6 +32,7 @@ import {
   getSetParcelDefectErrorMessage
 } from '@/helpers/parcel.defect.helpers.js'
 import { storeToRefs } from 'pinia'
+import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -45,8 +48,24 @@ const alertStore = useAlertStore()
 
 const { alert } = storeToRefs(alertStore)
 const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
-const { parcels_per_page, parcels_sort_by, parcels_page } = storeToRefs(authStore)
+const {
+  parcels_per_page,
+  parcels_sort_by,
+  parcels_page,
+  parcels_wh_status,
+  parcels_wh_check_status_projection,
+  parcels_wh_zone,
+  parcels_wh_number,
+  parcels_wh_box_number,
+  parcels_wh_sticker,
+  parcels_wh_product_name,
+} = storeToRefs(authStore)
 const { ops } = storeToRefs(warehousesStore)
+
+const localParcelNumberSearch = ref(parcels_wh_number.value || '')
+const localBoxNumberSearch = ref(parcels_wh_box_number.value || '')
+const localStickerSearch = ref(parcels_wh_sticker.value || '')
+const localProductNameSearch = ref(parcels_wh_product_name.value || '')
 
 const registerLoading = ref(true)
 const isInitializing = ref(true)
@@ -112,9 +131,48 @@ async function loadParcelsWrapper() {
   })
 }
 
+const statusOptions = computed(() => [
+  { value: null, title: 'Все' },
+  ...(parcelStatusStore.parcelStatuses || []).map(status => ({
+    value: status.id,
+    title: status.title
+  }))
+])
+
+const checkStatusProjectionOptions = [
+  { value: null, title: 'Все' },
+  { value: scanjobCheckStatusProjectionKind.NotChecked, title: 'Не проверено' },
+  { value: scanjobCheckStatusProjectionKind.Restriction, title: 'Запрет' },
+  { value: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' },
+  { value: scanjobCheckStatusProjectionKind.Checked, title: 'Проверено' },
+]
+
+const warehouseZoneNoneValue = 1
+const zoneOptions = computed(() => [
+  { value: null, title: 'Все' },
+  { value: warehouseZoneNoneValue, title: 'Не задана' },
+  ...(ops.value?.zones || [])
+    .filter(zone => Number(zone.value) !== warehouseZoneNoneValue)
+    .map(zone => ({
+      value: zone.value,
+      title: zone.name || String(zone.value)
+    }))
+])
+
+const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+  filters: [
+    { local: localParcelNumberSearch, store: parcels_wh_number },
+    { local: localBoxNumberSearch, store: parcels_wh_box_number },
+    { local: localStickerSearch, store: parcels_wh_sticker },
+    { local: localProductNameSearch, store: parcels_wh_product_name }
+  ],
+  loadFn: loadParcelsWrapper,
+  isComponentMounted
+})
+
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by],
-  () => loadParcelsWrapper(),
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
+  () => triggerLoad(),
   { immediate: false }
 )
 
@@ -130,7 +188,6 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
 
     await fetchRegister()
-    await loadParcelsWrapper()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при инициализации компонента')
@@ -145,6 +202,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
+  stopFilterSync()
   if (watcherStop) {
     watcherStop()
   }
@@ -203,6 +261,25 @@ async function clearParcelDefect(item) {
       />
     </div>
     <hr class="hr" />
+
+    <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
+      <ParcelWhFilterSelectors
+        v-model:parcels-wh-status="parcels_wh_status"
+        v-model:parcels-wh-check-status-projection="parcels_wh_check_status_projection"
+        v-model:parcels-wh-zone="parcels_wh_zone"
+        v-model:local-parcel-number-search="localParcelNumberSearch"
+        v-model:local-box-number-search="localBoxNumberSearch"
+        v-model:local-sticker-search="localStickerSearch"
+        v-model:local-product-name-search="localProductNameSearch"
+        :status-options="statusOptions"
+        :check-status-projection-options="checkStatusProjectionOptions"
+        :zone-options="zoneOptions"
+        number-label="ШК"
+        :running-action="runningAction"
+        :loading="loading"
+        :is-initializing="isInitializing"
+      />
+    </div>
 
     <v-card class="table-card">
       <v-data-table-server

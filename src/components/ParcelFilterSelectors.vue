@@ -146,7 +146,7 @@ const localProductNameSearchModel = computed({
     />
     <v-text-field
       v-model="localProductNameSearchModel"
-      label="Название продукта"
+      label="Товар"
       density="compact"
       style="min-width: 220px;"
       :disabled="disabledState.textFieldsDisabled"

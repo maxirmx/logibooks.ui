@@ -120,7 +120,7 @@ const headers = [
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
       <div style="display:flex; align-items:center;">

@@ -34,7 +34,14 @@ const mockAuthStore = {
   parcels_hide_legacy_restrictions: false,
   parcels_tnved: '',
   parcels_number: '',
-  parcels_product_name: ''
+  parcels_product_name: '',
+  parcels_wh_status: null,
+  parcels_wh_check_status_projection: null,
+  parcels_wh_zone: null,
+  parcels_wh_number: '',
+  parcels_wh_box_number: '',
+  parcels_wh_sticker: '',
+  parcels_wh_product_name: ''
 }
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -56,6 +63,13 @@ describe('parcels store', () => {
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
     mockAuthStore.parcels_product_name = ''
+    mockAuthStore.parcels_wh_status = null
+    mockAuthStore.parcels_wh_check_status_projection = null
+    mockAuthStore.parcels_wh_zone = null
+    mockAuthStore.parcels_wh_number = ''
+    mockAuthStore.parcels_wh_box_number = ''
+    mockAuthStore.parcels_wh_sticker = ''
+    mockAuthStore.parcels_wh_product_name = ''
   })
 
   it('fetches data with default parameters from auth store', async () => {
@@ -79,6 +93,46 @@ describe('parcels store', () => {
     await store.getAll(1, { showMarkedByPartner: true })
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
+    )
+  })
+
+  it('fetches warehouse data with warehouse-specific filters only on extended endpoint', async () => {
+    mockAuthStore.parcels_status = 99
+    mockAuthStore.parcels_number = 'REGULAR-SUBSTRING'
+    mockAuthStore.parcels_product_name = 'Regular product'
+    mockAuthStore.parcels_wh_status = 3
+    mockAuthStore.parcels_wh_check_status_projection = 20
+    mockAuthStore.parcels_wh_zone = 1
+    mockAuthStore.parcels_wh_number = 'POST-'
+    mockAuthStore.parcels_wh_box_number = 'BOX-'
+    mockAuthStore.parcels_wh_sticker = 'ST-'
+    mockAuthStore.parcels_wh_product_name = 'Warehouse product'
+
+    fetchWrapper.get.mockResolvedValue({
+      items: [],
+      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+    })
+    const store = useParcelsStore()
+    await store.getAll(1, { showMarkedByPartner: true })
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=3&checkStatusProjectionKind=20&zone=1&numberPrefix=POST-&boxNumberPrefix=BOX-&stickerPrefix=ST-&productName=Warehouse+product`
+    )
+  })
+
+  it('ignores warehouse-specific filters on regular parcel endpoint', async () => {
+    mockAuthStore.parcels_number = 'REG'
+    mockAuthStore.parcels_wh_number = 'POST-'
+    mockAuthStore.parcels_wh_box_number = 'BOX-'
+    mockAuthStore.parcels_wh_sticker = 'ST-'
+
+    fetchWrapper.get.mockResolvedValue({
+      items: [],
+      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+    })
+    const store = useParcelsStore()
+    await store.getAll(1)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&number=REG`
     )
   })
 

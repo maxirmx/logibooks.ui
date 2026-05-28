@@ -50,6 +50,29 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   return params
 }
 
+function appendIfPresent(params, name, value) {
+  if (value !== null && value !== undefined && value !== '') {
+    params.append(name, value.toString())
+  }
+}
+
+export function buildParcelsWhFilterParams(authStore, additionalParams = {}) {
+  const params = new URLSearchParams(additionalParams)
+
+  params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
+  params.append('sortOrder', authStore.parcels_sort_by?.[0]?.order || 'asc')
+
+  appendIfPresent(params, 'statusId', authStore.parcels_wh_status)
+  appendIfPresent(params, 'checkStatusProjectionKind', authStore.parcels_wh_check_status_projection)
+  appendIfPresent(params, 'zone', authStore.parcels_wh_zone)
+  appendIfPresent(params, 'numberPrefix', authStore.parcels_wh_number)
+  appendIfPresent(params, 'boxNumberPrefix', authStore.parcels_wh_box_number)
+  appendIfPresent(params, 'stickerPrefix', authStore.parcels_wh_sticker)
+  appendIfPresent(params, 'productName', authStore.parcels_wh_product_name)
+
+  return params
+}
+
 export function buildParcelsNumberParams(number) {
   const params = new URLSearchParams()
   if (number) {
@@ -83,7 +106,10 @@ export const useParcelsStore = defineStore('parcels', () => {
     loading.value = true
     error.value = null
     try {
-      const params = buildParcelsFilterParams(authStore, {
+      const filterBuilder = showMarkedByPartner
+        ? buildParcelsWhFilterParams
+        : buildParcelsFilterParams
+      const params = filterBuilder(authStore, {
         registerId: registerId.toString(),
         page: authStore.parcels_page.toString(),
         pageSize: authStore.parcels_per_page.toString()

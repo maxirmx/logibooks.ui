@@ -552,36 +552,42 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('marks and scrolls resolved parcel in current box', async () => {
-    const scrollIntoView = vi.fn()
-    window.HTMLElement.prototype.scrollIntoView = scrollIntoView
-    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
-    resolveMonitorTarget.mockResolvedValueOnce({
-      kind: 2,
-      area: 1,
-      boxId: 7,
-      bucketIndex: null,
-      parcelId: 71,
-      number: 'P-71',
-      boxCode: 'BOX-7',
-      parcelNumber: 'P-71'
-    })
-    const wrapper = mount(ScanjobMonitor, {
-      props: { scanjobId: 42, monitorScope: box7MonitorScope },
-      global: { stubs: monitorGlobalStubs }
-    })
+    const scrollIntoView = vi
+      .spyOn(window.HTMLElement.prototype, 'scrollIntoView')
+      .mockImplementation(() => {})
 
-    await flushPromises()
-    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
-    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
-    await flushPromises()
+    try {
+      loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+      resolveMonitorTarget.mockResolvedValueOnce({
+        kind: 2,
+        area: 1,
+        boxId: 7,
+        bucketIndex: null,
+        parcelId: 71,
+        number: 'P-71',
+        boxCode: 'BOX-7',
+        parcelNumber: 'P-71'
+      })
+      const wrapper = mount(ScanjobMonitor, {
+        props: { scanjobId: 42, monitorScope: box7MonitorScope },
+        global: { stubs: monitorGlobalStubs }
+      })
 
-    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
-    expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
-    expect(scrollIntoView).toHaveBeenCalledWith({
-      behavior: 'smooth',
-      block: 'center',
-      inline: 'nearest'
-    })
+      await flushPromises()
+      await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
+      await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+      await flushPromises()
+
+      expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+      expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+    } finally {
+      scrollIntoView.mockRestore()
+    }
   })
 
   it('alerts when jump target is not found', async () => {

@@ -527,6 +527,33 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
+  it('clears stale jump error after successful box search', async () => {
+    mockAlert.value = { message: 'Посылка или коробка не найдена', type: 'alert-danger' }
+    clearAlert.mockImplementationOnce(() => { mockAlert.value = null })
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 1,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: null,
+      number: 'BOX-7',
+      boxCode: 'BOX-7',
+      parcelNumber: null
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(clearAlert).toHaveBeenCalledTimes(1)
+    expect(mockAlert.value).toBeNull()
+  })
+
   it('navigates to resolved unassigned parcel bucket', async () => {
     resolveMonitorTarget.mockResolvedValueOnce({
       kind: 2,
@@ -596,6 +623,35 @@ describe('Scanjob_Monitor.vue', () => {
         delete window.HTMLElement.prototype.scrollIntoView
       }
     }
+  })
+
+  it('clears stale jump error after successful parcel search', async () => {
+    mockAlert.value = { message: 'Посылка или коробка не найдена', type: 'alert-danger' }
+    clearAlert.mockImplementationOnce(() => { mockAlert.value = null })
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 2,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: 71,
+      number: 'P-71',
+      boxCode: 'BOX-7',
+      parcelNumber: 'P-71'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+    expect(clearAlert).toHaveBeenCalledTimes(1)
+    expect(mockAlert.value).toBeNull()
   })
 
   it('alerts when jump target is not found', async () => {

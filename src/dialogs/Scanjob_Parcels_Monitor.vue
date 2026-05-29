@@ -26,7 +26,8 @@ const props = defineProps({
   box: { type: Object, default: null },
   registerType: { type: Number, default: 0 },
   loading: { type: Boolean, default: false },
-  defectActionLoading: { type: Boolean, default: false }
+  defectActionLoading: { type: Boolean, default: false },
+  selectedParcelId: { type: [Number, String], default: null }
 })
 
 const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
@@ -102,6 +103,7 @@ function clearDefect(item) {
           :parcels="parcels"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
+          :selected-parcel-id="props.selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setDefect"
           @clear-defect="clearDefect"
@@ -113,6 +115,7 @@ function clearDefect(item) {
           :parcels="parcels"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
+          :selected-parcel-id="props.selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setDefect"
           @clear-defect="clearDefect"

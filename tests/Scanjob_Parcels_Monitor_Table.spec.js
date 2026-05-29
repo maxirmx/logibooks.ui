@@ -4,7 +4,7 @@
 // This file is a part of Logibooks UI application
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
 import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor_Table.vue'
@@ -55,6 +55,9 @@ const global = { stubs: vuetifyStubs }
 
 describe('Scanjob parcel monitor typed tables', () => {
   beforeEach(() => {
+    scanjobmonitorParcelsPerPage.value = 50
+    scanjobmonitorParcelsSortBy.value = [{ key: 'id', order: 'asc' }]
+    scanjobmonitorParcelsPage.value = 1
     hasLogistRole.value = true
     isAdmin.value = false
     isWhManager.value = false
@@ -301,5 +304,377 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     await clearButton.trigger('click')
     expect(wrapper.emitted('clear-defect')?.[0][0]).toEqual(expect.objectContaining({ id: 42 }))
+  })
+
+  it('marks selected parcel row and moves pagination to its page', async () => {
+    const scrollIntoView = vi.fn()
+    const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView
+
+    let wrapper
+    try {
+      scanjobmonitorParcelsPerPage.value = 2
+      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
+
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [
+            { title: 'Посылка', key: 'parcelNumber' },
+            { title: 'Товар', key: 'productName' }
+          ],
+          selectedParcelId: 3,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001', productName: 'One' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002', productName: 'Two' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003', productName: 'Three' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+      expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+    } finally {
+      wrapper?.unmount()
+      window.HTMLElement.prototype.scrollIntoView = originalScrollIntoView
+    }
+  })
+
+  it('does not change page or scroll when no selectedParcelId', async () => {
+    scanjobmonitorParcelsPerPage.value = 2
+    scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
+    scanjobmonitorParcelsPage.value = 1
+
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    let wrapper
+
+    try {
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [
+            { title: 'Посылка', key: 'parcelNumber' }
+          ],
+          selectedParcelId: null,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+      expect(scrollIntoView).not.toHaveBeenCalled()
+    } finally {
+      wrapper?.unmount()
+      scrollIntoView.mockRestore()
+    }
+  })
+
+  it('does not change page when selectedParcelId is not found in parcels', async () => {
+    scanjobmonitorParcelsPerPage.value = 2
+    scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
+    scanjobmonitorParcelsPage.value = 1
+
+    let wrapper
+    try {
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 999,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+    } finally {
+      wrapper?.unmount()
+    }
+  })
+
+  it('moves to correct page when parcels are sorted in descending order', async () => {
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    let wrapper
+
+    try {
+      scanjobmonitorParcelsPerPage.value = 2
+      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
+      scanjobmonitorParcelsPage.value = 1
+
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 1,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      // Sorted desc: P-003 (id=3), P-002 (id=2), P-001 (id=1)
+      // id=1 is at index 2 → page 2 with 2 per page
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+    } finally {
+      wrapper?.unmount()
+      scrollIntoView.mockRestore()
+    }
+  })
+
+  it('applies selected-parcel-row class only to matching row', async () => {
+    scanjobmonitorParcelsPerPage.value = 50
+    scanjobmonitorParcelsSortBy.value = []
+
+    let wrapper
+    try {
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 2,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      const selectedRows = wrapper.findAll('.selected-parcel-row')
+      expect(selectedRows).toHaveLength(1)
+      expect(selectedRows[0].text()).toContain('P-002')
+    } finally {
+      wrapper?.unmount()
+    }
+  })
+
+  it('uses custom header sort function when sorting parcels', async () => {
+    scanjobmonitorParcelsPerPage.value = 2
+    scanjobmonitorParcelsPage.value = 1
+
+    const customSort = vi.fn((a, b) => {
+      // Reverse numeric sort: higher numbers come first
+      return b - a
+    })
+
+    scanjobmonitorParcelsSortBy.value = [{ key: 'weight', order: 'asc' }]
+
+    let wrapper
+    try {
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [
+            {
+              title: 'Вес',
+              key: 'weight',
+              sort: customSort
+            }
+          ],
+          selectedParcelId: 1,
+          parcels: [
+            { id: 1, parcelId: 1, weight: 10 },
+            { id: 2, parcelId: 2, weight: 20 },
+            { id: 3, parcelId: 3, weight: 30 }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      // Custom sort reverses order: id=3 (30), id=2 (20), id=1 (10)
+      // id=1 is at index 2 → page 2 with 2 per page
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+      expect(customSort).toHaveBeenCalled()
+    } finally {
+      wrapper?.unmount()
+    }
+  })
+
+  it('uses item.id as fallback when item.parcelId is absent', async () => {
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    let wrapper
+
+    try {
+      scanjobmonitorParcelsPerPage.value = 50
+      scanjobmonitorParcelsSortBy.value = []
+
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 5,
+          parcels: [
+            { id: 5, parcelNumber: 'P-005' },
+            { id: 6, parcelNumber: 'P-006' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+      expect(wrapper.find('.selected-parcel-row').text()).toContain('P-005')
+    } finally {
+      wrapper?.unmount()
+      scrollIntoView.mockRestore()
+    }
+  })
+
+  it('updates page when selectedParcelId changes reactively', async () => {
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    let wrapper
+
+    try {
+      scanjobmonitorParcelsPerPage.value = 2
+      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
+      scanjobmonitorParcelsPage.value = 1
+
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: null,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+
+      await wrapper.setProps({ selectedParcelId: 3 })
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+    } finally {
+      wrapper?.unmount()
+      scrollIntoView.mockRestore()
+    }
+  })
+
+  it('updates page when parcels list changes reactively', async () => {
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    let wrapper
+
+    try {
+      scanjobmonitorParcelsPerPage.value = 2
+      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
+      scanjobmonitorParcelsPage.value = 1
+
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 3,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+      // id=3 not found yet → page stays at 1
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+
+      await wrapper.setProps({
+        parcels: [
+          { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+          { id: 2, parcelId: 2, parcelNumber: 'P-002' },
+          { id: 3, parcelId: 3, parcelNumber: 'P-003' }
+        ]
+      })
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+    } finally {
+      wrapper?.unmount()
+      scrollIntoView.mockRestore()
+    }
+  })
+
+  it('does not change page when perPage is zero', async () => {
+    scanjobmonitorParcelsPerPage.value = 0
+    scanjobmonitorParcelsSortBy.value = []
+    scanjobmonitorParcelsPage.value = 1
+
+    let wrapper
+    try {
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 2,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+    } finally {
+      wrapper?.unmount()
+    }
+  })
+
+  it('sorts without rules returns original parcel order', async () => {
+    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    let wrapper
+
+    try {
+      scanjobmonitorParcelsPerPage.value = 2
+      scanjobmonitorParcelsSortBy.value = []
+      scanjobmonitorParcelsPage.value = 1
+
+      wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+          selectedParcelId: 3,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
+          ]
+        },
+        global
+      })
+
+      await flushPromises()
+
+      // No sort rules → original order: id=3 at index 2 → page 2
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+    } finally {
+      wrapper?.unmount()
+      scrollIntoView.mockRestore()
+    }
   })
 })

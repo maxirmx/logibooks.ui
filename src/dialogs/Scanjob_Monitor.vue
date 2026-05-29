@@ -124,8 +124,9 @@ const scopeHeading = computed(() => {
   return 'Коробки'
 })
 const monitorHeading = computed(() => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`)
-const autoFollowActionIcon = computed(() => (
-  autoFollowEnabled.value ? 'fa-solid fa-link-slash' : 'fa-solid fa-link'
+const autoFollowActionIcon = computed(() => 'fa-solid fa-link')
+const autoFollowActionVariant = computed(() => (
+  autoFollowEnabled.value ? 'green' : 'orange'
 ))
 const autoFollowActionTooltip = computed(() => (
   autoFollowEnabled.value ? 'Отключить автослежение' : 'Включить автослежение'
@@ -1017,6 +1018,7 @@ defineExpose({
             :item="{}"
             :icon="autoFollowActionIcon"
             icon-size="2x"
+            :variant="autoFollowActionVariant"
             :tooltip-text="autoFollowActionTooltip"
             :aria-label="autoFollowActionTooltip"
             :title="autoFollowActionTooltip"

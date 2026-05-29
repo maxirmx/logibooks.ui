@@ -610,6 +610,262 @@ describe('Scanjob_Monitor.vue', () => {
     expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «MISSING» не найдена')
   })
 
+  it('alerts when jump input is empty', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    // Input is empty; button is disabled, so trigger via keydown.enter on the input field
+    const form = wrapper.get('[data-testid="scanjob-monitor-jump"]')
+    await form.trigger('submit')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Введите номер посылки или коробки')
+    expect(resolveMonitorTarget).not.toHaveBeenCalled()
+  })
+
+  it('does not call resolveMonitorTarget when isLoading is true', async () => {
+    monitorLoading.value = true
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(resolveMonitorTarget).not.toHaveBeenCalled()
+  })
+
+  it('disables jump action button when input is empty', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+
+    const jumpAction = wrapper.get('[data-testid="scanjob-monitor-jump-action"]')
+    expect(jumpAction.attributes('disabled')).toBeDefined()
+  })
+
+  it('enables jump action button when input has text', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+
+    const jumpAction = wrapper.get('[data-testid="scanjob-monitor-jump-action"]')
+    expect(jumpAction.attributes('disabled')).toBeUndefined()
+  })
+
+  it('shows jump loading spinner while resolving', async () => {
+    let resolveTarget
+    resolveMonitorTarget.mockReturnValueOnce(new Promise((resolve) => { resolveTarget = resolve }))
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-loading"]').exists()).toBe(true)
+
+    resolveTarget({ kind: 0 })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-loading"]').exists()).toBe(false)
+  })
+
+  it('alerts when resolved box target has null boxId', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 1,
+      area: 1,
+      boxId: null,
+      parcelId: null,
+      number: 'BADBOX'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BADBOX')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «BADBOX» не найдена')
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('alerts when resolved parcel target has null parcelId', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 2,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: null,
+      number: 'BADPARCEL'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BADPARCEL')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «BADPARCEL» не найдена')
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('alerts when resolved parcel target scope is Boxes area', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 2,
+      area: 0,
+      boxId: null,
+      bucketIndex: null,
+      parcelId: 55,
+      number: 'P-55'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-55')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «P-55» не найдена')
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('shows error alert when resolveMonitorTarget throws with a message', async () => {
+    resolveMonitorTarget.mockRejectedValueOnce(new Error('Network failure'))
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Network failure')
+  })
+
+  it('shows fallback error message when resolveMonitorTarget throws without message', async () => {
+    resolveMonitorTarget.mockRejectedValueOnce({})
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith('Ошибка при поиске посылки или коробки')
+  })
+
+  it('submits jump form on Enter key press', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 1,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: null,
+      number: 'BOX-7'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    const input = wrapper.get('[data-testid="scanjob-monitor-jump-input"]')
+    await input.setValue('BOX-7')
+    await input.trigger('keydown.enter')
+    await flushPromises()
+
+    expect(resolveMonitorTarget).toHaveBeenCalledWith(42, 'BOX-7')
+  })
+
+  it('clears selectedParcelId when navigating back to register monitor', async () => {
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 2,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: 71,
+      number: 'P-71'
+    })
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+
+    loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
+    clearMonitor.mockResolvedValue(true)
+    await wrapper.vm.openRegisterMonitor()
+    await flushPromises()
+
+    expect(wrapper.find('.selected-parcel-row').exists()).toBe(false)
+  })
+
+  it('stays on same scope without navigation when scope is unchanged and reloadIfSame is false', async () => {
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 1,
+      area: 0,
+      boxId: null,
+      bucketIndex: null,
+      parcelId: null,
+      number: 'BOX-SAME'
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    const pushCallsBefore = mockPush.mock.calls.length
+    const replaceCallsBefore = mockReplace.mock.calls.length
+
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-SAME')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(mockPush.mock.calls.length).toBe(pushCallsBefore)
+    expect(mockReplace.mock.calls.length).toBe(replaceCallsBefore)
+  })
+
   it('does not start a separate autofollow observer for the register panel', async () => {
     mount(ScanjobMonitor, {
       props: { scanjobId: 42 },

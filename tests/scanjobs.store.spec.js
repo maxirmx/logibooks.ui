@@ -580,6 +580,16 @@ describe('scanjobs store', () => {
       expect(store.monitorError).toBeNull()
     })
 
+    it('resolveMonitorTarget throws and sets monitorError on failure', async () => {
+      const fetchError = new Error('Resolve error')
+      fetchWrapper.get.mockRejectedValue(fetchError)
+
+      const store = useScanjobsStore()
+
+      await expect(store.resolveMonitorTarget(42, 'UNKNOWN')).rejects.toThrow('Resolve error')
+      expect(store.monitorError).toBe(fetchError)
+    })
+
     it('starts SignalR monitor and forwards snapshots', async () => {
       const onSnapshot = vi.fn()
       const store = useScanjobsStore()

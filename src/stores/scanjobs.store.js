@@ -317,6 +317,18 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function resolveMonitorTarget(scanJobId, number) {
+    monitorError.value = null
+
+    try {
+      const params = new URLSearchParams({ number: String(number ?? '') })
+      return await fetchWrapper.get(`${baseUrl}/${scanJobId}/monitor/resolve?${params.toString()}`)
+    } catch (err) {
+      monitorError.value = err
+      throw err
+    }
+  }
+
   async function startMonitor(scanJobId, {
     area = scanjobMonitorArea.Boxes,
     boxId = null,
@@ -608,6 +620,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     ensureOpsLoaded,
     getOpsLabel,
     loadMonitorSnapshot,
+    resolveMonitorTarget,
     startMonitor,
     clearMonitor,
     stopMonitor,

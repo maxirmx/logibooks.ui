@@ -59,7 +59,7 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-text-field': {
-    template: '<label class="v-text-field-stub" data-testid="v-text-field"><span>{{ label }}</span><input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" @keydown="$emit(\'keydown\', $event)" /></label>',
+    template: '<label class="v-text-field-stub" data-testid="v-text-field"><span>{{ label }}</span><input v-bind="$attrs" :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" @keydown="$emit(\'keydown\', $event)" /></label>',
     props: ['modelValue', 'label', 'clearable', 'prefix', 'type', 'variant', 'density', 'hideDetails', 'readonly', 'style', 'errorMessages', 'required', 'disabled', 'placeholder'],
     inheritAttrs: false,
     emits: ['input', 'update:modelValue', 'keydown']

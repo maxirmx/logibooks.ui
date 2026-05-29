@@ -985,6 +985,33 @@ defineExpose({
         <div v-if="isLoading" class="header-actions header-actions-group">
             <span class="spinner-border spinner-border-m"></span>
         </div>
+        <form class="header-actions header-actions-group scanjob-monitor-jump" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
+          <v-text-field
+            id="scanjob-monitor-jump-input"
+            v-model="jumpNumber"
+            density="compact"
+            class="scanjob-monitor-jump-input"
+            label="Перейти к посылке или коробке"
+            variant="outlined"
+            hide-details
+            autocomplete="off"
+            data-testid="scanjob-monitor-jump-input"
+            :disabled="isLoading || jumpLoading"
+            @keydown.enter="handleJumpToNumber"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-angles-right"
+            icon-size="2x"
+            tooltip-text="Перейти"
+            aria-label="Перейти"
+            title="Перейти"
+            data-testid="scanjob-monitor-jump-action"
+            :disabled="isJumpDisabled"
+            @click="handleJumpToNumber"
+          />
+          <span v-if="jumpLoading" class="spinner-border spinner-border-m" data-testid="scanjob-monitor-jump-loading"></span>
+        </form>
         <div class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
@@ -1029,33 +1056,6 @@ defineExpose({
     </div>
 
     <hr class="hr" />
-
-    <form class="scanjob-monitor-jump" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
-      <label class="scanjob-monitor-jump-label" for="scanjob-monitor-jump-input">
-        Перейти к посылке или коробке по номеру:
-      </label>
-      <input
-        id="scanjob-monitor-jump-input"
-        v-model="jumpNumber"
-        class="form-control scanjob-monitor-jump-input"
-        type="text"
-        autocomplete="off"
-        data-testid="scanjob-monitor-jump-input"
-        :disabled="isLoading || jumpLoading"
-      />
-      <ActionButton
-        :item="{}"
-        icon="fa-solid fa-check-double"
-        icon-size="2x"
-        tooltip-text="Перейти"
-        aria-label="Перейти"
-        title="Перейти"
-        data-testid="scanjob-monitor-jump-action"
-        :disabled="isJumpDisabled"
-        @click="handleJumpToNumber"
-      />
-      <span v-if="jumpLoading" class="spinner-border spinner-border-m" data-testid="scanjob-monitor-jump-loading"></span>
-    </form>
 
     <div class="scanjob-monitor-panel">
       <div v-if="isLoading && !visibleSnapshot" class="monitor-empty" data-testid="scanjob-monitor-loading">
@@ -1111,22 +1111,11 @@ defineExpose({
 }
 
 .scanjob-monitor-jump {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.scanjob-monitor-jump-label {
-  flex: 0 1 auto;
-  margin-bottom: 0;
-  font-weight: 600;
+  gap: 8px;
 }
 
 .scanjob-monitor-jump-input {
-  flex: 1 1 220px;
-  max-width: 360px;
+  min-width: 300px;
 }
 
 .monitor-summary-action {

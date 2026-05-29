@@ -493,7 +493,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
-    expect(wrapper.get('[data-testid="scanjob-monitor-jump"]').text()).toContain('Перейти к посылке или коробке по номеру:')
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump"]').text()).toContain('Перейти к посылке или коробке')
   })
 
   it('navigates to resolved box by number', async () => {
@@ -552,6 +552,8 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('marks and scrolls resolved parcel in current box', async () => {
+    const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView
+    window.HTMLElement.prototype.scrollIntoView ??= vi.fn()
     const scrollIntoView = vi
       .spyOn(window.HTMLElement.prototype, 'scrollIntoView')
       .mockImplementation(() => {})
@@ -587,6 +589,9 @@ describe('Scanjob_Monitor.vue', () => {
       })
     } finally {
       scrollIntoView.mockRestore()
+      if (originalScrollIntoView === undefined) {
+        delete window.HTMLElement.prototype.scrollIntoView
+      }
     }
   })
 

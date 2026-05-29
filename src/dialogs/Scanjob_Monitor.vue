@@ -72,6 +72,16 @@ const loadedScanjobId = ref(null)
 const jumpNumber = ref('')
 const jumpLoading = ref(false)
 const selectedParcelId = ref(null)
+const lastJumpErrorMessage = ref(null)
+
+const JUMP_EMPTY_MESSAGE = 'Введите номер посылки или коробки'
+const JUMP_NOT_FOUND_MESSAGE = 'Посылка или коробка не найдена'
+const JUMP_FALLBACK_ERROR_MESSAGE = 'Ошибка при поиске посылки или коробки'
+const jumpKnownErrorMessages = new Set([
+  JUMP_EMPTY_MESSAGE,
+  JUMP_NOT_FOUND_MESSAGE,
+  JUMP_FALLBACK_ERROR_MESSAGE
+])
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -461,7 +471,26 @@ function normalizeMonitorScope(scope = {}) {
 }
 
 function getMonitorTargetErrorMessage(error) {
-  return error?.message || 'Ошибка при поиске посылки или коробки'
+  return error?.message || JUMP_FALLBACK_ERROR_MESSAGE
+}
+
+function showJumpError(message) {
+  lastJumpErrorMessage.value = message
+  alertStore.error(message)
+}
+
+function clearJumpError() {
+  const currentMessage = alert.value?.message
+  if (
+    currentMessage
+    && (
+      currentMessage === lastJumpErrorMessage.value
+      || jumpKnownErrorMessages.has(currentMessage)
+    )
+  ) {
+    alertStore.clear()
+  }
+  lastJumpErrorMessage.value = null
 }
 
 async function navigateToResolvedScope(scope, { reloadIfSame = false } = {}) {
@@ -484,7 +513,7 @@ async function handleJumpToNumber() {
 
   const number = jumpNumber.value.trim()
   if (!number) {
-    alertStore.error('Введите номер посылки или коробки')
+    showJumpError(JUMP_EMPTY_MESSAGE)
     return
   }
 
@@ -496,7 +525,7 @@ async function handleJumpToNumber() {
     if (kind === scanjobMonitorTargetKind.Box) {
       const boxId = toNumberOrNull(target?.boxId)
       if (boxId == null) {
-        alertStore.error(`Посылка или коробка не найдена`)
+        showJumpError(JUMP_NOT_FOUND_MESSAGE)
         return
       }
 
@@ -506,6 +535,7 @@ async function handleJumpToNumber() {
         boxId,
         bucketIndex: null
       })
+      clearJumpError()
       return
     }
 
@@ -518,20 +548,21 @@ async function handleJumpToNumber() {
       })
 
       if (parcelId == null || targetScope.area === scanjobMonitorArea.Boxes) {
-        alertStore.error(`Посылка или коробка не найдена`)
+        showJumpError(JUMP_NOT_FOUND_MESSAGE)
         return
       }
 
       selectedParcelId.value = parcelId
       await navigateToResolvedScope(targetScope, { reloadIfSame: true })
+      clearJumpError()
       return
     }
 
     selectedParcelId.value = null
-    alertStore.error(`Посылка или коробка не найдена`)
+    showJumpError(JUMP_NOT_FOUND_MESSAGE)
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error(getMonitorTargetErrorMessage(error))
+      showJumpError(getMonitorTargetErrorMessage(error))
     }
   } finally {
     if (isComponentMounted.value) {

@@ -554,6 +554,32 @@ describe('Scanjob_Monitor.vue', () => {
     expect(mockAlert.value).toBeNull()
   })
 
+  it('keeps unrelated alert after successful box search', async () => {
+    mockAlert.value = { message: 'Несвязанное сообщение', type: 'alert-danger' }
+    resolveMonitorTarget.mockResolvedValueOnce({
+      kind: 1,
+      area: 1,
+      boxId: 7,
+      bucketIndex: null,
+      parcelId: null,
+      number: 'BOX-7',
+      boxCode: 'BOX-7',
+      parcelNumber: null
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+
+    expect(clearAlert).not.toHaveBeenCalled()
+    expect(mockAlert.value).toEqual({ message: 'Несвязанное сообщение', type: 'alert-danger' })
+  })
+
   it('navigates to resolved unassigned parcel bucket', async () => {
     resolveMonitorTarget.mockResolvedValueOnce({
       kind: 2,

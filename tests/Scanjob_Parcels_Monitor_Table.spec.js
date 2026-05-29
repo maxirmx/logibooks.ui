@@ -308,34 +308,40 @@ describe('Scanjob parcel monitor typed tables', () => {
 
   it('marks selected parcel row and moves pagination to its page', async () => {
     const scrollIntoView = vi.fn()
+    const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView
     window.HTMLElement.prototype.scrollIntoView = scrollIntoView
-    scanjobmonitorParcelsPerPage.value = 2
-    scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
 
-    const wrapper = mount(ScanjobParcelsMonitorTable, {
-      props: {
-        headers: [
-          { title: 'Посылка', key: 'parcelNumber' },
-          { title: 'Товар', key: 'productName' }
-        ],
-        selectedParcelId: 3,
-        parcels: [
-          { id: 1, parcelId: 1, parcelNumber: 'P-001', productName: 'One' },
-          { id: 2, parcelId: 2, parcelNumber: 'P-002', productName: 'Two' },
-          { id: 3, parcelId: 3, parcelNumber: 'P-003', productName: 'Three' }
-        ]
-      },
-      global
-    })
+    try {
+      scanjobmonitorParcelsPerPage.value = 2
+      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
 
-    await flushPromises()
+      const wrapper = mount(ScanjobParcelsMonitorTable, {
+        props: {
+          headers: [
+            { title: 'Посылка', key: 'parcelNumber' },
+            { title: 'Товар', key: 'productName' }
+          ],
+          selectedParcelId: 3,
+          parcels: [
+            { id: 1, parcelId: 1, parcelNumber: 'P-001', productName: 'One' },
+            { id: 2, parcelId: 2, parcelNumber: 'P-002', productName: 'Two' },
+            { id: 3, parcelId: 3, parcelNumber: 'P-003', productName: 'Three' }
+          ]
+        },
+        global
+      })
 
-    expect(scanjobmonitorParcelsPage.value).toBe(2)
-    expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
-    expect(scrollIntoView).toHaveBeenCalledWith({
-      behavior: 'smooth',
-      block: 'center',
-      inline: 'nearest'
-    })
+      await flushPromises()
+
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+      expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      })
+    } finally {
+      window.HTMLElement.prototype.scrollIntoView = originalScrollIntoView
+    }
   })
 })

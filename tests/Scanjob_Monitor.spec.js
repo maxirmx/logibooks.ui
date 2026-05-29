@@ -403,7 +403,10 @@ const monitorGlobalStubs = {
 function getAutoFollowAction(wrapper) {
   return wrapper
     .findAllComponents(ActionButton)
-    .find((button) => ['fa-solid fa-link', 'fa-solid fa-link-slash'].includes(button.props('icon')))
+    .find((button) => (
+      button.props('icon') === 'fa-solid fa-link'
+      && ['green', 'orange'].includes(button.props('variant'))
+    ))
 }
 
 function getAutoFollowSnapshotHandler() {
@@ -906,7 +909,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
-  it('toggles auto-follow from the header action and switches icon', async () => {
+  it('toggles auto-follow from the header action and switches color', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
       global: { stubs: monitorGlobalStubs }
@@ -914,17 +917,20 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
 
-    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link-slash')
+    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link')
+    expect(getAutoFollowAction(wrapper).props('variant')).toBe('green')
     expect(getAutoFollowAction(wrapper).props('tooltipText')).toBe('Отключить автослежение')
 
     await wrapper.find('[data-testid="scanjob-monitor-auto-follow-action"]').trigger('click')
 
     expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link')
+    expect(getAutoFollowAction(wrapper).props('variant')).toBe('orange')
     expect(getAutoFollowAction(wrapper).props('tooltipText')).toBe('Включить автослежение')
 
     await wrapper.find('[data-testid="scanjob-monitor-auto-follow-action"]').trigger('click')
 
-    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link-slash')
+    expect(getAutoFollowAction(wrapper).props('icon')).toBe('fa-solid fa-link')
+    expect(getAutoFollowAction(wrapper).props('variant')).toBe('green')
   })
 
   it('switches to box monitor and renders parcels', async () => {

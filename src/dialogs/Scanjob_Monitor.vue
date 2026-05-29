@@ -495,7 +495,7 @@ async function handleJumpToNumber() {
     if (kind === scanjobMonitorTargetKind.Box) {
       const boxId = toNumberOrNull(target?.boxId)
       if (boxId == null) {
-        alertStore.error(`Посылка или коробка с номером «${number}» не найдена`)
+        alertStore.error(`Посылка или коробка не найдена`)
         return
       }
 
@@ -517,7 +517,7 @@ async function handleJumpToNumber() {
       })
 
       if (parcelId == null || targetScope.area === scanjobMonitorArea.Boxes) {
-        alertStore.error(`Посылка или коробка с номером «${number}» не найдена`)
+        alertStore.error(`Посылка или коробка не найдена`)
         return
       }
 
@@ -527,7 +527,7 @@ async function handleJumpToNumber() {
     }
 
     selectedParcelId.value = null
-    alertStore.error(`Посылка или коробка с номером «${number}» не найдена`)
+    alertStore.error(`Посылка или коробка не найдена`)
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(getMonitorTargetErrorMessage(error))

@@ -607,7 +607,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «MISSING» не найдена')
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка не найдена')
   })
 
   it('alerts when jump input is empty', async () => {
@@ -706,7 +706,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «BADBOX» не найдена')
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка не найдена')
     expect(mockPush).not.toHaveBeenCalled()
   })
 
@@ -729,7 +729,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «BADPARCEL» не найдена')
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка не найдена')
     expect(mockPush).not.toHaveBeenCalled()
   })
 
@@ -752,7 +752,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('Посылка или коробка с номером «P-55» не найдена')
+    expect(alertError).toHaveBeenCalledWith('Посылка или коробка не найдена')
     expect(mockPush).not.toHaveBeenCalled()
   })
 

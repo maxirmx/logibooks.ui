@@ -8,7 +8,7 @@ import pluginVue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
 
 export default [
-  // Global configuration for all files
+  // Global ignore patterns
   {
     ignores: [
       'doc/**',
@@ -33,7 +33,10 @@ export default [
         '*.sln',
         '*.sw?',
         '.env'
-    ],
+    ]
+  },
+  // Global configuration for all files
+  {
     languageOptions: {
       sourceType: 'module',
       ecmaVersion: 2022,

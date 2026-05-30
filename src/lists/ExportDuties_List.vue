@@ -8,17 +8,22 @@ import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
 import { useExportDutiesStore } from '@/stores/export.duties.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
 const exportDutiesStore = useExportDutiesStore()
 const authStore = useAuthStore()
+const alertStore = useAlertStore()
 
 const { duties, loading, error } = storeToRefs(exportDutiesStore)
+const { alert } = storeToRefs(alertStore)
 const {
   exportduties_per_page,
   exportduties_search,
   exportduties_sort_by,
-  exportduties_page
+  exportduties_page,
+  isSrLogistPlus
 } = storeToRefs(authStore)
 
 onMounted(() => {
@@ -38,6 +43,19 @@ function filterDuties(value, query, item) {
   )
 }
 
+async function updateDuties() {
+  try {
+    if (typeof exportDutiesStore.update !== 'function') {
+      alertStore.error('Обновите страницу перед загрузкой информации о пошлинах')
+      return
+    }
+    await exportDutiesStore.update()
+    await exportDutiesStore.getAll()
+  } catch (err) {
+    alertStore.error(err)
+  }
+}
+
 const headers = [
   { title: 'Код ТН ВЭД', key: 'code', align: 'start' },
   { title: 'Описание', key: 'description', align: 'start' },
@@ -52,6 +70,16 @@ const headers = [
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-file-import"
+            tooltip-text="Обновить информацию о пошлинах"
+            iconSize="2x"
+            :disabled="loading"
+            @click="updateDuties"
+          />
         </div>
       </div>
     </div>
@@ -92,6 +120,10 @@ const headers = [
     </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
+    </div>
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
     </div>
   </div>
 </template>

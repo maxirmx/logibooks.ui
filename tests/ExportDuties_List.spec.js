@@ -19,8 +19,14 @@ const dutiesPerPage = ref(10)
 const dutiesSearch = ref('')
 const dutiesSortBy = ref([{ key: 'code', order: 'asc' }])
 const dutiesPage = ref(1)
+const isSrLogistPlus = ref(false)
+const mockAlert = ref(null)
+let includeUpdateMethod = true
 
 const getAll = vi.fn()
+const update = vi.fn()
+const alertError = vi.fn()
+const alertClear = vi.fn()
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -34,24 +40,36 @@ vi.mock('pinia', async () => {
           error: store.error
         }
       }
+      if (store.alert) {
+        return {
+          alert: store.alert
+        }
+      }
 
       return {
         exportduties_per_page: store.exportduties_per_page,
         exportduties_search: store.exportduties_search,
         exportduties_sort_by: store.exportduties_sort_by,
-        exportduties_page: store.exportduties_page
+        exportduties_page: store.exportduties_page,
+        isSrLogistPlus: store.isSrLogistPlus
       }
     })
   }
 })
 
 vi.mock('@/stores/export.duties.store.js', () => ({
-  useExportDutiesStore: () => ({
-    duties: mockDuties,
-    loading: mockLoading,
-    error: mockError,
-    getAll
-  })
+  useExportDutiesStore: () => {
+    const store = {
+      duties: mockDuties,
+      loading: mockLoading,
+      error: mockError,
+      getAll
+    }
+    if (includeUpdateMethod) {
+      store.update = update
+    }
+    return store
+  }
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -59,7 +77,16 @@ vi.mock('@/stores/auth.store.js', () => ({
     exportduties_per_page: dutiesPerPage,
     exportduties_search: dutiesSearch,
     exportduties_sort_by: dutiesSortBy,
-    exportduties_page: dutiesPage
+    exportduties_page: dutiesPage,
+    isSrLogistPlus
+  })
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    alert: mockAlert,
+    error: alertError,
+    clear: alertClear
   })
 }))
 
@@ -76,13 +103,27 @@ describe('ExportDuties_List.vue', () => {
     ]
     mockLoading.value = false
     mockError.value = null
+    mockAlert.value = null
     dutiesSearch.value = ''
     dutiesPage.value = 1
+    isSrLogistPlus.value = false
+    includeUpdateMethod = true
+    update.mockResolvedValue()
   })
 
   function mountList() {
     return mount(ExportDutiesList, {
-      global: { stubs: vuetifyStubs }
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: {
+            name: 'ActionButton',
+            template: '<button data-testid="update-duties-button" :disabled="disabled" :title="tooltipText" @click="$emit(\'click\')"></button>',
+            props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
+            emits: ['click']
+          }
+        }
+      }
     })
   }
 
@@ -129,6 +170,55 @@ describe('ExportDuties_List.vue', () => {
     const wrapper = mountList()
 
     expect(wrapper.html()).toContain('Отсутствуют данные')
+  })
+
+  it('renders update button for senior logist plus users', () => {
+    isSrLogistPlus.value = true
+
+    const wrapper = mountList()
+    const button = wrapper.find('[data-testid="update-duties-button"]')
+
+    expect(button.exists()).toBe(true)
+    expect(button.attributes('title')).toBe('Обновить информацию о пошлинах')
+  })
+
+  it('does not render update button for regular users', () => {
+    const wrapper = mountList()
+
+    expect(wrapper.find('[data-testid="update-duties-button"]').exists()).toBe(false)
+  })
+
+  it('updateDuties calls update and reloads duties', async () => {
+    const wrapper = mountList()
+    getAll.mockClear()
+
+    await wrapper.vm.updateDuties()
+
+    expect(update).toHaveBeenCalledOnce()
+    expect(getAll).toHaveBeenCalledOnce()
+  })
+
+  it('updateDuties displays alert when update fails', async () => {
+    const err = new Error('bad update')
+    update.mockRejectedValueOnce(err)
+    const wrapper = mountList()
+    getAll.mockClear()
+
+    await wrapper.vm.updateDuties()
+
+    expect(alertError).toHaveBeenCalledWith(err)
+    expect(getAll).not.toHaveBeenCalled()
+  })
+
+  it('updateDuties displays alert when store instance is stale', async () => {
+    includeUpdateMethod = false
+    const wrapper = mountList()
+    getAll.mockClear()
+
+    await wrapper.vm.updateDuties()
+
+    expect(alertError).toHaveBeenCalledWith('Обновите страницу перед загрузкой информации о пошлинах')
+    expect(getAll).not.toHaveBeenCalled()
   })
 
   it('shows spinner and error message', () => {

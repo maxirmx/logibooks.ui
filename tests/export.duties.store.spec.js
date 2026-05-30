@@ -9,7 +9,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn() }
+  fetchWrapper: { get: vi.fn(), post: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -58,6 +58,18 @@ describe('export.duties store', () => {
     await store.getAll()
 
     expect(store.error).toBeNull()
+  })
+
+  it('calls update endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue({})
+
+    const store = useExportDutiesStore()
+    await store.update()
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/exportduties/update`)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+    expect(store.isInitialized).toBe(false)
   })
 
   it('ensures duties are loaded only once after successful initialization', async () => {

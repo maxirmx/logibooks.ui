@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
@@ -28,6 +28,19 @@ export const useExportDutiesStore = defineStore('export.duties', () => {
     }
   }
 
+  async function update() {
+    loading.value = true
+    error.value = null
+    isInitialized.value = false
+    try {
+      await fetchWrapper.post(`${baseUrl}/update`)
+    } catch (err) {
+      error.value = err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function ensureLoaded() {
     if (!isInitialized.value && !loading.value) {
       await getAll()
@@ -40,6 +53,11 @@ export const useExportDutiesStore = defineStore('export.duties', () => {
     error,
     isInitialized,
     getAll,
+    update,
     ensureLoaded
   }
 })
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useExportDutiesStore, import.meta.hot))
+}

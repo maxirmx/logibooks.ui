@@ -50,6 +50,7 @@ const router = createRouter({
     { path: '/countries', component: { template: '<div>Countries</div>' } },
     { path: '/feacn/codes', component: { template: '<div>FEACN Codes</div>' } },
     { path: '/feacn/orders', component: { template: '<div>FEACN Orders</div>' } },
+    { path: '/export-duties', component: { template: '<div>Export Duties</div>' } },
     { path: '/feacn/prefixes', component: { template: '<div>FEACN Prefixes</div>' } },
     { path: '/keywords', component: { template: '<div>Keywords</div>' } },
     { path: '/feacn/insertitems', component: { template: '<div>FEACN Insert Items</div>' } },
@@ -134,5 +135,17 @@ describe('App navigation for registers', () => {
     expect(link?.attributes('href')).toContain(
       `/registers?mode=${encodeURIComponent(OP_MODE_WAREHOUSE)}`
     )
+  })
+
+  it('renders an export duties reference link', async () => {
+    const wrapper = mountApp()
+    await wrapper.vm.$nextTick()
+
+    const link = wrapper.findAll('a').find((item) =>
+      item.text().includes('Экспортные пошлины')
+    )
+
+    expect(link).toBeTruthy()
+    expect(link?.attributes('href')).toBe('/export-duties')
   })
 })

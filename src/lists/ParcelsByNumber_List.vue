@@ -23,7 +23,7 @@ const parcelStatusStore = useParcelStatusesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
-const { items_bn, loading, error } = storeToRefs(parcelsStore)
+const { items_bn, loading } = storeToRefs(parcelsStore)
 const { alert } = storeToRefs(alertStore)
 const { parcels_number, parcels_bn_per_page, parcels_bn_page, parcels_bn_sort_by } = storeToRefs(authStore)
 
@@ -204,10 +204,6 @@ defineExpose({
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
-    </div>
 
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>

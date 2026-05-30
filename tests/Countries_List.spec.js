@@ -108,7 +108,7 @@ describe('Countries_List.vue', () => {
     update.mockRejectedValueOnce(new Error('fail'))
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     await wrapper.vm.updateCodes()
-    expect(error).toHaveBeenCalledWith(expect.any(Error))
+    expect(error).toHaveBeenCalledWith('fail')
   })
 
   it('shows empty message when no items', () => {
@@ -124,14 +124,25 @@ describe('Countries_List.vue', () => {
     expect(headerActions.exists()).toBe(true)
   })
 
-  it('shows spinner and error message', () => {
+  it('shows spinner and reports store error through alertStore', async () => {
     mockLoading.value = true
     mockError.value = 'bad'
     // spinner is only rendered for admin users in header-actions
     mockIsAdmin.value = true
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
+    await Promise.resolve()
+
     expect(wrapper.html()).toContain('spinner-border')
-    expect(wrapper.html()).toContain('Ошибка при загрузке информации')
+    expect(wrapper.html()).not.toContain('Ошибка при загрузке информации')
+    expect(error).toHaveBeenCalledWith('bad')
+  })
+
+  it('reports Error object store error as message string through alertStore', async () => {
+    mockError.value = new Error('load countries failed')
+    mount(CountriesList, { global: { stubs: vuetifyStubs } })
+    await Promise.resolve()
+
+    expect(error).toHaveBeenCalledWith('load countries failed')
   })
 })
 

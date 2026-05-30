@@ -67,7 +67,7 @@ const route = useRoute()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 
-const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
+const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -656,9 +656,6 @@ function getGenericTemplateHeaders() {
         />
       </div>
     </v-card>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

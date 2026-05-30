@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application 
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
@@ -211,8 +211,33 @@ describe('Registers_List.vue', () => {
     mockCountries.value = []
     mockAirports.value = []
     mockOps.value = { customsProcedures: [], transportationTypes: [] }
+    registersStore.error.value = null
     getAirportsAll.mockClear()
     ensureOpsLoadedFn.mockClear()
+  })
+
+  it('reports store error via alertStore when loadRegisters fails', async () => {
+    getAll.mockImplementationOnce(() => {
+      registersStore.error.value = 'load registers failed'
+      return Promise.resolve()
+    })
+
+    mount(RegistersList, { global: { stubs: vuetifyStubs } })
+    await flushPromises()
+
+    expect(alertErrorFn).toHaveBeenCalledWith('load registers failed')
+  })
+
+  it('reports Error object store error as message string via alertStore', async () => {
+    getAll.mockImplementationOnce(() => {
+      registersStore.error.value = new Error('load registers failed')
+      return Promise.resolve()
+    })
+
+    mount(RegistersList, { global: { stubs: vuetifyStubs } })
+    await flushPromises()
+
+    expect(alertErrorFn).toHaveBeenCalledWith('load registers failed')
   })
 
   describe('getCustomerName function', () => {

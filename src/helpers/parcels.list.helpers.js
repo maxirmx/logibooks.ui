@@ -303,31 +303,39 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
  */
 export async function loadParcels(registerId, parcelsStore, isComponentMounted, alertStore, options = {}) {
   if (isComponentMounted.value) {
-    // Get data without updating the reactive store yet
-    const safeOptions = { ...options }
-    delete safeOptions.updateStore
-    const response = await parcelsStore.getAll(registerId, {
-      ...safeOptions,
-      updateStore: false
-    })
-    
-    if (response && response.items && response.items.length > 0) {
-      const tnvedCodes = response.items
-        .map(parcel => parcel.tnVed)
-        .filter(tnved => tnved && tnved.trim() !== '')
-      
-      if (tnvedCodes.length > 0) {
-        try {
-          await preloadFeacnInfo(tnvedCodes)
-        } catch {
-          if (alertStore) {
-            alertStore.error('Не удалось загрузить информацию о кодах ТН ВЭД')
+    try {
+      // Get data without updating the reactive store yet
+      const safeOptions = { ...options }
+      delete safeOptions.updateStore
+      const response = await parcelsStore.getAll(registerId, {
+        ...safeOptions,
+        updateStore: false
+      })
+
+      if (response && response.items && response.items.length > 0) {
+        const tnvedCodes = response.items
+          .map(parcel => parcel.tnVed)
+          .filter(tnved => tnved && tnved.trim() !== '')
+
+        if (tnvedCodes.length > 0) {
+          try {
+            await preloadFeacnInfo(tnvedCodes)
+          } catch {
+            if (alertStore) {
+              alertStore.error('Не удалось загрузить информацию о кодах ТН ВЭД')
+            }
           }
         }
       }
+
+      // Now update the reactive store - watchers will fire with FEACN data ready
+      parcelsStore.updateItems(response)
+    } catch (error) {
+      if (isComponentMounted.value) {
+        const message = error?.response?.data?.message || error?.message || 'Ошибка при загрузке данных'
+        parcelsStore.error = message
+        alertStore?.error(message)
+      }
     }
-    
-    // Now update the reactive store - watchers will fire with FEACN data ready
-    parcelsStore.updateItems(response)
   }
 }

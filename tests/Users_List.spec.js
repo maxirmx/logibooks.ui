@@ -28,7 +28,7 @@ const mockUsersStore = {
   error: mockError,
   getAll: vi.fn(),
   delete: vi.fn(),
-  ensureLoaded: vi.fn()
+  ensureLoaded: vi.fn().mockResolvedValue(undefined)
 }
 
 const mockWarehousesStore = {
@@ -126,6 +126,7 @@ describe('Users_List.vue', () => {
     confirmMock.mockResolvedValue(true)
     mockUsersStore.getAll = vi.fn()
     mockUsersStore.delete = vi.fn().mockResolvedValue()
+    mockUsersStore.ensureLoaded = vi.fn().mockResolvedValue(undefined)
     mockWarehousesStore.ensureLoaded = vi.fn().mockResolvedValue(undefined)
     mockWarehousesStore.getWarehouseName = vi.fn((id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id)))
     mockAlertStore.error = vi.fn()
@@ -189,12 +190,13 @@ describe('Users_List.vue', () => {
       mockUsers.value = old
     })
 
-    it('shows error state', () => {
-      mockError.value = 'Failed to fetch users'
+    it('reports load errors through alertStore', async () => {
+      mockUsersStore.ensureLoaded.mockRejectedValueOnce(new Error('Failed to fetch users'))
       createWrapper()
-      expect(wrapper.text()).toContain('Ошибка при загрузке списка пользователей: Failed to fetch users')
-      // restore
-      mockError.value = null
+      await Promise.resolve()
+
+      expect(wrapper.text()).not.toContain('Ошибка при загрузке списка пользователей')
+      expect(mockAlertStore.error).toHaveBeenCalledWith('Failed to fetch users')
     })
 
     it('displays alert when alert store has alert', async () => {

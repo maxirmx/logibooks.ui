@@ -21,6 +21,7 @@ const searchRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
 const clearMock = vi.hoisted(() => vi.fn())
+const alertErrorMock = vi.hoisted(() => vi.fn())
 
 let customsReportsStoreMock
 let alertStoreMock
@@ -129,7 +130,8 @@ describe('CustomsReportRows_List.vue', () => {
 
     alertStoreMock = {
       alert: alertRef,
-      clear: clearMock
+      clear: clearMock,
+      error: alertErrorMock
     }
 
     authStoreMock = {}
@@ -229,7 +231,7 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.find('.spinner-border').exists()).toBe(true)
   })
 
-  it('displays error message when there is an error', async () => {
+  it('reports store error through alertStore', async () => {
     errorRef.value = new Error('Failed to load rows')
 
     const wrapper = mount(CustomsReportRowsList, {
@@ -241,7 +243,8 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Ошибка при загрузке информации')
+    expect(wrapper.text()).not.toContain('Ошибка при загрузке информации')
+    expect(alertErrorMock).toHaveBeenCalledWith(errorRef.value.message)
   })
 
   it('displays report ID in header', async () => {
@@ -312,5 +315,68 @@ describe('CustomsReportRows_List.vue', () => {
 
     await cell.trigger('click')
     expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('reports string store error through alertStore', async () => {
+    errorRef.value = 'row load error'
+
+    mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(alertErrorMock).toHaveBeenCalledWith('row load error')
+  })
+
+  it('triggers reload when pagination changes', async () => {
+    const wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    const callsBefore = getReportRowsMock.mock.calls.length
+
+    pageRef.value = 2
+    await flushPromises()
+
+    expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBefore)
+    wrapper.unmount()
+  })
+
+  it('stops watchers and cleans up on unmount', async () => {
+    const wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    // Unmounting exercises the onUnmounted hook (isComponentMounted=false, stopFilterSync, watcherStop)
+    wrapper.unmount()
+  })
+
+  it('generates page options for large page counts', async () => {
+    customsReportsStoreMock.reportRowsTotalCount.value = 10000
+
+    const wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    // With 10000 rows and 10 per page, maxPage = 1000 > 200.
+    // The >200 branch builds a sparse set around page 1 and last pages.
+    const pageOptions = wrapper.vm.pageOptions
+    expect(Array.isArray(pageOptions)).toBe(true)
+    expect(pageOptions.length).toBeGreaterThan(10)
+    expect(pageOptions.some((o) => o.value > 200)).toBe(true)
+    expect(pageOptions[0]).toEqual({ value: 1, title: '1' })
   })
 })

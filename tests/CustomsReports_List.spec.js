@@ -530,4 +530,28 @@ describe('CustomsReports_List.vue', () => {
     await idLink.trigger('click')
     expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/rows', query: {} })
   })
+
+  it('reports string store error via alertStore on load', async () => {
+    errorRef.value = 'load reports failed'
+
+    mount(CustomsReportsList, {
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed')
+  })
+
+  it('reports Error object store error as message string via alertStore on load', async () => {
+    errorRef.value = new Error('load reports failed')
+
+    mount(CustomsReportsList, {
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed')
+  })
 })

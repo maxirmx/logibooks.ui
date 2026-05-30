@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { watch, ref, onMounted, onUnmounted, reactive, computed } from 'vue'
+import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import {
   toggleBulkStatusEditMode,
@@ -47,7 +47,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
-const { items, loading, error, totalCount, ops } = storeToRefs(registersStore)
+const { items, loading, totalCount, ops } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
 
@@ -237,6 +237,7 @@ onMounted(async () => {
   } catch (error) {
     if (isComponentMounted.value) {
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
+      alertStore.error(registersStore.error)
     }
   } finally {
     if (isComponentMounted.value) {
@@ -295,6 +296,10 @@ function startRegisterUpload(registerType) {
 
 async function loadRegisters() {
   await registersStore.getAll({ mode: props.mode })
+  const storeError = unref(registersStore.error)
+  if (storeError) {
+    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  }
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
@@ -746,11 +751,6 @@ defineExpose({
         </template>
       </v-data-table-server>
     </v-card>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">
-        Ошибка при загрузке списка {{ registerNouns.genitivePlural }}: {{ error }}
-      </div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

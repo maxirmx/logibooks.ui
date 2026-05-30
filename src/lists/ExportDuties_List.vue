@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { onMounted } from 'vue'
+import { onMounted, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
 import { useExportDutiesStore } from '@/stores/export.duties.store.js'
@@ -16,7 +16,7 @@ const exportDutiesStore = useExportDutiesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
-const { duties, loading, error } = storeToRefs(exportDutiesStore)
+const { duties, loading } = storeToRefs(exportDutiesStore)
 const { alert } = storeToRefs(alertStore)
 const {
   exportduties_per_page,
@@ -26,9 +26,15 @@ const {
   isSrLogistPlus
 } = storeToRefs(authStore)
 
-onMounted(() => {
-  exportDutiesStore.getAll()
-})
+onMounted(loadDuties)
+
+async function loadDuties() {
+  await exportDutiesStore.getAll()
+  const storeError = unref(exportDutiesStore.error)
+  if (storeError) {
+    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  }
+}
 
 function filterDuties(value, query, item) {
   if (!query) return true
@@ -54,13 +60,14 @@ async function updateDuties() {
       return
     }
     await exportDutiesStore.update()
-    if (error.value) {
-      alertStore.error(error.value)
+    const storeError = unref(exportDutiesStore.error)
+    if (storeError) {
+      alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
       return
     }
-    await exportDutiesStore.getAll()
+    await loadDuties()
   } catch (err) {
-    alertStore.error(err)
+    alertStore.error(err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -131,9 +138,6 @@ const customKeySort = {
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

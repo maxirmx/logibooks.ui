@@ -20,12 +20,12 @@ import { getCredentials, hasAllWarehouseAccess } from '@/helpers/user.roles.js'
 const authStore = useAuthStore()
 
 const usersStore = useUsersStore()
-const { users, loading, error } = storeToRefs(usersStore)
+const { users, loading } = storeToRefs(usersStore)
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
-usersStore.ensureLoaded()
+usersStore.ensureLoaded().catch((error) => alertStore.error(error?.message || String(error)))
 warehousesStore.ensureLoaded().catch((error) => alertStore.error(error?.message || String(error)))
 
 const confirm = useConfirm()
@@ -204,9 +204,6 @@ const headers = [
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке списка пользователей: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

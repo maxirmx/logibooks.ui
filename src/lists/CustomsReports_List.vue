@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onUnmounted, ref, toRef, watch } from 'vue'
+import { computed, onUnmounted, ref, toRef, unref, watch } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -24,7 +24,7 @@ const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, error, reportsTotalCount } = storeToRefs(customsReportsStore)
+const { reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 
 const fileInput = ref(null)
@@ -40,6 +40,10 @@ const isComponentMounted = ref(true)
 
 async function loadReports() {
   await customsReportsStore.getReports()
+  const storeError = unref(customsReportsStore.error)
+  if (storeError) {
+    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  }
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
@@ -81,7 +85,7 @@ async function onReportFileSelected(event) {
     showActionDialog('upload-report')
     await customsReportsStore.upload(file)
     dispatchDecReportUploadedEvent({ fileName: file.name })
-    await customsReportsStore.getReports()
+    await loadReports()
   } catch (error) {
     const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
     alertStore.error(message)
@@ -341,9 +345,6 @@ function viewReportRows(report) {
       </v-data-table-server>
     </v-card>
 
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

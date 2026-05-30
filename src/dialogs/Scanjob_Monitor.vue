@@ -141,6 +141,9 @@ const autoFollowActionVariant = computed(() => (
 const autoFollowActionTooltip = computed(() => (
   autoFollowEnabled.value ? 'Отключить автослежение' : 'Включить автослежение'
 ))
+const autoFollowActionInfo = computed(() => (
+  autoFollowEnabled.value ? 'Сейчас автослежение включено' : 'Сейчас автослежение отключено'
+))
 const isJumpDisabled = computed(() => (
   isLoading.value || jumpLoading.value || !jumpNumber.value.trim()
 ))
@@ -1037,7 +1040,6 @@ defineExpose({
             icon-size="2x"
             tooltip-text="Перейти"
             aria-label="Перейти"
-            title="Перейти"
             data-testid="scanjob-monitor-jump-action"
             :disabled="isJumpDisabled"
             @click="handleJumpToNumber"
@@ -1051,8 +1053,8 @@ defineExpose({
             icon-size="2x"
             :variant="autoFollowActionVariant"
             :tooltip-text="autoFollowActionTooltip"
-            :aria-label="autoFollowActionTooltip"
-            :title="autoFollowActionTooltip"
+            :aria-label="`${autoFollowActionTooltip}. ${autoFollowActionInfo}`"
+            :aria-pressed="autoFollowEnabled"
             data-testid="scanjob-monitor-auto-follow-action"
             @click="toggleAutoFollow"
           />
@@ -1064,7 +1066,6 @@ defineExpose({
             icon-size="2x"
             tooltip-text="Посылки не в реестре"
             aria-label="Посылки не в реестре"
-            title="Посылки не в реестре"
             data-testid="scanjob-monitor-unregistered-action"
             class="monitor-summary-action"
             :disabled="!registerId"
@@ -1079,7 +1080,6 @@ defineExpose({
             icon-size="2x"
             tooltip-text="Закрыть"
             aria-label="Закрыть"
-            title="Закрыть"
             data-testid="scanjob-monitor-close-action"
             :disabled="isLoading"
             @click="handleCloseAction"

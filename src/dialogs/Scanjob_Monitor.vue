@@ -1053,8 +1053,8 @@ defineExpose({
             icon-size="2x"
             :variant="autoFollowActionVariant"
             :tooltip-text="autoFollowActionTooltip"
-            :title="autoFollowActionInfo"
-            :aria-label="autoFollowActionTooltip"
+            :aria-label="`${autoFollowActionTooltip}. ${autoFollowActionInfo}`"
+            :aria-pressed="autoFollowEnabled"
             data-testid="scanjob-monitor-auto-follow-action"
             @click="toggleAutoFollow"
           />

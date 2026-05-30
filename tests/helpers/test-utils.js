@@ -91,10 +91,15 @@ export const vuetifyStubs = {
             </slot>
           </div>
         </div>
+        <div v-if="!loading && !items?.length" class="v-data-table-empty">
+          <slot name="no-data">
+            {{ noDataText || 'Отсутствуют данные' }}
+          </slot>
+        </div>
         <slot></slot>
       </div>
     `,
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density', 'style', 'rowProps'],
+    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'customKeySort', 'density', 'style', 'rowProps', 'noDataText'],
     inheritAttrs: false
   },
   'v-data-table-server': {

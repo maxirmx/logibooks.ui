@@ -322,6 +322,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/export-duties',
+      name: 'Экспортные пошлины',
+      component: () => import('@/views/ExportDuties_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/feacn/orders',
       name: 'Запреты по постановлениям',
       component: () => import('@/views/FeacnOrders_View.vue'),

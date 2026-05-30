@@ -132,6 +132,10 @@ export const useAuthStore = defineStore('auth', () => {
   const countries_search = ref('')
   const countries_sort_by = ref([])
   const countries_page = ref(1)
+  const exportduties_per_page = ref(100)
+  const exportduties_search = ref('')
+  const exportduties_sort_by = ref([])
+  const exportduties_page = ref(1)
   const stopwords_per_page = ref(100)
   const stopwords_search = ref('')
   const stopwords_procedure = ref('all')
@@ -349,6 +353,10 @@ export const useAuthStore = defineStore('auth', () => {
     countries_search,
     countries_sort_by,
     countries_page,
+    exportduties_per_page,
+    exportduties_search,
+    exportduties_sort_by,
+    exportduties_page,
     stopwords_per_page,
     stopwords_search,
     stopwords_procedure,

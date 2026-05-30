@@ -63,6 +63,7 @@ const router = createRouter({
     { path: '/keyword/edit/:id', component: { template: '<div>Edit Keyword</div>' } },
     { path: '/feacn/codes', component: { template: '<div>Feacn Codes</div>' } },
     { path: '/feacn/orders', component: { template: '<div>Feacn Orders</div>' } },
+    { path: '/export-duties', component: { template: '<div>Export Duties</div>' } },
     { path: '/feacn/prefixes', component: { template: '<div>Feacn Prefixes</div>' } },
     { path: '/feacn/insertitems', component: { template: '<div>Feacn Insert Items</div>' } },
     { path: '/customs-reports', component: { template: '<div>Customs Reports</div>' } },

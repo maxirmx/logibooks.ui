@@ -114,7 +114,7 @@ describe('Countries_List.vue', () => {
   it('shows empty message when no items', () => {
     mockItems.value = []
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Список стран пуст')
+    expect(wrapper.text()).toContain('Отсутствуют данные')
   })
 
   it('renders admin update button when user is admin', () => {

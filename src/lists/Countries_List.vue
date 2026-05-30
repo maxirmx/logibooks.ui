@@ -110,9 +110,6 @@ const headers = [
         class="elevation-1 interlaced-table"
         fixed-header
       />
-      <div v-if="!countries?.length && !loading" class="text-center m-5">
-        Список стран пуст
-      </div>
     </v-card>
     <div v-if="error" class="text-center m-5">
       <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>

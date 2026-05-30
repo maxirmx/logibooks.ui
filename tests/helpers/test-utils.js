@@ -91,7 +91,7 @@ export const vuetifyStubs = {
             </slot>
           </div>
         </div>
-        <div v-if="!items?.length" class="v-data-table-empty">
+        <div v-if="!loading && !items?.length" class="v-data-table-empty">
           <slot name="no-data">
             {{ noDataText || 'Отсутствуют данные' }}
           </slot>

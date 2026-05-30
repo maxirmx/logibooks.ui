@@ -50,6 +50,10 @@ async function updateDuties() {
       return
     }
     await exportDutiesStore.update()
+    if (error.value) {
+      alertStore.error(error.value)
+      return
+    }
     await exportDutiesStore.getAll()
   } catch (err) {
     alertStore.error(err)

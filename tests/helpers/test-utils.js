@@ -99,7 +99,7 @@ export const vuetifyStubs = {
         <slot></slot>
       </div>
     `,
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'density', 'style', 'rowProps', 'noDataText'],
+    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'customKeySort', 'density', 'style', 'rowProps', 'noDataText'],
     inheritAttrs: false
   },
   'v-data-table-server': {

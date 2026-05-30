@@ -43,6 +43,10 @@ function filterDuties(value, query, item) {
   )
 }
 
+function compareDutyCodesAsStrings(a, b) {
+  return (a ?? '').toString().localeCompare((b ?? '').toString())
+}
+
 async function updateDuties() {
   try {
     if (typeof exportDutiesStore.update !== 'function') {
@@ -61,14 +65,18 @@ async function updateDuties() {
 }
 
 const headers = [
-  { title: 'Код ТН ВЭД', key: 'code', align: 'start' },
+  { title: 'Префикс кода ТН ВЭД', key: 'code', align: 'start', width: '250px' },
   { title: 'Описание', key: 'description', align: 'start' },
-  { title: 'Пошлина', key: 'duty', align: 'end' }
+  { title: 'Пошлина, руб.', key: 'duty', align: 'end', width: '200px' }
 ]
+
+const customKeySort = {
+  code: compareDutyCodesAsStrings
+}
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="export-duties-list">
+  <div class="settings table-3" data-testid="export-duties-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Пошлины</h1>
       <div class="header-actions-bar">
@@ -112,6 +120,7 @@ const headers = [
         :items="duties"
         :search="authStore.exportduties_search"
         v-model:sort-by="exportduties_sort_by"
+        :custom-key-sort="customKeySort"
         :custom-filter="filterDuties"
         density="compact"
         class="elevation-1 interlaced-table"

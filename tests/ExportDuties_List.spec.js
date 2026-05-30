@@ -164,6 +164,14 @@ describe('ExportDuties_List.vue', () => {
     expect(wrapper.vm.filterDuties(null, 'missing', item)).toBe(false)
   })
 
+  it('sorts duty codes as strings', () => {
+    const wrapper = mountList()
+
+    expect(wrapper.vm.compareDutyCodesAsStrings('10', '2')).toBeLessThan(0)
+    expect(wrapper.vm.compareDutyCodesAsStrings(10, 2)).toBeLessThan(0)
+    expect(wrapper.vm.customKeySort.code).toBe(wrapper.vm.compareDutyCodesAsStrings)
+  })
+
   it('shows empty message when no duties are available', () => {
     mockDuties.value = []
 

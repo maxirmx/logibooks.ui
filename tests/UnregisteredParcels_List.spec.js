@@ -15,6 +15,8 @@ const mockError = ref(null)
 const getAll = vi.fn()
 const download = vi.fn()
 const alertError = vi.fn()
+const alertClear = vi.fn()
+const mockAlert = ref(null)
 const ensureLoaded = vi.fn().mockResolvedValue()
 const getStatusTitle = vi.fn((id) => `Status ${id}`)
 const ensureOpsLoaded = vi.fn().mockResolvedValue()
@@ -53,7 +55,9 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    error: alertError
+    alert: mockAlert,
+    error: alertError,
+    clear: alertClear
   })
 }))
 
@@ -67,6 +71,7 @@ describe('UnregisteredParcels_List.vue', () => {
     mockItems.value = []
     mockLoading.value = false
     mockError.value = null
+    mockAlert.value = null
     download.mockReset()
     mockRegisterItem.item = {}
     mockRegisterItem.getById = getById

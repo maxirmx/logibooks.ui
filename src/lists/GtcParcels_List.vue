@@ -67,7 +67,7 @@ const route = useRoute()
 
 const { alert } = storeToRefs(alertStore)
 
-const { items, loading, error, totalCount } = storeToRefs(parcelsStore)
+const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
   parcels_per_page,
   parcels_sort_by,
@@ -300,6 +300,7 @@ onMounted(async () => {
   } catch (error) {
     if (isComponentMounted.value) {
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
+      alertStore.error(parcelsStore.error)
     }
   } finally {
     if (isComponentMounted.value) {
@@ -700,9 +701,6 @@ function formatPassport(item) {
         />
       </div>
     </v-card>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке реестра: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

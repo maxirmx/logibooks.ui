@@ -9,17 +9,12 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { onMounted } from 'vue'
+import { onMounted, unref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 
 const countriesStore = useCountriesStore()
-const { countries, loading, error } = storeToRefs(countriesStore)
-
-onMounted(() => {
-  countriesStore.getAll()
-})
-
 const alertStore = useAlertStore()
+const { countries, loading } = storeToRefs(countriesStore)
 const { alert } = storeToRefs(alertStore)
 
 const authStore = useAuthStore()
@@ -30,6 +25,16 @@ const {
   countries_page,
   isSrLogistPlus
 } = storeToRefs(authStore)
+
+async function loadCountries() {
+  await countriesStore.getAll()
+  const storeError = unref(countriesStore.error)
+  if (storeError) {
+    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  }
+}
+
+onMounted(loadCountries)
 
 function filterCodes(value, query, item) {
   if (!query) return true
@@ -46,9 +51,14 @@ function filterCodes(value, query, item) {
 async function updateCodes() {
   try {
     await countriesStore.update()
-    await countriesStore.getAll()
+    const storeError = unref(countriesStore.error)
+    if (storeError) {
+      alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+      return
+    }
+    await loadCountries()
   } catch (err) {
-    alertStore.error(err)
+    alertStore.error(err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -111,9 +121,6 @@ const headers = [
         fixed-header
       />
     </v-card>
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

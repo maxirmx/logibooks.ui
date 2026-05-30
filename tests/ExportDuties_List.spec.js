@@ -214,7 +214,7 @@ describe('ExportDuties_List.vue', () => {
 
     await wrapper.vm.updateDuties()
 
-    expect(alertError).toHaveBeenCalledWith(err)
+    expect(alertError).toHaveBeenCalledWith(err.message)
     expect(getAll).not.toHaveBeenCalled()
   })
 
@@ -229,13 +229,24 @@ describe('ExportDuties_List.vue', () => {
     expect(getAll).not.toHaveBeenCalled()
   })
 
-  it('shows spinner and error message', () => {
+  it('shows spinner and reports store error through alertStore', async () => {
     mockLoading.value = true
     mockError.value = 'bad'
 
     const wrapper = mountList()
+    await Promise.resolve()
 
     expect(wrapper.html()).toContain('spinner-border')
-    expect(wrapper.html()).toContain('Ошибка при загрузке информации')
+    expect(wrapper.html()).not.toContain('Ошибка при загрузке информации')
+    expect(alertError).toHaveBeenCalledWith('bad')
+  })
+
+  it('reports Error object store error as message string through alertStore', async () => {
+    mockError.value = new Error('load duties failed')
+
+    mountList()
+    await Promise.resolve()
+
+    expect(alertError).toHaveBeenCalledWith('load duties failed')
   })
 })

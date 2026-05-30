@@ -709,6 +709,23 @@ describe('Parcels List Helpers', () => {
       })
       expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
     })
+
+    it('should report load errors through alertStore', async () => {
+      const error = new Error('Network error')
+      const mockParcelsStore = {
+        getAll: vi.fn().mockRejectedValue(error),
+        updateItems: vi.fn(),
+        error: null
+      }
+      const mockIsComponentMounted = { value: true }
+      const mockAlertStore = { error: vi.fn() }
+
+      await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore)
+
+      expect(mockParcelsStore.error).toBe('Network error')
+      expect(mockAlertStore.error).toHaveBeenCalledWith('Network error')
+      expect(mockParcelsStore.updateItems).not.toHaveBeenCalled()
+    })
   })
 
 })

@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onUnmounted, computed, watch, ref, toRef } from 'vue'
+import { onUnmounted, computed, watch, ref, toRef, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -34,7 +34,7 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, error, reportRowsTotalCount } = storeToRefs(customsReportsStore)
+const { reportRows, loading, reportRowsTotalCount } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
@@ -61,6 +61,10 @@ function getCellClass(columnKey) {
 
 async function loadReportRows() {
   await customsReportsStore.getReportRows(props.reportId)
+  const storeError = unref(customsReportsStore.error)
+  if (storeError) {
+    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  }
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
@@ -209,9 +213,6 @@ const pageOptions = computed(() => {
       </div>
     </v-card>
 
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
-    </div>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}

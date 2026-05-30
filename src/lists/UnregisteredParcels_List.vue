@@ -24,7 +24,8 @@ const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 
-const { items, loading, error } = storeToRefs(unregisteredParcelsStore)
+const { items, loading } = storeToRefs(unregisteredParcelsStore)
+const { alert } = storeToRefs(alertStore)
 const { ops } = storeToRefs(warehousesStore)
 
 const isExporting = ref(false)
@@ -148,9 +149,9 @@ function closeList() {
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке информации: {{ error }}</div>
+    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
     </div>
   </div>
 </template>

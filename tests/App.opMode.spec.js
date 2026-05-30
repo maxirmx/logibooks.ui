@@ -142,7 +142,7 @@ describe('App navigation for registers', () => {
     await wrapper.vm.$nextTick()
 
     const link = wrapper.findAll('a').find((item) =>
-      item.text().includes('Экспортные пошлины')
+      item.text().includes('Пошлины')
     )
 
     expect(link).toBeTruthy()

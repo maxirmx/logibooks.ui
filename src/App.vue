@@ -153,7 +153,7 @@ function getUserName() {
             <RouterLink to="/feacn/orders" class="link">Постановления</RouterLink>
           </v-list-item>
           <v-list-item>
-            <RouterLink to="/export-duties" class="link">Экспортные пошлины</RouterLink>
+            <RouterLink to="/export-duties" class="link">Пошлины</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/feacn/prefixes" class="link">Запреты по ТН ВЭД</RouterLink>

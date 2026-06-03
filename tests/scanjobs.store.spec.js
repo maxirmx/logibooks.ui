@@ -61,11 +61,13 @@ const signalRConnection = signalRTestState.firstConnection
 const signalRBuild = signalRTestState.build
 const signalRWithUrl = vi.hoisted(() => vi.fn(function withUrl() { return this }))
 const signalRWithAutomaticReconnect = vi.hoisted(() => vi.fn(function withAutomaticReconnect() { return this }))
-const signalRBuilder = vi.hoisted(() => vi.fn(() => ({
+const signalRBuilder = vi.hoisted(() => vi.fn(function HubConnectionBuilder() {
+  return {
   withUrl: signalRWithUrl,
   withAutomaticReconnect: signalRWithAutomaticReconnect,
   build: signalRBuild
-})))
+  }
+}))
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {

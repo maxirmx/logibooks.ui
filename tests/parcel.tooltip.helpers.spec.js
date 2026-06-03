@@ -14,9 +14,11 @@ vi.mock('@/helpers/parcels.check.helpers.js', () => ({
 
 // Mock the CheckStatusCode
 vi.mock('@/helpers/check.status.code.js', () => ({
-  CheckStatusCode: vi.fn().mockImplementation(() => ({
-    toString: vi.fn()
-  })),
+  CheckStatusCode: vi.fn().mockImplementation(function CheckStatusCodeMock() {
+    return {
+      toString: vi.fn()
+    }
+  }),
   SWCheckStatus: {
     NotChecked: 0,
     NoIssues: 0x0010,
@@ -97,7 +99,9 @@ describe('parcel tooltip helpers', () => {
       }
       vi.clearAllMocks()
       // Reset and configure the mocked constructor
-      CheckStatusCode.mockImplementation(() => mockCheckStatusInstance)
+      CheckStatusCode.mockImplementation(function CheckStatusCodeMockInstance() {
+        return mockCheckStatusInstance
+      })
     })
 
     it('returns base title when item has no issues', () => {

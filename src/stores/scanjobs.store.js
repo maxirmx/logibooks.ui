@@ -107,8 +107,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     let connection = null
     let startPromise = null
     let lastObserveRequest = null
+    let lastFollowRequest = null
     let snapshotHandler = null
     let closedHandler = null
+    let followEventHandler = null
 
     function ensureConnection() {
       if (connection) {
@@ -142,6 +144,12 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         }
       })
 
+      currentConnection.on('ScanJobMonitorFollowEvent', (followEvent) => {
+        if (followEventHandler) {
+          followEventHandler(followEvent)
+        }
+      })
+
       currentConnection.onclose((err) => {
         if (err && syncErrors) {
           monitorError.value = err
@@ -149,14 +157,21 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       })
 
       currentConnection.onreconnected?.(() => {
-        if (!lastObserveRequest) {
-          return
+        if (lastObserveRequest) {
+          currentConnection.invoke('ObserveScanJob', lastObserveRequest).catch((err) => {
+            if (syncErrors) {
+              monitorError.value = err
+            }
+          })
         }
-        currentConnection.invoke('ObserveScanJob', lastObserveRequest).catch((err) => {
-          if (syncErrors) {
-            monitorError.value = err
-          }
-        })
+
+        if (lastFollowRequest) {
+          currentConnection.invoke('ObserveScanJobFollowUser', lastFollowRequest).catch((err) => {
+            if (syncErrors) {
+              monitorError.value = err
+            }
+          })
+        }
       })
 
       return currentConnection
@@ -241,10 +256,54 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
     }
 
+    async function followUser(scanJobId, userId, {
+      onFollowEvent = null
+    } = {}) {
+      followEventHandler = onFollowEvent
+      lastFollowRequest = {
+        scanJobId: Number(scanJobId),
+        userId: Number(userId)
+      }
+
+      try {
+        const currentConnection = await ensureStarted()
+        await currentConnection.invoke('ObserveScanJobFollowUser', lastFollowRequest)
+        return true
+      } catch (err) {
+        followEventHandler = null
+        lastFollowRequest = null
+        if (syncErrors) {
+          monitorError.value = err
+        }
+        throw err
+      }
+    }
+
+    async function clearFollowUser() {
+      followEventHandler = null
+      lastFollowRequest = null
+
+      if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+        return false
+      }
+
+      try {
+        await connection.invoke('ClearScanJobFollowUser')
+        return true
+      } catch (err) {
+        if (syncErrors) {
+          monitorError.value = err
+        }
+        throw err
+      }
+    }
+
     async function stop() {
       snapshotHandler = null
       closedHandler = null
+      followEventHandler = null
       lastObserveRequest = null
+      lastFollowRequest = null
 
       if (!connection) {
         return false
@@ -259,6 +318,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       try {
         if (currentConnection.state === signalR.HubConnectionState.Connected) {
           await currentConnection.invoke('ClearScanJobMonitor')
+          await currentConnection.invoke('ClearScanJobFollowUser')
         }
         await currentConnection.stop()
         return true
@@ -276,6 +336,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return {
       start,
       clear,
+      followUser,
+      clearFollowUser,
       stop
     }
   }
@@ -286,7 +348,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     syncLoading: true,
     syncErrors: true
   })
-  const monitorAutoFollowChannel = createMonitorChannel()
 
   async function loadMonitorSnapshot(scanJobId, {
     area = scanjobMonitorArea.Boxes,
@@ -329,6 +390,17 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function loadMonitorFollowUsers(scanJobId) {
+    monitorError.value = null
+
+    try {
+      return await fetchWrapper.get(`${baseUrl}/${scanJobId}/monitor/follow-users`)
+    } catch (err) {
+      monitorError.value = err
+      throw err
+    }
+  }
+
   async function startMonitor(scanJobId, {
     area = scanjobMonitorArea.Boxes,
     boxId = null,
@@ -353,19 +425,16 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return monitorChannel.stop()
   }
 
-  async function startMonitorAutoFollow(scanJobId, {
-    onSnapshot = null,
-    onClosed = null
+  async function startMonitorFollowUser(scanJobId, userId, {
+    onFollowEvent = null
   } = {}) {
-    return monitorAutoFollowChannel.start(scanJobId, {
-      area: scanjobMonitorArea.Boxes,
-      onSnapshot,
-      onClosed
+    return monitorChannel.followUser(scanJobId, userId, {
+      onFollowEvent
     })
   }
 
-  async function stopMonitorAutoFollow() {
-    return monitorAutoFollowChannel.stop()
+  async function clearMonitorFollowUser() {
+    return monitorChannel.clearFollowUser()
   }
 
   function ensureScanJobsListConnection() {
@@ -621,11 +690,12 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     getOpsLabel,
     loadMonitorSnapshot,
     resolveMonitorTarget,
+    loadMonitorFollowUsers,
     startMonitor,
     clearMonitor,
     stopMonitor,
-    startMonitorAutoFollow,
-    stopMonitorAutoFollow,
+    startMonitorFollowUser,
+    clearMonitorFollowUser,
     startScanJobsListMonitor,
     stopScanJobsListMonitor,
     scanjobMonitorArea,

@@ -11,6 +11,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
@@ -46,6 +47,7 @@ const MONITOR_THROTTLE_MS = 150
 const SCAN_JOB_STATUS_IN_PROGRESS = 15
 
 const scanJobsStore = useScanjobsStore()
+const authStore = useAuthStore()
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
@@ -65,7 +67,9 @@ const switchingScope = ref(false)
 const monitorStatusOnly = ref(false)
 const scopeVersion = ref(0)
 const registerLoading = ref(true)
-const autoFollowEnabled = ref(true)
+const followUsers = ref([])
+const followUsersLoading = ref(false)
+const selectedFollowUserId = ref(authStore.scanjobmonitor_follow_user_id ?? null)
 const defectActionRunning = ref(false)
 const scanjobLoaded = ref(false)
 const loadedScanjobId = ref(null)
@@ -85,8 +89,6 @@ const jumpKnownErrorMessages = new Set([
 
 let pendingSnapshot = null
 let throttleTimer = null
-let autoFollowSnapshot = null
-let autoFollowObservationVersion = 0
 
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
@@ -134,16 +136,13 @@ const scopeHeading = computed(() => {
   return 'Коробки'
 })
 const monitorHeading = computed(() => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`)
-const autoFollowActionIcon = computed(() => 'fa-solid fa-link')
-const autoFollowActionVariant = computed(() => (
-  autoFollowEnabled.value ? 'green' : 'orange'
-))
-const autoFollowActionTooltip = computed(() => (
-  autoFollowEnabled.value ? 'Отключить автослежение' : 'Включить автослежение'
-))
-const autoFollowActionInfo = computed(() => (
-  autoFollowEnabled.value ? 'Сейчас автослежение включено' : 'Сейчас автослежение отключено'
-))
+const followUserOptions = computed(() => [
+  { title: 'Не следить', value: null },
+  ...followUsers.value.map((user) => ({
+    title: getFollowUserLabel(user),
+    value: toNumberOrNull(user?.id)
+  }))
+])
 const isJumpDisabled = computed(() => (
   isLoading.value || jumpLoading.value || !jumpNumber.value.trim()
 ))
@@ -178,8 +177,8 @@ function openUnregisteredParcels() {
   })
 }
 
-function toggleAutoFollow() {
-  autoFollowEnabled.value = !autoFollowEnabled.value
+function getFollowUserLabel(user) {
+  return user?.displayName || user?.userName || user?.email || `Пользователь ${user?.id ?? ''}`.trim()
 }
 
 function monitorScopeKey(scope = props.monitorScope) {
@@ -408,15 +407,10 @@ function clearPendingSnapshot() {
 async function resetMonitorObservation() {
   scopeVersion.value += 1
   clearPendingSnapshot()
-  await stopAutoFollowMonitor()
+  await clearFollowUserSubscription()
   closedStatus.value = null
   visibleSnapshot.value = null
   await scanJobsStore.stopMonitor().catch(() => {})
-}
-
-function toNumberOrZero(value) {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : 0
 }
 
 function toNumberOrNull(value) {
@@ -442,6 +436,31 @@ async function loadScanjobAndRegister() {
   loadedScanjobId.value = props.scanjobId
   scanjobLoaded.value = true
   return loaded
+}
+
+async function loadFollowUsers() {
+  followUsersLoading.value = true
+  try {
+    const users = await scanJobsStore.loadMonitorFollowUsers(props.scanjobId)
+    followUsers.value = Array.isArray(users) ? users : []
+    const selectedUserId = toNumberOrNull(selectedFollowUserId.value)
+    if (
+      selectedUserId != null
+      && !followUsers.value.some((user) => Number(user?.id) === selectedUserId)
+    ) {
+      selectedFollowUserId.value = null
+      authStore.setScanjobMonitorFollowUserId(null)
+    }
+  } catch (error) {
+    followUsers.value = []
+    if (isComponentMounted.value) {
+      alertStore.error(getMonitorErrorMessage(error))
+    }
+  } finally {
+    if (isComponentMounted.value) {
+      followUsersLoading.value = false
+    }
+  }
 }
 
 function normalizeMonitorScope(scope = {}) {
@@ -574,186 +593,41 @@ async function handleJumpToNumber() {
   }
 }
 
-function getSnapshotBoxes(snapshot) {
-  return Array.isArray(snapshot?.boxes) ? snapshot.boxes : []
-}
-
-function getSnapshotMonitorBoxes(snapshot) {
-  const boxes = getSnapshotBoxes(snapshot)
-  return snapshot?.box ? [...boxes, snapshot.box] : boxes
-}
-
-function getMonitorBoxKey(box) {
-  if (isUnassignedMonitorBox(box)) {
-    return `unassigned:${Number(box?.bucketIndex ?? 0)}`
+function normalizeFollowTarget(target) {
+  const area = toNumberOrNull(target?.area)
+  if (area === scanjobMonitorArea.Box) {
+    const boxId = toNumberOrNull(target?.boxId)
+    return boxId == null
+      ? { area: scanjobMonitorArea.Boxes, boxId: null, bucketIndex: null }
+      : { area: scanjobMonitorArea.Box, boxId, bucketIndex: null }
   }
 
-  const boxId = toNumberOrNull(box?.boxId)
-  return boxId == null ? null : `box:${boxId}`
-}
-
-function getBoxMap(snapshot) {
-  const map = new Map()
-  getSnapshotBoxes(snapshot).forEach((box) => {
-    const key = getMonitorBoxKey(box)
-    if (key != null) {
-      map.set(key, box)
-    }
-  })
-  return map
-}
-
-function getLatestScanId(snapshot) {
-  return toNumberOrNull(snapshot?.latestScan?.scanCodeId)
-}
-
-function findLatestScanBox(snapshot, predicate) {
-  return getSnapshotMonitorBoxes(snapshot).find(predicate) ?? null
-}
-
-function resolveLatestScanTarget(latestScan, snapshot) {
-  const latestScanArea = toNumberOrNull(latestScan?.area)
-  if (latestScanArea === scanJobsStore.scanjobMonitorArea.Box) {
-    const boxId = toNumberOrNull(latestScan?.boxId)
-    if (boxId == null) {
-      return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
-    }
-
-    const box = findLatestScanBox(snapshot, (candidate) => {
-      return toNumberOrNull(candidate?.boxId) === boxId
-    }) ?? {
-      area: scanJobsStore.scanjobMonitorArea.Box,
-      boxId
-    }
-
-    return { mode: MODE_BOX, box, hasDecision: true }
-  }
-
-  if (latestScanArea === scanJobsStore.scanjobMonitorArea.Unassigned) {
-    const bucketIndex = toNumberOrNull(latestScan?.bucketIndex) ?? 0
-    const box = findLatestScanBox(snapshot, (candidate) => {
-      return isUnassignedMonitorBox(candidate)
-        && Number(toNumberOrNull(candidate?.bucketIndex) ?? 0) === Number(bucketIndex)
-    }) ?? {
-      area: scanJobsStore.scanjobMonitorArea.Unassigned,
+  if (area === scanjobMonitorArea.Unassigned) {
+    return {
+      area: scanjobMonitorArea.Unassigned,
       boxId: null,
-      bucketIndex,
-      boxCode: `Без коробки ${bucketIndex + 1}`
+      bucketIndex: toNumberOrNull(target?.bucketIndex) ?? 0
     }
-
-    return { mode: MODE_BOX, box, hasDecision: true }
   }
 
-  if (
-    latestScanArea === scanJobsStore.scanjobMonitorArea.NotInRegister
-    || latestScanArea === scanJobsStore.scanjobMonitorArea.Boxes
-  ) {
-    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
-  }
-
-  return null
+  return { area: scanjobMonitorArea.Boxes, boxId: null, bucketIndex: null }
 }
 
-function resolveAutoFollowTarget(previousSnapshot, nextSnapshot) {
-  if (!autoFollowEnabled.value || !previousSnapshot || !nextSnapshot) {
-    return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
-  }
-
-  const previousLatestScanId = getLatestScanId(previousSnapshot)
-  const nextLatestScanId = getLatestScanId(nextSnapshot)
-  if (nextLatestScanId != null && nextLatestScanId !== previousLatestScanId) {
-    const latestScanTarget = resolveLatestScanTarget(nextSnapshot.latestScan, nextSnapshot)
-    if (latestScanTarget?.hasDecision) {
-      return latestScanTarget
-    }
-  }
-
-  const prevUnregistered = toNumberOrZero(previousSnapshot.scannedItemsNotInRegister)
-  const nextUnregistered = toNumberOrZero(nextSnapshot.scannedItemsNotInRegister)
-  if (nextUnregistered > prevUnregistered) {
-    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
-  }
-
-  const previousBoxesById = getBoxMap(previousSnapshot)
-  const nextBoxes = getSnapshotBoxes(nextSnapshot)
-
-  for (const box of nextBoxes) {
-    const boxId = toNumberOrNull(box?.boxId)
-    if (boxId == null || !box?.boxStickerScanned) {
-      continue
-    }
-
-    const previousBox = previousBoxesById.get(`box:${boxId}`)
-    if (!previousBox?.boxStickerScanned) {
-      return { mode: MODE_BOX, box, hasDecision: true }
-    }
-  }
-
-  for (const box of nextBoxes) {
-    const boxKey = getMonitorBoxKey(box)
-    if (boxKey == null) {
-      continue
-    }
-
-    const previousBox = previousBoxesById.get(boxKey)
-    const previousScannedParcels = toNumberOrZero(previousBox?.parcelsWithStickerScanned)
-    const nextScannedParcels = toNumberOrZero(box?.parcelsWithStickerScanned)
-    if (nextScannedParcels > previousScannedParcels) {
-      return { mode: MODE_BOX, box, hasDecision: true }
-    }
-  }
-
-  const hasBoxesSnapshotContext = nextBoxes.length > 0 || previousBoxesById.size > 0
-  const prevTotalScannedParcels = toNumberOrZero(previousSnapshot.parcelsWithStickerScanned)
-  const nextTotalScannedParcels = toNumberOrZero(nextSnapshot.parcelsWithStickerScanned)
-  if (hasBoxesSnapshotContext && nextTotalScannedParcels > prevTotalScannedParcels) {
-    return { mode: MODE_REGISTER, boxId: null, hasDecision: true }
-  }
-
-  return { mode: MODE_REGISTER, boxId: null, hasDecision: false }
+async function clearFollowUserSubscription() {
+  await scanJobsStore.clearMonitorFollowUser().catch(() => {})
 }
 
-async function stopAutoFollowMonitor() {
-  autoFollowObservationVersion += 1
-  autoFollowSnapshot = null
-  await scanJobsStore.stopMonitorAutoFollow().catch(() => {})
-}
+async function startFollowUserSubscription({ subscribe = true, version = scopeVersion.value } = {}) {
+  await clearFollowUserSubscription()
 
-function applyAutoFollowSnapshot(snapshot, version) {
-  if (
-    !isComponentMounted.value ||
-    version !== autoFollowObservationVersion ||
-    Number(snapshot?.scanJobId) !== Number(props.scanjobId) ||
-    Number(snapshot?.area) !== scanjobMonitorArea.Boxes
-  ) {
+  const userId = toNumberOrNull(selectedFollowUserId.value)
+  if (!subscribe || userId == null || !canSubscribeToMonitor(scanjob.value)) {
     return
   }
-
-  const previousSnapshot = autoFollowSnapshot
-  autoFollowSnapshot = snapshot
-
-  if (!previousSnapshot) {
-    return
-  }
-
-  runAutoFollow(previousSnapshot, snapshot, 'live')
-}
-
-async function startAutoFollowMonitor(scope, { subscribe = true, version = scopeVersion.value } = {}) {
-  await stopAutoFollowMonitor()
-
-  const normalized = normalizeMonitorScope(scope)
-  if (!subscribe || !autoFollowEnabled.value || normalized.area === scanjobMonitorArea.Boxes) {
-    return
-  }
-
-  const nextAutoFollowVersion = autoFollowObservationVersion + 1
-  autoFollowObservationVersion = nextAutoFollowVersion
-  autoFollowSnapshot = null
 
   try {
-    await scanJobsStore.startMonitorAutoFollow(props.scanjobId, {
-      onSnapshot: (nextSnapshot) => applyAutoFollowSnapshot(nextSnapshot, nextAutoFollowVersion)
+    await scanJobsStore.startMonitorFollowUser(props.scanjobId, userId, {
+      onFollowEvent: (followEvent) => handleFollowEvent(followEvent, version)
     })
   } catch (error) {
     if (isComponentMounted.value && version === scopeVersion.value) {
@@ -762,40 +636,40 @@ async function startAutoFollowMonitor(scope, { subscribe = true, version = scope
   }
 }
 
-function runAutoFollow(previousSnapshot, nextSnapshot, source) {
-  if (source !== 'live' || switchingScope.value || isLoading.value) {
+async function handleFollowEvent(followEvent, version = scopeVersion.value) {
+  const selectedUserId = toNumberOrNull(selectedFollowUserId.value)
+  if (
+    !isComponentMounted.value ||
+    version !== scopeVersion.value ||
+    switchingScope.value ||
+    Number(followEvent?.scanJobId) !== Number(props.scanjobId) ||
+    selectedUserId == null ||
+    Number(followEvent?.userId) !== selectedUserId
+  ) {
     return
   }
 
-  const target = resolveAutoFollowTarget(previousSnapshot, nextSnapshot)
-  if (!target.hasDecision) {
-    return
-  }
+  const targetScope = normalizeFollowTarget(followEvent?.followTarget)
+  const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
 
-  if (target.mode === MODE_BOX && target.box) {
-    const targetArea = isUnassignedMonitorBox(target.box)
-      ? scanJobsStore.scanjobMonitorArea.Unassigned
-      : Number(target.box.area ?? scanJobsStore.scanjobMonitorArea.Box)
-    const targetBoxId = toNumberOrNull(target.box.boxId)
-    const targetBucketIndex = toNumberOrNull(target.box.bucketIndex) ?? 0
-    const sameRealBox = targetArea === scanJobsStore.scanjobMonitorArea.Box
-      && Number(selectedBoxId.value) === Number(targetBoxId)
-    const sameUnassignedBucket = targetArea === scanJobsStore.scanjobMonitorArea.Unassigned
-      && Number(selectedBucketIndex.value ?? 0) === Number(targetBucketIndex)
-
-    if (isBoxMode.value && Number(selectedArea.value) === targetArea && (sameRealBox || sameUnassignedBucket)) {
+  if (targetScope.area === scanjobMonitorArea.Boxes) {
+    selectedParcelId.value = null
+    if (isRegisterMode.value) {
+      await refreshCurrentScopeSnapshot()
       return
     }
 
-    void navigateToBoxMonitor(target.box, { replace: true })
+    await navigateToRegisterMonitor({ replace: true })
     return
   }
 
-  if (isRegisterMode.value) {
+  selectedParcelId.value = targetParcelId
+  if (scopesAreEqual(targetScope, getCurrentScope())) {
+    await refreshCurrentScopeSnapshot()
     return
   }
 
-  void navigateToRegisterMonitor({ replace: true })
+  await updateMonitorRoute(targetScope, { replace: true })
 }
 
 function applySnapshot(snapshot, { version = scopeVersion.value, immediate = false, source = 'manual' } = {}) {
@@ -804,10 +678,8 @@ function applySnapshot(snapshot, { version = scopeVersion.value, immediate = fal
   }
 
   if (immediate) {
-    const previousSnapshot = visibleSnapshot.value
     clearPendingSnapshot()
     visibleSnapshot.value = snapshot
-    runAutoFollow(previousSnapshot, snapshot, source)
     return
   }
 
@@ -837,7 +709,7 @@ function handleMonitorClosed(scanJobId, status, version) {
 
   closedStatus.value = { scanJobId, status }
   clearPendingSnapshot()
-  stopAutoFollowMonitor().catch(() => {})
+  clearFollowUserSubscription().catch(() => {})
   scanJobsStore.stopMonitor().catch(() => {})
 }
 
@@ -859,7 +731,7 @@ async function observeScope(scope, { subscribe = true } = {}) {
   clearPendingSnapshot()
 
   try {
-    await stopAutoFollowMonitor()
+    await clearFollowUserSubscription()
     await scanJobsStore.clearMonitor().catch(() => {})
 
     const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, scope)
@@ -871,7 +743,7 @@ async function observeScope(scope, { subscribe = true } = {}) {
         onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version, source: 'live' }),
         onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version)
       })
-      await startAutoFollowMonitor(scope, { subscribe, version })
+      await startFollowUserSubscription({ subscribe, version })
     }
   } catch (error) {
     if (isComponentMounted.value && version === scopeVersion.value) {
@@ -890,30 +762,6 @@ async function openRegisterMonitor({ subscribe = canSubscribeToMonitor(scanjob.v
   selectedBoxId.value = null
   selectedBucketIndex.value = null
   await observeScope(buildScope(scanJobsStore.scanjobMonitorArea.Boxes), { subscribe })
-}
-
-async function openBoxMonitor(box) {
-  if (!box || isLoading.value) {
-    return
-  }
-
-  const isUnassigned = isUnassignedMonitorBox(box)
-  const boxId = toNumberOrNull(box.boxId)
-  const bucketIndex = toNumberOrNull(box.bucketIndex) ?? 0
-
-  if (!isUnassigned && boxId == null) {
-    return
-  }
-
-  mode.value = MODE_BOX
-  selectedArea.value = isUnassigned
-    ? scanJobsStore.scanjobMonitorArea.Unassigned
-    : scanJobsStore.scanjobMonitorArea.Box
-  selectedBoxId.value = isUnassigned ? null : boxId
-  selectedBucketIndex.value = isUnassigned ? bucketIndex : null
-  await observeScope(buildScope(selectedArea.value, selectedBoxId.value, selectedBucketIndex.value), {
-    subscribe: canSubscribeToMonitor(scanjob.value)
-  })
 }
 
 async function openMonitorScope(scope, { subscribe = canSubscribeToMonitor(scanjob.value) } = {}) {
@@ -943,6 +791,7 @@ async function openMonitorScope(scope, { subscribe = canSubscribeToMonitor(scanj
 onMounted(async () => {
   const loaded = await loadScanjobAndRegister()
   if (loaded) {
+    await loadFollowUsers()
     await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })
   } else if (isComponentMounted.value) {
     registerLoading.value = false
@@ -962,6 +811,7 @@ watch(
       await resetMonitorObservation()
       const loaded = await loadScanjobAndRegister()
       if (loaded) {
+        await loadFollowUsers()
         await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })
       } else if (isComponentMounted.value) {
         registerLoading.value = false
@@ -975,23 +825,17 @@ watch(
 )
 
 watch(
-  autoFollowEnabled,
-  async (enabled) => {
+  selectedFollowUserId,
+  async (userId) => {
+    authStore.setScanjobMonitorFollowUserId(userId)
     if (!scanjobLoaded.value || !isComponentMounted.value || switchingScope.value) {
       return
     }
 
-    if (!enabled) {
-      await stopAutoFollowMonitor()
-      return
-    }
-
-    if (isBoxMode.value) {
-      await startAutoFollowMonitor(getCurrentScope(), {
-        subscribe: canSubscribeToMonitor(scanjob.value),
-        version: scopeVersion.value
-      })
-    }
+    await startFollowUserSubscription({
+      subscribe: canSubscribeToMonitor(scanjob.value),
+      version: scopeVersion.value
+    })
   }
 )
 
@@ -999,14 +843,13 @@ onUnmounted(() => {
   isComponentMounted.value = false
   scopeVersion.value += 1
   clearPendingSnapshot()
-  stopAutoFollowMonitor().catch(() => {})
+  clearFollowUserSubscription().catch(() => {})
   scanJobsStore.stopMonitor().catch(() => {})
 })
 
 defineExpose({
   close,
   openRegisterMonitor,
-  openBoxMonitor,
   openMonitorScope,
   applySnapshot
 })
@@ -1046,17 +889,19 @@ defineExpose({
           />
           <span v-if="jumpLoading" class="spinner-border spinner-border-m" data-testid="scanjob-monitor-jump-loading"></span>
         </form>
-        <div class="header-actions header-actions-group">
-          <ActionButton
-            :item="{}"
-            :icon="autoFollowActionIcon"
-            icon-size="2x"
-            :variant="autoFollowActionVariant"
-            :tooltip-text="autoFollowActionTooltip"
-            :aria-label="`${autoFollowActionTooltip}. ${autoFollowActionInfo}`"
-            :aria-pressed="autoFollowEnabled"
-            data-testid="scanjob-monitor-auto-follow-action"
-            @click="toggleAutoFollow"
+        <div class="header-actions header-actions-group scanjob-monitor-follow-user">
+          <v-select
+            v-model="selectedFollowUserId"
+            :items="followUserOptions"
+            item-title="title"
+            item-value="value"
+            density="compact"
+            variant="outlined"
+            label="Следить за сканером"
+            hide-details
+            :loading="followUsersLoading"
+            :disabled="isLoading || followUsersLoading"
+            data-testid="scanjob-monitor-follow-user-select"
           />
         </div>
         <div v-if="!isBoxMode" class="header-actions header-actions-group">
@@ -1149,6 +994,39 @@ defineExpose({
 
 .scanjob-monitor-jump-input {
   min-width: 300px;
+}
+
+.scanjob-monitor-follow-user {
+  align-items: center;
+  min-width: 260px;
+  min-height: 50px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.scanjob-monitor-follow-user :deep(.v-input),
+.scanjob-monitor-follow-user :deep(.v-input__control),
+.scanjob-monitor-follow-user :deep(.v-field) {
+  height: 50px;
+  min-height: 50px;
+}
+
+.scanjob-monitor-follow-user :deep(.v-field) {
+  --v-field-border-radius: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.scanjob-monitor-follow-user :deep(.v-field__outline) {
+  border-radius: inherit;
+}
+
+.scanjob-monitor-follow-user :deep(.v-field__input) {
+  min-height: 50px;
+  padding-top: 0;
+  padding-bottom: 0;
+  align-items: center;
 }
 
 .monitor-summary-action {

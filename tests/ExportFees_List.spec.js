@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import ExportDutiesList from '@/lists/ExportDuties_List.vue'
+import ExportFeesList from '@/lists/ExportFees_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const mockDuties = ref([
@@ -47,18 +47,18 @@ vi.mock('pinia', async () => {
       }
 
       return {
-        exportduties_per_page: store.exportduties_per_page,
-        exportduties_search: store.exportduties_search,
-        exportduties_sort_by: store.exportduties_sort_by,
-        exportduties_page: store.exportduties_page,
+        exportfees_per_page: store.exportfees_per_page,
+        exportfees_search: store.exportfees_search,
+        exportfees_sort_by: store.exportfees_sort_by,
+        exportfees_page: store.exportfees_page,
         isSrLogistPlus: store.isSrLogistPlus
       }
     })
   }
 })
 
-vi.mock('@/stores/export.duties.store.js', () => ({
-  useExportDutiesStore: () => {
+vi.mock('@/stores/export.fees.store.js', () => ({
+  useExportFeesStore: () => {
     const store = {
       duties: mockDuties,
       loading: mockLoading,
@@ -74,10 +74,10 @@ vi.mock('@/stores/export.duties.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    exportduties_per_page: dutiesPerPage,
-    exportduties_search: dutiesSearch,
-    exportduties_sort_by: dutiesSortBy,
-    exportduties_page: dutiesPage,
+    exportfees_per_page: dutiesPerPage,
+    exportfees_search: dutiesSearch,
+    exportfees_sort_by: dutiesSortBy,
+    exportfees_page: dutiesPage,
     isSrLogistPlus
   })
 }))
@@ -94,7 +94,7 @@ vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
 
-describe('ExportDuties_List.vue', () => {
+describe('ExportFees_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockDuties.value = [
@@ -112,7 +112,7 @@ describe('ExportDuties_List.vue', () => {
   })
 
   function mountList() {
-    return mount(ExportDutiesList, {
+    return mount(ExportFeesList, {
       global: {
         stubs: {
           ...vuetifyStubs,

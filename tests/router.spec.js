@@ -27,7 +27,7 @@ vi.mock('@/views/User_RegisterView.vue', () => ({ default: { template: '<div />'
 vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
-vi.mock('@/views/ExportDuties_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/ExportFees_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Parcel_EditView.vue', () => ({ default: { template: '<div />' } }))
 
@@ -345,10 +345,10 @@ describe('router guards', () => {
     authStore.user = { id: 9 }
     authStore.hasAnyRole = true
 
-    await router.push('/export-duties')
+    await router.push('/export-fees')
     await router.isReady()
 
-    expect(router.currentRoute.value.fullPath).toBe('/export-duties')
+    expect(router.currentRoute.value.fullPath).toBe('/export-fees')
   })
 
   it('prevents non-logist user from accessing parcels', async () => {

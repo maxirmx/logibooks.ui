@@ -12,6 +12,7 @@ import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const pushMock = vi.hoisted(() => vi.fn())
 const backMock = vi.hoisted(() => vi.fn())
+const mockGet = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lists/WbrParcels_List.vue', () => ({
   default: {
@@ -88,8 +89,6 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
 }))
 
 describe('Parcels_View', () => {
-  const mockGet = vi.hoisted(() => vi.fn())
-  
   beforeEach(async () => {
     vi.clearAllMocks()
     const { fetchWrapper } = await import('@/helpers/fetch.wrapper.js')

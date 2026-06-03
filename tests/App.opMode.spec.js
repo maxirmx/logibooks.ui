@@ -50,7 +50,7 @@ const router = createRouter({
     { path: '/countries', component: { template: '<div>Countries</div>' } },
     { path: '/feacn/codes', component: { template: '<div>FEACN Codes</div>' } },
     { path: '/feacn/orders', component: { template: '<div>FEACN Orders</div>' } },
-    { path: '/export-duties', component: { template: '<div>Export Duties</div>' } },
+    { path: '/export-fees', component: { template: '<div>Export Duties</div>' } },
     { path: '/feacn/prefixes', component: { template: '<div>FEACN Prefixes</div>' } },
     { path: '/keywords', component: { template: '<div>Keywords</div>' } },
     { path: '/feacn/insertitems', component: { template: '<div>FEACN Insert Items</div>' } },
@@ -142,10 +142,10 @@ describe('App navigation for registers', () => {
     await wrapper.vm.$nextTick()
 
     const link = wrapper.findAll('a').find((item) =>
-      item.text().includes('Пошлины')
+      item.text().includes('Сборы')
     )
 
     expect(link).toBeTruthy()
-    expect(link?.attributes('href')).toBe('/export-duties')
+    expect(link?.attributes('href')).toBe('/export-fees')
   })
 })

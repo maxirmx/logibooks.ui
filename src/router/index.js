@@ -322,9 +322,9 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
-      path: '/export-duties',
-      name: 'Экспортные пошлины',
-      component: () => import('@/views/ExportDuties_View.vue'),
+      path: '/export-fees',
+      name: 'Сборы',
+      component: () => import('@/views/ExportFees_View.vue'),
       meta: { reqAnyRole: true }
     },
     {

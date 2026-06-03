@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useExportDutiesStore } from '@/stores/export.duties.store.js'
+import { useExportFeesStore } from '@/stores/export.fees.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -26,10 +26,10 @@ describe('export.duties store', () => {
     const mockDuties = [{ id: 1, code: '1000000000', description: 'Test', duty: 5.5 }]
     fetchWrapper.get.mockResolvedValue(mockDuties)
 
-    const store = useExportDutiesStore()
+    const store = useExportFeesStore()
     await store.getAll()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportduties`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/ExportFees`)
     expect(store.duties).toEqual(mockDuties)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
@@ -40,10 +40,10 @@ describe('export.duties store', () => {
     const testError = new Error('API error')
     fetchWrapper.get.mockRejectedValue(testError)
 
-    const store = useExportDutiesStore()
+    const store = useExportFeesStore()
     await store.getAll()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportduties`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/ExportFees`)
     expect(store.duties).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
@@ -51,7 +51,7 @@ describe('export.duties store', () => {
   })
 
   it('clears previous error before a new fetch', async () => {
-    const store = useExportDutiesStore()
+    const store = useExportFeesStore()
     store.error = new Error('old')
     fetchWrapper.get.mockResolvedValue([])
 
@@ -63,10 +63,10 @@ describe('export.duties store', () => {
   it('calls update endpoint', async () => {
     fetchWrapper.post.mockResolvedValue({})
 
-    const store = useExportDutiesStore()
+    const store = useExportFeesStore()
     await store.update()
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/exportduties/update`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/ExportFees/update`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
     expect(store.isInitialized).toBe(false)
@@ -75,7 +75,7 @@ describe('export.duties store', () => {
   it('ensures duties are loaded only once after successful initialization', async () => {
     fetchWrapper.get.mockResolvedValue([{ id: 1, code: '1000000000', duty: 1 }])
 
-    const store = useExportDutiesStore()
+    const store = useExportFeesStore()
     await store.ensureLoaded()
 
     expect(fetchWrapper.get).toHaveBeenCalledOnce()
@@ -87,7 +87,7 @@ describe('export.duties store', () => {
   })
 
   it('does not load while already loading', async () => {
-    const store = useExportDutiesStore()
+    const store = useExportFeesStore()
     store.loading = true
 
     await store.ensureLoaded()

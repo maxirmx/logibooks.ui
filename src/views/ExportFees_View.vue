@@ -3,9 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import ExportDuties_List from '@/lists/ExportDuties_List.vue'
+import ExportFees_List from '@/lists/ExportFees_List.vue'
 </script>
 
 <template>
-  <ExportDuties_List />
+  <ExportFees_List />
 </template>

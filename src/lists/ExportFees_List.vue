@@ -6,31 +6,31 @@
 import { onMounted, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
-import { useExportDutiesStore } from '@/stores/export.duties.store.js'
+import { useExportFeesStore } from '@/stores/export.fees.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
-const exportDutiesStore = useExportDutiesStore()
+const ExportFeesStore = useExportFeesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
-const { duties, loading } = storeToRefs(exportDutiesStore)
+const { duties, loading } = storeToRefs(ExportFeesStore)
 const { alert } = storeToRefs(alertStore)
 const {
-  exportduties_per_page,
-  exportduties_search,
-  exportduties_sort_by,
-  exportduties_page,
+  exportfees_per_page,
+  exportfees_search,
+  exportfees_sort_by,
+  exportfees_page,
   isSrLogistPlus
 } = storeToRefs(authStore)
 
 onMounted(loadDuties)
 
 async function loadDuties() {
-  await exportDutiesStore.getAll()
-  const storeError = unref(exportDutiesStore.error)
+  await ExportFeesStore.getAll()
+  const storeError = unref(ExportFeesStore.error)
   if (storeError) {
     alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
   }
@@ -55,12 +55,12 @@ function compareDutyCodesAsStrings(a, b) {
 
 async function updateDuties() {
   try {
-    if (typeof exportDutiesStore.update !== 'function') {
+    if (typeof ExportFeesStore.update !== 'function') {
       alertStore.error('Обновите страницу перед загрузкой информации о пошлинах')
       return
     }
-    await exportDutiesStore.update()
-    const storeError = unref(exportDutiesStore.error)
+    await ExportFeesStore.update()
+    const storeError = unref(ExportFeesStore.error)
     if (storeError) {
       alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
       return
@@ -83,7 +83,7 @@ const customKeySort = {
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="export-duties-list">
+  <div class="settings table-3" data-testid="export-fees-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Пошлины</h1>
       <div class="header-actions-bar">
@@ -107,7 +107,7 @@ const customKeySort = {
 
     <div>
       <v-text-field
-        v-model="exportduties_search"
+        v-model="exportfees_search"
         :append-inner-icon="mdiMagnify"
         label="Поиск по записям"
         variant="solo"
@@ -118,15 +118,15 @@ const customKeySort = {
 
     <v-card class="table-card">
       <v-data-table
-        v-model:items-per-page="exportduties_per_page"
+        v-model:items-per-page="exportfees_per_page"
         items-per-page-text="Записей на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="exportduties_page"
+        v-model:page="exportfees_page"
         :headers="headers"
         :items="duties"
-        :search="authStore.exportduties_search"
-        v-model:sort-by="exportduties_sort_by"
+        :search="authStore.exportfees_search"
+        v-model:sort-by="exportfees_sort_by"
         :custom-key-sort="customKeySort"
         :custom-filter="filterDuties"
         density="compact"

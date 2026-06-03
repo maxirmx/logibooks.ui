@@ -7,9 +7,9 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/exportduties`
+const baseUrl = `${apiUrl}/ExportFees`
 
-export const useExportDutiesStore = defineStore('export.duties', () => {
+export const useExportFeesStore = defineStore('export.duties', () => {
   const duties = ref([])
   const loading = ref(false)
   const error = ref(null)
@@ -59,5 +59,5 @@ export const useExportDutiesStore = defineStore('export.duties', () => {
 })
 
 if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useExportDutiesStore, import.meta.hot))
+  import.meta.hot.accept(acceptHMRUpdate(useExportFeesStore, import.meta.hot))
 }

@@ -12,10 +12,13 @@ import * as Yup from 'yup'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
+import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -48,10 +51,12 @@ const props = defineProps({
 const scanJobsStore = useScanjobsStore()
 const warehousesStore = useWarehousesStore()
 const registersStore = useRegistersStore()
+const companiesStore = useCompaniesStore()
 const parcelStatusesStore = useParcelStatusesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const { ops } = storeToRefs(scanJobsStore)
+const { companies } = storeToRefs(companiesStore)
 
 const isCreate = computed(() => props.mode === 'create')
 
@@ -148,6 +153,34 @@ const operationOptions = computed(() => {
 
 const warehouseDisplayName = computed(() => warehousesStore.getWarehouseName(fieldWarehouseId.value))
 const resolvedDealNumber = computed(() => currentScanjob.value?.dealNumber || props.dealNumber || '')
+function getPresentationValue(fieldName) {
+  return currentScanjob.value?.[fieldName] ?? currentRegister.value?.[fieldName] ?? null
+}
+
+const registerPresentationItem = computed(() => ({
+  invoiceNumber: getPresentationValue('invoiceNumber'),
+  transportationTypeCode: getPresentationValue('transportationTypeCode'),
+  senderId: getPresentationValue('senderId'),
+  recipientId: getPresentationValue('recipientId')
+}))
+
+const invoiceDisplay = computed(() => {
+  const item = registerPresentationItem.value
+  const value = formatRegisterInvoice(item, (transportationTypeCode) => (
+    transportationTypeCode === null || transportationTypeCode === undefined || transportationTypeCode === ''
+      ? ''
+      : registersStore.getTransportationDocument(transportationTypeCode)
+  ))
+  return value || 'Не задан'
+})
+
+const senderRecipientDisplay = computed(() => {
+  const item = registerPresentationItem.value
+  const sender = getCompanyDisplayName(companies.value, item.senderId)
+  const recipient = getCompanyDisplayName(companies.value, item.recipientId)
+  return `${sender} / ${recipient}`
+})
+
 const statusDisplay = computed(() => {
   if (status.value === null || status.value === undefined) return '—'
   return scanJobsStore.getOpsLabel(ops.value?.statuses, status.value)
@@ -190,6 +223,8 @@ onMounted(async () => {
   loading.value = true
   try {
     await scanJobsStore.ensureOpsLoaded()
+    await registersStore.ensureOpsLoaded()
+    await companiesStore.getAll()
     await warehousesStore.ensureLoaded()
     await parcelStatusesStore.ensureLoaded()
 
@@ -501,17 +536,31 @@ defineExpose({ onSubmit, cancel })
 
       <div class="form-row">
         <div class="form-group">
-          <label for="name" class="label">Название:</label>
+          <label for="invoiceDisplay" class="label">ТСД:</label>
           <input
-            id="name"
+            id="invoiceDisplay"
             type="text"
             class="form-control input"
-            :class="{ 'is-invalid': errors.name }"
-            placeholder="Название"
-            v-model="name"
+            :value="invoiceDisplay"
+            readonly
+            data-testid="invoice-display"
           />
         </div>
 
+        <div class="form-group">
+          <label for="senderRecipientDisplay" class="label">Отправитель/Получатель:</label>
+          <input
+            id="senderRecipientDisplay"
+            type="text"
+            class="form-control input"
+            :value="senderRecipientDisplay"
+            readonly
+            data-testid="sender-recipient-display"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
           <label for="dealNumber" class="label">Номер сделки:</label>
           <input
@@ -520,6 +569,18 @@ defineExpose({ onSubmit, cancel })
             class="form-control input"
             :value="resolvedDealNumber || 'Не задан'"
             readonly
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="name" class="label">Название задания:</label>
+          <input
+            id="name"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.name }"
+            placeholder="Название"
+            v-model="name"
           />
         </div>
 

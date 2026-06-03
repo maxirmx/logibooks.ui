@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { buildParcelListHeading, formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 
 function mockGetTransportationDocument( ) {
@@ -47,6 +47,18 @@ describe('register.heading.helpers', () => {
     const heading = buildParcelListHeading(register, mockGetTransportationDocument)
     // Invoice placeholder present; counts not included
     expect(heading).toBe('Сделка D1 (ТСД отсутствует)')
+  })
+
+  it('formats invoice from transportation document and number', () => {
+    const getTransportationDocument = vi.fn().mockReturnValue('AWB')
+
+    expect(formatRegisterInvoice({ transportationTypeCode: 0, invoiceNumber: 'INV-1' }, getTransportationDocument)).toBe('AWB INV-1')
+    expect(getTransportationDocument).toHaveBeenCalledWith(0)
+  })
+
+  it('formats invoice when document or number is missing', () => {
+    expect(formatRegisterInvoice({ invoiceNumber: 'INV-1' }, null)).toBe('INV-1')
+    expect(formatRegisterInvoice({ transportationTypeCode: 0 }, () => 'CMR')).toBe('CMR')
   })
 
   it('returns loading message for null register', () => {

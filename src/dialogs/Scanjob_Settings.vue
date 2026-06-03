@@ -500,6 +500,7 @@ defineExpose({ onSubmit, cancel })
             tooltip-text="Завершить сканирование"
             data-testid="scanjob-finish-action"
             :disabled="saving || loading || runningAction || !canFinish"
+            v-if="authStore.isAdmin"
             @click="finishScanjob"
           />
         </div>

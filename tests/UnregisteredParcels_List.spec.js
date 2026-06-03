@@ -27,6 +27,7 @@ const getOpsLabel = vi.fn((list, value) => {
 
 const mockRegisterItem = { item: {} }
 const getById = vi.fn()
+const getTransportationDocument = vi.fn((id) => Number(id) === 1 ? 'CMR' : `Документ ${id}`)
 
 vi.mock('@/stores/unregistered.parcels.store.js', () => ({
   useUnregisteredParcelsStore: () => ({
@@ -75,7 +76,10 @@ describe('UnregisteredParcels_List.vue', () => {
     download.mockReset()
     mockRegisterItem.item = {}
     mockRegisterItem.getById = getById
+    mockRegisterItem.getTransportationDocument = getTransportationDocument
     getById.mockReset()
+    getTransportationDocument.mockReset()
+    getTransportationDocument.mockImplementation((id) => Number(id) === 1 ? 'CMR' : `Документ ${id}`)
   })
 
   it('loads rows on mount with register id', async () => {
@@ -108,6 +112,29 @@ describe('UnregisteredParcels_List.vue', () => {
     expect(wrapper.text()).toContain('Зона 1')
     expect(getStatusTitle).toHaveBeenCalledWith(7)
     expect(getOpsLabel).toHaveBeenCalledWith([{ value: 1, name: 'Зона 1' }], 1)
+  })
+
+  it('renders register deal and invoice in the header', async () => {
+    getAll.mockResolvedValue([])
+    getById.mockImplementation(() => {
+      mockRegisterItem.item = {
+        id: 5,
+        dealNumber: '3240',
+        invoiceNumber: '211875606',
+        transportationTypeCode: 1
+      }
+    })
+
+    const wrapper = mount(UnregisteredParcelsList, {
+      props: { registerId: 5 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('.primary-heading').text()).toBe('Стикеры не в реестре | Сделка 3240 (CMR 211875606)')
+    expect(getById).toHaveBeenCalledWith(5)
+    expect(getTransportationDocument).toHaveBeenCalledWith(1)
   })
 
   it('reports invalid register id', () => {

@@ -55,7 +55,7 @@ const summaryCards = computed(() => {
     },
     {
       key: 'unregistered',
-      label: 'Посылки не в реестре',
+      label: 'Стикеры не в реестре',
       value: String(snapshot.scannedItemsNotInRegister ?? 0),
     }
   ]

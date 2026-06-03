@@ -497,7 +497,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(summaryItems).toEqual([
       { label: 'Коробки всего / сканировано / не сканировано', value: '2 / 1 / 1' },
       { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '5 / 3 / 2 / 2' },
-      { label: 'Посылки не в реестре', value: '1' }
+      { label: 'Стикеры не в реестре', value: '1' }
     ])
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')

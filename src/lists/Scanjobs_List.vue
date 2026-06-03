@@ -8,6 +8,8 @@ import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -16,14 +18,22 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
 
+import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
+import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
+import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
+
 const scanJobsStore = useScanjobsStore()
+
 const warehousesStore = useWarehousesStore()
+const registersStore = useRegistersStore()
+const companiesStore = useCompaniesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { items, loading, ops, totalCount } = storeToRefs(scanJobsStore)
 const { alert } = storeToRefs(alertStore)
+const { companies } = storeToRefs(companiesStore)
 
 const runningAction = ref(false)
 const isInitializing = ref(true)
@@ -39,6 +49,8 @@ const headers = [
   ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '140px' }] : []),
 //  { title: 'Номер', key: 'id', sortable: true },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
+  { title: 'ТСД', key: 'invoice', sortable: true },
+  { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Тип', key: 'type', sortable: true },
   { title: 'Операция', key: 'operation', sortable: true },
@@ -170,6 +182,12 @@ onMounted(async () => {
     await scanJobsStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
     
+    await registersStore.ensureOpsLoaded()
+    if (!isComponentMounted.value) return
+
+    await companiesStore.getAll()
+    if (!isComponentMounted.value) return
+
     await warehousesStore.ensureLoaded()
     if (!isComponentMounted.value) return
     try {
@@ -251,6 +269,17 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template v-slot:[`item.invoice`]="{ item }">
+          <RegisterInvoiceCell
+            :item="item"
+            :get-transportation-document="registersStore.getTransportationDocument"
+          />
+        </template>
+
+        <template v-slot:[`item.senderRecipient`]="{ item }">
+          <SenderRecipientCell :item="item" :companies="companies" />
+        </template>
+
         <template v-slot:[`item.type`]="{ item }">
           {{ scanJobsStore.getOpsLabel(ops?.types, item.type) }}
         </template>
@@ -321,6 +350,24 @@ defineExpose({
               v-if="authStore.isWhManagerPlus"
             />
           </div>
+        </template>
+
+        <template v-slot:[`header.dealNumber`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Номер', 'сделки']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
+        </template>
+
+        <template v-slot:[`header.senderRecipient`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Отправитель', 'Получатель']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
         </template>
       </v-data-table-server>
     </v-card>

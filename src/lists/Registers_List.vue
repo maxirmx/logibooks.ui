@@ -39,6 +39,8 @@ import ActionButton2L from '@/components/ActionButton2L.vue'
 import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
 
+import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
+import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
 const props = defineProps({
   mode: {
     type: String,
@@ -377,12 +379,6 @@ function openScanjobCreate(item) {
   })
 }
 
-function formatInvoiceInfo(item) {
-  const { invoiceNumber, transportationTypeCode } = item
-  const transportationDocument = registersStore.getTransportationDocument(transportationTypeCode)
-  return `${transportationDocument} ${invoiceNumber || ''}`
-}
-
 const defaultHeaders = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
@@ -493,10 +489,10 @@ defineExpose({
             @click="openParcels" 
           >
             <template #default>
-              <div class="invoice-box">
-                <div class="invoice-number">{{ formatInvoiceInfo(item) }}</div>
-                <div v-if="item.invoiceDate" class="invoice-date">от {{ formatDate(item.invoiceDate) }}</div>
-              </div>
+              <RegisterInvoiceCell
+                :item="item"
+                :get-transportation-document="registersStore.getTransportationDocument"
+              />
             </template>
           </ClickableCell>
         </template>
@@ -527,10 +523,7 @@ defineExpose({
             @click="editRegister" 
           >
             <template #default>
-              <div class="data-box">
-                <div>{{ getCustomerName(item.senderId) }}</div>
-                <div>{{ getCustomerName(item.recipientId) }}</div>
-              </div>
+              <SenderRecipientCell :item="item" :companies="companies" />
             </template>
           </ClickableCell>
         </template>

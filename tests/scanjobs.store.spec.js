@@ -208,6 +208,34 @@ describe('scanjobs store', () => {
       expect(urlParams.get('sortOrder')).toBe('asc')
     })
 
+
+    it('passes invoice sort to backend', async () => {
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.scanjobs_sort_by = [{ key: 'invoice', order: 'desc' }]
+
+      await store.getAll()
+
+      const calledUrl = fetchWrapper.get.mock.calls[0][0]
+      const urlParams = new URL(calledUrl).searchParams
+      expect(urlParams.get('sortBy')).toBe('invoice')
+      expect(urlParams.get('sortOrder')).toBe('desc')
+    })
+
+    it('passes senderRecipient sort to backend', async () => {
+      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+      const store = useScanjobsStore()
+      const authStore = useAuthStore()
+      authStore.scanjobs_sort_by = [{ key: 'senderRecipient', order: 'asc' }]
+
+      await store.getAll()
+
+      const calledUrl = fetchWrapper.get.mock.calls[0][0]
+      const urlParams = new URL(calledUrl).searchParams
+      expect(urlParams.get('sortBy')).toBe('senderRecipient')
+      expect(urlParams.get('sortOrder')).toBe('asc')
+    })
     it('appends search param when scanjobs_search is set', async () => {
       const paginatedResponse = { items: mockScanjobs, pagination: { totalCount: 2 } }
       fetchWrapper.get.mockResolvedValue(paginatedResponse)

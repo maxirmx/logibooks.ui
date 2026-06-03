@@ -41,6 +41,12 @@ const mockScanjob = {
   status: 4,
   warehouseId: 11,
   registerId: 22,
+  dealNumber: 'ABC-1',
+  invoiceNumber: 'INV-001',
+  invoiceDate: '2026-06-03',
+  transportationTypeCode: 0,
+  senderId: 201,
+  recipientId: 202,
   allowStart: true,
   allowPause: false,
   allowFinish: false
@@ -63,12 +69,26 @@ const pause = vi.hoisted(() => vi.fn())
 const finish = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
 const getRegisterById = vi.hoisted(() => vi.fn())
+const ensureRegisterOpsLoaded = vi.hoisted(() => vi.fn())
+const getAllCompanies = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
 
 const getWarehouseName = vi.hoisted(() => vi.fn((id) => `Warehouse ${id}`))
-let registerItem = { registerType: 1048578 }
+let registerItem = {
+  id: 22,
+  registerType: 1048578,
+  invoiceNumber: 'INV-001',
+  invoiceDate: '2026-06-03',
+  transportationTypeCode: 0,
+  senderId: 201,
+  recipientId: 202
+}
+const mockCompanies = ref([
+  { id: 201, shortName: 'Отправитель ООО', name: 'Отправитель полное' },
+  { id: 202, shortName: '', name: 'Получатель полное' }
+])
 const parcelStatuses = [
   { id: 101, title: 'Найден' },
   { id: 102, title: 'Не найден' }
@@ -102,7 +122,16 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     get item() { return registerItem },
-    getById: getRegisterById
+    getById: getRegisterById,
+    ensureOpsLoaded: ensureRegisterOpsLoaded,
+    getTransportationDocument: (value) => Number(value) === 0 ? 'AWB' : `[Тип ${value}]`
+  })
+}))
+
+vi.mock('@/stores/companies.store.js', () => ({
+  useCompaniesStore: () => ({
+    companies: mockCompanies,
+    getAll: getAllCompanies
   })
 }))
 
@@ -144,6 +173,11 @@ vi.mock('pinia', async () => {
           ops: mockOps
         }
       }
+      if (store.companies !== undefined) {
+        return {
+          companies: mockCompanies
+        }
+      }
       return {}
     }
   }
@@ -171,8 +205,18 @@ describe('Scanjob_Settings.vue', () => {
     vi.clearAllMocks()
     ensureOpsLoaded.mockResolvedValue(mockOps.value)
     ensureLoaded.mockResolvedValue()
+    ensureRegisterOpsLoaded.mockResolvedValue()
+    getAllCompanies.mockResolvedValue(mockCompanies.value)
     getRegisterById.mockImplementation(async () => {
-      registerItem = { id: 22, registerType: 1048578 }
+      registerItem = {
+        id: 22,
+        registerType: 1048578,
+        invoiceNumber: 'INV-001',
+        invoiceDate: '2026-06-03',
+        transportationTypeCode: 0,
+        senderId: 201,
+        recipientId: 202
+      }
       return registerItem
     })
     getById.mockResolvedValue(mockScanjob)
@@ -206,8 +250,16 @@ describe('Scanjob_Settings.vue', () => {
     })
     await resolveAll()
 
+    expect(ensureRegisterOpsLoaded).toHaveBeenCalled()
+    expect(getAllCompanies).toHaveBeenCalled()
     expect(wrapper.find('[data-testid="status-display"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="status-display"]').element.value).toBe('Draft')
+    expect(wrapper.find('[data-testid="invoice-display"]').element.value).toBe('AWB INV-001')
+    expect(wrapper.find('[data-testid="sender-recipient-display"]').element.value).toBe('Отправитель ООО / Получатель полное')
+    const formRows = wrapper.findAll('form > .form-row')
+    expect(formRows[0].text()).toContain('ТСД')
+    expect(formRows[0].text()).toContain('Отправитель/Получатель')
+    expect(formRows[1].text()).toContain('Название')
     expect(wrapper.find('select#status').exists()).toBe(false)
     expect(wrapper.find('[data-testid="scanjob-start-action"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="scanjob-save-action"]').exists()).toBe(true)

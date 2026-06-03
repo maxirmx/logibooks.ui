@@ -673,7 +673,7 @@ defineExpose({
               v-if="hasWhRole && isWarehouseMode"
               :item="item"
               icon="fa-solid fa-rectangle-list"
-              :tooltip-text="`Посылки не в реестре`"
+              :tooltip-text="`Стикеры не в реестре`"
               @click="openUnregisteredParcels"
               :disabled="runningAction || loading"
             />

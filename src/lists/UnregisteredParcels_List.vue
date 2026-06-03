@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useUnregisteredParcelsStore } from '@/stores/unregistered.parcels.store.js'
@@ -11,6 +11,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -29,7 +30,14 @@ const { alert } = storeToRefs(alertStore)
 const { ops } = storeToRefs(warehousesStore)
 
 const isExporting = ref(false)
+const registerLoading = ref(true)
 
+const registerHeading = computed(() => {
+  if (registerLoading.value) return 'Загрузка реестра...'
+  if (registersStore.item?.error) return 'Реестр не загружен'
+  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
+})
+const pageHeading = computed(() => `Стикеры не в реестре | ${registerHeading.value}`)
 
 const headers = [
   { title: 'Сканированный код', key: 'scanCode', align: 'start', width: '120px' },
@@ -37,13 +45,29 @@ const headers = [
   { title: 'Статус', key: 'statusId', align: 'start', width: '120px' }
 ]
 
+function isValidRegisterId(registerId) {
+  return Number.isFinite(registerId) && Number.isInteger(registerId) && registerId > 0
+}
+
+async function loadRegister(registerId) {
+  registerLoading.value = true
+  try {
+    await registersStore.getById(registerId)
+  } finally {
+    registerLoading.value = false
+  }
+}
+
 async function loadItems() {
   const registerId = props.registerId
 
-  if (!Number.isFinite(registerId) || !Number.isInteger(registerId) || registerId <= 0) {
+  if (!isValidRegisterId(registerId)) {
+    registerLoading.value = false
     alertStore.error('Некорректный идентификатор реестра')
     return
   }
+
+  await loadRegister(registerId)
 
   try {
     await parcelStatusStore.ensureLoaded()
@@ -98,7 +122,7 @@ function closeList() {
 <template>
   <div class="settings table-3" data-testid="unregistered-parcels-list">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Посылки не в реестре</h1>
+      <h1 class="primary-heading">{{ pageHeading }}</h1>
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
             <span class="spinner-border spinner-border-m"></span>

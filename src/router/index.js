@@ -420,7 +420,7 @@ const router = createRouter({
 
     {
       path: '/registers/:registerId/unregistered-parcels',
-      name: 'Посылки не в реестре',
+      name: 'Стикеры не в реестре',
       component: () => import('@/views/UnregisteredParcels_View.vue'),
       props: (route) => ({
         registerId: Number(route.params.registerId)

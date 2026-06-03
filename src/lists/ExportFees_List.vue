@@ -12,11 +12,11 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 
-const ExportFeesStore = useExportFeesStore()
+const exportFeesStore = useExportFeesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
-const { duties, loading } = storeToRefs(ExportFeesStore)
+const { fees, loading } = storeToRefs(exportFeesStore)
 const { alert } = storeToRefs(alertStore)
 const {
   exportfees_per_page,
@@ -26,17 +26,17 @@ const {
   isSrLogistPlus
 } = storeToRefs(authStore)
 
-onMounted(loadDuties)
+onMounted(loadFees)
 
-async function loadDuties() {
-  await ExportFeesStore.getAll()
-  const storeError = unref(ExportFeesStore.error)
+async function loadFees() {
+  await exportFeesStore.getAll()
+  const storeError = unref(exportFeesStore.error)
   if (storeError) {
     alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
   }
 }
 
-function filterDuties(value, query, item) {
+function filterFees(value, query, item) {
   if (!query) return true
   const q = query.toString().toUpperCase()
   const i = item.raw
@@ -45,27 +45,27 @@ function filterDuties(value, query, item) {
     i.id?.toString().includes(q) ||
     i.code?.toString().toUpperCase().includes(q) ||
     (i.description || '').toUpperCase().includes(q) ||
-    i.duty?.toString().includes(q)
+    i.fee?.toString().includes(q)
   )
 }
 
-function compareDutyCodesAsStrings(a, b) {
+function compareFeeCodesAsStrings(a, b) {
   return (a ?? '').toString().localeCompare((b ?? '').toString())
 }
 
-async function updateDuties() {
+async function updateFees() {
   try {
-    if (typeof ExportFeesStore.update !== 'function') {
-      alertStore.error('Обновите страницу перед загрузкой информации о пошлинах')
+    if (typeof exportFeesStore.update !== 'function') {
+      alertStore.error('Обновите страницу перед загрузкой информации о сборах')
       return
     }
-    await ExportFeesStore.update()
-    const storeError = unref(ExportFeesStore.error)
+    await exportFeesStore.update()
+    const storeError = unref(exportFeesStore.error)
     if (storeError) {
       alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
       return
     }
-    await loadDuties()
+    await loadFees()
   } catch (err) {
     alertStore.error(err instanceof Error ? err.message : String(err))
   }
@@ -74,18 +74,18 @@ async function updateDuties() {
 const headers = [
   { title: 'Префикс кода ТН ВЭД', key: 'code', align: 'start', width: '250px' },
   { title: 'Описание', key: 'description', align: 'start' },
-  { title: 'Пошлина, руб.', key: 'duty', align: 'end', width: '200px' }
+  { title: 'Сбор, руб.', key: 'fee', align: 'end', width: '200px' }
 ]
 
 const customKeySort = {
-  code: compareDutyCodesAsStrings
+  code: compareFeeCodesAsStrings
 }
 </script>
 
 <template>
   <div class="settings table-3" data-testid="export-fees-list">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Пошлины</h1>
+      <h1 class="primary-heading">Сборы</h1>
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -94,10 +94,10 @@ const customKeySort = {
           <ActionButton
             :item="{}"
             icon="fa-solid fa-file-import"
-            tooltip-text="Обновить информацию о пошлинах"
+            tooltip-text="Обновить информацию о сборах"
             iconSize="2x"
             :disabled="loading"
-            @click="updateDuties"
+            @click="updateFees"
           />
         </div>
       </div>
@@ -124,11 +124,11 @@ const customKeySort = {
         page-text="{0}-{1} из {2}"
         v-model:page="exportfees_page"
         :headers="headers"
-        :items="duties"
+        :items="fees"
         :search="authStore.exportfees_search"
         v-model:sort-by="exportfees_sort_by"
         :custom-key-sort="customKeySort"
-        :custom-filter="filterDuties"
+        :custom-filter="filterFees"
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header

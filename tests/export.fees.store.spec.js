@@ -16,21 +16,22 @@ vi.mock('@/helpers/config.js', () => ({
   apiUrl: 'http://localhost:8080/api'
 }))
 
-describe('export.duties store', () => {
+describe('export fees store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
-  it('fetches duties from API', async () => {
-    const mockDuties = [{ id: 1, code: '1000000000', description: 'Test', duty: 5.5 }]
-    fetchWrapper.get.mockResolvedValue(mockDuties)
+  it('fetches fees from API', async () => {
+    const mockFees = [{ id: 1, code: '1000000000', description: 'Test', fee: 5.5 }]
+    fetchWrapper.get.mockResolvedValue(mockFees)
 
     const store = useExportFeesStore()
     await store.getAll()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/ExportFees`)
-    expect(store.duties).toEqual(mockDuties)
+    expect(store.$id).toBe('exportFees')
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportfees`)
+    expect(store.fees).toEqual(mockFees)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
     expect(store.isInitialized).toBe(true)
@@ -43,8 +44,8 @@ describe('export.duties store', () => {
     const store = useExportFeesStore()
     await store.getAll()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/ExportFees`)
-    expect(store.duties).toEqual([])
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportfees`)
+    expect(store.fees).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
     expect(store.isInitialized).toBe(false)
@@ -66,14 +67,14 @@ describe('export.duties store', () => {
     const store = useExportFeesStore()
     await store.update()
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/ExportFees/update`)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/exportfees/update`)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
     expect(store.isInitialized).toBe(false)
   })
 
-  it('ensures duties are loaded only once after successful initialization', async () => {
-    fetchWrapper.get.mockResolvedValue([{ id: 1, code: '1000000000', duty: 1 }])
+  it('ensures fees are loaded only once after successful initialization', async () => {
+    fetchWrapper.get.mockResolvedValue([{ id: 1, code: '1000000000', fee: 1 }])
 
     const store = useExportFeesStore()
     await store.ensureLoaded()

@@ -7,10 +7,10 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
-const baseUrl = `${apiUrl}/ExportFees`
+const baseUrl = `${apiUrl}/exportfees`
 
-export const useExportFeesStore = defineStore('export.duties', () => {
-  const duties = ref([])
+export const useExportFeesStore = defineStore('exportFees', () => {
+  const fees = ref([])
   const loading = ref(false)
   const error = ref(null)
   const isInitialized = ref(false)
@@ -19,7 +19,7 @@ export const useExportFeesStore = defineStore('export.duties', () => {
     loading.value = true
     error.value = null
     try {
-      duties.value = await fetchWrapper.get(baseUrl)
+      fees.value = await fetchWrapper.get(baseUrl)
       isInitialized.value = true
     } catch (err) {
       error.value = err
@@ -48,7 +48,7 @@ export const useExportFeesStore = defineStore('export.duties', () => {
   }
 
   return {
-    duties,
+    fees,
     loading,
     error,
     isInitialized,

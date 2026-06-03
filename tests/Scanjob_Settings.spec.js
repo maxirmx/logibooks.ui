@@ -152,7 +152,8 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    hasWhRole: true
+    hasWhRole: true,
+    isAdmin: true
   })
 }))
 

@@ -324,7 +324,7 @@ defineExpose({
               tooltip-text="Завершить сканирование"
               @click="finishScanjob"
               :disabled="runningAction || loading || item.allowFinish !== true"
-              v-if="authStore.isWhManagerPlus"
+              v-if="authStore.isAdmin"
             />
             <ActionButton
               :item="item"
@@ -347,7 +347,7 @@ defineExpose({
               tooltip-text="Удалить задание на сканирование"
               @click="deleteScanjob"
               :disabled="runningAction || loading"
-              v-if="authStore.isWhManagerPlus"
+              v-if="authStore.isAdmin"
             />
           </div>
         </template>

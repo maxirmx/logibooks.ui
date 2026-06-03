@@ -52,6 +52,16 @@ vi.mock('pinia', async () => {
 })
 
 const global = { stubs: vuetifyStubs }
+const mockScrollIntoView = () => {
+  if (typeof window.HTMLElement.prototype.scrollIntoView !== 'function') {
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      value: () => {},
+      configurable: true
+    })
+  }
+
+  return vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+}
 
 describe('Scanjob parcel monitor typed tables', () => {
   beforeEach(() => {
@@ -352,7 +362,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
     scanjobmonitorParcelsPage.value = 1
 
-    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    const scrollIntoView = mockScrollIntoView()
     let wrapper
 
     try {
@@ -409,7 +419,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('moves to correct page when parcels are sorted in descending order', async () => {
-    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    const scrollIntoView = mockScrollIntoView()
     let wrapper
 
     try {
@@ -514,7 +524,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('uses item.id as fallback when item.parcelId is absent', async () => {
-    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    const scrollIntoView = mockScrollIntoView()
     let wrapper
 
     try {
@@ -544,7 +554,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('updates page when selectedParcelId changes reactively', async () => {
-    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    const scrollIntoView = mockScrollIntoView()
     let wrapper
 
     try {
@@ -579,7 +589,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('updates page when parcels list changes reactively', async () => {
-    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    const scrollIntoView = mockScrollIntoView()
     let wrapper
 
     try {
@@ -647,7 +657,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('sorts without rules returns original parcel order', async () => {
-    const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+    const scrollIntoView = mockScrollIntoView()
     let wrapper
 
     try {

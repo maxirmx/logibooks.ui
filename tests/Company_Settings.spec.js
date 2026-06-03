@@ -169,7 +169,9 @@ beforeEach(async () => {
   vi.clearAllMocks()
   fileReaderResult = 'data:image/png;base64,NEW_STAMP'
   mockFileReaderInstance.readAsDataURL.mockClear()
-  global.FileReader = vi.fn(() => mockFileReaderInstance)
+  global.FileReader = vi.fn(function MockFileReader() {
+    return mockFileReaderInstance
+  })
   // Reset store states
   mockCompaniesStore.loading = false
   mockCompaniesStore.error = null

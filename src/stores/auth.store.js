@@ -19,6 +19,13 @@ import {
 } from '@/helpers/user.roles.js'
 
 const baseUrl = `${apiUrl}/auth`
+const scanjobMonitorFollowUserStorageKey = 'scanjobmonitor_follow_user_id'
+
+function readScanjobMonitorFollowUserId() {
+  const raw = localStorage.getItem(scanjobMonitorFollowUserStorageKey)
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
 
 export const useAuthStore = defineStore('auth', () => {
   // initialize state from local storage to enable user to stay logged in
@@ -82,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
   const scanjobmonitor_parcels_per_page = ref(100)
   const scanjobmonitor_parcels_sort_by = ref([{ key: 'parcelNumber', order: 'asc' }])
   const scanjobmonitor_parcels_page = ref(1)
+  const scanjobmonitor_follow_user_id = ref(readScanjobMonitorFollowUserId())
   const notifications_per_page = ref(100)
   const notifications_search = ref('')
   const notifications_sort_by = ref(['id'])
@@ -252,6 +260,19 @@ export const useAuthStore = defineStore('auth', () => {
     statusStore.fetchStatus().catch(() => {})
   }
 
+  function setScanjobMonitorFollowUserId(userId) {
+    const parsed = Number(userId)
+    const normalized = Number.isInteger(parsed) && parsed > 0 ? parsed : null
+    scanjobmonitor_follow_user_id.value = normalized
+
+    if (normalized == null) {
+      localStorage.removeItem(scanjobMonitorFollowUserStorageKey)
+      return
+    }
+
+    localStorage.setItem(scanjobMonitorFollowUserStorageKey, String(normalized))
+  }
+
   // Restore temporary parcels snapshot from sessionStorage if available.
   // This helps keep filters/sorting when a browser extension or external
   // actor causes a navigation or reload during image selection.
@@ -305,6 +326,7 @@ export const useAuthStore = defineStore('auth', () => {
     scanjobmonitor_parcels_per_page,
     scanjobmonitor_parcels_sort_by,
     scanjobmonitor_parcels_page,
+    scanjobmonitor_follow_user_id,
     notifications_per_page,
     notifications_search,
     notifications_sort_by,
@@ -418,6 +440,7 @@ export const useAuthStore = defineStore('auth', () => {
     recover,
     re,
     login,
-    logout
+    logout,
+    setScanjobMonitorFollowUserId
   }
 })

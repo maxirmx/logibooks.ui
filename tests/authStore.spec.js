@@ -107,6 +107,7 @@ describe('auth store', () => {
       expect(store.scanjobmonitor_parcels_per_page).toBe(100)
       expect(store.scanjobmonitor_parcels_sort_by).toEqual([{ key: 'parcelNumber', order: 'asc' }])
       expect(store.scanjobmonitor_parcels_page).toBe(1)
+      expect(store.scanjobmonitor_follow_user_id).toBeNull()
       expect(store.exportduties_per_page).toBe(100)
       expect(store.exportduties_search).toBe('')
       expect(store.exportduties_sort_by).toEqual([])
@@ -127,6 +128,28 @@ describe('auth store', () => {
       expect(store.isAdmin).toBe(true)
       expect(store.isLogist).toBeFalsy()
       expect(store.isSrLogist).toBeFalsy()
+    })
+
+    it('loads scan job monitor follow user id from localStorage', () => {
+      localStorage.setItem('scanjobmonitor_follow_user_id', '17')
+
+      const store = useAuthStore()
+
+      expect(store.scanjobmonitor_follow_user_id).toBe(17)
+    })
+
+    it('persists and clears scan job monitor follow user id', () => {
+      const store = useAuthStore()
+
+      store.setScanjobMonitorFollowUserId(23)
+
+      expect(store.scanjobmonitor_follow_user_id).toBe(23)
+      expect(localStorage.setItem).toHaveBeenCalledWith('scanjobmonitor_follow_user_id', '23')
+
+      store.setScanjobMonitorFollowUserId(null)
+
+      expect(store.scanjobmonitor_follow_user_id).toBeNull()
+      expect(localStorage.removeItem).toHaveBeenCalledWith('scanjobmonitor_follow_user_id')
     })
 
     it('correctly identifies admin users', () => {

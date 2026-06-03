@@ -620,6 +620,18 @@ describe('scanjobs store', () => {
       expect(store.monitorError).toBe(fetchError)
     })
 
+    it('loads monitor follow users', async () => {
+      const followUsers = [{ id: 7, displayName: 'Operator' }]
+      fetchWrapper.get.mockResolvedValue(followUsers)
+      const store = useScanjobsStore()
+
+      const result = await store.loadMonitorFollowUsers(42)
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor/follow-users`)
+      expect(result).toEqual(followUsers)
+      expect(store.monitorError).toBeNull()
+    })
+
     it('starts SignalR monitor and forwards snapshots', async () => {
       const onSnapshot = vi.fn()
       const store = useScanjobsStore()
@@ -643,40 +655,42 @@ describe('scanjobs store', () => {
       expect(onSnapshot).toHaveBeenCalledWith(monitorSnapshot)
     })
 
-    it('starts autofollow monitor on a separate connection without replacing the visible snapshot', async () => {
-      const onSnapshot = vi.fn()
+    it('starts follow user subscription on the monitor connection without replacing the visible snapshot', async () => {
+      const onFollowEvent = vi.fn()
       const store = useScanjobsStore()
       const visibleSnapshot = { ...monitorSnapshot, area: 1, box: { boxId: 7 } }
-      const autoFollowSnapshot = { ...monitorSnapshot, area: 0, boxes: [{ boxId: 8 }] }
+      const followEvent = {
+        scanJobId: 42,
+        userId: 17,
+        followTarget: { area: 1, boxId: 8 }
+      }
 
       await store.startMonitor(42, { area: 1, boxId: 7 })
       signalRConnections[0].handlers.ScanJobMonitorSnapshot(visibleSnapshot)
 
-      await store.startMonitorAutoFollow(42, { onSnapshot })
+      await store.startMonitorFollowUser(42, 17, { onFollowEvent })
 
-      expect(signalRConnections).toHaveLength(2)
-      expect(signalRConnections[1].start).toHaveBeenCalled()
-      expect(signalRConnections[1].invoke).toHaveBeenCalledWith('ObserveScanJob', {
+      expect(signalRConnections).toHaveLength(1)
+      expect(signalRConnections[0].invoke).toHaveBeenCalledWith('ObserveScanJobFollowUser', {
         scanJobId: 42,
-        area: 0
+        userId: 17
       })
 
-      signalRConnections[1].handlers.ScanJobMonitorSnapshot(autoFollowSnapshot)
+      signalRConnections[0].handlers.ScanJobMonitorFollowEvent(followEvent)
 
-      expect(onSnapshot).toHaveBeenCalledWith(autoFollowSnapshot)
+      expect(onFollowEvent).toHaveBeenCalledWith(followEvent)
       expect(store.monitorSnapshot).toEqual(visibleSnapshot)
     })
 
-    it('stops autofollow monitor independently from the visible monitor', async () => {
+    it('clears follow user subscription independently from the visible monitor', async () => {
       const store = useScanjobsStore()
 
       await store.startMonitor(42, { area: 1, boxId: 7 })
-      await store.startMonitorAutoFollow(42)
+      await store.startMonitorFollowUser(42, 17)
 
-      await store.stopMonitorAutoFollow()
+      await store.clearMonitorFollowUser()
 
-      expect(signalRConnections[1].invoke).toHaveBeenCalledWith('ClearScanJobMonitor')
-      expect(signalRConnections[1].stop).toHaveBeenCalled()
+      expect(signalRConnections[0].invoke).toHaveBeenCalledWith('ClearScanJobFollowUser')
       expect(signalRConnections[0].stop).not.toHaveBeenCalled()
 
       await store.stopMonitor()
@@ -733,6 +747,7 @@ describe('scanjobs store', () => {
       const store = useScanjobsStore()
 
       await store.startMonitor(42, { area: 1, boxId: 7 })
+      await store.startMonitorFollowUser(42, 17)
       signalRConnection.invoke.mockClear()
 
       signalRHandlers.onreconnected()
@@ -742,6 +757,10 @@ describe('scanjobs store', () => {
         scanJobId: 42,
         area: 1,
         boxId: 7
+      })
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobFollowUser', {
+        scanJobId: 42,
+        userId: 17
       })
     })
 
@@ -757,6 +776,19 @@ describe('scanjobs store', () => {
       expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveScanJob', expect.anything())
     })
 
+    it('does not re-observe follow user on reconnect after clearMonitorFollowUser', async () => {
+      const store = useScanjobsStore()
+
+      await store.startMonitor(42, { area: 0 })
+      await store.startMonitorFollowUser(42, 17)
+      await store.clearMonitorFollowUser()
+      signalRConnection.invoke.mockClear()
+
+      signalRHandlers.onreconnected()
+
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveScanJobFollowUser', expect.anything())
+    })
+
     it('clears and stops monitor connection', async () => {
       const store = useScanjobsStore()
 
@@ -765,6 +797,7 @@ describe('scanjobs store', () => {
       await store.stopMonitor()
 
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobMonitor')
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobFollowUser')
       expect(signalRConnection.stop).toHaveBeenCalled()
     })
 

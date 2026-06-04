@@ -4,6 +4,7 @@ export const ACTION_DIALOG_TITLES = {
   'export-all-xml-without-excise': 'Подготовка файлов',
   'export-all-xml-excise': 'Подготовка файлов',
   'download-register': 'Подготовка файла реестра',
+  'download-additional-restrictions': 'Подготовка файла реестра',
   'upload-register': 'Загрузка реестра',
   'upload-report': 'Загрузка отчёта',
   'download-invoice': 'Подготовка файла инвойса',

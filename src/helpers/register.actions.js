@@ -236,6 +236,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.download(item.id, item.fileName)
   }
 
+  async function downloadAdditionalRestrictions(item) {
+    await registersStore.downloadAdditionalRestrictions(item.id, item.invoiceNumber)
+  }
+
   async function downloadTechdoc(item) {
     await registersStore.downloadTechdoc(item.id, item.invoiceNumber)
   }
@@ -280,6 +284,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     exportAllXmlExcise,
     exportAllXmlNotifications,
     downloadRegister,
+    downloadAdditionalRestrictions,
     downloadTechdoc,
     freezeCheckStatus,
     freezeTnVedOrder,
@@ -309,6 +314,7 @@ export function useRegisterHeaderActions({
     exportAllXmlExcise,
     exportAllXmlNotifications,
     downloadRegister,
+    downloadAdditionalRestrictions,
     downloadTechdoc,
     freezeCheckStatus,
     freezeTnVedOrder,
@@ -407,6 +413,10 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(downloadRegister, 'download-register')
   }
 
+  const runDownloadAdditionalRestrictions = async () => {
+    await runActionWithDialog(downloadAdditionalRestrictions, 'download-additional-restrictions')
+  }
+
   const runDownloadTechdoc = async () => {
     await runActionWithDialog(downloadTechdoc, 'download-techdoc')
   }
@@ -456,6 +466,7 @@ export function useRegisterHeaderActions({
     exportAllXmlExcise: runExportAllXmlExcise,
     exportAllXmlNotifications: runExportAllXmlNotifications,    
     downloadRegister: runDownloadRegister,
+    downloadAdditionalRestrictions: runDownloadAdditionalRestrictions,
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     freezeTnVedOrder: runFreezeTnVedOrder,

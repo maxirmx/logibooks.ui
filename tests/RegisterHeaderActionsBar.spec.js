@@ -144,6 +144,35 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('export-notifications')).toHaveLength(1)
   })
 
+  it('emits additional restrictions download action and respects disabled state', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const additionalRestrictionsButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Скачать дополнительные изъятия'
+    )
+
+    expect(additionalRestrictionsButton).toBeTruthy()
+    expect(additionalRestrictionsButton.props('icon')).toBe('fa-solid fa-person-circle-xmark')
+
+    additionalRestrictionsButton.vm.$emit('click')
+    expect(wrapper.emitted('download-additional-restrictions')).toHaveLength(1)
+
+    const disabledWrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, disabled: true },
+      global: { stubs: vuetifyStubs }
+    })
+    const disabledButton = disabledWrapper.findAllComponents(ActionButton).find(
+      (button) => button.props('tooltipText') === 'Скачать дополнительные изъятия'
+    )
+
+    disabledButton.vm.$emit('click')
+    expect(disabledWrapper.emitted('download-additional-restrictions')).toBeUndefined()
+  })
+
   it('emits stop-word validation events when corresponding menu options are used', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },

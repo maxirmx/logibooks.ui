@@ -453,6 +453,23 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function downloadAdditionalRestrictions(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      const filename = `Дополнительные_изъятия_${invoiceNumber || id}.xlsx`
+      return await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download-additional-restrictions`,
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function freezeTnVedOrder(id) {
     loading.value = true
     error.value = null
@@ -593,6 +610,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadInvoiceFile,
     download,
     downloadTechdoc,
+    downloadAdditionalRestrictions,
     freezeCheckStatus,
     freezeTnVedOrder,
     nextParcels,

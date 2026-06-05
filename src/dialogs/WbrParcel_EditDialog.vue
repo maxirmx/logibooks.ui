@@ -7,6 +7,7 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -18,7 +19,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { wbrRegisterColumnTitles, wbrRegisterColumnTooltips } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
@@ -33,6 +34,10 @@ import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
+import {
+  canClearParcelExtId,
+  getClearParcelExtIdErrorMessage
+} from '@/helpers/parcel.ext-id.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
@@ -57,6 +62,7 @@ const isComponentMounted = ref(true)
 const route = useRoute()
 
 const parcelsStore = useParcelsStore()
+const scanJobsStore = useScanjobsStore()
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
 const statusStore = useParcelStatusesStore()
@@ -96,6 +102,7 @@ const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
+const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -157,13 +164,21 @@ const overlayActive = ref(false)
 const isDescriptionVisible = ref(false)
 
 // Pre-fetch next parcels after component is mounted
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
   initNextParcelsPromise(currentParcelId.value)
+  try {
+    await scanJobsStore.startParcelExtIdMonitor(props.registerId, {
+      onChanged: handleParcelExtIdChanged
+    })
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  }
 })
 
 onUnmounted(() => {
   isComponentMounted.value = false
+  scanJobsStore.stopParcelExtIdMonitor().catch(() => {})
   window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
   // Clean up keyboard event listener if still attached
   document.removeEventListener('keydown', handleImageOverlayEscape)
@@ -220,6 +235,23 @@ async function validateParcel(values, sw, matchMode) {
 
 async function runCheckStatusAction(values, actionFn) {
   return runCheckStatusActionHelper(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore)
+}
+
+async function clearParcelExtId() {
+  if (!canClearParcelExtId(item.value, authStore) || runningAction.value || loading.value) return
+  runningAction.value = true
+  try {
+    await parcelsStore.clearExtId(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(getClearParcelExtIdErrorMessage(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+function handleParcelExtIdChanged(change) {
+  if (Number(change?.registerId) !== Number(props.registerId)) return
+  parcelsStore.applyExtIdChange(change)
 }
 
 // Approve the parcel
@@ -511,6 +543,28 @@ async function onLookup(values) {
               @fellows="handleFellows"
             />
           </div>          
+          <div class="form-group">
+            <label for="extId" class="label">{{ wbrRegisterColumnTitles.extId }}:</label>
+            <div class="input-with-action">
+              <input
+                id="extId"
+                class="form-control input"
+                :value="item?.extId || ''"
+                readonly
+              />
+              <ActionButton
+                v-if="isAdminUser"
+                :item="item"
+                icon="fa-solid fa-broom"
+                tooltip-text="Очистить номер КГТ"
+                aria-label="Очистить номер КГТ"
+                title="Очистить номер КГТ"
+                data-testid="clear-ext-id-action"
+                :disabled="isSubmitting || runningAction || loading || !canClearParcelExtId(item, authStore)"
+                @click="clearParcelExtId"
+              />
+            </div>
+          </div>
 
           <ProductLinkWithActions
             :label="wbrRegisterColumnTitles.productLink"
@@ -610,6 +664,16 @@ async function onLookup(values) {
 .product-name-row {
   display: flex;
   align-items: center;
+}
+
+.input-with-action {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.input-with-action .form-control {
+  min-width: 0;
 }
 
 /* Overlay state styling */

@@ -324,6 +324,51 @@ describe('parcels store', () => {
     expect(result).toBe(true)
   })
 
+  it('clears parcel ExtId through API and patches loaded parcel collections', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+    store.item = { id: 12, extId: '5', number: 'P-12' }
+    store.items = [
+      { id: 11, extId: '4' },
+      { id: 12, extId: '5', number: 'P-12' }
+    ]
+    store.items_bn = [
+      { id: 12, extId: '5', number: 'P-12' }
+    ]
+
+    const result = await store.clearExtId(12)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/clear-ext-id`)
+    expect(result).toBe(true)
+    expect(store.item).toEqual({ id: 12, extId: null, number: 'P-12' })
+    expect(store.items).toEqual([
+      { id: 11, extId: '4' },
+      { id: 12, extId: null, number: 'P-12' }
+    ])
+    expect(store.items_bn).toEqual([
+      { id: 12, extId: null, number: 'P-12' }
+    ])
+  })
+
+  it('applies ExtId subscription changes and ignores stale revisions', () => {
+    const store = useParcelsStore()
+    store.item = { id: 12, extId: null, number: 'P-12' }
+    store.items = [{ id: 12, extId: null, number: 'P-12' }]
+    store.items_bn = [{ id: 12, extId: null, number: 'P-12' }]
+
+    expect(store.applyExtIdChange({ parcelId: 12, extId: '6', revision: 10 })).toBe(true)
+    expect(store.item.extId).toBe('6')
+    expect(store.items[0].extId).toBe('6')
+    expect(store.items_bn[0].extId).toBe('6')
+
+    expect(store.applyExtIdChange({ parcelId: 12, extId: '7', revision: 9 })).toBe(false)
+    expect(store.applyExtIdChange({ parcelId: 12, extId: '7', revision: 10 })).toBe(false)
+    expect(store.item.extId).toBe('6')
+
+    expect(store.applyExtIdChange({ parcelId: 12, extId: null, revision: 11 })).toBe(true)
+    expect(store.item.extId).toBeNull()
+  })
+
   describe('bulkAssignTnved method', () => {
     it('calls assign-tnved endpoint with payload', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)

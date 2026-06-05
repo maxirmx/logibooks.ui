@@ -8,7 +8,7 @@ export const wbrRegisterColumnTitles = {
   invoiceDate: 'Дата инвойса',
   sticker: 'Стикер (УИН)',
   shk: 'ШК',
-  extId: 'ext_id',
+  extId: 'Номер КГТ',
   tnVed: 'ТН ВЭД',
   siteArticle: 'Артикул сайта',
   heelHeight: 'Высота каблука (подошвы), см',

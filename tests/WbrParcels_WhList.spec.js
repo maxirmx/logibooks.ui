@@ -10,10 +10,22 @@ import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 
-const { loadParcels, setDefect, clearDefect } = vi.hoisted(() => ({
+const {
+  loadParcels,
+  setDefect,
+  clearDefect,
+  clearExtId,
+  applyExtIdChange,
+  startParcelExtIdMonitor,
+  stopParcelExtIdMonitor
+} = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
   setDefect: vi.fn().mockResolvedValue(true),
-  clearDefect: vi.fn().mockResolvedValue(true)
+  clearDefect: vi.fn().mockResolvedValue(true),
+  clearExtId: vi.fn().mockResolvedValue(true),
+  applyExtIdChange: vi.fn(),
+  startParcelExtIdMonitor: vi.fn().mockResolvedValue(),
+  stopParcelExtIdMonitor: vi.fn().mockResolvedValue()
 }))
 
 const mockItems = ref([
@@ -24,6 +36,7 @@ const mockItems = ref([
     sticker: 'Sticker-1',
     stickerCode: 'STK-1',
     boxNumber: 'BOX-1',
+    extId: '77',
     weightKg: 2.4,
     quantity: 3,
     statusId: 7,
@@ -89,7 +102,16 @@ vi.mock('@/stores/parcels.store.js', () => ({
     error: mockError,
     totalCount: mockTotalCount,
     setDefect,
-    clearDefect
+    clearDefect,
+    clearExtId,
+    applyExtIdChange
+  })
+}))
+
+vi.mock('@/stores/scanjobs.store.js', () => ({
+  useScanjobsStore: () => ({
+    startParcelExtIdMonitor,
+    stopParcelExtIdMonitor
   })
 }))
 
@@ -168,6 +190,7 @@ describe('WbrParcels_WhList.vue', () => {
         sticker: 'Sticker-1',
         stickerCode: 'STK-1',
         boxNumber: 'BOX-1',
+        extId: '77',
         weightKg: 2.4,
         quantity: 3,
         statusId: 7,
@@ -220,6 +243,7 @@ describe('WbrParcels_WhList.vue', () => {
     expect(text).toContain('Sticker-1')
     expect(text).toContain('STK-1')
     expect(text).toContain('BOX-1')
+    expect(text).toContain('77')
     expect(text).toContain('3')
     expect(text).toContain('Status 7')
     expect(text).toContain('Не проверено')
@@ -239,6 +263,7 @@ describe('WbrParcels_WhList.vue', () => {
       'checkStatusProjection',
       'zone',
       'statusId',
+      'extId',
       'shk',
       'sticker',
       'stickerCode',
@@ -286,6 +311,67 @@ describe('WbrParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
+  })
+
+  it('shows and clears KGT number only for admins', async () => {
+    isAdmin.value = true
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    loadParcels.mockClear()
+
+    const clearExtIdAction = wrapper.get('[data-testid="clear-ext-id-action"]')
+    expect(clearExtIdAction.attributes('aria-label')).toBe('Очистить номер КГТ')
+    expect(clearExtIdAction.attributes('title')).toBe('Очистить номер КГТ')
+    expect(clearExtIdAction.attributes('disabled')).toBeUndefined()
+
+    await clearExtIdAction.trigger('click')
+    await resolveAll()
+
+    expect(clearExtId).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
+  })
+
+  it('does not render KGT clear action for non-admins', () => {
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    expect(wrapper.find('[data-testid="clear-ext-id-action"]').exists()).toBe(false)
+  })
+
+  it('subscribes to KGT number changes and patches matching register events', async () => {
+    mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    expect(startParcelExtIdMonitor).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ onChanged: expect.any(Function) })
+    )
+
+    const onChanged = startParcelExtIdMonitor.mock.calls[0][1].onChanged
+    const matchingChange = { registerId: 1, parcelId: 1, extId: '78', revision: 2 }
+    const otherRegisterChange = { registerId: 2, parcelId: 1, extId: '79', revision: 3 }
+
+    onChanged(matchingChange)
+    onChanged(otherRegisterChange)
+
+    expect(applyExtIdChange).toHaveBeenCalledTimes(1)
+    expect(applyExtIdChange).toHaveBeenCalledWith(matchingChange)
   })
 
   it('clears defect from row action and reloads parcels for shift lead', async () => {

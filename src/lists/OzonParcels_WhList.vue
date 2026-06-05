@@ -49,9 +49,9 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
-  parcels_per_page,
-  parcels_sort_by,
-  parcels_page,
+  parcels_wh_per_page,
+  parcels_wh_sort_by,
+  parcels_wh_page,
   parcels_wh_status,
   parcels_wh_check_status_projection,
   parcels_wh_zone,
@@ -72,11 +72,11 @@ const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value)))
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
-  const current = parcels_page.value || 1
+  const current = parcels_wh_page.value || 1
   if (mp <= 200) {
     return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
   }
@@ -90,7 +90,7 @@ const pageOptions = computed(() => {
 })
 
 watch(maxPage, (v) => {
-  if (parcels_page.value > v) parcels_page.value = v
+  if (parcels_wh_page.value > v) parcels_wh_page.value = v
 })
 
 const headers = computed(() => [
@@ -169,7 +169,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
+  [parcels_wh_page, parcels_wh_per_page, parcels_wh_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
   () => triggerLoad(),
   { immediate: false }
 )
@@ -281,12 +281,12 @@ async function clearParcelDefect(item) {
 
     <v-card class="table-card">
       <v-data-table-server
-        v-model:items-per-page="parcels_per_page"
+        v-model:items-per-page="parcels_wh_per_page"
         items-per-page-text="Посылок на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="parcels_page"
-        v-model:sort-by="parcels_sort_by"
+        v-model:page="parcels_wh_page"
+        v-model:sort-by="parcels_wh_sort_by"
         :headers="headers"
         :items="items"
         :items-length="totalCount"
@@ -356,8 +356,8 @@ async function clearParcelDefect(item) {
 
       <div class="v-data-table-footer">
         <PaginationFooter
-          v-model:items-per-page="parcels_per_page"
-          v-model:page="parcels_page"
+          v-model:items-per-page="parcels_wh_per_page"
+          v-model:page="parcels_wh_page"
           :items-per-page-options="itemsPerPageOptions"
           :page-options="pageOptions"
           :total-count="totalCount"

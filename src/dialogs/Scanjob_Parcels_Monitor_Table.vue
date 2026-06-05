@@ -282,6 +282,10 @@ watch(
       <ClickableCell :item="item" :display-value="valueOrDash(item.shk)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
+    <template #[`item.extId`]="{ item }">
+      <ClickableCell :item="item" :display-value="valueOrDash(item.extId)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
+    </template>
+
     <template #[`item.sticker`]="{ item }">
       <ClickableCell :item="item" :display-value="valueOrDash(item.sticker)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>

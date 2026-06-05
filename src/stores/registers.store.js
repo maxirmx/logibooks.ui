@@ -110,6 +110,11 @@ export const useRegistersStore = defineStore('registers', () => {
 
   async function getAll({ mode = OP_MODE_PAPERWORK } = {}) {
     const authStore = useAuthStore()
+    const warehouseMode = mode === OP_MODE_WAREHOUSE
+    const page = warehouseMode ? authStore.registers_wh_page : authStore.registers_page
+    const pageSize = warehouseMode ? authStore.registers_wh_per_page : authStore.registers_per_page
+    const sortBy = warehouseMode ? authStore.registers_wh_sort_by : authStore.registers_sort_by
+    const search = warehouseMode ? authStore.registers_wh_search : authStore.registers_search
     
     loading.value = true
     error.value = null
@@ -117,15 +122,15 @@ export const useRegistersStore = defineStore('registers', () => {
       await ensureOpsLoaded()
 
       const queryParams = new URLSearchParams({
-        page: authStore.registers_page.toString(),
-        pageSize: authStore.registers_per_page.toString(),
-        sortBy: authStore.registers_sort_by?.[0]?.key || 'id',
-        sortOrder: authStore.registers_sort_by?.[0]?.order || 'desc',
-        whOnly: mode === OP_MODE_WAREHOUSE ? 'true' : 'false'
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        sortBy: sortBy?.[0]?.key || 'id',
+        sortOrder: sortBy?.[0]?.order || 'desc',
+        whOnly: warehouseMode ? 'true' : 'false'
       })
 
-      if (authStore.registers_search) {
-        queryParams.append('search', authStore.registers_search)
+      if (search) {
+        queryParams.append('search', search)
       }
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)

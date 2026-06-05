@@ -157,7 +157,7 @@ const overlayActive = ref(false)
 const isDescriptionVisible = ref(false)
 
 // Pre-fetch next parcels after component is mounted
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
   initNextParcelsPromise(currentParcelId.value)
 })
@@ -511,7 +511,6 @@ async function onLookup(values) {
               @fellows="handleFellows"
             />
           </div>          
-
           <ProductLinkWithActions
             :label="wbrRegisterColumnTitles.productLink"
             :item="item"

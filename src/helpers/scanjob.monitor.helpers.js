@@ -54,6 +54,7 @@ export const scanjobOzonParcelHeaders = [
 
 export const scanjobWbrParcelHeaders = [
   ...scanjobParcelScanHeaders,
+  { title: wbrRegisterColumnTitles.extId, key: 'extId', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start' },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },

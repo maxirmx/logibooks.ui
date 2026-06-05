@@ -36,9 +36,9 @@ const mockLoading = ref(false)
 const mockError = ref(null)
 const mockTotalCount = ref(1)
 
-const parcelsPerPage = ref(10)
-const parcelsSortBy = ref([])
-const parcelsPage = ref(1)
+const parcelsWhPerPage = ref(10)
+const parcelsWhSortBy = ref([])
+const parcelsWhPage = ref(1)
 const parcelsWhStatus = ref(null)
 const parcelsWhCheckStatusProjection = ref(null)
 const parcelsWhZone = ref(null)
@@ -110,9 +110,9 @@ vi.mock('@/stores/registers.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    parcels_per_page: parcelsPerPage,
-    parcels_sort_by: parcelsSortBy,
-    parcels_page: parcelsPage,
+    parcels_wh_per_page: parcelsWhPerPage,
+    parcels_wh_sort_by: parcelsWhSortBy,
+    parcels_wh_page: parcelsWhPage,
     parcels_wh_status: parcelsWhStatus,
     parcels_wh_check_status_projection: parcelsWhCheckStatusProjection,
     parcels_wh_zone: parcelsWhZone,

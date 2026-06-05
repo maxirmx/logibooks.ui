@@ -11,6 +11,7 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn(), downloadFile: vi.fn() }
@@ -65,6 +66,10 @@ describe('registers store', () => {
     registers_per_page: 10,
     registers_sort_by: [{ key: 'id', order: 'asc' }],
     registers_search: '',
+    registers_wh_page: 1,
+    registers_wh_per_page: 10,
+    registers_wh_sort_by: [{ key: 'id', order: 'asc' }],
+    registers_wh_search: '',
     parcels_sort_by: [{ key: 'id', order: 'asc' }],
     parcels_status: null,
     parcels_check_status_sw: null,
@@ -139,6 +144,38 @@ describe('registers store', () => {
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&whOnly=false&search=search+term`
+        )
+        expect(store.items).toEqual(mockResponse.items)
+      })
+
+      it('uses warehouse register list settings in warehouse mode', async () => {
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_page: 2,
+          registers_per_page: 5,
+          registers_sort_by: [{ key: 'price', order: 'desc' }],
+          registers_search: 'paperwork search',
+          registers_wh_page: 3,
+          registers_wh_per_page: 25,
+          registers_wh_sort_by: [{ key: 'warehouseArrivalDate', order: 'asc' }],
+          registers_wh_search: 'warehouse search'
+        })
+
+        const mockResponse = {
+          items: [{ id: 4, name: 'Warehouse Register' }],
+          pagination: {
+            totalCount: 1,
+            hasNextPage: false,
+            hasPreviousPage: false
+          }
+        }
+        fetchWrapper.get.mockResolvedValue(mockResponse)
+
+        const store = useRegistersStore()
+        await store.getAll({ mode: OP_MODE_WAREHOUSE })
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=3&pageSize=25&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&search=warehouse+search`
         )
         expect(store.items).toEqual(mockResponse.items)
       })

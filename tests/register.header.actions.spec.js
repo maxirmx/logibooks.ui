@@ -47,6 +47,7 @@ describe('useRegisterHeaderActions', () => {
       generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
+      downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
@@ -140,6 +141,83 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
     expect(alertStore.error).toHaveBeenCalledWith('Download failed')
+  })
+
+  it('shows action dialog while additional restrictions download runs', async () => {
+    const deferred = createDeferred()
+    registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const { actionDialog, downloadAdditionalRestrictions } = actions
+
+    const promise = downloadAdditionalRestrictions()
+
+    expect(actionDialog.show).toBe(true)
+    expect(actionDialog.title).toBe('Подготовка файла реестра')
+    expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledWith(1, 'INV-1')
+
+    deferred.resolve()
+    await promise
+
+    expect(actionDialog.show).toBe(false)
+    expect(actionDialog.title).toBe('')
+  })
+
+  it('reports additional restrictions download errors and hides action dialog', async () => {
+    const error = new Error('Additional restrictions download failed')
+    registersStore.downloadAdditionalRestrictions.mockRejectedValueOnce(error)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.downloadAdditionalRestrictions()
+
+    expect(actions.actionDialog.show).toBe(true)
+
+    await expect(promise).resolves.toBeUndefined()
+
+    expect(actions.actionDialog.show).toBe(false)
+    expect(alertStore.error).toHaveBeenCalledWith('Additional restrictions download failed')
+  })
+
+  it('locks duplicate additional restrictions downloads while one is running', async () => {
+    const deferred = createDeferred()
+    registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const firstPromise = actions.downloadAdditionalRestrictions()
+    const secondPromise = actions.downloadAdditionalRestrictions()
+
+    expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledTimes(1)
+
+    deferred.resolve()
+    await firstPromise
+    await secondPromise
   })
 
   it('reports export errors through alertStore without rejecting', async () => {

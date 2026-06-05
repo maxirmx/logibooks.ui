@@ -54,6 +54,7 @@ function createRegisterHeaderActionsMock() {
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
+    downloadAdditionalRestrictions: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
   }
@@ -317,7 +318,7 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // Header actions include logist actions + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(10)
+    expect(buttons).toHaveLength(11)
 
     const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
     const stopWordsMenu = actionMenus.find(
@@ -390,11 +391,14 @@ describe.each([
     await buttons[4].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    await buttons[7].trigger('click')
+    await buttons[5].trigger('click')
+    expect(registerHeaderActionsMock.downloadAdditionalRestrictions).toHaveBeenCalled()
+
+    await buttons[8].trigger('click')
     expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
 
-    // The close button is the last button (index 9); clicking it should emit 'close' from the list
-    await buttons[9].trigger('click')
+    // The close button is the last button (index 10); clicking it should emit 'close' from the list
+    await buttons[10].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 
@@ -478,7 +482,7 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // When user lacks logist role the first group is hidden, leaving xml split + export/download/invoice/close actions
-    expect(buttons).toHaveLength(5)
+    expect(buttons).toHaveLength(6)
   })
 
   it('calls stop handler on unmount', async () => {

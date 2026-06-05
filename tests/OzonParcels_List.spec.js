@@ -70,6 +70,7 @@ vi.mock('@/helpers/register.actions.js', () => ({
     exportAllXmlExcise: vi.fn(),
     exportAllXmlNotifications: vi.fn(),
     downloadRegister: vi.fn(),
+    downloadAdditionalRestrictions: vi.fn(),
     downloadTechdoc: vi.fn(),
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),

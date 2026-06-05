@@ -26,6 +26,7 @@ const emit = defineEmits([
   'export-excise',
   'export-notifications',
   'download',
+  'download-additional-restrictions',
   'download-techdoc',
   'freeze-check-status',
   'freeze-tnved-order',
@@ -136,6 +137,14 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :iconSize="iconSize"
         :disabled="disabled"
         @click="run('download')"
+      />
+      <ActionButton
+        :item="item"
+        icon="fa-solid fa-person-circle-xmark"
+        tooltip-text="Сформировать реестр дополнительных изъятий"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('download-additional-restrictions')"
       />
       <ActionButton2L
         :item="item"

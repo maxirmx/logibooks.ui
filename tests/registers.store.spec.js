@@ -998,6 +998,43 @@ describe('registers store', () => {
     })
   })
 
+  describe('downloadAdditionalRestrictions method', () => {
+    it('uses invoice number in filename and calls additional restrictions endpoint', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      const result = await store.downloadAdditionalRestrictions(21, 'INV-21')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/21/download-additional-restrictions`,
+        'Дополнительные_изъятия_INV-21.xlsx'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('uses register id in filename when invoice number is missing', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.downloadAdditionalRestrictions(22, null)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/22/download-additional-restrictions`,
+        'Дополнительные_изъятия_22.xlsx'
+      )
+    })
+
+    it('stores and rethrows errors from fetch wrapper', async () => {
+      const store = useRegistersStore()
+      const error = new Error('Download failed')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+
+      await expect(store.downloadAdditionalRestrictions(23, 'INV-23')).rejects.toThrow(error)
+
+      expect(store.error).toBe(error)
+    })
+  })
+
   describe('generate method', () => {
     it('calls downloadFile with default filename by id when invoiceNumber missing', async () => {
       const store = useRegistersStore()

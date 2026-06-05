@@ -1160,4 +1160,162 @@ describe('scanjobs store', () => {
       expect(store.error).toBe(stopError)
     })
   })
+
+  describe('parcel ext-id monitor', () => {
+    it('starts parcel ext-id monitor and forwards changed notifications', async () => {
+      const onChanged = vi.fn()
+      const store = useScanjobsStore()
+
+      await store.startParcelExtIdMonitor(42, { onChanged })
+
+      expect(signalRWithUrl).toHaveBeenCalledWith('http://localhost:8080/hubs/scan-jobs', {
+        accessTokenFactory: expect.any(Function),
+        withCredentials: false
+      })
+      expect(signalRConnection.start).toHaveBeenCalled()
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 42)
+
+      const change = { parcelId: 1, extId: 'KGT-001', revision: 1 }
+      signalRHandlers.ParcelExtIdChanged(change)
+
+      expect(onChanged).toHaveBeenCalledWith(change)
+    })
+
+    it('starts parcel ext-id monitor without onChanged callback', async () => {
+      const store = useScanjobsStore()
+
+      const result = await store.startParcelExtIdMonitor(42)
+
+      expect(result).toBe(true)
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 42)
+
+      // calling handler with no registered callback should not throw
+      expect(() => signalRHandlers.ParcelExtIdChanged({ parcelId: 1, extId: 'X', revision: 1 })).not.toThrow()
+    })
+
+    it('stops parcel ext-id monitor', async () => {
+      const store = useScanjobsStore()
+
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      const result = await store.stopParcelExtIdMonitor()
+
+      expect(result).toBe(true)
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearParcelExtIds')
+      expect(signalRConnection.stop).toHaveBeenCalled()
+    })
+
+    it('reuses existing parcel ext-id connection and skips restart when already connected', async () => {
+      const store = useScanjobsStore()
+      const firstChangedHandler = vi.fn()
+      const secondChangedHandler = vi.fn()
+
+      await store.startParcelExtIdMonitor(42, { onChanged: firstChangedHandler })
+      signalRConnection.start.mockClear()
+      signalRConnection.invoke.mockClear()
+
+      await store.startParcelExtIdMonitor(42, { onChanged: secondChangedHandler })
+      signalRHandlers.ParcelExtIdChanged({ parcelId: 1, extId: 'X', revision: 1 })
+
+      expect(signalRConnection.start).not.toHaveBeenCalled()
+      expect(signalRWithUrl).toHaveBeenCalledTimes(1)
+      expect(firstChangedHandler).not.toHaveBeenCalled()
+      expect(secondChangedHandler).toHaveBeenCalledTimes(1)
+    })
+
+    it('observes parcel ext-ids again after stop and restart', async () => {
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      await store.stopParcelExtIdMonitor()
+      signalRConnection.invoke.mockClear()
+
+      await store.startParcelExtIdMonitor(99, { onChanged: vi.fn() })
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 99)
+    })
+
+    it('stores error when parcel ext-id connection closes with error', async () => {
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+
+      const closeError = new Error('Ext-id connection dropped')
+      signalRHandlers.onclose(closeError)
+
+      expect(store.error).toBe(closeError)
+    })
+
+    it('does not store error when parcel ext-id connection closes cleanly', async () => {
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+
+      signalRHandlers.onclose(null)
+
+      expect(store.error).toBeNull()
+    })
+
+    it('re-observes parcel ext-ids on reconnect when registerId is set', async () => {
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      signalRConnection.invoke.mockClear()
+
+      signalRHandlers.onreconnected()
+      await Promise.resolve()
+
+      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 42)
+    })
+
+    it('does not re-observe parcel ext-ids on reconnect after stop', async () => {
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      await store.stopParcelExtIdMonitor()
+      signalRConnection.invoke.mockClear()
+
+      signalRHandlers.onreconnected()
+      await Promise.resolve()
+
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ObserveParcelExtIds', expect.anything())
+    })
+
+    it('stores error when re-observe parcel ext-ids fails on reconnect', async () => {
+      const reconnectError = new Error('Reconnect observe failed')
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      signalRConnection.invoke.mockRejectedValueOnce(reconnectError)
+
+      signalRHandlers.onreconnected()
+      await Promise.resolve()
+
+      expect(store.error).toBe(reconnectError)
+    })
+
+    it('stopParcelExtIdMonitor returns false when never started', async () => {
+      const store = useScanjobsStore()
+
+      const result = await store.stopParcelExtIdMonitor()
+
+      expect(result).toBe(false)
+    })
+
+    it('stopParcelExtIdMonitor does not invoke ClearParcelExtIds when disconnected', async () => {
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      signalRConnection.state = 'Disconnected'
+      signalRConnection.invoke.mockClear()
+
+      const result = await store.stopParcelExtIdMonitor()
+
+      expect(result).toBe(true)
+      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ClearParcelExtIds')
+      expect(signalRConnection.stop).toHaveBeenCalled()
+    })
+
+    it('stopParcelExtIdMonitor throws and stores error when stop fails', async () => {
+      const stopError = new Error('Stop parcel ext-id monitor failed')
+      const store = useScanjobsStore()
+      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
+      signalRConnection.stop.mockRejectedValueOnce(stopError)
+
+      await expect(store.stopParcelExtIdMonitor()).rejects.toThrow('Stop parcel ext-id monitor failed')
+      expect(store.error).toBe(stopError)
+    })
+  })
 })

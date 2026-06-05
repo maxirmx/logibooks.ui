@@ -15,7 +15,8 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
     put: vi.fn(),
     post: vi.fn(),
     delete: vi.fn(),
-    downloadFile: vi.fn()
+    downloadFile: vi.fn(),
+    getFile: vi.fn()
   }
 }))
 
@@ -394,6 +395,21 @@ describe('parcels store', () => {
     expect(store.item.extId).toBeNull()
   })
 
+  it('applyExtIdChange returns false for null change', () => {
+    const store = useParcelsStore()
+    expect(store.applyExtIdChange(null)).toBe(false)
+  })
+
+  it('applyExtIdChange returns false when parcelId is 0', () => {
+    const store = useParcelsStore()
+    expect(store.applyExtIdChange({ parcelId: 0, extId: 'X', revision: 5 })).toBe(false)
+  })
+
+  it('applyExtIdChange returns false when revision is 0', () => {
+    const store = useParcelsStore()
+    expect(store.applyExtIdChange({ parcelId: 12, extId: 'X', revision: 0 })).toBe(false)
+  })
+
   describe('bulkAssignTnved method', () => {
     it('calls assign-tnved endpoint with payload', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
@@ -682,5 +698,50 @@ describe('parcels store', () => {
         expect(store.error).toBe(error)
       })
     })
+
+  describe('lookupFeacnCode method', () => {
+    it('calls lookup-feacn-code endpoint and returns result', async () => {
+      const mockResult = { tnVed: '6402919000' }
+      fetchWrapper.post.mockResolvedValue(mockResult)
+
+      const store = useParcelsStore()
+      const result = await store.lookupFeacnCode(55)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/55/lookup-feacn-code`)
+      expect(result).toEqual(mockResult)
+    })
+
+    it('propagates error when lookup fails', async () => {
+      const error = new Error('Lookup failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.lookupFeacnCode(55)).rejects.toThrow('Lookup failed')
+    })
+  })
+
+  describe('getImageBlob method', () => {
+    it('fetches image blob for the given parcel id', async () => {
+      const mockBlob = new Blob(['image data'], { type: 'image/jpeg' })
+      const mockResponse = { blob: vi.fn().mockResolvedValue(mockBlob) }
+      fetchWrapper.getFile.mockResolvedValue(mockResponse)
+
+      const store = useParcelsStore()
+      const result = await store.getImageBlob(77)
+
+      expect(fetchWrapper.getFile).toHaveBeenCalledWith(`${apiUrl}/parcels/77/image`)
+      expect(result).toBe(mockBlob)
+    })
+
+    it('propagates error when getFile fails', async () => {
+      const error = new Error('Image not found')
+      fetchWrapper.getFile.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.getImageBlob(77)).rejects.toThrow('Image not found')
+    })
+  })
 
 })

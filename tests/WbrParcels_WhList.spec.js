@@ -273,6 +273,7 @@ describe('WbrParcels_WhList.vue', () => {
       'quantity'
     ])
     expect(wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable).toBe(true)
+    expect(wrapper.vm.headers.find((header) => header.key === 'extId').sortable).not.toBe(false)
   })
 
   it('renders product name in a non-wrapping truncated cell', () => {

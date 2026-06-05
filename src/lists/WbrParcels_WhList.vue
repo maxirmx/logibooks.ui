@@ -106,7 +106,7 @@ const headers = computed(() =>[
   { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: true },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
-  { title: wbrRegisterColumnTitles.extId, key: 'extId', align: 'start', sortable: false },
+  { title: wbrRegisterColumnTitles.extId, key: 'extId', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },

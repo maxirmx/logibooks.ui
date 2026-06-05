@@ -118,6 +118,9 @@ export const useAuthStore = defineStore('auth', () => {
   const parcels_tnved = ref('')
   const parcels_number = ref('')
   const parcels_product_name = ref('')
+  const parcels_wh_per_page = ref(100)
+  const parcels_wh_sort_by = ref([{ key: 'id', order: 'asc' }])
+  const parcels_wh_page = ref(1)
   const parcels_wh_status = ref(null)
   const parcels_wh_check_status_projection = ref(null)
   const parcels_wh_zone = ref(null)
@@ -353,6 +356,9 @@ export const useAuthStore = defineStore('auth', () => {
     parcels_tnved,
     parcels_number,
     parcels_product_name,
+    parcels_wh_per_page,
+    parcels_wh_sort_by,
+    parcels_wh_page,
     parcels_wh_status,
     parcels_wh_check_status_projection,
     parcels_wh_zone,

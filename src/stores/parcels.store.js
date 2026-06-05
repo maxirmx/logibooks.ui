@@ -59,8 +59,8 @@ function appendIfPresent(params, name, value) {
 export function buildParcelsWhFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
 
-  params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
-  params.append('sortOrder', authStore.parcels_sort_by?.[0]?.order || 'asc')
+  params.append('sortBy', authStore.parcels_wh_sort_by?.[0]?.key || 'id')
+  params.append('sortOrder', authStore.parcels_wh_sort_by?.[0]?.order || 'asc')
 
   appendIfPresent(params, 'statusId', authStore.parcels_wh_status)
   appendIfPresent(params, 'checkStatusProjectionKind', authStore.parcels_wh_check_status_projection)
@@ -110,10 +110,12 @@ export const useParcelsStore = defineStore('parcels', () => {
       const filterBuilder = showMarkedByPartner
         ? buildParcelsWhFilterParams
         : buildParcelsFilterParams
+      const page = showMarkedByPartner ? authStore.parcels_wh_page : authStore.parcels_page
+      const pageSize = showMarkedByPartner ? authStore.parcels_wh_per_page : authStore.parcels_per_page
       const params = filterBuilder(authStore, {
         registerId: registerId.toString(),
-        page: authStore.parcels_page.toString(),
-        pageSize: authStore.parcels_per_page.toString()
+        page: page.toString(),
+        pageSize: pageSize.toString()
       })
 
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl

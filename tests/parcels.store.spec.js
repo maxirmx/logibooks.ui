@@ -35,6 +35,9 @@ const mockAuthStore = {
   parcels_tnved: '',
   parcels_number: '',
   parcels_product_name: '',
+  parcels_wh_page: 1,
+  parcels_wh_per_page: 100,
+  parcels_wh_sort_by: [{ key: 'id', order: 'asc' }],
   parcels_wh_status: null,
   parcels_wh_check_status_projection: null,
   parcels_wh_zone: null,
@@ -63,6 +66,9 @@ describe('parcels store', () => {
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
     mockAuthStore.parcels_product_name = ''
+    mockAuthStore.parcels_wh_page = 1
+    mockAuthStore.parcels_wh_per_page = 100
+    mockAuthStore.parcels_wh_sort_by = [{ key: 'id', order: 'asc' }]
     mockAuthStore.parcels_wh_status = null
     mockAuthStore.parcels_wh_check_status_projection = null
     mockAuthStore.parcels_wh_zone = null
@@ -322,6 +328,25 @@ describe('parcels store', () => {
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/clear-defect`)
     expect(result).toBe(true)
+  })
+
+  it('fetches warehouse data with warehouse-specific page and sort parameters', async () => {
+    mockAuthStore.parcels_page = 9
+    mockAuthStore.parcels_per_page = 25
+    mockAuthStore.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
+    mockAuthStore.parcels_wh_page = 3
+    mockAuthStore.parcels_wh_per_page = 50
+    mockAuthStore.parcels_wh_sort_by = [{ key: 'checkStatusProjection', order: 'asc' }]
+
+    fetchWrapper.get.mockResolvedValue({
+      items: [],
+      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+    })
+    const store = useParcelsStore()
+    await store.getAll(1, { showMarkedByPartner: true })
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels/a?registerId=1&page=3&pageSize=50&sortBy=checkStatusProjection&sortOrder=asc`
+    )
   })
 
   it('clears parcel ExtId through API and patches loaded parcel collections', async () => {

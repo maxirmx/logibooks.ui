@@ -260,7 +260,8 @@ async function clearParcelExtId(item) {
 }
 
 function handleParcelExtIdChanged(change) {
-  if (Number(change?.registerId) !== Number(props.registerId)) return
+  const changeRegisterId = change?.registerId
+  if (changeRegisterId != null && Number(changeRegisterId) !== Number(props.registerId)) return
   parcelsStore.applyExtIdChange(change)
 }
 </script>

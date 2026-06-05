@@ -80,10 +80,15 @@ const {
 } = createRegisterActionHandlers(registersStore, alertStore, { mode: computed(() => props.mode) })
 
 const authStore = useAuthStore()
-const { registers_per_page, 
-  registers_search, 
-  registers_sort_by, 
-  registers_page, 
+const {
+  registers_per_page: paperworkRegistersPerPage,
+  registers_search: paperworkRegistersSearch,
+  registers_sort_by: paperworkRegistersSortBy,
+  registers_page: paperworkRegistersPage,
+  registers_wh_per_page: warehouseRegistersPerPage,
+  registers_wh_search: warehouseRegistersSearch,
+  registers_wh_sort_by: warehouseRegistersSortBy,
+  registers_wh_page: warehouseRegistersPage,
   isShiftLeadPlus, 
   isSrLogistPlus,
   isWhManagerPlus,
@@ -94,6 +99,25 @@ const selectedRegisterType = ref(null)
 
 const isWarehouseMode = computed(() => props.mode === OP_MODE_WAREHOUSE)
 const registerNouns = computed(() => getRegisterNouns(props.mode))
+
+function modeRef(paperworkRef, warehouseRef) {
+  return computed({
+    get: () => (isWarehouseMode.value ? warehouseRef.value : paperworkRef.value),
+    set: (value) => {
+      if (isWarehouseMode.value) {
+        warehouseRef.value = value
+        return
+      }
+
+      paperworkRef.value = value
+    }
+  })
+}
+
+const registers_per_page = modeRef(paperworkRegistersPerPage, warehouseRegistersPerPage)
+const registers_search = modeRef(paperworkRegistersSearch, warehouseRegistersSearch)
+const registers_sort_by = modeRef(paperworkRegistersSortBy, warehouseRegistersSortBy)
+const registers_page = modeRef(paperworkRegistersPage, warehouseRegistersPage)
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -317,6 +341,12 @@ const watcherStop = watch([registers_page, registers_per_page, registers_sort_by
 
 // Watch for mode changes and reload data
 const modeWatcherStop = watch(() => props.mode, () => {
+  const modeSearch = registers_search.value || ''
+  if (localSearch.value !== modeSearch) {
+    localSearch.value = modeSearch
+    return
+  }
+
   loadRegisters()
 }, { immediate: false })
 

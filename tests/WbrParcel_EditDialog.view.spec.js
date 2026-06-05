@@ -29,7 +29,8 @@ vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensu
 vi.mock('@/stores/parcel.views.store.js', () => ({ useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue() }) }))
 vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => ({ nextParcels: vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null }) }) }))
 
-vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ selectedParcelId: null }) }))
+const authMock = { selectedParcelId: null, isAdmin: ref(false) }
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 const alertErrorMock = vi.fn()
 vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() }) }))
 
@@ -51,6 +52,8 @@ describe('WbrParcel_EditDialog image overlay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
+    authMock.isAdmin.value = false
+    parcelsMock.item.value = { id: 3, productLink: 'http://example.com', hasImage: true }
     parcelsMock.getImageBlob.mockResolvedValue(new Blob(['test'], { type: 'image/png' }))
     global.URL.createObjectURL = vi.fn(() => 'blob:mock')
     global.URL.revokeObjectURL = vi.fn()
@@ -73,7 +76,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
           ParcelStatusSection: true,
           FeacnCodeEditor: true,
           ParcelNumberExt: true,
-          ActionButton: true,
+          ActionButton: { props: ['item', 'disabled'], template: '<button v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>' },
           'font-awesome-icon': true,
           VTooltip: true
         }
@@ -82,6 +85,9 @@ describe('WbrParcel_EditDialog image overlay', () => {
 
     await nextTick()
     await resolveAll()
+
+    expect(wrapper.text()).not.toContain('Номер КГТ')
+    expect(wrapper.find('[data-testid="clear-ext-id-action"]').exists()).toBe(false)
 
     await wrapper.find('[data-test="view-btn"]').trigger('click')
     await resolveAll()

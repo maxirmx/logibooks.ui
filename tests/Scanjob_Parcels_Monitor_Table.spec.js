@@ -129,6 +129,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       props: {
         parcels: [{
           stickerScanned: false,
+          extId: 'KGT-21',
           shk: 'SHK-21',
           sticker: 'STICKER-21',
           stickerCode: 'CODE-21',
@@ -152,6 +153,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       'zone',
       'statusId',
       'scannedInfo',
+      'extId',
       'shk',
       'sticker',
       'stickerCode',
@@ -161,6 +163,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       'quantity'
     ])
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
+    expect(wrapper.text()).toContain('KGT-21')
     expect(wrapper.text()).toContain('SHK-21')
     expect(wrapper.text()).toContain('STICKER-21')
     expect(wrapper.text()).toContain('CODE-21')

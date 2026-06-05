@@ -77,6 +77,10 @@ vi.mock('pinia', async () => {
         registers_search: ref(''),
         registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
         registers_page: ref(1),
+        registers_wh_per_page: ref(25),
+        registers_wh_search: ref('warehouse search'),
+        registers_wh_sort_by: ref([{ key: 'warehouseArrivalDate', order: 'asc' }]),
+        registers_wh_page: ref(3),
         isShiftLeadPlus: ref(true),
         isSrLogistPlus: ref(true),
         isWhManagerPlus: ref(true),
@@ -149,8 +153,13 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_search: ref(''),
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
+    registers_wh_per_page: ref(25),
+    registers_wh_search: ref('warehouse search'),
+    registers_wh_sort_by: ref([{ key: 'warehouseArrivalDate', order: 'asc' }]),
+    registers_wh_page: ref(3),
     isShiftLeadPlus: ref(true),
     isSrLogistPlus: ref(true),
+    isWhManagerPlus: ref(true),
     hasWhRole: ref(true)
   })
 }))
@@ -239,6 +248,20 @@ describe('Registers_List.vue in warehouse mode', () => {
       'Склад',
       'Дата прибытия'
     ])
+  })
+
+  it('binds table controls to warehouse register list state', async () => {
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const table = wrapper.findComponent({ name: 'v-data-table-server' })
+
+    expect(table.props('itemsPerPage')).toBe(25)
+    expect(table.props('page')).toBe(3)
+    expect(table.props('sortBy')).toEqual([
+      { key: 'warehouseArrivalDate', order: 'asc' }
+    ])
+    expect(wrapper.vm.localSearch).toBe('warehouse search')
   })
 
   it('marks warehouse visible columns as sortable', async () => {

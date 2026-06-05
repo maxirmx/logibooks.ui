@@ -59,8 +59,8 @@ function appendIfPresent(params, name, value) {
 export function buildParcelsWhFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
 
-  params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
-  params.append('sortOrder', authStore.parcels_sort_by?.[0]?.order || 'asc')
+  params.append('sortBy', authStore.parcels_wh_sort_by?.[0]?.key || 'id')
+  params.append('sortOrder', authStore.parcels_wh_sort_by?.[0]?.order || 'asc')
 
   appendIfPresent(params, 'statusId', authStore.parcels_wh_status)
   appendIfPresent(params, 'checkStatusProjectionKind', authStore.parcels_wh_check_status_projection)
@@ -96,6 +96,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   const totalCount = ref(0)
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
+  const extIdRevisionByParcelId = new Map()
 
   async function getAll(registerId, options = {}) {
     const {
@@ -103,16 +104,20 @@ export const useParcelsStore = defineStore('parcels', () => {
       showMarkedByPartner = false
     } = options
     const authStore = useAuthStore()
-    loading.value = true
+    if (updateStore) {
+      loading.value = true
+    }
     error.value = null
     try {
       const filterBuilder = showMarkedByPartner
         ? buildParcelsWhFilterParams
         : buildParcelsFilterParams
+      const page = showMarkedByPartner ? authStore.parcels_wh_page : authStore.parcels_page
+      const pageSize = showMarkedByPartner ? authStore.parcels_wh_per_page : authStore.parcels_per_page
       const params = filterBuilder(authStore, {
         registerId: registerId.toString(),
-        page: authStore.parcels_page.toString(),
-        pageSize: authStore.parcels_per_page.toString()
+        page: page.toString(),
+        pageSize: pageSize.toString()
       })
 
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
@@ -271,6 +276,42 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
+  function setParcelExtId(id, extId) {
+    const numericId = Number(id)
+    if (item.value?.id === numericId) {
+      item.value = { ...item.value, extId }
+    }
+
+    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
+    if (itemIndex !== -1) {
+      items.value[itemIndex] = { ...items.value[itemIndex], extId }
+    }
+
+    const itemByNumberIndex = items_bn.value.findIndex(parcel => Number(parcel.id) === numericId)
+    if (itemByNumberIndex !== -1) {
+      items_bn.value[itemByNumberIndex] = { ...items_bn.value[itemByNumberIndex], extId }
+    }
+  }
+
+  function applyExtIdChange(change) {
+    const parcelId = Number(change?.parcelId)
+    const revision = Number(change?.revision ?? 0)
+    if (!parcelId || !revision) return false
+
+    const lastRevision = extIdRevisionByParcelId.get(parcelId) || 0
+    if (revision <= lastRevision) return false
+
+    extIdRevisionByParcelId.set(parcelId, revision)
+    setParcelExtId(parcelId, change.extId ?? null)
+    return true
+  }
+
+  async function clearExtId(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/clear-ext-id`)
+    setParcelExtId(id, null)
+    return true
+  }
+
   async function bulkAssignTnved(parcelIds, tnVed) {
     await fetchWrapper.post(`${baseUrl}/assign-tnved`, {
       tnVed,
@@ -330,6 +371,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     checkForDuplicate,
     setDefect,
     clearDefect,
+    clearExtId,
+    applyExtIdChange,
     bulkAssignTnved,
     getImageProcessingUrl,
     getImageBlob,

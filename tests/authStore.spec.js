@@ -101,12 +101,22 @@ describe('auth store', () => {
       expect(store.registers_search).toBe('')
       expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'desc' }])
       expect(store.registers_page).toBe(1)
+      expect(store.registers_wh_per_page).toBe(50)
+      expect(store.registers_wh_search).toBe('')
+      expect(store.registers_wh_sort_by).toEqual([{ key: 'id', order: 'desc' }])
+      expect(store.registers_wh_page).toBe(1)
       expect(store.scanjobmonitor_boxes_per_page).toBe(100)
       expect(store.scanjobmonitor_boxes_sort_by).toEqual([{ key: 'boxCode', order: 'asc' }])
       expect(store.scanjobmonitor_boxes_page).toBe(1)
       expect(store.scanjobmonitor_parcels_per_page).toBe(100)
       expect(store.scanjobmonitor_parcels_sort_by).toEqual([{ key: 'parcelNumber', order: 'asc' }])
       expect(store.scanjobmonitor_parcels_page).toBe(1)
+      expect(store.parcels_per_page).toBe(100)
+      expect(store.parcels_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      expect(store.parcels_page).toBe(1)
+      expect(store.parcels_wh_per_page).toBe(100)
+      expect(store.parcels_wh_sort_by).toEqual([{ key: 'id', order: 'asc' }])
+      expect(store.parcels_wh_page).toBe(1)
       expect(store.scanjobmonitor_follow_user_id).toBeNull()
       expect(store.exportfees_per_page).toBe(100)
       expect(store.exportfees_search).toBe('')
@@ -508,6 +518,30 @@ describe('auth store', () => {
       expect(store.registers_page).toBe(2)
     })
 
+    it('maintains regular and warehouse register list parameters independently', () => {
+      const store = useAuthStore()
+
+      store.registers_per_page = 15
+      store.registers_search = 'paperwork search'
+      store.registers_sort_by = [{ key: 'price', order: 'desc' }]
+      store.registers_page = 2
+
+      store.registers_wh_per_page = 25
+      store.registers_wh_search = 'warehouse search'
+      store.registers_wh_sort_by = [{ key: 'warehouseArrivalDate', order: 'asc' }]
+      store.registers_wh_page = 4
+
+      expect(store.registers_per_page).toBe(15)
+      expect(store.registers_search).toBe('paperwork search')
+      expect(store.registers_sort_by).toEqual([{ key: 'price', order: 'desc' }])
+      expect(store.registers_page).toBe(2)
+
+      expect(store.registers_wh_per_page).toBe(25)
+      expect(store.registers_wh_search).toBe('warehouse search')
+      expect(store.registers_wh_sort_by).toEqual([{ key: 'warehouseArrivalDate', order: 'asc' }])
+      expect(store.registers_wh_page).toBe(4)
+    })
+
     it('handles edge cases for registers parameters', () => {
       const store = useAuthStore()
       
@@ -547,6 +581,26 @@ describe('auth store', () => {
       
       store.selectedParcelId = null
       expect(store.selectedParcelId).toBeNull()
+    })
+
+    it('maintains regular and warehouse parcel list parameters independently', () => {
+      const store = useAuthStore()
+
+      store.parcels_per_page = 50
+      store.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
+      store.parcels_page = 3
+
+      store.parcels_wh_per_page = 25
+      store.parcels_wh_sort_by = [{ key: 'checkStatusProjection', order: 'asc' }]
+      store.parcels_wh_page = 4
+
+      expect(store.parcels_per_page).toBe(50)
+      expect(store.parcels_sort_by).toEqual([{ key: 'tnVed', order: 'desc' }])
+      expect(store.parcels_page).toBe(3)
+
+      expect(store.parcels_wh_per_page).toBe(25)
+      expect(store.parcels_wh_sort_by).toEqual([{ key: 'checkStatusProjection', order: 'asc' }])
+      expect(store.parcels_wh_page).toBe(4)
     })
   })
 

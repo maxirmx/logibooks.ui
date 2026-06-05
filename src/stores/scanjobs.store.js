@@ -39,6 +39,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   let scanJobsListObserving = false
   let scanJobsListChangedHandler = null
   let scanJobsListClosedHandler = null
+  let parcelExtIdConnection = null
+  let parcelExtIdStartPromise = null
+  let parcelExtIdRegisterId = null
+  let parcelExtIdChangedHandler = null
 
 
   function getOpsLabel(list, value) {
@@ -530,6 +534,97 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  function ensureParcelExtIdConnection() {
+    if (parcelExtIdConnection) {
+      return parcelExtIdConnection
+    }
+
+    parcelExtIdConnection = new signalR.HubConnectionBuilder()
+      .withUrl(scanJobMonitorHubUrl, {
+        accessTokenFactory: getMonitorAccessToken,
+        withCredentials: false
+      })
+      .withAutomaticReconnect()
+      .build()
+
+    parcelExtIdConnection.on('ParcelExtIdChanged', (change) => {
+      if (parcelExtIdChangedHandler) {
+        parcelExtIdChangedHandler(change)
+      }
+    })
+
+    parcelExtIdConnection.onclose((err) => {
+      if (err) {
+        error.value = err
+      }
+    })
+
+    parcelExtIdConnection.onreconnected?.(() => {
+      if (parcelExtIdRegisterId != null) {
+        parcelExtIdConnection.invoke('ObserveParcelExtIds', Number(parcelExtIdRegisterId)).catch((err) => {
+          error.value = err
+        })
+      }
+    })
+
+    return parcelExtIdConnection
+  }
+
+  async function ensureParcelExtIdStarted() {
+    const connection = ensureParcelExtIdConnection()
+
+    if (connection.state === signalR.HubConnectionState.Connected) {
+      return connection
+    }
+
+    if (!parcelExtIdStartPromise) {
+      parcelExtIdStartPromise = connection.start().finally(() => {
+        parcelExtIdStartPromise = null
+      })
+    }
+
+    await parcelExtIdStartPromise
+    return connection
+  }
+
+  async function startParcelExtIdMonitor(registerId, {
+    onChanged = null
+  } = {}) {
+    const normalizedRegisterId = Number(registerId)
+    if (!Number.isFinite(normalizedRegisterId) || normalizedRegisterId <= 0) {
+      throw new Error('registerId must be a positive number')
+    }
+
+    parcelExtIdChangedHandler = onChanged
+    parcelExtIdRegisterId = normalizedRegisterId
+
+    const connection = await ensureParcelExtIdStarted()
+    await connection.invoke('ObserveParcelExtIds', parcelExtIdRegisterId)
+    return true
+  }
+
+  async function stopParcelExtIdMonitor() {
+    parcelExtIdChangedHandler = null
+    parcelExtIdRegisterId = null
+
+    if (!parcelExtIdConnection) {
+      return false
+    }
+
+    const connection = parcelExtIdConnection
+    try {
+      if (connection.state === signalR.HubConnectionState.Connected) {
+        await connection.invoke('ClearParcelExtIds')
+      }
+      await connection.stop()
+      parcelExtIdConnection = null
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   async function getById(id) {
     loading.value = true
     error.value = null
@@ -698,6 +793,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     clearMonitorFollowUser,
     startScanJobsListMonitor,
     stopScanJobsListMonitor,
+    startParcelExtIdMonitor,
+    stopParcelExtIdMonitor,
     scanjobMonitorArea,
   }
 })

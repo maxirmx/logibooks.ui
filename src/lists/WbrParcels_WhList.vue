@@ -5,6 +5,7 @@
 
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
@@ -31,6 +32,10 @@ import {
   getClearParcelDefectErrorMessage,
   getSetParcelDefectErrorMessage
 } from '@/helpers/parcel.defect.helpers.js'
+import {
+  canClearParcelExtId,
+  getClearParcelExtIdErrorMessage
+} from '@/helpers/parcel.ext-id.helpers.js'
 import { storeToRefs } from 'pinia'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 
@@ -40,6 +45,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const parcelsStore = useParcelsStore()
+const scanJobsStore = useScanjobsStore()
 const parcelStatusStore = useParcelStatusesStore()
 const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
@@ -49,9 +55,9 @@ const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
-  parcels_per_page,
-  parcels_sort_by,
-  parcels_page,
+  parcels_wh_per_page,
+  parcels_wh_sort_by,
+  parcels_wh_page,
   parcels_wh_status,
   parcels_wh_check_status_projection,
   parcels_wh_zone,
@@ -71,12 +77,13 @@ const registerLoading = ref(true)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
+const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value)))
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
-  const current = parcels_page.value || 1
+  const current = parcels_wh_page.value || 1
   if (mp <= 200) {
     return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
   }
@@ -90,15 +97,16 @@ const pageOptions = computed(() => {
 })
 
 watch(maxPage, (v) => {
-  if (parcels_page.value > v) parcels_page.value = v
+  if (parcels_wh_page.value > v) parcels_wh_page.value = v
 })
 
 const headers = computed(() =>[
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '108px' },
   { title: '№', key: 'id', align: 'start' },
   { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: true },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
+  { title: wbrRegisterColumnTitles.extId, key: 'extId', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
@@ -170,7 +178,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
+  [parcels_wh_page, parcels_wh_per_page, parcels_wh_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
   () => triggerLoad(),
   { immediate: false }
 )
@@ -187,6 +195,9 @@ onMounted(async () => {
     if (!isComponentMounted.value) return
 
     await fetchRegister()
+    await scanJobsStore.startParcelExtIdMonitor(props.registerId, {
+      onChanged: handleParcelExtIdChanged
+    })
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error('Ошибка при инициализации компонента')
@@ -205,13 +216,14 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  scanJobsStore.stopParcelExtIdMonitor().catch(() => {})
 })
 
 function closeList() {
   emit('close')
 }
 
-async function runDefectAction(item, action, getErrorMessage) {
+async function runParcelAction(item, action, getErrorMessage) {
   if (runningAction.value || loading.value || !item?.id) return
 
   runningAction.value = true
@@ -234,12 +246,23 @@ async function runDefectAction(item, action, getErrorMessage) {
 
 async function setParcelDefect(item) {
   if (!canSetParcelDefect(item, authStore)) return
-  await runDefectAction(item, parcelsStore.setDefect, getSetParcelDefectErrorMessage)
+  await runParcelAction(item, parcelsStore.setDefect, getSetParcelDefectErrorMessage)
 }
 
 async function clearParcelDefect(item) {
   if (!canClearParcelDefect(item, authStore)) return
-  await runDefectAction(item, parcelsStore.clearDefect, getClearParcelDefectErrorMessage)
+  await runParcelAction(item, parcelsStore.clearDefect, getClearParcelDefectErrorMessage)
+}
+
+async function clearParcelExtId(item) {
+  if (!canClearParcelExtId(item, authStore)) return
+  await runParcelAction(item, parcelsStore.clearExtId, getClearParcelExtIdErrorMessage)
+}
+
+function handleParcelExtIdChanged(change) {
+  const changeRegisterId = change?.registerId
+  if (changeRegisterId != null && Number(changeRegisterId) !== Number(props.registerId)) return
+  parcelsStore.applyExtIdChange(change)
 }
 </script>
 
@@ -282,12 +305,12 @@ async function clearParcelDefect(item) {
 
     <v-card class="table-card">
       <v-data-table-server
-        v-model:items-per-page="parcels_per_page"
+        v-model:items-per-page="parcels_wh_per_page"
         items-per-page-text="Посылок на странице"
         :items-per-page-options="itemsPerPageOptions"
         page-text="{0}-{1} из {2}"
-        v-model:page="parcels_page"
-        v-model:sort-by="parcels_sort_by"
+        v-model:page="parcels_wh_page"
+        v-model:sort-by="parcels_wh_sort_by"
         :headers="headers"
         :items="items"
         :items-length="totalCount"
@@ -298,6 +321,17 @@ async function clearParcelDefect(item) {
       >
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-broom"
+              tooltip-text="Очистить номер КГТ"
+              aria-label="Очистить номер КГТ"
+              title="Очистить номер КГТ"
+              data-testid="clear-ext-id-action"
+              @click="clearParcelExtId"
+              :disabled="runningAction || loading || !canClearParcelExtId(item, authStore)"
+              v-if="isAdminUser"
+            />
             <ActionButton
               :item="item"
               icon="fa-solid fa-person-circle-xmark"
@@ -357,8 +391,8 @@ async function clearParcelDefect(item) {
 
       <div class="v-data-table-footer">
         <PaginationFooter
-          v-model:items-per-page="parcels_per_page"
-          v-model:page="parcels_page"
+          v-model:items-per-page="parcels_wh_per_page"
+          v-model:page="parcels_wh_page"
           :items-per-page-options="itemsPerPageOptions"
           :page-options="pageOptions"
           :total-count="totalCount"

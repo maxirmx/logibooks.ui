@@ -152,7 +152,7 @@ describe('RegisterHeaderActionsBar', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const additionalRestrictionsButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Скачать дополнительные изъятия'
+      (button) => button.props('tooltipText') === 'Сформировать реестр дополнительных изъятий'
     )
 
     expect(additionalRestrictionsButton).toBeTruthy()
@@ -166,7 +166,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
     const disabledButton = disabledWrapper.findAllComponents(ActionButton).find(
-      (button) => button.props('tooltipText') === 'Скачать дополнительные изъятия'
+      (button) => button.props('tooltipText') === 'Сформировать реестр дополнительных изъятий'
     )
 
     disabledButton.vm.$emit('click')

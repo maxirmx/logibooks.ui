@@ -162,7 +162,7 @@ describe('useRegisterHeaderActions', () => {
     const promise = downloadAdditionalRestrictions()
 
     expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Подготовка файла дополнительных изъятий')
+    expect(actionDialog.title).toBe('Подготовка файла реестра')
     expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledWith(1, 'INV-1')
 
     deferred.resolve()

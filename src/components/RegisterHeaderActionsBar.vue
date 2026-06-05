@@ -141,7 +141,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       <ActionButton
         :item="item"
         icon="fa-solid fa-person-circle-xmark"
-        tooltip-text="Скачать дополнительные изъятия"
+        tooltip-text="Сформировать реестр дополнительных изъятий"
         :iconSize="iconSize"
         :disabled="disabled"
         @click="run('download-additional-restrictions')"

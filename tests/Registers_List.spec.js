@@ -85,9 +85,14 @@ vi.mock('pinia', async () => {
           registers_search: ref(''),
           registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
           registers_page: ref(1),
+          registers_wh_per_page: ref(25),
+          registers_wh_search: ref('warehouse search'),
+          registers_wh_sort_by: ref([{ key: 'warehouseArrivalDate', order: 'asc' }]),
+          registers_wh_page: ref(3),
           alert: ref(null),
           isShiftLeadPlus: ref(false),
           isSrLogistPlus: ref(false),
+          isWhManagerPlus: ref(false),
           hasWhRole: ref(false)
         }
       }
@@ -184,8 +189,13 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_search: ref(''),
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
+    registers_wh_per_page: ref(25),
+    registers_wh_search: ref('warehouse search'),
+    registers_wh_sort_by: ref([{ key: 'warehouseArrivalDate', order: 'asc' }]),
+    registers_wh_page: ref(3),
     isShiftLeadPlus: ref(false),
     isSrLogistPlus: ref(false),
+    isWhManagerPlus: ref(false),
     hasWhRole: ref(false)
   })
 }))

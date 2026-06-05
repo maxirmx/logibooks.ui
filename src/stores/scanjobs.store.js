@@ -587,16 +587,21 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return connection
   }
 
-  async function startParcelExtIdMonitor(registerId, {
-    onChanged = null
-  } = {}) {
-    parcelExtIdChangedHandler = onChanged
-    parcelExtIdRegisterId = Number(registerId)
-
-    const connection = await ensureParcelExtIdStarted()
-    await connection.invoke('ObserveParcelExtIds', parcelExtIdRegisterId)
-    return true
+async function startParcelExtIdMonitor(registerId, {
+  onChanged = null
+} = {}) {
+  const normalizedRegisterId = Number(registerId)
+  if (!Number.isFinite(normalizedRegisterId) || normalizedRegisterId <= 0) {
+    throw new Error('registerId must be a positive number')
   }
+
+  parcelExtIdChangedHandler = onChanged
+  parcelExtIdRegisterId = normalizedRegisterId
+
+  const connection = await ensureParcelExtIdStarted()
+  await connection.invoke('ObserveParcelExtIds', parcelExtIdRegisterId)
+  return true
+}
 
   async function stopParcelExtIdMonitor() {
     parcelExtIdChangedHandler = null

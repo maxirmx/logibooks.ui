@@ -111,6 +111,10 @@ describe('CheckStatusCode', () => {
       expect(CheckStatusCode.hasIssues(CheckStatusCode.Duplicate.value)).toBe(true)
     })
 
+    it('should not detect Duplicate2 status as having issues', () => {
+      expect(CheckStatusCode.hasIssues(CheckStatusCode.Duplicate2.value)).toBe(false)
+    })
+
     it('should detect Defect status as having issues', () => {
       const value = CheckStatusCode.compose(FCCheckStatus.Defect, SWCheckStatus.Defect)
       expect(CheckStatusCode.hasIssues(value)).toBe(true)
@@ -125,6 +129,10 @@ describe('CheckStatusCode', () => {
     it('should return true for manually composed Duplicate value', () => {
       const value = CheckStatusCode.compose(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate)
       expect(CheckStatusCode.isDuplicate(value)).toBe(true)
+    })
+
+    it('should return true for Duplicate2 status', () => {
+      expect(CheckStatusCode.isDuplicate(CheckStatusCode.Duplicate2.value)).toBe(true)
     })
 
     it('should return false for non-Duplicate statuses', () => {
@@ -224,6 +232,9 @@ describe('CheckStatusCode', () => {
 
       const duplicate = CheckStatusCode.Duplicate
       expect(duplicate.toString()).toBe('Дубликат')
+
+      const duplicate2 = CheckStatusCode.Duplicate2
+      expect(duplicate2.toString()).toBe('Дубликат')
 
       const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
       expect(defect.toString()).toBe('Брак')
@@ -378,6 +389,14 @@ describe('CheckStatusCode', () => {
       expect(duplicate.sw).toBe(SWCheckStatus.Duplicate)
       expect(duplicate.value).toBe(CheckStatusCode.compose(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate))
     })
+
+    it('should have Duplicate2 constant', () => {
+      const duplicate = CheckStatusCode.Duplicate2
+      expect(duplicate.fc).toBe(FCCheckStatus.Duplicate2)
+      expect(duplicate.sw).toBe(SWCheckStatus.Duplicate2)
+      expect(duplicate.value).toBe(0x02320232)
+      expect(duplicate.value).toBe(CheckStatusCode.compose(FCCheckStatus.Duplicate2, SWCheckStatus.Duplicate2))
+    })
   })
 })
 
@@ -506,6 +525,21 @@ describe('Integration tests', () => {
     
     // Verify CheckStatusHelper also sees it as having issues
     expect(CheckStatusHelper.hasIssues(duplicate.value)).toBe(true)
+  })
+
+  it('should correctly handle Duplicate2 status in all operations', () => {
+    const duplicate = CheckStatusCode.Duplicate2
+
+    expect(duplicate.fc).toBe(FCCheckStatus.Duplicate2)
+    expect(duplicate.sw).toBe(SWCheckStatus.Duplicate2)
+    expect(CheckStatusCode.hasIssues(duplicate.value)).toBe(false)
+    expect(CheckStatusCode.isDuplicate(duplicate.value)).toBe(true)
+    expect(duplicate.toString()).toBe('Дубликат')
+
+    const decomposed = CheckStatusHelper.decompose(duplicate.value)
+    expect(decomposed.fc).toBe(FCCheckStatus.Duplicate2)
+    expect(decomposed.sw).toBe(SWCheckStatus.Duplicate2)
+    expect(CheckStatusHelper.hasIssues(duplicate.value)).toBe(false)
   })
 
   it('should correctly handle Defect status in all operations', () => {

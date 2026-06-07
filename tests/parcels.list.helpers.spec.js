@@ -46,6 +46,7 @@ import {
   getFeacnCodesForKeywords,
   getKeywordFeacnPairs,
   getFeacnCodeItemClass,
+  getMatchingFeacnCodeItemClass,
   getTnVedCellClass,
   updateParcelTnVed,
   loadParcels
@@ -235,6 +236,21 @@ describe('Parcels List Helpers', () => {
 
       expect(result).toEqual({ class: 'order-has-issues' })
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicateValue)
+    })
+
+    it('should not return issue class for Duplicate2 status without issue bit', async () => {
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(false)
+
+      const duplicate2Value = 0x02320232
+      const data = {
+        item: { checkStatus: duplicate2Value }
+      }
+
+      const result = getRowPropsForParcel(data)
+
+      expect(result).toEqual({ class: '' })
+      expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicate2Value)
     })
   })
 
@@ -434,6 +450,11 @@ describe('Parcels List Helpers', () => {
     it('should return matched class when feacnCode matches tnVed and is in allFeacnCodes', () => {
       const result = getFeacnCodeItemClass('123', '123', ['123', '456'])
       expect(result).toBe('feacn-code-item clickable matched')
+    })
+
+    it('should return matching highlight class for matching FEACN code', () => {
+      const result = getMatchingFeacnCodeItemClass('123', '123', ['123', '456'])
+      expect(result).toBe('feacn-code-item clickable matched matching-feacn-code-item')
     })
 
     it('should return unmatched class when feacnCode does not match tnVed', () => {
@@ -707,6 +728,26 @@ describe('Parcels List Helpers', () => {
         updateStore: false,
         showMarkedByPartner: true
       })
+      expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
+    })
+
+    it('should report FEACN preload errors and still update items', async () => {
+      const mockResponse = {
+        items: [{ id: 1, tnVed: '1234567890' }],
+        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+      }
+      const mockParcelsStore = {
+        getAll: vi.fn().mockResolvedValue(mockResponse),
+        updateItems: vi.fn()
+      }
+      const mockIsComponentMounted = { value: true }
+      const mockAlertStore = { error: vi.fn() }
+      preloadFeacnInfo.mockRejectedValueOnce(new Error('preload failed'))
+
+      await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore)
+
+      expect(preloadFeacnInfo).toHaveBeenCalledWith(['1234567890'])
+      expect(mockAlertStore.error).toHaveBeenCalledWith('Не удалось загрузить информацию о кодах ТН ВЭД')
       expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
     })
 

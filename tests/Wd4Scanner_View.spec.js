@@ -1,4 +1,4 @@
-// Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
@@ -13,7 +13,7 @@ describe('Wd4Scanner_View', () => {
     expect(wrapper.find('h1').text()).toBe('Настройки WD4')
     expect(wrapper.text()).toContain('Полный вариант')
     expect(wrapper.text()).toContain('Сокращённый вариант, только для новых устройств')
-    expect(wrapper.text()).toContain('Bluetooth pairing')
+    expect(wrapper.text()).toContain('Подключение Bluetooth')
     expect(wrapper.text()).toContain('@SETUPE1')
     expect(wrapper.text()).toContain('@INTERF10')
     expect(wrapper.text()).toContain('@TSUSET0D0A')

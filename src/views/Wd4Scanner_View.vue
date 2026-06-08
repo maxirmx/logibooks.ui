@@ -85,7 +85,7 @@ const shortSetup = [
     </section>
 
     <section class="wd4-section">
-      <h2>Bluetooth pairing</h2>
+      <h2>Подключение Bluetooth</h2>
       <ol class="pairing-list">
         <li>Выполняется после настройки штрих-кодами.</li>
         <li>Нужно искать устройство с префиксом, как на коробке.</li>

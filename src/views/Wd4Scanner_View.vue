@@ -98,7 +98,7 @@ const shortSetup = [
         </figure>
         <figure class="photo-item">
           <figcaption>Устройство Bluetooth, которое увидит телефон</figcaption>
-          <img :src="bluetoothDeviceBs20" alt="Bluetooth устройство с префиксом BS20 на телефоне" />
+          <img :src="bluetoothDeviceBs20" alt="Bluetooth устройство с префиксом BS20 на телефоне" loading="lazy" decoding="async" />
         </figure>
       </div>
     </section>

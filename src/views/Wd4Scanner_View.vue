@@ -79,7 +79,7 @@ const shortSetup = [
             <span class="step-number">{{ index + 1 }}</span>
             <code>{{ code }}</code>
           </figcaption>
-          <img :src="barcodeImages[code]" :alt="`Штрих-код ${code}`" />
+          <img :src="barcodeImages[code]" :alt="`Штрих-код ${code}`" loading="lazy" decoding="async" />
         </figure>
       </div>
     </section>

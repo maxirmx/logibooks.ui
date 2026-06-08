@@ -94,7 +94,7 @@ const shortSetup = [
       <div class="photo-grid">
         <figure class="photo-item">
           <figcaption>Наклейка на коробке, префикс BS20</figcaption>
-          <img :src="labelPrefixBs20" alt="Наклейка на коробке WD4 с префиксом BS20" />
+          <img :src="labelPrefixBs20" alt="Наклейка на коробке WD4 с префиксом BS20" loading="lazy" decoding="async" />
         </figure>
         <figure class="photo-item">
           <figcaption>Устройство Bluetooth, которое увидит телефон</figcaption>

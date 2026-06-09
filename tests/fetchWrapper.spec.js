@@ -383,6 +383,26 @@ describe('fetchWrapper', () => {
       // Reset fetch mock
       global.fetch = vi.fn();
     });
+
+    function mockDownloadResponse(contentDisposition) {
+      const mockHeaders = new Map();
+      if (contentDisposition !== undefined) {
+        mockHeaders.set('Content-Disposition', contentDisposition);
+      }
+
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: (name) => mockHeaders.get(name)
+        },
+        blob: vi.fn().mockResolvedValue(new Blob(['content'], { type: 'application/octet-stream' }))
+      };
+
+      global.fetch = vi.fn(() => Promise.resolve(mockResponse));
+      return mockResponse;
+    }
     
     it('should download file with filename from Content-Disposition header', async () => {
       // Mock response with Content-Disposition header
@@ -499,6 +519,35 @@ describe('fetchWrapper', () => {
       // Get the created anchor element (second call to createElement)
       const anchor2 = global.document.createElement.mock.results[1].value;
       expect(anchor2.download).toBe('single-quote.xlsx');
+    });
+
+    it('should prefer decoded filename star over fallback filename parameter', async () => {
+      mockDownloadResponse('attachment; filename="5324721 __ 2 _______ _____ __________.xlsx"; filename*=UTF-8\'\'5324721%20%D0%BE%D0%B7%D0%BE%D0%BD.xlsx');
+
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.xlsx');
+
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe('5324721 озон.xlsx');
+    });
+
+    it('should decode filename star with language tag', async () => {
+      mockDownloadResponse('attachment; filename*=utf-8\'en\'%D0%94%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5_%D0%B8%D0%B7%D1%8A%D1%8F%D1%82%D0%B8%D1%8F.xlsx');
+
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.xlsx');
+
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe('Дополнительные_изъятия.xlsx');
+    });
+
+    it('should fall back when filename star is malformed', async () => {
+      mockDownloadResponse('attachment; filename="header-fallback.xlsx"; filename*=UTF-8\'\'%E0%A4%A');
+
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'default-fallback.xlsx');
+
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe('header-fallback.xlsx');
+      expect(anchor.download).not.toContain('filename');
+      expect(anchor.download).not.toContain('UTF-8');
     });
     
     it('should throw error if download fails', async () => {

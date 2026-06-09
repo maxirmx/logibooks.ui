@@ -28,6 +28,7 @@ vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/ExportFees_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/Wd4Scanner_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Parcel_EditView.vue', () => ({ default: { template: '<div />' } }))
 
@@ -349,6 +350,16 @@ describe('router guards', () => {
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/export-fees')
+  })
+
+  it('allows any authenticated role to access the WD4 scanner guide', async () => {
+    authStore.user = { id: 10 }
+    authStore.hasAnyRole = true
+
+    await router.push('/scanner/wd4')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/scanner/wd4')
   })
 
   it('prevents non-logist user from accessing parcels', async () => {

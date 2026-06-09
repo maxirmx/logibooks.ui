@@ -470,6 +470,12 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/scanner/wd4',
+      name: 'Настройки WD4',
+      component: () => import('@/views/Wd4Scanner_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/register/:id/invoice-settings',
       name: 'Настройки инвойса',
       component: () => import('@/views/Register_InvoiceSettingsView.vue'),

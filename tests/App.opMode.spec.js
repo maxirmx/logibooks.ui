@@ -65,6 +65,7 @@ const router = createRouter({
     { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
     { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
     { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } },
+    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } },
   ]
 })
 
@@ -147,5 +148,17 @@ describe('App navigation for registers', () => {
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toBe('/export-fees')
+  })
+
+  it('renders a WD4 scanner guide link in the downloads group', async () => {
+    const wrapper = mountApp()
+    await wrapper.vm.$nextTick()
+
+    const link = wrapper.findAll('a').find((item) =>
+      item.text().includes('Настройки WD4')
+    )
+
+    expect(link).toBeTruthy()
+    expect(link?.attributes('href')).toBe('/scanner/wd4')
   })
 })

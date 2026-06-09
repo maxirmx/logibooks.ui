@@ -214,6 +214,9 @@ function getUserName() {
           <v-list-item v-if="authStore.hasWhRole">
             <a :href="`${baseUrl}downloads/app-latest.apk`" target="_blank" rel="noopener" class="link">Сканнер apk</a>
           </v-list-item>
+          <v-list-item>
+            <RouterLink to="/scanner/wd4" class="link">Настройки WD4</RouterLink>
+          </v-list-item>
         </v-list-group>
 
         <v-list-item>

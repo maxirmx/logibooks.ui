@@ -1312,6 +1312,13 @@ a,
   overflow: ellipsis;
 }
 
+.status-cell.is-duplicate2 {
+  background-color: rgba(205, 60, 150, 0.25);
+  color: #c0266a;
+  border: 1px solid rgba(205, 60, 150, 0.5);
+  font-weight: 600;
+}
+
 .status-cell.is-approved {
   background-color: rgba(76, 175, 80, 0.25);
   color: #2e7d32;
@@ -1353,6 +1360,18 @@ a,
   gap: 0.5rem;
 }
 
+.stopwords-info-duplicate2 {
+  grid-column: 2; /* Only span the second column to align with checkStatus field */
+  padding: 4px 8px;
+  background-color: rgba(205, 60, 150, 0.05);
+  border: 1px solid rgba(205, 60, 150, 0.2);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
 
 .stopwords-info .label {
   color: #d32f2f;
@@ -1376,6 +1395,15 @@ a,
 
 .stopwords-text-approved {
   color: #2e7d32;
+  font-size: 0.9rem;
+  font-style: italic;
+  width: 60%;
+  flex-grow: 1;
+  word-wrap: break-word;
+}
+
+.stopwords-text-duplicate2 {
+  color: #c0266a;
   font-size: 0.9rem;
   font-style: italic;
   width: 60%;

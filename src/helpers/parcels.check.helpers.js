@@ -146,6 +146,10 @@ export function getCheckStatusClass(checkStatus) {
     return 'is-approved-with-notification'
   }
 
+  if (checkStatus === CheckStatusCode.Duplicate2.value) {
+    return 'is-duplicate2'
+  }
+
   if (CheckStatusCode.getSW(checkStatus) === SWCheckStatus.IssueStopWordInherited) {
     return 'has-issues-with-inheritance'
   }

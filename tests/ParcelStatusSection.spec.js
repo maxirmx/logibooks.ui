@@ -9,6 +9,7 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 vi.mock('@fortawesome/vue-fontawesome', () => ({
   FontAwesomeIcon: {
@@ -148,6 +149,7 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('.stopwords-info').exists()).toBe(false)
     expect(wrapper.find('.stopwords-info-approved').exists()).toBe(false)
+    expect(wrapper.find('.stopwords-info-duplicate2').exists()).toBe(false)
   })
 
   it('shows stopword info with issue styling when issues exist', () => {
@@ -162,6 +164,18 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('.stopwords-info-approved').exists()).toBe(true)
     expect(wrapper.find('.stopwords-text-approved').text()).toContain('Проверка пройдена')
+  })
+
+  it('shows Duplicate2 styling for check status info', () => {
+    const wrapper = createWrapper({
+      item: { ...defaultProps.item, checkStatus: CheckStatusCode.Duplicate2.value },
+      checkStatusInfo: 'Найден дубликат',
+      hasCheckStatusIssues: false
+    })
+
+    expect(wrapper.find('.stopwords-info-duplicate2').exists()).toBe(true)
+    expect(wrapper.find('.stopwords-info-approved').exists()).toBe(false)
+    expect(wrapper.find('.stopwords-text-duplicate2').text()).toContain('Найден дубликат')
   })
 
   it('renders empty last-view when dTime is missing', () => {

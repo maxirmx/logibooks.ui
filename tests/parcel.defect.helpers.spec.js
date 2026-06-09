@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import {
   canClearParcelDefect,
   canSetParcelDefect,
@@ -19,6 +20,10 @@ describe('parcel defect helpers', () => {
   it('detects special statuses from projection only', () => {
     expect(isParcelDefect({ checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' } })).toBe(true)
     expect(isParcelDuplicate({ checkStatusProjection: { restrictionReason: 'Дубликат' } })).toBe(true)
+    expect(isParcelDuplicate({
+      checkStatus: CheckStatusCode.Duplicate2.value,
+      checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Checked, title: 'Проверено' }
+    })).toBe(true)
     expect(isParcelMarkedByPartner({ checkStatusProjection: { title: 'Исключено партнёром' } })).toBe(true)
   })
 
@@ -64,6 +69,10 @@ describe('parcel defect helpers', () => {
     expect(canClearParcelDefect(parcel, { isAdmin: ref(false), isShiftLead: ref(false) })).toBe(false)
     expect(canClearParcelDefect({ checkStatusProjection: { title: 'Не проверено' } }, { isAdmin: true })).toBe(false)
     expect(canClearParcelDefect({ checkStatusProjection: { title: 'Брак' } }, { isShiftLead: true })).toBe(true)
+    expect(canClearParcelDefect({
+      checkStatus: CheckStatusCode.Duplicate2.value,
+      checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Checked, title: 'Проверено' }
+    }, { isShiftLead: true })).toBe(false)
   })
 
   it('returns expected error messages for defect actions', () => {

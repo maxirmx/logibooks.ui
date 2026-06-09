@@ -442,7 +442,15 @@ async function onLookup(values) {
       <!-- Action buttons moved inside Form scope -->
       <ParcelHeaderActionsBar
         :disabled="isSubmitting || runningAction || loading"
-        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem || isCustomsProcessingDisabled(values.statusId, statusStore)"
+        :download-disabled="
+          isSubmitting ||
+          runningAction ||
+          loading ||
+          CheckStatusCode.hasIssues(item?.checkStatus) ||
+          CheckStatusCode.isDuplicate(item?.checkStatus) ||
+          item?.blockedByFellowItem ||
+          isCustomsProcessingDisabled(values.statusId, statusStore)
+        "
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"

@@ -3,6 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 function unrefValue(value) {
   return value && typeof value === 'object' && 'value' in value ? value.value : value
@@ -46,7 +47,8 @@ export function isParcelDefect(item) {
 }
 
 export function isParcelDuplicate(item) {
-  return projectionIncludes(item, ['Дубликат'])
+  return CheckStatusCode.isDuplicate(item?.checkStatus) ||
+    projectionIncludes(item, ['Дубликат'])
 }
 
 export function isParcelMarkedByPartner(item) {

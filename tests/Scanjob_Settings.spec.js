@@ -74,6 +74,7 @@ const getAllCompanies = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
+const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
 const getWarehouseName = vi.hoisted(() => vi.fn((id) => `Warehouse ${id}`))
 let registerItem = {
@@ -153,8 +154,13 @@ vi.mock('@/stores/alert.store.js', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     hasWhRole: true,
-    isAdmin: true
+    isAdmin: true,
+    isShiftLeadPlus: true
   })
+}))
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
 }))
 
 vi.mock('@/router', () => ({
@@ -226,6 +232,7 @@ describe('Scanjob_Settings.vue', () => {
     start.mockResolvedValue(true)
     pause.mockResolvedValue(true)
     finish.mockResolvedValue(true)
+    confirmMock.mockResolvedValue(true)
   })
 
   afterEach(() => {
@@ -367,7 +374,29 @@ describe('Scanjob_Settings.vue', () => {
 
     await wrapper.find('[data-testid="scanjob-finish-action"]').trigger('click')
     await resolveAll()
+    expect(confirmMock).toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Задание на сканирование не найдено')
+  })
+
+  it('does not save or finish when finish confirmation is declined', async () => {
+    confirmMock.mockResolvedValueOnce(false)
+    getById.mockResolvedValue({
+      ...mockScanjob,
+      allowFinish: true
+    })
+
+    const wrapper = mountComponent({
+      mode: 'edit',
+      scanjobId: 11
+    })
+    await resolveAll()
+
+    await wrapper.find('[data-testid="scanjob-finish-action"]').trigger('click')
+    await resolveAll()
+
+    expect(confirmMock).toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
+    expect(finish).not.toHaveBeenCalled()
   })
 
   it('shows api error when update fails with conflict', async () => {

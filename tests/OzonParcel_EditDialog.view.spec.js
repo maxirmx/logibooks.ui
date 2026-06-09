@@ -20,7 +20,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
 }))
 
 const ensureLoadedFactory = () => ({ ensureLoaded: vi.fn().mockResolvedValue(), add: vi.fn().mockResolvedValue() })
-vi.mock('@/stores/parcel.statuses.store.js', () => ({ useParcelStatusesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), parcelStatuses: [] }) }))
+const parcelStatusesMock = vi.hoisted(() => [])
+vi.mock('@/stores/parcel.statuses.store.js', () => ({ useParcelStatusesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), parcelStatuses: parcelStatusesMock }) }))
 vi.mock('@/stores/stop.words.store.js', () => ({ useStopWordsStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => ensureLoadedFactory() }))
@@ -51,6 +52,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
+    parcelStatusesMock.length = 0
     parcelsMock.getImageBlob.mockResolvedValue(new Blob(['test'], { type: 'image/png' }))
     global.URL.createObjectURL = vi.fn(() => 'blob:mock')
     global.URL.revokeObjectURL = vi.fn()
@@ -95,5 +97,41 @@ describe('OzonParcel_EditDialog image overlay', () => {
     await resolveAll()
     expect(wrapper.find('[data-test="parcel-image-overlay"]').exists()).toBe(false)
     expect(global.URL.revokeObjectURL).toHaveBeenCalled()
+  })
+
+  it('disables XML download action for customs-disabled parcel status', async () => {
+    parcelStatusesMock.push({ id: 10, title: 'Disabled', useAtCustomsProcessing: false })
+    parcelsMock.item.value = { id: 2, statusId: 10, checkStatus: 0, productLink: 'http://example.com', hasImage: true }
+
+    const TestWrapper = {
+      components: { OzonParcel_EditDialog },
+      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
+    }
+
+    const wrapper = mount(TestWrapper, {
+      global: {
+        stubs: {
+          Field: { template: '<input />' },
+          Form: {
+            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+          },
+          ParcelHeaderActionsBar: true,
+          ParcelStatusSection: true,
+          FeacnCodeEditor: true,
+          ParcelNumberExt: true,
+          ArticleWithH: true,
+          ActionButton: true,
+          'font-awesome-icon': true,
+          VTooltip: true
+        }
+      }
+    })
+
+    await nextTick()
+    await resolveAll()
+
+    const headerActions = wrapper.findComponent({ name: 'ParcelHeaderActionsBar' })
+    expect(headerActions.exists()).toBe(true)
+    expect(headerActions.props('downloadDisabled')).toBe(true)
   })
 })

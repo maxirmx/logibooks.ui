@@ -145,6 +145,23 @@ async function finishScanjob(scanJob) {
   if (runningAction.value) return
   runningAction.value = true
   try {
+    const content = 'Завершить задание на сканирование "' + scanJob.name + '" ?'
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Завершить',
+      cancellationText: 'Не завершать',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: content
+    })
+
+    if (!confirmed) return
+
     await scanJobsStore.finish(scanJob.id)
     await loadScanjobs()
   } catch (error) {
@@ -324,7 +341,7 @@ defineExpose({
               tooltip-text="Завершить сканирование"
               @click="finishScanjob"
               :disabled="runningAction || loading || item.allowFinish !== true"
-              v-if="authStore.isAdmin"
+              v-if="authStore.isShiftLeadPlus"
             />
             <ActionButton
               :item="item"

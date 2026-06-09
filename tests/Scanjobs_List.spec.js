@@ -240,6 +240,9 @@ vi.mock('@/stores/alert.store.js', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     isAdmin: true,
+    isShiftLeadPlus: true,
+    isWhManagerPlus: true,
+    hasWhRole: true,
     isSrLogistPlus: true,
     scanjobs_per_page: mockScanjobsPerPage,
     scanjobs_search: mockScanjobsSearch,
@@ -279,6 +282,7 @@ describe('Scanjobs_List.vue', () => {
     mockScanjobsSortBy.value = [{ key: 'id', order: 'desc' }]
     mockScanjobsPage.value = 1
     mockTotalCount.value = 1
+    confirmMock.mockResolvedValue(true)
     startScanJobsListMonitorFn.mockResolvedValue(true)
     stopScanJobsListMonitorFn.mockResolvedValue(true)
   })
@@ -722,6 +726,7 @@ describe('Scanjobs_List.vue', () => {
       const scanjob = { id: 1, name: 'Сканирование приемки' }
       await wrapper.vm.finishScanjob(scanjob)
 
+      expect(confirmMock).toHaveBeenCalled()
       expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(getAllScanjobs).toHaveBeenCalled()
     })
@@ -738,6 +743,7 @@ describe('Scanjobs_List.vue', () => {
       const scanjob = { id: 1, name: 'Сканирование приемки' }
       await wrapper.vm.finishScanjob(scanjob)
 
+      expect(confirmMock).toHaveBeenCalled()
       expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Нет прав для завершения сканирования')
     })
@@ -754,6 +760,7 @@ describe('Scanjobs_List.vue', () => {
       const scanjob = { id: 1, name: 'Сканирование приемки' }
       await wrapper.vm.finishScanjob(scanjob)
 
+      expect(confirmMock).toHaveBeenCalled()
       expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
     })
@@ -770,6 +777,7 @@ describe('Scanjobs_List.vue', () => {
       const scanjob = { id: 1, name: 'Сканирование приемки' }
       await wrapper.vm.finishScanjob(scanjob)
 
+      expect(confirmMock).toHaveBeenCalled()
       expect(finishScanjobFn).toHaveBeenCalledWith(1)
       expect(errorFn).toHaveBeenCalledWith('Ошибка при завершении сканирования')
     })
@@ -787,6 +795,23 @@ describe('Scanjobs_List.vue', () => {
       const scanjob = { id: 1, name: 'Сканирование приемки' }
       await wrapper.vm.finishScanjob(scanjob)
 
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(finishScanjobFn).not.toHaveBeenCalled()
+    })
+
+    it('does not finish when confirmation is declined', async () => {
+      confirmMock.mockResolvedValueOnce(false)
+
+      const wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: testStubs
+        }
+      })
+
+      const scanjob = { id: 1, name: 'Сканирование приемки' }
+      await wrapper.vm.finishScanjob(scanjob)
+
+      expect(confirmMock).toHaveBeenCalled()
       expect(finishScanjobFn).not.toHaveBeenCalled()
     })
   })

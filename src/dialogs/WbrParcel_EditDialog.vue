@@ -33,6 +33,7 @@ import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
+import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
@@ -128,14 +129,6 @@ function ensureNextParcelsPromise() {
     initNextParcelsPromise(currentParcelId.value)
   }
   return nextParcelsPromise
-}
-
-function isCustomsProcessingDisabled(statusId) {
-  const id = Number(statusId)
-  const status = typeof statusStore.getStatusById === 'function'
-    ? statusStore.getStatusById(id)
-    : statusStore.parcelStatuses?.find(status => status.id === id)
-  return status?.useAtCustomsProcessing === false
 }
 
 function getModeQueryParam() {
@@ -423,7 +416,7 @@ async function onLookup(values) {
       <!-- Action buttons moved inside Form scope -->
       <ParcelHeaderActionsBar
         :disabled="isSubmitting || runningAction || loading"
-        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem || isCustomsProcessingDisabled(values.statusId)"
+        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem || isCustomsProcessingDisabled(values.statusId, statusStore)"
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"

@@ -20,6 +20,7 @@ import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import { useConfirm } from 'vuetify-use-dialog'
 
 const props = defineProps({
   mode: {
@@ -55,6 +56,7 @@ const companiesStore = useCompaniesStore()
 const parcelStatusesStore = useParcelStatusesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
+const confirm = useConfirm()
 const { ops } = storeToRefs(scanJobsStore)
 const { companies } = storeToRefs(companiesStore)
 
@@ -449,6 +451,23 @@ async function finishScanjob() {
   if (runningAction.value || isCreate.value) return
   runningAction.value = true
   try {
+    const actionName = name.value || currentScanjob.value?.name || props.scanjobId
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Завершить',
+      cancellationText: 'Не завершать',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Завершить задание на сканирование "' + actionName + '" ?'
+    })
+
+    if (!confirmed) return
+
     const saved = await saveScanjobQuiet()
     if (!saved) return
     await scanJobsStore.finish(props.scanjobId)
@@ -500,7 +519,7 @@ defineExpose({ onSubmit, cancel })
             tooltip-text="Завершить сканирование"
             data-testid="scanjob-finish-action"
             :disabled="saving || loading || runningAction || !canFinish"
-            v-if="authStore.isAdmin"
+            v-if="authStore.isShiftLeadPlus"
             @click="finishScanjob"
           />
         </div>

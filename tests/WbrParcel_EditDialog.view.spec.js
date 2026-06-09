@@ -20,7 +20,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
 }))
 
 const ensureLoadedFactory = () => ({ ensureLoaded: vi.fn().mockResolvedValue(), add: vi.fn().mockResolvedValue() })
-const parcelStatusesMock = []
+const parcelStatusesMock = vi.hoisted(() => [])
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),

@@ -129,6 +129,14 @@ function ensureNextParcelsPromise() {
   return nextParcelsPromise
 }
 
+function isCustomsProcessingDisabled(statusId) {
+  const id = Number(statusId)
+  const status = typeof statusStore.getStatusById === 'function'
+    ? statusStore.getStatusById(id)
+    : statusStore.parcelStatuses?.find(status => status.id === id)
+  return status?.useAtCustomsProcessing === false
+}
+
 function getModeQueryParam() {
   return typeof route.query.mode === 'string' && route.query.mode.length > 0
     ? route.query.mode
@@ -412,7 +420,7 @@ async function onLookup(values) {
       <!-- Action buttons moved inside Form scope -->
       <ParcelHeaderActionsBar
         :disabled="isSubmitting || runningAction || loading"
-        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem"
+        :download-disabled="isSubmitting || runningAction || loading || CheckStatusCode.hasIssues(item?.checkStatus) || item?.blockedByFellowItem || isCustomsProcessingDisabled(values.statusId)"
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"

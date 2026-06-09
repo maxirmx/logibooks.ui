@@ -10,6 +10,7 @@ export const SwInheritanceFlag = 0x0080
 export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
+  Duplicate2: 0x0232,
   Defect: 0x017D,
   Duplicate: 0x017E,
   MarkedByPartner: 0x01FF
@@ -27,6 +28,7 @@ export const SWCheckStatus = Object.freeze({
   ApprovedInherited: 0x0020 | SwInheritanceFlag,
   ApprovedWithExcise: WStatusValues.ApprovedWithExcise,
   ApprovedWithNotification: WStatusValues.ApprovedWithNotification,
+  Duplicate2: WStatusValues.Duplicate2,
   
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
@@ -45,6 +47,7 @@ export const FCCheckStatus = Object.freeze({
   NoIssues: 0x0010,
   ApprovedWithExcise: WStatusValues.ApprovedWithExcise,
   ApprovedWithNotification: WStatusValues.ApprovedWithNotification,
+  Duplicate2: WStatusValues.Duplicate2,
   
   IssueFeacnCode: 0x0100,
   IssueNonexistingFeacn: 0x0101,
@@ -169,8 +172,10 @@ export class CheckStatusCode {
    * Check if the combined status is Duplicate
    */
   static isDuplicate(value) {
-    return CheckStatusCode.getFC(value) === FCCheckStatus.Duplicate && 
-           CheckStatusCode.getSW(value) === SWCheckStatus.Duplicate
+    const fc = CheckStatusCode.getFC(value)
+    const sw = CheckStatusCode.getSW(value)
+    return (fc === FCCheckStatus.Duplicate && sw === SWCheckStatus.Duplicate) ||
+           (fc === FCCheckStatus.Duplicate2 && sw === SWCheckStatus.Duplicate2)
   }
 
   /**
@@ -230,6 +235,10 @@ export class CheckStatusCode {
     }
 
     if (this.fc === FCCheckStatus.Duplicate && this.sw === SWCheckStatus.Duplicate) {
+      return DuplicateString
+    }
+
+    if (this.fc === FCCheckStatus.Duplicate2 && this.sw === SWCheckStatus.Duplicate2) {
       return DuplicateString
     }
 
@@ -323,6 +332,10 @@ export class CheckStatusCode {
 
   static get Duplicate() {
     return CheckStatusCode.fromParts(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate)
+  }
+
+  static get Duplicate2() {
+    return CheckStatusCode.fromParts(FCCheckStatus.Duplicate2, SWCheckStatus.Duplicate2)
   }
 
   static get Defect() {

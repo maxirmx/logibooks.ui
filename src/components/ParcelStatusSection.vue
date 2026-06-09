@@ -4,10 +4,11 @@
 // This file is a part of Logibooks ui application
 
 import { Field } from 'vee-validate'
+import { computed } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-defineProps({
+const props = defineProps({
   item: {
     type: Object,
     required: true
@@ -45,6 +46,25 @@ defineProps({
     default: false
   }
 })
+
+const hasDuplicate2CheckStatus = computed(() => props.item?.checkStatus === CheckStatusCode.Duplicate2.value)
+
+const checkStatusInfoClass = computed(() => [
+  'form-group',
+  hasDuplicate2CheckStatus.value
+    ? 'stopwords-info-duplicate2'
+    : props.hasCheckStatusIssues
+      ? 'stopwords-info'
+      : 'stopwords-info-approved'
+])
+
+const checkStatusInfoTextClass = computed(() => (
+  hasDuplicate2CheckStatus.value
+    ? 'stopwords-text-duplicate2'
+    : props.hasCheckStatusIssues
+      ? 'stopwords-text'
+      : 'stopwords-text-approved'
+))
 
 defineEmits([
   'validate-sw',
@@ -153,9 +173,9 @@ defineEmits([
       </div>
       <div
         v-if="checkStatusInfo"
-        :class="['form-group', hasCheckStatusIssues ? 'stopwords-info' : 'stopwords-info-approved']"
+        :class="checkStatusInfoClass"
       >
-        <div :class="hasCheckStatusIssues ? 'stopwords-text' : 'stopwords-text-approved'">
+        <div :class="checkStatusInfoTextClass">
           {{ checkStatusInfo }}
         </div>
       </div>

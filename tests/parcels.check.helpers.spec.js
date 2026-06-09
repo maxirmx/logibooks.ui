@@ -376,6 +376,10 @@ describe('parcels.check.helpers', () => {
         expect(getCheckStatusClass(CheckStatusCode.Duplicate.value)).toBe('has-issues')
       })
 
+      it('returns "is-duplicate2" for Duplicate2 status', () => {
+        expect(getCheckStatusClass(CheckStatusCode.Duplicate2.value)).toBe('is-duplicate2')
+      })
+
       it('returns "has-issues" for Defect status', () => {
         const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
         expect(getCheckStatusClass(defect.value)).toBe('has-issues')

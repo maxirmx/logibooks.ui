@@ -7,6 +7,7 @@ import { ref } from 'vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 const { loadParcels, setDefect, clearDefect } = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
@@ -304,6 +305,33 @@ describe('OzonParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
+  })
+
+  it('disables clear defect action for Duplicate2 status that is not defect', async () => {
+    isShiftLead.value = true
+    mockItems.value = [{
+      ...mockItems.value[0],
+      checkStatus: CheckStatusCode.Duplicate2.value,
+      checkStatusProjection: {
+        kind: scanjobCheckStatusProjectionKind.Checked,
+        title: 'Проверено',
+        restrictionReason: null
+      }
+    }]
+    const wrapper = mount(OzonParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    const clearDefectAction = wrapper.get('[data-testid="clear-defect-action"]')
+    expect(clearDefectAction.attributes('disabled')).toBeDefined()
+
+    await clearDefectAction.trigger('click')
+    await resolveAll()
+
+    expect(clearDefect).not.toHaveBeenCalled()
   })
 
   it('shows reload error message when refresh fails after setting defect', async () => {

@@ -74,7 +74,8 @@ const router = createRouter({
     { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
     { path: '/parcelsevents', component: { template: '<div>Parcel Events</div>' } },
     { path: '/registersevents', component: { template: '<div>Register Events</div>' } },
-    { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } }
+    { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } },
+    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } }
   ]
 })
 

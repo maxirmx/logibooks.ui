@@ -73,7 +73,8 @@ const registersStore = createMockStore({
 const countriesStore = createMockStore({
   countries: ref([
     { id: 1, isoNumeric: 840, nameRuOfficial: 'США' },
-    { id: 2, isoNumeric: 643, nameRuOfficial: 'Россия' }
+    { id: 2, isoNumeric: 643, nameRuOfficial: 'Россия' },
+    { id: 3, isoNumeric: 860, nameRuOfficial: 'Узбекистан' }
   ]),
   ensureLoaded: vi.fn()
 })
@@ -1122,6 +1123,44 @@ describe('Register_EditDialog', () => {
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(dialog.vm.item.lookupByArticle).toBe(false)
+  })
+
+  it('defaults missing country to Uzbekistan when loaded', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      theOtherCountryCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.theOtherCountryCode).toBe(860)
+  })
+
+  it('keeps existing country when loaded', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      theOtherCountryCode: 840
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.theOtherCountryCode).toBe(840)
   })
 
   it('submits lookupByArticle value in form data', async () => {

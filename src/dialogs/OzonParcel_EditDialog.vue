@@ -545,7 +545,22 @@ async function onLookup(values) {
           <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <OzonFormField name="passportSeries" :errors="errors" :fullWidth="false" />
           <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="passportIssueDate" type="date" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="passportIssuedBy" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <OzonFormField name="inn" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="phone" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="email" type="email" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="postalCode" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <OzonFormField name="city" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="address" :errors="errors" :fullWidth="true" />
         </div>
       </div>
       

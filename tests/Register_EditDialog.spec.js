@@ -80,8 +80,10 @@ const countriesStore = createMockStore({
 })
 const companiesStore = createMockStore({
   companies: ref([
+    { id: OZON_COMPANY_ID, shortName: 'Ozon' },
     { id: 2, shortName: 'My Company' },
-    { id: 3, shortName: 'Partner' }
+    { id: 3, shortName: 'Partner' },
+    { id: GTC_COMPANY_ID, shortName: 'GTC' }
   ]),
   getAll: vi.fn(() => Promise.resolve())
 })
@@ -1306,6 +1308,49 @@ describe('Register_EditDialog', () => {
     expect(optionTexts).toContain('Импорт')
     expect(optionTexts).toContain('Экспорт')
     expect(optionTexts).not.toContain('ГТК Импорт')
+  })
+
+  it('shows import and reexport for Ozon when allowed by ops metadata and uses GTC company', async () => {
+    mockOps.value = {
+      ...mockOps.value,
+      customsProcedures: [
+        { value: 10, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID] },
+        { value: 31, charCode: 'ЭК31', name: 'Реэкспорт', isExport: true, isRe: true, isGtc: true, allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID] },
+        { value: 40, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: true, allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID] },
+        { value: 60, charCode: 'ИМ60', name: 'Реимпорт', isExport: false, isRe: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID] }
+      ]
+    }
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: OZON_COMPANY_ID,
+      companyId: OZON_COMPANY_ID,
+      customsProcedureCode: 40
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const procSelect = wrapper.find('#customsProcedureCode')
+    const optionTexts = procSelect.findAll('option').filter(o => o.attributes('value') !== '').map(o => o.text())
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    expect(optionTexts).toEqual(['Экспорт', 'Реэкспорт', 'Импорт', 'Реимпорт'])
+    expect(mockItem.value.companyId).toBe(GTC_COMPANY_ID)
+
+    dialog.vm.handleProcedureChange({ target: { value: '31' } })
+    await nextTick()
+
+    expect(mockItem.value.customsProcedureCode).toBe(31)
+    expect(mockItem.value.companyId).toBe(GTC_COMPANY_ID)
+    expect(mockItem.value.senderId).toBe(GTC_COMPANY_ID)
   })
 
   it('defaults to first filtered procedure for GTC register in create mode', async () => {

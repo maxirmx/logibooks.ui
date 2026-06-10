@@ -134,4 +134,50 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(headerActions.exists()).toBe(true)
     expect(headerActions.props('downloadDisabled')).toBe(true)
   })
+
+  it('renders Ozon import recipient fields', async () => {
+    parcelsMock.item.value = {
+      id: 2,
+      statusId: 1,
+      checkStatus: 0,
+      productLink: 'http://example.com',
+      passportIssueDate: '2025-02-03',
+      inn: '500100732259',
+      phone: '+79001234567',
+      email: 'recipient@example.com',
+      postalCode: '101000',
+      city: 'Москва',
+      address: 'Москва, ул. Тестовая, 1'
+    }
+
+    const TestWrapper = {
+      components: { OzonParcel_EditDialog },
+      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
+    }
+
+    const wrapper = mount(TestWrapper, {
+      global: {
+        stubs: {
+          Field: { template: '<input />' },
+          Form: {
+            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+          },
+          ParcelHeaderActionsBar: true,
+          ParcelStatusSection: true,
+          FeacnCodeEditor: true,
+          ParcelNumberExt: true,
+          ArticleWithH: true,
+          ActionButton: true,
+          'font-awesome-icon': true,
+          VTooltip: true
+        }
+      }
+    })
+
+    await nextTick()
+    await resolveAll()
+
+    expect(wrapper.text()).toContain('Серия паспорта')
+    expect(wrapper.text()).toContain('Номер паспорта')
+  })
 })

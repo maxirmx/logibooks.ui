@@ -12,6 +12,7 @@ import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
 import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
+import { formatDate } from '@/helpers/date.formatters.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 
@@ -179,7 +180,15 @@ const FieldStub = {
       }
     }
 
-    return { val, handleInput, slots }
+    function handleChange(valueOrEvent) {
+      if (valueOrEvent?.target) {
+        handleInput(valueOrEvent)
+      } else {
+        val.value = valueOrEvent
+      }
+    }
+
+    return { val, handleInput, handleChange, slots, props }
   },
   template: `
     <div>
@@ -190,7 +199,11 @@ const FieldStub = {
       </template>
       <template v-else-if="$slots.default">
         <!-- Custom root provided (e.g. v-slot pattern); just expose value -->
-        <slot :value="val.value" />
+        <slot
+          :value="val.value"
+          :field="{ value: val.value, name: props.name, id: props.id }"
+          :handleChange="handleChange"
+        />
       </template>
       <template v-else>
         <input v-if="type === 'checkbox'" type="checkbox" :id="id || name" :checked="val.value" :readonly="readonly" :disabled="disabled" :class="$attrs.class" @change="handleInput" />
@@ -408,6 +421,58 @@ describe('Register_EditDialog', () => {
     const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
     expect(optionTexts).toContain('Не задано')
     expect(optionTexts).toContain('Main Warehouse')
+  })
+
+  it('formats upload and warehouse arrival dates like Registers_List', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBR_COMPANY_ID,
+      date: '2024-01-01T23:30:00Z',
+      warehouseArrivalDate: '2024-02-03T23:30:00Z'
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    expect(wrapper.find('#uploadDate').text()).toBe(formatDate(mockItem.value.date))
+    expect(wrapper.find('#warehouseArrivalDate').attributes('type')).toBe('date')
+    expect(wrapper.find('#warehouseArrivalDate').element.value).toBe(
+      dialog.vm.formatDateInputValue(mockItem.value.warehouseArrivalDate)
+    )
+  })
+
+  it('formats warehouse arrival value for native date selector', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBR_COMPANY_ID,
+      warehouseArrivalDate: '2024-02-03T23:30:00Z'
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    expect(dialog.vm.formatDateInputValue('2024-02-04')).toBe('2024-02-04')
+    expect(dialog.vm.formatDateInputValue('not-a-date')).toBe('')
   })
 
   it('renders warehouse selector for OZON register type', async () => {

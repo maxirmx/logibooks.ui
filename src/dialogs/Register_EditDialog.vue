@@ -651,6 +651,7 @@ const loadReportFields = computed(() => {
     { key: 'markedForExcise', label: 'Согласовано с акцизом', value: formatReportCounter(report.markedForExcise) },
     { key: 'markedForNotifications', label: 'Согласовано с нотификацией', value: formatReportCounter(report.markedForNotifications) },
     { key: 'duplicates', label: 'Дубликатов', value: formatReportDuplicates(report) },
+    { key: 'updated', label: 'С предшествующими', value: formatReportCounter(report.updated) },
     { key: 'createdAt', label: 'Время загрузки', value: formatTime(report.createdAt) || '—' }
   ]
 })

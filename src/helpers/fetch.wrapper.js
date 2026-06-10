@@ -221,6 +221,123 @@ function requestBlob(method) {
     };
 }
 
+function splitContentDispositionParameters(disposition) {
+  const parts = []
+  let current = ''
+  let quote = null
+  let escaped = false
+
+  for (const char of disposition) {
+    if (escaped) {
+      current += char
+      escaped = false
+      continue
+    }
+
+    if (char === '\\' && quote === '"') {
+      escaped = true
+      current += char
+      continue
+    }
+
+    if (char === '"' && quote === null) {
+      quote = char
+      current += char
+      continue
+    }
+
+    if (char === quote) {
+      quote = null
+      current += char
+      continue
+    }
+
+    if (char === ';' && quote === null) {
+      parts.push(current.trim())
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  if (current.trim() !== '') {
+    parts.push(current.trim())
+  }
+
+  return parts
+}
+
+function stripContentDispositionQuotes(value) {
+  if (value.length < 2) {
+    return value
+  }
+
+  const first = value[0]
+  const last = value[value.length - 1]
+  if (!((first === '"' && last === '"') || (first === "'" && last === "'"))) {
+    return value
+  }
+
+  return value.slice(1, -1).replace(/\\(["\\])/g, '$1')
+}
+
+function parseContentDispositionParameters(disposition) {
+  const parameters = new Map()
+  const parts = splitContentDispositionParameters(disposition)
+
+  for (const part of parts.slice(1)) {
+    const equalsIndex = part.indexOf('=')
+    if (equalsIndex <= 0) {
+      continue
+    }
+
+    const name = part.slice(0, equalsIndex).trim().toLowerCase()
+    const value = stripContentDispositionQuotes(part.slice(equalsIndex + 1).trim())
+    if (name && value) {
+      parameters.set(name, value)
+    }
+  }
+
+  return parameters
+}
+
+function decodeContentDispositionFilenameStar(value) {
+  const match = /^([^']*)'[^']*'(.*)$/.exec(value)
+  if (!match) {
+    return null
+  }
+
+  const charset = match[1].trim().toLowerCase()
+  if (charset !== 'utf-8' && charset !== 'utf8') {
+    return null
+  }
+
+  try {
+    const filename = decodeURIComponent(match[2])
+    return filename.trim() ? filename : null
+  } catch {
+    return null
+  }
+}
+
+function parseContentDispositionFilename(disposition) {
+  if (!disposition) {
+    return null
+  }
+
+  const parameters = parseContentDispositionParameters(disposition)
+  const encodedFilename = parameters.get('filename*')
+  if (encodedFilename) {
+    const decodedFilename = decodeContentDispositionFilenameStar(encodedFilename)
+    if (decodedFilename) {
+      return decodedFilename
+    }
+  }
+
+  return parameters.get('filename') || null
+}
+
 /**
  * Downloads a file from the server and initiates browser download
  * @param {string} fileUrl - The URL to download from
@@ -232,11 +349,9 @@ async function downloadFile(fileUrl, defaultFilename) {
   
   let filename = defaultFilename
   const disposition = response.headers.get('Content-Disposition')
-  if (disposition && disposition.includes('filename=')) {
-    filename = disposition
-      .split('filename=')[1]
-      .replace(/["']/g, '')
-      .trim()
+  const dispositionFilename = parseContentDispositionFilename(disposition)
+  if (dispositionFilename) {
+    filename = dispositionFilename
   }
   
   // Process the blob and trigger download

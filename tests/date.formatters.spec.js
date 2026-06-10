@@ -8,7 +8,8 @@ import { formatDate, formatDateTime, formatTime } from '@/helpers/date.formatter
 describe('date.formatters', () => {
   describe('formatDate', () => {
     it('formats date values as DD.MM.YYYY', () => {
-      expect(formatDate('2026-06-10T12:30:15+03:00')).toBe('10.06.2026')
+      const value = new Date(2026, 5, 10, 12, 30, 15)
+      expect(formatDate(value)).toBe('10.06.2026')
     })
 
     it('returns empty string for empty date values', () => {

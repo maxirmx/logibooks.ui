@@ -866,7 +866,8 @@ describe('Register_EditDialog', () => {
         markedForExcise: 3,
         duplicates: 4,
         duplicate2ColorRejections: 5,
-        markedForNotifications: 6
+        markedForNotifications: 6,
+        updated: 7
       }
     }
 
@@ -902,6 +903,7 @@ describe('Register_EditDialog', () => {
       'Согласовано с акцизом:',
       'Согласовано с нотификацией:',
       'Дубликатов:',
+      'С предшествующими:',
       'Время загрузки:'
     ])
     toggle = wrapper
@@ -917,6 +919,7 @@ describe('Register_EditDialog', () => {
     expect(getReportValue(wrapper, 'Согласовано с акцизом')).toBe('3')
     expect(getReportValue(wrapper, 'Дубликатов')).toBe('4 (5)')
     expect(getReportValue(wrapper, 'Согласовано с нотификацией')).toBe('6')
+    expect(getReportValue(wrapper, 'С предшествующими')).toBe('7')
     expect(wrapper.text()).not.toContain('Таблица с номерами колонок')
     expect(wrapper.text()).not.toContain('Неподтверждённых дубликатов')
     expect(wrapper.text()).not.toContain('Режим обновления')

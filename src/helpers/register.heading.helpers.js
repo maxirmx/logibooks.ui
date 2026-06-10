@@ -28,18 +28,19 @@ export function formatRegisterInvoice(register, getTransportationDocument) {
 
 /**
  * Builds heading text for parcel list pages.
- * Example: "Номер сделки: DEAL-123 | ТСД: Авиа накладная 123 от 01.09.2025"
+ * Example with registerLabel "Реестр": "Реестр DEAL-123 (Авиа накладная 123)"
  * Falls back to placeholders when data missing.
  * @param {Object} register - Register item as loaded from API.
  * @param {Function} getTransportationDocument - Function providing document label.
+ * @param {string} registerLabel - Label to use before the register number.
  * @returns {string}
  */
-export function buildParcelListHeading(register, getTransportationDocument) {
-  if (!register) return 'Загрузка реестра...'
+export function buildParcelListHeading(register, getTransportationDocument, registerLabel = 'Сделка') {
+  if (!register) return 'Загрузка...'
   const dealNumberRaw = register.dealNumber
   const dealNumber = dealNumberRaw && String(dealNumberRaw).trim() !== '' ? String(dealNumberRaw).trim() : null
   const invoiceInfo = formatRegisterInvoice(register, getTransportationDocument)
-  const dealPart = `Сделка ${dealNumber || 'без номера'}`
+  const dealPart = `${registerLabel} ${dealNumber || 'без номера'}`
   const tsdPart = `${invoiceInfo || 'ТСД отсутствует'}`
   // Counts removed from heading; will be shown in tooltip instead.
   return `${dealPart} (${tsdPart})`

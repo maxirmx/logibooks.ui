@@ -19,9 +19,9 @@ describe('register.heading.helpers', () => {
       parcelsTotal: 15,
       placesTotal: 20
     }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument)
+    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Реестр')
     const invoice = formatRegisterInvoice(register, mockGetTransportationDocument)
-    expect(heading).toContain('Сделка DEAL-123 (')
+    expect(heading).toContain('Реестр DEAL-123 (')
     expect(heading).toContain(invoice)
     expect(heading).not.toContain('15/20')
   })
@@ -33,9 +33,9 @@ describe('register.heading.helpers', () => {
       invoiceDate: '2025-09-01',
       transportationTypeCode: 7
     }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument)
+    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Реестр')
     expect(heading).not.toContain(';')
-    expect(heading).toMatch(/Сделка DEAL-123 \(.*INV-45.*\)$/)
+    expect(heading).toMatch(/Реестр DEAL-123 \(.*INV-45.*\)$/)
   })
 
   it('builds heading without counts when invoice missing', () => {
@@ -44,8 +44,28 @@ describe('register.heading.helpers', () => {
       parcelsTotal: 5,
       placesTotal: 7
     }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument)
+    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Реестр')
     // Invoice placeholder present; counts not included
+    expect(heading).toBe('Реестр D1 (ТСД отсутствует)')
+  })
+
+  it('builds warehouse heading with party label', () => {
+    const register = {
+      dealNumber: 'D1',
+      parcelsTotal: 5,
+      placesTotal: 7
+    }
+    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Партия')
+
+    expect(heading).toBe('Партия D1 (ТСД отсутствует)')
+  })
+
+  it('keeps deal label by default', () => {
+    const register = {
+      dealNumber: 'D1'
+    }
+    const heading = buildParcelListHeading(register, mockGetTransportationDocument)
+
     expect(heading).toBe('Сделка D1 (ТСД отсутствует)')
   })
 
@@ -63,7 +83,7 @@ describe('register.heading.helpers', () => {
 
   it('returns loading message for null register', () => {
     const heading = buildParcelListHeading(null, mockGetTransportationDocument)
-    expect(heading).toBe('Загрузка реестра...')
+    expect(heading).toBe('Загрузка...')
   })
 
 })

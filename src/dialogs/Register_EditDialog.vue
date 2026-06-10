@@ -25,6 +25,8 @@ import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 
+const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
+
 const props = defineProps({
   id: { type: Number, required: false },
   create: { type: Boolean, default: false },
@@ -140,6 +142,14 @@ function formatDateInputValue(value) {
 function handleWarehouseArrivalDateInput(event, handleChange) {
   isWarehouseArrivalDateEdited.value = true
   handleChange(event.target.value || null)
+}
+
+function ensureDefaultOtherCountry() {
+  if (!item.value) return
+  const countryCode = item.value.theOtherCountryCode
+  if (countryCode === null || countryCode === undefined || countryCode === '') {
+    item.value.theOtherCountryCode = DEFAULT_OTHER_COUNTRY_CODE
+  }
 }
 
 const filteredCustomsProcedures = computed(() => {
@@ -263,6 +273,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
         item.value.warehouseId = 0
       }
+      ensureDefaultOtherCountry()
     } else {
       // Set default values for new records
       if (item.value.customsProcedureCode == null) {
@@ -286,6 +297,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
         item.value.warehouseId = 0
       }
+      ensureDefaultOtherCountry()
     }
 
 

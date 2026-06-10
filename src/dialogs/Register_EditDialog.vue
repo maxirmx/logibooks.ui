@@ -23,7 +23,7 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
-import { formatTime } from '@/helpers/date.formatters.js'
+import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -81,6 +81,7 @@ const isInitializing = ref(true)
 const isSubmitting = ref(false)
 const checkForDuplicates = ref(true)
 const isLoadReportExpanded = ref(false)
+const isWarehouseArrivalDateEdited = ref(false)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const warehouseOptions = computed(() => {
@@ -101,6 +102,45 @@ const loadReportToggleIcon = computed(() => (
 const loadReportToggleTooltip = computed(() => (
   isLoadReportExpanded.value ? 'Скрыть отчет загрузки' : 'Показать отчет загрузки'
 ))
+const uploadDateDisplay = computed(() => formatDate(item.value?.date))
+
+watch(
+  () => item.value?.warehouseArrivalDate,
+  () => {
+    isWarehouseArrivalDateEdited.value = false
+  }
+)
+
+function formatWarehouseArrivalDateInputValue(fieldValue) {
+  if (
+    !isWarehouseArrivalDateEdited.value &&
+    (fieldValue === null || fieldValue === undefined || fieldValue === '')
+  ) {
+    return formatDateInputValue(item.value?.warehouseArrivalDate)
+  }
+
+  return formatDateInputValue(fieldValue)
+}
+
+function formatDateInputValue(value) {
+  if (value === null || value === undefined || value === '') return ''
+  const trimmed = String(value).trim()
+  if (!trimmed) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function handleWarehouseArrivalDateInput(event, handleChange) {
+  isWarehouseArrivalDateEdited.value = true
+  handleChange(event.target.value || null)
+}
 
 const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
@@ -821,12 +861,15 @@ const loadReportFields = computed(() => {
           </div>
           <div class="form-group">
             <label for="warehouseArrivalDate" class="label">Дата прибытия:</label>
-            <Field 
-              name="warehouseArrivalDate" 
-              id="warehouseArrivalDate" 
-              type="date" 
-              class="form-control input" 
-            />
+            <Field name="warehouseArrivalDate" v-slot="{ field, handleChange }">
+              <input
+                id="warehouseArrivalDate"
+                type="date"
+                class="form-control input"
+                :value="formatWarehouseArrivalDateInputValue(field?.value)"
+                @input="(event) => handleWarehouseArrivalDateInput(event, handleChange)"
+              />
+            </Field>
           </div>
         </div>
 
@@ -837,7 +880,7 @@ const loadReportFields = computed(() => {
           </div>
           <div class="form-group">
             <span class="label">Дата загрузки:</span>
-            <div id="uploadDate" class="readonly-field">{{ item.date ? item.date.slice(0, 10) : '' }}</div>
+            <div id="uploadDate" class="readonly-field">{{ uploadDateDisplay }}</div>
           </div>
         </div>
 

@@ -108,6 +108,12 @@ const registerStatusesStore = createMockStore({
   ensureLoaded: vi.fn(() => Promise.resolve()),
   getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Unknown')
 })
+const mockIsAdmin = ref(true)
+const mockIsShiftLead = ref(false)
+const authStore = {
+  isAdmin: mockIsAdmin,
+  isShiftLead: mockIsShiftLead
+}
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -139,6 +145,7 @@ vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => compani
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
 vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
 vi.mock('@/stores/register.statuses.store.js', () => ({ useRegisterStatusesStore: () => registerStatusesStore }))
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authStore }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Simple stubs for vee-validate components
@@ -216,6 +223,13 @@ function getGroupByLabel(wrapper, text) {
     .find((g) => g.find('label').text().includes(text))
 }
 
+function getReportValue(wrapper, label) {
+  const field = wrapper
+    .findAll('.load-report-field')
+    .find((g) => g.find('.label').text().includes(label))
+  return field?.find('.load-report-value').text()
+}
+
 function createDeferred() {
   let resolve
   let reject
@@ -233,6 +247,8 @@ describe('Register_EditDialog', () => {
     vi.clearAllMocks()
     // Create a fresh copy of baseRegisterItem to avoid reference issues
     mockItem.value = JSON.parse(JSON.stringify(baseRegisterItem))
+    mockIsAdmin.value = true
+    mockIsShiftLead.value = false
     registerItems.value = []
     airportsStore.airports.value = [...baseAirports]
     warehousesStore.warehouses.value = [
@@ -752,6 +768,165 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.find('#checkForDuplicates').exists()).toBe(false)
+  })
+
+  it('does not render load report controls when register has no load report', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
+    const reportButtons = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .filter((button) => ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon')))
+    expect(reportButtons).toHaveLength(0)
+  })
+
+  it('renders load report collapsed by default and expands with approved labels', async () => {
+    const createdAt = '2026-06-10T12:30:15+03:00'
+    mockItem.value = {
+      ...baseRegisterItem,
+      loadReport: {
+        createdAt,
+        processed: 10,
+        failed: -1,
+        markedByPartner: 2,
+        markedForExcise: 3,
+        duplicates: 4,
+        duplicate2ColorRejections: 5,
+        markedForNotifications: 6
+      }
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Отчёт о загрузке файла реестра')
+    expect(wrapper.find('#register-load-report-body').exists()).toBe(false)
+
+    let toggle = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((button) => button.props('icon') === 'fa-solid fa-angles-down')
+    expect(toggle).toBeTruthy()
+    expect(toggle.props('tooltipText')).toBe('Показать отчет загрузки')
+
+    await wrapper.find('[data-testid="register-load-report-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('#register-load-report-body').exists()).toBe(true)
+    expect(wrapper.find('#register-load-report-body').classes()).toContain('form-row')
+    expect(wrapper.findAll('.load-report-field .label').map((label) => label.text())).toEqual([
+      'Обработано строк:',
+      'Ошибочных строк:',
+      'Исключено партнёром:',
+      'Согласовано с акцизом:',
+      'Согласовано с нотификацией:',
+      'Дубликатов:',
+      'Время загрузки:'
+    ])
+    toggle = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((button) => button.props('icon') === 'fa-solid fa-angles-up')
+    expect(toggle).toBeTruthy()
+    expect(toggle.props('tooltipText')).toBe('Скрыть отчет загрузки')
+
+    expect(getReportValue(wrapper, 'Время загрузки')).toBe(new Date(createdAt).toLocaleTimeString('ru-RU'))
+    expect(getReportValue(wrapper, 'Обработано строк')).toBe('10')
+    expect(getReportValue(wrapper, 'Ошибочных строк')).toBe('—')
+    expect(getReportValue(wrapper, 'Исключено партнёром')).toBe('2')
+    expect(getReportValue(wrapper, 'Согласовано с акцизом')).toBe('3')
+    expect(getReportValue(wrapper, 'Дубликатов')).toBe('4 (5)')
+    expect(getReportValue(wrapper, 'Согласовано с нотификацией')).toBe('6')
+    expect(wrapper.text()).not.toContain('Таблица с номерами колонок')
+    expect(wrapper.text()).not.toContain('Неподтверждённых дубликатов')
+    expect(wrapper.text()).not.toContain('Режим обновления')
+    expect(wrapper.text()).not.toContain('Обновлено посылок')
+
+    await wrapper.find('[data-testid="register-load-report-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('#register-load-report-body').exists()).toBe(false)
+    toggle = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((button) => button.props('icon') === 'fa-solid fa-angles-down')
+    expect(toggle).toBeTruthy()
+  })
+
+  it('does not render load report controls for users without administrator or shift lead role', async () => {
+    mockIsAdmin.value = false
+    mockIsShiftLead.value = false
+    mockItem.value = {
+      ...baseRegisterItem,
+      loadReport: {
+        createdAt: '2026-06-10T12:30:15+03:00',
+        processed: 10
+      }
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
+    const reportButtons = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .filter((button) => ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon')))
+    expect(reportButtons).toHaveLength(0)
+  })
+
+  it('renders load report controls for shift lead users', async () => {
+    mockIsAdmin.value = false
+    mockIsShiftLead.value = true
+    mockItem.value = {
+      ...baseRegisterItem,
+      loadReport: {
+        createdAt: '2026-06-10T12:30:15+03:00',
+        processed: 10,
+        duplicates: 4,
+        duplicate2ColorRejections: 0
+      }
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(true)
+    const toggle = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((button) => button.props('icon') === 'fa-solid fa-angles-down')
+    expect(toggle).toBeTruthy()
+
+    await wrapper.find('[data-testid="register-load-report-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(getReportValue(wrapper, 'Дубликатов')).toBe('4')
   })
 
   it('passes checkForDuplicates=true to upload when provided', async () => {

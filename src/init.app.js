@@ -64,7 +64,9 @@ import {
   faPersonCircleXmark,
   faPersonCircleCheck,
   faXmarksLines,
-  faAnglesRight
+  faAnglesRight,
+  faAnglesDown,
+  faAnglesUp
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -121,7 +123,9 @@ library.add(
   faPersonCircleXmark,
   faPersonCircleCheck,
   faXmarksLines,
-  faAnglesRight
+  faAnglesRight,
+  faAnglesDown,
+  faAnglesUp
 )
 
 import 'vuetify/styles'

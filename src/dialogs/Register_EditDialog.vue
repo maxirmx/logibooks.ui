@@ -7,8 +7,9 @@ import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
-import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, unref } from 'vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
@@ -22,6 +23,7 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
+import { formatTime } from '@/helpers/date.formatters.js'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -31,6 +33,7 @@ const props = defineProps({
 
 const alertStore = useAlertStore()
 
+const authStore = useAuthStore()
 const registersStore = useRegistersStore()
 const { item, uploadFile, ops } = storeToRefs(registersStore)
 
@@ -77,6 +80,7 @@ const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 const isSubmitting = ref(false)
 const checkForDuplicates = ref(true)
+const isLoadReportExpanded = ref(false)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const warehouseOptions = computed(() => {
@@ -88,6 +92,15 @@ const isWbrRegister = computed(() => item.value?.registerType === WBR_COMPANY_ID
 const isOzonRegister = computed(() => item.value?.registerType === OZON_COMPANY_ID)
 const isWarehouseCapableRegister = computed(() => isWbrRegister.value || isWbr2Register.value || isOzonRegister.value)
 const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
+const loadReport = computed(() => item.value?.loadReport ?? null)
+const canViewLoadReport = computed(() => Boolean(unref(authStore.isAdmin) || unref(authStore.isShiftLead)))
+const hasLoadReport = computed(() => canViewLoadReport.value && Boolean(loadReport.value))
+const loadReportToggleIcon = computed(() => (
+  isLoadReportExpanded.value ? 'fa-solid fa-angles-up' : 'fa-solid fa-angles-down'
+))
+const loadReportToggleTooltip = computed(() => (
+  isLoadReportExpanded.value ? 'Скрыть отчет загрузки' : 'Показать отчет загрузки'
+))
 
 const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
@@ -194,6 +207,12 @@ watch(
   },
   { immediate: true }
 )
+
+watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
+  if (!report || !canViewReport) {
+    isLoadReportExpanded.value = false
+  }
+})
 
     if (!props.create) {
       await registersStore.getById(props.id)
@@ -537,6 +556,53 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
+function toggleLoadReport() {
+  isLoadReportExpanded.value = !isLoadReportExpanded.value
+}
+
+function formatReportCounter(value) {
+  if (value === null || value === undefined || Number(value) === -1) {
+    return '—'
+  }
+
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue)
+    ? numericValue.toLocaleString('ru-RU')
+    : String(value)
+}
+
+function formatReportDuplicates(report) {
+  const duplicates = formatReportCounter(report.duplicates)
+  if (
+    report.duplicate2ColorRejections === null
+    || report.duplicate2ColorRejections === undefined
+    || Number(report.duplicate2ColorRejections) === -1
+  ) {
+    return duplicates
+  }
+
+  const unconfirmedDuplicates = Number(report.duplicate2ColorRejections)
+
+  return Number.isFinite(unconfirmedDuplicates) && unconfirmedDuplicates !== 0
+    ? `${duplicates} (${formatReportCounter(report.duplicate2ColorRejections)})`
+    : duplicates
+}
+
+const loadReportFields = computed(() => {
+  const report = loadReport.value
+  if (!report) return []
+
+  return [
+    { key: 'processed', label: 'Обработано строк', value: formatReportCounter(report.processed) },
+    { key: 'failed', label: 'Ошибочных строк', value: formatReportCounter(report.failed) },
+    { key: 'markedByPartner', label: 'Исключено партнёром', value: formatReportCounter(report.markedByPartner) },
+    { key: 'markedForExcise', label: 'Согласовано с акцизом', value: formatReportCounter(report.markedForExcise) },
+    { key: 'markedForNotifications', label: 'Согласовано с нотификацией', value: formatReportCounter(report.markedForNotifications) },
+    { key: 'duplicates', label: 'Дубликатов', value: formatReportDuplicates(report) },
+    { key: 'createdAt', label: 'Время загрузки', value: formatTime(report.createdAt) || '—' }
+  ]
+})
+
 </script>
 
 <template>
@@ -824,6 +890,40 @@ function getCustomerName(customerId) {
             </label>
           </div>
         </div>
+
+        <div
+          v-if="hasLoadReport"
+          class="load-report-section"
+          data-testid="register-load-report"
+        >
+          <div class="load-report-header">
+            <h2 class="load-report-title">Отчёт о загрузке файла реестра</h2>
+            <ActionButton
+              :item="{}"
+              :icon="loadReportToggleIcon"
+              :iconSize="'2x'"
+              :tooltip-text="loadReportToggleTooltip"
+              :aria-expanded="isLoadReportExpanded"
+              aria-controls="register-load-report-body"
+              data-testid="register-load-report-toggle"
+              @click="toggleLoadReport"
+            />
+          </div>
+          <div
+            v-if="isLoadReportExpanded"
+            id="register-load-report-body"
+            class="form-row load-report-grid"
+          >
+            <div
+              v-for="field in loadReportFields"
+              :key="field.key"
+              class="form-group load-report-field"
+            >
+              <span class="label">{{ field.label }}:</span>
+              <div class="readonly-field load-report-value">{{ field.value }}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- actions moved to header -->
@@ -910,6 +1010,38 @@ function getCustomerName(customerId) {
 .form-row,
 .form-group {
   overflow: visible !important;
+}
+
+.load-report-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d7dbe1;
+}
+
+.load-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.load-report-title {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.load-report-grid {
+  margin-top: 0.75rem;
+}
+
+.load-report-field {
+  min-width: 0;
+}
+
+.load-report-value {
+  min-height: 2.25rem;
 }
 
 /* On small screens, ensure full width for heading and buttons flow below */

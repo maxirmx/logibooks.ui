@@ -16,3 +16,27 @@ export function formatDate(dateStr) {
   const yyyy = d.getFullYear()
   return `${dd}.${mm}.${yyyy}`
 }
+
+/**
+ * Format date-time value with Russian locale.
+ * @param {string|Date|null} dateValue - Date-time string or Date object to format
+ * @returns {string} Localized date-time string, or empty string if input is falsy
+ */
+export function formatDateTime(dateValue) {
+  if (!dateValue) return ''
+  const d = new Date(dateValue)
+  if (isNaN(d)) return dateValue
+  return d.toLocaleString('ru-RU')
+}
+
+/**
+ * Format date-time value as local time with Russian locale.
+ * @param {string|Date|null} dateValue - Date-time string or Date object to format
+ * @returns {string} Localized time string, or empty string if input is falsy
+ */
+export function formatTime(dateValue) {
+  if (!dateValue) return ''
+  const d = new Date(dateValue)
+  if (isNaN(d)) return dateValue
+  return d.toLocaleTimeString('ru-RU')
+}

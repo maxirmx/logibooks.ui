@@ -118,7 +118,7 @@ const activeRegisterItem = computed(() => {
 })
 const basicHeading = computed(() => {
   if (!registerId.value) return 'Реестр не указан'
-  if (registerLoading.value || !activeRegisterItem.value) return 'Загрузка реестра...'
+  if (registerLoading.value || !activeRegisterItem.value) return 'Загрузка...'
   return buildParcelListHeading(activeRegisterItem.value, (id) => registersStore.getTransportationDocument(id))
 })
 const scopeHeading = computed(() => {

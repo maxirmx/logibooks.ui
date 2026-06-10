@@ -175,8 +175,8 @@ const runningAction = ref(false)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const registerHeading = computed(() => {
-  if (registerLoading.value) return 'Загрузка реестра...'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
+  if (registerLoading.value) return 'Загрузка...'
+  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id), 'Реестр')
 })
 
 async function fetchRegister() {

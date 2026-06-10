@@ -33,9 +33,9 @@ const isExporting = ref(false)
 const registerLoading = ref(true)
 
 const registerHeading = computed(() => {
-  if (registerLoading.value) return 'Загрузка реестра...'
+  if (registerLoading.value) return 'Загрузка...'
   if (registersStore.item?.error) return 'Реестр не загружен'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id))
+  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id), 'Партия')
 })
 const pageHeading = computed(() => `Стикеры не в реестре | ${registerHeading.value}`)
 

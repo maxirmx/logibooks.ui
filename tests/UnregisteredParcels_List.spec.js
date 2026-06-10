@@ -132,7 +132,7 @@ describe('UnregisteredParcels_List.vue', () => {
 
     await resolveAll()
 
-    expect(wrapper.find('.primary-heading').text()).toBe('Стикеры не в реестре | Сделка 3240 (CMR 211875606)')
+    expect(wrapper.find('.primary-heading').text()).toBe('Стикеры не в реестре | Партия 3240 (CMR 211875606)')
     expect(getById).toHaveBeenCalledWith(5)
     expect(getTransportationDocument).toHaveBeenCalledWith(1)
   })

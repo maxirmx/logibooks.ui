@@ -95,6 +95,19 @@ const isWbrRegister = computed(() => item.value?.registerType === WBR_COMPANY_ID
 const isOzonRegister = computed(() => item.value?.registerType === OZON_COMPANY_ID)
 const isWarehouseCapableRegister = computed(() => isWbrRegister.value || isWbr2Register.value || isOzonRegister.value)
 const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
+const selectedCustomsProcedure = computed(() => {
+  const procedureCode = Number(item.value?.customsProcedureCode)
+  return ops.value?.customsProcedures?.find((procedure) => Number(procedure.value) === procedureCode) || null
+})
+const fixedCompanyId = computed(() => {
+  if (isOzonRegister.value && selectedCustomsProcedure.value?.isGtc) {
+    return GTC_COMPANY_ID
+  }
+  if (isWbr2Register.value) {
+    return WBR_COMPANY_ID
+  }
+  return item.value?.registerType || item.value?.companyId || null
+})
 const loadReport = computed(() => item.value?.loadReport ?? null)
 const canViewLoadReport = computed(() => Boolean(unref(authStore.isAdmin) || unref(authStore.isShiftLead)))
 const hasLoadReport = computed(() => canViewLoadReport.value && Boolean(loadReport.value))
@@ -155,13 +168,13 @@ function ensureDefaultOtherCountry() {
 const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
   if (!Array.isArray(all)) return []
-  if (isGtcRegister.value) {
-    return all.filter(p => p.isGtc === true)
-  }
-  else {
-    return all.filter(p => p.isGtc !== true)
-  }
-
+  const registerType = item.value?.registerType
+  return all.filter((procedure) => {
+    if (Array.isArray(procedure.allowedRegisterTypes)) {
+      return procedure.allowedRegisterTypes.map(Number).includes(Number(registerType))
+    }
+    return isGtcRegister.value ? procedure.isGtc === true : procedure.isGtc !== true
+  })
 })
 
 function getTransportationTypeByValue(typeValue) {
@@ -411,6 +424,7 @@ const typesLoaded = computed(
 )
 
 function updateDirection() {
+  item.value.companyId = fixedCompanyId.value
   if (isExport.value) {
     item.value.destCountryCode = item.value.theOtherCountryCode
     item.value.origCountryCode = 643
@@ -447,10 +461,13 @@ watch(typesLoaded, (loaded) => {
 })
 
 function handleProcedureChange(e) {
-  item.value.customsProcedureCode = parseInt(e.target.value)
-  const proc = ops.value?.customsProcedures?.find((p) => Number(p.value) === item.value.customsProcedureCode)
-  isExport.value = proc?.isExport
-  isRe.value = proc?.isRe || false  
+  const procedureCode = parseNumber(e.target.value, null)
+  item.value.customsProcedureCode = procedureCode
+  const proc = procedureCode === null
+    ? null
+    : ops.value?.customsProcedures?.find((p) => Number(p.value) === procedureCode)
+  isExport.value = Boolean(proc?.isExport)
+  isRe.value = Boolean(proc?.isRe)
   updateDirection()
 }
 

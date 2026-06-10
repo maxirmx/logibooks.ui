@@ -240,7 +240,7 @@ function splitContentDispositionParameters(disposition) {
       continue
     }
 
-    if ((char === '"' || char === "'") && quote === null) {
+    if (char === '"' && quote === null) {
       quote = char
       current += char
       continue

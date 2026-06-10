@@ -549,6 +549,15 @@ describe('fetchWrapper', () => {
       expect(anchor.download).not.toContain('filename');
       expect(anchor.download).not.toContain('UTF-8');
     });
+
+    it('should keep apostrophes in unquoted filename parameters', async () => {
+      mockDownloadResponse("attachment; filename=foo'bar.txt; size=123");
+
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt');
+
+      const anchor = global.document.createElement.mock.results[0].value;
+      expect(anchor.download).toBe("foo'bar.txt");
+    });
     
     it('should throw error if download fails', async () => {
       

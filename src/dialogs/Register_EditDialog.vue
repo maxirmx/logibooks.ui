@@ -463,10 +463,9 @@ watch(typesLoaded, (loaded) => {
 function handleProcedureChange(e) {
   item.value.customsProcedureCode = parseInt(e.target.value)
   const proc = ops.value?.customsProcedures?.find((p) => Number(p.value) === item.value.customsProcedureCode)
-  isExport.value = proc?.isExport
-  isRe.value = proc?.isRe || false  
-  item.value.companyId = fixedCompanyId.value
-  updateDirection()
+isExport.value = proc?.isExport
+isRe.value = proc?.isRe || false
+updateDirection()
 }
 
 function getTitle() {

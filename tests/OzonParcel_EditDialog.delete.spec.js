@@ -27,7 +27,12 @@ vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => en
 vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] }) }))
 vi.mock('@/stores/parcel.views.store.js', () => ({ useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue() }) }))
-vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => ({ nextParcels: vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null }) }) }))
+const registersMock = {
+  item: ref({ id: 1, customsProcedureCode: 10 }),
+  getById: vi.fn().mockResolvedValue({ id: 1, customsProcedureCode: 10 }),
+  nextParcels: vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null })
+}
+vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersMock }))
 
 // Mock auth and alert stores
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ selectedParcelId: null }) }))
@@ -50,6 +55,7 @@ describe('OzonParcel_EditDialog delete flow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
+    registersMock.item.value = { id: 1, customsProcedureCode: 10 }
   })
 
   it('calls deleteImage when user confirms', async () => {

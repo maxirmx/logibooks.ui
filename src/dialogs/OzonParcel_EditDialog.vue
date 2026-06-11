@@ -17,7 +17,7 @@ import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { ozonRegisterColumnTitles, ozonRegisterColumnTooltips } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
@@ -53,8 +53,12 @@ const props = defineProps({
   id: { type: Number, required: true }
 })
 
+const CUSTOMS_PROCEDURE_IMPORT = 40
+const CUSTOMS_PROCEDURE_REEXPORT = 31
+
 // track current parcel id so we can swap inline without changing route
 const currentParcelId = ref(props.id)
+const currentRegisterId = ref(props.registerId)
 const isComponentMounted = ref(true)
 const route = useRoute()
 
@@ -75,6 +79,7 @@ await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
 await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
+await registersStore.getById(currentRegisterId.value)
 // load initial parcel by currentParcelId
 await parcelsStore.getById(currentParcelId.value)
 await parcelViewsStore.add(currentParcelId.value)
@@ -94,10 +99,17 @@ const {
 authStore.selectedParcelId = currentParcelId.value
 
 const { item } = storeToRefs(parcelsStore)
+const { item: registerItem } = storeToRefs(registersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
+
+const showImportConsigneeFields = computed(() => {
+  const customsProcedureCode = Number(registerItem.value?.customsProcedureCode)
+  return customsProcedureCode === CUSTOMS_PROCEDURE_IMPORT ||
+    customsProcedureCode === CUSTOMS_PROCEDURE_REEXPORT
+})
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -148,7 +160,7 @@ function goToParcelsList() {
   }
 
   router.push({
-    path: `/registers/${props.registerId}/parcels`,
+    path: `/registers/${currentRegisterId.value}/parcels`,
     query
   })
 }
@@ -194,7 +206,11 @@ const schema = Yup.object().shape({
   invoiceDate: Yup.date().nullable(),
   weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
   quantity: Yup.number().nullable().min(0, 'Количество не может быть отрицательным'),
-  unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
+  unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной'),
+  phone: Yup.string()
+    .nullable()
+    .matches(/^\+?\d{7,15}$/, { message: 'Неверный формат телефона', excludeEmptyString: true }),
+  email: Yup.string().nullable().email('Неверный формат email')
 })
 
 async function deleteProductImage(values) {
@@ -311,7 +327,7 @@ async function onSubmit(values, useTheNext = false) {
       initNextParcelsPromise(currentParcelId.value)
 
       // update URL without remount
-      const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
+      const newUrl = `/registers/${currentRegisterId.value}/parcels/edit/${nextParcel.id}`
       router.replace(newUrl)
 
       // fetch full parcel data 
@@ -348,6 +364,12 @@ async function onBack(values) {
     const prevParcel = await parcelViewsStore.back()
 
     if (prevParcel) {
+      const prevRegisterId = Number(prevParcel.registerId ?? currentRegisterId.value)
+      if (prevRegisterId !== currentRegisterId.value) {
+        currentRegisterId.value = prevRegisterId
+        await registersStore.getById(prevRegisterId)
+      }
+
       // Inline swap to previous parcel: preview -> set item, update id and auth
       item.value = prevParcel
       currentParcelId.value = prevParcel.id
@@ -358,7 +380,7 @@ async function onBack(values) {
 
       // fetch full parcel data in background
       // update URL without remount
-      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
+      const prevUrl = `/registers/${currentRegisterId.value}/parcels/edit/${prevParcel.id}`
       router.replace(prevUrl)
 
     } else {
@@ -545,11 +567,26 @@ async function onLookup(values) {
           <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
+          <OzonFormField v-if="showImportConsigneeFields" name="inn" :errors="errors" :fullWidth="false" />
+          <OzonFormField v-else name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
-        <div class="form-row">
-          <OzonFormField name="passportSeries" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
-        </div>
+        <template v-if="showImportConsigneeFields">
+          <div class="form-row">
+            <OzonFormField name="passportSeries" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="passportIssueDate" type="date" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="passportIssuedBy" :errors="errors" :fullWidth="false" />
+          </div>
+          <div class="form-row">
+            <OzonFormField name="phone" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="email" :errors="errors" :fullWidth="false" />
+          </div>
+          <div class="form-row">
+            <OzonFormField name="postalCode" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="city" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="address" :errors="errors" :fullWidth="false" />
+          </div>
+        </template>
       </div>
       
         <!-- DTag -->

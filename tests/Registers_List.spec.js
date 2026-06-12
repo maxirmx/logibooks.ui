@@ -8,7 +8,9 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
+import ActionButton from '@/components/ActionButton.vue'
 import router from '@/router'
 
 let lastRegisterActions = null
@@ -41,17 +43,22 @@ const uploadFn = vi.fn()
 const setOrderStatusesFn = vi.fn()
 const getCompaniesAll = vi.fn()
 const getOrderStatusesAll = vi.fn()
+const ensureOrderStatusesLoadedFn = vi.fn().mockResolvedValue()
 const getCountriesAll = vi.fn()
 const countriesEnsureLoadedFn = vi.fn().mockResolvedValue(mockCountries.value)
 const ensureOpsLoadedFn = vi.fn().mockResolvedValue()
 const generateFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertErrorFn = vi.fn()
+const alertClearFn = vi.fn()
+const mockAlert = ref(null)
 const validateFn = vi.fn()
 const getValidationProgressFn = vi.fn()
 const cancelValidationFn = vi.fn()
 const removeFn = vi.fn()
 const confirmMock = vi.fn()
+const mockIsShiftLeadPlus = ref(false)
+const mockIsSrLogistPlus = ref(false)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -78,6 +85,8 @@ vi.mock('pinia', async () => {
       } else if (store.airports !== undefined && store.getAll === getAirportsAll) {
         // airports store
         return { airports: mockAirports }
+      } else if (store.alert !== undefined) {
+        return { alert: store.alert }
       } else {
         // auth store or other stores - return safe defaults
         return {
@@ -90,8 +99,8 @@ vi.mock('pinia', async () => {
           registers_wh_sort_by: ref([{ key: 'warehouseArrivalDate', order: 'asc' }]),
           registers_wh_page: ref(3),
           alert: ref(null),
-          isShiftLeadPlus: ref(false),
-          isSrLogistPlus: ref(false),
+          isShiftLeadPlus: mockIsShiftLeadPlus,
+          isSrLogistPlus: mockIsSrLogistPlus,
           isWhManagerPlus: ref(false),
           hasWhRole: ref(false)
         }
@@ -134,7 +143,7 @@ vi.mock('@/stores/registers.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    ensureLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: ensureOrderStatusesLoadedFn,
     parcelStatuses: mockOrderStatuses
   })
 }))
@@ -178,6 +187,8 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
+    alert: mockAlert,
+    clear: alertClearFn,
     success: alertSuccessFn,
     error: alertErrorFn
   })
@@ -193,8 +204,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_wh_search: ref('warehouse search'),
     registers_wh_sort_by: ref([{ key: 'warehouseArrivalDate', order: 'asc' }]),
     registers_wh_page: ref(3),
-    isShiftLeadPlus: ref(false),
-    isSrLogistPlus: ref(false),
+    isShiftLeadPlus: mockIsShiftLeadPlus,
+    isSrLogistPlus: mockIsSrLogistPlus,
     isWhManagerPlus: ref(false),
     hasWhRole: ref(false)
   })
@@ -221,8 +232,12 @@ describe('Registers_List.vue', () => {
     mockCountries.value = []
     mockAirports.value = []
     mockOps.value = { customsProcedures: [], transportationTypes: [] }
-    registersStore.error.value = null
+    registersStore.error = ref(null)
+    mockAlert.value = null
+    mockIsShiftLeadPlus.value = false
+    mockIsSrLogistPlus.value = false
     getAirportsAll.mockClear()
+    ensureOrderStatusesLoadedFn.mockClear()
     ensureOpsLoadedFn.mockClear()
   })
 
@@ -298,6 +313,12 @@ describe('Registers_List.vue', () => {
       expect(customerName).toBe('Неизвестно')
     })
 
+    it('returns "Неизвестно" when a company has no usable display name', () => {
+      mockCompanies.value = [{ id: 4, shortName: '', name: '' }]
+      const customerName = wrapper.vm.getCustomerName(4)
+      expect(customerName).toBe('Неизвестно')
+    })
+
     it('returns "Неизвестно" when companies array is empty', () => {
       mockCompanies.value = []
       const customerName = wrapper.vm.getCustomerName(1)
@@ -368,9 +389,57 @@ describe('Registers_List.vue', () => {
 
       expect(wrapper.vm.getCountryDisplayName(item, item.origCountryCode, item.departureAirportId)).toBe('Австралия')
     })
+
+    it('covers country and airport fallbacks', () => {
+      mockCountries.value = [
+        { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }
+      ]
+      mockOps.value = {
+        customsProcedures: [],
+        transportationTypes: [
+          { value: 2, name: 'Авиа', document: 'AWB', isAvia: true }
+        ]
+      }
+      mockAirports.value = []
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      expect(wrapper.vm.getCountryDisplayName({}, null, null)).toBe('Неизвестно')
+      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 643, null)).toBe('Россия')
+      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 999, null)).toBe(999)
+      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 36, null)).toBe('Австралийский Союз')
+
+      mockCountries.value = [{ isoNumeric: 156 }]
+      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 156, null)).toBe(156)
+
+      mockCountries.value = [{ isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }]
+      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 2 }, 36, null)).toBe('Австралийский Союз')
+
+      mockOps.value = { customsProcedures: [], transportationTypes: null }
+      mockAirports.value = null
+      expect(wrapper.vm.isAviaTransportation({ transportationTypeCode: 2 })).toBe(false)
+      expect(wrapper.vm.getAirportIata(0)).toBeNull()
+      expect(wrapper.vm.getAirportIata(10)).toBeNull()
+    })
   })
 
   describe('component integration', () => {
+    it('loads paperwork registers explicitly', async () => {
+      mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+
+      expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+    })
+
     it('displays customer names correctly when items and companies are present', async () => {
       // Set up mock companies
       mockCompanies.value = [
@@ -405,6 +474,54 @@ describe('Registers_List.vue', () => {
       // Test that getCustomerName works with the mock data
       expect(wrapper.vm.getCustomerName(1)).toBe('РВБ')
       expect(wrapper.vm.getCustomerName(2)).toBe('ООО "Интернет решения"')
+    })
+
+    it('reports initialization failures', async () => {
+      countriesEnsureLoadedFn.mockRejectedValueOnce(new Error('countries failed'))
+
+      mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+
+      expect(alertErrorFn).toHaveBeenCalledWith('countries failed')
+    })
+
+    it('reports fallback initialization error text for non-error failures', async () => {
+      countriesEnsureLoadedFn.mockRejectedValueOnce('countries failed')
+
+      mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+
+      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при загрузке данных')
+    })
+
+    it('stops initialization work after unmounting during initial load', async () => {
+      let resolveStatuses
+      ensureOrderStatusesLoadedFn.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveStatuses = resolve
+      }))
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+      await wrapper.vm.$nextTick()
+
+      wrapper.unmount()
+      resolveStatuses()
+      await flushPromises()
+
+      expect(countriesEnsureLoadedFn).not.toHaveBeenCalled()
     })
   })
 
@@ -450,6 +567,33 @@ describe('Registers_List.vue', () => {
       const cell = wrapper.find('.open-parcels-link')
       await cell.trigger('click')
       expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
+    })
+
+    it('renders bookmark marker for lookup-by-article registers', async () => {
+      mockItems.value = [
+        {
+          id: 1,
+          dealNumber: 'D-1',
+          lookupByArticle: true
+        }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: {
+            ...vuetifyStubs,
+            'font-awesome-icon': {
+              template: '<i v-bind="$attrs" data-testid="fa-icon"></i>',
+              props: ['icon'],
+              inheritAttrs: false
+            }
+          }
+        }
+      })
+
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.find('.bookmark-icon').exists()).toBe(true)
     })
 
     it('edits register when sender cell is clicked', async () => {
@@ -504,6 +648,15 @@ describe('Registers_List.vue', () => {
 
         expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
         expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('keeps selected upload type when no file input is mounted', async () => {
+        wrapper.vm.fileInput = null
+
+        await wrapper.vm.startRegisterUpload(OZON_COMPANY_ID)
+
+        expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
+        expect(alertErrorFn).not.toHaveBeenCalled()
       })
 
       it('shows error when trying to start upload without customer', async () => {
@@ -702,6 +855,15 @@ describe('Registers_List.vue', () => {
       expect(removeFn).not.toHaveBeenCalled()
     })
 
+    it('does not open confirmation while another action is running', async () => {
+      wrapper.vm.runningAction = true
+
+      await wrapper.vm.deleteRegister({ id: 5, fileName: 'busy.xlsx' })
+
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(removeFn).not.toHaveBeenCalled()
+    })
+
     it('handles delete error', async () => {
      
       confirmMock.mockResolvedValue(true)
@@ -711,6 +873,15 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.deleteRegister(item)
 
       expect(removeFn).toHaveBeenCalledWith(item.id)
+    })
+
+    it('handles delete errors without a message', async () => {
+      confirmMock.mockResolvedValue(true)
+      removeFn.mockRejectedValueOnce({})
+
+      await wrapper.vm.deleteRegister({ id: 6, fileName: 'file.xlsx' })
+
+      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении реестра')
     })
   })
 
@@ -774,6 +945,9 @@ describe('Registers_List.vue', () => {
       expect(sortableByKey.weight).toBe(true)
       expect(sortableByKey.price).toBe(true)
       expect(sortableByKey.date).toBe(true)
+      expect(sortableByKey.statusId).toBeUndefined()
+      expect(sortableByKey.warehouseId).toBeUndefined()
+      expect(sortableByKey.warehouseArrivalDate).toBeUndefined()
     })
 
     it('aligns numeric headers with numeric cells', () => {
@@ -793,6 +967,133 @@ describe('Registers_List.vue', () => {
       expect(headersByKey.parcelsTotal.width).toBe('150px')
       expect(headersByKey.weight.width).toBe('220px')
       expect(headersByKey.price.width).toBe('240px')
+    })
+
+    it('does not render warehouse-only actions', () => {
+      mockItems.value = [{ id: 1, warehouseId: 10 }]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const actionTooltips = wrapper.findAllComponents(ActionButton).map(button =>
+        String(button.props('tooltipText') || '')
+      )
+
+      expect(actionTooltips).not.toContain('Создать задание на сканирование')
+      expect(actionTooltips).not.toContain('Стикеры не в реестре')
+      expect(wrapper.text()).not.toContain('Создать реестр возврата')
+    })
+
+    it('renders delete action for shift leads', () => {
+      mockIsShiftLeadPlus.value = true
+      mockItems.value = [{ id: 1, fileName: 'reg.xlsx' }]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const actionTooltips = wrapper.findAllComponents(ActionButton).map(button =>
+        String(button.props('tooltipText') || '')
+      )
+
+      expect(actionTooltips).toContain('Удалить реестр')
+    })
+
+    it('updates search and table controls through rendered v-model bindings', async () => {
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+      await wrapper.find('[data-testid="v-text-field"] input').setValue('new paperwork search')
+      expect(wrapper.vm.localSearch).toBe('new paperwork search')
+
+      const table = wrapper.findComponent({ name: 'v-data-table-server' })
+      table.vm.$emit('update:itemsPerPage', 75)
+      table.vm.$emit('update:page', 5)
+      table.vm.$emit('update:sortBy', [{ key: 'price', order: 'desc' }])
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.registers_per_page).toBe(75)
+      expect(wrapper.vm.registers_page).toBe(5)
+      expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'price', order: 'desc' }])
+    })
+
+    it('renders bulk edit controls and applies or cancels status changes', async () => {
+      mockItems.value = [{ id: 1 }]
+      mockIsSrLogistPlus.value = true
+      setOrderStatusesFn.mockResolvedValue()
+      getAll.mockResolvedValue()
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      let actionButtons = wrapper.findAllComponents(ActionButton)
+      let bulkButton = actionButtons.find(button =>
+        String(button.props('tooltipText') || '').includes('Изменить статус')
+      )
+
+      await bulkButton.find('button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.find('[data-testid="v-select"]').exists()).toBe(true)
+      const select = wrapper.findComponent(vuetifyStubs['v-select'])
+      select.vm.$emit('update:modelValue', 6)
+      await wrapper.vm.$nextTick()
+
+      actionButtons = wrapper.findAllComponents(ActionButton)
+      const cancelButton = actionButtons.find(button =>
+        button.props('tooltipText') === 'Отменить'
+      )
+      await cancelButton.find('button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      actionButtons = wrapper.findAllComponents(ActionButton)
+      bulkButton = actionButtons.find(button =>
+        String(button.props('tooltipText') || '').includes('Изменить статус')
+      )
+      await bulkButton.find('button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      wrapper.vm.setSelectedStatusId(1, 5)
+      await wrapper.vm.$nextTick()
+
+      actionButtons = wrapper.findAllComponents(ActionButton)
+      const applyButton = actionButtons.find(button =>
+        button.props('tooltipText') === 'Применить статус'
+      )
+      await applyButton.find('button').trigger('click')
+      await flushPromises()
+
+      expect(setOrderStatusesFn).toHaveBeenCalledWith(1, 5)
+      expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+      expect(wrapper.vm.isInEditMode(1)).toBe(false)
+    })
+
+    it('shows and clears alert messages', async () => {
+      mockAlert.value = { type: 'alert-danger', message: 'Visible alert' }
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      expect(wrapper.text()).toContain('Visible alert')
+
+      await wrapper.find('.close').trigger('click')
+
+      expect(alertClearFn).toHaveBeenCalled()
     })
 
     it('passes the current sort model to the server table', async () => {
@@ -895,7 +1196,7 @@ describe('Registers_List.vue', () => {
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     getAll: getOrderStatusesAll,
-    ensureLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: ensureOrderStatusesLoadedFn,
     parcelStatuses: mockOrderStatuses
   })
 }))

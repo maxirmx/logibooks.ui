@@ -66,7 +66,8 @@ import {
   faXmarksLines,
   faAnglesRight,
   faAnglesDown,
-  faAnglesUp
+  faAnglesUp,
+  faPersonWalkingArrowLoopLeft
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -125,7 +126,8 @@ library.add(
   faXmarksLines,
   faAnglesRight,
   faAnglesDown,
-  faAnglesUp
+  faAnglesUp,
+  faPersonWalkingArrowLoopLeft
 )
 
 import 'vuetify/styles'

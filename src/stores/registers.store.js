@@ -202,6 +202,53 @@ export const useRegistersStore = defineStore('registers', () => {
     return res
   }
 
+  async function getReturnRegisterPairs(warehouseId) {
+    loading.value = true
+    error.value = null
+    try {
+      const params = new URLSearchParams({ warehouseId: String(warehouseId) })
+      return await fetchWrapper.get(`${baseUrl}/return-register/pairs?${params.toString()}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function getReturnRegisterSourceRegisters({ warehouseId, senderCompanyId, receiverCompanyId }) {
+    loading.value = true
+    error.value = null
+    try {
+      const params = new URLSearchParams({
+        warehouseId: String(warehouseId),
+        senderCompanyId: String(senderCompanyId),
+        receiverCompanyId: String(receiverCompanyId)
+      })
+      return await fetchWrapper.get(`${baseUrl}/return-register/registers?${params.toString()}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createReturnRegister(payload) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetchWrapper.post(`${baseUrl}/return-register`, payload)
+      setDestinationField(response)
+      return response
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function setParcelStatuses(registerId, statusId) {
     loading.value = true
     error.value = null
@@ -601,6 +648,9 @@ export const useRegistersStore = defineStore('registers', () => {
     upload,
     getById,
     update,
+    getReturnRegisterPairs,
+    getReturnRegisterSourceRegisters,
+    createReturnRegister,
     setParcelStatuses,
     validate,
     getValidationProgress,

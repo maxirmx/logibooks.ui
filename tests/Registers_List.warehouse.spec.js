@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -217,6 +217,23 @@ describe('Registers_List.vue in warehouse mode', () => {
       String(button.props('tooltipText') || '').includes('в партии')
     )
     expect(hasWarehouseTooltip).toBe(true)
+  })
+
+  it('shows return-register action and routes to creation view', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const returnButton = actionButtons.find(button =>
+      button.props('tooltipText') === 'Создать реестр возврата'
+    )
+
+    expect(returnButton).toBeTruthy()
+
+    const router = (await import('@/router')).default
+    await returnButton.find('button').trigger('click')
+    expect(router.push).toHaveBeenCalledWith('/register/return')
   })
 
   it('uses warehouse-specific table headers', async () => {

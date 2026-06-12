@@ -598,6 +598,86 @@ describe('registers store', () => {
       expect(store.items[0].senderId).toBe(200)
     })
   })
+
+  describe('return register methods', () => {
+    it('requests return-register pairs by warehouse', async () => {
+      const response = [{ senderCompanyId: 2, receiverCompanyId: 3 }]
+      fetchWrapper.get.mockResolvedValue(response)
+
+      const store = useRegistersStore()
+      const result = await store.getReturnRegisterPairs(12)
+
+      expect(result).toBe(response)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/return-register/pairs?warehouseId=12`)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('requests source registers by warehouse and pair', async () => {
+      const response = [{ id: 7 }]
+      fetchWrapper.get.mockResolvedValue(response)
+
+      const store = useRegistersStore()
+      const result = await store.getReturnRegisterSourceRegisters({
+        warehouseId: 12,
+        senderCompanyId: 2,
+        receiverCompanyId: 3
+      })
+
+      expect(result).toBe(response)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/return-register/registers?warehouseId=12&senderCompanyId=2&receiverCompanyId=3`
+      )
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('creates a return register and applies destination fields to the response', async () => {
+      const response = {
+        id: 99,
+        customsProcedureCode: 1,
+        companyId: 2,
+        theOtherCompanyId: 3,
+        theOtherCountryCode: 860
+      }
+      const payload = {
+        warehouseId: 12,
+        senderCompanyId: 2,
+        receiverCompanyId: 3,
+        registerIds: [7, 8]
+      }
+      fetchWrapper.post.mockResolvedValue(response)
+
+      const store = useRegistersStore()
+      store.ops.customsProcedures = [{ value: 1, name: 'Возврат', isExport: false, charCode: '01' }]
+      const result = await store.createReturnRegister(payload)
+
+      expect(result).toBe(response)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/return-register`, payload)
+      expect(result.destination).toBe('in')
+      expect(result.senderId).toBe(3)
+      expect(result.recipientId).toBe(2)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('stores and rethrows return-register request errors', async () => {
+      const error = new Error('return register failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      await expect(store.createReturnRegister({
+        warehouseId: 12,
+        senderCompanyId: 2,
+        receiverCompanyId: 3,
+        registerIds: [7]
+      })).rejects.toThrow('return register failed')
+
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+  })
+
   describe('upload method', () => {
     it('uploads file via postFile with required parameters', async () => {
       const file = new File(['data'], 'test.xlsx')

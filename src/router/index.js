@@ -470,6 +470,12 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/register/return',
+      name: 'Создание реестра возврата',
+      component: () => import('@/views/ReturnRegister_View.vue'),
+      meta: { reqWhManagerRole: true, hideSidebar: true }
+    },
+    {
       path: '/scanner/wd4',
       name: 'Настройки WD4',
       component: () => import('@/views/Wd4Scanner_View.vue'),

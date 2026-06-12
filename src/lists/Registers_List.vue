@@ -320,6 +320,10 @@ function startRegisterUpload(registerType) {
   }
 }
 
+function openReturnRegisterCreate() {
+  router.push('/register/return')
+}
+
 async function loadRegisters() {
   await registersStore.getAll({ mode: props.mode })
   const storeError = unref(registersStore.error)
@@ -458,6 +462,16 @@ defineExpose({
             iconSize="2x"
             :disabled="runningAction || loading || isInitializing || isUploadDisabled"
             :options="uploadMenuOptions"
+          />
+        </div>
+        <div class="header-actions header-actions-group" v-if="isWhManagerPlus && isWarehouseMode">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-person-walking-arrow-loop-left"
+            tooltip-text="Создать реестр возврата"
+            iconSize="2x"
+            :disabled="runningAction || loading || isInitializing"
+            @click="openReturnRegisterCreate"
           />
         </div>
       </div>

@@ -34,7 +34,7 @@ import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
-import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
+import { formatParcelsByCheckStatusProjectionTooltip } from '@/helpers/parcel.stats.helpers.js'
 
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
@@ -413,7 +413,7 @@ defineExpose({
               </ClickableCell>
             </template>
             <template #default>
-              <div style="white-space: pre-line">{{ formatParcelsByCheckStatusTooltip(item) }}</div>
+              <div style="white-space: pre-line">{{ formatParcelsByCheckStatusProjectionTooltip(item) }}</div>
             </template>
           </v-tooltip>
         </template>

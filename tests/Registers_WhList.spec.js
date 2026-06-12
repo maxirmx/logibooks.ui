@@ -11,6 +11,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 const mockItems = ref([])
 const mockCompanies = ref([])
@@ -672,6 +673,28 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.text()).toContain('Status 5')
     expect(wrapper.text()).toContain('Warehouse 12')
     expect(wrapper.text()).toContain('01.02.2024')
+  })
+
+  it('renders warehouse projection tooltip for parcels totals', async () => {
+    mockItems.value = [{
+      id: 56,
+      parcelsTotal: 7,
+      placesTotal: 2,
+      parcelsByCheckStatus: {
+        [CheckStatusCode.NoIssues.value]: 7
+      },
+      parcelsByCheckStatusProjection: {
+        20: 2,
+        30: 5
+      }
+    }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Запрет: 2')
+    expect(wrapper.text()).toContain('Проверено: 5')
+    expect(wrapper.text()).not.toContain('Ок стоп слова')
   })
 
   it('navigates to edit register with warehouse mode in query', async () => {

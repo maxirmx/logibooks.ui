@@ -12,6 +12,7 @@ import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import ActionButton from '@/components/ActionButton.vue'
 import router from '@/router'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 let lastRegisterActions = null
 
@@ -985,6 +986,29 @@ describe('Registers_List.vue', () => {
       expect(actionTooltips).not.toContain('Создать задание на сканирование')
       expect(actionTooltips).not.toContain('Стикеры не в реестре')
       expect(wrapper.text()).not.toContain('Создать реестр возврата')
+    })
+
+    it('keeps check-status tooltip for paperwork parcels totals', () => {
+      mockItems.value = [{
+        id: 1,
+        parcelsTotal: 3,
+        placesTotal: 1,
+        parcelsByCheckStatus: {
+          [CheckStatusCode.NoIssues.value]: 3
+        },
+        parcelsByCheckStatusProjection: {
+          30: 3
+        }
+      }]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      expect(wrapper.text()).toContain('Ок стоп слова, Ок ТН ВЭД: 3')
+      expect(wrapper.text()).not.toContain('Проверено: 3')
     })
 
     it('renders delete action for shift leads', () => {

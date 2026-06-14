@@ -150,6 +150,7 @@ function clearSourceSearchTimer() {
 
 function clearSourceRegisters() {
   clearSourceSearchTimer()
+  sourcePage.value = 1
   sourceRegisters.value = []
   sourceTotalCount.value = 0
   selectedRegisterIds.value = []

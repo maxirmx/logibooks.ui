@@ -37,7 +37,7 @@
     "@eslint/js": "^9.0.0",
     "@mdi/js": "^7.2.96",
     "@rushstack/eslint-patch": "^1.2.0",
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-v8": "^4.1.8",
     "@vue/eslint-config-prettier": "^7.1.0",
     "@vue/test-utils": "^2.3.2",
@@ -45,7 +45,7 @@
     "eslint-plugin-vue": "^9.11.0",
     "jsdom": "^28.1.0",
     "prettier": "^2.8.8",
-    "vite": "^6.3.5",
+    "vite": "^8.0.16",
     "vitest": "^4.1.8",
     "vue-eslint-parser": "^10.1.4"
   }

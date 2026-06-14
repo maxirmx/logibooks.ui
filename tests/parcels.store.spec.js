@@ -266,7 +266,7 @@ describe('parcels store', () => {
     fetchWrapper.get.mockResolvedValue({ id: 5 })
     const store = useParcelsStore()
     await store.getById(5)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/5`)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/5`)
     expect(store.item).toEqual({ id: 5 })
   })
 
@@ -682,7 +682,7 @@ describe('parcels store', () => {
 
         const result = await store.deleteImage(42)
         expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/parcels/42/image`)
-        expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/42`)
+        expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/42`)
         expect(result).toBe(true)
         expect(store.item).toEqual({ id: 42, hasImage: false })
       })

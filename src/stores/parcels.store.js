@@ -179,7 +179,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   async function getById(id) {
     item.value = { loading: true }
     try {
-      const result = await fetchWrapper.get(`${baseUrl}/${id}`)
+      const result = await fetchWrapper.get(`${baseUrl}/a/${id}`)
       item.value = result
       return result
     } catch (err) {

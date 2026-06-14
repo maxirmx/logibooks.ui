@@ -20,10 +20,8 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
-import { useWarehousesStore } from '@/stores/warehouses.store.js'
-import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
+import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
@@ -41,12 +39,6 @@ import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helper
 
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
-const props = defineProps({
-  mode: {
-    type: String,
-    default: OP_MODE_PAPERWORK
-  }
-})
 
 const registersStore = useRegistersStore()
 const { items, loading, totalCount, ops } = storeToRefs(registersStore)
@@ -66,9 +58,6 @@ const { countries } = storeToRefs(countriesStore)
 const airportsStore = useAirportsStore()
 const { airports } = storeToRefs(airportsStore)
 
-const warehousesStore = useWarehousesStore()
-const registerStatusesStore = useRegisterStatusesStore()
-
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
@@ -77,7 +66,7 @@ const {
   validationState,
   progressPercent,
   stopPolling
-} = createRegisterActionHandlers(registersStore, alertStore, { mode: computed(() => props.mode) })
+} = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
 
 const authStore = useAuthStore()
 const {
@@ -85,39 +74,18 @@ const {
   registers_search: paperworkRegistersSearch,
   registers_sort_by: paperworkRegistersSortBy,
   registers_page: paperworkRegistersPage,
-  registers_wh_per_page: warehouseRegistersPerPage,
-  registers_wh_search: warehouseRegistersSearch,
-  registers_wh_sort_by: warehouseRegistersSortBy,
-  registers_wh_page: warehouseRegistersPage,
   isShiftLeadPlus, 
-  isSrLogistPlus,
-  isWhManagerPlus,
-  hasWhRole } = storeToRefs(authStore)
+  isSrLogistPlus } = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
 
-const isWarehouseMode = computed(() => props.mode === OP_MODE_WAREHOUSE)
-const registerNouns = computed(() => getRegisterNouns(props.mode))
+const registerNouns = computed(() => getRegisterNouns(OP_MODE_PAPERWORK))
 
-function modeRef(paperworkRef, warehouseRef) {
-  return computed({
-    get: () => (isWarehouseMode.value ? warehouseRef.value : paperworkRef.value),
-    set: (value) => {
-      if (isWarehouseMode.value) {
-        warehouseRef.value = value
-        return
-      }
-
-      paperworkRef.value = value
-    }
-  })
-}
-
-const registers_per_page = modeRef(paperworkRegistersPerPage, warehouseRegistersPerPage)
-const registers_search = modeRef(paperworkRegistersSearch, warehouseRegistersSearch)
-const registers_sort_by = modeRef(paperworkRegistersSortBy, warehouseRegistersSortBy)
-const registers_page = modeRef(paperworkRegistersPage, warehouseRegistersPage)
+const registers_per_page = paperworkRegistersPerPage
+const registers_search = paperworkRegistersSearch
+const registers_sort_by = paperworkRegistersSortBy
+const registers_page = paperworkRegistersPage
 
 // State for bulk status change
 const bulkStatusState = reactive({})
@@ -161,7 +129,7 @@ async function applyStatusToAllOrders(registerId, statusId) {
     bulkStatusState,
     registersStore,
     alertStore,
-    { mode: props.mode }
+    { mode: OP_MODE_PAPERWORK }
   )
 }
 
@@ -250,12 +218,6 @@ onMounted(async () => {
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
-    await warehousesStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-
-    await registerStatusesStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
 
@@ -277,9 +239,6 @@ onUnmounted(() => {
   stopFilterSync()
   if (watcherStop) {
     watcherStop()
-  }
-  if (modeWatcherStop) {
-    modeWatcherStop()
   }
   stopPolling()
 })
@@ -320,12 +279,8 @@ function startRegisterUpload(registerType) {
   }
 }
 
-function openReturnRegisterCreate() {
-  router.push('/register/return')
-}
-
 async function loadRegisters() {
-  await registersStore.getAll({ mode: props.mode })
+  await registersStore.getAll({ mode: OP_MODE_PAPERWORK })
   const storeError = unref(registersStore.error)
   if (storeError) {
     alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
@@ -343,23 +298,12 @@ const watcherStop = watch([registers_page, registers_per_page, registers_sort_by
   triggerLoad()
 }, { immediate: false })
 
-// Watch for mode changes and reload data
-const modeWatcherStop = watch(() => props.mode, () => {
-  const modeSearch = registers_search.value || ''
-  if (localSearch.value !== modeSearch) {
-    localSearch.value = modeSearch
-    return
-  }
-
-  loadRegisters()
-}, { immediate: false })
-
 function openParcels(item) {
-  router.push(`/registers/${item.id}/parcels?mode=${props.mode}`)
+  router.push(`/registers/${item.id}/parcels?mode=${OP_MODE_PAPERWORK}`)
 }
 
 function editRegister(item) {
-  router.push(`/register/edit/${item.id}?mode=${props.mode}`)
+  router.push(`/register/edit/${item.id}?mode=${OP_MODE_PAPERWORK}`)
 }
 
 async function deleteRegister(item) {
@@ -396,24 +340,7 @@ async function deleteRegister(item) {
   }
 }
 
-function openUnregisteredParcels(item) {
-  if (!item?.id) return
-  router.push(`/registers/${item.id}/unregistered-parcels`)
-}
-
-function openScanjobCreate(item) {
-  if (!item) return
-  router.push({
-    path: '/scanjob/create',
-    query: {
-      registerId: item.id,
-      warehouseId: item.warehouseId,
-      dealNumber: item.dealNumber
-    }
-  })
-}
-
-const defaultHeaders = [
+const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
   { title: 'ТСД', key: 'invoice', sortable: true },
@@ -424,20 +351,6 @@ const defaultHeaders = [
   { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
   { title: 'Дата загрузки', key: 'date', sortable: true }
 ]
-
-const warehouseHeaders = [
-  { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber', sortable: true },
-  { title: 'ТСД', key: 'invoice', sortable: true },
-  { title: 'Страны', key: 'countries', sortable: true },
-  { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
-  { title: 'Статус', key: 'statusId', sortable: true },
-  { title: 'Склад', key: 'warehouseId', sortable: true },
-  { title: 'Дата прибытия', key: 'warehouseArrivalDate', sortable: true }
-]
-
-const headers = computed(() => (isWarehouseMode.value ? warehouseHeaders : defaultHeaders))
 
 defineExpose({
   validationState,
@@ -454,7 +367,7 @@ defineExpose({
         <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isSrLogistPlus && !isWarehouseMode">
+        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
           <ActionButton2L
             :item="{}"
             icon="fa-solid fa-file-import"
@@ -464,20 +377,10 @@ defineExpose({
             :options="uploadMenuOptions"
           />
         </div>
-        <div class="header-actions header-actions-group" v-if="isWhManagerPlus && isWarehouseMode">
-          <ActionButton
-            :item="{}"
-            icon="fa-solid fa-person-walking-arrow-loop-left"
-            tooltip-text="Создать реестр возврата"
-            iconSize="2x"
-            :disabled="runningAction || loading || isInitializing"
-            @click="openReturnRegisterCreate"
-          />
-        </div>
       </div>
     </div>
     <v-file-input
-      v-if="isSrLogistPlus && !isWarehouseMode"
+      v-if="isSrLogistPlus"
       ref="fileInput"
       style="display: none"
       accept=".xls,.xlsx,.zip,.rar"
@@ -570,15 +473,6 @@ defineExpose({
               <SenderRecipientCell :item="item" :companies="companies" />
             </template>
           </ClickableCell>
-        </template>
-        <template #[`item.statusId`]="{ item }">
-          <span class="truncated-cell">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
-        </template>
-        <template #[`item.warehouseId`]="{ item }">
-          <span class="truncated-cell">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
-        </template>
-        <template #[`item.warehouseArrivalDate`]="{ item }">
-          <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>
         </template>
         <template #[`item.date`]="{ item }">
           <ClickableCell 
@@ -695,15 +589,6 @@ defineExpose({
           />
         </template>
 
-        <template #[`header.warehouseArrivalDate`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Дата', 'прибытия']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton 
@@ -712,14 +597,6 @@ defineExpose({
               tooltip-text="Список посылок" 
               @click="openParcels" 
               :disabled="runningAction || loading" 
-            />
-           <ActionButton
-              v-if="hasWhRole && isWarehouseMode"
-              :item="item"
-              icon="fa-solid fa-rectangle-list"
-              :tooltip-text="`Стикеры не в реестре`"
-              @click="openUnregisteredParcels"
-              :disabled="runningAction || loading"
             />
             <ActionButton  v-if="isSrLogistPlus"
               :item="item"
@@ -769,15 +646,7 @@ defineExpose({
               />
             </div>
             <ActionButton
-              v-if="isWhManagerPlus"
-              :item="item"
-              icon="fa-solid fa-barcode"
-              :tooltip-text="`Создать задание на сканирование`"
-              @click="openScanjobCreate"
-              :disabled="runningAction || loading"
-            />
-            <ActionButton
-              v-if="isShiftLeadPlus && !isWarehouseMode"
+              v-if="isShiftLeadPlus"
               :item="item"
               icon="fa-solid fa-trash-can"
               :tooltip-text="`Удалить ${registerNouns.accusative}`"

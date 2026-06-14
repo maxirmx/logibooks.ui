@@ -47,8 +47,11 @@ export function toggleBulkStatusEditMode(registerId, bulkStatusState, loading) {
  */
 export function cancelBulkStatusChange(registerId, bulkStatusState) {
   if (bulkStatusState[registerId]) {
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
+    bulkStatusState[registerId] = {
+      ...bulkStatusState[registerId],
+      editMode: false,
+      selectedStatusId: null
+    }
   }
 }
 
@@ -87,8 +90,11 @@ export function validateBulkStatusParams(registerId, statusId) {
  */
 export function resetBulkStatusState(registerId, bulkStatusState) {
   if (bulkStatusState[registerId]) {
-    bulkStatusState[registerId].editMode = false
-    bulkStatusState[registerId].selectedStatusId = null
+    bulkStatusState[registerId] = {
+      ...bulkStatusState[registerId],
+      editMode: false,
+      selectedStatusId: null
+    }
   }
 }
 

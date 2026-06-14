@@ -108,6 +108,62 @@ export const useRegistersStore = defineStore('registers', () => {
     return opsPromise
   }
 
+  function appendDefinedParam(params, name, value) {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(name, String(value))
+    }
+  }
+
+  async function getRegisters({
+    page = 1,
+    pageSize = 25,
+    sortBy = 'id',
+    sortOrder = 'desc',
+    whOnly = false,
+    returnSourceOnly = false,
+    warehouseId,
+    senderCompanyId,
+    receiverCompanyId,
+    search = ''
+  } = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      await ensureOpsLoaded()
+
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        sortBy: String(sortBy || 'id'),
+        sortOrder: String(sortOrder || 'desc'),
+        whOnly: whOnly ? 'true' : 'false'
+      })
+
+      if (returnSourceOnly) {
+        queryParams.append('returnSourceOnly', 'true')
+      }
+      appendDefinedParam(queryParams, 'warehouseId', warehouseId)
+      appendDefinedParam(queryParams, 'senderCompanyId', senderCompanyId)
+      appendDefinedParam(queryParams, 'receiverCompanyId', receiverCompanyId)
+      if (search) {
+        queryParams.append('search', search)
+      }
+
+      const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
+      if (Array.isArray(response)) {
+        response.forEach(setDestinationField)
+      } else if (Array.isArray(response?.items)) {
+        response.items.forEach(setDestinationField)
+      }
+      return response
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function getAll({ mode = OP_MODE_PAPERWORK } = {}) {
     const authStore = useAuthStore()
     const warehouseMode = mode === OP_MODE_WAREHOUSE
@@ -115,39 +171,24 @@ export const useRegistersStore = defineStore('registers', () => {
     const pageSize = warehouseMode ? authStore.registers_wh_per_page : authStore.registers_per_page
     const sortBy = warehouseMode ? authStore.registers_wh_sort_by : authStore.registers_sort_by
     const search = warehouseMode ? authStore.registers_wh_search : authStore.registers_search
-    
-    loading.value = true
-    error.value = null
-    try {
-      await ensureOpsLoaded()
 
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
+    try {
+      const response = await getRegisters({
+        page,
+        pageSize,
         sortBy: sortBy?.[0]?.key || 'id',
         sortOrder: sortBy?.[0]?.order || 'desc',
-        whOnly: warehouseMode ? 'true' : 'false'
+        whOnly: warehouseMode,
+        search
       })
-
-      if (search) {
-        queryParams.append('search', search)
-      }
-
-      const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
 
       // API format with pagination metadata
       items.value = response.items || []
-      // Set destination for each register
-      if (Array.isArray(items.value)) {
-        items.value.forEach(setDestinationField)
-      }
       totalCount.value = response.pagination?.totalCount || 0
       hasNextPage.value = response.pagination?.hasNextPage || false
       hasPreviousPage.value = response.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
-    } finally {
-      loading.value = false
     }
   }
 
@@ -208,24 +249,6 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       const params = new URLSearchParams({ warehouseId: String(warehouseId) })
       return await fetchWrapper.get(`${baseUrl}/return-register/pairs?${params.toString()}`)
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function getReturnRegisterSourceRegisters({ warehouseId, senderCompanyId, receiverCompanyId }) {
-    loading.value = true
-    error.value = null
-    try {
-      const params = new URLSearchParams({
-        warehouseId: String(warehouseId),
-        senderCompanyId: String(senderCompanyId),
-        receiverCompanyId: String(receiverCompanyId)
-      })
-      return await fetchWrapper.get(`${baseUrl}/return-register/registers?${params.toString()}`)
     } catch (err) {
       error.value = err
       throw err
@@ -645,11 +668,11 @@ export const useRegistersStore = defineStore('registers', () => {
     opsLoading,
     opsError,
     getAll,
+    getRegisters,
     upload,
     getById,
     update,
     getReturnRegisterPairs,
-    getReturnRegisterSourceRegisters,
     createReturnRegister,
     setParcelStatuses,
     validate,

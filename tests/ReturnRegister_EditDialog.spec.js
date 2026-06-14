@@ -6,11 +6,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import ReturnRegisterEditDialog from '@/dialogs/ReturnRegister_EditDialog.vue'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 const warehousesRef = vi.hoisted(() => ({ value: [] }))
 const ensureWarehousesLoaded = vi.hoisted(() => vi.fn())
+const ensureCountriesLoaded = vi.hoisted(() => vi.fn())
+const ensureOpsLoaded = vi.hoisted(() => vi.fn())
+const ensureRegisterStatusesLoaded = vi.hoisted(() => vi.fn())
+const getCompaniesAll = vi.hoisted(() => vi.fn())
+const getAirportsAll = vi.hoisted(() => vi.fn())
 const getReturnRegisterPairs = vi.hoisted(() => vi.fn())
-const getReturnRegisterSourceRegisters = vi.hoisted(() => vi.fn())
+const getRegisters = vi.hoisted(() => vi.fn())
 const createReturnRegister = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
 
@@ -36,9 +42,34 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
+    ensureOpsLoaded,
     getReturnRegisterPairs,
-    getReturnRegisterSourceRegisters,
+    getRegisters,
     createReturnRegister
+  })
+}))
+
+vi.mock('@/stores/companies.store.js', () => ({
+  useCompaniesStore: () => ({
+    getAll: getCompaniesAll
+  })
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    ensureLoaded: ensureCountriesLoaded
+  })
+}))
+
+vi.mock('@/stores/airports.store.js', () => ({
+  useAirportsStore: () => ({
+    getAll: getAirportsAll
+  })
+}))
+
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => ({
+    ensureLoaded: ensureRegisterStatusesLoaded
   })
 }))
 
@@ -55,11 +86,76 @@ vi.mock('@/components/ActionButton.vue', () => ({
   }
 }))
 
+vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
+  default: {
+    name: 'WarehouseRegistersTable',
+    props: [
+      'items',
+      'itemsLength',
+      'loading',
+      'itemsPerPage',
+      'page',
+      'sortBy',
+      'selectedIds',
+      'showActions',
+      'selectable',
+      'linksEnabled',
+      'selectionDisabled'
+    ],
+    emits: ['update:selectedIds', 'update:itemsPerPage', 'update:page', 'update:sortBy'],
+    methods: {
+      label(item) {
+        return item.dealNumber || item.fileName || `#${item.id}`
+      },
+      toggle(item, checked) {
+        const selected = new Set(this.selectedIds || [])
+        if (checked) {
+          selected.add(item.id)
+        } else {
+          selected.delete(item.id)
+        }
+        this.$emit('update:selectedIds', Array.from(selected))
+      }
+    },
+    template: `
+      <div
+        data-testid="registers-table"
+        :data-show-actions="String(showActions)"
+        :data-links-enabled="String(linksEnabled)"
+        :data-selectable="String(selectable)"
+      >
+        <button
+          type="button"
+          data-testid="table-sort"
+          @click="$emit('update:sortBy', [{ key: 'warehouseArrivalDate', order: 'asc' }])"
+        ></button>
+        <button
+          type="button"
+          data-testid="table-page"
+          @click="$emit('update:page', 2)"
+        ></button>
+        <div v-for="item in items" :key="item.id" class="v-data-table-row">
+          <input
+            type="checkbox"
+            data-testid="register-checkbox"
+            :aria-label="label(item)"
+            :checked="selectedIds && selectedIds.includes(item.id)"
+            :disabled="selectionDisabled"
+            @change="toggle(item, $event.target.checked)"
+          />
+          <span>{{ item.dealNumber || item.fileName || item.id }}</span>
+          <span>{{ item.parcelsTotal }}</span>
+        </div>
+      </div>
+    `
+  }
+}))
+
 function mountDialog() {
   return mount(ReturnRegisterEditDialog, {
     global: {
       stubs: {
-        'v-card': { template: '<div class="v-card-stub"><slot /></div>' }
+        ...vuetifyStubs
       }
     }
   })
@@ -85,6 +181,22 @@ function cancelButton(wrapper) {
   return wrapper.find('[data-tooltip="Отменить"]')
 }
 
+function defaultSourceQuery(overrides = {}) {
+  return {
+    warehouseId: 1,
+    senderCompanyId: 2,
+    receiverCompanyId: 3,
+    whOnly: true,
+    returnSourceOnly: true,
+    page: 1,
+    pageSize: 25,
+    sortBy: 'id',
+    sortOrder: 'desc',
+    search: '',
+    ...overrides
+  }
+}
+
 describe('ReturnRegister_EditDialog.vue', () => {
   beforeEach(() => {
     warehousesRef.value = [
@@ -93,10 +205,20 @@ describe('ReturnRegister_EditDialog.vue', () => {
     ]
     ensureWarehousesLoaded.mockReset()
     ensureWarehousesLoaded.mockResolvedValue()
+    ensureCountriesLoaded.mockReset()
+    ensureCountriesLoaded.mockResolvedValue()
+    ensureOpsLoaded.mockReset()
+    ensureOpsLoaded.mockResolvedValue()
+    ensureRegisterStatusesLoaded.mockReset()
+    ensureRegisterStatusesLoaded.mockResolvedValue()
+    getCompaniesAll.mockReset()
+    getCompaniesAll.mockResolvedValue()
+    getAirportsAll.mockReset()
+    getAirportsAll.mockResolvedValue()
     getReturnRegisterPairs.mockReset()
     getReturnRegisterPairs.mockResolvedValue([])
-    getReturnRegisterSourceRegisters.mockReset()
-    getReturnRegisterSourceRegisters.mockResolvedValue([])
+    getRegisters.mockReset()
+    getRegisters.mockResolvedValue([])
     createReturnRegister.mockReset()
     createReturnRegister.mockResolvedValue({ id: 99 })
     routerPush.mockReset()
@@ -158,7 +280,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
         receiverCompanyName: 'Receiver'
       }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
     ])
 
@@ -168,14 +290,53 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await selectWarehouse(wrapper, 1)
     expect(getReturnRegisterPairs).toHaveBeenCalledWith(1)
     expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender')
+    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver')
 
     await selectPair(wrapper)
-    expect(getReturnRegisterSourceRegisters).toHaveBeenCalledWith({
-      warehouseId: 1,
-      senderCompanyId: 2,
-      receiverCompanyId: 3
-    })
+    expect(getRegisters).toHaveBeenCalledWith(defaultSourceQuery())
     expect(wrapper.find('[data-testid="registers-table"]').text()).toContain('D-7')
+  })
+
+  it('shows source parties as a selectable read-only table with search and sort', async () => {
+    getReturnRegisterPairs.mockResolvedValueOnce([
+      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+    ])
+    getRegisters.mockResolvedValueOnce({
+      items: [{ id: 7, dealNumber: 'D-7', parcelsTotal: 5 }],
+      pagination: { totalCount: 1 }
+    })
+
+    const wrapper = mountDialog()
+    await flushPromises()
+    await selectWarehouse(wrapper, 1)
+    await selectPair(wrapper)
+
+    const table = wrapper.findComponent({ name: 'WarehouseRegistersTable' })
+    expect(table.props('showActions')).toBe(false)
+    expect(table.props('linksEnabled')).toBe(false)
+    expect(table.props('selectable')).toBe(true)
+
+    await wrapper.find('[data-testid="table-sort"]').trigger('click')
+    await flushPromises()
+    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
+      sortBy: 'warehouseArrivalDate',
+      sortOrder: 'asc'
+    }))
+
+    vi.useFakeTimers()
+    try {
+      await wrapper.find('[data-testid="source-register-search"]').setValue('deal')
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+
+      expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
+        sortBy: 'warehouseArrivalDate',
+        sortOrder: 'asc',
+        search: 'deal'
+      }))
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('clears source data when warehouse selection is cleared', async () => {
@@ -199,7 +360,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, receiverCompanyId: 3 }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, fileName: 'source.xlsx', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 },
       { id: 8, date: '2026-06-12T11:00:00Z', redParcelsCount: 1, parcelsTotal: 1 }
     ])
@@ -226,7 +387,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce(null)
+    getRegisters.mockResolvedValueOnce(null)
 
     const wrapper = mountDialog()
     await flushPromises()
@@ -250,7 +411,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
     ])
-    getReturnRegisterSourceRegisters.mockRejectedValueOnce(null)
+    getRegisters.mockRejectedValueOnce(null)
 
     const wrapper = mountDialog()
     await flushPromises()
@@ -268,7 +429,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
       .mockResolvedValueOnce([
         { senderCompanyId: 4, senderCompanyName: 'Other Sender', receiverCompanyId: 5, receiverCompanyName: 'Other Receiver' }
       ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
     ])
 
@@ -291,7 +452,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
     ])
 
@@ -319,7 +480,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 },
       { id: 8, dealNumber: 'D-8', date: '2026-06-12T11:00:00Z', redParcelsCount: 1, parcelsTotal: 1 }
     ])
@@ -349,7 +510,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
     ])
     createReturnRegister.mockRejectedValueOnce(new Error('No red parcels'))
@@ -370,7 +531,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
     ])
-    getReturnRegisterSourceRegisters.mockResolvedValueOnce([
+    getRegisters.mockResolvedValueOnce([
       { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
     ])
     createReturnRegister.mockResolvedValueOnce({})

@@ -613,21 +613,43 @@ describe('registers store', () => {
       expect(store.error).toBeNull()
     })
 
-    it('requests source registers by warehouse and pair', async () => {
-      const response = [{ id: 7 }]
+    it('requests return-source registers through the generic paged register list endpoint', async () => {
+      const response = {
+        items: [
+          {
+            id: 7,
+            customsProcedureCode: 10,
+            companyId: 2,
+            theOtherCompanyId: 3,
+            theOtherCountryCode: 860
+          }
+        ],
+        pagination: { totalCount: 1 }
+      }
       fetchWrapper.get.mockResolvedValue(response)
 
       const store = useRegistersStore()
-      const result = await store.getReturnRegisterSourceRegisters({
+      store.ops.customsProcedures = [{ value: 10, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }]
+      const result = await store.getRegisters({
         warehouseId: 12,
         senderCompanyId: 2,
-        receiverCompanyId: 3
+        receiverCompanyId: 3,
+        whOnly: true,
+        returnSourceOnly: true,
+        page: 2,
+        pageSize: 50,
+        sortBy: 'warehouseArrivalDate',
+        sortOrder: 'asc',
+        search: 'deal'
       })
 
       expect(result).toBe(response)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/return-register/registers?warehouseId=12&senderCompanyId=2&receiverCompanyId=3`
+        `${apiUrl}/registers?page=2&pageSize=50&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&returnSourceOnly=true&warehouseId=12&senderCompanyId=2&receiverCompanyId=3&search=deal`
       )
+      expect(result.items[0].destination).toBe('out')
+      expect(result.items[0].senderId).toBe(2)
+      expect(result.items[0].recipientId).toBe(3)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })

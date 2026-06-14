@@ -24,38 +24,27 @@ import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatIntegerThousands } from '@/helpers/number.formatters.js'
-import { formatDate } from '@/helpers/date.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
-import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
-import { formatParcelsByCheckStatusProjectionTooltip } from '@/helpers/parcel.stats.helpers.js'
-
-import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
-import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
+import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
 
 const registersStore = useRegistersStore()
-const { items, loading, totalCount, ops } = storeToRefs(registersStore)
+const { items, loading, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
+const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
 
 const companiesStore = useCompaniesStore()
-const { companies } = storeToRefs(companiesStore)
-
 const countriesStore = useCountriesStore()
-const { countries } = storeToRefs(countriesStore)
 
 const airportsStore = useAirportsStore()
-const { airports } = storeToRefs(airportsStore)
 
 const warehousesStore = useWarehousesStore()
 const registerStatusesStore = useRegisterStatusesStore()
@@ -87,12 +76,6 @@ const bulkStatusState = reactive({})
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
 
-const warehouseZoneDistribution = [
-  { value: 1, label: 'Без зоны' },
-  { value: 10, label: 'Зеленая' },
-  { value: 20, label: 'Красная' }
-]
-
 function bulkChangeStatus(registerId) {
   toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
 }
@@ -122,63 +105,6 @@ function getSelectedStatusId(registerId) {
 
 function setSelectedStatusId(registerId, statusId) {
   setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
-}
-
-function getCountryShortName(countryCode) {
-  if (!countryCode || !countries?.value) return 'Неизвестно'
-  const num = Number(countryCode)
-  if (num == 643) return 'Россия'
-  const country = countries.value.find(c => c.isoNumeric === num)
-  if (!country) return countryCode
-  return country.nameRuShort || country.nameRuOfficial || countryCode
-}
-
-const transportationTypesById = computed(() => {
-  if (!Array.isArray(ops.value?.transportationTypes)) return new Map()
-  return new Map(ops.value.transportationTypes.map(type => [Number(type.value), type]))
-})
-
-const airportsById = computed(() => {
-  if (!Array.isArray(airports.value)) return new Map()
-  return new Map(airports.value.map(airport => [airport.id, airport]))
-})
-
-function isAviaTransportation(item) {
-  const typeId = Number(item?.transportationTypeCode)
-  if (typeId == null || isNaN(typeId)) return false
-  const type = transportationTypesById.value.get(typeId)
-  return type?.isAvia || false
-}
-
-function getAirportIata(airportId) {
-  const id = Number(airportId)
-  if (!id) return null
-  const airport = airportsById.value.get(id)
-  return airport?.codeIata || null
-}
-
-function getCountryDisplayName(item, countryCode, airportId) {
-  const countryName = getCountryShortName(countryCode)
-  if (!isAviaTransportation(item)) {
-    return countryName
-  }
-
-  const airportCode = getAirportIata(airportId)
-  if (!airportCode) {
-    return countryName
-  }
-
-  return `${countryName} (${airportCode})`
-}
-
-function getZoneCount(item, zoneValue) {
-  const count = Number(item?.parcelsByZone?.[zoneValue] ?? 0)
-  return Number.isFinite(count) && count > 0 ? count : 0
-}
-
-function formatZoneCount(item, zoneValue) {
-  const count = getZoneCount(item, zoneValue)
-  return count > 0 ? formatIntegerThousands(count) : '-'
 }
 
 onMounted(async () => {
@@ -273,19 +199,6 @@ function openScanjobCreate(item) {
   })
 }
 
-const headers = [
-  { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber', sortable: true },
-  { title: 'ТСД', key: 'invoice', sortable: true },
-  { title: 'Страны', key: 'countries', sortable: true },
-  { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
-  { title: 'Зоны', key: 'parcelsByZone', sortable: false, align: 'end', minWidth: '135px', width: '135px' },
-  { title: 'Статус', key: 'statusId', sortable: true },
-  { title: 'Склад', key: 'warehouseId', sortable: true },
-  { title: 'Дата прибытия', key: 'warehouseArrivalDate', sortable: true }
-]
-
 defineExpose({
   validationState,
   progressPercent
@@ -328,239 +241,30 @@ defineExpose({
       />
     </div>
 
-    <v-card class="table-card">
-      <v-data-table-server
-        v-model:items-per-page="registers_per_page"
-        :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
-        v-model:page="registers_page"
-        v-model:sort-by="registers_sort_by"
-        :headers="headers"
-        :items="items"
-        :items-length="totalCount"
-        :loading="loading || isInitializing"
-        density="compact"
-        class="elevation-1 interlaced-table"
-        fixed-header
-      >
-        <template #[`item.dealNumber`]="{ item }">
-          <ClickableCell
-            :item="item"
-            :display-value="item.dealNumber"
-            cell-class="truncated-cell clickable-cell open-parcels-link"
-            @click="openParcels"
-          />
-          <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
-        </template>
+    <WarehouseRegistersTable
+      v-model:items-per-page="registers_per_page"
+      v-model:page="registers_page"
+      v-model:sort-by="registers_sort_by"
+      :items="items"
+      :items-length="totalCount"
+      :loading="loading || isInitializing"
+      :running-action="runningAction"
+      :has-wh-role="hasWhRole"
+      :is-sr-logist-plus="isSrLogistPlus"
+      :is-wh-manager-plus="isWhManagerPlus"
+      :status-options="parcelStatuses"
+      :is-in-edit-mode="isInEditMode"
+      :get-selected-status-id="getSelectedStatusId"
+      :set-selected-status-id="setSelectedStatusId"
+      :bulk-change-status="bulkChangeStatus"
+      :cancel-status-change="cancelStatusChange"
+      :apply-status-to-all-orders="applyStatusToAllOrders"
+      @open-parcels="openParcels"
+      @edit-register="editRegister"
+      @open-unregistered-parcels="openUnregisteredParcels"
+      @open-scanjob-create="openScanjobCreate"
+    />
 
-        <template #[`item.invoice`]="{ item }">
-          <ClickableCell
-            :item="item"
-            cell-class="truncated-cell clickable-cell open-parcels-link invoice-panel"
-            @click="openParcels"
-          >
-            <template #default>
-              <RegisterInvoiceCell
-                :item="item"
-                :get-transportation-document="registersStore.getTransportationDocument"
-              />
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`item.countries`]="{ item }">
-          <ClickableCell
-            :item="item"
-            cell-class="truncated-cell clickable-cell edit-register-link countries-panel"
-            @click="editRegister"
-          >
-            <template #default>
-              <div class="countries-box">
-                <div class="customs-procedure">{{ registersStore.getOpsLabel(ops.customsProcedures, item.customsProcedureCode) }}</div>
-                <div class="country-route">
-                  <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
-                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-                  <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
-                </div>
-              </div>
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`item.senderRecipient`]="{ item }">
-          <ClickableCell
-            :item="item"
-            cell-class="truncated-cell clickable-cell edit-register-link data-panel"
-            @click="editRegister"
-          >
-            <template #default>
-              <SenderRecipientCell :item="item" :companies="companies" />
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`item.statusId`]="{ item }">
-          <span class="truncated-cell">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
-        </template>
-
-        <template #[`item.warehouseId`]="{ item }">
-          <span class="truncated-cell">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
-        </template>
-
-        <template #[`item.warehouseArrivalDate`]="{ item }">
-          <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>
-        </template>
-
-        <template #[`item.parcelsTotal`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <ClickableCell
-                v-bind="props"
-                :item="item"
-                cell-class="truncated-cell clickable-cell data-panel numeric-panel"
-                @click="openParcels"
-              >
-                <template #default>
-                  <div class="data-box">
-                    <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
-                    <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
-                  </div>
-                </template>
-              </ClickableCell>
-            </template>
-            <template #default>
-              <div style="white-space: pre-line">{{ formatParcelsByCheckStatusProjectionTooltip(item) }}</div>
-            </template>
-          </v-tooltip>
-        </template>
-
-        <template #[`item.parcelsByZone`]="{ item }">
-          <div class="zone-distribution">
-            <div
-              v-for="zone in warehouseZoneDistribution"
-              :key="zone.value"
-              class="zone-distribution-row"
-            >
-              <span class="zone-distribution-label">{{ zone.label }}</span>
-              <span class="zone-distribution-value">{{ formatZoneCount(item, zone.value) }}</span>
-            </div>
-          </div>
-        </template>
-
-        <template #[`header.dealNumber`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Номер', 'сделки']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.senderRecipient`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Отправитель', 'Получатель']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.parcelsTotal`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Товаров', 'Посылок']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.warehouseArrivalDate`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Дата', 'прибытия']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`item.actions`]="{ item }">
-          <div class="actions-container">
-            <ActionButton
-              :item="item"
-              icon="fa-solid fa-list"
-              tooltip-text="Список посылок"
-              @click="openParcels"
-              :disabled="runningAction || loading"
-            />
-            <ActionButton
-              v-if="hasWhRole"
-              :item="item"
-              icon="fa-solid fa-rectangle-list"
-              tooltip-text="Стикеры не в реестре"
-              @click="openUnregisteredParcels"
-              :disabled="runningAction || loading"
-            />
-            <ActionButton
-              v-if="isSrLogistPlus"
-              :item="item"
-              icon="fa-solid fa-pen"
-              :tooltip-text="`Редактировать ${registerNouns.accusative}`"
-              @click="editRegister"
-              :disabled="runningAction || loading"
-            />
-
-            <div class="bulk-status-inline" v-if="isSrLogistPlus">
-              <div v-if="isInEditMode(item.id)" class="status-selector-inline">
-                <v-select
-                  :model-value="getSelectedStatusId(item.id)"
-                  @update:model-value="(value) => setSelectedStatusId(item.id, value)"
-                  :items="parcelStatusesStore.parcelStatuses"
-                  item-title="title"
-                  item-value="id"
-                  placeholder="Статус"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  hide-no-data
-                  :disabled="runningAction || loading"
-                />
-                <ActionButton
-                  :item="item"
-                  icon="fa-solid fa-check"
-                  tooltip-text="Применить статус"
-                  :disabled="runningAction || loading || !getSelectedStatusId(item.id)"
-                  @click="() => applyStatusToAllOrders(item.id, getSelectedStatusId(item.id))"
-                />
-                <ActionButton
-                  :item="item"
-                  icon="fa-solid fa-xmark"
-                  tooltip-text="Отменить"
-                  :disabled="runningAction || loading"
-                  @click="() => cancelStatusChange(item.id)"
-                />
-              </div>
-              <ActionButton
-                v-else
-                :item="item"
-                icon="fa-solid fa-pen-to-square"
-                :tooltip-text="`Изменить статус всех посылок в ${registerNouns.prepositional}`"
-                :disabled="runningAction || loading"
-                @click="() => bulkChangeStatus(item.id)"
-              />
-            </div>
-            <ActionButton
-              v-if="isWhManagerPlus"
-              :item="item"
-              icon="fa-solid fa-barcode"
-              tooltip-text="Создать задание на сканирование"
-              @click="openScanjobCreate"
-              :disabled="runningAction || loading"
-            />
-          </div>
-        </template>
-      </v-data-table-server>
-    </v-card>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
@@ -570,147 +274,4 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
-
-.bulk-status-container {
-  min-width: 60px;
-  padding: 2px;
-  transition: min-width 0.2s ease;
-}
-
-.bulk-status-container:has(.status-selector) {
-  min-width: 200px;
-}
-
-.status-selector {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.status-selector .v-select {
-  font-size: 0.875rem;
-}
-
-.status-selector .v-select :deep(.v-field__input) {
-  font-size: 0.875rem;
-  min-height: 32px;
-}
-
-.status-selector .v-select :deep(.v-field__field) {
-  font-size: 0.875rem;
-}
-
-.status-selector .v-select :deep(.v-list-item) {
-  font-size: 0.875rem;
-  min-height: 36px;
-}
-
-.status-selector .v-select :deep(.v-list-item__title) {
-  font-size: 0.875rem;
-}
-
-.arrow-icon {
-  opacity: 0.8;
-}
-
-.bookmark-icon {
-  color: #28a745;
-  margin-right: 0;
-  margin-left: 8px;
-  margin-top: 2px;
-  opacity: 0.95;
-}
-
-.bookmark-icon:hover {
-  color: #218838;
-}
-
-.invoice-panel .invoice-box {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.invoice-panel .invoice-number {
-  font-size: 0.95rem;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.invoice-panel .invoice-date {
-  font-size: 0.78rem;
-  margin-top: 4px;
-}
-
-.data-panel .data-box {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  margin-top: 4px;
-}
-
-.data-panel .data-box > div {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.numeric-panel .data-box {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.zone-distribution {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.82rem;
-  line-height: 1.15;
-  min-width: 120px;
-}
-
-.zone-distribution-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-}
-
-.zone-distribution-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.zone-distribution-value {
-  min-width: 26px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.countries-panel .countries-box {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  margin-top: 4px;
-}
-
-.countries-panel .customs-procedure {
-  font-size: 0.9rem;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-}
-
-.countries-panel .country-route {
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 </style>

@@ -12,6 +12,15 @@ import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import {
+  createAirportsById,
+  createTransportationTypesById,
+  createWarehouseRegisterHeaders,
+  formatZoneCount,
+  getAirportIata,
+  getCountryDisplayName,
+  isAviaTransportation
+} from '@/helpers/warehouse.registers.table.helpers.js'
 
 const mockItems = ref([])
 const mockCompanies = ref([])
@@ -375,11 +384,9 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('uses warehouse-specific table headers', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const headerKeys = wrapper.vm.headers.map(header => header.key)
-    const headerTitles = wrapper.vm.headers.map(header => header.title)
+    const headers = createWarehouseRegisterHeaders()
+    const headerKeys = headers.map(header => header.key)
+    const headerTitles = headers.map(header => header.title)
 
     expect(headerKeys).toEqual([
       'actions',
@@ -450,11 +457,8 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('marks warehouse visible columns as sortable', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
     const sortableByKey = Object.fromEntries(
-      wrapper.vm.headers.map(header => [header.key, header.sortable])
+      createWarehouseRegisterHeaders().map(header => [header.key, header.sortable])
     )
 
     expect(sortableByKey.actions).toBe(false)
@@ -470,10 +474,7 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('aligns warehouse parcels header with numeric cells', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const parcelsHeader = wrapper.vm.headers.find(header => header.key === 'parcelsTotal')
+    const parcelsHeader = createWarehouseRegisterHeaders().find(header => header.key === 'parcelsTotal')
 
     expect(parcelsHeader.align).toBe('end')
     expect(parcelsHeader.width).toBe('150px')
@@ -500,7 +501,7 @@ describe('Registers_WhList.vue', () => {
     expect(rows[1].text()).toContain('-')
     expect(rows[2].text()).toContain('Красная')
     expect(rows[2].text()).toContain('12')
-    expect(wrapper.vm.formatZoneCount({}, 1)).toBe('-')
+    expect(formatZoneCount({}, 1)).toBe('-')
   })
 
   it('shows a sort icon for warehouse custom multiline headers', async () => {
@@ -536,45 +537,45 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('covers country and airport display fallbacks', () => {
-    mockCountries.value = [
+    let countries = [
       { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' },
       { isoNumeric: 840, nameRuShort: 'США' }
     ]
-    mockOps.value = {
+    const ops = {
       customsProcedures: [],
       transportationTypes: [
         { value: 2, name: 'Авиа', document: 'AWB', isAvia: true },
         { value: 3, name: 'Авто', document: 'CMR', isAvia: false }
       ]
     }
-    mockAirports.value = [
+    const airports = [
       { id: 20, codeIata: 'JFK' }
     ]
+    const transportationTypesById = createTransportationTypesById(ops)
+    const airportsById = createAirportsById(airports)
 
-    const wrapper = createWrapper()
+    expect(getCountryDisplayName({}, null, null, countries, transportationTypesById, airportsById)).toBe('Неизвестно')
+    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 643, null, countries, transportationTypesById, airportsById)).toBe('Россия')
+    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 999, null, countries, transportationTypesById, airportsById)).toBe(999)
+    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 36, null, countries, transportationTypesById, airportsById)).toBe('Австралийский Союз')
 
-    expect(wrapper.vm.getCountryDisplayName({}, null, null)).toBe('Неизвестно')
-    expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 3 }, 643, null)).toBe('Россия')
-    expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 3 }, 999, null)).toBe(999)
-    expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 3 }, 36, null)).toBe('Австралийский Союз')
+    countries = [{ isoNumeric: 156 }]
+    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 156, null, countries, transportationTypesById, airportsById)).toBe(156)
 
-    mockCountries.value = [{ isoNumeric: 156 }]
-    expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 3 }, 156, null)).toBe(156)
-
-    mockCountries.value = [
+    countries = [
       { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' },
       { isoNumeric: 840, nameRuShort: 'США' }
     ]
-    expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 2 }, 840, null)).toBe('США')
-    expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 2 }, 840, 20)).toBe('США (JFK)')
-    expect(wrapper.vm.isAviaTransportation({ transportationTypeCode: 'invalid' })).toBe(false)
-    expect(wrapper.vm.isAviaTransportation({ transportationTypeCode: 99 })).toBe(false)
-    expect(wrapper.vm.getAirportIata(0)).toBeNull()
+    expect(getCountryDisplayName({ transportationTypeCode: 2 }, 840, null, countries, transportationTypesById, airportsById)).toBe('США')
+    expect(getCountryDisplayName({ transportationTypeCode: 2 }, 840, 20, countries, transportationTypesById, airportsById)).toBe('США (JFK)')
+    expect(isAviaTransportation({ transportationTypeCode: 'invalid' }, transportationTypesById)).toBe(false)
+    expect(isAviaTransportation({ transportationTypeCode: 99 }, transportationTypesById)).toBe(false)
+    expect(getAirportIata(0, airportsById)).toBeNull()
 
-    mockOps.value = { customsProcedures: [], transportationTypes: null }
-    mockAirports.value = null
-    expect(wrapper.vm.isAviaTransportation({ transportationTypeCode: 2 })).toBe(false)
-    expect(wrapper.vm.getAirportIata(20)).toBeNull()
+    const emptyTransportationTypesById = createTransportationTypesById({ customsProcedures: [], transportationTypes: null })
+    const emptyAirportsById = createAirportsById(null)
+    expect(isAviaTransportation({ transportationTypeCode: 2 }, emptyTransportationTypesById)).toBe(false)
+    expect(getAirportIata(20, emptyAirportsById)).toBeNull()
   })
 
   it('renders bulk edit controls and applies or cancels status changes', async () => {
@@ -583,6 +584,9 @@ describe('Registers_WhList.vue', () => {
     getAll.mockResolvedValue()
 
     const wrapper = createWrapper()
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+
     let actionButtons = wrapper.findAllComponents(ActionButton)
     let bulkButton = actionButtons.find(button =>
       String(button.props('tooltipText') || '').includes('Изменить статус')

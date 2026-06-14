@@ -3,17 +3,26 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
-import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
-import { formatDate } from '@/helpers/date.formatters.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
+import { useAirportsStore } from '@/stores/airports.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
+import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
 
 const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
+const companiesStore = useCompaniesStore()
+const countriesStore = useCountriesStore()
+const airportsStore = useAirportsStore()
+const registerStatusesStore = useRegisterStatusesStore()
 const { warehouses } = storeToRefs(warehousesStore)
 
 const selectedWarehouseId = ref('')
@@ -21,6 +30,11 @@ const selectedPairKey = ref('')
 const selectedRegisterIds = ref([])
 const pairs = ref([])
 const sourceRegisters = ref([])
+const sourceTotalCount = ref(0)
+const sourceSearch = ref('')
+const sourcePage = ref(1)
+const sourcePerPage = ref(25)
+const sourceSortBy = ref([{ key: 'id', order: 'desc' }])
 const isInitializing = ref(true)
 const pairsLoading = ref(false)
 const registersLoading = ref(false)
@@ -30,6 +44,7 @@ const errorMessage = ref('')
 const warehouseOptions = computed(() => Array.isArray(warehouses.value) ? warehouses.value : [])
 const selectedWarehouseNumber = computed(() => Number(selectedWarehouseId.value) || 0)
 const selectedPair = computed(() => pairs.value.find((pair) => getPairKey(pair) === selectedPairKey.value) || null)
+const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 const canSubmit = computed(() =>
   selectedWarehouseNumber.value > 0 &&
   selectedPair.value !== null &&
@@ -40,21 +55,40 @@ const canSubmit = computed(() =>
   !isSubmitting.value
 )
 const isBusy = computed(() => isInitializing.value || pairsLoading.value || registersLoading.value || isSubmitting.value)
+const sourceTableDisabled = computed(() => !selectedPair.value || isSubmitting.value)
 
 let pairRequestId = 0
 let registerRequestId = 0
+let sourceSearchTimer = null
 
 onMounted(async () => {
   try {
     await warehousesStore.ensureLoaded()
+  } catch (error) {
+    errorMessage.value = getErrorText(error, 'Не удалось загрузить склады')
+    isInitializing.value = false
+    return
+  }
+
+  try {
+    await countriesStore.ensureLoaded()
+    await registersStore.ensureOpsLoaded()
+    await registerStatusesStore.ensureLoaded()
+    await companiesStore.getAll()
+    await airportsStore.getAll()
+
     if (warehouseOptions.value.length === 1) {
       selectedWarehouseId.value = String(warehouseOptions.value[0].id)
     }
   } catch (error) {
-    errorMessage.value = error?.message || 'Не удалось загрузить склады'
+    errorMessage.value = error?.message || 'Не удалось загрузить данные'
   } finally {
     isInitializing.value = false
   }
+})
+
+onUnmounted(() => {
+  clearSourceSearchTimer()
 })
 
 watch(selectedWarehouseId, async () => {
@@ -66,8 +100,7 @@ watch(selectedWarehouseId, async () => {
 
   selectedPairKey.value = ''
   pairs.value = []
-  sourceRegisters.value = []
-  selectedRegisterIds.value = []
+  clearSourceRegisters()
 
   if (!selectedWarehouseNumber.value) return
 
@@ -79,13 +112,48 @@ watch(selectedPairKey, async () => {
   registerRequestId += 1
   registersLoading.value = false
 
-  sourceRegisters.value = []
-  selectedRegisterIds.value = []
+  clearSourceRegisters()
 
   if (!selectedPair.value) return
 
   await loadSourceRegisters()
 })
+
+watch([sourcePage, sourcePerPage, sourceSortBy], () => {
+  if (!selectedPair.value) return
+
+  clearSourceSearchTimer()
+  loadSourceRegisters()
+}, { immediate: false })
+
+watch(sourceSearch, () => {
+  if (!selectedPair.value) return
+
+  clearSourceSearchTimer()
+  sourceSearchTimer = window.setTimeout(() => {
+    sourceSearchTimer = null
+    if (sourcePage.value !== 1) {
+      sourcePage.value = 1
+      return
+    }
+
+    loadSourceRegisters()
+  }, 300)
+})
+
+function clearSourceSearchTimer() {
+  if (sourceSearchTimer) {
+    window.clearTimeout(sourceSearchTimer)
+    sourceSearchTimer = null
+  }
+}
+
+function clearSourceRegisters() {
+  clearSourceSearchTimer()
+  sourceRegisters.value = []
+  sourceTotalCount.value = 0
+  selectedRegisterIds.value = []
+}
 
 function getPairKey(pair) {
   return `${pair.senderCompanyId}:${pair.receiverCompanyId}`
@@ -94,12 +162,7 @@ function getPairKey(pair) {
 function getPairLabel(pair) {
   const sender = pair.senderCompanyName || pair.senderCompanyId
   const receiver = pair.receiverCompanyName || pair.receiverCompanyId
-  return `${sender} → ${receiver}`
-}
-
-function getRegisterLabel(item) {
-  const base = item.dealNumber || item.fileName || `#${item.id}`
-  return `${base} · ${item.redParcelsCount}`
+  return `${sender} / ${receiver}`
 }
 
 function getErrorText(error, fallback) {
@@ -141,14 +204,24 @@ async function loadSourceRegisters() {
   registersLoading.value = true
   errorMessage.value = ''
   try {
-    const result = await registersStore.getReturnRegisterSourceRegisters({
+    const result = await registersStore.getRegisters({
       warehouseId: selectedWarehouseNumber.value,
       senderCompanyId: pair.senderCompanyId,
-      receiverCompanyId: pair.receiverCompanyId
+      receiverCompanyId: pair.receiverCompanyId,
+      whOnly: true,
+      returnSourceOnly: true,
+      page: sourcePage.value,
+      pageSize: sourcePerPage.value,
+      sortBy: sourceSortBy.value?.[0]?.key || 'id',
+      sortOrder: sourceSortBy.value?.[0]?.order || 'desc',
+      search: sourceSearch.value
     })
     /* v8 ignore next -- stale async response guard */
     if (requestId === registerRequestId) {
-      sourceRegisters.value = Array.isArray(result) ? result : []
+      sourceRegisters.value = Array.isArray(result) ? result : (result?.items || [])
+      sourceTotalCount.value = Array.isArray(result)
+        ? result.length
+        : (result?.pagination?.totalCount || 0)
     }
   } catch (error) {
     /* v8 ignore next -- stale async response guard */
@@ -161,21 +234,6 @@ async function loadSourceRegisters() {
       registersLoading.value = false
     }
   }
-}
-
-function isRegisterSelected(registerId) {
-  return selectedRegisterIds.value.includes(registerId)
-}
-
-function toggleRegister(registerId, checked) {
-  if (checked) {
-    if (!selectedRegisterIds.value.includes(registerId)) {
-      selectedRegisterIds.value = [...selectedRegisterIds.value, registerId]
-    }
-    return
-  }
-
-  selectedRegisterIds.value = selectedRegisterIds.value.filter((id) => id !== registerId)
 }
 
 async function submit() {
@@ -278,40 +336,34 @@ function cancel() {
       </div>
     </div>
 
-    <div class="return-register-table-wrap">
-      <table class="return-register-table" data-testid="registers-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Реестр</th>
-            <th>Дата</th>
-            <th>Красная зона</th>
-            <th>Всего</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="sourceRegisters.length === 0">
-            <td colspan="5" class="empty-cell"></td>
-          </tr>
-          <tr v-for="item in sourceRegisters" :key="item.id">
-            <td>
-              <input
-                type="checkbox"
-                :checked="isRegisterSelected(item.id)"
-                :disabled="isSubmitting"
-                :aria-label="getRegisterLabel(item)"
-                data-testid="register-checkbox"
-                @change="toggleRegister(item.id, $event.target.checked)"
-              />
-            </td>
-            <td>{{ item.dealNumber || item.fileName || item.id }}</td>
-            <td>{{ formatDate(item.date) }}</td>
-            <td>{{ item.redParcelsCount }}</td>
-            <td>{{ item.parcelsTotal }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <section class="return-register-source-section">
+      <h2 class="secondary-heading">{{ registerNouns.plural }}</h2>
+
+      <v-text-field
+        v-model="sourceSearch"
+        :append-inner-icon="mdiMagnify"
+        :label="`Поиск по любой информации о ${registerNouns.prepositional}`"
+        variant="solo"
+        hide-details
+        :loading="registersLoading"
+        :disabled="sourceTableDisabled"
+        data-testid="source-register-search"
+      />
+
+      <WarehouseRegistersTable
+        v-model:items-per-page="sourcePerPage"
+        v-model:page="sourcePage"
+        v-model:sort-by="sourceSortBy"
+        v-model:selected-ids="selectedRegisterIds"
+        :items="sourceRegisters"
+        :items-length="sourceTotalCount"
+        :loading="registersLoading"
+        :show-actions="false"
+        :selectable="true"
+        :links-enabled="false"
+        :selection-disabled="sourceTableDisabled || registersLoading"
+      />
+    </section>
 
     <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0" data-testid="return-register-error">
       {{ errorMessage }}
@@ -320,32 +372,15 @@ function cancel() {
 </template>
 
 <style scoped>
-.return-register-table-wrap {
-  margin-top: 18px;
-  overflow-x: auto;
+.return-register-source-section {
+  margin-top: 1.25rem;
 }
 
-.return-register-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.return-register-table th,
-.return-register-table td {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 8px;
-  text-align: left;
-  vertical-align: middle;
-}
-
-.return-register-table th:first-child,
-.return-register-table td:first-child {
-  width: 44px;
-  text-align: center;
-}
-
-.empty-cell {
-  height: 40px;
+.secondary-heading {
+  color: #495057;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
 }
 
 </style>

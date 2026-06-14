@@ -388,6 +388,7 @@ describe('Registers_WhList.vue', () => {
       'countries',
       'senderRecipient',
       'parcelsTotal',
+      'parcelsByZone',
       'statusId',
       'warehouseId',
       'warehouseArrivalDate'
@@ -399,6 +400,7 @@ describe('Registers_WhList.vue', () => {
       'Страны',
       'Отправитель/Получатель',
       'Товаров/Посылок',
+      'Зоны',
       'Статус',
       'Склад',
       'Дата прибытия'
@@ -461,6 +463,7 @@ describe('Registers_WhList.vue', () => {
     expect(sortableByKey.countries).toBe(true)
     expect(sortableByKey.senderRecipient).toBe(true)
     expect(sortableByKey.parcelsTotal).toBe(true)
+    expect(sortableByKey.parcelsByZone).toBe(false)
     expect(sortableByKey.statusId).toBe(true)
     expect(sortableByKey.warehouseId).toBe(true)
     expect(sortableByKey.warehouseArrivalDate).toBe(true)
@@ -474,6 +477,30 @@ describe('Registers_WhList.vue', () => {
 
     expect(parcelsHeader.align).toBe('end')
     expect(parcelsHeader.width).toBe('150px')
+  })
+
+  it('renders warehouse zone distribution counts and hides zero values', async () => {
+    mockItems.value = [{
+      id: 57,
+      parcelsByZone: {
+        1: 3,
+        10: 0,
+        20: 12
+      }
+    }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const rows = wrapper.findAll('.zone-distribution-row')
+    expect(rows).toHaveLength(3)
+    expect(rows[0].text()).toContain('Без зоны')
+    expect(rows[0].text()).toContain('3')
+    expect(rows[1].text()).toContain('Зеленая')
+    expect(rows[1].text()).toContain('-')
+    expect(rows[2].text()).toContain('Красная')
+    expect(rows[2].text()).toContain('12')
+    expect(wrapper.vm.formatZoneCount({}, 1)).toBe('-')
   })
 
   it('shows a sort icon for warehouse custom multiline headers', async () => {

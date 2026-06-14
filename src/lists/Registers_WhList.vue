@@ -87,6 +87,12 @@ const bulkStatusState = reactive({})
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
 
+const warehouseZoneDistribution = [
+  { value: 1, label: 'Без зоны' },
+  { value: 10, label: 'Зеленая' },
+  { value: 20, label: 'Красная' }
+]
+
 function bulkChangeStatus(registerId) {
   toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
 }
@@ -163,6 +169,16 @@ function getCountryDisplayName(item, countryCode, airportId) {
   }
 
   return `${countryName} (${airportCode})`
+}
+
+function getZoneCount(item, zoneValue) {
+  const count = Number(item?.parcelsByZone?.[zoneValue] ?? 0)
+  return Number.isFinite(count) && count > 0 ? count : 0
+}
+
+function formatZoneCount(item, zoneValue) {
+  const count = getZoneCount(item, zoneValue)
+  return count > 0 ? formatIntegerThousands(count) : '-'
 }
 
 onMounted(async () => {
@@ -264,6 +280,7 @@ const headers = [
   { title: 'Страны', key: 'countries', sortable: true },
   { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
   { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
+  { title: 'Зоны', key: 'parcelsByZone', sortable: false, align: 'end', minWidth: '135px', width: '135px' },
   { title: 'Статус', key: 'statusId', sortable: true },
   { title: 'Склад', key: 'warehouseId', sortable: true },
   { title: 'Дата прибытия', key: 'warehouseArrivalDate', sortable: true }
@@ -416,6 +433,19 @@ defineExpose({
               <div style="white-space: pre-line">{{ formatParcelsByCheckStatusProjectionTooltip(item) }}</div>
             </template>
           </v-tooltip>
+        </template>
+
+        <template #[`item.parcelsByZone`]="{ item }">
+          <div class="zone-distribution">
+            <div
+              v-for="zone in warehouseZoneDistribution"
+              :key="zone.value"
+              class="zone-distribution-row"
+            >
+              <span class="zone-distribution-label">{{ zone.label }}</span>
+              <span class="zone-distribution-value">{{ formatZoneCount(item, zone.value) }}</span>
+            </div>
+          </div>
         </template>
 
         <template #[`header.dealNumber`]="{ column, isSorted, getSortIcon }">
@@ -630,6 +660,34 @@ defineExpose({
 .numeric-panel .data-box {
   align-items: flex-end;
   text-align: right;
+}
+
+.zone-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.82rem;
+  line-height: 1.15;
+  min-width: 120px;
+}
+
+.zone-distribution-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.zone-distribution-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zone-distribution-value {
+  min-width: 26px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .countries-panel .countries-box {

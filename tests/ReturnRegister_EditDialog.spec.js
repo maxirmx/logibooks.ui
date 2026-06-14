@@ -51,7 +51,7 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'iconSize', 'disabled'],
     emits: ['click'],
-    template: '<button type="button" :data-tooltip="tooltipText" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template: '<button type="button" :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
@@ -78,11 +78,11 @@ async function selectPair(wrapper, senderId = 2, receiverId = 3) {
 }
 
 function okButton(wrapper) {
-  return wrapper.find('[data-tooltip="OK"]')
+  return wrapper.find('[data-tooltip="Создать"]')
 }
 
 function cancelButton(wrapper) {
-  return wrapper.find('[data-tooltip="Cancel"]')
+  return wrapper.find('[data-tooltip="Отменить"]')
 }
 
 describe('ReturnRegister_EditDialog.vue', () => {
@@ -107,6 +107,8 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await flushPromises()
 
     expect(ensureWarehousesLoaded).toHaveBeenCalledOnce()
+    expect(okButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-check-double')
+    expect(cancelButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-xmark')
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
   })
 

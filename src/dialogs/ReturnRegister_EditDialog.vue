@@ -212,7 +212,7 @@ function cancel() {
 </script>
 
 <template>
-  <div class="settings form-3 form-compact">
+  <div class="settings form-4 form-compact">
     <div class="header-with-actions">
       <h1 class="primary-heading">Создание реестра возврата</h1>
       <div class="header-actions-bar">
@@ -222,8 +222,8 @@ function cancel() {
         <div class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
-            icon="fa-solid fa-check"
-            tooltip-text="OK"
+            icon="fa-solid fa-check-double"
+            tooltip-text="Создать"
             iconSize="2x"
             :disabled="!canSubmit"
             @click="submit"
@@ -231,7 +231,7 @@ function cancel() {
           <ActionButton
             :item="{}"
             icon="fa-solid fa-xmark"
-            tooltip-text="Cancel"
+            tooltip-text="Отменить"
             iconSize="2x"
             :disabled="isSubmitting"
             @click="cancel"

@@ -43,6 +43,8 @@ let company = ref({
   postalCode: '',
   city: '',
   street: '',
+  email: '',
+  phone: '',
   titleSignatureStamp: null
 })
 
@@ -113,6 +115,8 @@ const schema = Yup.object({
   postalCode: Yup.string(),
   city: Yup.string(),
   street: Yup.string(),
+  email: Yup.string().nullable().email('Неверный формат электронной почты'),
+  phone: Yup.string().nullable(),
   titleSignatureStamp: Yup.string().nullable()
 })
 
@@ -334,6 +338,30 @@ function onSubmit(values, { setErrors }) {
         />
       </div>
 
+      <div class="form-group">
+        <label for="email" class="label">Адрес электронной почты:</label>
+        <Field
+          name="email"
+          id="email"
+          type="email"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.email }"
+          placeholder="Адрес электронной почты"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="phone" class="label">Телефон:</label>
+        <Field
+          name="phone"
+          id="phone"
+          type="text"
+          class="form-control input"
+          :class="{ 'is-invalid': errors.phone }"
+          placeholder="Телефон"
+        />
+      </div>
+
       <div class="form-group signature-stamp-group">
         <label class="label">Подпись / печать:</label>
         <input
@@ -399,6 +427,8 @@ function onSubmit(values, { setErrors }) {
       <div v-if="errors.postalCode" class="alert alert-danger mt-3 mb-0">{{ errors.postalCode }}</div>
       <div v-if="errors.city" class="alert alert-danger mt-3 mb-0">{{ errors.city }}</div>
       <div v-if="errors.street" class="alert alert-danger mt-3 mb-0">{{ errors.street }}</div>
+      <div v-if="errors.email" class="alert alert-danger mt-3 mb-0">{{ errors.email }}</div>
+      <div v-if="errors.phone" class="alert alert-danger mt-3 mb-0">{{ errors.phone }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
       <!-- Global alert display (uses alert store) -->
       <div v-if="alertStore.alert" class="mt-3">

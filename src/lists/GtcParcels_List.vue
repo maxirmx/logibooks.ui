@@ -23,7 +23,6 @@ import { gtcRegisterColumnTitles } from '@/helpers/gtc.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
-import { formatDate } from '@/helpers/date.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -32,6 +31,7 @@ import {
   getFeacnCodesForKeywords,
   getFrozenOrderSortDir,
   loadParcels,
+  formatPassport,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -371,7 +371,7 @@ const headers = computed(() => {
     { title: gtcRegisterColumnTitles.postalCode, key: 'postalCode', sortable: false, align: 'start', width: '120px' },
     { title: gtcRegisterColumnTitles.city, key: 'city', sortable: false, align: 'start', width: '120px' },
     { title: gtcRegisterColumnTitles.address, key: 'address', sortable: false, align: 'start', width: '120px' },
-    { title: "Паспорт", key: 'passport', sortable: false, align: 'start', width: '120px' },
+    { title: 'Паспорт', key: 'passport', sortable: false, align: 'start', width: '220px' },
     { title: gtcRegisterColumnTitles.inn, key: 'inn', sortable: false, align: 'start', width: '120px' },
     { title: gtcRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
     { title: gtcRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
@@ -430,16 +430,6 @@ function closeList() {
 // Function to filter headers that need generic templates
 function getGenericTemplateHeaders() {
   return filterGenericTemplateHeadersForParcel(headers.value)
-}
-
-function formatPassport(item) {
-  const parts = [item.passportSeries, item.passportNumber]
-  if (item.passportIssuedBy || item.passportIssueDate) {
-    parts.push('выдан')
-    if (item.passportIssuedBy) parts.push(item.passportIssuedBy)
-    if (item.passportIssueDate) parts.push(formatDate(item.passportIssueDate))
-  }
-  return parts.filter(Boolean).join(' ')
 }
 </script>
 

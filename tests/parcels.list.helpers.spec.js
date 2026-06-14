@@ -49,7 +49,8 @@ import {
   getMatchingFeacnCodeItemClass,
   getTnVedCellClass,
   updateParcelTnVed,
-  loadParcels
+  loadParcels,
+  formatPassport
 } from '../src/helpers/parcels.list.helpers.js'
 
 // Import mocked FEACN info helpers
@@ -287,6 +288,24 @@ describe('Parcels List Helpers', () => {
       expect(result).toEqual([
         { key: 'productName', title: 'Product Name' }
       ])
+    })
+  })
+
+  describe('formatPassport', () => {
+    it('formats passport parts with issuer and issue date', () => {
+      expect(formatPassport({
+        passportSeries: 'AA',
+        passportNumber: '123456',
+        passportIssuedBy: 'ОВД',
+        passportIssueDate: '2020-01-01'
+      })).toBe('AA 123456 выдан ОВД 01.01.2020')
+    })
+
+    it('formats partial passport data without extra spaces', () => {
+      expect(formatPassport({ passportSeries: 'AA', passportNumber: '123' })).toBe('AA 123')
+      expect(formatPassport({ passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe('123 выдан 01.01.2020')
+      expect(formatPassport({})).toBe('')
+      expect(formatPassport(null)).toBe('')
     })
   })
 

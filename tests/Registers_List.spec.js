@@ -1216,15 +1216,6 @@ describe('Registers_List.vue', () => {
   })
 })
 
-// Add mock for orderStatusesStore.orderStatuses in the Pinia mock
-vi.mock('@/stores/parcel.statuses.store.js', () => ({
-  useParcelStatusesStore: () => ({
-    getAll: getOrderStatusesAll,
-    ensureLoaded: ensureOrderStatusesLoadedFn,
-    parcelStatuses: mockOrderStatuses
-  })
-}))
-
 describe('formatInvoiceDate function', () => {
   it('formats a valid date string correctly in dd.MM.yyyy format', () => {
     const wrapper = mount(RegistersList, {

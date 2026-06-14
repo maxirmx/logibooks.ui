@@ -50,7 +50,9 @@ import {
   getTnVedCellClass,
   updateParcelTnVed,
   loadParcels,
-  formatPassport
+  formatPassport,
+  hasParcelEditRouteAccess,
+  buildParcelEditCellClass
 } from '../src/helpers/parcels.list.helpers.js'
 
 // Import mocked FEACN info helpers
@@ -131,6 +133,41 @@ describe('Parcels List Helpers', () => {
         params: { id: 123, registerId: 456 },
         query: {}
       })
+    })
+  })
+
+  describe('hasParcelEditRouteAccess', () => {
+    it('returns true for plain or ref-like hasLogistRole values', () => {
+      expect(hasParcelEditRouteAccess({ hasLogistRole: true })).toBe(true)
+      expect(hasParcelEditRouteAccess({ hasLogistRole: { value: true } })).toBe(true)
+    })
+
+    it('returns false for missing, false, or ref-like false values', () => {
+      expect(hasParcelEditRouteAccess(null)).toBe(false)
+      expect(hasParcelEditRouteAccess({})).toBe(false)
+      expect(hasParcelEditRouteAccess({ hasLogistRole: false })).toBe(false)
+      expect(hasParcelEditRouteAccess({ hasLogistRole: { value: false } })).toBe(false)
+    })
+  })
+
+  describe('buildParcelEditCellClass', () => {
+    it('appends clickable-cell when parcel edit route access is allowed', () => {
+      expect(buildParcelEditCellClass(true, 'truncated-cell')).toBe('truncated-cell clickable-cell')
+      expect(buildParcelEditCellClass({ value: true }, 'truncated-cell numeric-panel')).toBe(
+        'truncated-cell numeric-panel clickable-cell'
+      )
+    })
+
+    it('keeps only base classes when parcel edit route access is denied', () => {
+      expect(buildParcelEditCellClass(false, 'truncated-cell')).toBe('truncated-cell')
+      expect(buildParcelEditCellClass({ value: false }, 'truncated-cell numeric-panel')).toBe(
+        'truncated-cell numeric-panel'
+      )
+    })
+
+    it('handles empty base classes', () => {
+      expect(buildParcelEditCellClass(true)).toBe('clickable-cell')
+      expect(buildParcelEditCellClass(false)).toBe('')
     })
   })
 

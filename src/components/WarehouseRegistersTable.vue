@@ -21,10 +21,8 @@ import {
   createTransportationTypesById,
   createWarehouseRegisterHeaders,
   formatZoneCount,
-  getAirportIata as resolveAirportIata,
   getCountryDisplayName as resolveCountryDisplayName,
   isReturnRegister,
-  isAviaTransportation as resolveIsAviaTransportation,
   warehouseZoneDistribution
 } from '@/helpers/warehouse.registers.table.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -127,14 +125,6 @@ function toggleSelection(registerId, checked) {
 
 function getRegisterLabel(item) {
   return item?.dealNumber || item?.fileName || `#${item?.id}`
-}
-
-function isAviaTransportation(item) {
-  return resolveIsAviaTransportation(item, transportationTypesById.value)
-}
-
-function getAirportIata(airportId) {
-  return resolveAirportIata(airportId, airportsById.value)
 }
 
 function getCountryDisplayName(item, countryCode, airportId) {

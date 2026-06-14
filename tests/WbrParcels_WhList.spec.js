@@ -13,6 +13,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 const {
   loadParcels,
+  navigateToEditParcel,
   setDefect,
   clearDefect,
   clearExtId,
@@ -21,6 +22,7 @@ const {
   stopParcelExtIdMonitor
 } = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
+  navigateToEditParcel: vi.fn(),
   setDefect: vi.fn().mockResolvedValue(true),
   clearDefect: vi.fn().mockResolvedValue(true),
   clearExtId: vi.fn().mockResolvedValue(true),
@@ -93,7 +95,12 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
-  loadParcels
+  loadParcels,
+  navigateToEditParcel
+}))
+
+vi.mock('@/router', () => ({
+  default: { push: vi.fn() }
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -213,6 +220,7 @@ describe('WbrParcels_WhList.vue', () => {
     parcelsWhBoxNumber.value = ''
     parcelsWhSticker.value = ''
     parcelsWhProductName.value = ''
+    navigateToEditParcel.mockClear()
   })
 
   it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
@@ -286,6 +294,22 @@ describe('WbrParcels_WhList.vue', () => {
     const productName = wrapper.get('.warehouse-product-name-cell')
     expect(productName.text()).toBe('Very long WBR product name that must remain on one line')
     expect(productName.attributes('title')).toBe('Very long WBR product name that must remain on one line')
+  })
+
+  it('opens parcel edit from warehouse table cells', async () => {
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await wrapper.get('.warehouse-product-name-cell').trigger('click')
+
+    expect(navigateToEditParcel).toHaveBeenCalledWith(
+      expect.any(Object),
+      mockItems.value[0],
+      'Редактирование посылки',
+      { registerId: 1 }
+    )
   })
 
   it('sets defect from row action and reloads parcels for warehouse manager', async () => {

@@ -43,6 +43,11 @@ const mockWhPerPage = ref(25)
 const mockWhSearch = ref('warehouse search')
 const mockWhSortBy = ref([{ key: 'warehouseArrivalDate', order: 'asc' }])
 const mockWhPage = ref(3)
+const mockIsShiftLeadPlus = ref(true)
+const mockIsSrLogistPlus = ref(true)
+const mockIsWhManagerPlus = ref(true)
+const mockHasWhRole = ref(true)
+const confirmMock = vi.fn()
 
 const registersStore = {
   getAll,
@@ -104,10 +109,10 @@ vi.mock('pinia', async () => {
         registers_wh_search: mockWhSearch,
         registers_wh_sort_by: mockWhSortBy,
         registers_wh_page: mockWhPage,
-        isShiftLeadPlus: ref(true),
-        isSrLogistPlus: ref(true),
-        isWhManagerPlus: ref(true),
-        hasWhRole: ref(true)
+        isShiftLeadPlus: mockIsShiftLeadPlus,
+        isSrLogistPlus: mockIsSrLogistPlus,
+        isWhManagerPlus: mockIsWhManagerPlus,
+        hasWhRole: mockHasWhRole
       }
     }
   }
@@ -180,11 +185,15 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_wh_search: mockWhSearch,
     registers_wh_sort_by: mockWhSortBy,
     registers_wh_page: mockWhPage,
-    isShiftLeadPlus: ref(true),
-    isSrLogistPlus: ref(true),
-    isWhManagerPlus: ref(true),
-    hasWhRole: ref(true)
+    isShiftLeadPlus: mockIsShiftLeadPlus,
+    isSrLogistPlus: mockIsSrLogistPlus,
+    isWhManagerPlus: mockIsWhManagerPlus,
+    hasWhRole: mockHasWhRole
   })
+}))
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
 }))
 
 vi.mock('@/helpers/items.per.page.js', () => ({
@@ -212,11 +221,18 @@ describe('Registers_WhList.vue', () => {
     mockAirports.value = []
     mockOps.value = { customsProcedures: [], transportationTypes: [] }
     registersStore.error = ref(null)
+    registersStore.remove.mockReset()
+    registersStore.remove.mockResolvedValue()
     mockWhPerPage.value = 25
     mockWhSearch.value = 'warehouse search'
     mockWhSortBy.value = [{ key: 'warehouseArrivalDate', order: 'asc' }]
     mockWhPage.value = 3
+    mockIsShiftLeadPlus.value = true
+    mockIsSrLogistPlus.value = true
+    mockIsWhManagerPlus.value = true
+    mockHasWhRole.value = true
     mockAlert.value = null
+    confirmMock.mockReset()
     ensureParcelStatusesLoadedFn.mockClear()
     countriesEnsureLoadedFn.mockClear()
     warehousesEnsureLoadedFn.mockClear()
@@ -341,7 +357,7 @@ describe('Registers_WhList.vue', () => {
     expect(getCompaniesAll).not.toHaveBeenCalled()
   })
 
-  it('uses warehouse labels and hides paperwork actions', async () => {
+  it('uses warehouse labels and shows actions allowed by warehouse roles', async () => {
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
@@ -359,12 +375,71 @@ describe('Registers_WhList.vue', () => {
     )
 
     expect(hasEdit).toBe(true)
-    expect(hasDelete).toBe(false)
+    expect(hasDelete).toBe(true)
 
     const hasWarehouseTooltip = actionButtons.some(button =>
       String(button.props('tooltipText') || '').includes('в партии')
     )
     expect(hasWarehouseTooltip).toBe(true)
+  })
+
+  it('hides warehouse register delete action below shift lead role', async () => {
+    mockIsShiftLeadPlus.value = false
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const hasDelete = actionButtons.some(button =>
+      String(button.props('tooltipText') || '').includes('Удалить')
+    )
+
+    expect(hasDelete).toBe(false)
+  })
+
+  it('uses confirmation workflow when deleting warehouse parties', async () => {
+    confirmMock.mockResolvedValueOnce(true)
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+    const item = { id: 12, fileName: 'party.xlsx' }
+
+    await wrapper.vm.deleteRegister(item)
+
+    expect(confirmMock).toHaveBeenCalledWith({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Удалить партию "party.xlsx" ?'
+    })
+    expect(registersStore.remove).toHaveBeenCalledWith(12)
+  })
+
+  it('does not delete warehouse party when confirmation is cancelled', async () => {
+    confirmMock.mockResolvedValueOnce(false)
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })
+
+    expect(registersStore.remove).not.toHaveBeenCalled()
+  })
+
+  it('reports warehouse party delete errors', async () => {
+    confirmMock.mockResolvedValueOnce(true)
+    registersStore.remove.mockRejectedValueOnce(new Error('delete failed'))
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })
+
+    expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении партии: delete failed')
   })
 
   it('shows return-register action and routes to creation view', async () => {

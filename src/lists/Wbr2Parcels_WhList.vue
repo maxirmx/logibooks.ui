@@ -10,10 +10,11 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { loadParcels } from '@/helpers/parcels.list.helpers.js'
+import { loadParcels, navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import {
   scanjobCheckStatusProjectionKind,
   getScanjobCheckStatusClass,
@@ -24,6 +25,7 @@ import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
+import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import {
   canClearParcelDefect,
@@ -108,6 +110,16 @@ const headers = computed(() =>[
   { title: wbr2RegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false },
 ])
+
+const genericClickableHeaders = computed(() => headers.value.filter(header => ![
+  'actions',
+  'checkStatusProjection',
+  'zone',
+  'statusId',
+  'productName',
+  'weightKg',
+  'quantity'
+].includes(header.key)))
 
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка...'
@@ -210,6 +222,10 @@ onUnmounted(() => {
 
 function closeList() {
   emit('close')
+}
+
+function editParcel(item) {
+  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
 }
 
 async function runDefectAction(item, action, getErrorMessage) {
@@ -321,38 +337,77 @@ async function clearParcelDefect(item) {
             />
           </div>
         </template>
+        <template v-for="header in genericClickableHeaders" :key="header.key" #[`item.${header.key}`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item[header.key] || ''"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
+          />
+        </template>
         <template #[`item.productName`]="{ item }">
-          <span class="warehouse-product-name-cell" :title="item.productName || ''">{{ item.productName || ' ' }}</span>
+          <ClickableCell
+            :item="item"
+            :display-value="item.productName || ' '"
+            cell-class="truncated-cell clickable-cell warehouse-product-name-cell"
+            :title="item.productName || ''"
+            @click="editParcel"
+          />
         </template>
         <template #[`item.weightKg`]="{ item }">
-          <span class="numeric-panel">{{ formatWeight(item.weightKg) }}</span>
+          <ClickableCell
+            :item="item"
+            :display-value="formatWeight(item.weightKg)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+        <template #[`item.quantity`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item.quantity"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
         </template>
         <template #[`item.statusId`]="{ item }">
-          {{ parcelStatusStore.getStatusTitle(item.statusId) }}
+          <ClickableCell
+            :item="item"
+            :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
+          />
         </template>
         <template #[`item.checkStatusProjection`]="{ item }">
           <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
             <template #activator="{ props: tooltipProps }">
-              <span
+              <ClickableCell
                 v-bind="tooltipProps"
-                :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
-              >
-                {{ item.checkStatusProjection?.title }}
-              </span>
+                :item="item"
+                :display-value="item.checkStatusProjection?.title"
+                :cell-class="`truncated-cell status-cell clickable-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+                @click="editParcel"
+              />
             </template>
             <template #default>
               <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
             </template>
           </v-tooltip>
-          <span
+          <ClickableCell
             v-else
-            :class="`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
-          >
-            {{ item.checkStatusProjection?.title }}
-          </span>
+            :item="item"
+            :display-value="item.checkStatusProjection?.title"
+            :cell-class="`truncated-cell status-cell clickable-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+            @click="editParcel"
+          />
         </template>
         <template #[`item.zone`]="{ item }">
-          {{ ops.zones.find(z => z.value === item.zone)?.name || ' ' }}
+          <ClickableCell
+            :item="item"
+            :display-value="ops.zones.find(z => z.value === item.zone)?.name || ' '"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
+          />
         </template>
       </v-data-table-server>
 

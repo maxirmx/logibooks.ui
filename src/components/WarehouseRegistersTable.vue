@@ -45,6 +45,7 @@ const props = defineProps({
   linksEnabled: { type: Boolean, default: true },
   runningAction: { type: Boolean, default: false },
   hasWhRole: { type: Boolean, default: false },
+  isShiftLeadPlus: { type: Boolean, default: false },
   isSrLogistPlus: { type: Boolean, default: false },
   isWhManagerPlus: { type: Boolean, default: false },
   statusOptions: { type: Array, default: () => [] },
@@ -63,6 +64,7 @@ const emit = defineEmits([
   'update:selectedIds',
   'open-parcels',
   'edit-register',
+  'delete-register',
   'open-unregistered-parcels',
   'open-scanjob-create'
 ])
@@ -452,6 +454,14 @@ function emitEditRegister(item) {
               @click="() => bulkChangeStatus(item.id)"
             />
           </div>
+          <ActionButton
+            v-if="isShiftLeadPlus"
+            :item="item"
+            icon="fa-solid fa-trash-can"
+            :tooltip-text="`Удалить ${registerNouns.accusative}`"
+            @click="() => emit('delete-register', item)"
+            :disabled="runningAction || loading"
+          />
           <ActionButton
             v-if="isWhManagerPlus"
             :item="item"

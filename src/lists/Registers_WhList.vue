@@ -27,6 +27,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
+import { useConfirm } from 'vuetify-use-dialog'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
@@ -51,6 +52,7 @@ const registerStatusesStore = useRegisterStatusesStore()
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
+const confirm = useConfirm()
 
 const {
   validationState,
@@ -64,6 +66,7 @@ const {
   registers_wh_search: registers_search,
   registers_wh_sort_by: registers_sort_by,
   registers_wh_page: registers_page,
+  isShiftLeadPlus,
   isSrLogistPlus,
   isWhManagerPlus,
   hasWhRole
@@ -178,6 +181,39 @@ function editRegister(item) {
   router.push(`/register/edit/${item.id}?mode=${OP_MODE_WAREHOUSE}`)
 }
 
+async function deleteRegister(item) {
+  if (runningAction.value) return
+  runningAction.value = true
+  try {
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Удалить',
+      cancellationText: 'Не удалять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: `Удалить ${registerNouns.value.accusative} "${item.fileName}" ?`
+    })
+
+    if (confirmed) {
+      try {
+        await registersStore.remove(item.id)
+      } catch (err) {
+        alertStore.error(
+          `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
+          (err.message ? `: ${err.message}` : '')
+        )
+      }
+    }
+  } finally {
+    runningAction.value = false
+  }
+}
+
 function openReturnRegisterCreate() {
   router.push('/register/return')
 }
@@ -250,6 +286,7 @@ defineExpose({
       :loading="loading || isInitializing"
       :running-action="runningAction"
       :has-wh-role="hasWhRole"
+      :is-shift-lead-plus="isShiftLeadPlus"
       :is-sr-logist-plus="isSrLogistPlus"
       :is-wh-manager-plus="isWhManagerPlus"
       :status-options="parcelStatuses"
@@ -261,6 +298,7 @@ defineExpose({
       :apply-status-to-all-orders="applyStatusToAllOrders"
       @open-parcels="openParcels"
       @edit-register="editRegister"
+      @delete-register="deleteRegister"
       @open-unregistered-parcels="openUnregisteredParcels"
       @open-scanjob-create="openScanjobCreate"
     />

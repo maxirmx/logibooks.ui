@@ -11,8 +11,9 @@ import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
-const { loadParcels, setDefect, clearDefect } = vi.hoisted(() => ({
+const { loadParcels, navigateToEditParcel, setDefect, clearDefect } = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
+  navigateToEditParcel: vi.fn(),
   setDefect: vi.fn().mockResolvedValue(true),
   clearDefect: vi.fn().mockResolvedValue(true)
 }))
@@ -80,7 +81,12 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
-  loadParcels
+  loadParcels,
+  navigateToEditParcel
+}))
+
+vi.mock('@/router', () => ({
+  default: { push: vi.fn() }
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -190,6 +196,7 @@ describe('Wbr2Parcels_WhList.vue', () => {
     parcelsWhBoxNumber.value = ''
     parcelsWhSticker.value = ''
     parcelsWhProductName.value = ''
+    navigateToEditParcel.mockClear()
   })
 
   it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
@@ -261,6 +268,22 @@ describe('Wbr2Parcels_WhList.vue', () => {
     const productName = wrapper.get('.warehouse-product-name-cell')
     expect(productName.text()).toBe('Very long WBR2 product name that must remain on one line')
     expect(productName.attributes('title')).toBe('Very long WBR2 product name that must remain on one line')
+  })
+
+  it('opens parcel edit from warehouse table cells', async () => {
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await wrapper.get('.warehouse-product-name-cell').trigger('click')
+
+    expect(navigateToEditParcel).toHaveBeenCalledWith(
+      expect.any(Object),
+      mockItems.value[0],
+      'Редактирование посылки',
+      { registerId: 1 }
+    )
   })
 
   it('sets defect from row action and reloads parcels for warehouse manager', async () => {

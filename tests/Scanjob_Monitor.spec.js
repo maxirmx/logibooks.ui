@@ -993,7 +993,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorFollowUsers).toHaveBeenCalledWith(42)
     expect(getFollowUserSelect(wrapper).props('modelValue')).toBeNull()
     expect(getFollowUserSelect(wrapper).props('items')).toEqual([
-      { title: 'Не следить', value: null },
+      { title: 'Не следить (Esc)', value: null },
       { title: 'Operator A', value: 17 },
       { title: 'Operator B', value: 18 }
     ])
@@ -1044,6 +1044,26 @@ describe('Scanjob_Monitor.vue', () => {
     expect(startMonitorFollowUser).toHaveBeenCalledWith(42, 17, {
       onFollowEvent: expect.any(Function)
     })
+  })
+
+  it('clears follow user selection on Escape', async () => {
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+
+    getFollowUserSelect(wrapper).vm.$emit('update:modelValue', 17)
+    await flushPromises()
+
+    const clearCallsBeforeEscape = clearMonitorFollowUser.mock.calls.length
+    await getFollowUserSelect(wrapper).trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+
+    expect(getFollowUserSelect(wrapper).props('modelValue')).toBeNull()
+    expect(setScanjobMonitorFollowUserId).toHaveBeenLastCalledWith(null)
+    expect(clearMonitorFollowUser.mock.calls.length).toBeGreaterThan(clearCallsBeforeEscape)
   })
 
   it('restores persisted follow user selection on mount', async () => {

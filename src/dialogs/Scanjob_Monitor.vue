@@ -137,7 +137,7 @@ const scopeHeading = computed(() => {
 })
 const monitorHeading = computed(() => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`)
 const followUserOptions = computed(() => [
-  { title: 'Не следить', value: null },
+  { title: 'Не следить (Esc)', value: null },
   ...followUsers.value.map((user) => ({
     title: getFollowUserLabel(user),
     value: toNumberOrNull(user?.id)
@@ -179,6 +179,10 @@ function openUnregisteredParcels() {
 
 function getFollowUserLabel(user) {
   return user?.displayName || user?.userName || user?.email || `Пользователь ${user?.id ?? ''}`.trim()
+}
+
+function clearFollowUserSelection() {
+  selectedFollowUserId.value = null
 }
 
 function monitorScopeKey(scope = props.monitorScope) {
@@ -902,6 +906,7 @@ defineExpose({
             :loading="followUsersLoading"
             :disabled="isLoading || followUsersLoading"
             data-testid="scanjob-monitor-follow-user-select"
+            @keydown.esc.prevent.stop="clearFollowUserSelection"
           />
         </div>
         <div v-if="!isBoxMode" class="header-actions header-actions-group">

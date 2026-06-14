@@ -12,6 +12,10 @@ import { formatDate } from '@/helpers/date.formatters.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
+function unrefValue(value) {
+  return value && typeof value === 'object' && 'value' in value ? value.value : value
+}
+
 /**
  * Navigates to edit parcel page
  * @param {Object} router - Vue router instance
@@ -30,6 +34,40 @@ export function navigateToEditParcel(router, item, routeName, queryParams = {}) 
     },
     query: otherQueryParams
   })
+}
+
+/**
+ * Checks whether the current user can follow the shared parcel edit route.
+ *
+ * The parcel edit route uses the same permission as Scanjob monitor parcel
+ * cells: `authStore.hasLogistRole`. This helper accepts either a Pinia setup
+ * store where computed values are unwrapped, or a mocked/storeToRefs-style
+ * object where `hasLogistRole` is a ref.
+ *
+ * @param {Object|null|undefined} authStore - Auth store or auth-store-like test double.
+ * @returns {boolean} True when parcel edit cell navigation should be enabled.
+ */
+export function hasParcelEditRouteAccess(authStore) {
+  return Boolean(unrefValue(authStore?.hasLogistRole))
+}
+
+/**
+ * Builds the class string for a parcel-edit clickable cell.
+ *
+ * The `clickable-cell` cursor class is appended only for users who can follow
+ * the parcel edit route. This mirrors Scanjob monitor cursor behavior; loading
+ * and disabled states are still controlled through ClickableCell's `disabled`
+ * prop.
+ *
+ * @param {boolean|Object} canAccess - Boolean or ref-like value for edit-route access.
+ * @param {string} [baseClass=''] - Existing cell classes to preserve.
+ * @returns {string} Space-separated class list for ClickableCell.
+ */
+export function buildParcelEditCellClass(canAccess, baseClass = '') {
+  return [
+    String(baseClass || '').trim(),
+    unrefValue(canAccess) ? 'clickable-cell' : ''
+  ].filter(Boolean).join(' ')
 }
 
 /**

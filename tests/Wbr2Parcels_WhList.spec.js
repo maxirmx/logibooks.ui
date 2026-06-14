@@ -54,6 +54,7 @@ const parcelsWhProductName = ref('')
 const isAdmin = ref(false)
 const isWhManager = ref(false)
 const isShiftLead = ref(false)
+const hasLogistRole = ref(true)
 
 const registerItem = ref({ dealNumber: 'D-1' })
 
@@ -80,10 +81,19 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/helpers/parcels.list.helpers.js', () => ({
-  loadParcels,
-  navigateToEditParcel
-}))
+vi.mock('@/helpers/parcels.list.helpers.js', () => {
+  const unrefValue = (value) => value && typeof value === 'object' && 'value' in value ? value.value : value
+
+  return {
+    loadParcels,
+    navigateToEditParcel,
+    hasParcelEditRouteAccess: (authStore) => Boolean(unrefValue(authStore?.hasLogistRole)),
+    buildParcelEditCellClass: (canAccess, baseClass = '') => [
+      String(baseClass || '').trim(),
+      unrefValue(canAccess) ? 'clickable-cell' : ''
+    ].filter(Boolean).join(' ')
+  }
+})
 
 vi.mock('@/router', () => ({
   default: { push: vi.fn() }
@@ -132,7 +142,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     parcels_wh_product_name: parcelsWhProductName,
     isAdmin,
     isWhManager,
-    isShiftLead
+    isShiftLead,
+    hasLogistRole
   })
 }))
 
@@ -189,6 +200,8 @@ describe('Wbr2Parcels_WhList.vue', () => {
     isAdmin.value = false
     isWhManager.value = false
     isShiftLead.value = false
+    hasLogistRole.value = true
+    mockLoading.value = false
     parcelsWhStatus.value = null
     parcelsWhCheckStatusProjection.value = null
     parcelsWhZone.value = null
@@ -276,7 +289,13 @@ describe('Wbr2Parcels_WhList.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    await wrapper.get('.warehouse-product-name-cell').trigger('click')
+    await resolveAll()
+
+    const productNameCell = wrapper.get('.warehouse-product-name-cell')
+    expect(productNameCell.classes()).toContain('clickable-cell')
+    expect(productNameCell.attributes('aria-disabled')).toBeUndefined()
+
+    await productNameCell.trigger('click')
 
     expect(navigateToEditParcel).toHaveBeenCalledWith(
       expect.any(Object),
@@ -284,6 +303,24 @@ describe('Wbr2Parcels_WhList.vue', () => {
       'Редактирование посылки',
       { registerId: 1 }
     )
+  })
+
+  it('disables parcel edit cells without parcel edit route access', async () => {
+    hasLogistRole.value = false
+    const wrapper = mount(Wbr2ParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    const productNameCell = wrapper.get('.warehouse-product-name-cell')
+    expect(productNameCell.classes()).not.toContain('clickable-cell')
+    expect(productNameCell.attributes('aria-disabled')).toBe('true')
+
+    await productNameCell.trigger('click')
+
+    expect(navigateToEditParcel).not.toHaveBeenCalled()
   })
 
   it('sets defect from row action and reloads parcels for warehouse manager', async () => {

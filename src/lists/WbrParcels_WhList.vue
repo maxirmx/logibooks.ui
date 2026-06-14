@@ -15,7 +15,7 @@ import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { loadParcels, navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { loadParcels } from '@/helpers/parcels.list.helpers.js'
 import {
   scanjobCheckStatusProjectionKind,
   getScanjobCheckStatusClass,
@@ -40,6 +40,7 @@ import {
 } from '@/helpers/parcel.ext-id.helpers.js'
 import { storeToRefs } from 'pinia'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
+import { useParcelEditAccess } from '@/composables/useParcelEditAccess.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -189,6 +190,16 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   isComponentMounted
 })
 
+const {
+  isParcelEditCellDisabled,
+  parcelEditCellClass,
+  openParcelEdit
+} = useParcelEditAccess({
+  router,
+  disabled: computed(() => loading.value || isInitializing.value),
+  getQueryParams: () => ({ registerId: props.registerId })
+})
+
 const watcherStop = watch(
   [parcels_wh_page, parcels_wh_per_page, parcels_wh_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
   () => triggerLoad(),
@@ -236,7 +247,7 @@ function closeList() {
 }
 
 function editParcel(item) {
-  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
+  openParcelEdit(item)
 }
 
 async function runParcelAction(item, action, getErrorMessage) {
@@ -374,7 +385,8 @@ function handleParcelExtIdChanged(change) {
           <ClickableCell
             :item="item"
             :display-value="item[header.key] ?? ''"
-            cell-class="truncated-cell clickable-cell"
+            :cell-class="parcelEditCellClass('truncated-cell')"
+            :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
         </template>
@@ -382,7 +394,8 @@ function handleParcelExtIdChanged(change) {
           <ClickableCell
             :item="item"
             :display-value="item.productName || ' '"
-            cell-class="truncated-cell clickable-cell warehouse-product-name-cell"
+            :cell-class="parcelEditCellClass('truncated-cell warehouse-product-name-cell')"
+            :disabled="isParcelEditCellDisabled"
             :title="item.productName || ''"
             @click="editParcel"
           />
@@ -391,7 +404,8 @@ function handleParcelExtIdChanged(change) {
           <ClickableCell
             :item="item"
             :display-value="formatWeight(item.weightKg)"
-            cell-class="truncated-cell clickable-cell numeric-panel"
+            :cell-class="parcelEditCellClass('truncated-cell numeric-panel')"
+            :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
         </template>
@@ -399,7 +413,8 @@ function handleParcelExtIdChanged(change) {
           <ClickableCell
             :item="item"
             :display-value="item.quantity"
-            cell-class="truncated-cell clickable-cell numeric-panel"
+            :cell-class="parcelEditCellClass('truncated-cell numeric-panel')"
+            :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
         </template>
@@ -407,7 +422,8 @@ function handleParcelExtIdChanged(change) {
           <ClickableCell
             :item="item"
             :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
-            cell-class="truncated-cell clickable-cell"
+            :cell-class="parcelEditCellClass('truncated-cell')"
+            :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
         </template>
@@ -418,7 +434,8 @@ function handleParcelExtIdChanged(change) {
                 v-bind="tooltipProps"
                 :item="item"
                 :display-value="item.checkStatusProjection?.title"
-                :cell-class="`truncated-cell status-cell clickable-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+                :cell-class="parcelEditCellClass('truncated-cell status-cell ' + getScanjobCheckStatusClass(item.checkStatusProjection))"
+                :disabled="isParcelEditCellDisabled"
                 @click="editParcel"
               />
             </template>
@@ -430,7 +447,8 @@ function handleParcelExtIdChanged(change) {
             v-else
             :item="item"
             :display-value="item.checkStatusProjection?.title"
-            :cell-class="`truncated-cell status-cell clickable-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`"
+            :cell-class="parcelEditCellClass('truncated-cell status-cell ' + getScanjobCheckStatusClass(item.checkStatusProjection))"
+            :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
         </template>
@@ -438,7 +456,8 @@ function handleParcelExtIdChanged(change) {
           <ClickableCell
             :item="item"
             :display-value="ops.zones.find(z => z.value === item.zone)?.name || ' '"
-            cell-class="truncated-cell clickable-cell"
+            :cell-class="parcelEditCellClass('truncated-cell')"
+            :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
         </template>

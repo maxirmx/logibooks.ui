@@ -24,6 +24,11 @@ const mockBulkAssignTnved = vi.fn().mockResolvedValue(true)
 const parcelsPerPage = ref(100)
 const parcelsSortBy = ref([])
 const parcelsPage = ref(1)
+const mockRegisterItem = ref({ dealNumber: 'D-1' })
+const mockCustomsProcedures = [
+  { value: 31, isRe: true },
+  { value: 40, isRe: false }
+]
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -143,8 +148,10 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
-    item: ref({ dealNumber: 'D-1' }),
-    ops: { customsProcedures: [], transportationTypes: [] },
+    get item() {
+      return mockRegisterItem.value
+    },
+    ops: { customsProcedures: mockCustomsProcedures, transportationTypes: [] },
     getById: vi.fn().mockResolvedValue(),
     ensureOpsLoaded: vi.fn().mockResolvedValue(),
     getTransportationDocument: vi.fn(() => 'Документ')
@@ -227,6 +234,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
     vi.clearAllMocks()
     mockBulkAssignTnved.mockResolvedValue(true)
     selectedParcelId.value = null
+    mockRegisterItem.value = { dealNumber: 'D-1' }
     mockItems.value = [
       { id: 1, postingNumber: 'P-1', productName: 'Item1', checkStatus: 0 },
       { id: 2, postingNumber: 'P-2', productName: 'Item2', checkStatus: 0 },
@@ -383,5 +391,41 @@ describe('OzonParcels_List.vue – multi-select', () => {
 
     expect(wrapper.vm.runningAction).toBe(false)
     expect(wrapper.vm.showAssignTnvedDialog).toBe(true)
+  })
+
+  it('shows INN and combined passport columns for import and reexport registers', async () => {
+    for (const customsProcedureCode of [40, 31]) {
+      wrapper.unmount()
+      mockRegisterItem.value = { dealNumber: 'D-1', customsProcedureCode }
+      wrapper = mount(OzonParcels_List, {
+        props: { registerId: 1 },
+        global: { plugins: [createPinia()], stubs: globalStubs }
+      })
+
+      await resolveAll()
+
+      const table = wrapper.findComponent({ name: 'v-data-table-server' })
+      const keys = table.props('headers').map(header => header.key)
+
+      expect(keys).toEqual(expect.arrayContaining([
+        'inn',
+        'passport'
+      ]))
+      expect(keys).not.toContain('passportSeries')
+      expect(keys).not.toContain('passportIssueDate')
+      expect(keys).not.toContain('passportIssuedBy')
+    }
+  })
+
+  it('keeps the legacy passport number column for other Ozon registers', () => {
+    const table = wrapper.findComponent({ name: 'v-data-table-server' })
+    const keys = table.props('headers').map(header => header.key)
+
+    expect(keys).toContain('passportNumber')
+    expect(keys).not.toContain('inn')
+    expect(keys).not.toContain('passport')
+    expect(keys).not.toContain('passportSeries')
+    expect(keys).not.toContain('passportIssueDate')
+    expect(keys).not.toContain('passportIssuedBy')
   })
 })

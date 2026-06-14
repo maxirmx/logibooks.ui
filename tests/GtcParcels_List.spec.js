@@ -15,6 +15,7 @@ const mockItems = ref([
     lastName: 'Ivanov',
     firstName: 'Ivan',
     patronymic: 'Ivanovich',
+    inn: '770123456789',
     passportSeries: 'AA',
     passportNumber: '123456',
     passportIssuedBy: 'ОВД',
@@ -129,7 +130,7 @@ describe('GtcParcels_List.vue', () => {
     vi.clearAllMocks()
   })
 
-  it('renders formatted passport text in the passport column', async () => {
+  it('renders INN and formatted combined passport text', async () => {
     const wrapper = mount(GtcParcels_List, {
       props: { registerId: 1 },
       global: { plugins: [createPinia()], stubs: globalStubs }
@@ -138,22 +139,22 @@ describe('GtcParcels_List.vue', () => {
     await resolveAll()
 
     const text = wrapper.text()
+    expect(text).toContain('770123456789')
     expect(text).toContain('AA 123456 выдан ОВД 01.01.2020')
   })
 
-  it('formatPassport returns correct strings for various inputs', async () => {
+  it('uses a single combined passport column', async () => {
     const wrapper = mount(GtcParcels_List, {
       props: { registerId: 1 },
       global: { plugins: [createPinia()], stubs: globalStubs }
     })
 
-    // Wait for component to initialize
     await resolveAll()
 
-    const fn = wrapper.vm.formatPassport
-    expect(fn({ passportSeries: 'AA', passportNumber: '123' })).toBe('AA 123')
-    expect(fn({ passportSeries: 'AA', passportNumber: '123', passportIssuedBy: 'ОВД' })).toBe('AA 123 выдан ОВД')
-    expect(fn({ passportSeries: 'AA', passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe('AA 123 выдан 01.01.2020')
-    expect(fn({})).toBe('')
+    const table = wrapper.findComponent({ name: 'v-data-table-server' })
+    const keys = table.props('headers').map(header => header.key)
+
+    expect(keys).toContain('inn')
+    expect(keys.filter(key => key === 'passport' || key.startsWith('passport'))).toEqual(['passport'])
   })
 })

@@ -8,6 +8,7 @@
 
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
+import { formatDate } from '@/helpers/date.formatters.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -85,6 +86,16 @@ export function filterGenericTemplateHeadersForParcel(headers) {
   ])
   
   return headers.filter(h => !h.key.startsWith('actions') && !excluded.has(h.key))
+}
+
+export function formatPassport(item) {
+  const parts = [item?.passportSeries, item?.passportNumber]
+  if (item?.passportIssuedBy || item?.passportIssueDate) {
+    parts.push('выдан')
+    if (item.passportIssuedBy) parts.push(item.passportIssuedBy)
+    if (item.passportIssueDate) parts.push(formatDate(item.passportIssueDate))
+  }
+  return parts.filter(Boolean).join(' ')
 }
 
 /**

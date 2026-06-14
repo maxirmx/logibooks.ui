@@ -31,6 +31,7 @@ import {
   getFeacnCodesForKeywords,
   getFrozenOrderSortDir,
   loadParcels,
+  formatPassport,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -52,6 +53,9 @@ const props = defineProps({
   registerId: { type: Number, required: true }
 })
 const emit = defineEmits(['close'])
+
+const CUSTOMS_PROCEDURE_IMPORT = 40
+const CUSTOMS_PROCEDURE_REEXPORT = 31
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -141,6 +145,12 @@ const isReProcedure = computed(() => {
   if (procedureId == null) return false
   const procedure = registersStore.ops?.customsProcedures?.find((proc) => Number(proc.value) === Number(procedureId))
   return procedure?.isRe
+})
+
+const showImportConsigneeColumns = computed(() => {
+  const customsProcedureCode = Number(registersStore.item?.customsProcedureCode)
+  return customsProcedureCode === CUSTOMS_PROCEDURE_IMPORT ||
+    customsProcedureCode === CUSTOMS_PROCEDURE_REEXPORT
 })
 
 // Provide page options for a select control. For very large page counts, return a compact set
@@ -344,6 +354,11 @@ const checkStatusOptionsFc = computed(() => [
 const headers = computed(() => {
   const feacnLookupColumn = { title: 'Подбор ТНВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
   const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
+  const passportNumberColumn = { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' }
+  const importConsigneeColumns = [
+    { title: ozonRegisterColumnTitles.inn, key: 'inn', sortable: false, align: 'start', width: '120px' },
+    { title: 'Паспорт', key: 'passport', sortable: false, align: 'start', width: '220px' },
+  ]
 
   const baseHeaders = [
     // Frozen order column - kept first for visibility and sorting
@@ -368,7 +383,7 @@ const headers = computed(() => {
     { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
     { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' },
+    ...(showImportConsigneeColumns.value ? importConsigneeColumns : [passportNumberColumn]),
     // Status Information - Current state of the order
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
@@ -547,6 +562,15 @@ function getGenericTemplateHeaders() {
             :item="item"
             :display-value="formatPrice(item.unitPrice)"
             cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.passport`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatPassport(item)"
+            cell-class="truncated-cell clickable-cell"
             @click="editParcel"
           />
         </template>

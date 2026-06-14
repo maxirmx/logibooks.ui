@@ -21,6 +21,8 @@ const mockCompany = {
   postalCode: '123456',
   city: 'Moscow',
   street: 'Test Street',
+  email: 'contact@example.com',
+  phone: '+7 900 123-45-67',
   titleSignatureStamp: 'data:image/png;base64,EXISTING'
 }
 
@@ -241,6 +243,8 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.find('#postalCode').exists()).toBe(true)
       expect(wrapper.find('#city').exists()).toBe(true)
       expect(wrapper.find('#street').exists()).toBe(true)
+      expect(wrapper.find('#email').exists()).toBe(true)
+      expect(wrapper.find('#phone').exists()).toBe(true)
       expect(wrapper.find('[data-testid="signature-stamp-input"]').exists()).toBe(true)
     })
 
@@ -262,6 +266,8 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.text()).toContain('Почтовый индекс:')
       expect(wrapper.text()).toContain('Город:')
       expect(wrapper.text()).toContain('Улица:')
+      expect(wrapper.text()).toContain('Адрес электронной почты:')
+      expect(wrapper.text()).toContain('Телефон:')
       expect(wrapper.text()).toContain('Подпись / печать:')
     })
 
@@ -453,7 +459,9 @@ describe('Company_Settings.vue', () => {
         1,
         expect.objectContaining({
           titleSignatureStamp: mockCompany.titleSignatureStamp,
-          inn: mockCompany.inn
+          inn: mockCompany.inn,
+          email: mockCompany.email,
+          phone: mockCompany.phone
         })
       )
     })

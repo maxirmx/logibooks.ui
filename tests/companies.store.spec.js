@@ -32,6 +32,8 @@ const mockCompanies = [
     postalCode: '123456',
     city: 'Москва',
     street: 'ул. Тестовая, д. 1',
+    email: 'contact@example.com',
+    phone: '+7 900 123-45-67',
     titleSignatureStamp: 'data:image/png;base64,EXISTING'
   },
   {
@@ -44,6 +46,8 @@ const mockCompanies = [
     postalCode: '654321',
     city: 'Санкт-Петербург',
     street: 'пр. Тестовый, д. 2',
+    email: 'other@example.com',
+    phone: '+7 900 765-43-21',
     titleSignatureStamp: null
   }
 ]

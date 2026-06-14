@@ -44,7 +44,9 @@ function filterCompanies(value, query, item) {
     i.shortName?.toLocaleUpperCase().indexOf(q) !== -1 ||
     i.inn?.toLocaleUpperCase().indexOf(q) !== -1 ||
     i.kpp?.toLocaleUpperCase().indexOf(q) !== -1 ||
-    i.city?.toLocaleUpperCase().indexOf(q) !== -1
+    i.city?.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.email?.toLocaleUpperCase().indexOf(q) !== -1 ||
+    i.phone?.toLocaleUpperCase().indexOf(q) !== -1
   ) {
     return true
   }
@@ -61,7 +63,9 @@ const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
   { title: 'Название', key: 'displayName', sortable: false },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
-  { title: 'Город', key: 'city', sortable: true }
+  { title: 'Город', key: 'city', sortable: true },
+  { title: 'Телефон', key: 'phone', sortable: true },
+  { title: 'Адрес электронной почты', key: 'email', sortable: true }
 ]
 
 // Helper function to get display name

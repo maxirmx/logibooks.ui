@@ -36,7 +36,7 @@ const testStubs = {
 
 // Centralized mock data
 const mockCompanies = ref([
-  { id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street' }
+  { id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' }
 ])
 
 const mockCountries = ref([
@@ -205,7 +205,7 @@ describe('Companies_List.vue', () => {
     })
     expect(wrapper.exists()).toBe(true)
     // Reset mock data for other tests
-    mockCompanies.value = [{ id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street' }]
+    mockCompanies.value = [{ id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' }]
   })
 
   it('handles search input', async () => {
@@ -231,8 +231,8 @@ describe('Companies_List.vue', () => {
   it('filters companies based on search term', async () => {
     // Add another company to test filtering
     mockCompanies.value = [
-      { id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street' },
-      { id: 2, inn: '987654321', kpp: '123456789', name: 'Another Company', shortName: 'AC', countryIsoNumeric: 840, city: 'New York', street: 'Broadway' }
+      { id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' },
+      { id: 2, inn: '987654321', kpp: '123456789', name: 'Another Company', shortName: 'AC', countryIsoNumeric: 840, city: 'New York', street: 'Broadway', email: 'other@example.com', phone: '+1 212 555-01-00' }
     ]
 
     const wrapper = mount(CompaniesList, {
@@ -263,7 +263,36 @@ describe('Companies_List.vue', () => {
     expect(authStore.companies_search).toBe('росс')
 
     // Reset mock data
-    mockCompanies.value = [{ id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street' }]
+    mockCompanies.value = [{ id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' }]
+  })
+
+  it('renders company contact columns and values', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Телефон')
+    expect(wrapper.text()).toContain('Адрес электронной почты')
+    expect(wrapper.text()).toContain('+7 900 123-45-67')
+    expect(wrapper.text()).toContain('contact@example.com')
+  })
+
+  it('filters companies by phone and email', async () => {
+    const wrapper = mount(CompaniesList, {
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    const item = { raw: mockCompanies.value[0] }
+    expect(wrapper.vm.filterCompanies(null, 'CONTACT@EXAMPLE.COM', item)).toBe(true)
+    expect(wrapper.vm.filterCompanies(null, '900 123', item)).toBe(true)
   })
 
   it('gets country name by ISO numeric code', async () => {

@@ -373,7 +373,7 @@ function handleParcelExtIdChanged(change) {
         <template v-for="header in genericClickableHeaders" :key="header.key" #[`item.${header.key}`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="item[header.key] || ''"
+            :display-value="item[header.key] ?? ''"
             cell-class="truncated-cell clickable-cell"
             @click="editParcel"
           />

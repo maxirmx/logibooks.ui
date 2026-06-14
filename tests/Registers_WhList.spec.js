@@ -19,6 +19,7 @@ import {
   formatZoneCount,
   getAirportIata,
   getCountryDisplayName,
+  isReturnRegister,
   isAviaTransportation
 } from '@/helpers/warehouse.registers.table.helpers.js'
 
@@ -704,6 +705,59 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.text()).toContain('Status 5')
     expect(wrapper.text()).toContain('Warehouse 12')
     expect(wrapper.text()).toContain('01.02.2024')
+  })
+
+  it('opens parcels from status, warehouse, and arrival date cells', async () => {
+    mockItems.value = [{
+      id: 55,
+      statusId: 5,
+      warehouseId: 12,
+      warehouseArrivalDate: '2024-02-01'
+    }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const router = (await import('@/router')).default
+    const expectedRoute = '/registers/55/parcels?mode=modeWarehouse'
+
+    await wrapper.find('.status-panel').trigger('click')
+    await wrapper.find('.warehouse-panel').trigger('click')
+    await wrapper.find('.warehouse-arrival-panel').trigger('click')
+
+    expect(router.push).toHaveBeenCalledTimes(3)
+    expect(router.push).toHaveBeenNthCalledWith(1, expectedRoute)
+    expect(router.push).toHaveBeenNthCalledWith(2, expectedRoute)
+    expect(router.push).toHaveBeenNthCalledWith(3, expectedRoute)
+  })
+
+  it('renders return registers with blank invoice and return-only countries cell', async () => {
+    const returnRegister = {
+      id: 56,
+      customsProcedureCode: 1,
+      invoiceNumber: 'INV-56',
+      invoiceDate: '2024-02-01',
+      transportationTypeCode: 2,
+      origCountryCode: 643,
+      destCountryCode: 860
+    }
+    mockItems.value = [returnRegister]
+    mockOps.value = {
+      customsProcedures: [{ value: 1, name: 'Возврат' }],
+      transportationTypes: [{ value: 2, name: 'Авиа', document: 'AWB', isAvia: true }]
+    }
+    mockCountries.value = [
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    expect(isReturnRegister(returnRegister)).toBe(true)
+    expect(wrapper.find('.countries-panel').text()).toBe('Возврат')
+    expect(wrapper.text()).not.toContain('INV-56')
+    expect(wrapper.text()).not.toContain('AWB')
+    expect(registersStore.getTransportationDocument).not.toHaveBeenCalled()
   })
 
   it('renders warehouse projection tooltip for parcels totals', async () => {

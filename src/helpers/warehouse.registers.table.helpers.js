@@ -4,11 +4,17 @@
 
 import { formatIntegerThousands } from '@/helpers/number.formatters.js'
 
+export const CUSTOMS_PROCEDURE_RETURN = 1
+
 export const warehouseZoneDistribution = [
   { value: 1, label: 'Без зоны' },
   { value: 10, label: 'Зеленая' },
   { value: 20, label: 'Красная' }
 ]
+
+export function isReturnRegister(item) {
+  return Number(item?.customsProcedureCode) === CUSTOMS_PROCEDURE_RETURN
+}
 
 export function createWarehouseRegisterHeaders({ showActions = true, selectable = false } = {}) {
   return [

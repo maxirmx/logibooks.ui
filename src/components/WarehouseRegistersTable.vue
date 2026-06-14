@@ -23,6 +23,7 @@ import {
   formatZoneCount,
   getAirportIata as resolveAirportIata,
   getCountryDisplayName as resolveCountryDisplayName,
+  isReturnRegister,
   isAviaTransportation as resolveIsAviaTransportation,
   warehouseZoneDistribution
 } from '@/helpers/warehouse.registers.table.helpers.js'
@@ -206,8 +207,9 @@ function emitEditRegister(item) {
       </template>
 
       <template #[`item.invoice`]="{ item }">
+        <span v-if="isReturnRegister(item)" class="truncated-cell invoice-panel"></span>
         <ClickableCell
-          v-if="linksEnabled"
+          v-else-if="linksEnabled"
           :item="item"
           cell-class="truncated-cell clickable-cell open-parcels-link invoice-panel"
           @click="emitOpenParcels"
@@ -236,23 +238,29 @@ function emitEditRegister(item) {
         >
           <template #default>
             <div class="countries-box">
+              <div v-if="isReturnRegister(item)" class="customs-procedure return-procedure">Возврат</div>
+              <template v-else>
+                <div class="customs-procedure">{{ registersStore.getOpsLabel(ops.customsProcedures, item.customsProcedureCode) }}</div>
+                <div class="country-route">
+                  <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
+                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
+                  <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
+                </div>
+              </template>
+            </div>
+          </template>
+        </ClickableCell>
+        <span v-else class="truncated-cell countries-panel">
+          <div class="countries-box">
+            <div v-if="isReturnRegister(item)" class="customs-procedure return-procedure">Возврат</div>
+            <template v-else>
               <div class="customs-procedure">{{ registersStore.getOpsLabel(ops.customsProcedures, item.customsProcedureCode) }}</div>
               <div class="country-route">
                 <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
                 <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
                 <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
               </div>
-            </div>
-          </template>
-        </ClickableCell>
-        <span v-else class="truncated-cell countries-panel">
-          <div class="countries-box">
-            <div class="customs-procedure">{{ registersStore.getOpsLabel(ops.customsProcedures, item.customsProcedureCode) }}</div>
-            <div class="country-route">
-              <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
-              <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-              <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
-            </div>
+            </template>
           </div>
         </span>
       </template>
@@ -274,15 +282,36 @@ function emitEditRegister(item) {
       </template>
 
       <template #[`item.statusId`]="{ item }">
-        <span class="truncated-cell">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
+        <ClickableCell
+          v-if="linksEnabled"
+          :item="item"
+          :display-value="registerStatusesStore.getStatusTitle(item.statusId)"
+          cell-class="truncated-cell clickable-cell open-parcels-link status-panel"
+          @click="emitOpenParcels"
+        />
+        <span v-else class="truncated-cell status-panel">{{ registerStatusesStore.getStatusTitle(item.statusId) }}</span>
       </template>
 
       <template #[`item.warehouseId`]="{ item }">
-        <span class="truncated-cell">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
+        <ClickableCell
+          v-if="linksEnabled"
+          :item="item"
+          :display-value="warehousesStore.getWarehouseName(item.warehouseId)"
+          cell-class="truncated-cell clickable-cell open-parcels-link warehouse-panel"
+          @click="emitOpenParcels"
+        />
+        <span v-else class="truncated-cell warehouse-panel">{{ warehousesStore.getWarehouseName(item.warehouseId) }}</span>
       </template>
 
       <template #[`item.warehouseArrivalDate`]="{ item }">
-        <span class="truncated-cell">{{ formatDate(item.warehouseArrivalDate) }}</span>
+        <ClickableCell
+          v-if="linksEnabled"
+          :item="item"
+          :display-value="formatDate(item.warehouseArrivalDate)"
+          cell-class="truncated-cell clickable-cell open-parcels-link warehouse-arrival-panel"
+          @click="emitOpenParcels"
+        />
+        <span v-else class="truncated-cell warehouse-arrival-panel">{{ formatDate(item.warehouseArrivalDate) }}</span>
       </template>
 
       <template #[`item.parcelsTotal`]="{ item }">

@@ -32,6 +32,8 @@ describe('customs.reports.store', () => {
     expect(store.reportRows).toEqual([])
     expect(store.reportsTotalCount).toBe(0)
     expect(store.reportRowsTotalCount).toBe(0)
+    expect(store.reportRowsColumns).toEqual([])
+    expect(store.reportRowsCustomsProcedure).toBeNull()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -216,7 +218,9 @@ describe('customs.reports.store', () => {
         totalCount: 2,
         hasNextPage: false,
         hasPreviousPage: false
-      }
+      },
+      customsProcedure: 'ИМ 40',
+      columns: ['id', 'parcelNumber', 'processingResult', 'uin']
     }
     fetchWrapper.get.mockResolvedValue(mockResponse)
 
@@ -236,6 +240,8 @@ describe('customs.reports.store', () => {
     expect(store.reportRowsTotalCount).toBe(2)
     expect(store.reportRowsHasNextPage).toBe(false)
     expect(store.reportRowsHasPreviousPage).toBe(false)
+    expect(store.reportRowsCustomsProcedure).toBe('ИМ 40')
+    expect(store.reportRowsColumns).toEqual(['id', 'parcelNumber', 'processingResult', 'uin'])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -267,10 +273,14 @@ describe('customs.reports.store', () => {
     expect(store.reportRowsTotalCount).toBe(0)
     expect(store.reportRowsHasNextPage).toBe(false)
     expect(store.reportRowsHasPreviousPage).toBe(false)
+    expect(store.reportRowsColumns).toEqual([])
+    expect(store.reportRowsCustomsProcedure).toBeNull()
   })
 
   it('stores error when getReportRows fails', async () => {
     const store = useCustomsReportsStore()
+    store.reportRowsColumns = ['id', 'parcelNumber']
+    store.reportRowsCustomsProcedure = 'ЭК 10'
     const error = new Error('fetch rows failed')
     fetchWrapper.get.mockRejectedValue(error)
 
@@ -280,6 +290,8 @@ describe('customs.reports.store', () => {
 
     expect(store.error).toBe(error)
     expect(store.reportRows).toEqual([])
+    expect(store.reportRowsColumns).toEqual([])
+    expect(store.reportRowsCustomsProcedure).toBeNull()
     expect(store.loading).toBe(false)
   })
 })

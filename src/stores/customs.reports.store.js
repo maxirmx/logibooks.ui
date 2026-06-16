@@ -21,6 +21,8 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reportRowsTotalCount = ref(0)
   const reportRowsHasNextPage = ref(false)
   const reportRowsHasPreviousPage = ref(false)
+  const reportRowsColumns = ref([])
+  const reportRowsCustomsProcedure = ref(null)
 
   async function upload(file) {
     loading.value = true
@@ -108,12 +110,16 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       reportRowsTotalCount.value = response?.pagination?.totalCount || 0
       reportRowsHasNextPage.value = response?.pagination?.hasNextPage || false
       reportRowsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
+      reportRowsColumns.value = Array.isArray(response?.columns) ? response.columns : []
+      reportRowsCustomsProcedure.value = response?.customsProcedure || null
     } catch (err) {
       error.value = err
       reportRows.value = []
       reportRowsTotalCount.value = 0
       reportRowsHasNextPage.value = false
       reportRowsHasPreviousPage.value = false
+      reportRowsColumns.value = []
+      reportRowsCustomsProcedure.value = null
     } finally {
       loading.value = false
     }
@@ -128,6 +134,8 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     reportRowsTotalCount,
     reportRowsHasNextPage,
     reportRowsHasPreviousPage,
+    reportRowsColumns,
+    reportRowsCustomsProcedure,
     loading,
     error,
     upload,

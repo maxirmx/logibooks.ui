@@ -13,6 +13,8 @@ import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const reportRowsRef = ref([])
+const reportRowsColumnsRef = ref([])
+const reportRowsCustomsProcedureRef = ref(null)
 const loadingRef = ref(false)
 const errorRef = ref(null)
 const alertRef = ref(null)
@@ -30,6 +32,90 @@ let alertStoreMock
 let authStoreMock
 const routerPushMock = vi.hoisted(() => vi.fn())
 
+const fullColumnKeys = [
+  'id',
+  'parcelNumber',
+  'processingResult',
+  'uin',
+  'dTag',
+  'masterInvoice',
+  'recipient',
+  'description',
+  'tnVed',
+  'quantity',
+  'totalWeight',
+  'totalCost',
+  'previousMonthValueOrWeight',
+  'customsDutiesAndTaxes',
+  'customsFees',
+  'prohibitionsAndRestrictions',
+  'customsPaymentReservationId',
+  'dateTime',
+  'comments'
+]
+
+const exportColumnKeys = [
+  'id',
+  'parcelNumber',
+  'processingResult',
+  'uin',
+  'dTag',
+  'recipient',
+  'description',
+  'tnVed',
+  'quantity',
+  'totalWeight',
+  'totalCost',
+  'dateTime',
+  'comments'
+]
+
+const reimportColumnKeys = [
+  'id',
+  'parcelNumber',
+  'processingResult',
+  'uin',
+  'dTag',
+  'recipient',
+  'description',
+  'tnVed',
+  'quantity',
+  'totalWeight',
+  'totalCost',
+  'customsDutiesAndTaxes',
+  'customsFees',
+  'dateTime',
+  'comments'
+]
+
+function createFullReportRow() {
+  return {
+    id: 1,
+    rowNumber: 9,
+    parcelNumber: 'PN-001',
+    processingResult: 'Выпущено',
+    uin: 'UIN-001',
+    dTag: 'DTAG-001',
+    masterInvoice: 'MASTER-001',
+    recipient: 'Получатель',
+    description: 'УИН:UIN-001; описание',
+    tnVed: '1234567890',
+    prevTnVed: '0987654321',
+    quantity: '2',
+    totalWeight: '3.4',
+    weightUnit: 'кг',
+    totalCost: '99.95',
+    currency: 'USD',
+    previousMonthValueOrWeight: 'предыдущий месяц',
+    customsDutiesAndTaxes: 'пошлины и налоги',
+    customsFees: 'сборы',
+    prohibitionsAndRestrictions: 'запреты',
+    customsPaymentReservationId: 12345,
+    dateTime: '2026-05-07T10:30:00+03:00',
+    comments: '10-выпуск'
+  }
+}
+
 const testStubs = {
   ...defaultGlobalStubs,
   'v-data-table': {
@@ -38,6 +124,24 @@ const testStubs = {
     props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue'],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
+        <div class="v-data-table-header-row">
+          <div
+            v-for="header in headers"
+            :key="header.key"
+            class="v-data-table-header-cell"
+            :data-column-key="header.key + '-header'"
+          >
+            <slot
+              :name="'header.' + header.key"
+              :column="header"
+              :sort-by="sortBy"
+              :is-sorted="isSorted"
+              :get-sort-icon="getSortIcon"
+            >
+              {{ header.title }}
+            </slot>
+          </div>
+        </div>
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
           <template v-if="$slots.item">
             <slot name="item" :item="item" :columns="headers"></slot>
@@ -52,7 +156,18 @@ const testStubs = {
         </div>
         <slot></slot>
       </div>
-    `
+    `,
+    methods: {
+      isSorted(header) {
+        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+      },
+      getSortIcon(header) {
+        const item = Array.isArray(this.sortBy)
+          ? this.sortBy.find(item => item.key === header.key)
+          : null
+        return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
+      }
+    }
   },
   'v-data-table-server': {
     name: 'v-data-table-server',
@@ -61,6 +176,24 @@ const testStubs = {
     props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
     template: `
       <div class="v-data-table-server-stub" data-testid="v-data-table">
+        <div class="v-data-table-header-row">
+          <div
+            v-for="header in headers"
+            :key="header.key"
+            class="v-data-table-header-cell"
+            :data-column-key="header.key + '-header'"
+          >
+            <slot
+              :name="'header.' + header.key"
+              :column="header"
+              :sort-by="sortBy"
+              :is-sorted="isSorted"
+              :get-sort-icon="getSortIcon"
+            >
+              {{ header.title }}
+            </slot>
+          </div>
+        </div>
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
           <template v-if="$slots.item">
             <slot name="item" :item="item" :columns="headers"></slot>
@@ -75,7 +208,18 @@ const testStubs = {
         </div>
         <slot></slot>
       </div>
-    `
+    `,
+    methods: {
+      isSorted(header) {
+        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+      },
+      getSortIcon(header) {
+        const item = Array.isArray(this.sortBy)
+          ? this.sortBy.find(item => item.key === header.key)
+          : null
+        return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
+      }
+    }
   }
 }
 
@@ -127,6 +271,8 @@ describe('CustomsReportRows_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     reportRowsRef.value = []
+    reportRowsColumnsRef.value = []
+    reportRowsCustomsProcedureRef.value = null
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
@@ -140,6 +286,8 @@ describe('CustomsReportRows_List.vue', () => {
       loading: loadingRef,
       error: errorRef,
       reportRowsTotalCount: ref(0),
+      reportRowsColumns: reportRowsColumnsRef,
+      reportRowsCustomsProcedure: reportRowsCustomsProcedureRef,
       getReportRows: getReportRowsMock
     }
 
@@ -239,33 +387,157 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.vm.headers.map((header) => header.key)).toEqual([
-      'id',
-      'parcelNumber',
-      'processingResult',
-      'uin',
-      'dTag',
-      'masterInvoice',
-      'recipient',
-      'description',
-      'tnVed',
-      'prevTnVed',
-      'quantity',
-      'totalWeight',
-      'weightUnit',
-      'totalCost',
-      'currency',
-      'previousMonthValueOrWeight',
-      'customsDutiesAndTaxes',
-      'customsFees',
-      'prohibitionsAndRestrictions',
-      'customsPaymentReservationId',
-      'dateTime',
-      'comments'
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
+  })
+
+  it('filters headers and cells to EK10 report columns', async () => {
+    reportRowsColumnsRef.value = exportColumnKeys
+    reportRowsCustomsProcedureRef.value = 'ЭК 10'
+    reportRowsRef.value = [createFullReportRow()]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(exportColumnKeys)
+    expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="masterInvoice"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="recipient"]').text()).toContain('Получатель')
+    expect(wrapper.find('[data-column-key="dateTime"]').exists()).toBe(true)
+  })
+
+  it('filters headers and cells to IM60 report columns', async () => {
+    reportRowsColumnsRef.value = reimportColumnKeys
+    reportRowsCustomsProcedureRef.value = 'ИМ 60'
+    reportRowsRef.value = [createFullReportRow()]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(reimportColumnKeys)
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(true)
+    expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(true)
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes"]').text()).toContain('пошлины и налоги')
+    expect(wrapper.find('[data-column-key="customsFees"]').text()).toContain('сборы')
+    expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(false)
+  })
+
+  it.each(['ИМ 40', 'ЭК 31'])('uses full headers and cells for %s report columns', async (customsProcedure) => {
+    reportRowsColumnsRef.value = fullColumnKeys
+    reportRowsCustomsProcedureRef.value = customsProcedure
+    reportRowsRef.value = [createFullReportRow()]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
+    expect(wrapper.find('[data-column-key="masterInvoice"]').text()).toContain('MASTER-001')
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight"]').text()).toContain('предыдущий месяц')
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions"]').text()).toContain('запреты')
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').text()).toContain('12345')
+  })
+
+  it('resets hidden sort column after metadata loads', async () => {
+    sortByRef.value = [{ key: 'customsPaymentReservationId', order: 'desc' }]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+    const callsBeforeMetadata = getReportRowsMock.mock.calls.length
+
+    reportRowsColumnsRef.value = exportColumnKeys
+    await flushPromises()
+
+    expect(sortByRef.value).toEqual([{ key: 'rowNumber', order: 'asc' }])
+    expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
+  })
+
+  it('renders tn ved header as two lines', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const tnVedHeader = wrapper.find('[data-column-key="tnVed-header"]')
+    expect(tnVedHeader.exists()).toBe(true)
+    expect(tnVedHeader.findAll('.multiline-header span').map((line) => line.text())).toEqual([
+      'Код ТНВЭД',
+      'Предшествующий'
+    ])
+    expect(wrapper.find('[data-column-key="prevTnVed-header"]').exists()).toBe(false)
+  })
+
+  it('renders combined weight and cost headers', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-column-key="totalWeight-header"] .multiline-header span').text()).toBe('Вес')
+    expect(wrapper.find('[data-column-key="totalCost-header"] .multiline-header span').text()).toBe('Стоимость')
+    expect(wrapper.find('[data-column-key="weightUnit-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="currency-header"]').exists()).toBe(false)
+  })
+
+  it('renders date time header as two lines', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const dateTimeHeader = wrapper.find('[data-column-key="dateTime-header"]')
+    expect(dateTimeHeader.exists()).toBe(true)
+    expect(dateTimeHeader.findAll('.multiline-header span').map((line) => line.text())).toEqual([
+      'Дата',
+      'Время'
     ])
   })
 
   it('renders widened DTO fields and truncates long text columns', async () => {
+    const reportDateTime = '2026-05-07 10:30'
     reportRowsRef.value = [
       {
         id: 1,
@@ -289,7 +561,7 @@ describe('CustomsReportRows_List.vue', () => {
         customsFees: 'сборы',
         prohibitionsAndRestrictions: 'запреты и ограничения',
         customsPaymentReservationId: 12345,
-        dateTime: '2026-05-07 10:30',
+        dateTime: reportDateTime,
         comments: '10-выпуск',
         parcelId: 12,
         registerId: 5
@@ -312,12 +584,52 @@ describe('CustomsReportRows_List.vue', () => {
     expect(textFor('description')).toContain('УИН:UIN-001; длинное описание товара')
     expect(textFor('customsDutiesAndTaxes')).toContain('пошлины и налоги')
     expect(textFor('customsFees')).toContain('сборы')
-    expect(textFor('dateTime')).toContain('2026-05-07 10:30')
+    const tnVedCell = wrapper.find('[data-column-key="tnVed"]')
+    expect(tnVedCell.find('.primary-line').text()).toBe('1234567890')
+    expect(tnVedCell.find('.secondary-line').text()).toBe('0987654321')
+    expect(wrapper.find('[data-column-key="prevTnVed"]').exists()).toBe(false)
+    expect(textFor('totalWeight')).toContain('3.4 кг')
+    expect(textFor('totalCost')).toContain('99.95 USD')
+    expect(wrapper.find('[data-column-key="totalWeight"] .nowrap-cell').text()).toBe('3.4 кг')
+    expect(wrapper.find('[data-column-key="totalCost"] .nowrap-cell').text()).toBe('99.95 USD')
+    expect(wrapper.find('[data-column-key="weightUnit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="currency"]').exists()).toBe(false)
+    const dateTimeCell = wrapper.find('[data-column-key="dateTime"]')
+    expect(dateTimeCell.find('.primary-line').text()).toBe('07.05.2026')
+    expect(dateTimeCell.find('.secondary-line').text()).toBe(new Date(reportDateTime).toLocaleTimeString('ru-RU'))
     expect(textFor('comments')).toContain('10-выпуск')
     expect(textFor('customsPaymentReservationId')).toContain('12345')
     expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)
     expect(wrapper.find('[data-column-key="comments"] .truncate-cell').exists()).toBe(true)
     expect(wrapper.findAllComponents(TruncateTooltipCell)).toHaveLength(7)
+  })
+
+  it('renders an empty previous tn ved line when previous code is missing', async () => {
+    reportRowsRef.value = [
+      {
+        id: 1,
+        rowNumber: 9,
+        parcelNumber: 'PN-001',
+        processingResult: 'Выпущено',
+        dTag: 'DTAG-001',
+        tnVed: '1234567890',
+        prevTnVed: null
+      }
+    ]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const tnVedCell = wrapper.find('[data-column-key="tnVed"]')
+    expect(tnVedCell.find('.primary-line').text()).toBe('1234567890')
+    expect(tnVedCell.find('.tnved-previous-line').exists()).toBe(true)
+    expect(tnVedCell.find('.tnved-previous-line').text()).toBe('')
   })
 
   // Back navigation handled by parent view; no local back button to test
@@ -364,9 +676,27 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
+    expect(wrapper.find('h1').text()).not.toContain('по процедуре')
   })
 
   it('displays master invoice in header when provided', async () => {
+    reportRowsCustomsProcedureRef.value = 'ИМ 40'
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 42, masterInvoice: 'CMR 4114294' },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для CMR 4114294 по процедуре ИМ40')
+  })
+
+  it('formats EK procedure without an internal space in header', async () => {
+    reportRowsCustomsProcedureRef.value = 'ЭК 31'
+
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 42, masterInvoice: 'MASTER-42' },
       global: {
@@ -376,7 +706,7 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для MASTER-42')
+    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для MASTER-42 по процедуре ЭК31')
   })
 
   it('updates local search from the search field', async () => {

@@ -38,6 +38,24 @@ const testStubs = {
     props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue'],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
+        <div class="v-data-table-header-row">
+          <div
+            v-for="header in headers"
+            :key="header.key"
+            class="v-data-table-header-cell"
+            :data-column-key="header.key + '-header'"
+          >
+            <slot
+              :name="'header.' + header.key"
+              :column="header"
+              :sort-by="sortBy"
+              :is-sorted="isSorted"
+              :get-sort-icon="getSortIcon"
+            >
+              {{ header.title }}
+            </slot>
+          </div>
+        </div>
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
           <template v-if="$slots.item">
             <slot name="item" :item="item" :columns="headers"></slot>
@@ -52,7 +70,18 @@ const testStubs = {
         </div>
         <slot></slot>
       </div>
-    `
+    `,
+    methods: {
+      isSorted(header) {
+        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+      },
+      getSortIcon(header) {
+        const item = Array.isArray(this.sortBy)
+          ? this.sortBy.find(item => item.key === header.key)
+          : null
+        return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
+      }
+    }
   },
   'v-data-table-server': {
     name: 'v-data-table-server',
@@ -61,6 +90,24 @@ const testStubs = {
     props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
     template: `
       <div class="v-data-table-server-stub" data-testid="v-data-table">
+        <div class="v-data-table-header-row">
+          <div
+            v-for="header in headers"
+            :key="header.key"
+            class="v-data-table-header-cell"
+            :data-column-key="header.key + '-header'"
+          >
+            <slot
+              :name="'header.' + header.key"
+              :column="header"
+              :sort-by="sortBy"
+              :is-sorted="isSorted"
+              :get-sort-icon="getSortIcon"
+            >
+              {{ header.title }}
+            </slot>
+          </div>
+        </div>
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
           <template v-if="$slots.item">
             <slot name="item" :item="item" :columns="headers"></slot>
@@ -75,7 +122,18 @@ const testStubs = {
         </div>
         <slot></slot>
       </div>
-    `
+    `,
+    methods: {
+      isSorted(header) {
+        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+      },
+      getSortIcon(header) {
+        const item = Array.isArray(this.sortBy)
+          ? this.sortBy.find(item => item.key === header.key)
+          : null
+        return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
+      }
+    }
   }
 }
 
@@ -265,7 +323,26 @@ describe('CustomsReportRows_List.vue', () => {
     ])
   })
 
+  it('renders date time header as two lines', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const dateTimeHeader = wrapper.find('[data-column-key="dateTime-header"]')
+    expect(dateTimeHeader.exists()).toBe(true)
+    expect(dateTimeHeader.findAll('.multiline-header span').map((line) => line.text())).toEqual([
+      'Дата',
+      'Время'
+    ])
+  })
+
   it('renders widened DTO fields and truncates long text columns', async () => {
+    const reportDateTime = '2026-05-07 10:30'
     reportRowsRef.value = [
       {
         id: 1,
@@ -289,7 +366,7 @@ describe('CustomsReportRows_List.vue', () => {
         customsFees: 'сборы',
         prohibitionsAndRestrictions: 'запреты и ограничения',
         customsPaymentReservationId: 12345,
-        dateTime: '2026-05-07 10:30',
+        dateTime: reportDateTime,
         comments: '10-выпуск',
         parcelId: 12,
         registerId: 5
@@ -312,7 +389,9 @@ describe('CustomsReportRows_List.vue', () => {
     expect(textFor('description')).toContain('УИН:UIN-001; длинное описание товара')
     expect(textFor('customsDutiesAndTaxes')).toContain('пошлины и налоги')
     expect(textFor('customsFees')).toContain('сборы')
-    expect(textFor('dateTime')).toContain('2026-05-07 10:30')
+    const dateTimeCell = wrapper.find('[data-column-key="dateTime"]')
+    expect(dateTimeCell.find('.primary-line').text()).toBe('07.05.2026')
+    expect(dateTimeCell.find('.secondary-line').text()).toBe(new Date(reportDateTime).toLocaleTimeString('ru-RU'))
     expect(textFor('comments')).toContain('10-выпуск')
     expect(textFor('customsPaymentReservationId')).toContain('12345')
     expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)

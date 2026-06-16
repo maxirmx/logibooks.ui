@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application 
 
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDateTime, formatTime } from '@/helpers/date.formatters.js'
+import { formatDate, formatDateTime, formatDateTimeLines, formatTime } from '@/helpers/date.formatters.js'
 
 describe('date.formatters', () => {
   describe('formatDate', () => {
@@ -56,6 +56,27 @@ describe('date.formatters', () => {
 
     it('returns original value for invalid date-time values', () => {
       expect(formatTime('not-a-date')).toBe('not-a-date')
+    })
+  })
+
+  describe('formatDateTimeLines', () => {
+    it('formats date-time values as local date and local time lines', () => {
+      const value = new Date(2026, 5, 10, 12, 30, 15)
+
+      expect(formatDateTimeLines(value)).toEqual([
+        '10.06.2026',
+        value.toLocaleTimeString('ru-RU')
+      ])
+    })
+
+    it('returns empty array for empty values', () => {
+      expect(formatDateTimeLines(null)).toEqual([])
+      expect(formatDateTimeLines(undefined)).toEqual([])
+      expect(formatDateTimeLines('')).toEqual([])
+    })
+
+    it('returns original value once for invalid date-time values', () => {
+      expect(formatDateTimeLines('not-a-date')).toEqual(['not-a-date'])
     })
   })
 })

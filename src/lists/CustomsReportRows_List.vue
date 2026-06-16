@@ -9,9 +9,11 @@ import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
@@ -96,6 +98,7 @@ const TRUNCATABLE_COLUMNS = [
   'prohibitionsAndRestrictions',
   'comments'
 ]
+const DATE_TIME_COLUMNS = new Set(['dateTime'])
 const headers = [
   { title: 'Номер записи', key: 'id', align: 'start', width: '72px' },
   { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '140px' },
@@ -180,6 +183,15 @@ const pageOptions = computed(() => {
         item-value="id"
         hide-default-footer
       >
+        <template #[`header.dateTime`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Дата', 'Время']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
+        </template>
+
         <!-- Row-level slot -->
         <template #item="{ item, columns }">
           <tr>
@@ -203,6 +215,19 @@ const pageOptions = computed(() => {
                   <div class="two-line-cell">
                     <div class="primary-line">{{ item.dTag }}</div>
                     <div class="secondary-line">Позиция {{ item.rowNumber }}</div>
+                  </div>
+                </template>
+
+                <!-- Date/time columns: local date on line 1, local time on line 2 -->
+                <template v-else-if="DATE_TIME_COLUMNS.has(col.key)">
+                  <div class="two-line-cell">
+                    <div
+                      v-for="(line, index) in formatDateTimeLines(item[col.key])"
+                      :key="index"
+                      :class="index === 0 ? 'primary-line' : 'secondary-line'"
+                    >
+                      {{ line }}
+                    </div>
                   </div>
                 </template>
 

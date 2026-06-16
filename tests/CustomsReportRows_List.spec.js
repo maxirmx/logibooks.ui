@@ -307,12 +307,9 @@ describe('CustomsReportRows_List.vue', () => {
       'recipient',
       'description',
       'tnVed',
-      'prevTnVed',
       'quantity',
       'totalWeight',
-      'weightUnit',
       'totalCost',
-      'currency',
       'previousMonthValueOrWeight',
       'customsDutiesAndTaxes',
       'customsFees',
@@ -321,6 +318,41 @@ describe('CustomsReportRows_List.vue', () => {
       'dateTime',
       'comments'
     ])
+  })
+
+  it('renders tn ved header as two lines', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const tnVedHeader = wrapper.find('[data-column-key="tnVed-header"]')
+    expect(tnVedHeader.exists()).toBe(true)
+    expect(tnVedHeader.findAll('.multiline-header span').map((line) => line.text())).toEqual([
+      'Код ТНВЭД',
+      'Предшествующий'
+    ])
+    expect(wrapper.find('[data-column-key="prevTnVed-header"]').exists()).toBe(false)
+  })
+
+  it('renders combined weight and cost headers', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-column-key="totalWeight-header"] .multiline-header span').text()).toBe('Вес')
+    expect(wrapper.find('[data-column-key="totalCost-header"] .multiline-header span').text()).toBe('Стоимость')
+    expect(wrapper.find('[data-column-key="weightUnit-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="currency-header"]').exists()).toBe(false)
   })
 
   it('renders date time header as two lines', async () => {
@@ -389,6 +421,16 @@ describe('CustomsReportRows_List.vue', () => {
     expect(textFor('description')).toContain('УИН:UIN-001; длинное описание товара')
     expect(textFor('customsDutiesAndTaxes')).toContain('пошлины и налоги')
     expect(textFor('customsFees')).toContain('сборы')
+    const tnVedCell = wrapper.find('[data-column-key="tnVed"]')
+    expect(tnVedCell.find('.primary-line').text()).toBe('1234567890')
+    expect(tnVedCell.find('.secondary-line').text()).toBe('0987654321')
+    expect(wrapper.find('[data-column-key="prevTnVed"]').exists()).toBe(false)
+    expect(textFor('totalWeight')).toContain('3.4 кг')
+    expect(textFor('totalCost')).toContain('99.95 USD')
+    expect(wrapper.find('[data-column-key="totalWeight"] .nowrap-cell').text()).toBe('3.4 кг')
+    expect(wrapper.find('[data-column-key="totalCost"] .nowrap-cell').text()).toBe('99.95 USD')
+    expect(wrapper.find('[data-column-key="weightUnit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="currency"]').exists()).toBe(false)
     const dateTimeCell = wrapper.find('[data-column-key="dateTime"]')
     expect(dateTimeCell.find('.primary-line').text()).toBe('07.05.2026')
     expect(dateTimeCell.find('.secondary-line').text()).toBe(new Date(reportDateTime).toLocaleTimeString('ru-RU'))
@@ -397,6 +439,34 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)
     expect(wrapper.find('[data-column-key="comments"] .truncate-cell').exists()).toBe(true)
     expect(wrapper.findAllComponents(TruncateTooltipCell)).toHaveLength(7)
+  })
+
+  it('renders an empty previous tn ved line when previous code is missing', async () => {
+    reportRowsRef.value = [
+      {
+        id: 1,
+        rowNumber: 9,
+        parcelNumber: 'PN-001',
+        processingResult: 'Выпущено',
+        dTag: 'DTAG-001',
+        tnVed: '1234567890',
+        prevTnVed: null
+      }
+    ]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const tnVedCell = wrapper.find('[data-column-key="tnVed"]')
+    expect(tnVedCell.find('.primary-line').text()).toBe('1234567890')
+    expect(tnVedCell.find('.tnved-previous-line').exists()).toBe(true)
+    expect(tnVedCell.find('.tnved-previous-line').text()).toBe('')
   })
 
   // Back navigation handled by parent view; no local back button to test

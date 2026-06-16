@@ -53,10 +53,8 @@ function openParcel(item) {
   router.push(`/registers/${registerId}/parcels/edit/${parcelId}`)
 }
 
-function getCellClass(columnKey) {
-  return TRUNCATABLE_COLUMNS.includes(columnKey)
-    ? 'truncated-cell clickable-cell'
-    : 'clickable-cell'
+function getColumnAlignmentClass(column) {
+  return column.align === 'center' ? 'text-center' : column.align === 'end' ? 'text-right' : 'text-start'
 }
 
 async function loadReportRows() {
@@ -85,20 +83,42 @@ const watcherStop = watch(
 onUnmounted(() => {
   isComponentMounted.value = false
   stopFilterSync()
-  if (watcherStop) {
-    watcherStop()
-  }
+  watcherStop()
 })
 
 // Column keys that should use TruncateTooltipCell
-const TRUNCATABLE_COLUMNS = []
+const TRUNCATABLE_COLUMNS = [
+  'recipient',
+  'description',
+  'previousMonthValueOrWeight',
+  'customsDutiesAndTaxes',
+  'customsFees',
+  'prohibitionsAndRestrictions',
+  'comments'
+]
 const headers = [
-  { title: 'Номер записи', key: 'id', align: 'start', width: '50px' },
-  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '120px' },
+  { title: 'Номер записи', key: 'id', align: 'start', width: '72px' },
+  { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '140px' },
   { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '180px' },
-  { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
+  { title: 'УИН', key: 'uin', align: 'start', width: '160px' },
+  { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '140px' },
+  { title: 'Мастер накладная', key: 'masterInvoice', align: 'start', width: '150px' },
+  { title: 'Получатель', key: 'recipient', align: 'start', width: '180px' },
+  { title: 'Описание', key: 'description', align: 'start', width: '260px' },
   { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
   { title: 'Предшествующий ТНВЭД', key: 'prevTnVed', align: 'start', width: '120px' },
+  { title: 'Количество', key: 'quantity', align: 'start', width: '90px' },
+  { title: 'Общий вес', key: 'totalWeight', align: 'start', width: '110px' },
+  { title: 'Ед. веса', key: 'weightUnit', align: 'start', width: '90px' },
+  { title: 'Стоимость', key: 'totalCost', align: 'start', width: '110px' },
+  { title: 'Валюта', key: 'currency', align: 'start', width: '90px' },
+  { title: 'Пред. месяц', key: 'previousMonthValueOrWeight', align: 'start', width: '220px' },
+  { title: 'Пошлины, налоги', key: 'customsDutiesAndTaxes', align: 'start', width: '160px' },
+  { title: 'Сборы', key: 'customsFees', align: 'start', width: '140px' },
+  { title: 'Запреты и ограничения', key: 'prohibitionsAndRestrictions', align: 'start', width: '220px' },
+  { title: 'ID резервирования', key: 'customsPaymentReservationId', align: 'start', width: '150px' },
+  { title: 'Дата и время', key: 'dateTime', align: 'start', width: '150px' },
+  { title: 'Комментарии', key: 'comments', align: 'start', width: '220px' }
 ]
 
 const maxPage = computed(() => Math.max(1, Math.ceil((reportRowsTotalCount.value || 0) / customsreportrows_per_page.value)))
@@ -168,13 +188,13 @@ const pageOptions = computed(() => {
               :key="col.key"
               :class="[
                 col.class,
-                col.align === 'center' ? 'text-center' : col.align === 'end' ? 'text-right' : 'text-start'
+                getColumnAlignmentClass(col)
               ]"
               :data-column-key="col.key"
             >
               <ClickableCell
                 :item="item"
-                :cell-class="getCellClass(col.key)"
+                cell-class="clickable-cell"
                 :disabled="!isParcelRowClickable(item)"
                 @click="openParcel"
               >

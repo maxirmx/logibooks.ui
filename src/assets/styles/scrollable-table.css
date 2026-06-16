@@ -15,21 +15,19 @@
  *     portion of the viewport, even if the container is taller.
  *   - Both are needed: the prop allows flexible layouts, while the CSS prevents the table from overflowing the viewport.
  *
- * :deep() Selector:
- *   - The `:deep()` selector is a Vue SFC (Single File Component) feature for targeting child components in scoped CSS.
- *   - It is not standard CSS and only works in build systems that support Vue's SFC syntax.
- *   - If using outside of Vue SFCs, replace with a suitable deep selector or global style.
+ * These styles are regular global CSS. Keep selectors standard so Vite's CSS
+ * minifier can parse them without Vue SFC-specific syntax.
  */
  
 .table-card {
   overflow: visible;
 }
 
-.table-card :deep(.v-data-table) {
+.table-card .v-data-table {
   height: 100%;
 }
 
-.table-card :deep(.v-table__wrapper) {
+.table-card .v-table__wrapper {
   max-height: calc(100vh - 500px);
   overflow-y: auto;
 }

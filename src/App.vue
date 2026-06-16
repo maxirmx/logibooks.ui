@@ -283,34 +283,6 @@ function getUserName() {
   align-items: center;
 }
 
-nav {
-  width: 100%;
-  margin-top: 1.5rem;
-  text-align: left;
-  margin-left: 1rem;
-  font-size: 1rem;
-  padding: 1rem 0;
-  margin-top: 1rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
 /* Make the entire menu item hoverable */
 :deep(.v-list-item) {
   transition: background-color 0.2s ease-in-out;
@@ -330,12 +302,16 @@ nav a:first-of-type {
     color: #eeeeee !important;
 }
 
-/* Style for nested menu items */
-:deep(.v-list-group .v-list-item) {
-  padding-left: 2rem;
+:deep(.v-list-item .router-link-exact-active) {
+  color: var(--color-text);
 }
 
-:deep(.v-list-group .v-list-item .link) {
+/* Style for nested menu items */
+:deep(.v-list-group__items > .v-list-item) {
+  padding-inline-start: 2rem !important;
+}
+
+:deep(.v-list-group__items > .v-list-item .link) {
   font-size: 1rem;
 }
 

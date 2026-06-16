@@ -9,9 +9,11 @@ import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
@@ -34,13 +36,27 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, reportRowsTotalCount } = storeToRefs(customsReportsStore)
+const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
+const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
+const SORT_ONLY_COLUMN_KEYS = new Set(['rowNumber'])
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
+const procedureHeadingLabel = computed(() => formatProcedureForHeading(reportRowsCustomsProcedure.value))
+const headingText = computed(() => {
+  const procedure = procedureHeadingLabel.value
+  return procedure
+    ? `Отчёт о выпуске для ${headingLabel.value} по процедуре ${procedure}`
+    : `Отчёт о выпуске для ${headingLabel.value}`
+})
+
+function formatProcedureForHeading(value) {
+  const text = String(value ?? '').trim()
+  return text.replace(/^([А-ЯЁ]{2})\s+(\d+)$/u, '$1$2')
+}
 
 function isParcelRowClickable(item) {
   return item?.parcelId !== null && item?.registerId !== null
@@ -55,6 +71,12 @@ function openParcel(item) {
 
 function getColumnAlignmentClass(column) {
   return column.align === 'center' ? 'text-center' : column.align === 'end' ? 'text-right' : 'text-start'
+}
+
+function joinDisplayParts(...parts) {
+  return parts
+    .filter((part) => part !== null && part !== undefined && String(part).trim() !== '')
+    .join(' ')
 }
 
 async function loadReportRows() {
@@ -80,12 +102,6 @@ const watcherStop = watch(
   { immediate: false }
 )
 
-onUnmounted(() => {
-  isComponentMounted.value = false
-  stopFilterSync()
-  watcherStop()
-})
-
 // Column keys that should use TruncateTooltipCell
 const TRUNCATABLE_COLUMNS = [
   'recipient',
@@ -96,7 +112,8 @@ const TRUNCATABLE_COLUMNS = [
   'prohibitionsAndRestrictions',
   'comments'
 ]
-const headers = [
+const DATE_TIME_COLUMNS = new Set(['dateTime'])
+const allHeaders = [
   { title: 'Номер записи', key: 'id', align: 'start', width: '72px' },
   { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '140px' },
   { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '180px' },
@@ -105,21 +122,49 @@ const headers = [
   { title: 'Мастер накладная', key: 'masterInvoice', align: 'start', width: '150px' },
   { title: 'Получатель', key: 'recipient', align: 'start', width: '180px' },
   { title: 'Описание', key: 'description', align: 'start', width: '260px' },
-  { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '120px' },
-  { title: 'Предшествующий ТНВЭД', key: 'prevTnVed', align: 'start', width: '120px' },
-  { title: 'Количество', key: 'quantity', align: 'start', width: '90px' },
-  { title: 'Общий вес', key: 'totalWeight', align: 'start', width: '110px' },
-  { title: 'Ед. веса', key: 'weightUnit', align: 'start', width: '90px' },
-  { title: 'Стоимость', key: 'totalCost', align: 'start', width: '110px' },
-  { title: 'Валюта', key: 'currency', align: 'start', width: '90px' },
-  { title: 'Пред. месяц', key: 'previousMonthValueOrWeight', align: 'start', width: '220px' },
-  { title: 'Пошлины, налоги', key: 'customsDutiesAndTaxes', align: 'start', width: '160px' },
-  { title: 'Сборы', key: 'customsFees', align: 'start', width: '140px' },
+  { title: 'Код ТНВЭД', key: 'tnVed', align: 'start', width: '150px' },
+  { title: 'Количество', key: 'quantity', align: 'end', width: '90px' },
+  { title: 'Вес', key: 'totalWeight', align: 'end', width: '130px' },
+  { title: 'Стоимость', key: 'totalCost', align: 'end', width: '140px' },
+  { title: 'Пред. месяц', key: 'previousMonthValueOrWeight', align: 'start' },
+  { title: 'Пошлины, налоги', key: 'customsDutiesAndTaxes', align: 'start' },
+  { title: 'Сборы', key: 'customsFees', align: 'start' },
   { title: 'Запреты и ограничения', key: 'prohibitionsAndRestrictions', align: 'start', width: '220px' },
-  { title: 'ID резервирования', key: 'customsPaymentReservationId', align: 'start', width: '150px' },
+  { title: 'ID резервирования', key: 'customsPaymentReservationId', align: 'start' },
   { title: 'Дата и время', key: 'dateTime', align: 'start', width: '150px' },
-  { title: 'Комментарии', key: 'comments', align: 'start', width: '220px' }
+  { title: 'Комментарии', key: 'comments', align: 'start', width: '250px' }
 ]
+
+const visibleColumnKeys = computed(() => {
+  const columns = reportRowsColumns.value
+  return Array.isArray(columns) && columns.length > 0 ? new Set(columns) : null
+})
+
+const headers = computed(() => {
+  const keys = visibleColumnKeys.value
+  return keys ? allHeaders.filter((header) => keys.has(header.key)) : allHeaders
+})
+
+function resetHiddenSortColumn() {
+  const keys = visibleColumnKeys.value
+  if (!keys) return
+
+  const sortKey = customsreportrows_sort_by.value?.[0]?.key
+  if (sortKey && !keys.has(sortKey) && !SORT_ONLY_COLUMN_KEYS.has(sortKey)) {
+    customsreportrows_sort_by.value = DEFAULT_SORT_BY.map((sort) => ({ ...sort }))
+  }
+}
+
+const columnMetadataStop = watch(reportRowsColumns, () => {
+  resetHiddenSortColumn()
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  stopFilterSync()
+  watcherStop()
+  columnMetadataStop()
+})
 
 const maxPage = computed(() => Math.max(1, Math.ceil((reportRowsTotalCount.value || 0) / customsreportrows_per_page.value)))
 
@@ -144,7 +189,7 @@ const pageOptions = computed(() => {
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Отчёт о выпуске для {{ headingLabel }}</h1>
+      <h1 class="primary-heading">{{ headingText }}</h1>
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
@@ -180,6 +225,42 @@ const pageOptions = computed(() => {
         item-value="id"
         hide-default-footer
       >
+        <template #[`header.tnVed`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Код ТНВЭД', 'Предшествующий']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
+        </template>
+
+        <template #[`header.totalWeight`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Вес']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
+        </template>
+
+        <template #[`header.totalCost`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Стоимость']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
+        </template>
+
+        <template #[`header.dateTime`]="{ column, isSorted, getSortIcon }">
+          <SortableMultilineHeader
+            :lines="['Дата', 'Время']"
+            :column="column"
+            :is-sorted="isSorted"
+            :get-sort-icon="getSortIcon"
+          />
+        </template>
+
         <!-- Row-level slot -->
         <template #item="{ item, columns }">
           <tr>
@@ -203,6 +284,35 @@ const pageOptions = computed(() => {
                   <div class="two-line-cell">
                     <div class="primary-line">{{ item.dTag }}</div>
                     <div class="secondary-line">Позиция {{ item.rowNumber }}</div>
+                  </div>
+                </template>
+
+                <!-- TN VED column: current code with previous code on the second line -->
+                <template v-else-if="col.key === 'tnVed'">
+                  <div class="two-line-cell">
+                    <div class="primary-line">{{ item.tnVed }}</div>
+                    <div class="secondary-line tnved-previous-line">{{ item.prevTnVed || '' }}</div>
+                  </div>
+                </template>
+
+                <!-- Combined value/unit columns -->
+                <template v-else-if="col.key === 'totalWeight'">
+                  <span class="nowrap-cell">{{ joinDisplayParts(item.totalWeight, item.weightUnit) }}</span>
+                </template>
+                <template v-else-if="col.key === 'totalCost'">
+                  <span class="nowrap-cell">{{ joinDisplayParts(item.totalCost, item.currency) }}</span>
+                </template>
+
+                <!-- Date/time columns: local date on line 1, local time on line 2 -->
+                <template v-else-if="DATE_TIME_COLUMNS.has(col.key)">
+                  <div class="two-line-cell">
+                    <div
+                      v-for="(line, index) in formatDateTimeLines(item[col.key])"
+                      :key="index"
+                      :class="index === 0 ? 'primary-line' : 'secondary-line'"
+                    >
+                      {{ line }}
+                    </div>
                   </div>
                 </template>
 
@@ -251,6 +361,12 @@ const pageOptions = computed(() => {
 .two-line-cell .secondary-line {
   font-size: 0.85em;
   color: #2a2c2d; /* muted gray */
+}
+.tnved-previous-line {
+  min-height: 1em;
+}
+.nowrap-cell {
+  white-space: nowrap;
 }
 
 /* Minimal width for truncation columns */

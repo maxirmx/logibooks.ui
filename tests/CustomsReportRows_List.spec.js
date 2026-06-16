@@ -3,11 +3,13 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
+import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
+import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const reportRowsRef = ref([])
@@ -53,6 +55,7 @@ const testStubs = {
     `
   },
   'v-data-table-server': {
+    name: 'v-data-table-server',
     inheritAttrs: false,
     emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
     props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
@@ -112,6 +115,15 @@ vi.mock('@/router', () => ({
 }))
 
 describe('CustomsReportRows_List.vue', () => {
+  let wrapper
+
+  afterEach(() => {
+    if (wrapper) {
+      wrapper.unmount()
+      wrapper = null
+    }
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     reportRowsRef.value = []
@@ -119,6 +131,9 @@ describe('CustomsReportRows_List.vue', () => {
     errorRef.value = null
     alertRef.value = null
     searchRef.value = ''
+    perPageRef.value = 10
+    sortByRef.value = [{ key: 'rowNumber', order: 'asc' }]
+    pageRef.value = 1
 
     customsReportsStoreMock = {
       reportRows: reportRowsRef,
@@ -164,7 +179,7 @@ describe('CustomsReportRows_List.vue', () => {
   })
 
   it('loads report rows on mount', async () => {
-    mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: {
         stubs: testStubs
@@ -198,7 +213,7 @@ describe('CustomsReportRows_List.vue', () => {
       }
     ]
 
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: {
         stubs: testStubs
@@ -214,12 +229,103 @@ describe('CustomsReportRows_List.vue', () => {
     expect(rows).toHaveLength(2)
   })
 
+  it('defines widened report row headers', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual([
+      'id',
+      'parcelNumber',
+      'processingResult',
+      'uin',
+      'dTag',
+      'masterInvoice',
+      'recipient',
+      'description',
+      'tnVed',
+      'prevTnVed',
+      'quantity',
+      'totalWeight',
+      'weightUnit',
+      'totalCost',
+      'currency',
+      'previousMonthValueOrWeight',
+      'customsDutiesAndTaxes',
+      'customsFees',
+      'prohibitionsAndRestrictions',
+      'customsPaymentReservationId',
+      'dateTime',
+      'comments'
+    ])
+  })
+
+  it('renders widened DTO fields and truncates long text columns', async () => {
+    reportRowsRef.value = [
+      {
+        id: 1,
+        rowNumber: 9,
+        parcelNumber: 'PN-001',
+        processingResult: 'Выпущено',
+        uin: 'UIN-001',
+        dTag: 'DTAG-001',
+        masterInvoice: 'MASTER-001',
+        recipient: 'Получатель с длинным названием',
+        description: 'УИН:UIN-001; длинное описание товара',
+        tnVed: '1234567890',
+        prevTnVed: '0987654321',
+        quantity: '2',
+        totalWeight: '3.4',
+        weightUnit: 'кг',
+        totalCost: '99.95',
+        currency: 'USD',
+        previousMonthValueOrWeight: 'стоимость за предыдущий месяц',
+        customsDutiesAndTaxes: 'пошлины и налоги',
+        customsFees: 'сборы',
+        prohibitionsAndRestrictions: 'запреты и ограничения',
+        customsPaymentReservationId: 12345,
+        dateTime: '2026-05-07 10:30',
+        comments: '10-выпуск',
+        parcelId: 12,
+        registerId: 5
+      }
+    ]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const textFor = (key) => wrapper.find(`[data-column-key="${key}"]`).text()
+
+    expect(textFor('uin')).toContain('UIN-001')
+    expect(textFor('masterInvoice')).toContain('MASTER-001')
+    expect(textFor('description')).toContain('УИН:UIN-001; длинное описание товара')
+    expect(textFor('customsDutiesAndTaxes')).toContain('пошлины и налоги')
+    expect(textFor('customsFees')).toContain('сборы')
+    expect(textFor('dateTime')).toContain('2026-05-07 10:30')
+    expect(textFor('comments')).toContain('10-выпуск')
+    expect(textFor('customsPaymentReservationId')).toContain('12345')
+    expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)
+    expect(wrapper.find('[data-column-key="comments"] .truncate-cell').exists()).toBe(true)
+    expect(wrapper.findAllComponents(TruncateTooltipCell)).toHaveLength(7)
+  })
+
   // Back navigation handled by parent view; no local back button to test
 
   it('displays loading indicator when loading', async () => {
     loadingRef.value = true
 
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: {
         stubs: testStubs
@@ -234,7 +340,7 @@ describe('CustomsReportRows_List.vue', () => {
   it('reports store error through alertStore', async () => {
     errorRef.value = new Error('Failed to load rows')
 
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: {
         stubs: testStubs
@@ -248,7 +354,7 @@ describe('CustomsReportRows_List.vue', () => {
   })
 
   it('displays report ID in header', async () => {
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 42 },
       global: {
         stubs: testStubs
@@ -258,6 +364,114 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
+  })
+
+  it('displays master invoice in header when provided', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 42, masterInvoice: 'MASTER-42' },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для MASTER-42')
+  })
+
+  it('updates local search from the search field', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+    await wrapper.find('input').setValue('UIN-001')
+
+    expect(wrapper.vm.localSearch).toBe('UIN-001')
+  })
+
+  it('passes pagination state to PaginationFooter', async () => {
+    customsReportsStoreMock.reportRowsTotalCount.value = 25
+    perPageRef.value = 10
+    pageRef.value = 2
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const footer = wrapper.findComponent(PaginationFooter)
+    expect(footer.props('totalCount')).toBe(25)
+    expect(footer.props('maxPage')).toBe(3)
+    expect(footer.props('page')).toBe(2)
+  })
+
+  it('updates table and footer models from emitted events', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    const table = wrapper.findComponent({ name: 'v-data-table-server' })
+    table.vm.$emit('update:itemsPerPage', 25)
+    table.vm.$emit('update:page', 3)
+    table.vm.$emit('update:sortBy', [{ key: 'uin', order: 'desc' }])
+    await flushPromises()
+
+    expect(perPageRef.value).toBe(25)
+    expect(pageRef.value).toBe(3)
+    expect(sortByRef.value).toEqual([{ key: 'uin', order: 'desc' }])
+
+    const footer = wrapper.findComponent(PaginationFooter)
+    footer.vm.$emit('update:itemsPerPage', 50)
+    footer.vm.$emit('update:page', 4)
+    await flushPromises()
+
+    expect(perPageRef.value).toBe(50)
+    expect(pageRef.value).toBe(4)
+  })
+
+  it('returns alignment classes for table columns', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.getColumnAlignmentClass({ align: 'center' })).toBe('text-center')
+    expect(wrapper.vm.getColumnAlignmentClass({ align: 'end' })).toBe('text-right')
+    expect(wrapper.vm.getColumnAlignmentClass({ align: 'start' })).toBe('text-start')
+  })
+
+  it('renders alert message and clears it', async () => {
+    alertRef.value = { type: 'alert-danger', message: 'Load failed' }
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('.alert').text()).toContain('Load failed')
+    await wrapper.find('.alert .close').trigger('click')
+    expect(clearMock).toHaveBeenCalled()
   })
 
   it('routes to parcel edit when parcelId is present', async () => {
@@ -275,7 +489,7 @@ describe('CustomsReportRows_List.vue', () => {
       }
     ]
 
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: { stubs: testStubs }
     })
@@ -286,6 +500,19 @@ describe('CustomsReportRows_List.vue', () => {
     await cell.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledWith('/registers/5/parcels/edit/12')
+  })
+
+  it('does not route when registerId is missing', async () => {
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    wrapper.vm.openParcel({ parcelId: 12, registerId: null })
+
+    expect(routerPushMock).not.toHaveBeenCalled()
   })
 
   it('prevents click and shows disabled cursor when parcelId is null', async () => {
@@ -303,7 +530,7 @@ describe('CustomsReportRows_List.vue', () => {
       }
     ]
 
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: { stubs: testStubs }
     })
@@ -320,7 +547,7 @@ describe('CustomsReportRows_List.vue', () => {
   it('reports string store error through alertStore', async () => {
     errorRef.value = 'row load error'
 
-    mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: {
         stubs: testStubs
@@ -333,7 +560,7 @@ describe('CustomsReportRows_List.vue', () => {
   })
 
   it('triggers reload when pagination changes', async () => {
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: { stubs: testStubs }
     })
@@ -347,10 +574,11 @@ describe('CustomsReportRows_List.vue', () => {
 
     expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBefore)
     wrapper.unmount()
+    wrapper = null
   })
 
   it('stops watchers and cleans up on unmount', async () => {
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: { stubs: testStubs }
     })
@@ -359,12 +587,13 @@ describe('CustomsReportRows_List.vue', () => {
 
     // Unmounting exercises the onUnmounted hook (isComponentMounted=false, stopFilterSync, watcherStop)
     wrapper.unmount()
+    wrapper = null
   })
 
   it('generates page options for large page counts', async () => {
     customsReportsStoreMock.reportRowsTotalCount.value = 10000
 
-    const wrapper = mount(CustomsReportRowsList, {
+    wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
       global: { stubs: testStubs }
     })
@@ -378,5 +607,21 @@ describe('CustomsReportRows_List.vue', () => {
     expect(pageOptions.length).toBeGreaterThan(10)
     expect(pageOptions.some((o) => o.value > 200)).toBe(true)
     expect(pageOptions[0]).toEqual({ value: 1, title: '1' })
+  })
+
+  it('uses page 1 as the page options fallback when current page is empty', async () => {
+    customsReportsStoreMock.reportRowsTotalCount.value = 10000
+    pageRef.value = 0
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+
+    await flushPromises()
+
+    const pageOptions = wrapper.vm.pageOptions
+    expect(pageOptions[0]).toEqual({ value: 1, title: '1' })
+    expect(pageOptions.some((o) => o.value === 11)).toBe(true)
   })
 })

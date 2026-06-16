@@ -13,6 +13,8 @@ import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const reportRowsRef = ref([])
+const reportRowsColumnsRef = ref([])
+const reportRowsCustomsProcedureRef = ref(null)
 const loadingRef = ref(false)
 const errorRef = ref(null)
 const alertRef = ref(null)
@@ -29,6 +31,90 @@ let customsReportsStoreMock
 let alertStoreMock
 let authStoreMock
 const routerPushMock = vi.hoisted(() => vi.fn())
+
+const fullColumnKeys = [
+  'id',
+  'parcelNumber',
+  'processingResult',
+  'uin',
+  'dTag',
+  'masterInvoice',
+  'recipient',
+  'description',
+  'tnVed',
+  'quantity',
+  'totalWeight',
+  'totalCost',
+  'previousMonthValueOrWeight',
+  'customsDutiesAndTaxes',
+  'customsFees',
+  'prohibitionsAndRestrictions',
+  'customsPaymentReservationId',
+  'dateTime',
+  'comments'
+]
+
+const exportColumnKeys = [
+  'id',
+  'parcelNumber',
+  'processingResult',
+  'uin',
+  'dTag',
+  'recipient',
+  'description',
+  'tnVed',
+  'quantity',
+  'totalWeight',
+  'totalCost',
+  'dateTime',
+  'comments'
+]
+
+const reimportColumnKeys = [
+  'id',
+  'parcelNumber',
+  'processingResult',
+  'uin',
+  'dTag',
+  'recipient',
+  'description',
+  'tnVed',
+  'quantity',
+  'totalWeight',
+  'totalCost',
+  'customsDutiesAndTaxes',
+  'customsFees',
+  'dateTime',
+  'comments'
+]
+
+function createFullReportRow() {
+  return {
+    id: 1,
+    rowNumber: 9,
+    parcelNumber: 'PN-001',
+    processingResult: 'Выпущено',
+    uin: 'UIN-001',
+    dTag: 'DTAG-001',
+    masterInvoice: 'MASTER-001',
+    recipient: 'Получатель',
+    description: 'УИН:UIN-001; описание',
+    tnVed: '1234567890',
+    prevTnVed: '0987654321',
+    quantity: '2',
+    totalWeight: '3.4',
+    weightUnit: 'кг',
+    totalCost: '99.95',
+    currency: 'USD',
+    previousMonthValueOrWeight: 'предыдущий месяц',
+    customsDutiesAndTaxes: 'пошлины и налоги',
+    customsFees: 'сборы',
+    prohibitionsAndRestrictions: 'запреты',
+    customsPaymentReservationId: 12345,
+    dateTime: '2026-05-07T10:30:00+03:00',
+    comments: '10-выпуск'
+  }
+}
 
 const testStubs = {
   ...defaultGlobalStubs,
@@ -185,6 +271,8 @@ describe('CustomsReportRows_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     reportRowsRef.value = []
+    reportRowsColumnsRef.value = []
+    reportRowsCustomsProcedureRef.value = null
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
@@ -198,6 +286,8 @@ describe('CustomsReportRows_List.vue', () => {
       loading: loadingRef,
       error: errorRef,
       reportRowsTotalCount: ref(0),
+      reportRowsColumns: reportRowsColumnsRef,
+      reportRowsCustomsProcedure: reportRowsCustomsProcedureRef,
       getReportRows: getReportRowsMock
     }
 
@@ -297,27 +387,100 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.vm.headers.map((header) => header.key)).toEqual([
-      'id',
-      'parcelNumber',
-      'processingResult',
-      'uin',
-      'dTag',
-      'masterInvoice',
-      'recipient',
-      'description',
-      'tnVed',
-      'quantity',
-      'totalWeight',
-      'totalCost',
-      'previousMonthValueOrWeight',
-      'customsDutiesAndTaxes',
-      'customsFees',
-      'prohibitionsAndRestrictions',
-      'customsPaymentReservationId',
-      'dateTime',
-      'comments'
-    ])
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
+  })
+
+  it('filters headers and cells to EK10 report columns', async () => {
+    reportRowsColumnsRef.value = exportColumnKeys
+    reportRowsCustomsProcedureRef.value = 'ЭК 10'
+    reportRowsRef.value = [createFullReportRow()]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(exportColumnKeys)
+    expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="masterInvoice"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="recipient"]').text()).toContain('Получатель')
+    expect(wrapper.find('[data-column-key="dateTime"]').exists()).toBe(true)
+  })
+
+  it('filters headers and cells to IM60 report columns', async () => {
+    reportRowsColumnsRef.value = reimportColumnKeys
+    reportRowsCustomsProcedureRef.value = 'ИМ 60'
+    reportRowsRef.value = [createFullReportRow()]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(reimportColumnKeys)
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(true)
+    expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(true)
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes"]').text()).toContain('пошлины и налоги')
+    expect(wrapper.find('[data-column-key="customsFees"]').text()).toContain('сборы')
+    expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(false)
+  })
+
+  it.each(['ИМ 40', 'ЭК 31'])('uses full headers and cells for %s report columns', async (customsProcedure) => {
+    reportRowsColumnsRef.value = fullColumnKeys
+    reportRowsCustomsProcedureRef.value = customsProcedure
+    reportRowsRef.value = [createFullReportRow()]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
+    expect(wrapper.find('[data-column-key="masterInvoice"]').text()).toContain('MASTER-001')
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight"]').text()).toContain('предыдущий месяц')
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions"]').text()).toContain('запреты')
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').text()).toContain('12345')
+  })
+
+  it('resets hidden sort column after metadata loads', async () => {
+    sortByRef.value = [{ key: 'customsPaymentReservationId', order: 'desc' }]
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5 },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+    const callsBeforeMetadata = getReportRowsMock.mock.calls.length
+
+    reportRowsColumnsRef.value = exportColumnKeys
+    await flushPromises()
+
+    expect(sortByRef.value).toEqual([{ key: 'rowNumber', order: 'asc' }])
+    expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
 
   it('renders tn ved header as two lines', async () => {
@@ -513,9 +676,27 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
+    expect(wrapper.find('h1').text()).not.toContain('по процедуре')
   })
 
   it('displays master invoice in header when provided', async () => {
+    reportRowsCustomsProcedureRef.value = 'ИМ 40'
+
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 42, masterInvoice: 'CMR 4114294' },
+      global: {
+        stubs: testStubs
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для CMR 4114294 по процедуре ИМ40')
+  })
+
+  it('formats EK procedure without an internal space in header', async () => {
+    reportRowsCustomsProcedureRef.value = 'ЭК 31'
+
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 42, masterInvoice: 'MASTER-42' },
       global: {
@@ -525,7 +706,7 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для MASTER-42')
+    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для MASTER-42 по процедуре ЭК31')
   })
 
   it('updates local search from the search field', async () => {

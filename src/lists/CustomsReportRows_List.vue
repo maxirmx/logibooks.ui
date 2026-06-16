@@ -36,13 +36,27 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, reportRowsTotalCount } = storeToRefs(customsReportsStore)
+const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } = storeToRefs(customsReportsStore)
 const { alert } = storeToRefs(alertStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
+const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
+const SORT_ONLY_COLUMN_KEYS = new Set(['rowNumber'])
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
+const procedureHeadingLabel = computed(() => formatProcedureForHeading(reportRowsCustomsProcedure.value))
+const headingText = computed(() => {
+  const procedure = procedureHeadingLabel.value
+  return procedure
+    ? `Отчёт о выпуске для ${headingLabel.value} по процедуре ${procedure}`
+    : `Отчёт о выпуске для ${headingLabel.value}`
+})
+
+function formatProcedureForHeading(value) {
+  const text = String(value ?? '').trim()
+  return text.replace(/^([А-ЯЁ]{2})\s+(\d+)$/u, '$1$2')
+}
 
 function isParcelRowClickable(item) {
   return item?.parcelId !== null && item?.registerId !== null
@@ -88,12 +102,6 @@ const watcherStop = watch(
   { immediate: false }
 )
 
-onUnmounted(() => {
-  isComponentMounted.value = false
-  stopFilterSync()
-  watcherStop()
-})
-
 // Column keys that should use TruncateTooltipCell
 const TRUNCATABLE_COLUMNS = [
   'recipient',
@@ -105,7 +113,7 @@ const TRUNCATABLE_COLUMNS = [
   'comments'
 ]
 const DATE_TIME_COLUMNS = new Set(['dateTime'])
-const headers = [
+const allHeaders = [
   { title: 'Номер записи', key: 'id', align: 'start', width: '72px' },
   { title: 'Номер отправления', key: 'parcelNumber', align: 'start', width: '140px' },
   { title: 'Результат обработки', key: 'processingResult', align: 'start', width: '180px' },
@@ -126,6 +134,37 @@ const headers = [
   { title: 'Дата и время', key: 'dateTime', align: 'start', width: '150px' },
   { title: 'Комментарии', key: 'comments', align: 'start', width: '250px' }
 ]
+
+const visibleColumnKeys = computed(() => {
+  const columns = reportRowsColumns.value
+  return Array.isArray(columns) && columns.length > 0 ? new Set(columns) : null
+})
+
+const headers = computed(() => {
+  const keys = visibleColumnKeys.value
+  return keys ? allHeaders.filter((header) => keys.has(header.key)) : allHeaders
+})
+
+function resetHiddenSortColumn() {
+  const keys = visibleColumnKeys.value
+  if (!keys) return
+
+  const sortKey = customsreportrows_sort_by.value?.[0]?.key
+  if (sortKey && !keys.has(sortKey) && !SORT_ONLY_COLUMN_KEYS.has(sortKey)) {
+    customsreportrows_sort_by.value = DEFAULT_SORT_BY.map((sort) => ({ ...sort }))
+  }
+}
+
+const columnMetadataStop = watch(reportRowsColumns, () => {
+  resetHiddenSortColumn()
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  stopFilterSync()
+  watcherStop()
+  columnMetadataStop()
+})
 
 const maxPage = computed(() => Math.max(1, Math.ceil((reportRowsTotalCount.value || 0) / customsreportrows_per_page.value)))
 
@@ -150,7 +189,7 @@ const pageOptions = computed(() => {
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">Отчёт о выпуске для {{ headingLabel }}</h1>
+      <h1 class="primary-heading">{{ headingText }}</h1>
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>

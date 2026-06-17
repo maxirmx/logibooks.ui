@@ -2,12 +2,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { reactive } from 'vue'
-
 export const WEIGHT_CORRECTION_CHOICE = {
   Apply: 'apply',
-  Skip: 'skip',
-  Cancel: 'cancel'
+  Skip: 'skip'
 }
 
 export const WEIGHT_CORRECTION_CONFIRM_DIALOG_PROPS = {
@@ -87,43 +84,4 @@ export async function chooseOutputWeightCorrection(confirm, register, options = 
 
 export async function confirmOutputWeightCorrection(confirm, register, options = {}) {
   return (await chooseOutputWeightCorrection(confirm, register, options)) === WEIGHT_CORRECTION_CHOICE.Apply
-}
-
-export function useWeightCorrectionChoiceDialog() {
-  const weightCorrectionDialogState = reactive({
-    show: false,
-    coefficientText: ''
-  })
-
-  let pendingResolve = null
-
-  function requestWeightCorrectionChoice(register) {
-    const correction = getWeightCorrection(register)
-    if (!correction.canCorrect) {
-      return Promise.resolve(WEIGHT_CORRECTION_CHOICE.Skip)
-    }
-
-    weightCorrectionDialogState.coefficientText = correction.coefficientText
-    weightCorrectionDialogState.show = true
-
-    return new Promise((resolve) => {
-      pendingResolve = resolve
-    })
-  }
-
-  function resolveWeightCorrectionChoice(choice) {
-    weightCorrectionDialogState.show = false
-    weightCorrectionDialogState.coefficientText = ''
-
-    if (pendingResolve) {
-      pendingResolve(choice)
-      pendingResolve = null
-    }
-  }
-
-  return {
-    weightCorrectionDialogState,
-    requestWeightCorrectionChoice,
-    resolveWeightCorrectionChoice
-  }
 }

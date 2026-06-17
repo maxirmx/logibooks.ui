@@ -4,11 +4,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
-import WeightCorrectionChoiceDialog from '@/l2/WeightCorrectionChoiceDialog.vue'
-import { WEIGHT_CORRECTION_CHOICE } from '@/helpers/weight.correction.helpers.js'
 
+const confirmMock = vi.hoisted(() => vi.fn())
 const download = vi.fn().mockResolvedValue(true)
 let isWhManagerPlus = true
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
+}))
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
@@ -38,11 +41,13 @@ const ActionButtonStub = {
   />`
 }
 
-const WeightCorrectionChoiceDialogStub = {
-  name: 'WeightCorrectionChoiceDialog',
-  props: ['state'],
-  emits: ['choose'],
-  template: '<div data-testid="weight-correction-dialog"></div>'
+function createDeferred() {
+  let resolve
+  const promise = new Promise((res) => {
+    resolve = res
+  })
+
+  return { promise, resolve }
 }
 
 function mountHeaderActionBar(props) {
@@ -51,8 +56,7 @@ function mountHeaderActionBar(props) {
     global: {
       stubs: {
         ActionButton: ActionButtonStub,
-        ActionButton2L: ActionButton2LStub,
-        WeightCorrectionChoiceDialog: WeightCorrectionChoiceDialogStub
+        ActionButton2L: ActionButton2LStub
       }
     }
   })
@@ -61,6 +65,7 @@ function mountHeaderActionBar(props) {
 describe('RegisterWhHeaderActionBar.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    confirmMock.mockReset()
     isWhManagerPlus = true
   })
 
@@ -132,6 +137,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
   })
 
   it('downloads selected zone with correction when selected', async () => {
+    confirmMock.mockResolvedValueOnce(true)
     const wrapper = mountHeaderActionBar({
       register: {
         id: 77,
@@ -144,19 +150,17 @@ describe('RegisterWhHeaderActionBar.vue', () => {
 
     const actionButton2L = wrapper.findComponent(ActionButton2LStub)
     const zoneOption = actionButton2L.props('options')[1]
-    const promise = zoneOption.action()
-    await nextTick()
+    await zoneOption.action()
 
-    const dialog = wrapper.findComponent(WeightCorrectionChoiceDialog)
-    expect(dialog.props('state').show).toBe(true)
-
-    dialog.vm.$emit('choose', WEIGHT_CORRECTION_CHOICE.Apply)
-    await promise
-
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
+    }))
     expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 8, 'Зона A', true)
   })
 
   it('prevents another export while the correction choice dialog is open', async () => {
+    const deferred = createDeferred()
+    confirmMock.mockReturnValueOnce(deferred.promise)
     const wrapper = mountHeaderActionBar({
       register: {
         id: 77,
@@ -179,9 +183,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     const secondPromise = allParcelsOption.action()
     await nextTick()
 
-    wrapper
-      .findComponent(WeightCorrectionChoiceDialog)
-      .vm.$emit('choose', WEIGHT_CORRECTION_CHOICE.Apply)
+    deferred.resolve(true)
 
     await firstPromise
     await secondPromise
@@ -194,6 +196,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
   })
 
   it('downloads selected zone without correction when correction is declined', async () => {
+    confirmMock.mockResolvedValueOnce(false)
     const wrapper = mountHeaderActionBar({
       register: {
         id: 77,
@@ -206,13 +209,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
 
     const actionButton2L = wrapper.findComponent(ActionButton2LStub)
     const zoneOption = actionButton2L.props('options')[1]
-    const promise = zoneOption.action()
-    await nextTick()
-
-    wrapper
-      .findComponent(WeightCorrectionChoiceDialog)
-      .vm.$emit('choose', WEIGHT_CORRECTION_CHOICE.Skip)
-    await promise
+    await zoneOption.action()
 
     expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 8, 'Зона A')
   })

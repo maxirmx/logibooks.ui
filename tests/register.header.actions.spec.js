@@ -6,7 +6,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
-import { WEIGHT_CORRECTION_CHOICE } from '@/helpers/weight.correction.helpers.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 
@@ -172,6 +171,7 @@ describe('useRegisterHeaderActions', () => {
   it('offers optional correction before register download and applies selected correction', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
+    confirmMock.mockResolvedValueOnce(true)
 
     const actions = useRegisterHeaderActions({
       registersStore,
@@ -183,20 +183,18 @@ describe('useRegisterHeaderActions', () => {
       isComponentMounted
     })
 
-    const promise = actions.downloadRegister()
+    await actions.downloadRegister()
 
-    expect(actions.weightCorrectionDialog.show).toBe(true)
-    expect(actions.weightCorrectionDialog.coefficientText).toBe('0,500')
-
-    actions.resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Apply)
-    await promise
-
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
+    }))
     expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx', null, null, true)
   })
 
   it('downloads register without correction when correction is declined', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
+    confirmMock.mockResolvedValueOnce(false)
 
     const actions = useRegisterHeaderActions({
       registersStore,
@@ -208,9 +206,7 @@ describe('useRegisterHeaderActions', () => {
       isComponentMounted
     })
 
-    const promise = actions.downloadRegister()
-    actions.resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Skip)
-    await promise
+    await actions.downloadRegister()
 
     expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx')
     expect(actions.actionDialog.show).toBe(false)
@@ -290,7 +286,7 @@ describe('useRegisterHeaderActions', () => {
 
     const promise = actions.downloadAdditionalRestrictions()
 
-    expect(actions.weightCorrectionDialog.show).toBe(false)
+    expect(confirmMock).not.toHaveBeenCalled()
     expect(actions.actionDialog.show).toBe(true)
     expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledWith(1, 'INV-1')
 

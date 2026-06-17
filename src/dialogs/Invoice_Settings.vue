@@ -19,6 +19,8 @@ const props = defineProps({
   selection: { type: String, required: false }
 })
 
+const CUSTOMS_PROCEDURE_REEXPORT = 31
+
 const registersStore = useRegistersStore()
 const { item, loading } = storeToRefs(registersStore)
 
@@ -45,7 +47,7 @@ const parcelSelectionOptions = [
   { id: 4, label: 'Без акциза и нотификаций', value: InvoiceParcelSelection.Ordinal }
 ]
 
-const optionalColumnOptions = [
+const allOptionalColumnOptions = [
   { id: 1, label: 'Номер мешка', value: InvoiceOptionalColumns.BagNumber },
   { id: 2, label: 'ФИО', value: InvoiceOptionalColumns.FullName },
   { id: 3, label: 'Предшествующий ДТЭГ', value: InvoiceOptionalColumns.PreviousDteg },
@@ -64,6 +66,19 @@ const heading = computed(() => {
   return number ? `Настройки инвойса (${number})` : 'Настройки инвойса'
 })
 
+const isReexportRegister = computed(() =>
+  Number(currentRegister.value?.customsProcedureCode) === CUSTOMS_PROCEDURE_REEXPORT
+)
+const optionalColumnOptions = computed(() =>
+  isReexportRegister.value
+    ? allOptionalColumnOptions.filter((column) => column.value !== InvoiceOptionalColumns.PreviousDteg)
+    : allOptionalColumnOptions
+)
+const sanitizedOptionalColumns = computed(() =>
+  isReexportRegister.value
+    ? optionalColumns.value & ~InvoiceOptionalColumns.PreviousDteg
+    : optionalColumns.value
+)
 const invoiceWeightCorrection = computed(() => getWeightCorrection(currentRegister.value))
 const showInvoiceWeightCorrection = computed(() => invoiceWeightCorrection.value.canCorrect)
 const invoiceWeightCorrectionLabel = computed(() =>
@@ -94,7 +109,12 @@ function isColumnSelected(column) {
   return (optionalColumns.value & column) === column
 }
 
+function isColumnAvailable(column) {
+  return optionalColumnOptions.value.some((option) => option.value === column)
+}
+
 function toggleColumn(column) {
+  if (!isColumnAvailable(column)) return
   if (isColumnSelected(column)) {
     optionalColumns.value &= ~column
   } else {
@@ -117,7 +137,7 @@ async function onSubmit() {
       currentRegister.value.id,
       currentRegister.value.invoiceNumber,
       parcelSelection.value,
-      optionalColumns.value,
+      sanitizedOptionalColumns.value,
       applyWeightCorrection
     )
     router.go(-1)

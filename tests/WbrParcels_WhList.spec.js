@@ -233,6 +233,7 @@ describe('WbrParcels_WhList.vue', () => {
     parcelsWhBoxNumber.value = ''
     parcelsWhSticker.value = ''
     parcelsWhProductName.value = ''
+    registerItem.value = { dealNumber: 'D-1' }
     navigateToEditParcel.mockClear()
   })
 
@@ -307,6 +308,65 @@ describe('WbrParcels_WhList.vue', () => {
     const productName = wrapper.get('.warehouse-product-name-cell')
     expect(productName.text()).toBe('Very long WBR product name that must remain on one line')
     expect(productName.attributes('title')).toBe('Very long WBR product name that must remain on one line')
+  })
+
+  it('renders corrected parcel weight when register correction is available', () => {
+    mockItems.value = [{
+      ...mockItems.value[0],
+      weightCorrectionEligible: true
+    }]
+    registerItem.value = {
+      dealNumber: 'D-1',
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    }
+
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: {
+          ...globalStubs,
+          'font-awesome-icon': {
+            props: ['icon'],
+            template: '<i :data-icon="icon" class="fa-stub"></i>'
+          }
+        }
+      }
+    })
+
+    const weight = wrapper.get('.corrected-weight-display')
+    expect(weight.text()).toContain('2.400')
+    expect(weight.text()).toContain('1.200')
+    expect(weight.get('[data-icon="fa-solid fa-arrow-right"]').exists()).toBe(true)
+  })
+
+  it('keeps parcel weight plain when row is not weight-correction eligible', () => {
+    mockItems.value = [{
+      ...mockItems.value[0],
+      weightCorrectionEligible: false
+    }]
+    registerItem.value = {
+      dealNumber: 'D-1',
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    }
+
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: {
+        stubs: {
+          ...globalStubs,
+          'font-awesome-icon': {
+            props: ['icon'],
+            template: '<i :data-icon="icon" class="fa-stub"></i>'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.find('.corrected-weight-display').exists()).toBe(false)
+    expect(wrapper.text()).toContain('2.400')
+    expect(wrapper.text()).not.toContain('1.200')
   })
 
   it('opens parcel edit from warehouse table cells', async () => {

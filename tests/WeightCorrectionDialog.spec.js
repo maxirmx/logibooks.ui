@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils'
 import WeightCorrectionChoiceDialog from '@/l2/WeightCorrectionChoiceDialog.vue'
 import {
   confirmOutputWeightCorrection,
+  getCorrectedWeight,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
 
@@ -44,6 +45,15 @@ function mountDialog(state = { show: true, coefficientText: '0,500' }) {
 }
 
 describe('weight correction confirmation dialogs', () => {
+  it('calculates corrected parcel weight only when register correction is possible', () => {
+    expect(getCorrectedWeight(2.4, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBe(1.2)
+    expect(getCorrectedWeight(2.4, { realWeightKg: null, totalWeightKgToRelease: 10 })).toBeNull()
+    expect(getCorrectedWeight(2.4, { realWeightKg: 0, totalWeightKgToRelease: 10 })).toBeNull()
+    expect(getCorrectedWeight(2.4, { realWeightKg: -1, totalWeightKgToRelease: 10 })).toBeNull()
+    expect(getCorrectedWeight(2.4, { realWeightKg: 5, totalWeightKgToRelease: 0 })).toBeNull()
+    expect(getCorrectedWeight(null, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBeNull()
+  })
+
   it('uses the same confirm dialog style as delete confirmations', async () => {
     const confirm = vi.fn().mockResolvedValue(true)
 

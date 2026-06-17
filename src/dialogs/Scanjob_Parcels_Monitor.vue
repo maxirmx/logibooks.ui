@@ -25,6 +25,7 @@ defineOptions({ name: 'Scanjob_Parcels_Monitor' })
 const props = defineProps({
   box: { type: Object, default: null },
   registerType: { type: Number, default: 0 },
+  register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null }
@@ -101,6 +102,7 @@ function clearDefect(item) {
           :is="typedTableComponent"
           v-else-if="typedTableComponent"
           :parcels="parcels"
+          :register="props.register"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
           :selected-parcel-id="props.selectedParcelId"
@@ -113,6 +115,7 @@ function clearDefect(item) {
           v-else
           :headers="scanjobParcelHeaders"
           :parcels="parcels"
+          :register="props.register"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
           :selected-parcel-id="props.selectedParcelId"

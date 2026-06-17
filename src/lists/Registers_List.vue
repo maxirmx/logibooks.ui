@@ -204,6 +204,20 @@ function getCountryDisplayName(item, countryCode, airportId) {
   return `${countryName} (${airportCode})`
 }
 
+function parseWeightValue(value) {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string' && value.trim() === '') return null
+  const numericValue = typeof value === 'string'
+    ? Number(value.trim().replace(/\u00A0|\s/g, '').replace(',', '.'))
+    : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
+
+function hasRealWeightKg(item) {
+  const realWeightKg = parseWeightValue(item?.realWeightKg)
+  return realWeightKg !== null && realWeightKg > 0
+}
+
 // Load companies and parcel statuses on component mount
 onMounted(async () => {
   try {
@@ -512,9 +526,17 @@ defineExpose({
             @click="editRegister"
           >
             <template #default>
-              <div class="data-box">
-                <div>{{ formatWeight(item.totalWeightKg) }}</div>
-                <div>{{ formatWeight(item.totalWeightKgToRelease) }}</div>
+              <div class="data-box weight-box" data-testid="register-weight-cell">
+                <div class="weight-line">{{ formatWeight(item.totalWeightKg) }}</div>
+                <div
+                  v-if="hasRealWeightKg(item)"
+                  class="weight-line weight-real-route"
+                >
+                  <span>{{ formatWeight(item.totalWeightKgToRelease) }}</span>
+                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
+                  <span>{{ formatWeight(item.realWeightKg) }}</span>
+                </div>
+                <div v-else class="weight-line">{{ formatWeight(item.totalWeightKgToRelease) }}</div>
               </div>
             </template>
           </ClickableCell>
@@ -752,6 +774,17 @@ defineExpose({
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.weight-real-route {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+.weight-real-route .arrow-icon {
+  flex-shrink: 0;
 }
 
 /* Right-align numeric stacked panels */

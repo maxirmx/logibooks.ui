@@ -6,6 +6,7 @@ defineOptions({ name: 'Scanjob_Ozon_Parcels_Monitor_Table' })
 
 defineProps({
   parcels: { type: Array, default: () => [] },
+  register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null }
@@ -18,6 +19,7 @@ defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
   <ScanjobParcelsMonitorTable
     :headers="scanjobOzonParcelHeaders"
     :parcels="parcels"
+    :register="register"
     :loading="loading"
     :defect-action-loading="defectActionLoading"
     :selected-parcel-id="selectedParcelId"

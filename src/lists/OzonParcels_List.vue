@@ -22,7 +22,7 @@ import { storeToRefs } from 'pinia'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
-import { formatWeight, formatPrice } from '@/helpers/number.formatters.js'
+import { formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   navigateToEditParcel,
@@ -36,6 +36,7 @@ import {
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
+import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
@@ -544,10 +545,17 @@ function getGenericTemplateHeaders() {
         <template #[`item.weightKg`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatWeight(item.weightKg)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
-          />
+          >
+            <template #default>
+              <CorrectedWeightDisplay
+                :weight="item.weightKg"
+                :register="registersStore.item"
+                :use-correction="item.weightCorrectionEligible === true"
+              />
+            </template>
+          </ClickableCell>
         </template>
 
         <template #[`item.quantity`]="{ item }">

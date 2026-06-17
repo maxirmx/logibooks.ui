@@ -52,6 +52,15 @@ vi.mock('pinia', async () => {
 })
 
 const global = { stubs: vuetifyStubs }
+const globalWithFontAwesome = {
+  stubs: {
+    ...vuetifyStubs,
+    'font-awesome-icon': {
+      props: ['icon'],
+      template: '<i :data-icon="icon" class="fa-stub"></i>'
+    }
+  }
+}
 const mockScrollIntoView = () => {
   if (typeof window.HTMLElement.prototype.scrollIntoView !== 'function') {
     Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
@@ -215,6 +224,45 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const statusCell = wrapper.get('.status-cell.has-issues')
     expect(statusCell.text()).toBe('Запрет')
+  })
+
+  it('renders corrected monitor parcel weights from register correction data', () => {
+    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+      props: {
+        register: {
+          realWeightKg: 5,
+          totalWeightKgToRelease: 10
+        },
+        parcels: [
+          {
+            isInRegister: true,
+            weightCorrectionEligible: true,
+            stickerScanned: true,
+            shk: 'SHK-41',
+            productName: 'Corrected product',
+            weightKg: 2.4,
+            quantity: 1,
+            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+          },
+          {
+            isInRegister: true,
+            weightCorrectionEligible: false,
+            stickerScanned: true,
+            parcelNumber: 'BLOCKED-ROW',
+            weightKg: 3.4,
+            quantity: 1
+          }
+        ]
+      },
+      global: globalWithFontAwesome
+    })
+
+    const corrected = wrapper.get('.corrected-weight-display')
+    expect(corrected.text()).toContain('2.400')
+    expect(corrected.text()).toContain('1.200')
+    expect(corrected.get('[data-icon="fa-solid fa-arrow-right"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('3.400')
+    expect(wrapper.text()).not.toContain('1.700')
   })
 
   it('renders product name as a non-wrapping tooltip cell and keeps click editing', async () => {

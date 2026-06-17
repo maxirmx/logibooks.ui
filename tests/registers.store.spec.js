@@ -1135,6 +1135,18 @@ describe('registers store', () => {
         'register_10_Зона_1.xlsx'
       )
     })
+
+    it('adds applyWeightCorrection query only when requested', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.download(10, 'register_10.xlsx', 15, 'Зона 1', true)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download?forZone=15&applyWeightCorrection=true`,
+        'register_10_Зона_1.xlsx'
+      )
+    })
   })
 
   describe('downloadAdditionalRestrictions method', () => {
@@ -1159,6 +1171,18 @@ describe('registers store', () => {
 
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/22/download-additional-restrictions`,
+        'Дополнительные_изъятия_22.xlsx'
+      )
+    })
+
+    it('adds applyWeightCorrection query to additional restrictions when requested', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.downloadAdditionalRestrictions(22, null, true)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/22/download-additional-restrictions?applyWeightCorrection=true`,
         'Дополнительные_изъятия_22.xlsx'
       )
     })
@@ -1319,6 +1343,25 @@ describe('registers store', () => {
       await store.downloadInvoiceFile(7, 'INV-7', InvoiceParcelSelection.All, optionalColumns)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/7/download-invoice?optionalColumns=${optionalColumns}`,
+        'Invoice_INV-7.xlsx'
+      )
+    })
+
+    it('appends weight correction opt-out query when invoice correction is unchecked', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const optionalColumns = InvoiceOptionalColumns.Url
+
+      await store.downloadInvoiceFile(
+        7,
+        'INV-7',
+        InvoiceParcelSelection.All,
+        optionalColumns,
+        false
+      )
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/7/download-invoice?optionalColumns=${optionalColumns}&applyWeightCorrection=false`,
         'Invoice_INV-7.xlsx'
       )
     })

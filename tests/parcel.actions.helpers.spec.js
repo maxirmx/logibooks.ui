@@ -213,6 +213,31 @@ describe('parcel actions helpers', () => {
 
       expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
     })
+
+    it('confirms XML generation when weight correction is possible', async () => {
+      const confirm = vi.fn().mockResolvedValue(true)
+
+      await generateXml(mockItem, mockParcelsStore, 'test-file', {
+        confirm,
+        register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
+      })
+
+      expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
+        content: 'К весу посылки будет применён поправочный коэффициент 0,500. Вы уверены?'
+      }))
+      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file')
+    })
+
+    it('does not generate XML when weight correction confirmation is cancelled', async () => {
+      const confirm = vi.fn().mockResolvedValue(false)
+
+      await generateXml(mockItem, mockParcelsStore, 'test-file', {
+        confirm,
+        register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
+      })
+
+      expect(mockParcelsStore.generate).not.toHaveBeenCalled()
+    })
   })
 
   describe('runCheckStatusAction', () => {

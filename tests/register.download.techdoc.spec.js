@@ -8,6 +8,12 @@ import { ref, reactive } from 'vue'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
+const confirmMock = vi.hoisted(() => vi.fn())
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
+}))
+
 function createDeferred() {
   let resolve
   let reject

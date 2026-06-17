@@ -8,6 +8,12 @@ import { createPinia } from 'pinia'
 import GtcParcels_List from '@/lists/GtcParcels_List.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
+const confirmMock = vi.hoisted(() => vi.fn())
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
+}))
+
 const mockItems = ref([
   {
     id: 1,

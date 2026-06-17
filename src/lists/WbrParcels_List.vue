@@ -207,6 +207,8 @@ const {
   validationState,
   progressPercent,
   actionDialog: actionDialogState,
+  weightCorrectionDialog: weightCorrectionDialogState,
+  resolveWeightCorrectionChoice,
   generalActionsDisabled,
   validateRegisterSw: validateRegisterSwHeader,
   validateRegisterSwEx: validateRegisterSwHeaderEx,
@@ -668,6 +670,8 @@ function getGenericTemplateHeaders() {
       :progress-percent="progressPercent"
       :cancel-validation="cancelRegisterValidation"
       :action-dialog="actionDialogState"
+      :weight-correction-dialog="weightCorrectionDialogState"
+      @weight-correction-choice="resolveWeightCorrectionChoice"
     />
 
     <AssignTnvedDialog

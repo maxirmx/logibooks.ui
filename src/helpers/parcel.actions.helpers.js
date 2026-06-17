@@ -4,6 +4,7 @@
 
 import { useAlertStore } from '@/stores/alert.store.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
+import { confirmOutputWeightCorrection } from '@/helpers/weight.correction.helpers.js'
 
 /**
  * Validates parcel data
@@ -67,11 +68,16 @@ export async function approveParcel(values, item, parcelsStore, approvalMode = P
  * @param {Object} params.item - Current parcel item ref
  * @param {Object} params.parcelsStore - Parcels store instance
  * @param {string|Function} params.filenameOrGenerator - Either a filename string or a function that returns filename
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>}
  */
-export async function generateXml(item, parcelsStore, filenameOrGenerator) {
+export async function generateXml(item, parcelsStore, filenameOrGenerator, { confirm = null, register = null } = {}) {
   const alertStore = useAlertStore()
   try {
+    if (confirm && register) {
+      const confirmed = await confirmOutputWeightCorrection(confirm, register, { singleParcel: true })
+      if (!confirmed) return false
+    }
+
     
     // Determine filename
     let filename
@@ -83,9 +89,11 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator) {
     
     // Then generate XML
     await parcelsStore.generate(item.value.id, filename)
+    return true
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
     alertStore.error(parcelsStore.error)
+    return false
   }
 }
 

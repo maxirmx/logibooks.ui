@@ -618,6 +618,74 @@ describe('Registers_List.vue', () => {
       await cell.trigger('click')
       expect(router.push).toHaveBeenCalledWith('/register/edit/2?mode=modePaperwork')
     })
+
+    it('renders release weight as a route to actual weight when real weight is set', async () => {
+      mockItems.value = [
+        {
+          id: 3,
+          totalWeightKg: 12.345,
+          totalWeightKgToRelease: 10,
+          realWeightKg: 5
+        }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: {
+            ...vuetifyStubs,
+            'font-awesome-icon': {
+              template: '<i v-bind="$attrs" :data-icon="icon" data-testid="fa-icon"></i>',
+              props: ['icon'],
+              inheritAttrs: false
+            }
+          }
+        }
+      })
+
+      await wrapper.vm.$nextTick()
+
+      const weightCell = wrapper.find('[data-testid="register-weight-cell"]')
+      expect(weightCell.findAll('.weight-line').at(0).text()).toBe('12.345')
+
+      const route = weightCell.find('.weight-real-route')
+      expect(route.exists()).toBe(true)
+      expect(route.findAll('span').map(span => span.text())).toEqual(['10.000', '5.000'])
+      const arrow = route.find('[data-icon="fa-solid fa-arrow-right"]')
+      expect(arrow.exists()).toBe(true)
+      expect(arrow.classes()).toContain('arrow-icon')
+    })
+
+    it('keeps the plain release weight line when real weight is not set or negative', async () => {
+      mockItems.value = [
+        {
+          id: 4,
+          totalWeightKg: 12.345,
+          totalWeightKgToRelease: 10,
+          realWeightKg: null
+        },
+        {
+          id: 5,
+          totalWeightKg: 20,
+          totalWeightKgToRelease: 15,
+          realWeightKg: -1
+        }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await wrapper.vm.$nextTick()
+
+      const weightCells = wrapper.findAll('[data-testid="register-weight-cell"]')
+      expect(weightCells).toHaveLength(2)
+      expect(weightCells[0].find('.weight-real-route').exists()).toBe(false)
+      expect(weightCells[0].findAll('.weight-line').map(line => line.text())).toEqual(['12.345', '10.000'])
+      expect(weightCells[1].find('.weight-real-route').exists()).toBe(false)
+      expect(weightCells[1].findAll('.weight-line').map(line => line.text())).toEqual(['20.000', '15.000'])
+    })
   })
 
   describe('file upload functionality', () => {

@@ -84,6 +84,7 @@ const isSubmitting = ref(false)
 const checkForDuplicates = ref(true)
 const isLoadReportExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
+const isRealWeightEdited = ref(false)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const warehouseOptions = computed(() => {
@@ -126,6 +127,13 @@ watch(
   }
 )
 
+watch(
+  () => item.value?.realWeightKg,
+  () => {
+    isRealWeightEdited.value = false
+  }
+)
+
 function formatWarehouseArrivalDateInputValue(fieldValue) {
   if (
     !isWarehouseArrivalDateEdited.value &&
@@ -155,6 +163,27 @@ function formatDateInputValue(value) {
 function handleWarehouseArrivalDateInput(event, handleChange) {
   isWarehouseArrivalDateEdited.value = true
   handleChange(event.target.value || null)
+}
+
+function getRealWeightFieldValue(fieldValue) {
+  if (
+    !isRealWeightEdited.value &&
+    (fieldValue === null || fieldValue === undefined || fieldValue === '')
+  ) {
+    return item.value?.realWeightKg ?? null
+  }
+
+  return fieldValue
+}
+
+function formatRealWeightInputValue(fieldValue) {
+  const value = getRealWeightFieldValue(fieldValue)
+  return value === null || value === undefined ? '' : String(value)
+}
+
+function handleRealWeightInput(event, handleChange) {
+  isRealWeightEdited.value = true
+  handleChange(event.target.value === '' ? null : event.target.value)
 }
 
 function ensureDefaultOtherCountry() {
@@ -384,6 +413,10 @@ const schema = Yup.object().shape({
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  realWeightKg: Yup.number()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .min(1, 'Фактический вес к оформлению должен быть больше 0')
+    .nullable(),
   lookupByArticle: Yup.boolean().default(false),
   checkForDuplicates: Yup.boolean().default(true)
 })
@@ -497,6 +530,17 @@ function parseNumber(value, defaultValue) {
   return Number.isNaN(parsed) ? defaultValue : parsed
 }
 
+function parseDecimal(value, defaultValue) {
+  if (value === '' || value === null || value === undefined) {
+    return defaultValue
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : defaultValue
+  }
+  const parsed = Number(String(value).replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : defaultValue
+}
+
 function prepareRegisterPayload(formValues) {
   const payload = { ...formValues }
   delete payload.checkForDuplicates
@@ -523,6 +567,7 @@ function prepareRegisterPayload(formValues) {
   payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
   payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
   payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
+  payload.realWeightKg = parseDecimal(formValues.realWeightKg, null)
 
   return payload
 }
@@ -629,6 +674,34 @@ function toggleLoadReport() {
   isLoadReportExpanded.value = !isLoadReportExpanded.value
 }
 
+function formatNumberValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return '—'
+  }
+
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue)
+    ? numericValue.toLocaleString('ru-RU', { maximumFractionDigits: 3 })
+    : String(value)
+}
+
+function formatCorrectionCoefficient(fieldValue) {
+  const realWeightKg = parseDecimal(getRealWeightFieldValue(fieldValue), null)
+  if (realWeightKg === null || realWeightKg <= 0) {
+    return '1'
+  }
+
+  const weightToRelease = parseDecimal(item.value?.totalWeightKgToRelease, null)
+  if (weightToRelease === null || weightToRelease <= 0) {
+    return '—'
+  }
+
+  return (realWeightKg / weightToRelease).toLocaleString('ru-RU', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  })
+}
+
 function formatReportCounter(value) {
   if (value === null || value === undefined || Number(value) === -1) {
     return '—'
@@ -711,6 +784,13 @@ const loadReportFields = computed(() => {
     
     <hr class="hr" />
       <div class="form-section">
+        <h2
+          v-if="!props.create"
+          class="section-title"
+          data-testid="register-deal-section-title"
+        >
+          Сделка
+        </h2>
         <div class="form-row">
           <div class="form-group">
             <label for="dealNumber" class="label">Номер сделки:</label>
@@ -965,12 +1045,53 @@ const loadReportFields = computed(() => {
         </div>
 
         <div
+          v-if="!props.create"
+          class="weight-section"
+          data-testid="register-weight-section"
+        >
+          <div class="weight-section-header">
+            <h2 class="section-title weight-section-title">Вес</h2>
+          </div>
+          <Field name="realWeightKg" v-slot="{ field, handleChange }">
+            <div class="form-row weight-grid">
+              <div class="form-group weight-field">
+                <span class="label">Общий вес, кг:</span>
+                <div class="readonly-field weight-value">{{ formatNumberValue(item.totalWeightKg) }}</div>
+              </div>
+              <div class="form-group weight-field">
+                <span class="label">К оформлению, кг:</span>
+                <div class="readonly-field weight-value">{{ formatNumberValue(item.totalWeightKgToRelease) }}</div>
+              </div>
+              <div class="form-group weight-field">
+                <label for="realWeightKg" class="label">Фактический к оформлению:</label>
+                <input
+                  id="realWeightKg"
+                  type="number"
+                  class="form-control input"
+                  :class="{ 'is-invalid': errors.realWeightKg }"
+                  min="1"
+                  step="1"
+                  :value="formatRealWeightInputValue(field?.value)"
+                  @input="(event) => handleRealWeightInput(event, handleChange)"
+                />
+              </div>
+              <div class="form-group weight-field">
+                <span class="label">Поправочный коэффициент:</span>
+                <div class="readonly-field weight-value">
+                  {{ formatCorrectionCoefficient(field?.value) }}
+                </div>
+              </div>
+            </div>
+          </Field>
+        </div>
+
+        <div
           v-if="hasLoadReport"
           class="load-report-section"
           data-testid="register-load-report"
         >
           <div class="load-report-header">
-            <h2 class="load-report-title">Отчёт о загрузке файла реестра</h2>
+            <h2 class="section-title load-report-title">Отчёт о загрузке файла реестра</h2>
             <ActionButton
               :item="{}"
               :icon="loadReportToggleIcon"
@@ -1015,6 +1136,7 @@ const loadReportFields = computed(() => {
       <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceNumber }}</div>
       <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceDate }}</div>
       <div v-if="errors.theOtherCountryCode" class="alert alert-danger mt-3 mb-0">{{ errors.theOtherCountryCode }}</div>
+      <div v-if="errors.realWeightKg" class="alert alert-danger mt-3 mb-0">{{ errors.realWeightKg }}</div>
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
@@ -1085,12 +1207,14 @@ const loadReportFields = computed(() => {
   overflow: visible !important;
 }
 
+.weight-section,
 .load-report-section {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #d7dbe1;
 }
 
+.weight-section-header,
 .load-report-header {
   display: flex;
   align-items: center;
@@ -1098,21 +1222,23 @@ const loadReportFields = computed(() => {
   gap: 0.75rem;
 }
 
+.weight-section-title,
 .load-report-title {
-  margin: 0;
-  font-size: 1.1rem;
-  line-height: 1.3;
-  font-weight: 600;
+  flex: 1;
+  margin-bottom: 0;
 }
 
+.weight-grid,
 .load-report-grid {
   margin-top: 0.75rem;
 }
 
+.weight-field,
 .load-report-field {
   min-width: 0;
 }
 
+.weight-value,
 .load-report-value {
   min-height: 2.25rem;
 }

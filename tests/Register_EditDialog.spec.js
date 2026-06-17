@@ -163,6 +163,19 @@ const FormStub = {
     return { mockSetFieldValue }
   }
 }
+
+const realWeightErrorMessage = 'Фактический вес к оформлению должен быть больше 0'
+const FormWithRealWeightErrorStub = {
+  name: 'Form',
+  template: '<form><slot :errors="{ realWeightKg: realWeightErrorMessage }" :isSubmitting="false" :values="{}" :setFieldValue="mockSetFieldValue" :handleSubmit="mockHandleSubmit" /></form>',
+  setup() {
+    return {
+      realWeightErrorMessage,
+      mockSetFieldValue: () => {},
+      mockHandleSubmit: (submit) => submit
+    }
+  }
+}
 // Shared value map so multiple Field instances with same name stay in sync (checkbox + slot consumer)
 const __fieldValueMap = {}
 const FieldStub = {
@@ -246,6 +259,13 @@ function getReportValue(wrapper, label) {
   return field?.find('.load-report-value').text()
 }
 
+function getWeightValue(wrapper, label) {
+  const field = wrapper
+    .findAll('.weight-field')
+    .find((g) => g.find('.label').text().includes(label))
+  return field?.find('.weight-value').text()
+}
+
 function createDeferred() {
   let resolve
   let reject
@@ -261,6 +281,7 @@ describe('Register_EditDialog', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    Object.keys(__fieldValueMap).forEach((key) => delete __fieldValueMap[key])
     // Create a fresh copy of baseRegisterItem to avoid reference issues
     mockItem.value = JSON.parse(JSON.stringify(baseRegisterItem))
     mockIsAdmin.value = true
@@ -857,6 +878,167 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.find('#checkForDuplicates').exists()).toBe(false)
+  })
+
+  it('renders weight section only in edit mode with approved fields', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      totalWeightKg: 12.345,
+      totalWeightKgToRelease: 10,
+      realWeightKg: 5
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-deal-section-title"]').text()).toBe('Сделка')
+    expect(wrapper.find('[data-testid="register-weight-section"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="register-weight-section"] .section-title').text()).toBe('Вес')
+    expect(wrapper.findAll('.weight-field .label').map((label) => label.text())).toEqual([
+      'Общий вес, кг:',
+      'К оформлению, кг:',
+      'Фактический к оформлению:',
+      'Поправочный коэффициент:'
+    ])
+    expect(getWeightValue(wrapper, 'Общий вес, кг')).toBe('12,345')
+    expect(getWeightValue(wrapper, 'К оформлению, кг')).toBe('10')
+    expect(getWeightValue(wrapper, 'Поправочный коэффициент')).toBe('0,500')
+
+    const realWeightInput = wrapper.find('#realWeightKg')
+    expect(realWeightInput.exists()).toBe(true)
+    expect(realWeightInput.attributes('type')).toBe('number')
+    expect(realWeightInput.attributes('min')).toBe('1')
+    expect(realWeightInput.attributes('step')).toBe('1')
+    expect(realWeightInput.element.value).toBe('5')
+  })
+
+  it('does not render weight section in create mode', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-deal-section-title"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="register-weight-section"]').exists()).toBe(false)
+  })
+
+  it('places weight section before load report section', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      totalWeightKg: 12,
+      totalWeightKgToRelease: 10,
+      loadReport: {
+        createdAt: '2026-06-10T12:30:15+03:00',
+        processed: 10
+      }
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const weightSection = wrapper.find('[data-testid="register-weight-section"]').element
+    const loadReportSection = wrapper.find('[data-testid="register-load-report"]').element
+
+    expect(Boolean(weightSection.compareDocumentPosition(loadReportSection) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
+  })
+
+  it('submits numeric real weight in edit mode', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({ realWeightKg: '12.5' }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      realWeightKg: 12.5
+    }))
+  })
+
+  it('submits null real weight when field is blank', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({ realWeightKg: '' }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      realWeightKg: null
+    }))
+  })
+
+  it('shows validation error for negative real weight', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormWithRealWeightErrorStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await expect(
+      dialog.vm.schema.validate({ realWeightKg: -1, theOtherCountryCode: 840 })
+    ).rejects.toThrow(realWeightErrorMessage)
+
+    expect(wrapper.find('#realWeightKg').classes()).toContain('is-invalid')
+    expect(wrapper.find('.alert-danger').text()).toContain(realWeightErrorMessage)
+  })
+
+  it('formats correction coefficient for empty zero and zero divisor cases', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      totalWeightKgToRelease: 0,
+      realWeightKg: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+
+    expect(getWeightValue(wrapper, 'Поправочный коэффициент')).toBe('1')
+    expect(dialog.vm.formatCorrectionCoefficient(0)).toBe('1')
+    expect(dialog.vm.formatCorrectionCoefficient(10)).toBe('—')
   })
 
   it('does not render load report controls when register has no load report', async () => {

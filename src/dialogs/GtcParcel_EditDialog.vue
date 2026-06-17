@@ -25,6 +25,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import GtcFormField from '@/components/GtcFormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
@@ -74,6 +75,7 @@ await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
 await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
+await registersStore.getById(props.registerId)
 // load initial parcel by currentParcelId
 await parcelsStore.getById(currentParcelId.value)
 await parcelViewsStore.add(currentParcelId.value)
@@ -93,6 +95,7 @@ const {
 authStore.selectedParcelId = currentParcelId.value
 
 const { item } = storeToRefs(parcelsStore)
+const { item: registerItem } = storeToRefs(registersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
@@ -539,7 +542,14 @@ async function onLookup(values) {
           @view-image="viewProductImage"
           @delete-image="() => deleteProductImage(values)"
         />
-          <GtcFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <ParcelWeightAutoField
+            :field-component="GtcFormField"
+            :item="item"
+            :register="registerItem"
+            :label="gtcRegisterColumnTitles.weightKg"
+            :errors="errors"
+            :fullWidth="false"
+          />
           <GtcFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <GtcFormField name="currency" :errors="errors" :fullWidth="false" />
           <GtcFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />

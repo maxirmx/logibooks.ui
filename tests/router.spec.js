@@ -27,6 +27,7 @@ vi.mock('@/views/User_RegisterView.vue', () => ({ default: { template: '<div />'
 vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/Parcels_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/ExportFees_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Wd4Scanner_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))

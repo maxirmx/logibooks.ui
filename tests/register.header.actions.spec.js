@@ -6,6 +6,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import { WEIGHT_CORRECTION_CHOICE } from '@/helpers/weight.correction.helpers.js'
+
+const confirmMock = vi.hoisted(() => vi.fn())
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => confirmMock
+}))
 
 function createDeferred() {
   let resolve
@@ -28,6 +35,8 @@ describe('useRegisterHeaderActions', () => {
   let isComponentMounted
 
   beforeEach(() => {
+    confirmMock.mockReset()
+    confirmMock.mockResolvedValue(true)
     registersStore = {
       item: reactive({
         id: 1,
@@ -116,6 +125,77 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.title).toBe('')
   })
 
+  it('confirms XML export when weight correction is possible', async () => {
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+    confirmMock.mockResolvedValueOnce(false)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.exportAllXmlOrdinary()
+
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'К весу посылок будет применён поправочный коэффициент 0,500. Вы уверены?'
+    }))
+    expect(registersStore.generateOrdinary).not.toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('offers optional correction before register download and applies selected correction', async () => {
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.downloadRegister()
+
+    expect(actions.weightCorrectionDialog.show).toBe(true)
+    expect(actions.weightCorrectionDialog.coefficientText).toBe('0,500')
+
+    actions.resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Apply)
+    await promise
+
+    expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx', null, null, true)
+  })
+
+  it('cancels register download from optional correction dialog', async () => {
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.downloadRegister()
+    actions.resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Cancel)
+    await promise
+
+    expect(registersStore.download).not.toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+  })
+
   it('reports download errors and hides action dialog when download fails', async () => {
     const error = new Error('Download failed')
     registersStore.download.mockRejectedValueOnce(error)
@@ -170,6 +250,32 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('does not offer correction before additional restrictions download', async () => {
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+    const deferred = createDeferred()
+    registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.downloadAdditionalRestrictions()
+
+    expect(actions.weightCorrectionDialog.show).toBe(false)
+    expect(actions.actionDialog.show).toBe(true)
+    expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledWith(1, 'INV-1')
+
+    deferred.resolve()
+    await promise
   })
 
   it('reports additional restrictions download errors and hides action dialog', async () => {

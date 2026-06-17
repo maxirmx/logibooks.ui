@@ -24,6 +24,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
+import { formatWeight } from '@/helpers/number.formatters.js'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
 
@@ -119,6 +120,7 @@ const loadReportToggleTooltip = computed(() => (
   isLoadReportExpanded.value ? 'Скрыть отчет загрузки' : 'Показать отчет загрузки'
 ))
 const uploadDateDisplay = computed(() => formatDate(item.value?.date))
+const realWeightValidationMessage = 'Фактический вес к оформлению должен быть больше 0. Если взвешивание не проводилось, оставьте поле пустым.'
 
 watch(
   () => item.value?.warehouseArrivalDate,
@@ -178,12 +180,24 @@ function getRealWeightFieldValue(fieldValue) {
 
 function formatRealWeightInputValue(fieldValue) {
   const value = getRealWeightFieldValue(fieldValue)
-  return value === null || value === undefined ? '' : String(value)
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'number') return String(value)
+  return normalizeDecimalSeparator(value)
 }
 
 function handleRealWeightInput(event, handleChange) {
   isRealWeightEdited.value = true
-  handleChange(event.target.value === '' ? null : event.target.value)
+  const value = event.target.value === ''
+    ? null
+    : normalizeDecimalSeparator(event.target.value)
+  if (value !== null) {
+    event.target.value = value
+  }
+  handleChange(value)
+}
+
+function normalizeDecimalSeparator(value) {
+  return String(value).replace(/,/g, '.')
 }
 
 function ensureDefaultOtherCountry() {
@@ -414,8 +428,9 @@ const schema = Yup.object().shape({
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   realWeightKg: Yup.number()
-    .transform((value, originalValue) => (originalValue === '' ? null : value))
-    .min(1, 'Фактический вес к оформлению должен быть больше 0')
+    .transform((value, originalValue) => parseNullableDecimal(originalValue))
+    .typeError(realWeightValidationMessage)
+    .moreThan(0, realWeightValidationMessage)
     .nullable(),
   lookupByArticle: Yup.boolean().default(false),
   checkForDuplicates: Yup.boolean().default(true)
@@ -539,6 +554,12 @@ function parseDecimal(value, defaultValue) {
   }
   const parsed = Number(String(value).replace(',', '.'))
   return Number.isFinite(parsed) ? parsed : defaultValue
+}
+
+function parseNullableDecimal(value) {
+  return value === '' || value === null || value === undefined
+    ? null
+    : parseDecimal(value, Number.NaN)
 }
 
 function prepareRegisterPayload(formValues) {
@@ -680,9 +701,7 @@ function formatNumberValue(value) {
   }
 
   const numericValue = Number(value)
-  return Number.isFinite(numericValue)
-    ? numericValue.toLocaleString('ru-RU', { maximumFractionDigits: 3 })
-    : String(value)
+  return Number.isFinite(numericValue) ? formatWeight(numericValue) : String(value)
 }
 
 function formatCorrectionCoefficient(fieldValue) {
@@ -696,10 +715,7 @@ function formatCorrectionCoefficient(fieldValue) {
     return '—'
   }
 
-  return (realWeightKg / weightToRelease).toLocaleString('ru-RU', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3
-  })
+  return (realWeightKg / weightToRelease).toFixed(3)
 }
 
 function formatReportCounter(value) {
@@ -1066,11 +1082,10 @@ const loadReportFields = computed(() => {
                 <label for="realWeightKg" class="label">Фактический к оформлению:</label>
                 <input
                   id="realWeightKg"
-                  type="number"
+                  type="text"
                   class="form-control input"
                   :class="{ 'is-invalid': errors.realWeightKg }"
-                  min="1"
-                  step="1"
+                  inputmode="decimal"
                   :value="formatRealWeightInputValue(field?.value)"
                   @input="(event) => handleRealWeightInput(event, handleChange)"
                 />

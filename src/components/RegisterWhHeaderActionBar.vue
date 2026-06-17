@@ -1,9 +1,15 @@
 <script setup>
-import { computed, unref } from 'vue'
+import { computed, ref, unref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import WeightCorrectionChoiceDialog from '@/l2/WeightCorrectionChoiceDialog.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import {
+  getWeightCorrection,
+  useWeightCorrectionChoiceDialog,
+  WEIGHT_CORRECTION_CHOICE
+} from '@/helpers/weight.correction.helpers.js'
 
 const props = defineProps({
   register: { type: Object, required: true },
@@ -18,6 +24,18 @@ const emit = defineEmits(['close'])
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
 const canExport = computed(() => Boolean(unref(authStore.isWhManagerPlus)))
+const exportPending = ref(false)
+const exportDisabled = computed(() =>
+  props.disabled ||
+  props.loading ||
+  exportPending.value ||
+  !props.register?.id
+)
+const {
+  weightCorrectionDialogState,
+  requestWeightCorrectionChoice,
+  resolveWeightCorrectionChoice
+} = useWeightCorrectionChoiceDialog()
 
 function normalizeZoneName(name) {
   if (!name || !name.trim()) {
@@ -27,17 +45,42 @@ function normalizeZoneName(name) {
 }
 
 async function downloadRegisterForZone(forZone, zoneLabel) {
-  if (props.disabled) return
+  if (exportDisabled.value) return
 
   const registerId = props.register?.id
   if (!registerId) return
 
-  await registersStore.download(
-    registerId,
-    props.register?.fileName,
-    forZone,
-    zoneLabel
-  )
+  exportPending.value = true
+
+  try {
+    let applyWeightCorrection = false
+    if (getWeightCorrection(props.register).canCorrect) {
+      const choice = await requestWeightCorrectionChoice(props.register)
+      if (choice === WEIGHT_CORRECTION_CHOICE.Cancel) return
+
+      applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
+    }
+
+    if (applyWeightCorrection) {
+      await registersStore.download(
+        registerId,
+        props.register?.fileName,
+        forZone,
+        zoneLabel,
+        true
+      )
+      return
+    }
+
+    await registersStore.download(
+      registerId,
+      props.register?.fileName,
+      forZone,
+      zoneLabel
+    )
+  } finally {
+    exportPending.value = false
+  }
 }
 
 const exportOptions = computed(() => {
@@ -73,7 +116,7 @@ const exportOptions = computed(() => {
           icon="fa-solid fa-file-export"
           tooltip-text="Экспортировать реестр"
           :icon-size="iconSize"
-          :disabled="disabled || loading || !register?.id"
+          :disabled="exportDisabled"
           :options="exportOptions"
         />
     </div>
@@ -88,5 +131,9 @@ const exportOptions = computed(() => {
           @click="emit('close')"
         />
     </div>
+    <WeightCorrectionChoiceDialog
+      :state="weightCorrectionDialogState"
+      @choose="resolveWeightCorrectionChoice"
+    />
   </div>
 </template>

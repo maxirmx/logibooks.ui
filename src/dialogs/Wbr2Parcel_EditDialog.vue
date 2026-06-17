@@ -360,8 +360,14 @@ async function generateXml(values) {
     // Wait for next parcels info to complete before calling helper
     const updatePromise = parcelsStore.update(currentParcelId.value, values)
     await Promise.all([ensureNextParcelsPromise(), updatePromise])
+    await registersStore.getById(props.registerId)
     
-    await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'))
+    await generateXmlHelper(
+      item,
+      parcelsStore,
+      String(item.value?.shk || '').padStart(20, '0'),
+      { confirm, register: registersStore.item }
+    )
     await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
     alertStore.error(error?.message || String(error))

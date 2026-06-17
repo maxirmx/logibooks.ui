@@ -885,7 +885,7 @@ describe('Register_EditDialog', () => {
       ...baseRegisterItem,
       totalWeightKg: 12.345,
       totalWeightKgToRelease: 10,
-      realWeightKg: 5
+      realWeightKg: 5.5
     }
 
     const Parent = {
@@ -907,16 +907,17 @@ describe('Register_EditDialog', () => {
       'Фактический к оформлению:',
       'Поправочный коэффициент:'
     ])
-    expect(getWeightValue(wrapper, 'Общий вес, кг')).toBe('12,345')
-    expect(getWeightValue(wrapper, 'К оформлению, кг')).toBe('10')
-    expect(getWeightValue(wrapper, 'Поправочный коэффициент')).toBe('0,500')
+    expect(getWeightValue(wrapper, 'Общий вес, кг')).toBe('12.345')
+    expect(getWeightValue(wrapper, 'К оформлению, кг')).toBe('10.000')
+    expect(getWeightValue(wrapper, 'Поправочный коэффициент')).toBe('0.550')
 
     const realWeightInput = wrapper.find('#realWeightKg')
     expect(realWeightInput.exists()).toBe(true)
-    expect(realWeightInput.attributes('type')).toBe('number')
-    expect(realWeightInput.attributes('min')).toBe('1')
-    expect(realWeightInput.attributes('step')).toBe('1')
-    expect(realWeightInput.element.value).toBe('5')
+    expect(realWeightInput.attributes('type')).toBe('text')
+    expect(realWeightInput.attributes('inputmode')).toBe('decimal')
+    expect(realWeightInput.attributes('min')).toBeUndefined()
+    expect(realWeightInput.attributes('step')).toBeUndefined()
+    expect(realWeightInput.element.value).toBe('5.5')
   })
 
   it('does not render weight section in create mode', async () => {

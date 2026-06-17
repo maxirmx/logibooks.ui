@@ -49,10 +49,18 @@ export function getWeightCorrection(register) {
 }
 
 export function getCorrectedWeight(weight, register) {
-  const weightValue = parseWeightCorrectionValue(weight)
+  const normalize = (value) => (
+    typeof value === 'string' ? value.trim().replace(/\u00A0|\s/g, '') : value
+  )
+
+  const weightValue = parseWeightCorrectionValue(normalize(weight))
   if (weightValue === null) return null
 
-  const correction = getWeightCorrection(register)
+  const correction = getWeightCorrection(register == null ? null : {
+    realWeightKg: normalize(register.realWeightKg),
+    totalWeightKgToRelease: normalize(register.totalWeightKgToRelease)
+  })
+
   return correction.canCorrect ? weightValue * correction.coefficient : null
 }
 

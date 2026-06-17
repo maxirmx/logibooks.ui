@@ -25,6 +25,7 @@ import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
@@ -73,6 +74,7 @@ await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
 await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
+await registersStore.getById(props.registerId)
 // load initial parcel by currentParcelId
 await parcelsStore.getById(currentParcelId.value)
 await parcelViewsStore.add(currentParcelId.value)
@@ -92,6 +94,7 @@ const {
 authStore.selectedParcelId = currentParcelId.value
 
 const { item } = storeToRefs(parcelsStore)
+const { item: registerItem } = storeToRefs(registersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
@@ -518,7 +521,14 @@ async function onLookup(values) {
               {{ country.nameRuOfficial }}
             </option>
           </Wbr2FormField>
-          <Wbr2FormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <ParcelWeightAutoField
+            :field-component="Wbr2FormField"
+            :item="item"
+            :register="registerItem"
+            :label="wbr2RegisterColumnTitles.weightKg"
+            :errors="errors"
+            :fullWidth="false"
+          />
           <Wbr2FormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <Wbr2FormField name="amountRub" :errors="errors" :fullWidth="false" />
           <Wbr2FormField name="amount" :errors="errors" :fullWidth="false" />

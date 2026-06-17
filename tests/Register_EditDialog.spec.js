@@ -981,7 +981,7 @@ describe('Register_EditDialog', () => {
     }))
   })
 
-  it('submits null real weight when field is blank', async () => {
+  it('submits zero real weight when field is blank', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
       components: { RegisterEditDialog }
@@ -992,11 +992,56 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
-    await dialog.vm.onSubmit({ realWeightKg: '' }, { setErrors: vi.fn() })
+    const validatedValues = await dialog.vm.schema.validate({ realWeightKg: '', theOtherCountryCode: 840 })
+    expect(validatedValues.realWeightKg).toBeNull()
+
+    await dialog.vm.onSubmit(validatedValues, { setErrors: vi.fn() })
     await resolveAll()
 
     expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      realWeightKg: null
+      realWeightKg: 0
+    }))
+  })
+
+  it('submits zero real weight when field is absent', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      realWeightKg: 0
+    }))
+  })
+
+  it('submits zero real weight when field contains only whitespace', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await expect(
+      dialog.vm.schema.validate({ realWeightKg: '   \t\n', theOtherCountryCode: 840 })
+    ).resolves.toBeTruthy()
+
+    await dialog.vm.onSubmit({ realWeightKg: '   \t\n' }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      realWeightKg: 0
     }))
   })
 

@@ -8,7 +8,7 @@ import { formatWeight } from '@/helpers/number.formatters.js'
 import { getCorrectedWeight } from '@/helpers/weight.correction.helpers.js'
 
 const props = defineProps({
-  weight: { type: [String, Number, null, undefined], default: null },
+  weight: { type: [String, Number], default: null },
   register: { type: Object, default: null },
   useCorrection: { type: Boolean, default: true }
 })

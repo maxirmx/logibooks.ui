@@ -1,17 +1,13 @@
 <script setup>
 import { computed, unref } from 'vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
-import WeightCorrectionChoiceDialog from '@/l2/WeightCorrectionChoiceDialog.vue'
 
 const props = defineProps({
   validationState: { type: Object, required: true },
   progressPercent: { type: [Number, Object], required: true },
   cancelValidation: { type: Function, required: true },
-  actionDialog: { type: Object, required: true },
-  weightCorrectionDialog: { type: Object, default: null }
+  actionDialog: { type: Object, required: true }
 })
-
-const emit = defineEmits(['weight-correction-choice'])
 
 const validationTitle = computed(() =>
   props.validationState?.operation === 'lookup-feacn-codes'
@@ -46,9 +42,4 @@ const onValidationDialogUpdate = (value) => {
   </v-dialog>
 
   <ActionDialog :action-dialog="actionDialog" />
-  <WeightCorrectionChoiceDialog
-    v-if="weightCorrectionDialog"
-    :state="weightCorrectionDialog"
-    @choose="emit('weight-correction-choice', $event)"
-  />
 </template>

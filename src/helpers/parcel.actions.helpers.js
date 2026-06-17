@@ -90,7 +90,7 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator, { con
     } else {
       filename = filenameOrGenerator
     }
-    
+
     // Then generate XML
     await parcelsStore.generate(item.value.id, filename, applyWeightCorrection)
     return true

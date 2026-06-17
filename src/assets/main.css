@@ -872,9 +872,8 @@ a,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.8rem;
-  line-height: 1.0;
-  border-right: 1px solid rgba(var(--v-border-color), 0.25);
+  font-size: 0.875rem;
+  line-height: 1.2;
 }
 
 .single-line-table .v-data-table__th {
@@ -882,10 +881,9 @@ a,
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
-  font-size: 0.8rem;
-  line-height: 1.0;
+  font-size: 0.875rem;
+  line-height: 1.2;
   font-weight: 600;
-  border-right: 1px solid rgba(var(--v-border-color), 0.12);
 }
 
 .single-line-table .v-data-table__td:first-child,

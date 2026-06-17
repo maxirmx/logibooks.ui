@@ -3,9 +3,16 @@
 // This file is a part of Logibooks ui application
 
 import { computed, watch, ref, unref, reactive } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+import {
+  confirmOutputWeightCorrection,
+  getWeightCorrection,
+  useWeightCorrectionChoiceDialog,
+  WEIGHT_CORRECTION_CHOICE
+} from '@/helpers/weight.correction.helpers.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
@@ -232,7 +239,12 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.generateNotifications(item.id, item.invoiceNumber)
   }
 
-  async function downloadRegister(item) {
+  async function downloadRegister(item, applyWeightCorrection = false) {
+    if (applyWeightCorrection) {
+      await registersStore.download(item.id, item.fileName, null, null, true)
+      return
+    }
+
     await registersStore.download(item.id, item.fileName)
   }
 
@@ -327,6 +339,12 @@ export function useRegisterHeaderActions({
   const runningActionRef = runningAction ?? ref(false)
 
   const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
+  const confirm = useConfirm()
+  const {
+    weightCorrectionDialogState,
+    requestWeightCorrectionChoice,
+    resolveWeightCorrectionChoice
+  } = useWeightCorrectionChoiceDialog()
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -343,7 +361,8 @@ export function useRegisterHeaderActions({
     tableLoadingRef.value ||
     runningActionRef.value ||
     validationState.show ||
-    actionDialogState.show
+    actionDialogState.show ||
+    weightCorrectionDialogState.show
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -397,20 +416,62 @@ export function useRegisterHeaderActions({
     }
   }
 
+  const runXmlActionWithDialog = async (action, operation) => {
+    if (generalActionsDisabled.value) return
+
+    const confirmation = confirmOutputWeightCorrection(confirm, currentRegister.value)
+    if (confirmation?.then) {
+      const confirmed = await confirmation
+      if (!confirmed) return
+    } else if (!confirmation) {
+      return
+    }
+
+    showActionDialog(operation)
+    try {
+      await runWithLock(action, { lock: true, checkDisabled: false })
+    } finally {
+      hideActionDialog()
+    }
+  }
+
+  const runDownloadActionWithDialog = async (action, operation) => {
+    if (generalActionsDisabled.value) return
+
+    let applyWeightCorrection = false
+    if (getWeightCorrection(currentRegister.value).canCorrect) {
+      const choice = await requestWeightCorrectionChoice(currentRegister.value)
+      if (choice === WEIGHT_CORRECTION_CHOICE.Cancel) {
+        return
+      }
+      applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
+    }
+
+    showActionDialog(operation)
+    try {
+      await runWithLock(
+        (register) => action(register, applyWeightCorrection),
+        { lock: true, checkDisabled: false }
+      )
+    } finally {
+      hideActionDialog()
+    }
+  }
+
   const runExportAllXmlWithoutExcise = async () => {
-    await runActionWithDialog(exportAllXmlOrdinary, 'export-all-xml-without-excise')
+    await runXmlActionWithDialog(exportAllXmlOrdinary, 'export-all-xml-without-excise')
   }
 
   const runExportAllXmlExcise = async () => {
-    await runActionWithDialog(exportAllXmlExcise, 'export-all-xml-excise')
+    await runXmlActionWithDialog(exportAllXmlExcise, 'export-all-xml-excise')
   }
 
   const runExportAllXmlNotifications = async () => {
-    await runActionWithDialog(exportAllXmlNotifications, 'export-all-xml-notifications')
+    await runXmlActionWithDialog(exportAllXmlNotifications, 'export-all-xml-notifications')
   }
 
   const runDownloadRegister = async () => {
-    await runActionWithDialog(downloadRegister, 'download-register')
+    await runDownloadActionWithDialog(downloadRegister, 'download-register')
   }
 
   const runDownloadAdditionalRestrictions = async () => {
@@ -450,12 +511,15 @@ export function useRegisterHeaderActions({
     stopValidationWatcher()
     stopPolling()
     hideActionDialog()
+    resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Cancel)
   }
 
   return {
     validationState,
     progressPercent,
     actionDialog: actionDialogState,
+    weightCorrectionDialog: weightCorrectionDialogState,
+    resolveWeightCorrectionChoice,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterSwEx: runValidateRegisterSwEx,

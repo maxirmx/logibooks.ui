@@ -12,6 +12,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
+import { getWeightCorrection } from '@/helpers/weight.correction.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: true },
@@ -31,6 +32,7 @@ function resolveParcelSelection(value) {
 // State mirrors register dialog style (item used as initial values provider)
 const parcelSelection = ref(resolveParcelSelection(props.selection))
 const optionalColumns = ref(InvoiceOptionalColumns.None)
+const applyInvoiceWeightCorrection = ref(true)
 const isSubmitting = ref(false)
 
 const alertStore = useAlertStore()
@@ -62,7 +64,24 @@ const heading = computed(() => {
   return number ? `Настройки инвойса (${number})` : 'Настройки инвойса'
 })
 
+const invoiceWeightCorrection = computed(() => getWeightCorrection(currentRegister.value))
+const showInvoiceWeightCorrection = computed(() => invoiceWeightCorrection.value.canCorrect)
+const invoiceWeightCorrectionLabel = computed(() =>
+  showInvoiceWeightCorrection.value
+    ? `Применить поправочный коэффициент ${invoiceWeightCorrection.value.coefficientText} к весу посылок.`
+    : ''
+)
 const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value)
+
+watch(
+  () => [currentRegister.value?.id, showInvoiceWeightCorrection.value],
+  ([, canCorrect]) => {
+    if (canCorrect) {
+      applyInvoiceWeightCorrection.value = true
+    }
+  },
+  { immediate: true }
+)
 
 function normalizeError(e) {
   if (!e) return ''
@@ -91,11 +110,15 @@ async function onSubmit() {
   // show global action dialog while preparing invoice
   try {
     showActionDialog('download-invoice')
+    const applyWeightCorrection = showInvoiceWeightCorrection.value
+      ? applyInvoiceWeightCorrection.value
+      : true
     await registersStore.downloadInvoiceFile(
       currentRegister.value.id,
       currentRegister.value.invoiceNumber,
       parcelSelection.value,
-      optionalColumns.value
+      optionalColumns.value,
+      applyWeightCorrection
     )
     router.go(-1)
   } catch (err) {
@@ -191,9 +214,28 @@ onMounted(() => {
             </div>
           </div>
         </div>
+
+        <div
+          v-if="showInvoiceWeightCorrection"
+          class="form-row-1 weight-correction-row"
+        >
+          <div class="form-group weight-correction-group">
+            <label class="custom-checkbox weight-correction-checkbox">
+              <input
+                v-model="applyInvoiceWeightCorrection"
+                type="checkbox"
+                class="custom-checkbox-input"
+                :disabled="isFormDisabled"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="custom-checkbox-label">{{ invoiceWeightCorrectionLabel }}</span>
+            </label>
+          </div>
+        </div>
+
+
       </div>
     </Form>
-    <!-- global alert store message placed at the bottom -->
     <div v-if="alertStore.alert" class="mt-3">
       <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
     </div>
@@ -207,6 +249,18 @@ onMounted(() => {
 .invoice-settings-dialog .form-group { overflow: visible; }
 
 .optional-columns-row { margin-top: 0.5rem; }
+
+.weight-correction-row {
+  margin-top: 0.5rem;
+}
+
+.weight-correction-group {
+  width: 100%;
+}
+
+.weight-correction-checkbox {
+  width: 100%;
+}
 
 .input-wrapper {
   border: 1px solid #d0d7de;

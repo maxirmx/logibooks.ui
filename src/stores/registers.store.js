@@ -454,11 +454,15 @@ export const useRegistersStore = defineStore('registers', () => {
    * @param {number} optionalColumns
    * @returns {string}
    */
-  function buildInvoiceRequestUrl(id, endpoint, optionalColumns) {
+  function buildInvoiceRequestUrl(id, endpoint, optionalColumns, applyWeightCorrection = true) {
     const params = new URLSearchParams()
 
     if (optionalColumns !== InvoiceOptionalColumns.None) {
       params.set('optionalColumns', optionalColumns.toString())
+    }
+
+    if (applyWeightCorrection === false) {
+      params.set('applyWeightCorrection', 'false')
     }
 
     const query = params.toString()
@@ -488,7 +492,8 @@ export const useRegistersStore = defineStore('registers', () => {
     id,
     invoiceNumber,
     selection = InvoiceParcelSelection.All,
-    optionalColumns = InvoiceOptionalColumns.None
+    optionalColumns = InvoiceOptionalColumns.None,
+    applyWeightCorrection = true
   ) {
     const config = invoiceSelectionConfig[selection]
     if (!config) {
@@ -500,7 +505,7 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       const filename = buildInvoiceFilename(id, invoiceNumber, config.suffix)
       return await fetchWrapper.downloadFile(
-        buildInvoiceRequestUrl(id, config.endpoint, optionalColumns),
+        buildInvoiceRequestUrl(id, config.endpoint, optionalColumns, applyWeightCorrection),
         filename
       )
     } catch (err) {
@@ -528,13 +533,14 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function downloadAdditionalRestrictions(id, invoiceNumber) {
+  async function downloadAdditionalRestrictions(id, invoiceNumber, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
     try {
       const filename = `Дополнительные_изъятия_${invoiceNumber || id}.xlsx`
+      const query = applyWeightCorrection === true ? '?applyWeightCorrection=true' : ''
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-additional-restrictions`,
+        `${baseUrl}/${id}/download-additional-restrictions${query}`,
         filename
       )
     } catch (err) {
@@ -591,13 +597,21 @@ export const useRegistersStore = defineStore('registers', () => {
     return `${filename.slice(0, dotIndex)}${suffix}${filename.slice(dotIndex)}`
   }
 
-  async function download(id, filename, forZone = null, zoneLabel = null) {
+  async function download(id, filename, forZone = null, zoneLabel = null, applyWeightCorrection = false) {
     const baseFilename = filename || `register_${id}.xlsx`
     const suffix = normalizeDownloadSuffix(forZone, zoneLabel)
     const targetFilename = withZoneSuffix(baseFilename, suffix)
-    const query = (forZone === null || forZone === undefined || forZone === 0)
-      ? ''
-      : `?forZone=${encodeURIComponent(forZone)}`
+    const params = new URLSearchParams()
+
+    if (forZone !== null && forZone !== undefined && forZone !== 0) {
+      params.set('forZone', forZone)
+    }
+
+    if (applyWeightCorrection === true) {
+      params.set('applyWeightCorrection', 'true')
+    }
+
+    const query = params.toString() ? `?${params.toString()}` : ''
 
     loading.value = true
     error.value = null

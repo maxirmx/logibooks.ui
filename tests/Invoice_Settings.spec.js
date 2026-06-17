@@ -133,10 +133,84 @@ describe('Invoice_Settings.vue', () => {
       77,
       'INV-77',
       InvoiceParcelSelection.Ordinal,
-      InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Url
+      InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Url,
+      true
     )
     // Implementation now uses router.go(-1) instead of router.push
     expect(router.go).toHaveBeenCalledWith(-1)
+  })
+
+  it('shows checked weight correction checkbox when coefficient is possible', async () => {
+    itemRef.value = {
+      id: 77,
+      invoiceNumber: 'INV-77',
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    }
+
+    const wrapper = mountDialog()
+    await resolveAll()
+
+    const correctionCheckbox = wrapper.get('.weight-correction-checkbox input')
+    expect(correctionCheckbox.element.checked).toBe(true)
+    expect(wrapper.get('.weight-correction-checkbox .custom-checkbox-label').text()).toBe(
+      'Применить поправочный коэффициент 0,500 к весу посылок.'
+    )
+  })
+
+  it('does not show weight correction checkbox when coefficient is unavailable', async () => {
+    const wrapper = mountDialog()
+    await resolveAll()
+
+    expect(wrapper.find('.weight-correction-checkbox').exists()).toBe(false)
+  })
+
+  it('passes unchecked weight correction option to invoice download', async () => {
+    itemRef.value = {
+      id: 77,
+      invoiceNumber: 'INV-77',
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    }
+
+    const wrapper = mountDialog()
+    await resolveAll()
+    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
+
+    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
+    await comp.onSubmit()
+
+    expect(downloadInvoiceFileMock).toHaveBeenCalledWith(
+      77,
+      'INV-77',
+      InvoiceParcelSelection.All,
+      InvoiceOptionalColumns.None,
+      false
+    )
+  })
+
+  it('resets weight correction to checked when another correctable register is loaded', async () => {
+    itemRef.value = {
+      id: 77,
+      invoiceNumber: 'INV-77',
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    }
+
+    const wrapper = mountDialog()
+    await resolveAll()
+    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
+
+    itemRef.value = {
+      id: 88,
+      invoiceNumber: 'INV-88',
+      realWeightKg: 12,
+      totalWeightKgToRelease: 24
+    }
+    await nextTick()
+
+    const correctionCheckbox = wrapper.get('.weight-correction-checkbox input')
+    expect(correctionCheckbox.element.checked).toBe(true)
   })
 
   it('displays error on submission failure', async () => {

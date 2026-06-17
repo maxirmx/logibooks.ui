@@ -25,6 +25,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
@@ -564,7 +565,14 @@ async function onLookup(values) {
               {{ country.nameRuOfficial }}
             </option>
           </OzonFormField>
-          <OzonFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <ParcelWeightAutoField
+            :field-component="OzonFormField"
+            :item="item"
+            :register="registerItem"
+            :label="ozonRegisterColumnTitles.weightKg"
+            :errors="errors"
+            :fullWidth="false"
+          />
           <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <OzonFormField name="currency" :errors="errors" :fullWidth="false" />

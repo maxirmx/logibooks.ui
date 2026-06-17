@@ -26,6 +26,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import WbrFormField from '@/components/WbrFormField.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
@@ -74,6 +75,7 @@ await keyWordsStore.ensureLoaded()
 await feacnOrdersStore.ensureLoaded()
 await feacnPrefixesStore.ensureLoaded()
 await countriesStore.ensureLoaded()
+await registersStore.getById(props.registerId)
 // load initial parcel by currentParcelId
 await parcelsStore.getById(currentParcelId.value)
 await parcelViewsStore.add(currentParcelId.value)
@@ -93,6 +95,7 @@ const {
 authStore.selectedParcelId = currentParcelId.value
 
 const { item } = storeToRefs(parcelsStore)
+const { item: registerItem } = storeToRefs(registersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
@@ -539,7 +542,14 @@ async function onLookup(values) {
               {{ country.nameRuOfficial }}
             </option>
           </WbrFormField>
-          <WbrFormField name="weightKg" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <ParcelWeightAutoField
+            :field-component="WbrFormField"
+            :item="item"
+            :register="registerItem"
+            :label="wbrRegisterColumnTitles.weightKg"
+            :errors="errors"
+            :fullWidth="false"
+          />
           <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <WbrFormField name="currency" :errors="errors" :fullWidth="false" />

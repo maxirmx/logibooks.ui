@@ -556,10 +556,22 @@ function parseDecimal(value, defaultValue) {
   return Number.isFinite(parsed) ? parsed : defaultValue
 }
 
+function isBlankString(value) {
+  return typeof value === 'string' && value.trim().length === 0
+}
+
 function parseNullableDecimal(value) {
-  return value === '' || value === null || value === undefined
+  return value === '' || value === null || value === undefined || isBlankString(value)
     ? null
     : parseDecimal(value, Number.NaN)
+}
+
+function parseRealWeightPayloadValue(value) {
+  if (value === '' || value === null || value === undefined || isBlankString(value)) {
+    return 0
+  }
+
+  return parseDecimal(value, null)
 }
 
 function prepareRegisterPayload(formValues) {
@@ -588,7 +600,7 @@ function prepareRegisterPayload(formValues) {
   payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
   payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
   payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
-  payload.realWeightKg = parseDecimal(formValues.realWeightKg, null)
+  payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
 
   return payload
 }

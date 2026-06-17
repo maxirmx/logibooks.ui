@@ -1295,6 +1295,35 @@ describe('registers store', () => {
         'IndPost_12-без-акциза-и-нотификаций.zip'
       )
     })
+
+    it('adds weight correction query to XML generation only when requested', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.generate(5, 'INV', true)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/5/generate?applyWeightCorrection=true`,
+        'IndPost_INV.zip'
+      )
+
+      await store.generateExcise(6, 'INV-E', true)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/6/generate-excise?applyWeightCorrection=true`,
+        'IndPost_INV-E-акциз.zip'
+      )
+
+      await store.generateNotifications(8, 'INV-N', true)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/8/generate-notifications?applyWeightCorrection=true`,
+        'IndPost_INV-N-нотификации.zip'
+      )
+
+      await store.generateOrdinary(11, 'INV-O', true)
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/11/generate-ordinary?applyWeightCorrection=true`,
+        'IndPost_INV-O-без-акциза-и-нотификаций.zip'
+      )
+    })
   })
 
   describe('downloadInvoiceFile method', () => {

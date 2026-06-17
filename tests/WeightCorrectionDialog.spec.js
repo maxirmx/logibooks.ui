@@ -71,7 +71,7 @@ describe('weight correction confirmation dialogs', () => {
       confirmationButtonProps: {
         color: 'orange-darken-3'
       },
-      content: 'К весу посылок будет применён поправочный коэффициент 0,500. Вы уверены?'
+      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
     }))
   })
 
@@ -84,18 +84,20 @@ describe('weight correction confirmation dialogs', () => {
     expect(dialog.props('persistent')).toBe(true)
     expect(wrapper.get('[data-testid="title"]').text()).toBe('Подтверждение')
     expect(wrapper.get('[data-testid="text"]').text()).toBe(
-      'К весу посылок будет применён поправочный коэффициент 0,500. Вы уверены?'
+      'Применить поправочный коэффициент 0,500 для веса посылок?'
     )
 
     const buttons = wrapper.findAll('button')
     expect(buttons.map(button => button.text())).toEqual([
-      'Отменить сохранение',
-      'Сохранить без поправки',
-      'Сохранить с поправкой'
+      'Нет',
+      'Да'
     ])
-    expect(buttons[2].attributes('data-color')).toBe('orange-darken-3')
+    expect(buttons[1].attributes('data-color')).toBe('orange-darken-3')
 
-    await buttons[2].trigger('click')
-    expect(wrapper.emitted('choose')?.[0]).toEqual([WEIGHT_CORRECTION_CHOICE.Apply])
+    await buttons[0].trigger('click')
+    expect(wrapper.emitted('choose')?.[0]).toEqual([WEIGHT_CORRECTION_CHOICE.Skip])
+
+    await buttons[1].trigger('click')
+    expect(wrapper.emitted('choose')?.[1]).toEqual([WEIGHT_CORRECTION_CHOICE.Apply])
   })
 })

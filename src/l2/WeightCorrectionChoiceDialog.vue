@@ -33,20 +33,16 @@ const message = computed(() => buildWeightCorrectionMessage(props.state?.coeffic
       <v-card-actions>
         <v-spacer />
         <v-btn
-          @click="emit('choose', WEIGHT_CORRECTION_CHOICE.Cancel)"
-        >
-          Отменить сохранение
-        </v-btn>
-        <v-btn
           @click="emit('choose', WEIGHT_CORRECTION_CHOICE.Skip)"
         >
-          Сохранить без поправки
+          Нет
         </v-btn>
         <v-btn
           v-bind="WEIGHT_CORRECTION_CONFIRM_BUTTON_PROPS"
+          autofocus
           @click="emit('choose', WEIGHT_CORRECTION_CHOICE.Apply)"
         >
-          Сохранить с поправкой
+          Да
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -542,7 +542,19 @@ describe('parcels store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/parcels/123/generate`, 'IndPost_123.xml')
       expect(result).toBe(true)
     })
-    
+
+    it('generate appends weight correction query only when requested', async () => {
+      const store = useParcelsStore()
+      fetchWrapper.downloadFile = vi.fn().mockResolvedValue(true)
+
+      await store.generate(123, null, true)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/generate?applyWeightCorrection=true`,
+        'IndPost_123.xml'
+      )
+    })
+
     it('throws error when generate fails', async () => {
       const store = useParcelsStore()
       const error = new Error('Generation failed')

@@ -193,7 +193,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     expect(wrapper.findComponent(ActionButton2LStub).props('disabled')).toBe(false)
   })
 
-  it('cancels selected zone download from correction dialog', async () => {
+  it('downloads selected zone without correction when correction is declined', async () => {
     const wrapper = mountHeaderActionBar({
       register: {
         id: 77,
@@ -211,10 +211,10 @@ describe('RegisterWhHeaderActionBar.vue', () => {
 
     wrapper
       .findComponent(WeightCorrectionChoiceDialog)
-      .vm.$emit('choose', WEIGHT_CORRECTION_CHOICE.Cancel)
+      .vm.$emit('choose', WEIGHT_CORRECTION_CHOICE.Skip)
     await promise
 
-    expect(download).not.toHaveBeenCalled()
+    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 8, 'Зона A')
   })
 
   it('emits close on close button click', async () => {

@@ -352,7 +352,12 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generate(id, invoiceNumber) {
+  function buildXmlRequestUrl(id, endpoint, applyWeightCorrection = false) {
+    const query = applyWeightCorrection === true ? '?applyWeightCorrection=true' : ''
+    return `${baseUrl}/${id}/${endpoint}${query}`
+  }
+
+  async function generate(id, invoiceNumber, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
     try {
@@ -363,7 +368,7 @@ export const useRegistersStore = defineStore('registers', () => {
         filename = `IndPost_${id}.zip`
       }
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/generate`,
+        buildXmlRequestUrl(id, 'generate', applyWeightCorrection),
         filename
       )
     } catch (err) {
@@ -374,7 +379,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateExcise(id, invoiceNumber) {
+  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
     try {
@@ -385,7 +390,7 @@ export const useRegistersStore = defineStore('registers', () => {
         filename = `IndPost_${id}-акциз.zip`
       }
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/generate-excise`,
+        buildXmlRequestUrl(id, 'generate-excise', applyWeightCorrection),
         filename
       )
     } catch (err) {
@@ -396,7 +401,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateNotifications(id, invoiceNumber) {
+  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
     try {
@@ -407,7 +412,7 @@ export const useRegistersStore = defineStore('registers', () => {
         filename = `IndPost_${id}-нотификации.zip`
       }
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/generate-notifications`,
+        buildXmlRequestUrl(id, 'generate-notifications', applyWeightCorrection),
         filename
       )
     } catch (err) {
@@ -418,7 +423,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateOrdinary(id, invoiceNumber) {
+  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
     try {
@@ -429,7 +434,7 @@ export const useRegistersStore = defineStore('registers', () => {
         filename = `IndPost_${id}-без-акциза-и-нотификаций.zip`
       }
       return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/generate-ordinary`,
+        buildXmlRequestUrl(id, 'generate-ordinary', applyWeightCorrection),
         filename
       )
     } catch (err) {

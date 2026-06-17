@@ -10,7 +10,6 @@ import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import {
   chooseOutputWeightCorrection,
   getWeightCorrection,
-  useWeightCorrectionChoiceDialog,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
 
@@ -340,11 +339,7 @@ export function useRegisterHeaderActions({
 
   const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
   const confirm = useConfirm()
-  const {
-    weightCorrectionDialogState,
-    requestWeightCorrectionChoice,
-    resolveWeightCorrectionChoice
-  } = useWeightCorrectionChoiceDialog()
+  const weightCorrectionChoicePending = ref(false)
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -362,7 +357,7 @@ export function useRegisterHeaderActions({
     runningActionRef.value ||
     validationState.show ||
     actionDialogState.show ||
-    weightCorrectionDialogState.show
+    weightCorrectionChoicePending.value
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -416,13 +411,22 @@ export function useRegisterHeaderActions({
     }
   }
 
+  async function chooseWeightCorrectionForCurrentRegister() {
+    weightCorrectionChoicePending.value = true
+    try {
+      const choice = await chooseOutputWeightCorrection(confirm, currentRegister.value)
+      return choice === WEIGHT_CORRECTION_CHOICE.Apply
+    } finally {
+      weightCorrectionChoicePending.value = false
+    }
+  }
+
   const runXmlActionWithDialog = async (action, operation) => {
     if (generalActionsDisabled.value) return
 
     let applyWeightCorrection = false
     if (getWeightCorrection(currentRegister.value).canCorrect) {
-      const choice = await chooseOutputWeightCorrection(confirm, currentRegister.value)
-      applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
+      applyWeightCorrection = await chooseWeightCorrectionForCurrentRegister()
     }
 
     showActionDialog(operation)
@@ -441,11 +445,7 @@ export function useRegisterHeaderActions({
 
     let applyWeightCorrection = false
     if (getWeightCorrection(currentRegister.value).canCorrect) {
-      const choice = await requestWeightCorrectionChoice(currentRegister.value)
-      if (choice === WEIGHT_CORRECTION_CHOICE.Cancel) {
-        return
-      }
-      applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
+      applyWeightCorrection = await chooseWeightCorrectionForCurrentRegister()
     }
 
     showActionDialog(operation)
@@ -512,15 +512,13 @@ export function useRegisterHeaderActions({
     stopValidationWatcher()
     stopPolling()
     hideActionDialog()
-    resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Cancel)
+    weightCorrectionChoicePending.value = false
   }
 
   return {
     validationState,
     progressPercent,
     actionDialog: actionDialogState,
-    weightCorrectionDialog: weightCorrectionDialogState,
-    resolveWeightCorrectionChoice,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterSwEx: runValidateRegisterSwEx,

@@ -1,13 +1,12 @@
 <script setup>
 import { computed, ref, unref } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import WeightCorrectionChoiceDialog from '@/l2/WeightCorrectionChoiceDialog.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import {
-  getWeightCorrection,
-  useWeightCorrectionChoiceDialog,
+  chooseOutputWeightCorrection,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
 
@@ -23,6 +22,7 @@ const emit = defineEmits(['close'])
 
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
+const confirm = useConfirm()
 const canExport = computed(() => Boolean(unref(authStore.isWhManagerPlus)))
 const exportPending = ref(false)
 const exportDisabled = computed(() =>
@@ -31,11 +31,6 @@ const exportDisabled = computed(() =>
   exportPending.value ||
   !props.register?.id
 )
-const {
-  weightCorrectionDialogState,
-  requestWeightCorrectionChoice,
-  resolveWeightCorrectionChoice
-} = useWeightCorrectionChoiceDialog()
 
 function normalizeZoneName(name) {
   if (!name || !name.trim()) {
@@ -54,12 +49,8 @@ async function downloadRegisterForZone(forZone, zoneLabel) {
 
   try {
     let applyWeightCorrection = false
-    if (getWeightCorrection(props.register).canCorrect) {
-      const choice = await requestWeightCorrectionChoice(props.register)
-      if (choice === WEIGHT_CORRECTION_CHOICE.Cancel) return
-
-      applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
-    }
+    const choice = await chooseOutputWeightCorrection(confirm, props.register)
+    applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
 
     if (applyWeightCorrection) {
       await registersStore.download(
@@ -131,9 +122,5 @@ const exportOptions = computed(() => {
           @click="emit('close')"
         />
     </div>
-    <WeightCorrectionChoiceDialog
-      :state="weightCorrectionDialogState"
-      @choose="resolveWeightCorrectionChoice"
-    />
   </div>
 </template>

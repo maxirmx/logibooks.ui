@@ -10,6 +10,7 @@ import router from '@/router'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
 
+const CUSTOMS_PROCEDURE_REEXPORT = 31
 const itemRef = ref({ id: 77, invoiceNumber: 'INV-77' })
 const loadingRef = ref(false)
 const errorRef = ref(null)
@@ -110,6 +111,25 @@ describe('Invoice_Settings.vue', () => {
     const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
+    expect(labels).toContain('Предшествующий ДТЭГ')
+  })
+
+  it('hides previous DTEG optional column for reexport registers', async () => {
+    itemRef.value = {
+      id: 77,
+      invoiceNumber: 'INV-77',
+      customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT
+    }
+
+    const wrapper = mountDialog()
+    await resolveAll()
+
+    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
+    expect(labels).toContain('Номер мешка')
+    expect(labels).toContain('ФИО')
+    expect(labels).toContain('УИН')
+    expect(labels).toContain('Ссылка')
+    expect(labels).not.toContain('Предшествующий ДТЭГ')
   })
 
   it('initializes parcel selection from prop', async () => {
@@ -138,6 +158,30 @@ describe('Invoice_Settings.vue', () => {
     )
     // Implementation now uses router.go(-1) instead of router.push
     expect(router.go).toHaveBeenCalledWith(-1)
+  })
+
+  it('does not submit previous DTEG optional column for reexport registers', async () => {
+    itemRef.value = {
+      id: 77,
+      invoiceNumber: 'INV-77',
+      customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT
+    }
+
+    const wrapper = mountDialog()
+    await resolveAll()
+    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
+    comp.optionalColumns = InvoiceOptionalColumns.PreviousDteg | InvoiceOptionalColumns.Url
+    await nextTick()
+
+    await comp.onSubmit()
+
+    expect(downloadInvoiceFileMock).toHaveBeenCalledWith(
+      77,
+      'INV-77',
+      InvoiceParcelSelection.All,
+      InvoiceOptionalColumns.Url,
+      true
+    )
   })
 
   it('shows checked weight correction checkbox when coefficient is possible', async () => {

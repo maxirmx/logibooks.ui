@@ -371,6 +371,10 @@ vi.mock('pinia', async () => {
 
 const monitorGlobalStubs = {
   ...defaultGlobalStubs,
+  'font-awesome-icon': {
+    props: ['icon'],
+    template: '<i :data-icon="icon" class="fa-stub"></i>'
+  },
   'v-select': {
     name: 'v-select',
     template: '<div class="v-select-stub" data-testid="v-select" v-bind="$attrs"></div>',
@@ -1136,6 +1140,31 @@ describe('Scanjob_Monitor.vue', () => {
     expect(parcelsTable.props('itemsPerPage')).toBe(50)
     expect(parcelsTable.props('page')).toBe(3)
     expect(parcelsTable.props('sortBy')).toEqual([{ key: 'parcelNumber', order: 'desc' }])
+  })
+
+  it('passes monitor snapshot weight correction data to parcel tables', async () => {
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshot)
+      .mockResolvedValueOnce({
+        ...boxSnapshot,
+        realWeightKg: 5,
+        totalWeightKgToRelease: 10
+      })
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.setProps({ monitorScope: box7MonitorScope })
+    await flushPromises()
+
+    const table = wrapper.getComponent({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' })
+    expect(table.props('register')).toEqual({
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    })
   })
 
   it('sets parcel defect from box monitor and refreshes current scope', async () => {

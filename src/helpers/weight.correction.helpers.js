@@ -48,6 +48,14 @@ export function getWeightCorrection(register) {
   }
 }
 
+export function getCorrectedWeight(weight, register) {
+  const weightValue = parseWeightCorrectionValue(weight)
+  if (weightValue === null) return null
+
+  const correction = getWeightCorrection(register)
+  return correction.canCorrect ? weightValue * correction.coefficient : null
+}
+
 export function buildWeightCorrectionMessage(coefficientText, { singleParcel = false } = {}) {
   const parcelText = singleParcel ? 'посылки' : 'посылок'
   return `К весу ${parcelText} будет применён поправочный коэффициент ${coefficientText}. Вы уверены?`

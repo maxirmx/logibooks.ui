@@ -136,6 +136,16 @@ const scopeHeading = computed(() => {
   return 'Коробки'
 })
 const monitorHeading = computed(() => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`)
+const monitorWeightRegister = computed(() => {
+  const snapshot = visibleSnapshot.value
+  const register = activeRegisterItem.value
+  return {
+    realWeightKg: hasOwnProperty(snapshot, 'realWeightKg') ? snapshot.realWeightKg : (register?.realWeightKg ?? null),
+    totalWeightKgToRelease: hasOwnProperty(snapshot, 'totalWeightKgToRelease')
+      ? snapshot.totalWeightKgToRelease
+      : (register?.totalWeightKgToRelease ?? null)
+  }
+})
 const followUserOptions = computed(() => [
   { title: 'Не следить (Esc)', value: null },
   ...followUsers.value.map((user) => ({
@@ -424,6 +434,10 @@ function toNumberOrNull(value) {
 
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function hasOwnProperty(value, key) {
+  return value != null && Object.prototype.hasOwnProperty.call(value, key)
 }
 
 async function loadScanjobAndRegister() {
@@ -971,6 +985,7 @@ defineExpose({
           v-if="isBoxMode"
           :box="selectedBox"
           :register-type="visibleSnapshot?.registerType ?? 0"
+          :register="monitorWeightRegister"
           :loading="isLoading"
           :defect-action-loading="defectActionRunning"
           :selected-parcel-id="selectedParcelId"

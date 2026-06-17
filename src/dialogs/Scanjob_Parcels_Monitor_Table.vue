@@ -8,8 +8,8 @@ import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
+import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatWeight } from '@/helpers/number.formatters.js'
 import {
   canClearParcelDefect,
   canSetParcelDefect
@@ -31,6 +31,7 @@ defineOptions({ name: 'Scanjob_Parcels_Monitor_Table' })
 const props = defineProps({
   headers: { type: Array, required: true },
   parcels: { type: Array, default: () => [] },
+  register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null }
@@ -337,7 +338,13 @@ watch(
     </template>
 
     <template #[`item.weightKg`]="{ item }">
-      <ClickableCell :item="item" :display-value="formatWeight(item.weightKg)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
+      <ClickableCell :item="item" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)">
+        <CorrectedWeightDisplay
+          :weight="item.weightKg"
+          :register="props.register"
+          :use-correction="item.weightCorrectionEligible === true"
+        />
+      </ClickableCell>
     </template>
 
     <template #[`item.quantity`]="{ item }">

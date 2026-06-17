@@ -14,7 +14,6 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
-import { formatWeight } from '@/helpers/number.formatters.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
 import {
   scanjobCheckStatusProjectionKind,
@@ -27,6 +26,7 @@ import PaginationFooter from '@/components/PaginationFooter.vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
+import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import {
   canClearParcelDefect,
@@ -403,11 +403,18 @@ function handleParcelExtIdChanged(change) {
         <template #[`item.weightKg`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatWeight(item.weightKg)"
             :cell-class="parcelEditCellClass('truncated-cell numeric-panel')"
             :disabled="isParcelEditCellDisabled"
             @click="editParcel"
-          />
+          >
+            <template #default>
+              <CorrectedWeightDisplay
+                :weight="item.weightKg"
+                :register="registersStore.item"
+                :use-correction="item.weightCorrectionEligible === true"
+              />
+            </template>
+          </ClickableCell>
         </template>
         <template #[`item.quantity`]="{ item }">
           <ClickableCell

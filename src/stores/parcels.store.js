@@ -206,7 +206,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     return response
   }
 
-  async function generate(id, filename) {
+  async function generate(id, filename, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
     try {
@@ -216,7 +216,8 @@ export const useParcelsStore = defineStore('parcels', () => {
       else {
         filename = `IndPost_${filename}.xml`
       }
-      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate`, filename)
+      const query = applyWeightCorrection === true ? '?applyWeightCorrection=true' : ''
+      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/generate${query}`, filename)
     } catch (err) {
       error.value = err?.message || 'Ошибка при выгрузке накладной для посылки'
       throw err

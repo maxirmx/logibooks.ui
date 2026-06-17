@@ -178,7 +178,7 @@ describe('parcel actions helpers', () => {
 
       await generateXml(mockItem, mockParcelsStore, filename)
 
-      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, filename)
+      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, filename, false)
       expect(mockParcelsStore.error).toBeNull()
     })
 
@@ -188,7 +188,7 @@ describe('parcel actions helpers', () => {
       await generateXml(mockItem, mockParcelsStore, filenameGenerator)
 
       expect(filenameGenerator).toHaveBeenCalledWith(mockItem.value)
-      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'generated-filename')
+      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'generated-filename', false)
     })
 
     it('should handle generate XML errors with API message', async () => {
@@ -223,12 +223,12 @@ describe('parcel actions helpers', () => {
       })
 
       expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-        content: 'К весу посылки будет применён поправочный коэффициент 0,500. Вы уверены?'
+        content: 'Применить поправочный коэффициент 0,500 для веса посылки?'
       }))
-      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file')
+      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file', true)
     })
 
-    it('does not generate XML when weight correction confirmation is cancelled', async () => {
+    it('generates raw XML when weight correction is declined', async () => {
       const confirm = vi.fn().mockResolvedValue(false)
 
       await generateXml(mockItem, mockParcelsStore, 'test-file', {
@@ -236,7 +236,7 @@ describe('parcel actions helpers', () => {
         register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
       })
 
-      expect(mockParcelsStore.generate).not.toHaveBeenCalled()
+      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file', false)
     })
   })
 

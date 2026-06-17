@@ -10,7 +10,7 @@ export const wbr2RegisterColumnTitles = {
   productName: 'Наименование товара',
   countryCode: 'Страна',
   unit: 'Единица измерения',
-  weightKg: 'Масса, кг',
+  weightKg: 'Вес, кг',
   quantity: 'Кол-во',
   amount: 'Сумма',
   currency: 'Валюта',

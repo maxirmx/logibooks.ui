@@ -25,7 +25,7 @@ export const wbrRegisterColumnTitles = {
   countryCode: 'Страна',
   factoryAddress: 'Завод адрес',
   unit: 'Единица измерения',
-  weightKg: 'Масса, кг',
+  weightKg: 'Вес, кг',
   quantity: 'Кол-во',
   unitPrice: 'Цена за 1 шт',
   currency: 'Валюта',

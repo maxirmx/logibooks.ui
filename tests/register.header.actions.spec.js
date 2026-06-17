@@ -116,7 +116,7 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(true)
     expect(actionDialog.title).toBe('Подготовка файлов')
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1')
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
 
     deferred.resolve()
     await promise
@@ -125,7 +125,7 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.title).toBe('')
   })
 
-  it('confirms XML export when weight correction is possible', async () => {
+  it('exports raw XML when weight correction is declined', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
     confirmMock.mockResolvedValueOnce(false)
@@ -143,10 +143,30 @@ describe('useRegisterHeaderActions', () => {
     await actions.exportAllXmlOrdinary()
 
     expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'К весу посылок будет применён поправочный коэффициент 0,500. Вы уверены?'
+      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
     }))
-    expect(registersStore.generateOrdinary).not.toHaveBeenCalled()
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
     expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('exports corrected XML when weight correction is accepted', async () => {
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+    confirmMock.mockResolvedValueOnce(true)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.exportAllXmlOrdinary()
+
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', true)
   })
 
   it('offers optional correction before register download and applies selected correction', async () => {
@@ -174,7 +194,7 @@ describe('useRegisterHeaderActions', () => {
     expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx', null, null, true)
   })
 
-  it('cancels register download from optional correction dialog', async () => {
+  it('downloads register without correction when correction is declined', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
 
@@ -189,10 +209,10 @@ describe('useRegisterHeaderActions', () => {
     })
 
     const promise = actions.downloadRegister()
-    actions.resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Cancel)
+    actions.resolveWeightCorrectionChoice(WEIGHT_CORRECTION_CHOICE.Skip)
     await promise
 
-    expect(registersStore.download).not.toHaveBeenCalled()
+    expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx')
     expect(actions.actionDialog.show).toBe(false)
   })
 
@@ -342,7 +362,7 @@ describe('useRegisterHeaderActions', () => {
 
     await expect(actions.exportAllXmlOrdinary()).resolves.toBeUndefined()
 
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1')
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
     expect(alertStore.error).toHaveBeenCalledWith('Export failed')
     expect(actions.actionDialog.show).toBe(false)
     expect(runningAction.value).toBe(false)

@@ -773,10 +773,10 @@ describe('registers.list.helpers', () => {
 
       it('exports XML variants and downloads register files', async () => {
         await handlers.exportAllXmlOrdinary({ id: 8, invoiceNumber: 'INV-8' })
-        expect(registersStore.generateOrdinary).toHaveBeenCalledWith(8, 'INV-8')
+        expect(registersStore.generateOrdinary).toHaveBeenCalledWith(8, 'INV-8', false)
 
         await handlers.exportAllXmlExcise({ id: 9, invoiceNumber: 'INV-9' })
-        expect(registersStore.generateExcise).toHaveBeenCalledWith(9, 'INV-9')
+        expect(registersStore.generateExcise).toHaveBeenCalledWith(9, 'INV-9', false)
 
         await handlers.downloadRegister({ id: 4, fileName: 'file.xlsx' })
         expect(registersStore.download).toHaveBeenCalledWith(4, 'file.xlsx')

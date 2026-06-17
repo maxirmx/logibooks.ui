@@ -8,7 +8,7 @@ import { useActionDialog } from '@/composables/useActionDialog.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import {
-  confirmOutputWeightCorrection,
+  chooseOutputWeightCorrection,
   getWeightCorrection,
   useWeightCorrectionChoiceDialog,
   WEIGHT_CORRECTION_CHOICE
@@ -227,16 +227,16 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlOrdinary(item) {
-    await registersStore.generateOrdinary(item.id, item.invoiceNumber)
+  async function exportAllXmlOrdinary(item, applyWeightCorrection = false) {
+    await registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection)
   }
 
-  async function exportAllXmlExcise(item) {
-    await registersStore.generateExcise(item.id, item.invoiceNumber)
+  async function exportAllXmlExcise(item, applyWeightCorrection = false) {
+    await registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection)
   }
 
-  async function exportAllXmlNotifications(item) {
-    await registersStore.generateNotifications(item.id, item.invoiceNumber)
+  async function exportAllXmlNotifications(item, applyWeightCorrection = false) {
+    await registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection)
   }
 
   async function downloadRegister(item, applyWeightCorrection = false) {
@@ -419,17 +419,18 @@ export function useRegisterHeaderActions({
   const runXmlActionWithDialog = async (action, operation) => {
     if (generalActionsDisabled.value) return
 
-    const confirmation = confirmOutputWeightCorrection(confirm, currentRegister.value)
-    if (confirmation?.then) {
-      const confirmed = await confirmation
-      if (!confirmed) return
-    } else if (!confirmation) {
-      return
+    let applyWeightCorrection = false
+    if (getWeightCorrection(currentRegister.value).canCorrect) {
+      const choice = await chooseOutputWeightCorrection(confirm, currentRegister.value)
+      applyWeightCorrection = choice === WEIGHT_CORRECTION_CHOICE.Apply
     }
 
     showActionDialog(operation)
     try {
-      await runWithLock(action, { lock: true, checkDisabled: false })
+      await runWithLock(
+        (register) => action(register, applyWeightCorrection),
+        { lock: true, checkDisabled: false }
+      )
     } finally {
       hideActionDialog()
     }

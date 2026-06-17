@@ -66,14 +66,14 @@ export function getCorrectedWeight(weight, register) {
 
 export function buildWeightCorrectionMessage(coefficientText, { singleParcel = false } = {}) {
   const parcelText = singleParcel ? 'посылки' : 'посылок'
-  return `К весу ${parcelText} будет применён поправочный коэффициент ${coefficientText}. Вы уверены?`
+  return `Применить поправочный коэффициент ${coefficientText} для веса ${parcelText}?`
 }
 
-export function confirmOutputWeightCorrection(confirm, register, options = {}) {
+export async function chooseOutputWeightCorrection(confirm, register, options = {}) {
   const correction = getWeightCorrection(register)
-  if (!correction.canCorrect) return true
+  if (!correction.canCorrect) return WEIGHT_CORRECTION_CHOICE.Skip
 
-  return confirm({
+  const applyWeightCorrection = await confirm({
     title: 'Подтверждение',
     confirmationText: 'Да',
     cancellationText: 'Нет',
@@ -81,6 +81,12 @@ export function confirmOutputWeightCorrection(confirm, register, options = {}) {
     confirmationButtonProps: WEIGHT_CORRECTION_CONFIRM_BUTTON_PROPS,
     content: buildWeightCorrectionMessage(correction.coefficientText, options)
   })
+
+  return applyWeightCorrection ? WEIGHT_CORRECTION_CHOICE.Apply : WEIGHT_CORRECTION_CHOICE.Skip
+}
+
+export async function confirmOutputWeightCorrection(confirm, register, options = {}) {
+  return (await chooseOutputWeightCorrection(confirm, register, options)) === WEIGHT_CORRECTION_CHOICE.Apply
 }
 
 export function useWeightCorrectionChoiceDialog() {

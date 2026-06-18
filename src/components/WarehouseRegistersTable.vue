@@ -392,7 +392,7 @@ function formatMatchingParcelsCount(item) {
       </template>
 
       <template #[`header.matchingParcelsCount`]>
-        <span class="return-matching-count-header">К возврату</span>
+        <span class="return-matching-count-header">{{ headers.find((header) => header.key === 'matchingParcelsCount')?.title }}</span>
       </template>
 
       <template #[`header.warehouseArrivalDate`]="{ column, isSorted, getSortIcon }">

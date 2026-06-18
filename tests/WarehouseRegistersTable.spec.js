@@ -94,7 +94,8 @@ function mountTable(props = {}) {
         },
         'v-tooltip': {
           template: '<span><slot name="activator" :props="{}" /><slot /></span>'
-        }
+        },
+        'font-awesome-icon': true
       }
     }
   })
@@ -107,16 +108,16 @@ describe('WarehouseRegistersTable matching-count column', () => {
     expect(headers.map((header) => header.key)).not.toContain('matchingParcelsCount')
   })
 
-  it('adds the matching-count header only when a label is supplied', () => {
+  it('adds the matching-count header only when requested', () => {
     const headers = createWarehouseRegisterHeaders({
       showActions: false,
       selectable: true,
-      matchingCountLabel: 'К отбору'
+      showMatchingCount: true
     })
 
     expect(headers.map((header) => header.key)).toContain('matchingParcelsCount')
     expect(headers.find((header) => header.key === 'matchingParcelsCount')).toMatchObject({
-      title: 'К отбору',
+      title: 'К возврату',
       sortable: false,
       align: 'end'
     })
@@ -124,7 +125,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
 
   it('passes the optional header to the table and formats matching counts', () => {
     const wrapper = mountTable({
-      matchingCountLabel: 'К отбору',
+      showMatchingCount: true,
       items: [
         { id: 1, matchingParcelsCount: 1234 },
         { id: 2, matchingParcelsCount: 0 }
@@ -132,7 +133,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
     })
 
     expect(wrapper.find('[data-testid="header-keys"]').text()).toContain('matchingParcelsCount')
-    expect(wrapper.find('[data-testid="header-titles"]').text()).toContain('К отбору')
+    expect(wrapper.find('[data-testid="header-titles"]').text()).toContain('К возврату')
     expect(wrapper.findAll('[data-testid="row"]')[0].text()).toBe('1\u00A0234')
     expect(wrapper.findAll('[data-testid="row"]')[1].text()).toBe('-')
   })

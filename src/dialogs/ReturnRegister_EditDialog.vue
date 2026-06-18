@@ -495,7 +495,7 @@ function cancel() {
         :show-actions="false"
         :selectable="true"
         :links-enabled="false"
-        matching-count-label="К отбору"
+        show-matching-count
         :selection-disabled="sourceTableDisabled || registersLoading"
       />
     </section>

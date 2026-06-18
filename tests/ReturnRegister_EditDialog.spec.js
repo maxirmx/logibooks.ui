@@ -121,7 +121,7 @@ vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
       'selectable',
       'linksEnabled',
       'selectionDisabled',
-      'matchingCountLabel'
+      'showMatchingCount'
     ],
     emits: ['update:selectedIds', 'update:itemsPerPage', 'update:page', 'update:sortBy'],
     methods: {
@@ -144,7 +144,6 @@ vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
         :data-show-actions="String(showActions)"
         :data-links-enabled="String(linksEnabled)"
         :data-selectable="String(selectable)"
-        :data-matching-count-label="matchingCountLabel || ''"
       >
         <button
           type="button"
@@ -416,7 +415,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(table.props('showActions')).toBe(false)
     expect(table.props('linksEnabled')).toBe(false)
     expect(table.props('selectable')).toBe(true)
-    expect(table.props('matchingCountLabel')).toBe('К отбору')
+    expect('showMatchingCount' in table.props()).toBe(true)
 
     await wrapper.find('[data-testid="table-sort"]').trigger('click')
     await flushPromises()

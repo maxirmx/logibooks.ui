@@ -55,7 +55,7 @@ const props = defineProps({
   bulkChangeStatus: { type: Function, default: () => {} },
   cancelStatusChange: { type: Function, default: () => {} },
   applyStatusToAllOrders: { type: Function, default: () => {} },
-  matchingCountLabel: { type: String, default: '' }
+  showMatchingCount: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([
@@ -90,7 +90,7 @@ const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 const headers = computed(() => createWarehouseRegisterHeaders({
   showActions: props.showActions,
   selectable: props.selectable,
-  matchingCountLabel: props.matchingCountLabel
+  showMatchingCount: props.showMatchingCount
 }))
 
 const itemsPerPageModel = computed({
@@ -391,6 +391,10 @@ function formatMatchingParcelsCount(item) {
         />
       </template>
 
+      <template #[`header.matchingParcelsCount`]>
+        <span class="return-matching-count-header">К возврату</span>
+      </template>
+
       <template #[`header.warehouseArrivalDate`]="{ column, isSorted, getSortIcon }">
         <SortableMultilineHeader
           :lines="['Дата', 'прибытия']"
@@ -557,6 +561,10 @@ function formatMatchingParcelsCount(item) {
 .numeric-panel .data-box {
   align-items: flex-end;
   text-align: right;
+}
+
+.return-matching-count-header {
+  white-space: nowrap;
 }
 
 .zone-distribution {

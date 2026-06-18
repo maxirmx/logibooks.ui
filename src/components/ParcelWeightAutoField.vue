@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, unref } from 'vue'
+import { computed, toRaw, unref } from 'vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import { getWeightCorrection } from '@/helpers/weight.correction.helpers.js'
 
@@ -17,6 +17,7 @@ const props = defineProps({
 })
 
 const registerValue = computed(() => unref(props.register))
+const fieldComponentDefinition = computed(() => toRaw(props.fieldComponent))
 const canUseAutomaticWeight = computed(() => getWeightCorrection(registerValue.value).canCorrect)
 const isWeightCorrectionEligible = computed(() => props.item?.weightCorrectionEligible === true)
 const groupClass = computed(() => props.fullWidth ? 'form-group-1' : 'form-group')
@@ -26,7 +27,7 @@ const inputClass = computed(() => ['form-control', props.fullWidth ? 'input-1' :
 
 <template>
   <component
-    :is="fieldComponent"
+    :is="fieldComponentDefinition"
     v-if="!canUseAutomaticWeight"
     name="weightKg"
     type="number"

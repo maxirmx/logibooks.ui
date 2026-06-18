@@ -3,7 +3,7 @@
 # This file is a part of Logibooks ui application 
 
 # Stage for building the frontend
-FROM node:20.19 AS build
+FROM node:22.23.0 AS build
 WORKDIR /app
 
 # Add build arguments with default values
@@ -18,7 +18,7 @@ COPY . .
 RUN npm run build
 
 # Stage for running nginx with static files
-FROM nginx:1.27-alpine AS final
+FROM nginx:1.30.3-alpine-slim AS final
 COPY --from=build /app/dist /var/www/logibooks
 COPY config/public /var/www
 COPY config/nginx.conf /etc/nginx/conf.d/default.conf

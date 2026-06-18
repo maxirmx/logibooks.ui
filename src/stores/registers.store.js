@@ -114,6 +114,16 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  /**
+   * Appends the shared return-register criteria used by pair lookup, source rows, and creation.
+   * Omitted values preserve the backend defaults: Return + RedZone.
+   */
+  function appendReturnRegisterCriteriaParams(params, criteria = {}) {
+    appendDefinedParam(params, 'customsProcedureCode', criteria.customsProcedureCode)
+    appendDefinedParam(params, 'parcelSelectionMode', criteria.parcelSelectionMode)
+    appendDefinedParam(params, 'parcelStatusId', criteria.parcelStatusId)
+  }
+
   async function getRegisters({
     page = 1,
     pageSize = 25,
@@ -124,7 +134,10 @@ export const useRegistersStore = defineStore('registers', () => {
     warehouseId,
     senderCompanyId,
     receiverCompanyId,
-    search = ''
+    search = '',
+    customsProcedureCode,
+    parcelSelectionMode,
+    parcelStatusId
   } = {}) {
     loading.value = true
     error.value = null
@@ -141,6 +154,11 @@ export const useRegistersStore = defineStore('registers', () => {
 
       if (returnSourceOnly) {
         queryParams.append('returnSourceOnly', 'true')
+        appendReturnRegisterCriteriaParams(queryParams, {
+          customsProcedureCode,
+          parcelSelectionMode,
+          parcelStatusId
+        })
       }
       appendDefinedParam(queryParams, 'warehouseId', warehouseId)
       appendDefinedParam(queryParams, 'senderCompanyId', senderCompanyId)
@@ -243,11 +261,12 @@ export const useRegistersStore = defineStore('registers', () => {
     return res
   }
 
-  async function getReturnRegisterPairs(warehouseId) {
+  async function getReturnRegisterPairs(warehouseId, criteria = {}) {
     loading.value = true
     error.value = null
     try {
       const params = new URLSearchParams({ warehouseId: String(warehouseId) })
+      appendReturnRegisterCriteriaParams(params, criteria)
       return await fetchWrapper.get(`${baseUrl}/return-register/pairs?${params.toString()}`)
     } catch (err) {
       error.value = err

@@ -16,7 +16,7 @@ export function isReturnRegister(item) {
   return Number(item?.customsProcedureCode) === CUSTOMS_PROCEDURE_RETURN
 }
 
-export function createWarehouseRegisterHeaders({ showActions = true, selectable = false } = {}) {
+export function createWarehouseRegisterHeaders({ showActions = true, selectable = false, matchingCountLabel = '' } = {}) {
   return [
     ...(selectable
       ? [{ title: '', key: 'selection', sortable: false, align: 'center', width: '48px' }]
@@ -29,6 +29,9 @@ export function createWarehouseRegisterHeaders({ showActions = true, selectable 
     { title: 'Страны', key: 'countries', sortable: true },
     { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
     { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
+    ...(matchingCountLabel
+      ? [{ title: matchingCountLabel, key: 'matchingParcelsCount', sortable: false, align: 'end', minWidth: '100px', width: '100px' }]
+      : []),
     { title: 'Зоны', key: 'parcelsByZone', sortable: false, align: 'end', minWidth: '135px', width: '135px' },
     { title: 'Статус', key: 'statusId', sortable: true },
     { title: 'Склад', key: 'warehouseId', sortable: true },

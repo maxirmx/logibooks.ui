@@ -13,9 +13,27 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
+
+const RETURN_REGISTER_CUSTOMS_PROCEDURE = Object.freeze({
+  Return: 1,
+  Reexport: 31,
+  Reimport: 60
+})
+const RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER = [
+  RETURN_REGISTER_CUSTOMS_PROCEDURE.Return,
+  RETURN_REGISTER_CUSTOMS_PROCEDURE.Reimport,
+  RETURN_REGISTER_CUSTOMS_PROCEDURE.Reexport
+]
+
+// API enum values for the two return-register parcel initialization modes.
+const RETURN_REGISTER_PARCEL_SELECTION_MODE = Object.freeze({
+  RedZone: 1,
+  ParcelStatus: 2
+})
 
 const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
@@ -23,9 +41,14 @@ const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
 const airportsStore = useAirportsStore()
 const registerStatusesStore = useRegisterStatusesStore()
+const parcelStatusesStore = useParcelStatusesStore()
 const { warehouses } = storeToRefs(warehousesStore)
+const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
 const selectedWarehouseId = ref('')
+const selectedCustomsProcedureCode = ref(String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Return))
+const selectedParcelSelectionMode = ref(String(RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone))
+const selectedParcelStatusId = ref('')
 const selectedPairKey = ref('')
 const selectedRegisterIds = ref([])
 const pairs = ref([])
@@ -43,10 +66,61 @@ const errorMessage = ref('')
 
 const warehouseOptions = computed(() => Array.isArray(warehouses.value) ? warehouses.value : [])
 const selectedWarehouseNumber = computed(() => Number(selectedWarehouseId.value) || 0)
+const selectedCustomsProcedureNumber = computed(() =>
+  Number(selectedCustomsProcedureCode.value) || RETURN_REGISTER_CUSTOMS_PROCEDURE.Return
+)
+const selectedParcelSelectionModeNumber = computed(() =>
+  Number(selectedParcelSelectionMode.value) || RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone
+)
+const selectedParcelStatusNumber = computed(() => Number(selectedParcelStatusId.value) || 0)
+const requiresParcelStatus = computed(() =>
+  selectedParcelSelectionModeNumber.value === RETURN_REGISTER_PARCEL_SELECTION_MODE.ParcelStatus
+)
+const hasValidParcelCriteria = computed(() =>
+  !requiresParcelStatus.value || selectedParcelStatusNumber.value > 0
+)
 const selectedPair = computed(() => pairs.value.find((pair) => getPairKey(pair) === selectedPairKey.value) || null)
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
+const returnRegisterProcedureOptions = computed(() => {
+  const supported = new Set(Object.values(RETURN_REGISTER_CUSTOMS_PROCEDURE))
+  const fromOps = Array.isArray(registersStore.ops?.customsProcedures)
+    ? registersStore.ops.customsProcedures
+      .filter((procedure) => supported.has(Number(procedure.value)))
+      .sort((left, right) =>
+        RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER.indexOf(Number(left.value)) -
+        RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER.indexOf(Number(right.value))
+      )
+      .map((procedure) => ({
+        value: String(procedure.value),
+        label: procedure.name || procedure.charCode || String(procedure.value)
+      }))
+    : []
+
+  return fromOps.length > 0
+    ? fromOps
+    : [
+        { value: String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Return), label: 'Возврат' },
+        { value: String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Reimport), label: 'Реимпорт' },
+        { value: String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Reexport), label: 'Реэкспорт' }
+      ]
+})
+const parcelSelectionModeOptions = [
+  { value: String(RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone), label: 'Красная зона' },
+  { value: String(RETURN_REGISTER_PARCEL_SELECTION_MODE.ParcelStatus), label: 'Статус посылки' }
+]
+const parcelStatusOptions = computed(() => Array.isArray(parcelStatuses.value) ? parcelStatuses.value : [])
+
+/**
+ * Shared API criteria; pair lookup, source list, and create payload must use the same values.
+ */
+const returnRegisterCriteria = computed(() => ({
+  customsProcedureCode: selectedCustomsProcedureNumber.value,
+  parcelSelectionMode: selectedParcelSelectionModeNumber.value,
+  parcelStatusId: requiresParcelStatus.value ? selectedParcelStatusNumber.value : null
+}))
 const canSubmit = computed(() =>
   selectedWarehouseNumber.value > 0 &&
+  hasValidParcelCriteria.value &&
   selectedPair.value !== null &&
   selectedRegisterIds.value.length > 0 &&
   !isInitializing.value &&
@@ -74,6 +148,7 @@ onMounted(async () => {
     await countriesStore.ensureLoaded()
     await registersStore.ensureOpsLoaded()
     await registerStatusesStore.ensureLoaded()
+    await parcelStatusesStore.ensureLoaded()
     await companiesStore.getAll()
     await airportsStore.getAll()
 
@@ -91,7 +166,7 @@ onUnmounted(() => {
   clearSourceSearchTimer()
 })
 
-watch(selectedWarehouseId, async () => {
+watch([selectedWarehouseId, returnRegisterCriteria], async () => {
   // Invalidate any in-flight async requests tied to the previous selection.
   pairRequestId += 1
   registerRequestId += 1
@@ -102,7 +177,7 @@ watch(selectedWarehouseId, async () => {
   pairs.value = []
   clearSourceRegisters()
 
-  if (!selectedWarehouseNumber.value) return
+  if (!selectedWarehouseNumber.value || !hasValidParcelCriteria.value) return
 
   await loadPairs()
 })
@@ -163,7 +238,10 @@ function getPairKey(pair) {
 function getPairLabel(pair) {
   const sender = pair.senderCompanyName || pair.senderCompanyId
   const receiver = pair.receiverCompanyName || pair.receiverCompanyId
-  return `${sender} / ${receiver}`
+  const count = Number(pair.matchingParcelsCount ?? pair.redParcelsCount ?? 0)
+  return Number.isFinite(count) && count > 0
+    ? `${sender} / ${receiver} (${count})`
+    : `${sender} / ${receiver}`
 }
 
 function getErrorText(error, fallback) {
@@ -178,7 +256,10 @@ async function loadPairs() {
   pairsLoading.value = true
   errorMessage.value = ''
   try {
-    const result = await registersStore.getReturnRegisterPairs(selectedWarehouseNumber.value)
+    const result = await registersStore.getReturnRegisterPairs(
+      selectedWarehouseNumber.value,
+      returnRegisterCriteria.value
+    )
     /* v8 ignore next -- stale async response guard */
     if (requestId === pairRequestId) {
       pairs.value = Array.isArray(result) ? result : []
@@ -215,7 +296,8 @@ async function loadSourceRegisters() {
       pageSize: sourcePerPage.value,
       sortBy: sourceSortBy.value?.[0]?.key || 'id',
       sortOrder: sourceSortBy.value?.[0]?.order || 'desc',
-      search: sourceSearch.value
+      search: sourceSearch.value,
+      ...returnRegisterCriteria.value
     })
     /* v8 ignore next -- stale async response guard */
     if (requestId === registerRequestId) {
@@ -250,6 +332,9 @@ async function submit() {
       warehouseId: selectedWarehouseNumber.value,
       senderCompanyId: selectedPair.value.senderCompanyId,
       receiverCompanyId: selectedPair.value.receiverCompanyId,
+      customsProcedureCode: returnRegisterCriteria.value.customsProcedureCode,
+      parcelSelectionMode: returnRegisterCriteria.value.parcelSelectionMode,
+      parcelStatusId: returnRegisterCriteria.value.parcelStatusId,
       registerIds: selectedRegisterIds.value
     })
     const createdId = created?.id
@@ -320,12 +405,60 @@ function cancel() {
         </div>
 
         <div class="form-group">
+          <label class="label" for="return-register-type">Тип реестра:</label>
+          <select
+            id="return-register-type"
+            v-model="selectedCustomsProcedureCode"
+            class="form-control input"
+            :disabled="isInitializing || isSubmitting"
+            data-testid="return-type-select"
+          >
+            <option v-for="procedure in returnRegisterProcedureOptions" :key="procedure.value" :value="procedure.value">
+              {{ procedure.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="label" for="return-register-initialization">Инициализировать:</label>
+          <select
+            id="return-register-initialization"
+            v-model="selectedParcelSelectionMode"
+            class="form-control input"
+            :disabled="isInitializing || isSubmitting"
+            data-testid="selection-mode-select"
+          >
+            <option v-for="mode in parcelSelectionModeOptions" :key="mode.value" :value="mode.value">
+              {{ mode.label }}
+            </option>
+          </select>
+        </div>
+
+        <div v-if="requiresParcelStatus" class="form-group">
+          <label class="label" for="return-register-parcel-status">Статус посылки:</label>
+          <select
+            id="return-register-parcel-status"
+            v-model="selectedParcelStatusId"
+            class="form-control input"
+            :disabled="isInitializing || isSubmitting"
+            data-testid="parcel-status-select"
+          >
+            <option value="">Не выбрано</option>
+            <option v-for="status in parcelStatusOptions" :key="status.id" :value="String(status.id)">
+              {{ status.title }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label class="label" for="return-register-pair">Отправитель / получатель:</label>
           <select
             id="return-register-pair"
             v-model="selectedPairKey"
             class="form-control input"
-            :disabled="!selectedWarehouseNumber || pairsLoading || isSubmitting"
+            :disabled="!selectedWarehouseNumber || !hasValidParcelCriteria || pairsLoading || isSubmitting"
             data-testid="pair-select"
           >
             <option value="">Не выбрано</option>
@@ -362,6 +495,7 @@ function cancel() {
         :show-actions="false"
         :selectable="true"
         :links-enabled="false"
+        matching-count-label="К отбору"
         :selection-disabled="sourceTableDisabled || registersLoading"
       />
     </section>

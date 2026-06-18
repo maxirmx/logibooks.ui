@@ -54,7 +54,8 @@ const props = defineProps({
   setSelectedStatusId: { type: Function, default: () => {} },
   bulkChangeStatus: { type: Function, default: () => {} },
   cancelStatusChange: { type: Function, default: () => {} },
-  applyStatusToAllOrders: { type: Function, default: () => {} }
+  applyStatusToAllOrders: { type: Function, default: () => {} },
+  matchingCountLabel: { type: String, default: '' }
 })
 
 const emit = defineEmits([
@@ -88,7 +89,8 @@ const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 
 const headers = computed(() => createWarehouseRegisterHeaders({
   showActions: props.showActions,
-  selectable: props.selectable
+  selectable: props.selectable,
+  matchingCountLabel: props.matchingCountLabel
 }))
 
 const itemsPerPageModel = computed({
@@ -150,6 +152,11 @@ function emitEditRegister(item) {
   if (props.linksEnabled) {
     emit('edit-register', item)
   }
+}
+
+function formatMatchingParcelsCount(item) {
+  const count = Number(item?.matchingParcelsCount ?? 0)
+  return Number.isFinite(count) && count > 0 ? formatIntegerThousands(count) : '-'
 }
 
 </script>
@@ -338,6 +345,10 @@ function emitEditRegister(item) {
             <div style="white-space: pre-line">{{ formatParcelsByCheckStatusProjectionTooltip(item) }}</div>
           </template>
         </v-tooltip>
+      </template>
+
+      <template #[`item.matchingParcelsCount`]="{ item }">
+        <span class="truncated-cell data-panel numeric-panel">{{ formatMatchingParcelsCount(item) }}</span>
       </template>
 
       <template #[`item.parcelsByZone`]="{ item }">

@@ -422,7 +422,7 @@ function cancel() {
 
       <div class="form-row">
         <div class="form-group">
-          <label class="label" for="return-register-initialization">Инициализировать:</label>
+          <label class="label" for="return-register-initialization">Выбор посылок:</label>
           <select
             id="return-register-initialization"
             v-model="selectedParcelSelectionMode"
@@ -451,7 +451,9 @@ function cancel() {
             </option>
           </select>
         </div>
+      </div>
 
+      <div class="form-row">
         <div class="form-group">
           <label class="label" for="return-register-pair">Отправитель / получатель:</label>
           <select

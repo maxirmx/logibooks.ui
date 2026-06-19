@@ -54,7 +54,8 @@ const props = defineProps({
   setSelectedStatusId: { type: Function, default: () => {} },
   bulkChangeStatus: { type: Function, default: () => {} },
   cancelStatusChange: { type: Function, default: () => {} },
-  applyStatusToAllOrders: { type: Function, default: () => {} }
+  applyStatusToAllOrders: { type: Function, default: () => {} },
+  showMatchingCount: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([
@@ -88,7 +89,8 @@ const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 
 const headers = computed(() => createWarehouseRegisterHeaders({
   showActions: props.showActions,
-  selectable: props.selectable
+  selectable: props.selectable,
+  showMatchingCount: props.showMatchingCount
 }))
 
 const itemsPerPageModel = computed({
@@ -150,6 +152,11 @@ function emitEditRegister(item) {
   if (props.linksEnabled) {
     emit('edit-register', item)
   }
+}
+
+function formatMatchingParcelsCount(item) {
+  const count = Number(item?.matchingParcelsCount ?? 0)
+  return Number.isFinite(count) && count > 0 ? formatIntegerThousands(count) : '-'
 }
 
 </script>
@@ -340,6 +347,10 @@ function emitEditRegister(item) {
         </v-tooltip>
       </template>
 
+      <template #[`item.matchingParcelsCount`]="{ item }">
+        <span class="truncated-cell data-panel numeric-panel">{{ formatMatchingParcelsCount(item) }}</span>
+      </template>
+
       <template #[`item.parcelsByZone`]="{ item }">
         <div class="zone-distribution">
           <div
@@ -378,6 +389,10 @@ function emitEditRegister(item) {
           :is-sorted="isSorted"
           :get-sort-icon="getSortIcon"
         />
+      </template>
+
+      <template #[`header.matchingParcelsCount`]>
+        <span class="return-matching-count-header">{{ headers.find((header) => header.key === 'matchingParcelsCount')?.title }}</span>
       </template>
 
       <template #[`header.warehouseArrivalDate`]="{ column, isSorted, getSortIcon }">
@@ -546,6 +561,10 @@ function emitEditRegister(item) {
 .numeric-panel .data-box {
   align-items: flex-end;
   text-align: right;
+}
+
+.return-matching-count-header {
+  white-space: nowrap;
 }
 
 .zone-distribution {

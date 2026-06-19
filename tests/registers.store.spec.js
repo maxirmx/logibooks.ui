@@ -605,10 +605,16 @@ describe('registers store', () => {
       fetchWrapper.get.mockResolvedValue(response)
 
       const store = useRegistersStore()
-      const result = await store.getReturnRegisterPairs(12)
+      const result = await store.getReturnRegisterPairs(12, {
+        customsProcedureCode: 60,
+        parcelSelectionMode: 2,
+        parcelStatusId: 5
+      })
 
       expect(result).toBe(response)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/return-register/pairs?warehouseId=12`)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/return-register/pairs?warehouseId=12&customsProcedureCode=60&parcelSelectionMode=2&parcelStatusId=5`
+      )
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -640,12 +646,15 @@ describe('registers store', () => {
         pageSize: 50,
         sortBy: 'warehouseArrivalDate',
         sortOrder: 'asc',
-        search: 'deal'
+        search: 'deal',
+        customsProcedureCode: 31,
+        parcelSelectionMode: 2,
+        parcelStatusId: 5
       })
 
       expect(result).toBe(response)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers?page=2&pageSize=50&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&returnSourceOnly=true&warehouseId=12&senderCompanyId=2&receiverCompanyId=3&search=deal`
+        `${apiUrl}/registers?page=2&pageSize=50&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&returnSourceOnly=true&customsProcedureCode=31&parcelSelectionMode=2&parcelStatusId=5&warehouseId=12&senderCompanyId=2&receiverCompanyId=3&search=deal`
       )
       expect(result.items[0].destination).toBe('out')
       expect(result.items[0].senderId).toBe(2)
@@ -666,6 +675,9 @@ describe('registers store', () => {
         warehouseId: 12,
         senderCompanyId: 2,
         receiverCompanyId: 3,
+        customsProcedureCode: 60,
+        parcelSelectionMode: 2,
+        parcelStatusId: 5,
         registerIds: [7, 8]
       }
       fetchWrapper.post.mockResolvedValue(response)
@@ -1146,6 +1158,23 @@ describe('registers store', () => {
         `${apiUrl}/registers/10/download?forZone=15&applyWeightCorrection=true`,
         'register_10_Зона_1.xlsx'
       )
+    })
+  })
+
+  describe('downloadTechdoc method', () => {
+    it('uses invoice number in filename and calls techdoc endpoint', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      const result = await store.downloadTechdoc(20, 'INV-20')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/20/download-techdoc`,
+        'тех-документация_INV-20-акциз.docx'
+      )
+      expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
     })
   })
 

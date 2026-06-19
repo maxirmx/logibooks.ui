@@ -9,10 +9,12 @@ import ReturnRegisterEditDialog from '@/dialogs/ReturnRegister_EditDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const warehousesRef = vi.hoisted(() => ({ value: [] }))
+const parcelStatusesRef = vi.hoisted(() => ({ value: [] }))
 const ensureWarehousesLoaded = vi.hoisted(() => vi.fn())
 const ensureCountriesLoaded = vi.hoisted(() => vi.fn())
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const ensureRegisterStatusesLoaded = vi.hoisted(() => vi.fn())
+const ensureParcelStatusesLoaded = vi.hoisted(() => vi.fn())
 const getCompaniesAll = vi.hoisted(() => vi.fn())
 const getAirportsAll = vi.hoisted(() => vi.fn())
 const getReturnRegisterPairs = vi.hoisted(() => vi.fn())
@@ -28,6 +30,9 @@ vi.mock('pinia', async () => {
       if (store.warehouses !== undefined) {
         return { warehouses: store.warehouses }
       }
+      if (store.parcelStatuses !== undefined) {
+        return { parcelStatuses: store.parcelStatuses }
+      }
       return {}
     }
   }
@@ -42,6 +47,14 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
+    ops: {
+      customsProcedures: [
+        { value: 1, name: 'Возврат' },
+        { value: 31, name: 'Реэкспорт' },
+        { value: 60, name: 'Реимпорт' }
+      ],
+      transportationTypes: []
+    },
     ensureOpsLoaded,
     getReturnRegisterPairs,
     getRegisters,
@@ -73,6 +86,13 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    parcelStatuses: parcelStatusesRef,
+    ensureLoaded: ensureParcelStatusesLoaded
+  })
+}))
+
 vi.mock('@/router', () => ({
   default: { push: routerPush }
 }))
@@ -100,7 +120,8 @@ vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
       'showActions',
       'selectable',
       'linksEnabled',
-      'selectionDisabled'
+      'selectionDisabled',
+      'showMatchingCount'
     ],
     emits: ['update:selectedIds', 'update:itemsPerPage', 'update:page', 'update:sortBy'],
     methods: {
@@ -134,6 +155,11 @@ vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
           data-testid="table-page"
           @click="$emit('update:page', 2)"
         ></button>
+        <button
+          type="button"
+          data-testid="table-per-page"
+          @click="$emit('update:itemsPerPage', 50)"
+        ></button>
         <div v-for="item in items" :key="item.id" class="v-data-table-row">
           <input
             type="checkbox"
@@ -145,6 +171,7 @@ vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
           />
           <span>{{ item.dealNumber || item.fileName || item.id }}</span>
           <span>{{ item.parcelsTotal }}</span>
+          <span>{{ item.matchingParcelsCount }}</span>
         </div>
       </div>
     `
@@ -181,11 +208,21 @@ function cancelButton(wrapper) {
   return wrapper.find('[data-tooltip="Отменить"]')
 }
 
+function defaultCriteria(overrides = {}) {
+  return {
+    customsProcedureCode: 1,
+    parcelSelectionMode: 1,
+    parcelStatusId: null,
+    ...overrides
+  }
+}
+
 function defaultSourceQuery(overrides = {}) {
   return {
     warehouseId: 1,
     senderCompanyId: 2,
     receiverCompanyId: 3,
+    ...defaultCriteria(),
     whOnly: true,
     returnSourceOnly: true,
     page: 1,
@@ -203,6 +240,10 @@ describe('ReturnRegister_EditDialog.vue', () => {
       { id: 1, name: 'Warehouse One' },
       { id: 2, name: 'Warehouse Two' }
     ]
+    parcelStatusesRef.value = [
+      { id: 5, title: 'Parcel status five' },
+      { id: 6, title: 'Parcel status six' }
+    ]
     ensureWarehousesLoaded.mockReset()
     ensureWarehousesLoaded.mockResolvedValue()
     ensureCountriesLoaded.mockReset()
@@ -211,6 +252,8 @@ describe('ReturnRegister_EditDialog.vue', () => {
     ensureOpsLoaded.mockResolvedValue()
     ensureRegisterStatusesLoaded.mockReset()
     ensureRegisterStatusesLoaded.mockResolvedValue()
+    ensureParcelStatusesLoaded.mockReset()
+    ensureParcelStatusesLoaded.mockResolvedValue()
     getCompaniesAll.mockReset()
     getCompaniesAll.mockResolvedValue()
     getAirportsAll.mockReset()
@@ -229,9 +272,14 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await flushPromises()
 
     expect(ensureWarehousesLoaded).toHaveBeenCalledOnce()
+    expect(ensureParcelStatusesLoaded).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="return-type-select"]').element.value).toBe('1')
+    expect(wrapper.find('[data-testid="selection-mode-select"]').element.value).toBe('1')
+    expect(wrapper.find('[data-testid="parcel-status-select"]').exists()).toBe(false)
     expect(okButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-check-double')
     expect(cancelButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-xmark')
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
+    wrapper.unmount()
   })
 
   it('shows no-selection labels for warehouse and pair selects', async () => {
@@ -256,7 +304,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="warehouse-select"]').element.value).toBe('1')
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1)
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria())
     expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
   })
 
@@ -277,7 +325,8 @@ describe('ReturnRegister_EditDialog.vue', () => {
         senderCompanyId: 2,
         senderCompanyName: 'Sender',
         receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
+        receiverCompanyName: 'Receiver',
+        matchingParcelsCount: 3
       }
     ])
     getRegisters.mockResolvedValueOnce([
@@ -288,13 +337,64 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await flushPromises()
 
     await selectWarehouse(wrapper, 1)
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1)
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria())
     expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender')
-    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver')
+    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver (3)')
 
     await selectPair(wrapper)
     expect(getRegisters).toHaveBeenCalledWith(defaultSourceQuery())
     expect(wrapper.find('[data-testid="registers-table"]').text()).toContain('D-7')
+  })
+
+  it('requires parcel status before loading status-mode pairs', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="selection-mode-select"]').setValue('2')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="parcel-status-select"]').exists()).toBe(true)
+
+    await selectWarehouse(wrapper, 1)
+    expect(getReturnRegisterPairs).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="pair-select"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-testid="parcel-status-select"]').setValue('5')
+    await flushPromises()
+
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria({
+      parcelSelectionMode: 2,
+      parcelStatusId: 5
+    }))
+  })
+
+  it('resets pair, registers, and selection when return-register criteria changes', async () => {
+    getReturnRegisterPairs
+      .mockResolvedValueOnce([
+        { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      ])
+      .mockResolvedValueOnce([
+        { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      ])
+    getRegisters.mockResolvedValueOnce([
+      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', matchingParcelsCount: 2, parcelsTotal: 5 }
+    ])
+
+    const wrapper = mountDialog()
+    await flushPromises()
+    await selectWarehouse(wrapper, 1)
+    await selectPair(wrapper)
+    await wrapper.find('[data-testid="register-checkbox"]').setValue(true)
+    expect(okButton(wrapper).attributes('disabled')).toBeUndefined()
+
+    await wrapper.find('[data-testid="return-type-select"]').setValue('60')
+    await flushPromises()
+
+    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(1, defaultCriteria({
+      customsProcedureCode: 60
+    }))
+    expect(wrapper.find('[data-testid="pair-select"]').element.value).toBe('')
+    expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
+    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
   it('shows source parties as a selectable read-only table with search and sort', async () => {
@@ -315,10 +415,28 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(table.props('showActions')).toBe(false)
     expect(table.props('linksEnabled')).toBe(false)
     expect(table.props('selectable')).toBe(true)
+    expect('showMatchingCount' in table.props()).toBe(true)
 
     await wrapper.find('[data-testid="table-sort"]').trigger('click')
     await flushPromises()
     expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
+      sortBy: 'warehouseArrivalDate',
+      sortOrder: 'asc'
+    }))
+
+    await wrapper.find('[data-testid="table-per-page"]').trigger('click')
+    await flushPromises()
+    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
+      pageSize: 50,
+      sortBy: 'warehouseArrivalDate',
+      sortOrder: 'asc'
+    }))
+
+    await wrapper.find('[data-testid="table-page"]').trigger('click')
+    await flushPromises()
+    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
+      page: 2,
+      pageSize: 50,
       sortBy: 'warehouseArrivalDate',
       sortOrder: 'asc'
     }))
@@ -330,6 +448,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
       await flushPromises()
 
       expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
+        pageSize: 50,
         sortBy: 'warehouseArrivalDate',
         sortOrder: 'asc',
         search: 'deal'
@@ -442,7 +561,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
     await selectWarehouse(wrapper, 2)
 
-    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(2)
+    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(2, defaultCriteria())
     expect(wrapper.find('[data-testid="pair-select"]').element.value).toBe('')
     expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
@@ -501,9 +620,52 @@ describe('ReturnRegister_EditDialog.vue', () => {
       warehouseId: 1,
       senderCompanyId: 2,
       receiverCompanyId: 3,
+      ...defaultCriteria(),
       registerIds: [7, 8]
     })
     expect(routerPush).toHaveBeenCalledWith('/registers/99/parcels?mode=modeWarehouse')
+  })
+
+  it('creates return register with selected type and parcel-status criteria', async () => {
+    getReturnRegisterPairs.mockResolvedValueOnce([
+      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver', matchingParcelsCount: 2 }
+    ])
+    getRegisters.mockResolvedValueOnce([
+      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', matchingParcelsCount: 2, parcelsTotal: 5 }
+    ])
+    createReturnRegister.mockResolvedValueOnce({ id: 100 })
+
+    const wrapper = mountDialog()
+    await flushPromises()
+    await wrapper.find('[data-testid="return-type-select"]').setValue('60')
+    await wrapper.find('[data-testid="selection-mode-select"]').setValue('2')
+    await wrapper.find('[data-testid="parcel-status-select"]').setValue('5')
+    await selectWarehouse(wrapper, 1)
+    await selectPair(wrapper)
+    await wrapper.find('[data-testid="register-checkbox"]').setValue(true)
+    await okButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria({
+      customsProcedureCode: 60,
+      parcelSelectionMode: 2,
+      parcelStatusId: 5
+    }))
+    expect(getRegisters).toHaveBeenCalledWith(defaultSourceQuery({
+      customsProcedureCode: 60,
+      parcelSelectionMode: 2,
+      parcelStatusId: 5
+    }))
+    expect(createReturnRegister).toHaveBeenCalledWith({
+      warehouseId: 1,
+      senderCompanyId: 2,
+      receiverCompanyId: 3,
+      customsProcedureCode: 60,
+      parcelSelectionMode: 2,
+      parcelStatusId: 5,
+      registerIds: [7]
+    })
+    expect(routerPush).toHaveBeenCalledWith('/registers/100/parcels?mode=modeWarehouse')
   })
 
   it('displays create errors', async () => {

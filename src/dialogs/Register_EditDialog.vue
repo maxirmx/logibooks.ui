@@ -27,6 +27,7 @@ import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
+const CUSTOMS_PROCEDURE_RETURN = 1
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -83,14 +84,24 @@ const isComponentMounted = ref(true)
 const isInitializing = ref(true)
 const isSubmitting = ref(false)
 const checkForDuplicates = ref(true)
+const originalCustomsProcedureCode = ref(null)
 const isLoadReportExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
 const isRealWeightEdited = ref(false)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
+const selectedCustomsProcedureCode = computed(() => parseNumber(item.value?.customsProcedureCode, null))
+const selectedWarehouseId = computed(() => parseNumber(item.value?.warehouseId, 0))
+const isReturnProcedureSelected = computed(() => isReturnProcedureCode(selectedCustomsProcedureCode.value))
+const hasEffectiveWarehouse = computed(() => selectedWarehouseId.value > 0)
+const shouldShowEditDuplicateCheck = computed(
+  () => hasProcedureChangedToNonReturn(selectedCustomsProcedureCode.value)
+)
 const warehouseOptions = computed(() => {
   const available = Array.isArray(warehouses.value) ? warehouses.value : []
-  return [{ id: 0, name: 'Не задано' }, ...available]
+  return isReturnProcedureSelected.value
+    ? available
+    : [{ id: 0, name: 'Не задано' }, ...available]
 })
 const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
 const isWbrRegister = computed(() => item.value?.registerType === WBR_COMPANY_ID)
@@ -98,7 +109,7 @@ const isOzonRegister = computed(() => item.value?.registerType === OZON_COMPANY_
 const isWarehouseCapableRegister = computed(() => isWbrRegister.value || isWbr2Register.value || isOzonRegister.value)
 const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
 const selectedCustomsProcedure = computed(() => {
-  const procedureCode = Number(item.value?.customsProcedureCode)
+  const procedureCode = selectedCustomsProcedureCode.value
   return ops.value?.customsProcedures?.find((procedure) => Number(procedure.value) === procedureCode) || null
 })
 const fixedCompanyId = computed(() => {
@@ -214,9 +225,18 @@ const filteredCustomsProcedures = computed(() => {
   const registerType = item.value?.registerType
   return all.filter((procedure) => {
     if (Array.isArray(procedure.allowedRegisterTypes)) {
-      return procedure.allowedRegisterTypes.map(Number).includes(Number(registerType))
+      if (!procedure.allowedRegisterTypes.map(Number).includes(Number(registerType))) {
+        return false
+      }
+    } else if (isGtcRegister.value ? procedure.isGtc !== true : procedure.isGtc === true) {
+      return false
     }
-    return isGtcRegister.value ? procedure.isGtc === true : procedure.isGtc !== true
+
+    if (isReturnProcedureCode(procedure.value)) {
+      return !props.create && hasEffectiveWarehouse.value
+    }
+
+    return true
   })
 })
 
@@ -329,6 +349,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
         item.value.warehouseId = 0
       }
+      originalCustomsProcedureCode.value = parseNumber(item.value.customsProcedureCode, null)
       ensureDefaultOtherCountry()
     } else {
       // Set default values for new records
@@ -353,6 +374,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
         item.value.warehouseId = 0
       }
+      originalCustomsProcedureCode.value = null
       ensureDefaultOtherCountry()
     }
 
@@ -426,7 +448,19 @@ const schema = Yup.object().shape({
     .required('Необходимо выбрать страну'),
   departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
   arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
-  warehouseId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  warehouseId: Yup.number()
+    .transform(parseNumberOrZero)
+    .min(0)
+    .nullable()
+    .test(
+      'return-warehouse-required',
+      'Склад обязателен для процедуры возврата',
+      function (value) {
+        const procedureCode = parseNumber(this?.parent?.customsProcedureCode ?? item.value?.customsProcedureCode, null)
+        const warehouseId = parseNumber(value ?? item.value?.warehouseId, 0)
+        return !isReturnProcedureCode(procedureCode) || warehouseId > 0
+      }
+    ),
   realWeightKg: Yup.number()
     .transform((value, originalValue) => parseNullableDecimal(originalValue))
     .typeError(realWeightValidationMessage)
@@ -508,7 +542,7 @@ watch(typesLoaded, (loaded) => {
   }
 })
 
-function handleProcedureChange(e) {
+function handleProcedureChange(e, setFieldValue) {
   const procedureCode = parseNumber(e.target.value, null)
   item.value.customsProcedureCode = procedureCode
   const proc = procedureCode === null
@@ -516,7 +550,18 @@ function handleProcedureChange(e) {
     : ops.value?.customsProcedures?.find((p) => Number(p.value) === procedureCode)
   isExport.value = Boolean(proc?.isExport)
   isRe.value = Boolean(proc?.isRe)
+  if (hasProcedureChangedToNonReturn(procedureCode)) {
+    checkForDuplicates.value = true
+    item.value.checkForDuplicates = true
+    if (setFieldValue && typeof setFieldValue === 'function') {
+      setFieldValue('checkForDuplicates', true)
+    }
+  }
   updateDirection()
+}
+
+function handleWarehouseChange(e) {
+  item.value.warehouseId = parseNumber(e.target.value, 0)
 }
 
 function getTitle() {
@@ -543,6 +588,19 @@ function parseNumber(value, defaultValue) {
   }
   const parsed = parseInt(value, 10)
   return Number.isNaN(parsed) ? defaultValue : parsed
+}
+
+function isReturnProcedureCode(value) {
+  return parseNumber(value, null) === CUSTOMS_PROCEDURE_RETURN
+}
+
+function hasProcedureChangedToNonReturn(procedureCode) {
+  const parsedProcedureCode = parseNumber(procedureCode, null)
+  return !props.create &&
+    originalCustomsProcedureCode.value !== null &&
+    parsedProcedureCode !== null &&
+    parsedProcedureCode !== originalCustomsProcedureCode.value &&
+    !isReturnProcedureCode(parsedProcedureCode)
 }
 
 function parseDecimal(value, defaultValue) {
@@ -601,6 +659,11 @@ function prepareRegisterPayload(formValues) {
   payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
   payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
   payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
+  if (hasProcedureChangedToNonReturn(payload.customsProcedureCode)) {
+    payload.checkForDuplicates = Boolean(
+      formValues.checkForDuplicates ?? item.value?.checkForDuplicates ?? checkForDuplicates.value ?? true
+    )
+  }
 
   return payload
 }
@@ -973,7 +1036,7 @@ const loadReportFields = computed(() => {
               id="customsProcedureCode"
               class="form-control input"
               :disabled="!proceduresLoaded"
-              @change="handleProcedureChange"
+              @change="(e) => handleProcedureChange(e, setFieldValue)"
             >
               <option value="">Выберите процедуру</option>
               <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
@@ -991,6 +1054,8 @@ const loadReportFields = computed(() => {
               name="warehouseId"
               id="warehouseId"
               class="form-control input"
+              :class="{ 'is-invalid': errors.warehouseId }"
+              @change="handleWarehouseChange"
             >
               <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="warehouse.id">
                 {{ warehouse.name }}
@@ -1022,7 +1087,7 @@ const loadReportFields = computed(() => {
           </div>
         </div>
 
-        <div class="form-row" v-if="props.create">
+        <div class="form-row" v-if="props.create || shouldShowEditDuplicateCheck">
           <div class="form-group">
             <label for="checkForDuplicates" class="custom-checkbox">
               <Field
@@ -1038,7 +1103,7 @@ const loadReportFields = computed(() => {
             </label>
           </div>
 
-          <div class="form-group" v-if="props.mode === OP_MODE_PAPERWORK">
+          <div class="form-group" v-if="props.create && props.mode === OP_MODE_PAPERWORK">
             <label for="transfer2Re" class="custom-checkbox" :class="{ 'disabled': !isRe }">
               <Field
                 id="transfer2Re"
@@ -1055,8 +1120,8 @@ const loadReportFields = computed(() => {
           </div>
         </div>
        
-        <div class="form-row-1" v-if="!props.create && props.mode === OP_MODE_PAPERWORK">
-          <div class="form-group lookup-by-article-group">
+        <div class="form-row" v-if="!props.create && props.mode === OP_MODE_PAPERWORK">
+          <div class="form-group">
             <label class="custom-checkbox">
               <Field
                 id="lookupByArticle"
@@ -1163,6 +1228,7 @@ const loadReportFields = computed(() => {
       <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceNumber }}</div>
       <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceDate }}</div>
       <div v-if="errors.theOtherCountryCode" class="alert alert-danger mt-3 mb-0">{{ errors.theOtherCountryCode }}</div>
+      <div v-if="errors.warehouseId" class="alert alert-danger mt-3 mb-0">{{ errors.warehouseId }}</div>
       <div v-if="errors.realWeightKg" class="alert alert-danger mt-3 mb-0">{{ errors.realWeightKg }}</div>
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
@@ -1314,14 +1380,6 @@ const loadReportFields = computed(() => {
 .form-disabled .feacn-search-wrapper {
   pointer-events: auto;
   opacity: 1;
-}
-
-/* Lookup by article checkbox styling */
-.lookup-by-article-group {
-  width: 100% !important;
-  flex: 1 1 100%;
-  max-width: none !important;
-  margin-top: 1rem;
 }
 
 .custom-checkbox {

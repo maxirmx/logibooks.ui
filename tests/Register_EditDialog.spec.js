@@ -15,6 +15,10 @@ import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } fro
 import { formatDate } from '@/helpers/date.formatters.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
+const CUSTOMS_PROCEDURE_RETURN = 1
+const CUSTOMS_PROCEDURE_EXPORT = 10
+const CUSTOMS_PROCEDURE_IMPORT = 40
+const CUSTOMS_PROCEDURE_GTC_IMPORT = 3
 
 const baseRegisterItem = {
   id: 1,
@@ -22,7 +26,7 @@ const baseRegisterItem = {
   companyId: 2,
   registerType: 2,
   dealNumber: 'D1',
-  customsProcedureCode: 1,
+  customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT,
   transportationTypeCode: 1,
   theOtherCompanyId: null,
   theOtherCountryCode: null,
@@ -41,9 +45,10 @@ const registerItems = ref([])
 
 const mockOps = ref({
   customsProcedures: [
-    { value: 1, charCode: 'ИМ11', name: 'Импорт', isExport: false, isGtc: false },
-    { value: 2, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
-    { value: 3, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
+    { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false },
+    { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
+    { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false },
+    { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
   ],
   transportationTypes: [
     { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -294,9 +299,10 @@ describe('Register_EditDialog', () => {
     ]
     mockOps.value = {
       customsProcedures: [
-        { value: 1, charCode: 'ИМ11', name: 'Импорт', isExport: false, isGtc: false },
-        { value: 2, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
-        { value: 3, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
+        { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false },
+        { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
+        { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false },
+        { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
       ],
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -382,9 +388,10 @@ describe('Register_EditDialog', () => {
 
     mockOps.value = {
       customsProcedures: [
-        { value: 1, charCode: 'ИМ11', name: 'Импорт', isRe: true, isExport: false, isGtc: false },
-        { value: 2, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true, isGtc: false },
-        { value: 3, charCode: 'ГТК1', name: 'ГТК Импорт', isGtc: true }
+        { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isRe: false, isExport: false, isGtc: false },
+        { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true, isGtc: false },
+        { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isRe: true, isExport: false, isGtc: false },
+        { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isGtc: true }
       ],
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -540,7 +547,7 @@ describe('Register_EditDialog', () => {
     expect(recipientGroup.find('.readonly-field').exists()).toBe(true)
 
     const procSelect = wrapper.find('#customsProcedureCode')
-    await procSelect.setValue('2')
+    await procSelect.setValue(String(CUSTOMS_PROCEDURE_EXPORT))
     await procSelect.trigger('change')
     await nextTick()
 
@@ -866,7 +873,7 @@ describe('Register_EditDialog', () => {
     expect(wrapper.text()).toContain('Проверить на дубликаты')
   })
 
-  it('does not render checkForDuplicates checkbox in edit mode', async () => {
+  it('does not render checkForDuplicates checkbox in edit mode before procedure changes', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
       components: { RegisterEditDialog }
@@ -878,6 +885,132 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.find('#checkForDuplicates').exists()).toBe(false)
+  })
+
+  it('hides Return procedure in create mode', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const optionTexts = wrapper
+      .find('#customsProcedureCode')
+      .findAll('option')
+      .filter((option) => option.attributes('value') !== '')
+      .map((option) => option.text())
+    expect(optionTexts).not.toContain('Возврат')
+  })
+
+  it('hides Return procedure in edit mode without warehouse', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      warehouseId: 0
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const optionTexts = wrapper
+      .find('#customsProcedureCode')
+      .findAll('option')
+      .filter((option) => option.attributes('value') !== '')
+      .map((option) => option.text())
+    expect(optionTexts).not.toContain('Возврат')
+  })
+
+  it('offers Return procedure in edit mode with warehouse', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      warehouseId: 10
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const optionTexts = wrapper
+      .find('#customsProcedureCode')
+      .findAll('option')
+      .filter((option) => option.attributes('value') !== '')
+      .map((option) => option.text())
+    expect(optionTexts).toContain('Возврат')
+  })
+
+  it('does not offer empty warehouse while Return procedure is selected', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      customsProcedureCode: CUSTOMS_PROCEDURE_RETURN,
+      warehouseId: 10
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const optionTexts = wrapper
+      .find('#warehouseId')
+      .findAll('option')
+      .map((option) => option.text())
+    expect(optionTexts).not.toContain('Не задано')
+    expect(optionTexts).toContain('Main Warehouse')
+  })
+
+  it('shows checked duplicate option and submits flag after changing to non-Return procedure', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(wrapper.find('#checkForDuplicates').exists()).toBe(false)
+
+    dialog.vm.handleProcedureChange({ target: { value: String(CUSTOMS_PROCEDURE_EXPORT) } }, vi.fn())
+    await nextTick()
+
+    expect(wrapper.find('#checkForDuplicates').exists()).toBe(true)
+    expect(dialog.vm.item.checkForDuplicates).toBe(true)
+
+    update.mockClear()
+    await dialog.vm.onSubmit(
+      { customsProcedureCode: String(CUSTOMS_PROCEDURE_EXPORT) },
+      { setErrors: vi.fn() }
+    )
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
+      checkForDuplicates: true
+    }))
   })
 
   it('renders weight section only in edit mode with approved fields', async () => {
@@ -1358,6 +1491,9 @@ describe('Register_EditDialog', () => {
     expect(lookupCheckbox.exists()).toBe(true)
     expect(lookupCheckbox.attributes('type')).toBe('checkbox')
     expect(lookupCheckbox.classes()).toContain('custom-checkbox-input')
+    expect(lookupCheckbox.element.closest('.form-row')).not.toBeNull()
+    expect(lookupCheckbox.element.closest('.form-group')).not.toBeNull()
+    expect(lookupCheckbox.element.closest('.lookup-by-article-group')).toBeNull()
 
     const label = wrapper.find('.custom-checkbox')
     expect(label.exists()).toBe(true)
@@ -1536,7 +1672,7 @@ describe('Register_EditDialog', () => {
     mockItem.value = {
       ...baseRegisterItem,
       registerType: 2,
-      customsProcedureCode: 1
+      customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT
     }
 
     const Parent = {

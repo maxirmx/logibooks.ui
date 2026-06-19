@@ -5,6 +5,7 @@
 import { formatIntegerThousands } from '@/helpers/number.formatters.js'
 
 export const CUSTOMS_PROCEDURE_RETURN = 1
+export const RETURN_REGISTER_MATCHING_COUNT_HEADER = 'К возврату'
 
 export const warehouseZoneDistribution = [
   { value: 1, label: 'Без зоны' },
@@ -16,7 +17,7 @@ export function isReturnRegister(item) {
   return Number(item?.customsProcedureCode) === CUSTOMS_PROCEDURE_RETURN
 }
 
-export function createWarehouseRegisterHeaders({ showActions = true, selectable = false } = {}) {
+export function createWarehouseRegisterHeaders({ showActions = true, selectable = false, showMatchingCount = false } = {}) {
   return [
     ...(selectable
       ? [{ title: '', key: 'selection', sortable: false, align: 'center', width: '48px' }]
@@ -29,6 +30,9 @@ export function createWarehouseRegisterHeaders({ showActions = true, selectable 
     { title: 'Страны', key: 'countries', sortable: true },
     { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
     { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
+    ...(showMatchingCount
+      ? [{ title: RETURN_REGISTER_MATCHING_COUNT_HEADER, key: 'matchingParcelsCount', sortable: false, align: 'end', minWidth: '120px', width: '120px' }]
+      : []),
     { title: 'Зоны', key: 'parcelsByZone', sortable: false, align: 'end', minWidth: '135px', width: '135px' },
     { title: 'Статус', key: 'statusId', sortable: true },
     { title: 'Склад', key: 'warehouseId', sortable: true },

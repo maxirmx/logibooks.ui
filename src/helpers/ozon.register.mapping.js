@@ -6,7 +6,7 @@ export const ozonRegisterColumnTitles = {
   boxNumber: 'Номер коробки',
   boxCode: 'Код коробки',
   ozonId: 'ID отправления',
-  postingNumber: 'Номер отправления',
+  postingNumber: '№ отправления',
   shipmentWeightKg: 'Вес отправления',
   placesCount: 'Кол-во мест',
   barcode: 'Штрихкод',

@@ -727,10 +727,6 @@ function getGenericTemplateHeaders() {
   user-select: none;
 }
 
-:deep(.selected-parcel-row) {
-  background-color: #b7d5fe !important;
-}
-
 .header-actions-group + .header-actions-group {
   margin-left: 8px;
   padding-left: 8px;

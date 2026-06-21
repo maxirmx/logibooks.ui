@@ -265,11 +265,14 @@ describe('useParcelMultiSelect', () => {
       const opts = makeOptions({
         getBaseRowClass: () => 'order-has-issues'
       })
+      const { handleRowClick, getRowProps } = useParcelMultiSelect(opts)
+
       handleRowClick(clickEvent(), { item: { id: 2 } })
 
       const rowClass = getRowProps({ item: { id: 2 } }).class
       expect(rowClass).toContain('order-has-issues')
       expect(rowClass).toContain('selected-parcel-row')
+    })
   })
 
   describe('selectedItems computed', () => {

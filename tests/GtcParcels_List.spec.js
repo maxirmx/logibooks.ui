@@ -215,10 +215,9 @@ describe('GtcParcels_List.vue', () => {
       markedByFellowItem: true
     })
 
-    const fellowButtons = wrapper
-      .findAllComponents(ActionButton)
-      .filter(button => button.props('tooltipText')?.includes('тем же номером посылки'))
+    const fellowButtons = parcelNumberCell.findAllComponents(ActionButton)
 
+    expect(fellowButtons).toHaveLength(3)
     expect(fellowButtons.map(button => button.props('icon'))).toEqual([
       'fa-solid fa-comment-slash',
       'fa-solid fa-comment-dollar',

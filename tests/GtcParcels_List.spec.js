@@ -228,5 +228,7 @@ describe('GtcParcels_List.vue', () => {
       'orange',
       'blue'
     ])
+
+    wrapper.unmount()
   })
 })

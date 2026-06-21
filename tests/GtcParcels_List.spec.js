@@ -6,6 +6,8 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia } from 'pinia'
 import GtcParcels_List from '@/lists/GtcParcels_List.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
@@ -131,9 +133,30 @@ const globalStubs = {
   PaginationFooter: { template: '<div data-testid="pagination-footer"></div>' }
 }
 
+function createMockItem(overrides = {}) {
+  return {
+    id: 1,
+    postingNumber: 'P-1',
+    lastName: 'Ivanov',
+    firstName: 'Ivan',
+    patronymic: 'Ivanovich',
+    inn: '770123456789',
+    passportSeries: 'AA',
+    passportNumber: '123456',
+    passportIssuedBy: 'ОВД',
+    passportIssueDate: '2020-01-01',
+    fellowItems: [],
+    blockedByFellowItem: false,
+    excsiseByFellowItem: false,
+    markedByFellowItem: false,
+    ...overrides
+  }
+}
+
 describe('GtcParcels_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockItems.value = [createMockItem()]
   })
 
   it('renders INN and formatted combined passport text', async () => {
@@ -162,5 +185,49 @@ describe('GtcParcels_List.vue', () => {
 
     expect(keys).toContain('inn')
     expect(keys.filter(key => key === 'passport' || key.startsWith('passport'))).toEqual(['passport'])
+  })
+
+  it('renders posting-number sibling indicators with the same flags as Ozon parcels', async () => {
+    mockItems.value = [
+      createMockItem({
+        fellowItems: [2, 3, 4],
+        blockedByFellowItem: true,
+        excsiseByFellowItem: true,
+        markedByFellowItem: true
+      })
+    ]
+
+    const wrapper = mount(GtcParcels_List, {
+      props: { registerId: 1 },
+      global: { plugins: [createPinia()], stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    const parcelNumberCell = wrapper.findComponent(ParcelNumberExt)
+    expect(parcelNumberCell.exists()).toBe(true)
+    expect(parcelNumberCell.props('fieldName')).toBe('postingNumber')
+    expect(parcelNumberCell.props('item')).toMatchObject({
+      postingNumber: 'P-1',
+      fellowItems: [2, 3, 4],
+      blockedByFellowItem: true,
+      excsiseByFellowItem: true,
+      markedByFellowItem: true
+    })
+
+    const fellowButtons = wrapper
+      .findAllComponents(ActionButton)
+      .filter(button => button.props('tooltipText')?.includes('тем же номером посылки'))
+
+    expect(fellowButtons.map(button => button.props('icon'))).toEqual([
+      'fa-solid fa-comment-slash',
+      'fa-solid fa-comment-dollar',
+      'fa-solid fa-comment-nodes'
+    ])
+    expect(fellowButtons.map(button => button.props('variant'))).toEqual([
+      'red',
+      'orange',
+      'blue'
+    ])
   })
 })

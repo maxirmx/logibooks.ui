@@ -22,6 +22,8 @@ This file is a part of Logibooks ui application
   --primary-color: #1976d2;
   --primary-color-dark: #1565c0;
   --primary-color-rgb: 25, 118, 210;
+  --parcel-row-selected-bg: #b7d5fe;
+  --parcel-row-selected-hover-bg: #a9caf6;
   --checkbox-label-width: 220px;
 }
 
@@ -951,6 +953,25 @@ a,
 
 .v-data-table__tbody tr.order-has-issues td {
   background-color: transparent !important;
+}
+
+/* Selected parcel rows must remain visible over issue and interlaced row colors. */
+.v-data-table__tbody tr.selected-parcel-row {
+  background-color: var(--parcel-row-selected-bg) !important;
+}
+
+.v-data-table__tbody tr.selected-parcel-row:hover {
+  background-color: var(--parcel-row-selected-hover-bg) !important;
+}
+
+.v-data-table__tbody tr.selected-parcel-row > td,
+.v-data-table__tbody tr.selected-parcel-row .v-data-table__td {
+  background-color: var(--parcel-row-selected-bg) !important;
+}
+
+.v-data-table__tbody tr.selected-parcel-row:hover > td,
+.v-data-table__tbody tr.selected-parcel-row:hover .v-data-table__td {
+  background-color: var(--parcel-row-selected-hover-bg) !important;
 }
 
 /* Custom pagination styling to match Vuetify's default exactly */

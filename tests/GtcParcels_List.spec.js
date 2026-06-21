@@ -160,31 +160,41 @@ describe('GtcParcels_List.vue', () => {
   })
 
   it('renders INN and formatted combined passport text', async () => {
-    const wrapper = mount(GtcParcels_List, {
-      props: { registerId: 1 },
-      global: { plugins: [createPinia()], stubs: globalStubs }
-    })
+    let wrapper
+    try {
+      wrapper = mount(GtcParcels_List, {
+        props: { registerId: 1 },
+        global: { plugins: [createPinia()], stubs: globalStubs }
+      })
 
-    await resolveAll()
+      await resolveAll()
 
-    const text = wrapper.text()
-    expect(text).toContain('770123456789')
-    expect(text).toContain('AA 123456 выдан ОВД 01.01.2020')
+      const text = wrapper.text()
+      expect(text).toContain('770123456789')
+      expect(text).toContain('AA 123456 выдан ОВД 01.01.2020')
+    } finally {
+      wrapper?.unmount()
+    }
   })
 
   it('uses a single combined passport column', async () => {
-    const wrapper = mount(GtcParcels_List, {
-      props: { registerId: 1 },
-      global: { plugins: [createPinia()], stubs: globalStubs }
-    })
+    let wrapper
+    try {
+      wrapper = mount(GtcParcels_List, {
+        props: { registerId: 1 },
+        global: { plugins: [createPinia()], stubs: globalStubs }
+      })
 
-    await resolveAll()
+      await resolveAll()
 
-    const table = wrapper.findComponent({ name: 'v-data-table-server' })
-    const keys = table.props('headers').map(header => header.key)
+      const table = wrapper.findComponent({ name: 'v-data-table-server' })
+      const keys = table.props('headers').map(header => header.key)
 
-    expect(keys).toContain('inn')
-    expect(keys.filter(key => key === 'passport' || key.startsWith('passport'))).toEqual(['passport'])
+      expect(keys).toContain('inn')
+      expect(keys.filter(key => key === 'passport' || key.startsWith('passport'))).toEqual(['passport'])
+    } finally {
+      wrapper?.unmount()
+    }
   })
 
   it('renders posting-number sibling indicators with the same flags as Ozon parcels', async () => {
@@ -197,38 +207,41 @@ describe('GtcParcels_List.vue', () => {
       })
     ]
 
-    const wrapper = mount(GtcParcels_List, {
-      props: { registerId: 1 },
-      global: { plugins: [createPinia()], stubs: globalStubs }
-    })
+    let wrapper
+    try {
+      wrapper = mount(GtcParcels_List, {
+        props: { registerId: 1 },
+        global: { plugins: [createPinia()], stubs: globalStubs }
+      })
 
-    await resolveAll()
+      await resolveAll()
 
-    const parcelNumberCell = wrapper.findComponent(ParcelNumberExt)
-    expect(parcelNumberCell.exists()).toBe(true)
-    expect(parcelNumberCell.props('fieldName')).toBe('postingNumber')
-    expect(parcelNumberCell.props('item')).toMatchObject({
-      postingNumber: 'P-1',
-      fellowItems: [2, 3, 4],
-      blockedByFellowItem: true,
-      excsiseByFellowItem: true,
-      markedByFellowItem: true
-    })
+      const parcelNumberCell = wrapper.findComponent(ParcelNumberExt)
+      expect(parcelNumberCell.exists()).toBe(true)
+      expect(parcelNumberCell.props('fieldName')).toBe('postingNumber')
+      expect(parcelNumberCell.props('item')).toMatchObject({
+        postingNumber: 'P-1',
+        fellowItems: [2, 3, 4],
+        blockedByFellowItem: true,
+        excsiseByFellowItem: true,
+        markedByFellowItem: true
+      })
 
-    const fellowButtons = parcelNumberCell.findAllComponents(ActionButton)
+      const fellowButtons = parcelNumberCell.findAllComponents(ActionButton)
 
-    expect(fellowButtons).toHaveLength(3)
-    expect(fellowButtons.map(button => button.props('icon'))).toEqual([
-      'fa-solid fa-comment-slash',
-      'fa-solid fa-comment-dollar',
-      'fa-solid fa-comment-nodes'
-    ])
-    expect(fellowButtons.map(button => button.props('variant'))).toEqual([
-      'red',
-      'orange',
-      'blue'
-    ])
-
-    wrapper.unmount()
+      expect(fellowButtons).toHaveLength(3)
+      expect(fellowButtons.map(button => button.props('icon'))).toEqual([
+        'fa-solid fa-comment-slash',
+        'fa-solid fa-comment-dollar',
+        'fa-solid fa-comment-nodes'
+      ])
+      expect(fellowButtons.map(button => button.props('variant'))).toEqual([
+        'red',
+        'orange',
+        'blue'
+      ])
+    } finally {
+      wrapper?.unmount()
+    }
   })
 })

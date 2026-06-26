@@ -1,7 +1,7 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
@@ -11,7 +11,13 @@ import {
   applyBulkStatusToAllOrders,
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
-  setBulkStatusSelectedId
+  setBulkStatusSelectedId,
+  startRegisterStatusEditMode,
+  cancelRegisterStatusChange,
+  applyRegisterStatusChange,
+  isRegisterStatusEditMode,
+  getRegisterStatusSelectedId,
+  setRegisterStatusSelectedId
 } from '@/helpers/registers.list.helpers.js'
 import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
@@ -24,26 +30,16 @@ import { useAirportsStore } from '@/stores/airports.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
-import { formatDate } from '@/helpers/date.formatters.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useConfirm } from 'vuetify-use-dialog'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
-import ClickableCell from '@/components/ClickableCell.vue'
-import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
-import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
-
-import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
-import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
-import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
+import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
 
 const registersStore = useRegistersStore()
-const { items, loading, totalCount, ops } = storeToRefs(registersStore)
+const { items, loading, totalCount } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
 const registerStatusesStore = useRegisterStatusesStore()
@@ -56,10 +52,7 @@ const companiesStore = useCompaniesStore()
 const { companies } = storeToRefs(companiesStore)
 
 const countriesStore = useCountriesStore()
-const { countries } = storeToRefs(countriesStore)
-
 const airportsStore = useAirportsStore()
-const { airports } = storeToRefs(airportsStore)
 
 const alertStore = useAlertStore()
 const { alert } = storeToRefs(alertStore)
@@ -77,8 +70,9 @@ const {
   registers_search: paperworkRegistersSearch,
   registers_sort_by: paperworkRegistersSortBy,
   registers_page: paperworkRegistersPage,
-  isShiftLeadPlus, 
-  isSrLogistPlus } = storeToRefs(authStore)
+  isShiftLeadPlus,
+  isSrLogistPlus
+} = storeToRefs(authStore)
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
@@ -90,12 +84,14 @@ const registers_search = paperworkRegistersSearch
 const registers_sort_by = paperworkRegistersSortBy
 const registers_page = paperworkRegistersPage
 
-// State for bulk status change
 const bulkStatusState = reactive({})
+const registerStatusState = reactive({})
 
-// Local search variable and loading state for debounced calls
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
+
+const parcelStatusOptions = computed(() => unref(parcelStatusesStore.parcelStatuses) || [])
+const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
 
 const uploadMenuOptions = computed(() => {
   if (!companies.value) return []
@@ -116,7 +112,6 @@ const uploadMenuOptions = computed(() => {
 
 const isUploadDisabled = computed(() => uploadMenuOptions.value.length === 0)
 
-// Bulk status change functions - using helpers
 function bulkChangeStatus(registerId) {
   toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
 }
@@ -136,7 +131,6 @@ async function applyStatusToAllOrders(registerId, statusId) {
   )
 }
 
-// Helper wrapper functions for template
 function isInEditMode(registerId) {
   return isBulkStatusEditMode(registerId, bulkStatusState)
 }
@@ -149,7 +143,43 @@ function setSelectedStatusId(registerId, statusId) {
   setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
 }
 
-// Function to get customer name by customerId
+function startRegisterStatusChange(registerId, currentStatusId) {
+  startRegisterStatusEditMode(
+    registerId,
+    currentStatusId,
+    registerStatusState,
+    runningAction.value || loading.value
+  )
+}
+
+function cancelRegisterStatusEdit(registerId) {
+  cancelRegisterStatusChange(registerId, registerStatusState)
+}
+
+async function applyRegisterStatusToRegister(registerId, statusId, currentStatusId) {
+  await applyRegisterStatusChange(
+    registerId,
+    statusId,
+    currentStatusId,
+    registerStatusState,
+    registersStore,
+    alertStore,
+    { mode: OP_MODE_PAPERWORK }
+  )
+}
+
+function isInRegisterStatusEditMode(registerId) {
+  return isRegisterStatusEditMode(registerId, registerStatusState)
+}
+
+function getSelectedRegisterStatusId(registerId) {
+  return getRegisterStatusSelectedId(registerId, registerStatusState)
+}
+
+function setSelectedRegisterStatusId(registerId, statusId) {
+  setRegisterStatusSelectedId(registerId, statusId, registerStatusState)
+}
+
 function getCustomerName(customerId) {
   if (!customerId || !companies?.value) return 'Неизвестно'
   const company = companies.value.find((c) => c.id === customerId)
@@ -157,93 +187,19 @@ function getCustomerName(customerId) {
   return company.shortName || company.name || 'Неизвестно'
 }
 
-
-// Helper functions to get country short names (reactive to countries store changes)
-function getCountryShortName(countryCode) {
-  if (!countryCode || !countries?.value) return 'Неизвестно'
-  const num = Number(countryCode)
-  if (num == 643) return 'Россия' // Special case for Russia
-  const country = countries.value.find(c => c.isoNumeric === num)
-  if (!country) return countryCode
-  return country.nameRuShort || country.nameRuOfficial || countryCode
-}
-
-
-const transportationTypesById = computed(() => {
-  if (!Array.isArray(ops.value?.transportationTypes)) return new Map()
-  return new Map(ops.value.transportationTypes.map(type => [Number(type.value), type]))
-})
-
-const airportsById = computed(() => {
-  if (!Array.isArray(airports.value)) return new Map()
-  return new Map(airports.value.map(airport => [airport.id, airport]))
-})
-
-function isAviaTransportation(item) {
-  const typeId = Number(item?.transportationTypeCode)
-  if (typeId == null || isNaN(typeId)) return false
-  const type = transportationTypesById.value.get(typeId)
-  return type?.isAvia || false
-}
-
-function getAirportIata(airportId) {
-  const id = Number(airportId)
-  if (!id) return null
-  const airport = airportsById.value.get(id)
-  return airport?.codeIata || null
-}
-
-function getCountryDisplayName(item, countryCode, airportId) {
-  const countryName = getCountryShortName(countryCode)
-  if (!isAviaTransportation(item)) {
-    return countryName
-  }
-
-  const airportCode = getAirportIata(airportId)
-  if (!airportCode) {
-    return countryName
-  }
-
-  return `${countryName} (${airportCode})`
-}
-
-function parseWeightValue(value) {
-  if (value === null || value === undefined) return null
-  if (typeof value === 'string' && value.trim() === '') return null
-  const numericValue = typeof value === 'string'
-    ? Number(value.trim().replace(/\u00A0|\s/g, '').replace(',', '.'))
-    : Number(value)
-  return Number.isFinite(numericValue) ? numericValue : null
-}
-
-function hasRealWeightKg(item) {
-  const realWeightKg = parseWeightValue(item?.realWeightKg)
-  return realWeightKg !== null && realWeightKg > 0
-}
-
-function getRegisterStatus(item) {
-  return registerStatusesStore.getStatusById(item?.statusId)
-}
-
-function getRegisterStatusTitle(item) {
-  const status = getRegisterStatus(item)
-  return status?.title || (item?.statusId ? registerStatusesStore.getStatusTitle(item.statusId) : null)
-}
-
-// Load companies and parcel statuses on component mount
 onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
-    
+
     await parcelStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
     await registerStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-     
+
     await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
@@ -369,23 +325,10 @@ async function deleteRegister(item) {
   }
 }
 
-const headers = [
-  { title: '', key: 'actions', sortable: false, align: 'center' },
-  { title: 'Номер сделки', key: 'dealNumber', sortable: true },
-  { title: 'ТСД', key: 'invoice', sortable: true },
-  { title: 'Страны', key: 'countries', sortable: true },
-  { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
-  { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
-  { title: 'Вес, кг, общий / К оформлению', key: 'weight', sortable: true, align: 'end', minWidth: '220px', width: '220px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
-  { title: 'Дата загрузки', key: 'date', sortable: true }
-]
-
 defineExpose({
   validationState,
   progressPercent
 })
-
 </script>
 
 <template>
@@ -431,279 +374,36 @@ defineExpose({
       />
     </div>
 
-    <v-card class="table-card">
-      <v-data-table-server
-        v-model:items-per-page="registers_per_page"
-        :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
-        v-model:page="registers_page"
-        v-model:sort-by="registers_sort_by"
-        :headers="headers"
-        :items="items"
-        :items-length="totalCount"
-        :loading="loading || isInitializing"
-        density="compact"
-        class="elevation-1 interlaced-table"
-        fixed-header
-      >
-        <template #[`item.dealNumber`]="{ item }">
-          
-          <ClickableCell 
-            :item="item" 
-            :display-value="item.dealNumber" 
-            cell-class="truncated-cell clickable-cell open-parcels-link" 
-            @click="openParcels" 
-          />
-          <font-awesome-icon class="bookmark-icon" icon="fa-solid fa-bookmark" v-if="item?.lookupByArticle" />
-        </template>
+    <CustomsProcessingRegistersTable
+      v-model:items-per-page="registers_per_page"
+      v-model:page="registers_page"
+      v-model:sort-by="registers_sort_by"
+      :items="items"
+      :items-length="totalCount"
+      :loading="loading || isInitializing"
+      :running-action="runningAction"
+      :is-shift-lead-plus="isShiftLeadPlus"
+      :is-sr-logist-plus="isSrLogistPlus"
+      :status-options="parcelStatusOptions"
+      :is-in-edit-mode="isInEditMode"
+      :get-selected-status-id="getSelectedStatusId"
+      :set-selected-status-id="setSelectedStatusId"
+      :bulk-change-status="bulkChangeStatus"
+      :cancel-status-change="cancelStatusChange"
+      :apply-status-to-all-orders="applyStatusToAllOrders"
+      :register-status-options="registerStatusOptions"
+      :can-change-register-status="isSrLogistPlus"
+      :is-register-status-edit-mode="isInRegisterStatusEditMode"
+      :get-selected-register-status-id="getSelectedRegisterStatusId"
+      :set-selected-register-status-id="setSelectedRegisterStatusId"
+      :start-register-status-change="startRegisterStatusChange"
+      :cancel-register-status-change="cancelRegisterStatusEdit"
+      :apply-register-status-change="applyRegisterStatusToRegister"
+      @open-parcels="openParcels"
+      @edit-register="editRegister"
+      @delete-register="deleteRegister"
+    />
 
-        <template #[`item.invoice`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            cell-class="truncated-cell clickable-cell open-parcels-link invoice-panel" 
-            @click="openParcels" 
-          >
-            <template #default>
-              <RegisterInvoiceCell
-                :item="item"
-                :get-transportation-document="registersStore.getTransportationDocument"
-              />
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`item.countries`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link countries-panel" 
-            @click="editRegister" 
-          >
-            <template #default>
-              <div class="countries-box">
-                <div class="customs-procedure">{{ registersStore.getOpsLabel(ops.customsProcedures, item.customsProcedureCode) }}</div>
-                <div class="country-route">
-                  <span>{{ getCountryDisplayName(item, item.origCountryCode, item.departureAirportId) }}</span>
-                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-                  <span>{{ getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId) }}</span>
-                </div>
-              </div>
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`item.senderRecipient`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            cell-class="truncated-cell clickable-cell edit-register-link data-panel" 
-            @click="editRegister" 
-          >
-            <template #default>
-              <SenderRecipientCell :item="item" :companies="companies" />
-            </template>
-          </ClickableCell>
-        </template>
-        <template #[`item.date`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="formatDate(item.date)" 
-            cell-class="truncated-cell clickable-cell edit-register-link" 
-            @click="editRegister" 
-          />
-        </template>
-        <template #[`item.parcelsTotal`]="{ item }">
-          <v-tooltip>
-            <template #activator="{ props }">
-              <ClickableCell
-                v-bind="props"
-                :item="item"
-                cell-class="truncated-cell clickable-cell data-panel numeric-panel"
-                @click="openParcels"
-              >
-                <template #default>
-                  <div class="data-box">
-                      <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
-                      <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
-                  </div>
-                </template>
-              </ClickableCell>
-            </template>
-            <template #default>
-              <div style="white-space: pre-line">{{ formatParcelsByCheckStatusTooltip(item) }}</div>
-            </template>
-          </v-tooltip>
-        </template>
-
-        <template #[`item.weight`]="{ item }">
-          <ClickableCell
-            :item="item"
-            cell-class="truncated-cell clickable-cell data-panel numeric-panel"
-            @click="editRegister"
-          >
-            <template #default>
-              <div class="data-box weight-box" data-testid="register-weight-cell">
-                <div class="weight-line">{{ formatWeight(item.totalWeightKg) }}</div>
-                <div
-                  v-if="hasRealWeightKg(item)"
-                  class="weight-line weight-real-route"
-                >
-                  <span>{{ formatWeight(item.totalWeightKgToRelease) }}</span>
-                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon" />
-                  <span>{{ formatWeight(item.realWeightKg) }}</span>
-                </div>
-                <div v-else class="weight-line">{{ formatWeight(item.totalWeightKgToRelease) }}</div>
-              </div>
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`item.price`]="{ item }">
-          <ClickableCell
-            :item="item"
-            cell-class="truncated-cell clickable-cell data-panel numeric-panel"
-            @click="editRegister"
-          >
-            <template #default>
-              <div class="data-box">
-                <div>{{ formatPrice(item.totalPrice) }}</div>
-                <div>{{ formatPrice(item.totalPriceToRelease) }}</div>
-              </div>
-            </template>
-          </ClickableCell>
-        </template>
-
-        <template #[`header.dealNumber`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Номер', 'сделки']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.senderRecipient`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Отправитель', 'Получатель']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.parcelsTotal`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Товаров', 'Посылок']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.weight`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Вес, кг, общий', 'К оформлению']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.price`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Стоимость общая', 'К оформлению']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`header.date`]="{ column, isSorted, getSortIcon }">
-          <SortableMultilineHeader
-            :lines="['Дата', 'загрузки']"
-            :column="column"
-            :is-sorted="isSorted"
-            :get-sort-icon="getSortIcon"
-          />
-        </template>
-
-        <template #[`item.actions`]="{ item }">
-          <div class="actions-container">
-            <button
-              type="button"
-              class="register-status-action-button"
-              :aria-label="`Редактировать ${registerNouns.accusative}`"
-              :title="getRegisterStatusTitle(item)"
-              :disabled="runningAction || loading"
-              @click="editRegister(item)"
-            >
-              <RegisterStatusIcon :status="getRegisterStatus(item)" />
-            </button>
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-list" 
-              tooltip-text="Список посылок" 
-              @click="openParcels" 
-              :disabled="runningAction || loading" 
-            />
-            <ActionButton  v-if="isSrLogistPlus"
-              :item="item"
-              icon="fa-solid fa-pen"
-              :tooltip-text="`Редактировать ${registerNouns.accusative}`"
-              @click="editRegister"
-              :disabled="runningAction || loading"
-            />
-            
-            <div class="bulk-status-inline" v-if="isSrLogistPlus">
-              <div v-if="isInEditMode(item.id)" class="status-selector-inline">
-                <v-select 
-                  :model-value="getSelectedStatusId(item.id)" 
-                  @update:model-value="(value) => setSelectedStatusId(item.id, value)"
-                  :items="parcelStatusesStore.parcelStatuses" 
-                  item-title="title" 
-                  item-value="id" 
-                  placeholder="Статус" 
-                  variant="outlined" 
-                  density="compact" 
-                  hide-details 
-                  hide-no-data 
-                  :disabled="runningAction || loading" 
-                />
-                <ActionButton 
-                  :item="item" 
-                  icon="fa-solid fa-check" 
-                  tooltip-text="Применить статус" 
-                  :disabled="runningAction || loading || !getSelectedStatusId(item.id)" 
-                  @click="() => applyStatusToAllOrders(item.id, getSelectedStatusId(item.id))" 
-                />
-                <ActionButton 
-                  :item="item" 
-                  icon="fa-solid fa-xmark" 
-                  tooltip-text="Отменить" 
-                  :disabled="runningAction || loading" 
-                  @click="() => cancelStatusChange(item.id)" 
-                />
-              </div>
-              <ActionButton 
-                v-else 
-                :item="item" 
-                icon="fa-solid fa-pen-to-square" 
-                :tooltip-text="`Изменить статус всех посылок в ${registerNouns.prepositional}`"
-                :disabled="runningAction || loading" 
-                @click="() => bulkChangeStatus(item.id)" 
-              />
-            </div>
-            <ActionButton
-              v-if="isShiftLeadPlus"
-              :item="item"
-              icon="fa-solid fa-trash-can"
-              :tooltip-text="`Удалить ${registerNouns.accusative}`"
-              @click="deleteRegister"
-              :disabled="runningAction || loading"
-            />
-          </div>
-        </template>
-      </v-data-table-server>
-    </v-card>
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
@@ -713,164 +413,4 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
-
-.bulk-status-container {
-  min-width: 60px;
-  padding: 2px;
-  transition: min-width 0.2s ease;
-}
-
-.bulk-status-container:has(.status-selector) {
-  min-width: 200px;
-}
-
-.status-selector {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.status-selector .v-select {
-  font-size: 0.875rem;
-}
-
-.status-selector .v-select :deep(.v-field__input) {
-  font-size: 0.875rem;
-  min-height: 32px;
-}
-
-.status-selector .v-select :deep(.v-field__field) {
-  font-size: 0.875rem;
-}
-
-.status-selector .v-select :deep(.v-list-item) {
-  font-size: 0.875rem;
-  min-height: 36px;
-}
-
-.status-selector .v-select :deep(.v-list-item__title) {
-  font-size: 0.875rem;
-}
-
-.arrow-icon {
-  opacity: 0.8;
-}
-
-/* Bookmark icon placed in table cell: green and aligned to right */
-.bookmark-icon {
-  color: #28a745; /* green */
-  margin-right: 0;
-  margin-left: 8px;
-  margin-top: 2px;
-  opacity: 0.95;
-}
-
-.bookmark-icon:hover {
-  color: #218838;
-}
-
-/* Invoice panel: fixed width, two lines with smaller date font */
-.invoice-panel .invoice-box {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.invoice-panel .invoice-number {
-  font-size: 0.95rem;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.invoice-panel .invoice-date {
-  font-size: 0.78rem;
-  margin-top: 4px;
-}
-
-/* Data panel styling  */
-.data-panel .data-box {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  margin-top: 4px;
-}
-
-.data-panel .data-box > div {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.weight-real-route {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  max-width: 100%;
-}
-
-.weight-real-route .arrow-icon {
-  flex-shrink: 0;
-}
-
-/* Right-align numeric stacked panels */
-.numeric-panel .data-box {
-  align-items: flex-end;
-  text-align: right;
-}
-
-/* Countries panel styling */
-.countries-panel .countries-box {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  margin-top: 4px;
-}
-
-.countries-panel .customs-procedure {
-  font-size: 0.9rem;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-}
-
-.countries-panel .country-route {
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.register-status-action-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  margin-left: 1px;
-  color: rgb(75, 75, 75);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.register-status-action-button:hover:not(:disabled) {
-  transform: scale(1.1);
-}
-
-.register-status-action-button:focus {
-  outline: none;
-}
-
-.register-status-action-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.register-status-action-button :deep(.register-status-icon) {
-  width: 2rem;
-  height: 2rem;
-}
-
 </style>

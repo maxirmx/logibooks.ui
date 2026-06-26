@@ -296,6 +296,7 @@ defineExpose({
       :bulk-change-status="bulkChangeStatus"
       :cancel-status-change="cancelStatusChange"
       :apply-status-to-all-orders="applyStatusToAllOrders"
+      show-register-status-icon
       @open-parcels="openParcels"
       @edit-register="editRegister"
       @delete-register="deleteRegister"

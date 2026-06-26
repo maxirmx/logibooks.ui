@@ -28,6 +28,7 @@ import {
 import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
+import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
 import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 
@@ -55,6 +56,7 @@ const props = defineProps({
   bulkChangeStatus: { type: Function, default: () => {} },
   cancelStatusChange: { type: Function, default: () => {} },
   applyStatusToAllOrders: { type: Function, default: () => {} },
+  showRegisterStatusIcon: { type: Boolean, default: false },
   showMatchingCount: { type: Boolean, default: false }
 })
 
@@ -157,6 +159,10 @@ function emitEditRegister(item) {
 function formatMatchingParcelsCount(item) {
   const count = Number(item?.matchingParcelsCount ?? 0)
   return Number.isFinite(count) && count > 0 ? formatIntegerThousands(count) : '-'
+}
+
+function getRegisterStatus(item) {
+  return registerStatusesStore.getStatusById(item?.statusId)
 }
 
 </script>
@@ -406,6 +412,22 @@ function formatMatchingParcelsCount(item) {
 
       <template v-if="showActions" #[`item.actions`]="{ item }">
         <div class="actions-container">
+          <button
+            v-if="showRegisterStatusIcon && linksEnabled"
+            type="button"
+            class="register-status-action-button"
+            :aria-label="`Редактировать ${registerNouns.accusative}`"
+            :disabled="runningAction || loading"
+            @click="emitEditRegister(item)"
+          >
+            <RegisterStatusIcon :status="getRegisterStatus(item)" />
+          </button>
+          <span
+            v-else-if="showRegisterStatusIcon"
+            class="register-status-action-button register-status-action-button--readonly"
+          >
+            <RegisterStatusIcon :status="getRegisterStatus(item)" />
+          </span>
           <ActionButton
             :item="item"
             icon="fa-solid fa-list"
@@ -512,6 +534,41 @@ function formatMatchingParcelsCount(item) {
 
 .arrow-icon {
   opacity: 0.8;
+}
+
+.register-status-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-left: 1px;
+  color: rgb(75, 75, 75);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.register-status-action-button:hover:not(:disabled):not(.register-status-action-button--readonly) {
+  transform: scale(1.1);
+}
+
+.register-status-action-button:focus {
+  outline: none;
+}
+
+.register-status-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.register-status-action-button--readonly {
+  cursor: default;
+}
+
+.register-status-action-button :deep(.register-status-icon) {
+  width: 2rem;
+  height: 2rem;
 }
 
 .bookmark-icon {

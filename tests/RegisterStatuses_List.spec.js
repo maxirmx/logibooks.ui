@@ -33,9 +33,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockRegisterStatuses = ref([
-  { id: 1, title: 'Черновик' },
-  { id: 2, title: 'Подтвержден' },
-  { id: 3, title: 'Выполнен' }
+  { id: 1, title: 'Черновик', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
+  { id: 2, title: 'Подтвержден', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+  { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
 ])
 
 // Mock stores
@@ -104,9 +104,9 @@ describe('RegisterStatuses_List.vue', () => {
 
     // Reset reactive data
     mockRegisterStatuses.value = [
-      { id: 1, title: 'Черновик' },
-      { id: 2, title: 'Подтвержден' },
-      { id: 3, title: 'Выполнен' }
+      { id: 1, title: 'Черновик', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
+      { id: 2, title: 'Подтвержден', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+      { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
     ]
 
     wrapper = mount(RegisterStatusesList, {
@@ -176,6 +176,15 @@ describe('RegisterStatuses_List.vue', () => {
       expect(wrapper.vm.deleteRegisterStatus).toBeDefined()
       expect(typeof wrapper.vm.openEditDialog).toBe('function')
       expect(typeof wrapper.vm.deleteRegisterStatus).toBe('function')
+    })
+
+    it('opens edit dialog when the status icon column is clicked', async () => {
+      const iconButton = wrapper.find('.status-icon-button')
+
+      expect(iconButton.exists()).toBe(true)
+      await iconButton.trigger('click')
+
+      expect(mockPush).toHaveBeenCalledWith('/registerstatus/edit/1')
     })
   })
 
@@ -280,6 +289,7 @@ describe('RegisterStatuses_List.vue', () => {
       const headers = wrapper.vm.headers
       expect(headers).toEqual([
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
+        { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
         { title: 'Название статуса', key: 'title', sortable: true }
       ])
     })

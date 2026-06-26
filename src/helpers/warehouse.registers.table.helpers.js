@@ -17,7 +17,11 @@ export function isReturnRegister(item) {
   return Number(item?.customsProcedureCode) === CUSTOMS_PROCEDURE_RETURN
 }
 
-export function createWarehouseRegisterHeaders({ showActions = true, selectable = false, showMatchingCount = false } = {}) {
+export function createWarehouseRegisterHeaders({
+  showActions = true,
+  selectable = false,
+  showMatchingCount = false
+} = {}) {
   return [
     ...(selectable
       ? [{ title: '', key: 'selection', sortable: false, align: 'center', width: '48px' }]

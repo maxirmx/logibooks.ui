@@ -110,11 +110,12 @@ const warehousesStore = createMockStore({
 })
 const registerStatusesStore = createMockStore({
   registerStatuses: [
-    { id: 1, title: 'New' },
-    { id: 2, title: 'In Progress' },
-    { id: 3, title: 'Completed' }
+    { id: 1, title: 'New', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
+    { id: 2, title: 'In Progress', icon: 'fa-solid fa-truck-fast', bkColor: '#FFEEDD', fgColor: '#111111' },
+    { id: 3, title: 'Completed', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' }
   ],
   ensureLoaded: vi.fn(() => Promise.resolve()),
+  getStatusById: vi.fn(id => registerStatusesStore.registerStatuses.find(status => status.id === id) || null),
   getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Unknown')
 })
 const mockIsAdmin = ref(true)
@@ -338,6 +339,48 @@ describe('Register_EditDialog', () => {
     const arrivalSelect = wrapper.find('select#arrivalAirportId')
     expect(arrivalSelect.exists()).toBe(true)
     expect(wrapper.find('#warehouseId').exists()).toBe(true)
+  })
+
+  it('renders register status icons in the status selector', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: 2
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub,
+          'v-select': {
+            props: ['modelValue', 'items'],
+            template: `
+              <div id="statusId" data-testid="register-status-select">
+                <slot
+                  name="selection"
+                  :item="{ raw: items.find(item => Number(item.id) === Number(modelValue)) || items[0] }"
+                />
+                <div v-for="option in items" :key="option.id" data-testid="register-status-option">
+                  <slot name="item" :props="{}" :item="{ raw: option }" />
+                </div>
+              </div>
+            `
+          }
+        }
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('In Progress')
+    expect(wrapper.text()).toContain('Completed')
+    expect(wrapper.findAll('[data-testid="register-status-icon"]').length).toBeGreaterThanOrEqual(3)
   })
 
   it('enables airport selectors when aviation transport is selected', async () => {

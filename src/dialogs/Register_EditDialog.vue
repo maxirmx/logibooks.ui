@@ -26,6 +26,7 @@ import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.helpers.js'
+import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
 
@@ -564,6 +565,22 @@ function handleWarehouseChange(e) {
   item.value.warehouseId = parseNumber(e.target.value, 0)
 }
 
+function getStatusFieldValue(fieldValue) {
+  return parseNumber(fieldValue ?? item.value?.statusId, null)
+}
+
+function getRegisterStatus(statusId) {
+  return registerStatusesStore.getStatusById(statusId)
+}
+
+function handleRegisterStatusChange(value, handleChange) {
+  const statusId = parseNumber(value, null)
+  if (item.value) {
+    item.value.statusId = statusId
+  }
+  handleChange(statusId)
+}
+
 function getTitle() {
   return props.create
     ? `Загрузка ${registerNouns.value.genitiveSingular}`
@@ -889,15 +906,32 @@ const loadReportFields = computed(() => {
           </div>
           <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
-            <Field
-              as="select"
-              name="statusId"
-              id="statusId"
-              class="form-control input"
-            >
-              <option v-for="s in registerStatusesStore.registerStatuses" :key="s.id" :value="s.id">
-                {{ s.title }}
-              </option>
+            <Field name="statusId" v-slot="{ field, handleChange }">
+              <v-select
+                id="statusId"
+                :model-value="getStatusFieldValue(field?.value)"
+                :items="registerStatusesStore.registerStatuses"
+                item-title="title"
+                item-value="id"
+                class="register-status-select"
+                variant="outlined"
+                density="compact"
+                hide-details
+                @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
+              >
+                <template #selection="{ item: selectedItem }">
+                  <div class="register-status-select-row">
+                    <RegisterStatusIcon :status="selectedItem?.raw" size="sm" />
+                    <span>{{ selectedItem?.raw?.title }}</span>
+                  </div>
+                </template>
+                <template #item="{ props: itemProps, item: option }">
+                  <div class="register-status-select-row register-status-select-option" v-bind="itemProps">
+                    <RegisterStatusIcon :status="option?.raw" size="sm" />
+                    <span>{{ option?.raw?.title }}</span>
+                  </div>
+                </template>
+              </v-select>
             </Field>
           </div>
         </div>
@@ -1446,6 +1480,25 @@ const loadReportFields = computed(() => {
 
 .custom-checkbox.disabled .custom-checkbox-box {
   background-color: #ccc;
+}
+
+.register-status-select-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.register-status-select-option {
+  display: flex;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+}
+
+.register-status-select :deep(.register-status-icon) {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 #fileName.readonly-field { 

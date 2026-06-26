@@ -26,7 +26,7 @@ import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.helpers.js'
-import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
+import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
 
@@ -569,65 +569,6 @@ function getStatusFieldValue(fieldValue) {
   return parseNumber(fieldValue ?? item.value?.statusId, null)
 }
 
-function normalizeRegisterStatus(status) {
-  if (!status || typeof status !== 'object') {
-    return null
-  }
-
-  return {
-    ...status,
-    id: status.id ?? status.Id,
-    title: status.title ?? status.Title,
-    icon: status.icon ?? status.Icon ?? null,
-    bkColor: status.bkColor ?? status.BkColor ?? null,
-    fgColor: status.fgColor ?? status.FgColor ?? null
-  }
-}
-
-function getRegisterStatus(statusId) {
-  return normalizeRegisterStatus(registerStatusesStore.getStatusById(parseNumber(statusId, statusId)))
-}
-
-function isRegisterStatusDto(value) {
-  return Boolean(value && typeof value === 'object' && (
-    Object.prototype.hasOwnProperty.call(value, 'id') ||
-    Object.prototype.hasOwnProperty.call(value, 'Id') ||
-    Object.prototype.hasOwnProperty.call(value, 'icon') ||
-    Object.prototype.hasOwnProperty.call(value, 'Icon') ||
-    Object.prototype.hasOwnProperty.call(value, 'bkColor') ||
-    Object.prototype.hasOwnProperty.call(value, 'BkColor') ||
-    Object.prototype.hasOwnProperty.call(value, 'fgColor') ||
-    Object.prototype.hasOwnProperty.call(value, 'FgColor')
-  ))
-}
-
-function getRegisterStatusSelectItem(selectItem) {
-  const raw = selectItem?.raw ?? selectItem
-  if (raw === null || raw === undefined || raw === '') {
-    return null
-  }
-
-  if (isRegisterStatusDto(raw)) {
-    return normalizeRegisterStatus(raw)
-  }
-
-  if (typeof raw === 'object') {
-    if (raw.raw !== undefined) {
-      return getRegisterStatusSelectItem(raw.raw)
-    }
-
-    if (raw.value !== undefined) {
-      return getRegisterStatus(raw.value)
-    }
-  }
-
-  return getRegisterStatus(raw)
-}
-
-function getRegisterStatusSelectTitle(selectItem) {
-  return getRegisterStatusSelectItem(selectItem)?.title || ''
-}
-
 function handleRegisterStatusChange(value, handleChange) {
   const statusId = parseNumber(value, null)
   if (item.value) {
@@ -962,31 +903,15 @@ const loadReportFields = computed(() => {
           <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
-              <v-select
+              <RegisterStatusSelect
                 id="statusId"
                 :model-value="getStatusFieldValue(field?.value)"
                 :items="registerStatusesStore.registerStatuses"
-                item-title="title"
-                item-value="id"
-                class="register-status-select"
                 variant="outlined"
                 density="compact"
                 hide-details
                 @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
-              >
-                <template #selection="{ item: selectedItem }">
-                  <div class="register-status-select-row">
-                    <RegisterStatusIcon :status="getRegisterStatusSelectItem(selectedItem)" size="sm" />
-                    <span>{{ getRegisterStatusSelectTitle(selectedItem) }}</span>
-                  </div>
-                </template>
-                <template #item="{ props: itemProps, item: option }">
-                  <div class="register-status-select-row register-status-select-option" v-bind="itemProps">
-                    <RegisterStatusIcon :status="getRegisterStatusSelectItem(option)" size="sm" />
-                    <span>{{ getRegisterStatusSelectTitle(option) }}</span>
-                  </div>
-                </template>
-              </v-select>
+              />
             </Field>
           </div>
         </div>
@@ -1535,25 +1460,6 @@ const loadReportFields = computed(() => {
 
 .custom-checkbox.disabled .custom-checkbox-box {
   background-color: #ccc;
-}
-
-.register-status-select-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.register-status-select-option {
-  display: flex;
-  width: 100%;
-  padding: 0.375rem 0.75rem;
-  cursor: pointer;
-}
-
-.register-status-select :deep(.register-status-icon) {
-  width: 1.75rem;
-  height: 1.75rem;
 }
 
 #fileName.readonly-field { 

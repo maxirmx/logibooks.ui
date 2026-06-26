@@ -166,6 +166,120 @@ export function setBulkStatusSelectedId(registerId, statusId, bulkStatusState) {
   bulkStatusState[registerId].selectedStatusId = statusId
 }
 
+export function initializeRegisterStatusState(registerId, registerStatusState) {
+  if (!registerStatusState[registerId]) {
+    registerStatusState[registerId] = {
+      editMode: false,
+      selectedStatusId: null,
+      originalStatusId: null
+    }
+  }
+}
+
+export function startRegisterStatusEditMode(
+  registerId,
+  currentStatusId,
+  registerStatusState,
+  loading
+) {
+  if (loading) {
+    return
+  }
+
+  initializeRegisterStatusState(registerId, registerStatusState)
+
+  registerStatusState[registerId] = {
+    editMode: true,
+    selectedStatusId: currentStatusId ?? null,
+    originalStatusId: currentStatusId ?? null
+  }
+}
+
+export function cancelRegisterStatusChange(registerId, registerStatusState) {
+  if (registerStatusState[registerId]) {
+    registerStatusState[registerId] = {
+      ...registerStatusState[registerId],
+      editMode: false,
+      selectedStatusId: null,
+      originalStatusId: null
+    }
+  }
+}
+
+export function validateRegisterStatusParams(registerId, statusId) {
+  if (!registerId || !statusId) {
+    return {
+      isValid: false,
+      error: 'Не указан реестр или статус партии для изменения'
+    }
+  }
+
+  const numericStatusId = Number(statusId)
+  if (isNaN(numericStatusId) || numericStatusId <= 0) {
+    return {
+      isValid: false,
+      error: 'Некорректный идентификатор статуса партии'
+    }
+  }
+
+  return {
+    isValid: true,
+    numericStatusId
+  }
+}
+
+export function resetRegisterStatusState(registerId, registerStatusState) {
+  cancelRegisterStatusChange(registerId, registerStatusState)
+}
+
+export async function applyRegisterStatusChange(
+  registerId,
+  statusId,
+  currentStatusId,
+  registerStatusState,
+  registersStore,
+  alertStore,
+  getAllOptions = {}
+) {
+  const validation = validateRegisterStatusParams(registerId, statusId)
+  if (!validation.isValid) {
+    alertStore.error(validation.error)
+    return
+  }
+
+  const numericCurrentStatusId = Number(currentStatusId)
+  if (Number.isFinite(numericCurrentStatusId) && validation.numericStatusId === numericCurrentStatusId) {
+    resetRegisterStatusState(registerId, registerStatusState)
+    return
+  }
+
+  try {
+    await registersStore.setRegisterStatus(registerId, validation.numericStatusId)
+    alertStore.success('Статус партии успешно изменен')
+    resetRegisterStatusState(registerId, registerStatusState)
+  } catch (error) {
+    const errorMessage =
+      error?.message || registersStore.error?.message || 'Ошибка при обновлении статуса партии'
+    alertStore.error(errorMessage)
+    resetRegisterStatusState(registerId, registerStatusState)
+  } finally {
+    await registersStore.getAll(getAllOptions)
+  }
+}
+
+export function isRegisterStatusEditMode(registerId, registerStatusState) {
+  return registerStatusState[registerId]?.editMode || false
+}
+
+export function getRegisterStatusSelectedId(registerId, registerStatusState) {
+  return registerStatusState[registerId]?.selectedStatusId || null
+}
+
+export function setRegisterStatusSelectedId(registerId, statusId, registerStatusState) {
+  initializeRegisterStatusState(registerId, registerStatusState)
+  registerStatusState[registerId].selectedStatusId = statusId
+}
+
 export {
   POLLING_INTERVAL_MS,
   createValidationState,

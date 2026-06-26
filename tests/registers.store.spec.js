@@ -887,6 +887,54 @@ describe('registers store', () => {
     })
   })
 
+  describe('setRegisterStatus method', () => {
+    it('updates register status through the existing register update endpoint', async () => {
+      fetchWrapper.put.mockResolvedValue({})
+
+      const store = useRegistersStore()
+      store.items = [{ id: 123, statusId: 1, dealNumber: 'D-1' }]
+      store.item = { id: 123, statusId: 1 }
+
+      await store.setRegisterStatus(123, 456)
+
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/123`, { statusId: 456 })
+      expect(store.items[0].statusId).toBe(456)
+      expect(store.item.statusId).toBe(456)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('stores and rethrows setRegisterStatus errors', async () => {
+      const error = new Error('Failed to update register status')
+      fetchWrapper.put.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      await expect(store.setRegisterStatus(123, 456)).rejects.toThrow(error.message)
+
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/123`, { statusId: 456 })
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+
+    it('sets loading while setRegisterStatus is pending', async () => {
+      let resolvePromise
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve
+      })
+      fetchWrapper.put.mockReturnValue(promise)
+
+      const store = useRegistersStore()
+      const setStatusPromise = store.setRegisterStatus(123, 456)
+
+      expect(store.loading).toBe(true)
+
+      resolvePromise({})
+      await setStatusPromise
+
+      expect(store.loading).toBe(false)
+    })
+  })
+
   describe('validation API', () => {
     it('starts validation for stop-words and returns handle', async () => {
       const handle = { id: '1234' }

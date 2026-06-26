@@ -5,8 +5,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
-import { createWarehouseRegisterHeaders } from '@/helpers/warehouse.registers.table.helpers.js'
+import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
 
 const opsRef = vi.hoisted(() => ({ value: { customsProcedures: [], transportationTypes: [] } }))
 const companiesRef = vi.hoisted(() => ({ value: [] }))
@@ -30,7 +29,7 @@ vi.mock('pinia', async () => {
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     ops: opsRef,
-    getOpsLabel: vi.fn(() => 'Возврат'),
+    getOpsLabel: vi.fn(() => 'ИМ40'),
     getTransportationDocument: vi.fn(() => 'CMR')
   })
 }))
@@ -47,42 +46,50 @@ vi.mock('@/stores/airports.store.js', () => ({
   useAirportsStore: () => ({ airports: airportsRef })
 }))
 
-vi.mock('@/stores/warehouses.store.js', () => ({
-  useWarehousesStore: () => ({
-    getWarehouseName: vi.fn((id) => `Warehouse ${id}`)
-  })
-}))
-
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     getStatusById: vi.fn((id) => id
-      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+      ? { id, title: `Register Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
       : null
     ),
-    getStatusTitle: vi.fn((id) => `Status ${id}`)
+    getStatusTitle: vi.fn((id) => `Register Status ${id}`)
   })
 }))
 
 vi.mock('@/components/ActionButton.vue', () => ({
   default: {
-    props: ['item', 'icon', 'disabled'],
+    props: ['item', 'icon', 'tooltipText', 'disabled'],
     emits: ['click'],
     template: '<button type="button" class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
-vi.mock('@/components/ClickableCell.vue', () => ({ default: { template: '<span><slot /></span>' } }))
+
+vi.mock('@/components/ClickableCell.vue', () => ({
+  default: {
+    props: ['item', 'displayValue', 'cellClass'],
+    emits: ['click'],
+    template: '<span :class="cellClass" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></span>'
+  }
+}))
+
 vi.mock('@/components/RegisterInvoiceCell.vue', () => ({ default: { template: '<span />' } }))
 vi.mock('@/components/SenderRecipientCell.vue', () => ({ default: { template: '<span />' } }))
 vi.mock('@/components/SortableMultilineHeader.vue', () => ({ default: { template: '<span />' } }))
 
+const registerStatusOptions = [
+  { id: 2, title: 'Current' },
+  { id: 5, title: 'Next' }
+]
+
 function mountTable(props = {}) {
-  return mount(WarehouseRegistersTable, {
+  return mount(CustomsProcessingRegistersTable, {
     props: {
       items: [],
       itemsLength: 0,
       itemsPerPage: 25,
       page: 1,
       sortBy: [{ key: 'id', order: 'desc' }],
+      registerStatusOptions,
       ...props
     },
     global: {
@@ -95,10 +102,10 @@ function mountTable(props = {}) {
           template: `
             <div>
               <div data-testid="header-keys">{{ headers.map(header => header.key).join(',') }}</div>
-              <div data-testid="header-titles">{{ headers.map(header => header.title).join(',') }}</div>
               <div v-for="item in items" :key="item.id" data-testid="row">
                 <slot name="item.actions" :item="item" />
-                <slot name="item.matchingParcelsCount" :item="item" />
+                <slot name="item.dealNumber" :item="item" />
+                <slot name="item.weight" :item="item" />
               </div>
             </div>
           `
@@ -121,83 +128,44 @@ function mountTable(props = {}) {
   })
 }
 
-describe('WarehouseRegistersTable matching-count column', () => {
-  it('does not add the matching-count header for the normal warehouse list', () => {
-    const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
-
-    expect(headers.map((header) => header.key)).not.toContain('matchingParcelsCount')
-  })
-
-  it('does not add the register-status icon header by default', () => {
-    const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
-
-    expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
-  })
-
-  it('keeps the register-status icon out of headers even when requested', () => {
-    const headers = createWarehouseRegisterHeaders({
-      showActions: true,
-      selectable: false,
-      showRegisterStatusIcon: true
+describe('CustomsProcessingRegistersTable', () => {
+  it('renders extracted customs-processing register headers and status icon', () => {
+    const wrapper = mountTable({
+      items: [{ id: 1, statusId: 2 }]
     })
 
-    expect(headers.map((header) => header.key).slice(0, 2)).toEqual(['actions', 'dealNumber'])
-    expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
+    expect(wrapper.find('[data-testid="header-keys"]').text()).toBe(
+      'actions,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,date'
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
+    expect(wrapper.find('.register-status-action-button--readonly').attributes('title')).toBe('Register Status 2')
   })
 
-  it('starts inline register-status edit from the optional status icon', async () => {
+  it('opens inline register status selector from the status icon', async () => {
     const startRegisterStatusChange = vi.fn()
     const wrapper = mountTable({
-      showRegisterStatusIcon: true,
+      items: [{ id: 1, statusId: 2 }],
       canChangeRegisterStatus: true,
-      startRegisterStatusChange,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      startRegisterStatusChange
     })
-
-    expect(wrapper.find('[data-testid="header-keys"]').text()).not.toContain('registerStatusIcon')
-    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
-    expect(wrapper.find('.register-status-action-button').attributes('title')).toBe('Status 2')
 
     await wrapper.find('.register-status-action-button').trigger('click')
 
     expect(startRegisterStatusChange).toHaveBeenCalledWith(1, 2)
-    expect(wrapper.emitted('edit-register')).toBeUndefined()
   })
 
-  it('keeps full register edit on the pen action', async () => {
-    const wrapper = mountTable({
-      isSrLogistPlus: true,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
-    })
-
-    await wrapper.find('[data-icon="fa-solid fa-pen"]').trigger('click')
-
-    expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 1, statusId: 2 }])
-  })
-
-  it('renders and applies inline register status selector', async () => {
+  it('selects, applies, and cancels register status changes inline', async () => {
     const setSelectedRegisterStatusId = vi.fn()
     const applyRegisterStatusChange = vi.fn()
     const cancelRegisterStatusChange = vi.fn()
     const wrapper = mountTable({
-      showRegisterStatusIcon: true,
+      items: [{ id: 1, statusId: 2 }],
       canChangeRegisterStatus: true,
-      registerStatusOptions: [
-        { id: 2, title: 'Current' },
-        { id: 5, title: 'Next' }
-      ],
       isRegisterStatusEditMode: () => true,
       getSelectedRegisterStatusId: () => 5,
       setSelectedRegisterStatusId,
       applyRegisterStatusChange,
-      cancelRegisterStatusChange,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      cancelRegisterStatusChange
     })
 
     await wrapper.find('[data-testid="register-status-select"]').setValue('5')
@@ -209,48 +177,45 @@ describe('WarehouseRegistersTable matching-count column', () => {
     expect(cancelRegisterStatusChange).toHaveBeenCalledWith(1)
   })
 
-  it('renders register-status tooltip for read-only warehouse rows', () => {
+  it('disables applying an unchanged register status', () => {
     const wrapper = mountTable({
-      showRegisterStatusIcon: true,
-      linksEnabled: false,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      items: [{ id: 1, statusId: 2 }],
+      canChangeRegisterStatus: true,
+      isRegisterStatusEditMode: () => true,
+      getSelectedRegisterStatusId: () => 2
     })
 
-    const statusIcon = wrapper.find('.register-status-action-button--readonly')
-
-    expect(statusIcon.exists()).toBe(true)
-    expect(statusIcon.attributes('title')).toBe('Status 2')
+    expect(wrapper.find('[data-icon="fa-solid fa-check"]').attributes('disabled')).toBeDefined()
   })
 
-  it('adds the matching-count header only when requested', () => {
-    const headers = createWarehouseRegisterHeaders({
-      showActions: false,
-      selectable: true,
-      showMatchingCount: true
+  it('keeps full register edit on the pen action', async () => {
+    const wrapper = mountTable({
+      items: [{ id: 7, statusId: 2 }],
+      isSrLogistPlus: true
     })
 
-    expect(headers.map((header) => header.key)).toContain('matchingParcelsCount')
-    expect(headers.find((header) => header.key === 'matchingParcelsCount')).toMatchObject({
-      title: 'К возврату',
-      sortable: false,
-      align: 'end'
-    })
+    await wrapper.find('[data-icon="fa-solid fa-pen"]').trigger('click')
+
+    expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 7, statusId: 2 }])
   })
 
-  it('passes the optional header to the table and formats matching counts', () => {
+  it('keeps navigation cells and copied weight display behavior', async () => {
     const wrapper = mountTable({
-      showMatchingCount: true,
-      items: [
-        { id: 1, matchingParcelsCount: 1234 },
-        { id: 2, matchingParcelsCount: 0 }
-      ]
+      items: [{
+        id: 3,
+        dealNumber: 'D-3',
+        statusId: 2,
+        totalWeightKg: 12.345,
+        totalWeightKgToRelease: 10,
+        realWeightKg: 5
+      }]
     })
 
-    expect(wrapper.find('[data-testid="header-keys"]').text()).toContain('matchingParcelsCount')
-    expect(wrapper.find('[data-testid="header-titles"]').text()).toContain('К возврату')
-    expect(wrapper.findAll('[data-testid="row"]')[0].text()).toBe('1\u00A0234')
-    expect(wrapper.findAll('[data-testid="row"]')[1].text()).toBe('-')
+    await wrapper.find('.open-parcels-link').trigger('click')
+
+    expect(wrapper.emitted('open-parcels')?.[0][0].id).toBe(3)
+    expect(wrapper.find('[data-testid="register-weight-cell"]').text()).toContain('12.345')
+    expect(wrapper.find('[data-testid="register-weight-cell"]').text()).toContain('10.000')
+    expect(wrapper.find('[data-testid="register-weight-cell"]').text()).toContain('5.000')
   })
 })

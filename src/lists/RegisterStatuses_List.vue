@@ -179,7 +179,7 @@ defineExpose({
             type="button"
             class="status-icon-button"
             aria-label="Редактировать статус партии"
-            :disabled="runningAction || loading"
+            :disabled="!authStore.isSrLogistPlus || runningAction || loading"
             @click="openEditDialog(item)"
           >
             <RegisterStatusIcon :status="item" />

@@ -10,7 +10,13 @@ import {
   applyBulkStatusToAllOrders,
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
-  setBulkStatusSelectedId
+  setBulkStatusSelectedId,
+  startRegisterStatusEditMode,
+  cancelRegisterStatusChange,
+  applyRegisterStatusChange,
+  isRegisterStatusEditMode,
+  getRegisterStatusSelectedId,
+  setRegisterStatusSelectedId
 } from '@/helpers/registers.list.helpers.js'
 import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
@@ -75,9 +81,13 @@ const {
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 
 const bulkStatusState = reactive({})
+const registerStatusState = reactive({})
 
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
+
+const parcelStatusOptions = computed(() => unref(parcelStatuses) || [])
+const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
 
 function bulkChangeStatus(registerId) {
   toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
@@ -108,6 +118,43 @@ function getSelectedStatusId(registerId) {
 
 function setSelectedStatusId(registerId, statusId) {
   setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
+}
+
+function startRegisterStatusChange(registerId, currentStatusId) {
+  startRegisterStatusEditMode(
+    registerId,
+    currentStatusId,
+    registerStatusState,
+    runningAction.value || loading.value
+  )
+}
+
+function cancelRegisterStatusEdit(registerId) {
+  cancelRegisterStatusChange(registerId, registerStatusState)
+}
+
+async function applyRegisterStatusToRegister(registerId, statusId, currentStatusId) {
+  await applyRegisterStatusChange(
+    registerId,
+    statusId,
+    currentStatusId,
+    registerStatusState,
+    registersStore,
+    alertStore,
+    { mode: OP_MODE_WAREHOUSE }
+  )
+}
+
+function isInRegisterStatusEditMode(registerId) {
+  return isRegisterStatusEditMode(registerId, registerStatusState)
+}
+
+function getSelectedRegisterStatusId(registerId) {
+  return getRegisterStatusSelectedId(registerId, registerStatusState)
+}
+
+function setSelectedRegisterStatusId(registerId, statusId) {
+  setRegisterStatusSelectedId(registerId, statusId, registerStatusState)
 }
 
 onMounted(async () => {
@@ -289,13 +336,21 @@ defineExpose({
       :is-shift-lead-plus="isShiftLeadPlus"
       :is-sr-logist-plus="isSrLogistPlus"
       :is-wh-manager-plus="isWhManagerPlus"
-      :status-options="parcelStatuses"
+      :status-options="parcelStatusOptions"
       :is-in-edit-mode="isInEditMode"
       :get-selected-status-id="getSelectedStatusId"
       :set-selected-status-id="setSelectedStatusId"
       :bulk-change-status="bulkChangeStatus"
       :cancel-status-change="cancelStatusChange"
       :apply-status-to-all-orders="applyStatusToAllOrders"
+      :register-status-options="registerStatusOptions"
+      :can-change-register-status="isSrLogistPlus"
+      :is-register-status-edit-mode="isInRegisterStatusEditMode"
+      :get-selected-register-status-id="getSelectedRegisterStatusId"
+      :set-selected-register-status-id="setSelectedRegisterStatusId"
+      :start-register-status-change="startRegisterStatusChange"
+      :cancel-register-status-change="cancelRegisterStatusEdit"
+      :apply-register-status-change="applyRegisterStatusToRegister"
       show-register-status-icon
       @open-parcels="openParcels"
       @edit-register="editRegister"

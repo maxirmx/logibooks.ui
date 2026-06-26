@@ -569,8 +569,63 @@ function getStatusFieldValue(fieldValue) {
   return parseNumber(fieldValue ?? item.value?.statusId, null)
 }
 
+function normalizeRegisterStatus(status) {
+  if (!status || typeof status !== 'object') {
+    return null
+  }
+
+  return {
+    ...status,
+    id: status.id ?? status.Id,
+    title: status.title ?? status.Title,
+    icon: status.icon ?? status.Icon ?? null,
+    bkColor: status.bkColor ?? status.BkColor ?? null,
+    fgColor: status.fgColor ?? status.FgColor ?? null
+  }
+}
+
 function getRegisterStatus(statusId) {
-  return registerStatusesStore.getStatusById(statusId)
+  return normalizeRegisterStatus(registerStatusesStore.getStatusById(parseNumber(statusId, statusId)))
+}
+
+function isRegisterStatusDto(value) {
+  return Boolean(value && typeof value === 'object' && (
+    Object.prototype.hasOwnProperty.call(value, 'id') ||
+    Object.prototype.hasOwnProperty.call(value, 'Id') ||
+    Object.prototype.hasOwnProperty.call(value, 'icon') ||
+    Object.prototype.hasOwnProperty.call(value, 'Icon') ||
+    Object.prototype.hasOwnProperty.call(value, 'bkColor') ||
+    Object.prototype.hasOwnProperty.call(value, 'BkColor') ||
+    Object.prototype.hasOwnProperty.call(value, 'fgColor') ||
+    Object.prototype.hasOwnProperty.call(value, 'FgColor')
+  ))
+}
+
+function getRegisterStatusSelectItem(selectItem) {
+  const raw = selectItem?.raw ?? selectItem
+  if (raw === null || raw === undefined || raw === '') {
+    return null
+  }
+
+  if (isRegisterStatusDto(raw)) {
+    return normalizeRegisterStatus(raw)
+  }
+
+  if (typeof raw === 'object') {
+    if (raw.raw !== undefined) {
+      return getRegisterStatusSelectItem(raw.raw)
+    }
+
+    if (raw.value !== undefined) {
+      return getRegisterStatus(raw.value)
+    }
+  }
+
+  return getRegisterStatus(raw)
+}
+
+function getRegisterStatusSelectTitle(selectItem) {
+  return getRegisterStatusSelectItem(selectItem)?.title || ''
 }
 
 function handleRegisterStatusChange(value, handleChange) {
@@ -921,14 +976,14 @@ const loadReportFields = computed(() => {
               >
                 <template #selection="{ item: selectedItem }">
                   <div class="register-status-select-row">
-                    <RegisterStatusIcon :status="selectedItem?.raw" size="sm" />
-                    <span>{{ selectedItem?.raw?.title }}</span>
+                    <RegisterStatusIcon :status="getRegisterStatusSelectItem(selectedItem)" size="sm" />
+                    <span>{{ getRegisterStatusSelectTitle(selectedItem) }}</span>
                   </div>
                 </template>
                 <template #item="{ props: itemProps, item: option }">
                   <div class="register-status-select-row register-status-select-option" v-bind="itemProps">
-                    <RegisterStatusIcon :status="option?.raw" size="sm" />
-                    <span>{{ option?.raw?.title }}</span>
+                    <RegisterStatusIcon :status="getRegisterStatusSelectItem(option)" size="sm" />
+                    <span>{{ getRegisterStatusSelectTitle(option) }}</span>
                   </div>
                 </template>
               </v-select>

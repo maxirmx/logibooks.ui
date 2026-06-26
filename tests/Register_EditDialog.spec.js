@@ -364,10 +364,10 @@ describe('Register_EditDialog', () => {
               <div id="statusId" data-testid="register-status-select">
                 <slot
                   name="selection"
-                  :item="{ raw: items.find(item => Number(item.id) === Number(modelValue)) || items[0] }"
+                  :item="{ raw: modelValue == null ? modelValue : String(modelValue) }"
                 />
                 <div v-for="option in items" :key="option.id" data-testid="register-status-option">
-                  <slot name="item" :props="{}" :item="{ raw: option }" />
+                  <slot name="item" :props="{}" :item="{ raw: String(option.id) }" />
                 </div>
               </div>
             `
@@ -380,7 +380,17 @@ describe('Register_EditDialog', () => {
     expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('In Progress')
     expect(wrapper.text()).toContain('Completed')
-    expect(wrapper.findAll('[data-testid="register-status-icon"]').length).toBeGreaterThanOrEqual(3)
+    const statusIcons = wrapper.findAll('[data-testid="register-status-icon"]')
+    expect(statusIcons).toHaveLength(4)
+    expect(statusIcons[0].attributes('data-icon')).toBe('svg:in-transit')
+    expect(statusIcons[0].attributes('data-icon-kind')).toBe('svg')
+    expect(statusIcons[0].element.style.backgroundColor).toBe('rgb(255, 238, 221)')
+    expect(statusIcons[0].element.style.color).toBe('rgb(17, 17, 17)')
+    expect(statusIcons.slice(1).map(icon => icon.attributes('data-icon'))).toEqual([
+      'svg:registered',
+      'svg:in-transit',
+      'svg:very-delivered'
+    ])
   })
 
   it('enables airport selectors when aviation transport is selected', async () => {

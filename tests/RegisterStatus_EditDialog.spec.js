@@ -262,7 +262,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await option.trigger('click')
 
       expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-circle-question')
-      expect(wrapper.find('.status-icon-preview [data-testid="register-status-icon"]').attributes('title')).toBeUndefined()
     })
 
     it('rejects unsupported icon values in the validation schema', async () => {

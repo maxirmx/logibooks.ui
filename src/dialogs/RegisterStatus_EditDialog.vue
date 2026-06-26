@@ -98,15 +98,6 @@ function getIconFieldValue(fieldValue) {
   return fieldValue || registerStatus.value?.icon || null
 }
 
-function getPreviewStatus(iconValue, bkColorValue, fgColorValue) {
-  return {
-    title: registerStatus.value?.title,
-    icon: getIconFieldValue(iconValue),
-    bkColor: getColorFieldValue(bkColorValue, 'bkColor'),
-    fgColor: getColorFieldValue(fgColorValue, 'fgColor')
-  }
-}
-
 function handleColorInput(event, handleChange, fieldName) {
   const value = event.target.value || null
   if (registerStatus.value) {
@@ -145,7 +136,7 @@ function onSubmit(values, { setErrors }) {
 </script>
 
 <template>
-  <div class="settings form-2">
+  <div class="settings form-3">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
     <Form
@@ -234,11 +225,6 @@ function onSubmit(values, { setErrors }) {
                   }"
                 />
               </button>
-            </div>
-            <div class="status-icon-preview">
-              <RegisterStatusIcon
-                :status="getPreviewStatus(field?.value, registerStatus.bkColor, registerStatus.fgColor)"
-              />
             </div>
           </div>
         </div>

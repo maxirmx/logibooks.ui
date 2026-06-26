@@ -31,12 +31,12 @@ describe('register.statuses.store.js', () => {
   let pinia
 
   const mockRegisterStatuses = [
-    { id: 1, title: 'Черновик' },
-    { id: 2, title: 'Подтвержден' },
-    { id: 3, title: 'Выполнен' }
+    { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
+    { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+    { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
   ]
 
-  const mockRegisterStatus = { id: 1, title: 'Черновик' }
+  const mockRegisterStatus = mockRegisterStatuses[0]
 
   beforeEach(() => {
     pinia = createPinia()
@@ -273,6 +273,15 @@ describe('register.statuses.store.js', () => {
       it('returns the correct status when found', () => {
         const status = store.getStatusById(1)
         expect(status).toEqual(mockRegisterStatuses[0])
+      })
+
+      it('keeps presentation fields in the status map', () => {
+        const status = store.getStatusById(2)
+        expect(status).toMatchObject({
+          icon: 'svg:very-delivered',
+          bkColor: '#00AA00',
+          fgColor: '#FFFFFF'
+        })
       })
 
       it('returns null when status is not found', () => {

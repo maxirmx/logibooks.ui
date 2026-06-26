@@ -162,6 +162,10 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
+    getStatusById: vi.fn(id => id
+      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+      : null
+    ),
     getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
   })
 }))
@@ -502,6 +506,14 @@ describe('Registers_WhList.vue', () => {
       { key: 'warehouseArrivalDate', order: 'asc' }
     ])
     expect(wrapper.vm.localSearch).toBe('warehouse search')
+  })
+
+  it('enables the register-status icon column on the warehouse table', async () => {
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const table = wrapper.findComponent({ name: 'WarehouseRegistersTable' })
+    expect(table.props('showRegisterStatusIcon')).toBe(true)
   })
 
   it('falls back to empty local search when no warehouse search is persisted', async () => {

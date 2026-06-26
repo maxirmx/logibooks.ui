@@ -55,6 +55,10 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
+    getStatusById: vi.fn((id) => id
+      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+      : null
+    ),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
@@ -87,6 +91,7 @@ function mountTable(props = {}) {
               <div data-testid="header-keys">{{ headers.map(header => header.key).join(',') }}</div>
               <div data-testid="header-titles">{{ headers.map(header => header.title).join(',') }}</div>
               <div v-for="item in items" :key="item.id" data-testid="row">
+                <slot name="item.actions" :item="item" />
                 <slot name="item.matchingParcelsCount" :item="item" />
               </div>
             </div>
@@ -106,6 +111,55 @@ describe('WarehouseRegistersTable matching-count column', () => {
     const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
 
     expect(headers.map((header) => header.key)).not.toContain('matchingParcelsCount')
+  })
+
+  it('does not add the register-status icon header by default', () => {
+    const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
+
+    expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
+  })
+
+  it('keeps the register-status icon out of headers even when requested', () => {
+    const headers = createWarehouseRegisterHeaders({
+      showActions: true,
+      selectable: false,
+      showRegisterStatusIcon: true
+    })
+
+    expect(headers.map((header) => header.key).slice(0, 2)).toEqual(['actions', 'dealNumber'])
+    expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
+  })
+
+  it('renders the optional register-status icon inside the actions column', async () => {
+    const wrapper = mountTable({
+      showRegisterStatusIcon: true,
+      items: [
+        { id: 1, statusId: 2 }
+      ]
+    })
+
+    expect(wrapper.find('[data-testid="header-keys"]').text()).not.toContain('registerStatusIcon')
+    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
+    expect(wrapper.find('.register-status-action-button').attributes('title')).toBe('Status 2')
+
+    await wrapper.find('.register-status-action-button').trigger('click')
+
+    expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 1, statusId: 2 }])
+  })
+
+  it('renders register-status tooltip for read-only warehouse rows', () => {
+    const wrapper = mountTable({
+      showRegisterStatusIcon: true,
+      linksEnabled: false,
+      items: [
+        { id: 1, statusId: 2 }
+      ]
+    })
+
+    const statusIcon = wrapper.find('.register-status-action-button--readonly')
+
+    expect(statusIcon.exists()).toBe(true)
+    expect(statusIcon.attributes('title')).toBe('Status 2')
   })
 
   it('adds the matching-count header only when requested', () => {

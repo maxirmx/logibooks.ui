@@ -45,6 +45,11 @@ const setOrderStatusesFn = vi.fn()
 const getCompaniesAll = vi.fn()
 const getOrderStatusesAll = vi.fn()
 const ensureOrderStatusesLoadedFn = vi.fn().mockResolvedValue()
+const ensureRegisterStatusesLoadedFn = vi.fn().mockResolvedValue()
+const getRegisterStatusByIdFn = vi.fn((id) => id
+  ? { id, title: `Register Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+  : null
+)
 const getCountriesAll = vi.fn()
 const countriesEnsureLoadedFn = vi.fn().mockResolvedValue(mockCountries.value)
 const ensureOpsLoadedFn = vi.fn().mockResolvedValue()
@@ -181,7 +186,8 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
-    ensureLoaded: vi.fn().mockResolvedValue(),
+    ensureLoaded: ensureRegisterStatusesLoadedFn,
+    getStatusById: getRegisterStatusByIdFn,
     getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
   })
 }))
@@ -239,6 +245,8 @@ describe('Registers_List.vue', () => {
     mockIsSrLogistPlus.value = false
     getAirportsAll.mockClear()
     ensureOrderStatusesLoadedFn.mockClear()
+    ensureRegisterStatusesLoadedFn.mockClear()
+    getRegisterStatusByIdFn.mockClear()
     ensureOpsLoadedFn.mockClear()
   })
 
@@ -438,6 +446,7 @@ describe('Registers_List.vue', () => {
 
       await flushPromises()
 
+      expect(ensureRegisterStatusesLoadedFn).toHaveBeenCalled()
       expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
     })
 
@@ -568,6 +577,32 @@ describe('Registers_List.vue', () => {
       const cell = wrapper.find('.open-parcels-link')
       await cell.trigger('click')
       expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
+    })
+
+    it('opens register edit when status action button is clicked', async () => {
+      mockItems.value = [
+        {
+          id: 7,
+          statusId: 2
+        }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      const router = (await import('@/router')).default
+      await wrapper.vm.$nextTick()
+
+      const statusIconButton = wrapper.find('.register-status-action-button')
+      expect(statusIconButton.exists()).toBe(true)
+      expect(statusIconButton.attributes('title')).toBe('Register Status 2')
+
+      await statusIconButton.trigger('click')
+      expect(getRegisterStatusByIdFn).toHaveBeenCalledWith(2)
+      expect(router.push).toHaveBeenCalledWith('/register/edit/7?mode=modePaperwork')
     })
 
     it('renders bookmark marker for lookup-by-article registers', async () => {
@@ -1006,6 +1041,7 @@ describe('Registers_List.vue', () => {
       )
 
       expect(sortableByKey.actions).toBe(false)
+      expect(sortableByKey.registerStatusIcon).toBeUndefined()
       expect(sortableByKey.dealNumber).toBe(true)
       expect(sortableByKey.invoice).toBe(true)
       expect(sortableByKey.countries).toBe(true)

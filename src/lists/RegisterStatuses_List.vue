@@ -13,6 +13,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 
 const registerStatusesStore = useRegisterStatusesStore()
 const authStore = useAuthStore()
@@ -42,6 +43,7 @@ function filterRegisterStatuses(value, query, item) {
 // Table headers
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
   { title: 'Название статуса', key: 'title', sortable: true }
 ]
 
@@ -171,6 +173,18 @@ defineExpose({
             />
           </div>
         </template>
+
+        <template v-slot:[`item.registerStatusIcon`]="{ item }">
+          <button
+            type="button"
+            class="status-icon-button"
+            aria-label="Редактировать статус партии"
+            :disabled="runningAction || loading"
+            @click="openEditDialog(item)"
+          >
+            <RegisterStatusIcon :status="item" />
+          </button>
+        </template>
       </v-data-table>
     </v-card>
 
@@ -184,4 +198,19 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.status-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.status-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 </style>

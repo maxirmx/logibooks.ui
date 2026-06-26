@@ -17,6 +17,7 @@ import { createRegisterActionHandlers } from '@/helpers/register.actions.js'
 
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
@@ -38,12 +39,14 @@ import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
 
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
+import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
 
 const registersStore = useRegistersStore()
 const { items, loading, totalCount, ops } = storeToRefs(registersStore)
 
 const parcelStatusesStore = useParcelStatusesStore()
+const registerStatusesStore = useRegisterStatusesStore()
 
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
@@ -218,12 +221,24 @@ function hasRealWeightKg(item) {
   return realWeightKg !== null && realWeightKg > 0
 }
 
+function getRegisterStatus(item) {
+  return registerStatusesStore.getStatusById(item?.statusId)
+}
+
+function getRegisterStatusTitle(item) {
+  const status = getRegisterStatus(item)
+  return status?.title || (item?.statusId ? registerStatusesStore.getStatusTitle(item.statusId) : null)
+}
+
 // Load companies and parcel statuses on component mount
 onMounted(async () => {
   try {
     if (!isComponentMounted.value) return
     
     await parcelStatusesStore.ensureLoaded()
+    if (!isComponentMounted.value) return
+
+    await registerStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
      
     await countriesStore.ensureLoaded()
@@ -613,6 +628,16 @@ defineExpose({
 
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
+            <button
+              type="button"
+              class="register-status-action-button"
+              :aria-label="`Редактировать ${registerNouns.accusative}`"
+              :title="getRegisterStatusTitle(item)"
+              :disabled="runningAction || loading"
+              @click="editRegister(item)"
+            >
+              <RegisterStatusIcon :status="getRegisterStatus(item)" />
+            </button>
             <ActionButton 
               :item="item" 
               icon="fa-solid fa-list" 
@@ -815,6 +840,37 @@ defineExpose({
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.register-status-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-left: 1px;
+  color: rgb(75, 75, 75);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.register-status-action-button:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.register-status-action-button:focus {
+  outline: none;
+}
+
+.register-status-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.register-status-action-button :deep(.register-status-icon) {
+  width: 2rem;
+  height: 2rem;
 }
 
 </style>

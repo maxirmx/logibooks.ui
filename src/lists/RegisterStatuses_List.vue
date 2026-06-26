@@ -178,11 +178,10 @@ defineExpose({
           <button
             type="button"
             class="status-icon-button"
+            aria-label="Редактировать статус партии"
             :disabled="runningAction || loading"
             @click="openEditDialog(item)"
           >
-            <RegisterStatusIcon :status="item" />
-          </button>
         </template>
       </v-data-table>
     </v-card>

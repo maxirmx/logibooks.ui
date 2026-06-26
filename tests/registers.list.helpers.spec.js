@@ -15,6 +15,15 @@ import {
   isBulkStatusEditMode,
   getBulkStatusSelectedId,
   setBulkStatusSelectedId,
+  initializeRegisterStatusState,
+  startRegisterStatusEditMode,
+  cancelRegisterStatusChange,
+  validateRegisterStatusParams,
+  resetRegisterStatusState,
+  applyRegisterStatusChange,
+  isRegisterStatusEditMode,
+  getRegisterStatusSelectedId,
+  setRegisterStatusSelectedId,
   createValidationState,
   calculateValidationProgress,
   pollValidation,
@@ -397,6 +406,165 @@ describe('registers.list.helpers', () => {
       
       expect(bulkStatusState[registerId].selectedStatusId).toBe(statusId)
       expect(bulkStatusState[registerId].editMode).toBe(true) // preserved
+    })
+  })
+
+  describe('register status inline edit helpers', () => {
+    let registerStatusState
+
+    beforeEach(() => {
+      registerStatusState = reactive({})
+      mockRegistersStore.setRegisterStatus = vi.fn()
+    })
+
+    it('initializes register status edit state if it does not exist', () => {
+      initializeRegisterStatusState(1, registerStatusState)
+
+      expect(registerStatusState[1]).toEqual({
+        editMode: false,
+        selectedStatusId: null,
+        originalStatusId: null
+      })
+    })
+
+    it('starts edit mode with the current register status preselected', () => {
+      startRegisterStatusEditMode(1, 4, registerStatusState, false)
+
+      expect(registerStatusState[1]).toEqual({
+        editMode: true,
+        selectedStatusId: 4,
+        originalStatusId: 4
+      })
+    })
+
+    it('does not start edit mode while loading', () => {
+      startRegisterStatusEditMode(1, 4, registerStatusState, true)
+
+      expect(registerStatusState[1]).toBeUndefined()
+    })
+
+    it('cancels register status edit state', () => {
+      registerStatusState[1] = {
+        editMode: true,
+        selectedStatusId: 6,
+        originalStatusId: 4
+      }
+
+      cancelRegisterStatusChange(1, registerStatusState)
+
+      expect(registerStatusState[1]).toEqual({
+        editMode: false,
+        selectedStatusId: null,
+        originalStatusId: null
+      })
+    })
+
+    it('validates register status change parameters', () => {
+      expect(validateRegisterStatusParams(null, 1)).toMatchObject({
+        isValid: false,
+        error: 'Не указан реестр или статус партии для изменения'
+      })
+      expect(validateRegisterStatusParams(1, -1)).toMatchObject({
+        isValid: false,
+        error: 'Некорректный идентификатор статуса партии'
+      })
+      expect(validateRegisterStatusParams(1, '7')).toMatchObject({
+        isValid: true,
+        numericStatusId: 7
+      })
+    })
+
+    it('gets and sets selected register status id', () => {
+      expect(isRegisterStatusEditMode(1, registerStatusState)).toBe(false)
+      expect(getRegisterStatusSelectedId(1, registerStatusState)).toBeNull()
+
+      startRegisterStatusEditMode(1, 4, registerStatusState, false)
+      setRegisterStatusSelectedId(1, 8, registerStatusState)
+
+      expect(isRegisterStatusEditMode(1, registerStatusState)).toBe(true)
+      expect(getRegisterStatusSelectedId(1, registerStatusState)).toBe(8)
+    })
+
+    it('applies register status change and refreshes the requested list mode', async () => {
+      registerStatusState[1] = {
+        editMode: true,
+        selectedStatusId: 8,
+        originalStatusId: 4
+      }
+      mockRegistersStore.setRegisterStatus.mockResolvedValueOnce()
+
+      await applyRegisterStatusChange(
+        1,
+        8,
+        4,
+        registerStatusState,
+        mockRegistersStore,
+        mockAlertStore,
+        { mode: 'modePaperwork' }
+      )
+
+      expect(mockRegistersStore.setRegisterStatus).toHaveBeenCalledWith(1, 8)
+      expect(mockAlertStore.success).toHaveBeenCalledWith('Статус партии успешно изменен')
+      expect(registerStatusState[1].editMode).toBe(false)
+      expect(registerStatusState[1].selectedStatusId).toBeNull()
+      expect(mockRegistersStore.getAll).toHaveBeenCalledWith({ mode: 'modePaperwork' })
+    })
+
+    it('does not call the API for unchanged register status', async () => {
+      registerStatusState[1] = {
+        editMode: true,
+        selectedStatusId: 4,
+        originalStatusId: 4
+      }
+
+      await applyRegisterStatusChange(
+        1,
+        4,
+        4,
+        registerStatusState,
+        mockRegistersStore,
+        mockAlertStore
+      )
+
+      expect(mockRegistersStore.setRegisterStatus).not.toHaveBeenCalled()
+      expect(mockRegistersStore.getAll).not.toHaveBeenCalled()
+      expect(registerStatusState[1].editMode).toBe(false)
+    })
+
+    it('shows store errors while applying register status', async () => {
+      registerStatusState[1] = {
+        editMode: true,
+        selectedStatusId: 8,
+        originalStatusId: 4
+      }
+      mockRegistersStore.setRegisterStatus.mockRejectedValueOnce(new Error())
+      mockRegistersStore.error = { message: 'Store status error' }
+
+      await applyRegisterStatusChange(
+        1,
+        8,
+        4,
+        registerStatusState,
+        mockRegistersStore,
+        mockAlertStore
+      )
+
+      expect(mockAlertStore.error).toHaveBeenCalledWith('Store status error')
+      expect(registerStatusState[1].editMode).toBe(false)
+      expect(mockRegistersStore.getAll).toHaveBeenCalled()
+    })
+
+    it('resets register status state', () => {
+      registerStatusState[1] = {
+        editMode: true,
+        selectedStatusId: 8,
+        originalStatusId: 4
+      }
+
+      resetRegisterStatusState(1, registerStatusState)
+
+      expect(registerStatusState[1].editMode).toBe(false)
+      expect(registerStatusState[1].selectedStatusId).toBeNull()
     })
   })
 

@@ -307,6 +307,19 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function setRegisterStatus(registerId, statusId) {
+    loading.value = true
+    error.value = null
+    try {
+      return await update(registerId, { statusId })
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function validate(registerId, sw, swMatchMode = SwValidationMatchMode.NoSwMatch) {
     loading.value = true
     error.value = null
@@ -714,6 +727,7 @@ export const useRegistersStore = defineStore('registers', () => {
     getReturnRegisterPairs,
     createReturnRegister,
     setParcelStatuses,
+    setRegisterStatus,
     validate,
     getValidationProgress,
     cancelValidation,

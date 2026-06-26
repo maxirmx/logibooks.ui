@@ -53,6 +53,7 @@ const registersStore = {
   getAll,
   remove: vi.fn(),
   setParcelStatuses: vi.fn(),
+  setRegisterStatus: vi.fn(),
   items: mockItems,
   item: ref({}),
   uploadFile: ref(null),
@@ -162,6 +163,10 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
+    registerStatuses: ref([
+      { id: 2, title: 'Status 2' },
+      { id: 5, title: 'Status 5' }
+    ]),
     getStatusById: vi.fn(id => id
       ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
       : null
@@ -227,6 +232,7 @@ describe('Registers_WhList.vue', () => {
     registersStore.error = ref(null)
     registersStore.remove.mockReset()
     registersStore.remove.mockResolvedValue()
+    registersStore.setRegisterStatus.mockReset()
     mockWhPerPage.value = 25
     mockWhSearch.value = 'warehouse search'
     mockWhSortBy.value = [{ key: 'warehouseArrivalDate', order: 'asc' }]
@@ -715,6 +721,34 @@ describe('Registers_WhList.vue', () => {
     expect(registersStore.setParcelStatuses).toHaveBeenCalledWith(1, 5)
     expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
     expect(wrapper.vm.isInEditMode(1)).toBe(false)
+  })
+
+  it('applies inline register status changes in warehouse mode', async () => {
+    mockItems.value = [{ id: 1, statusId: 2 }]
+    registersStore.setRegisterStatus.mockResolvedValue()
+    getAll.mockResolvedValue()
+
+    const wrapper = createWrapper()
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.find('.register-status-action-button').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    wrapper.vm.setSelectedRegisterStatusId(1, 5)
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const applyButton = actionButtons.find(button =>
+      button.props('tooltipText') === 'Применить статус партии'
+    )
+    await applyButton.find('button').trigger('click')
+    await flushPromises()
+
+    expect(registersStore.setRegisterStatus).toHaveBeenCalledWith(1, 5)
+    expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
+    expect(alertSuccessFn).toHaveBeenCalledWith('Статус партии успешно изменен')
+    expect(wrapper.vm.isInRegisterStatusEditMode(1)).toBe(false)
   })
 
   it('opens parcels with warehouse mode from row cells', async () => {

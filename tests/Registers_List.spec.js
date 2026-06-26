@@ -11,8 +11,17 @@ import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } fro
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import ActionButton from '@/components/ActionButton.vue'
+import RegisterStatusInlineEditor from '@/components/RegisterStatusInlineEditor.vue'
 import router from '@/router'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { formatDate } from '@/helpers/date.formatters.js'
+import {
+  createAirportsById,
+  createTransportationTypesById,
+  getAirportIata,
+  getCountryDisplayName,
+  isAviaTransportation
+} from '@/helpers/warehouse.registers.table.helpers.js'
 
 let lastRegisterActions = null
 
@@ -42,10 +51,15 @@ const getAll = vi.fn()
 const getAirportsAll = vi.fn()
 const uploadFn = vi.fn()
 const setOrderStatusesFn = vi.fn()
+const setRegisterStatusFn = vi.fn()
 const getCompaniesAll = vi.fn()
 const getOrderStatusesAll = vi.fn()
 const ensureOrderStatusesLoadedFn = vi.fn().mockResolvedValue()
 const ensureRegisterStatusesLoadedFn = vi.fn().mockResolvedValue()
+const mockRegisterStatuses = ref([
+  { id: 2, title: 'Register Status 2' },
+  { id: 5, title: 'Register Status 5' }
+])
 const getRegisterStatusByIdFn = vi.fn((id) => id
   ? { id, title: `Register Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
   : null
@@ -121,6 +135,7 @@ const registersStore = {
   getAll,
   upload: uploadFn,
   setParcelStatuses: setOrderStatusesFn,
+  setRegisterStatus: setRegisterStatusFn,
   validate: validateFn,
   getValidationProgress: getValidationProgressFn,
   cancelValidation: cancelValidationFn,
@@ -187,6 +202,7 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     ensureLoaded: ensureRegisterStatusesLoadedFn,
+    registerStatuses: mockRegisterStatuses,
     getStatusById: getRegisterStatusByIdFn,
     getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
   })
@@ -230,12 +246,20 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
+function getTableHeaders(wrapper) {
+  return wrapper.findComponent({ name: 'v-data-table-server' }).props('headers')
+}
+
 describe('Registers_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockItems.value = []
     mockCompanies.value = []
     mockOrderStatuses.value = []
+    mockRegisterStatuses.value = [
+      { id: 2, title: 'Register Status 2' },
+      { id: 5, title: 'Register Status 5' }
+    ]
     mockCountries.value = []
     mockAirports.value = []
     mockOps.value = { customsProcedures: [], transportationTypes: [] }
@@ -246,6 +270,7 @@ describe('Registers_List.vue', () => {
     getAirportsAll.mockClear()
     ensureOrderStatusesLoadedFn.mockClear()
     ensureRegisterStatusesLoadedFn.mockClear()
+    setRegisterStatusFn.mockReset()
     getRegisterStatusByIdFn.mockClear()
     ensureOpsLoadedFn.mockClear()
   })
@@ -352,12 +377,6 @@ describe('Registers_List.vue', () => {
         { id: 20, codeIata: 'JFK' }
       ]
 
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
       const item = {
         transportationTypeCode: 0,
         origCountryCode: '643',
@@ -365,9 +384,25 @@ describe('Registers_List.vue', () => {
         departureAirportId: 10,
         arrivalAirportId: 20
       }
+      const transportationTypesById = createTransportationTypesById(mockOps.value)
+      const airportsById = createAirportsById(mockAirports.value)
 
-      expect(wrapper.vm.getCountryDisplayName(item, item.origCountryCode, item.departureAirportId)).toBe('Россия (SVO)')
-      expect(wrapper.vm.getCountryDisplayName(item, item.destCountryCode, item.arrivalAirportId)).toBe('США (JFK)')
+      expect(getCountryDisplayName(
+        item,
+        item.origCountryCode,
+        item.departureAirportId,
+        mockCountries.value,
+        transportationTypesById,
+        airportsById
+      )).toBe('Россия (SVO)')
+      expect(getCountryDisplayName(
+        item,
+        item.destCountryCode,
+        item.arrivalAirportId,
+        mockCountries.value,
+        transportationTypesById,
+        airportsById
+      )).toBe('США (JFK)')
     })
 
     it('returns country name without code when not aviation or missing airport', () => {
@@ -384,19 +419,22 @@ describe('Registers_List.vue', () => {
         { id: 30, codeIata: 'SYD' }
       ]
 
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
       const item = {
         transportationTypeCode: 1,
         origCountryCode: '036',
         departureAirportId: 30
       }
+      const transportationTypesById = createTransportationTypesById(mockOps.value)
+      const airportsById = createAirportsById(mockAirports.value)
 
-      expect(wrapper.vm.getCountryDisplayName(item, item.origCountryCode, item.departureAirportId)).toBe('Австралия')
+      expect(getCountryDisplayName(
+        item,
+        item.origCountryCode,
+        item.departureAirportId,
+        mockCountries.value,
+        transportationTypesById,
+        airportsById
+      )).toBe('Австралия')
     })
 
     it('covers country and airport fallbacks', () => {
@@ -411,28 +449,27 @@ describe('Registers_List.vue', () => {
       }
       mockAirports.value = []
 
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
+      let transportationTypesById = createTransportationTypesById(mockOps.value)
+      let airportsById = createAirportsById(mockAirports.value)
 
-      expect(wrapper.vm.getCountryDisplayName({}, null, null)).toBe('Неизвестно')
-      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 643, null)).toBe('Россия')
-      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 999, null)).toBe(999)
-      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 36, null)).toBe('Австралийский Союз')
+      expect(getCountryDisplayName({}, null, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Неизвестно')
+      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 643, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Россия')
+      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 999, null, mockCountries.value, transportationTypesById, airportsById)).toBe(999)
+      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 36, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Австралийский Союз')
 
       mockCountries.value = [{ isoNumeric: 156 }]
-      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 1 }, 156, null)).toBe(156)
+      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 156, null, mockCountries.value, transportationTypesById, airportsById)).toBe(156)
 
       mockCountries.value = [{ isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }]
-      expect(wrapper.vm.getCountryDisplayName({ transportationTypeCode: 2 }, 36, null)).toBe('Австралийский Союз')
+      expect(getCountryDisplayName({ transportationTypeCode: 2 }, 36, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Австралийский Союз')
 
       mockOps.value = { customsProcedures: [], transportationTypes: null }
       mockAirports.value = null
-      expect(wrapper.vm.isAviaTransportation({ transportationTypeCode: 2 })).toBe(false)
-      expect(wrapper.vm.getAirportIata(0)).toBeNull()
-      expect(wrapper.vm.getAirportIata(10)).toBeNull()
+      transportationTypesById = createTransportationTypesById(mockOps.value)
+      airportsById = createAirportsById(mockAirports.value)
+      expect(isAviaTransportation({ transportationTypeCode: 2 }, transportationTypesById)).toBe(false)
+      expect(getAirportIata(0, airportsById)).toBeNull()
+      expect(getAirportIata(10, airportsById)).toBeNull()
     })
   })
 
@@ -579,7 +616,8 @@ describe('Registers_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
     })
 
-    it('opens register edit when status action button is clicked', async () => {
+    it('opens inline register-status selector when status action button is clicked', async () => {
+      mockIsSrLogistPlus.value = true
       mockItems.value = [
         {
           id: 7,
@@ -602,7 +640,42 @@ describe('Registers_List.vue', () => {
 
       await statusIconButton.trigger('click')
       expect(getRegisterStatusByIdFn).toHaveBeenCalledWith(2)
-      expect(router.push).toHaveBeenCalledWith('/register/edit/7?mode=modePaperwork')
+      expect(router.push).not.toHaveBeenCalledWith('/register/edit/7?mode=modePaperwork')
+      expect(wrapper.find('[data-testid="v-select"]').exists()).toBe(true)
+    })
+
+    it('applies inline register status changes in paperwork mode', async () => {
+      mockIsSrLogistPlus.value = true
+      setRegisterStatusFn.mockResolvedValue()
+      getAll.mockResolvedValue()
+      mockItems.value = [
+        {
+          id: 7,
+          statusId: 2
+        }
+      ]
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+      await wrapper.vm.$nextTick()
+      await wrapper.find('.register-status-action-button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      wrapper.vm.setSelectedRegisterStatusId(7, 5)
+      await wrapper.vm.$nextTick()
+
+      const inlineEditor = wrapper.findComponent(RegisterStatusInlineEditor)
+      await inlineEditor.vm.$emit('apply', 5)
+      await flushPromises()
+
+      expect(setRegisterStatusFn).toHaveBeenCalledWith(7, 5)
+      expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+      expect(alertSuccessFn).toHaveBeenCalledWith('Статус партии успешно изменен')
     })
 
     it('renders bookmark marker for lookup-by-article registers', async () => {
@@ -1037,7 +1110,7 @@ describe('Registers_List.vue', () => {
       })
 
       const sortableByKey = Object.fromEntries(
-        wrapper.vm.headers.map(header => [header.key, header.sortable])
+        getTableHeaders(wrapper).map(header => [header.key, header.sortable])
       )
 
       expect(sortableByKey.actions).toBe(false)
@@ -1063,7 +1136,7 @@ describe('Registers_List.vue', () => {
       })
 
       const headersByKey = Object.fromEntries(
-        wrapper.vm.headers.map(header => [header.key, header])
+        getTableHeaders(wrapper).map(header => [header.key, header])
       )
 
       expect(headersByKey.parcelsTotal.align).toBe('end')
@@ -1166,6 +1239,7 @@ describe('Registers_List.vue', () => {
         }
       })
 
+      await flushPromises()
       let actionButtons = wrapper.findAllComponents(ActionButton)
       let bulkButton = actionButtons.find(button =>
         String(button.props('tooltipText') || '').includes('Изменить статус')
@@ -1322,73 +1396,53 @@ describe('Registers_List.vue', () => {
 
 describe('formatInvoiceDate function', () => {
   it('formats a valid date string correctly in dd.MM.yyyy format', () => {
-    const wrapper = mount(RegistersList, {
-      global: { stubs: vuetifyStubs }
-    })
-    
     // Test with ISO format string
     const isoDate = '2025-07-27T12:34:56'
-    expect(wrapper.vm.formatDate(isoDate)).toBe('27.07.2025')
+    expect(formatDate(isoDate)).toBe('27.07.2025')
     
     // Test with different date
     const anotherDate = '2023-01-05'
-    expect(wrapper.vm.formatDate(anotherDate)).toBe('05.01.2023')
+    expect(formatDate(anotherDate)).toBe('05.01.2023')
   })
   
   it('handles single-digit day and month with padding', () => {
-    const wrapper = mount(RegistersList, {
-      global: { stubs: vuetifyStubs }
-    })
-    
     // Test with single-digit day
     const singleDigitDay = '2025-07-03'
-    expect(wrapper.vm.formatDate(singleDigitDay)).toBe('03.07.2025')
+    expect(formatDate(singleDigitDay)).toBe('03.07.2025')
     
     // Test with single-digit month
     const singleDigitMonth = '2025-03-15'
-    expect(wrapper.vm.formatDate(singleDigitMonth)).toBe('15.03.2025')
+    expect(formatDate(singleDigitMonth)).toBe('15.03.2025')
     
     // Test with both single-digit day and month
     const bothSingleDigit = '2025-02-09'
-    expect(wrapper.vm.formatDate(bothSingleDigit)).toBe('09.02.2025')
+    expect(formatDate(bothSingleDigit)).toBe('09.02.2025')
   })
   
   it('returns empty string for null or undefined input', () => {
-    const wrapper = mount(RegistersList, {
-      global: { stubs: vuetifyStubs }
-    })
-    
-    expect(wrapper.vm.formatDate(null)).toBe('')
-    expect(wrapper.vm.formatDate(undefined)).toBe('')
-    expect(wrapper.vm.formatDate('')).toBe('')
+    expect(formatDate(null)).toBe('')
+    expect(formatDate(undefined)).toBe('')
+    expect(formatDate('')).toBe('')
   })
   
   it('returns original string for invalid date input', () => {
-    const wrapper = mount(RegistersList, {
-      global: { stubs: vuetifyStubs }
-    })
-    
     const invalidDate = 'not-a-date'
-    expect(wrapper.vm.formatDate(invalidDate)).toBe(invalidDate)
+    expect(formatDate(invalidDate)).toBe(invalidDate)
     
     const anotherInvalidDate = '2025/13/45'  // invalid month and day
-    expect(wrapper.vm.formatDate(anotherInvalidDate)).toBe(anotherInvalidDate)
+    expect(formatDate(anotherInvalidDate)).toBe(anotherInvalidDate)
   })
   
   it('handles different date formats correctly', () => {
-    const wrapper = mount(RegistersList, {
-      global: { stubs: vuetifyStubs }
-    })
-    
     // Testing with more reliable date format MM/DD/YYYY (US)
-    expect(wrapper.vm.formatDate('07/27/2025')).toBe('27.07.2025')
+    expect(formatDate('07/27/2025')).toBe('27.07.2025')
     
     // Date object directly
     const dateObj = new Date(2025, 6, 27)  // Month is 0-indexed
-    expect(wrapper.vm.formatDate(dateObj)).toBe('27.07.2025')
+    expect(formatDate(dateObj)).toBe('27.07.2025')
     
     // Date with time component
     const dateWithTime = new Date('2025-07-27T15:30:45')
-    expect(wrapper.vm.formatDate(dateWithTime)).toBe('27.07.2025')
+    expect(formatDate(dateWithTime)).toBe('27.07.2025')
   })
 })

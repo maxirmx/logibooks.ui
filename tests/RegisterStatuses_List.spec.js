@@ -33,8 +33,8 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockRegisterStatuses = ref([
-  { id: 1, title: 'Черновик', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
-  { id: 2, title: 'Подтвержден', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+  { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
+  { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
   { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
 ])
 
@@ -104,8 +104,8 @@ describe('RegisterStatuses_List.vue', () => {
 
     // Reset reactive data
     mockRegisterStatuses.value = [
-      { id: 1, title: 'Черновик', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
-      { id: 2, title: 'Подтвержден', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+      { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
+      { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
       { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
     ]
 
@@ -182,6 +182,7 @@ describe('RegisterStatuses_List.vue', () => {
       const iconButton = wrapper.find('.status-icon-button')
 
       expect(iconButton.exists()).toBe(true)
+      expect(iconButton.attributes('title')).toBeUndefined()
       await iconButton.trigger('click')
 
       expect(mockPush).toHaveBeenCalledWith('/registerstatus/edit/1')

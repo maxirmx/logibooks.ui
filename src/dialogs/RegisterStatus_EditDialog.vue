@@ -232,14 +232,12 @@ function onSubmit(values, { setErrors }) {
                     bkColor: getColorFieldValue(undefined, 'bkColor'),
                     fgColor: getColorFieldValue(undefined, 'fgColor')
                   }"
-                  :show-tooltip="false"
                 />
               </button>
             </div>
             <div class="status-icon-preview">
               <RegisterStatusIcon
                 :status="getPreviewStatus(field?.value, registerStatus.bkColor, registerStatus.fgColor)"
-                :show-tooltip="false"
               />
             </div>
           </div>

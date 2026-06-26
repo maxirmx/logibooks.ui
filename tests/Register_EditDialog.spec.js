@@ -110,9 +110,9 @@ const warehousesStore = createMockStore({
 })
 const registerStatusesStore = createMockStore({
   registerStatuses: [
-    { id: 1, title: 'New', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
-    { id: 2, title: 'In Progress', icon: 'fa-solid fa-truck-fast', bkColor: '#FFEEDD', fgColor: '#111111' },
-    { id: 3, title: 'Completed', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+    { id: 1, title: 'New', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
+    { id: 2, title: 'In Progress', icon: 'svg:in-transit', bkColor: '#FFEEDD', fgColor: '#111111' },
+    { id: 3, title: 'Completed', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
   ],
   ensureLoaded: vi.fn(() => Promise.resolve()),
   getStatusById: vi.fn(id => registerStatusesStore.registerStatuses.find(status => status.id === id) || null),

@@ -163,7 +163,7 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
     getStatusById: vi.fn(id => id
-      ? { id, title: `Status ${id}`, icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
       : null
     ),
     getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')

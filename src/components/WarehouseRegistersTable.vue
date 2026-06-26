@@ -165,6 +165,11 @@ function getRegisterStatus(item) {
   return registerStatusesStore.getStatusById(item?.statusId)
 }
 
+function getRegisterStatusTitle(item) {
+  const status = getRegisterStatus(item)
+  return status?.title || (item?.statusId ? registerStatusesStore.getStatusTitle(item.statusId) : null)
+}
+
 </script>
 
 <template>
@@ -417,6 +422,7 @@ function getRegisterStatus(item) {
             type="button"
             class="register-status-action-button"
             :aria-label="`Редактировать ${registerNouns.accusative}`"
+            :title="getRegisterStatusTitle(item)"
             :disabled="runningAction || loading"
             @click="emitEditRegister(item)"
           >
@@ -425,6 +431,7 @@ function getRegisterStatus(item) {
           <span
             v-else-if="showRegisterStatusIcon"
             class="register-status-action-button register-status-action-button--readonly"
+            :title="getRegisterStatusTitle(item)"
           >
             <RegisterStatusIcon :status="getRegisterStatus(item)" />
           </span>

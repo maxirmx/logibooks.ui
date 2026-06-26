@@ -31,8 +31,8 @@ describe('register.statuses.store.js', () => {
   let pinia
 
   const mockRegisterStatuses = [
-    { id: 1, title: 'Черновик', icon: 'fa-solid fa-file-signature', bkColor: '#FFFFFF', fgColor: '#000000' },
-    { id: 2, title: 'Подтвержден', icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+    { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
+    { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
     { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
   ]
 
@@ -278,7 +278,7 @@ describe('register.statuses.store.js', () => {
       it('keeps presentation fields in the status map', () => {
         const status = store.getStatusById(2)
         expect(status).toMatchObject({
-          icon: 'fa-solid fa-circle-check',
+          icon: 'svg:very-delivered',
           bkColor: '#00AA00',
           fgColor: '#FFFFFF'
         })

@@ -225,6 +225,11 @@ function getRegisterStatus(item) {
   return registerStatusesStore.getStatusById(item?.statusId)
 }
 
+function getRegisterStatusTitle(item) {
+  const status = getRegisterStatus(item)
+  return status?.title || (item?.statusId ? registerStatusesStore.getStatusTitle(item.statusId) : null)
+}
+
 // Load companies and parcel statuses on component mount
 onMounted(async () => {
   try {
@@ -627,6 +632,7 @@ defineExpose({
               type="button"
               class="register-status-action-button"
               :aria-label="`Редактировать ${registerNouns.accusative}`"
+              :title="getRegisterStatusTitle(item)"
               :disabled="runningAction || loading"
               @click="editRegister(item)"
             >

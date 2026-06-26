@@ -56,7 +56,7 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     getStatusById: vi.fn((id) => id
-      ? { id, title: `Status ${id}`, icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
       : null
     ),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
@@ -140,10 +140,26 @@ describe('WarehouseRegistersTable matching-count column', () => {
 
     expect(wrapper.find('[data-testid="header-keys"]').text()).not.toContain('registerStatusIcon')
     expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
+    expect(wrapper.find('.register-status-action-button').attributes('title')).toBe('Status 2')
 
     await wrapper.find('.register-status-action-button').trigger('click')
 
     expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 1, statusId: 2 }])
+  })
+
+  it('renders register-status tooltip for read-only warehouse rows', () => {
+    const wrapper = mountTable({
+      showRegisterStatusIcon: true,
+      linksEnabled: false,
+      items: [
+        { id: 1, statusId: 2 }
+      ]
+    })
+
+    const statusIcon = wrapper.find('.register-status-action-button--readonly')
+
+    expect(statusIcon.exists()).toBe(true)
+    expect(statusIcon.attributes('title')).toBe('Status 2')
   })
 
   it('adds the matching-count header only when requested', () => {

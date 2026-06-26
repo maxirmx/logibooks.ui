@@ -10,6 +10,8 @@ import {
   REGISTER_STATUS_DEFAULT_BK_COLOR,
   REGISTER_STATUS_DEFAULT_FG_COLOR,
   REGISTER_STATUS_DEFAULT_ICON,
+  REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
+  REGISTER_STATUS_ICON_KIND_SVG,
   isSupportedRegisterStatusIcon,
   normalizeRegisterStatusPresentationPayload,
   registerStatusIconOptions,
@@ -18,35 +20,55 @@ import {
 } from '@/helpers/register.status.icons.js'
 
 describe('register.status.icons helper', () => {
-  it('contains the supported local Font Awesome status icons', () => {
-    expect(registerStatusIconOptions).toHaveLength(16)
+  it('contains the supported copied SVG status icons and manual Font Awesome fallback', () => {
+    expect(registerStatusIconOptions).toHaveLength(17)
     expect(registerStatusIconOptions.map(option => option.value)).toEqual([
-      'fa-solid fa-file-signature',
-      'fa-solid fa-hourglass-start',
-      'fa-solid fa-people-carry-box',
-      'fa-solid fa-hourglass-half',
-      'fa-solid fa-clock',
-      'fa-solid fa-truck-fast',
-      'fa-solid fa-warehouse',
-      'fa-solid fa-truck-ramp-box',
-      'fa-solid fa-magnifying-glass',
-      'fa-solid fa-clipboard-check',
-      'fa-solid fa-plane-departure',
-      'fa-solid fa-right-to-bracket',
-      'fa-solid fa-right-from-bracket',
-      'fa-solid fa-plane-arrival',
-      'fa-solid fa-box-open',
-      'fa-solid fa-circle-check'
+      'svg:registered',
+      'svg:waiting-for-shipment',
+      'svg:collected',
+      'svg:waiting',
+      'svg:waiting-for-transit',
+      'svg:in-transit',
+      'svg:in-storage',
+      'svg:out-of-storage',
+      'svg:customs-start',
+      'svg:customs-end',
+      'svg:out-of-country-of-origin',
+      'svg:into-country-of-transit',
+      'svg:out-of-country-of-transit',
+      'svg:into-country-of-destination',
+      'svg:delivered',
+      'svg:very-delivered',
+      REGISTER_STATUS_DEFAULT_ICON
     ])
     expect(registerStatusIconOptions.every(option => !('title' in option))).toBe(true)
+    expect(registerStatusIconOptions.slice(0, 16).every(option =>
+      option.kind === REGISTER_STATUS_ICON_KIND_SVG && typeof option.src === 'string'
+    )).toBe(true)
+    expect(registerStatusIconOptions[16]).toMatchObject({
+      kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
+      icon: REGISTER_STATUS_DEFAULT_ICON
+    })
   })
 
   it('resolves supported and fallback icons', () => {
-    expect(isSupportedRegisterStatusIcon('fa-solid fa-box-open')).toBe(true)
+    expect(isSupportedRegisterStatusIcon('svg:delivered')).toBe(true)
+    expect(isSupportedRegisterStatusIcon(REGISTER_STATUS_DEFAULT_ICON)).toBe(true)
+    expect(isSupportedRegisterStatusIcon('fa-solid fa-box-open')).toBe(false)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-not-real')).toBe(false)
-    expect(resolveRegisterStatusIcon('fa-solid fa-box-open')).toBe('fa-solid fa-box-open')
-    expect(resolveRegisterStatusIcon('fa-solid fa-not-real')).toBe(REGISTER_STATUS_DEFAULT_ICON)
-    expect(resolveRegisterStatusIcon(null)).toBe(REGISTER_STATUS_DEFAULT_ICON)
+    expect(resolveRegisterStatusIcon('svg:delivered')).toMatchObject({
+      value: 'svg:delivered',
+      kind: REGISTER_STATUS_ICON_KIND_SVG
+    })
+    expect(resolveRegisterStatusIcon('fa-solid fa-not-real')).toMatchObject({
+      value: REGISTER_STATUS_DEFAULT_ICON,
+      kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
+      icon: REGISTER_STATUS_DEFAULT_ICON
+    })
+    expect(resolveRegisterStatusIcon(null)).toMatchObject({
+      value: REGISTER_STATUS_DEFAULT_ICON,
+      kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME
+    })
   })
 
   it('resolves default and explicit colors', () => {
@@ -92,32 +114,36 @@ describe('RegisterStatusIcon', () => {
     })
   }
 
-  it('renders supported icon and colors', () => {
+  it('renders supported copied SVG icon and colors', () => {
     const wrapper = mountIcon({
       title: 'Готово',
-      icon: 'fa-solid fa-circle-check',
+      icon: 'svg:very-delivered',
       bkColor: '#00AA00',
       fgColor: '#FFFFFF'
     })
 
-    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe('fa-solid fa-circle-check')
+    expect(wrapper.find('[data-testid="register-status-svg-icon"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="fa-icon"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe('svg:very-delivered')
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_SVG)
     expect(wrapper.find('[data-testid="register-status-icon"]').attributes('style')).toContain('background-color: rgb(0, 170, 0)')
     expect(wrapper.find('[data-testid="register-status-icon"]').attributes('style')).toContain('color: rgb(255, 255, 255)')
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('title')).toBe('Готово')
+    expect(wrapper.find('[data-testid="register-status-svg-icon"]').attributes('style')).toContain('mask-image')
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('title')).toBeUndefined()
   })
 
   it('renders neutral placeholder for missing status', () => {
     const wrapper = mountIcon(null)
 
     expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe(REGISTER_STATUS_DEFAULT_ICON)
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('title')).toBe('Статус партии')
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_FONT_AWESOME)
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('title')).toBeUndefined()
   })
 
-  it('suppresses tooltip title when requested', () => {
+  it('does not render tooltip title for register status icons', () => {
     const wrapper = mount(RegisterStatusIcon, {
       props: {
-        status: { title: 'Готово', icon: 'fa-solid fa-circle-check' },
-        showTooltip: false
+        status: { title: 'Готово', icon: 'svg:delivered' }
       },
       global: {
         stubs: {

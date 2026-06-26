@@ -47,7 +47,7 @@ const getOrderStatusesAll = vi.fn()
 const ensureOrderStatusesLoadedFn = vi.fn().mockResolvedValue()
 const ensureRegisterStatusesLoadedFn = vi.fn().mockResolvedValue()
 const getRegisterStatusByIdFn = vi.fn((id) => id
-  ? { id, title: `Register Status ${id}`, icon: 'fa-solid fa-circle-check', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+  ? { id, title: `Register Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
   : null
 )
 const getCountriesAll = vi.fn()
@@ -598,6 +598,7 @@ describe('Registers_List.vue', () => {
 
       const statusIconButton = wrapper.find('.register-status-action-button')
       expect(statusIconButton.exists()).toBe(true)
+      expect(statusIconButton.attributes('title')).toBe('Register Status 2')
 
       await statusIconButton.trigger('click')
       expect(getRegisterStatusByIdFn).toHaveBeenCalledWith(2)

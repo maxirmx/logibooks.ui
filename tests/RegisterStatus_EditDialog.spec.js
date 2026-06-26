@@ -14,7 +14,7 @@ import { resolveAll } from './helpers/test-utils.js'
 const mockRegisterStatus = {
   id: 1,
   title: 'Черновик',
-  icon: 'fa-solid fa-file-signature',
+  icon: 'svg:registered',
   bkColor: '#FFFFFF',
   fgColor: '#000000'
 }
@@ -188,7 +188,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.find('.register-status-form').exists()).toBe(true)
       expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="fg-color-swatch"]').exists()).toBe(true)
-      expect(wrapper.findAll('.status-icon-option')).toHaveLength(16)
+      expect(wrapper.findAll('.status-icon-option')).toHaveLength(17)
     })
 
     it('renders form labels correctly', async () => {
@@ -219,7 +219,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       expect(wrapper.find('#bkColor').element.value).toBe('#ffffff')
       expect(wrapper.find('#fgColor').element.value).toBe('#000000')
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-file-signature')
+      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('svg:registered')
       expect(wrapper.find('.status-icon-option.selected').attributes('title')).toBeUndefined()
     })
 
@@ -242,7 +242,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.find('[data-testid="fg-color-swatch"]').attributes('style')).toContain('background-color: rgb(171, 205, 239)')
     })
 
-    it('selects an icon from the visual icon selector', async () => {
+    it('selects the manual Font Awesome question mark from the visual icon selector', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
         global: {
@@ -253,7 +253,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       const option = wrapper.findAll('.status-icon-option').find(button =>
-        button.attributes('aria-label') === 'fa-solid fa-circle-check'
+        button.attributes('aria-label') === 'fa-solid fa-circle-question'
       )
       expect(option.exists()).toBe(true)
       expect(option.attributes('title')).toBeUndefined()
@@ -261,7 +261,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       await option.trigger('click')
 
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-circle-check')
+      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-circle-question')
       expect(wrapper.find('.status-icon-preview [data-testid="register-status-icon"]').attributes('title')).toBeUndefined()
     })
 
@@ -433,6 +433,28 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
+      expect(mockRouter.push).not.toHaveBeenCalled()
+    })
+
+    it('uses fallback error text when update error has no message', async () => {
+      const error = new Error()
+      error.message = undefined
+      mockRegisterStatusesStore.update.mockRejectedValueOnce(error)
+
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', registerStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const form = wrapper.find('form')
+      await form.trigger('submit')
+      await resolveAll()
+
+      expect(wrapper.text()).toContain('Ошибка при сохранении статуса партии')
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
@@ -652,6 +674,29 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
         expect(wrapper.text()).toContain('Название статуса обязательно')
       }
+    })
+
+    it('displays icon and color validation errors when present', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const formComponent = wrapper.findComponent({ name: 'Form' })
+      formComponent.vm.setErrors({
+        icon: 'Выберите поддерживаемую иконку статуса',
+        bkColor: 'Цвет фона должен быть в формате #RRGGBB',
+        fgColor: 'Цвет иконки должен быть в формате #RRGGBB'
+      })
+      await resolveAll()
+
+      expect(wrapper.text()).toContain('Выберите поддерживаемую иконку статуса')
+      expect(wrapper.text()).toContain('Цвет фона должен быть в формате #RRGGBB')
+      expect(wrapper.text()).toContain('Цвет иконки должен быть в формате #RRGGBB')
     })
   })
 

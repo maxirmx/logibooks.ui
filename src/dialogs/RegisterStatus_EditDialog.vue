@@ -295,6 +295,8 @@ function onSubmit(values, { setErrors }) {
 
 .register-status-form {
   --register-status-label-width: 13rem;
+  --register-status-control-height: 2.25rem;
+  --register-status-icon-option-size: 2.5rem;
 }
 
 .status-settings-row {
@@ -312,10 +314,20 @@ function onSubmit(values, { setErrors }) {
 .status-settings-label {
   width: auto;
   min-width: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  min-height: var(--register-status-control-height);
+}
+
+.status-settings-row--icons .status-settings-label {
+  align-self: start;
+  min-height: var(--register-status-icon-option-size);
 }
 
 .status-title-input {
   width: 100%;
+  margin-bottom: 0;
 }
 
 .status-color-control {
@@ -361,7 +373,7 @@ function onSubmit(values, { setErrors }) {
 
 .status-icon-selector {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 2.5rem);
+  grid-template-columns: repeat(auto-fill, var(--register-status-icon-option-size));
   gap: 0.5rem;
   align-items: center;
 }
@@ -370,8 +382,8 @@ function onSubmit(values, { setErrors }) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--register-status-icon-option-size);
+  height: var(--register-status-icon-option-size);
   border: 1px solid #c7ccd1;
   border-radius: 4px;
   background: #fff;
@@ -417,6 +429,10 @@ function onSubmit(values, { setErrors }) {
   .status-settings-row {
     grid-template-columns: 1fr;
     row-gap: 0.35rem;
+  }
+
+  .status-settings-label {
+    min-height: 0;
   }
 }
 </style>

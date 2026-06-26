@@ -63,7 +63,7 @@ vi.mock('vee-validate', () => ({
     emits: ['submit'],
     template: `
       <form @submit.prevent="handleSubmit">
-        <slot :errors="errors" :isSubmitting="isSubmitting" />
+        <slot :errors="errors" :isSubmitting="isSubmitting" :handleSubmit="runSubmit" />
       </form>
     `,
     data() {
@@ -78,6 +78,12 @@ vi.mock('vee-validate', () => ({
           setErrors: this.setErrors.bind(this)
         }
         this.$emit('submit', this.$props.initialValues || {}, actions)
+      },
+      runSubmit(callback) {
+        const actions = {
+          setErrors: this.setErrors.bind(this)
+        }
+        return callback(this.$props.initialValues || {}, actions)
       },
       setErrors(newErrors) {
         this.errors = { ...this.errors, ...newErrors }
@@ -123,6 +129,12 @@ const AsyncWrapper = {
   `
 }
 
+function findActionButton(wrapper, icon) {
+  return wrapper
+    .findAllComponents({ name: 'ActionButton' })
+    .find(button => button.props('icon') === icon)
+}
+
 // Import router after mocking
 let mockRouter
 beforeEach(async () => {
@@ -153,7 +165,10 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Создание статуса партии')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
+      expect(wrapper.find('[data-testid="register-status-header-actions"]').exists()).toBe(true)
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
+      expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
+      expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
       expect(mockRegisterStatusesStore.getById).not.toHaveBeenCalled()
     })
 
@@ -168,7 +183,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Редактирование статуса партии')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
 
     it('renders all form fields', async () => {
@@ -485,11 +500,10 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       await resolveAll()
 
-      const cancelButton = wrapper.find('button.secondary')
+      const cancelButton = findActionButton(wrapper, 'fa-solid fa-xmark')
       expect(cancelButton.exists()).toBe(true)
-      expect(cancelButton.text()).toBe('Отменить')
 
-      await cancelButton.trigger('click')
+      await cancelButton.find('button').trigger('click')
       expect(mockRouter.push).toHaveBeenCalledWith('/registerstatuses')
     })
   })
@@ -624,7 +638,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
     })
 
     it('displays correct button text for edit mode', async () => {
@@ -636,7 +650,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
   })
 

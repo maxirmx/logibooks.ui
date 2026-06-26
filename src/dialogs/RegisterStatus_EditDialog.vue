@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 import {
   REGISTER_STATUS_DEFAULT_BK_COLOR,
@@ -136,16 +137,39 @@ function onSubmit(values, { setErrors }) {
 </script>
 
 <template>
-  <div class="settings form-3">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
-    <hr class="hr" />
+  <div class="settings form-2">
     <Form
       class="register-status-form"
       @submit="onSubmit"
       :initial-values="registerStatus"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, isSubmitting, handleSubmit }"
     >
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ getTitle() }}</h1>
+        <div class="header-actions" data-testid="register-status-header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            :iconSize="'2x'"
+            :tooltip-text="getButtonText()"
+            :disabled="isSubmitting"
+            data-testid="register-status-save-action"
+            @click="handleSubmit(onSubmit)"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            :iconSize="'2x'"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            data-testid="register-status-cancel-action"
+            @click="router.push('/registerstatuses')"
+          />
+        </div>
+      </div>
+      <hr class="hr" />
+
       <div class="status-settings-row">
         <label for="title" class="label status-settings-label">Название статуса:</label>
         <Field
@@ -230,24 +254,6 @@ function onSubmit(values, { setErrors }) {
         </div>
       </Field>
 
-      <div class="status-settings-actions mt-8">
-        <div class="status-settings-actions-buttons">
-          <button class="button primary" type="submit" :disabled="isSubmitting">
-            <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-            <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-            {{ getButtonText() }}
-          </button>
-          <button
-            class="button secondary"
-            type="button"
-            @click="$router.push('/registerstatuses')"
-          >
-            <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-            Отменить
-          </button>
-        </div>
-      </div>
-
       <div v-if="errors.title" class="alert alert-danger mt-3 mb-0">{{ errors.title }}</div>
       <div v-if="errors.icon" class="alert alert-danger mt-3 mb-0">{{ errors.icon }}</div>
       <div v-if="errors.bkColor" class="alert alert-danger mt-3 mb-0">{{ errors.bkColor }}</div>
@@ -258,12 +264,40 @@ function onSubmit(values, { setErrors }) {
 </template>
 
 <style scoped>
+.header-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-width: min-content;
+}
+
+.primary-heading {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .register-status-form {
   --register-status-label-width: 13rem;
 }
 
-.status-settings-row,
-.status-settings-actions {
+.status-settings-row {
   display: grid;
   grid-template-columns: var(--register-status-label-width) minmax(0, 1fr);
   align-items: center;
@@ -365,26 +399,24 @@ function onSubmit(values, { setErrors }) {
   margin-top: 0.75rem;
 }
 
-.status-settings-actions {
-  margin-bottom: 0;
-}
-
-.status-settings-actions-buttons {
-  grid-column: 2;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 @media (max-width: 700px) {
-  .status-settings-row,
-  .status-settings-actions {
-    grid-template-columns: 1fr;
-    row-gap: 0.35rem;
+  .header-with-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .status-settings-actions-buttons {
-    grid-column: 1;
+  .primary-heading {
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .header-actions {
+    align-self: flex-end;
+  }
+
+  .status-settings-row {
+    grid-template-columns: 1fr;
+    row-gap: 0.35rem;
   }
 }
 </style>

@@ -13,6 +13,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 
 const registerStatusesStore = useRegisterStatusesStore()
 const authStore = useAuthStore()
@@ -180,7 +181,9 @@ defineExpose({
             aria-label="Редактировать статус партии"
             :disabled="runningAction || loading"
             @click="openEditDialog(item)"
-          >
+          >        
+           <RegisterStatusIcon :status="item" />
+          </button>
         </template>
       </v-data-table>
     </v-card>

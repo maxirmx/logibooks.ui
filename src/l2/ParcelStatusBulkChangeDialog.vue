@@ -208,6 +208,7 @@ defineExpose({
   <v-dialog
     :model-value="show"
     content-class="parcel-status-bulk-dialog-position"
+    :persistent="busy"
     @update:model-value="onDialogUpdate"
   >
     <v-card class="parcel-status-bulk-card">

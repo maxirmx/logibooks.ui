@@ -32,7 +32,8 @@ describe('status store', () => {
         rates: [
           { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
           { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
-        ]
+        ],
+        eurUzs: { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 15586.1234, date: '2024-06-24' }
       },
     })
 
@@ -48,6 +49,12 @@ describe('status store', () => {
       { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
       { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
     ])
+    expect(store.eurUzs).toEqual({
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'UZS',
+      rate: 15586.1234,
+      date: '2024-06-24'
+    })
   })
 
   it('fetchStatus resets exchange rates when API does not return them', async () => {
@@ -61,9 +68,11 @@ describe('status store', () => {
     store.exchangeRates = [
       { alphabeticCode: 'USD', rate: 91.1, date: '2024-06-01' },
     ]
+    store.eurUzs = { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 15586.1234, date: '2024-06-01' }
 
     await store.fetchStatus()
 
     expect(store.exchangeRates).toEqual([])
+    expect(store.eurUzs).toBeNull()
   })
 })

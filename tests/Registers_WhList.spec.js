@@ -205,6 +205,15 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
+vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
+  default: {
+    name: 'ParcelStatusBulkChangeDialog',
+    props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
+    emits: ['update:show', 'updated'],
+    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+  }
+}))
+
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
@@ -387,10 +396,10 @@ describe('Registers_WhList.vue', () => {
     expect(hasEdit).toBe(true)
     expect(hasDelete).toBe(true)
 
-    const hasWarehouseTooltip = actionButtons.some(button =>
-      String(button.props('tooltipText') || '').includes('в партии')
+    const hasStatusBulkAction = actionButtons.some(button =>
+      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
-    expect(hasWarehouseTooltip).toBe(true)
+    expect(hasStatusBulkAction).toBe(true)
   })
 
   it('hides warehouse register delete action below shift lead role', async () => {
@@ -617,17 +626,17 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.registerNouns.genitivePlural).toBe('партий')
   })
 
-  it('uses warehouse-specific tooltips for bulk actions', async () => {
+  it('uses independent parcel status bulk-change action', async () => {
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const bulkStatusButton = actionButtons.find(button =>
-      String(button.props('tooltipText') || '').includes('партии')
+      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     expect(bulkStatusButton).toBeTruthy()
-    expect(bulkStatusButton.props('tooltipText')).toContain('в партии')
+    expect(bulkStatusButton.props('icon')).toBe('fa-solid fa-pen-to-square')
   })
 
   it('covers country and airport display fallbacks', () => {
@@ -672,55 +681,31 @@ describe('Registers_WhList.vue', () => {
     expect(getAirportIata(20, emptyAirportsById)).toBeNull()
   })
 
-  it('renders bulk edit controls and applies or cancels status changes', async () => {
-    mockItems.value = [{ id: 1 }]
-    registersStore.setParcelStatuses.mockResolvedValue()
+  it('opens parcel status bulk dialog and refreshes after dialog updates', async () => {
+    mockItems.value = [{ id: 1, registerType: 2 }]
     getAll.mockResolvedValue()
 
     const wrapper = createWrapper()
     await flushPromises()
     await wrapper.vm.$nextTick()
 
-    let actionButtons = wrapper.findAllComponents(ActionButton)
-    let bulkButton = actionButtons.find(button =>
-      String(button.props('tooltipText') || '').includes('Изменить статус')
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const bulkButton = actionButtons.find(button =>
+      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     await bulkButton.find('button').trigger('click')
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.find('[data-testid="v-select"]').exists()).toBe(true)
-    const select = wrapper.findComponent(vuetifyStubs['v-select'])
-    select.vm.$emit('update:modelValue', 6)
-    await wrapper.vm.$nextTick()
+    const dialog = wrapper.find('[data-testid="parcel-status-bulk-dialog"]')
+    expect(dialog.attributes('data-show')).toBe('true')
+    expect(dialog.attributes('data-register-id')).toBe('1')
+    expect(dialog.attributes('data-register-type')).toBe('2')
 
-    actionButtons = wrapper.findAllComponents(ActionButton)
-    const cancelButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Отменить'
-    )
-    await cancelButton.find('button').trigger('click')
-    await wrapper.vm.$nextTick()
-
-    actionButtons = wrapper.findAllComponents(ActionButton)
-    bulkButton = actionButtons.find(button =>
-      String(button.props('tooltipText') || '').includes('Изменить статус')
-    )
-    await bulkButton.find('button').trigger('click')
-    await wrapper.vm.$nextTick()
-
-    wrapper.vm.setSelectedStatusId(1, 5)
-    await wrapper.vm.$nextTick()
-
-    actionButtons = wrapper.findAllComponents(ActionButton)
-    const applyButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Применить статус'
-    )
-    await applyButton.find('button').trigger('click')
+    await wrapper.find('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
     await flushPromises()
 
-    expect(registersStore.setParcelStatuses).toHaveBeenCalledWith(1, 5)
     expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
-    expect(wrapper.vm.isInEditMode(1)).toBe(false)
   })
 
   it('applies inline register status changes in warehouse mode', async () => {

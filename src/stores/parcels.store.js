@@ -321,6 +321,21 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
+  async function resolveStatusSelection(registerId, numbers) {
+    return await fetchWrapper.post(`${baseUrl}/status-selection/resolve`, {
+      registerId,
+      numbers
+    })
+  }
+
+  async function updateStatusSelection(registerId, statusId, parcelIds) {
+    return await fetchWrapper.post(`${baseUrl}/status-selection/update`, {
+      registerId,
+      statusId,
+      parcelIds
+    })
+  }
+
   async function deleteImage(id) {
     // Calls API: DELETE /parcels/{id}/image
     // Defensive check: verify parcel has an image before making API call
@@ -375,6 +390,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     clearExtId,
     applyExtIdChange,
     bulkAssignTnved,
+    resolveStatusSelection,
+    updateStatusSelection,
     getImageProcessingUrl,
     getImageBlob,
     deleteImage

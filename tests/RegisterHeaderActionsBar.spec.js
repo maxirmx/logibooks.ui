@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { vi } from 'vitest'
-import { ref } from 'vue'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
@@ -8,6 +7,11 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
+const authRefs = vi.hoisted(() => ({
+  hasLogistRole: { __v_isRef: true, value: true },
+  isSrLogistPlus: { __v_isRef: true, value: true },
+  isShiftLeadPlus: { __v_isRef: true, value: true }
+}))
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
@@ -23,12 +27,16 @@ vi.mock('vue-router', () => ({
   createWebHistory: () => ({})
 }))
 
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => store
+  }
+})
+
 vi.mock('@/stores/auth.store.js', () => ({
-  useAuthStore: () => ({
-    hasLogistRole: ref(true),
-    isSrLogistPlus: ref(true),
-    isShiftLeadPlus: ref(true)
-  })
+  useAuthStore: () => authRefs
 }))
 
 describe('RegisterHeaderActionsBar', () => {
@@ -40,6 +48,9 @@ describe('RegisterHeaderActionsBar', () => {
 
   beforeEach(() => {
     pushMock.mockClear()
+    authRefs.hasLogistRole.value = true
+    authRefs.isSrLogistPlus.value = true
+    authRefs.isShiftLeadPlus.value = true
   })
 
   it('navigates to invoice settings with selected scope when invoice action option is used', async () => {
@@ -217,6 +228,25 @@ describe('RegisterHeaderActionsBar', () => {
 
     expect(wrapper.emitted('lookup')).toHaveLength(1)
     expect(wrapper.emitted('lookup-ex')).toHaveLength(1)
+  })
+
+  it('emits parcel status bulk-change action with approved icon', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const statusBulkButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
+    )
+
+    expect(statusBulkButton).toBeTruthy()
+    expect(statusBulkButton.props('icon')).toBe('fa-solid fa-pen-to-square')
+
+    statusBulkButton.vm.$emit('click')
+
+    expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
   })
 
   it('disables historic data actions when noHistoricData is true', () => {

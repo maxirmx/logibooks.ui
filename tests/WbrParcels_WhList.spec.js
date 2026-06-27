@@ -10,6 +10,7 @@ import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 
 const {
   loadParcels,
@@ -70,7 +71,7 @@ const isWhManager = ref(false)
 const isShiftLead = ref(false)
 const hasLogistRole = ref(true)
 
-const registerItem = ref({ dealNumber: 'D-1' })
+const registerItem = ref({ id: 1, dealNumber: 'D-1', registerType: WBR_COMPANY_ID })
 
 const getById = vi.fn().mockResolvedValue()
 
@@ -194,7 +195,14 @@ const globalStubs = {
     template: '<div data-testid="pagination-footer"></div>'
   },
   RegisterWhHeaderActionBar: {
-    template: '<div data-testid="register-wh-header-action-bar"></div>'
+    props: ['register'],
+    emits: ['bulk-change-parcel-status', 'close'],
+    template: '<div data-testid="register-wh-header-action-bar" :data-register-type="register?.registerType"><button type="button" data-testid="open-parcel-status-bulk-dialog" @click="$emit(\'bulk-change-parcel-status\')"></button></div>'
+  },
+  ParcelStatusBulkChangeDialog: {
+    props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
+    emits: ['update:show', 'updated'],
+    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.value?.registerType ?? register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
   }
 }
 
@@ -233,7 +241,7 @@ describe('WbrParcels_WhList.vue', () => {
     parcelsWhBoxNumber.value = ''
     parcelsWhSticker.value = ''
     parcelsWhProductName.value = ''
-    registerItem.value = { dealNumber: 'D-1' }
+    registerItem.value = { id: 1, dealNumber: 'D-1', registerType: WBR_COMPANY_ID }
     navigateToEditParcel.mockClear()
   })
 
@@ -297,6 +305,35 @@ describe('WbrParcels_WhList.vue', () => {
     ])
     expect(wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable).toBe(true)
     expect(wrapper.vm.headers.find((header) => header.key === 'extId').sortable).not.toBe(false)
+  })
+
+  it('opens parcel status bulk dialog and reloads warehouse parcels after update', async () => {
+    const wrapper = mount(WbrParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+
+    await wrapper.get('[data-testid="open-parcel-status-bulk-dialog"]').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const dialog = wrapper.get('[data-testid="parcel-status-bulk-dialog"]')
+    expect(dialog.attributes('data-show')).toBe('true')
+    expect(dialog.attributes('data-register-id')).toBe('1')
+    expect(dialog.attributes('data-register-type')).toBe(String(WBR_COMPANY_ID))
+
+    loadParcels.mockClear()
+    await wrapper.get('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
+    await resolveAll()
+
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true }
+    )
   })
 
   it('renders product name in a non-wrapping truncated cell', () => {

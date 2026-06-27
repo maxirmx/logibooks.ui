@@ -49,13 +49,7 @@ const props = defineProps({
   isShiftLeadPlus: { type: Boolean, default: false },
   isSrLogistPlus: { type: Boolean, default: false },
   isWhManagerPlus: { type: Boolean, default: false },
-  statusOptions: { type: Array, default: () => [] },
-  isInEditMode: { type: Function, default: () => false },
-  getSelectedStatusId: { type: Function, default: () => null },
-  setSelectedStatusId: { type: Function, default: () => {} },
-  bulkChangeStatus: { type: Function, default: () => {} },
-  cancelStatusChange: { type: Function, default: () => {} },
-  applyStatusToAllOrders: { type: Function, default: () => {} },
+  openParcelStatusBulkDialog: { type: Function, default: () => {} },
   showRegisterStatusIcon: { type: Boolean, default: false },
   registerStatusOptions: { type: Array, default: () => [] },
   canChangeRegisterStatus: { type: Boolean, default: false },
@@ -463,46 +457,14 @@ function getRegisterStatusTitle(item) {
             @click="() => emit('edit-register', item)"
             :disabled="runningAction || loading"
           />
-
-          <div class="bulk-status-inline" v-if="isSrLogistPlus">
-            <div v-if="isInEditMode(item.id)" class="status-selector-inline">
-              <v-select
-                :model-value="getSelectedStatusId(item.id)"
-                @update:model-value="(value) => setSelectedStatusId(item.id, value)"
-                :items="statusOptions"
-                item-title="title"
-                item-value="id"
-                placeholder="Статус"
-                variant="outlined"
-                density="compact"
-                hide-details
-                hide-no-data
-                :disabled="runningAction || loading"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-check"
-                tooltip-text="Применить статус"
-                :disabled="runningAction || loading || !getSelectedStatusId(item.id)"
-                @click="() => applyStatusToAllOrders(item.id, getSelectedStatusId(item.id))"
-              />
-              <ActionButton
-                :item="item"
-                icon="fa-solid fa-xmark"
-                tooltip-text="Отменить"
-                :disabled="runningAction || loading"
-                @click="() => cancelStatusChange(item.id)"
-              />
-            </div>
-            <ActionButton
-              v-else
-              :item="item"
-              icon="fa-solid fa-pen-to-square"
-              :tooltip-text="`Изменить статус всех посылок в ${registerNouns.prepositional}`"
-              :disabled="runningAction || loading"
-              @click="() => bulkChangeStatus(item.id)"
-            />
-          </div>
+          <ActionButton
+            v-if="isSrLogistPlus"
+            :item="item"
+            icon="fa-solid fa-pen-to-square"
+            tooltip-text="Выбрать посылки и изменить статус"
+            :disabled="runningAction || loading"
+            @click="() => openParcelStatusBulkDialog(item.id)"
+          />
           <ActionButton
             v-if="isShiftLeadPlus"
             :item="item"

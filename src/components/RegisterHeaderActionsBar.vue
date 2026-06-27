@@ -28,6 +28,7 @@ const emit = defineEmits([
   'download',
   'download-additional-restrictions',
   'download-techdoc',
+  'bulk-change-parcel-status',
   'freeze-check-status',
   'freeze-tnved-order',
   'close',
@@ -181,6 +182,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        v-if="isSrLogistPlus"
+        :item="item"
+        icon="fa-solid fa-pen-to-square"
+        tooltip-text="Выбрать посылки и изменить статус"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('bulk-change-parcel-status')"
+      />
       <ActionButton
         v-if="isShiftLeadPlus"
         :item="item"

@@ -6,13 +6,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const mocks = vi.hoisted(() => ({
   resolveStatusSelection: vi.fn(),
   updateStatusSelection: vi.fn(),
   setParcelStatuses: vi.fn(),
   alertSuccess: vi.fn(),
-  alertError: vi.fn()
+  alertError: vi.fn(),
+  registerItems: [],
+  registerItem: null
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -24,6 +27,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
+    items: mocks.registerItems,
+    item: mocks.registerItem,
     setParcelStatuses: mocks.setParcelStatuses
   })
 }))
@@ -61,6 +66,7 @@ function mountDialog(props = {}) {
     global: {
       stubs: {
         'v-dialog': {
+          name: 'VDialog',
           props: ['modelValue'],
           emits: ['update:modelValue'],
           template: '<div data-testid="dialog"><slot /></div>'
@@ -96,6 +102,8 @@ describe('ParcelStatusBulkChangeDialog', () => {
     })
     mocks.updateStatusSelection.mockResolvedValue({ updatedCount: 0, skippedCount: 0 })
     mocks.setParcelStatuses.mockResolvedValue()
+    mocks.registerItems = []
+    mocks.registerItem = null
   })
 
   it('keeps action buttons disabled until required input is present', async () => {
@@ -124,7 +132,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(actionGroups).toHaveLength(2)
     expect(actionGroups[0].find('[data-testid="parcel-status-bulk-find"]').exists()).toBe(true)
     expect(actionGroups[0].find('[data-testid="parcel-status-bulk-update-found"]').exists()).toBe(true)
-    expect(actionGroups[0].find('[data-testid="parcel-status-bulk-update-all"]').exists()).toBe(true)
+    expect(actionGroups[1].find('[data-testid="parcel-status-bulk-update-all"]').exists()).toBe(true)
     expect(actionGroups[1].find('[data-testid="parcel-status-bulk-cancel"]').exists()).toBe(true)
     expect(wrapper.find('.parcel-status-bulk-header hr.hr').exists()).toBe(true)
     expect(wrapper.find('[data-testid="v-card-actions"]').exists()).toBe(false)
@@ -137,6 +145,47 @@ describe('ParcelStatusBulkChangeDialog', () => {
     ]) {
       expect(wrapper.find(`[data-testid="${testId}"]`).attributes('data-icon-size')).toBe('2x')
     }
+  })
+
+  it('renders the parcel-number label from the current register type', async () => {
+    const wrapper = mountDialog({ register: { id: 7, registerType: WBR_COMPANY_ID } })
+    const label = () => wrapper.find('label[for="parcel-status-bulk-input"]').text()
+
+    expect(label()).toBe('ШК')
+
+    await wrapper.setProps({ register: { id: 7, registerType: WBR2_REGISTER_ID } })
+    expect(label()).toBe('ШК')
+
+    await wrapper.setProps({ register: { id: 7, registerType: OZON_COMPANY_ID } })
+    expect(label()).toBe('№ отправления')
+
+    await wrapper.setProps({ register: { id: 7, registerType: GTC_COMPANY_ID } })
+    expect(label()).toBe('№ посылки')
+
+    await wrapper.setProps({ register: { id: 8, registerType: WBR_COMPANY_ID } })
+    expect(label()).toBe('Номер посылки')
+  })
+
+  it('falls back to matching registers store entries for the parcel-number label', () => {
+    mocks.registerItems = [{ id: 7, registerType: OZON_COMPANY_ID }]
+    const wrapper = mountDialog()
+
+    expect(wrapper.find('label[for="parcel-status-bulk-input"]').text()).toBe('№ отправления')
+  })
+
+  it('falls back to matching current register store item for the parcel-number label', () => {
+    mocks.registerItem = { id: 7, registerType: GTC_COMPANY_ID }
+    const wrapper = mountDialog()
+
+    expect(wrapper.find('label[for="parcel-status-bulk-input"]').text()).toBe('№ посылки')
+  })
+
+  it('closes when the dialog model is set to false', async () => {
+    const wrapper = mountDialog()
+
+    await wrapper.findComponent({ name: 'VDialog' }).vm.$emit('update:modelValue', false)
+
+    expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
   })
 
   it('resolves pasted comma and Excel cell values without clearing the textarea', async () => {

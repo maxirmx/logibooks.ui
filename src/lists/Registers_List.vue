@@ -73,6 +73,14 @@ const fileInput = ref(null)
 const selectedRegisterType = ref(null)
 const parcelStatusBulkDialogRegisterId = ref(null)
 const showParcelStatusBulkDialog = ref(false)
+const parcelStatusBulkDialogRegister = computed(() => {
+  const registerId = Number(parcelStatusBulkDialogRegisterId.value)
+  if (!Number.isInteger(registerId) || registerId <= 0) {
+    return null
+  }
+
+  return unref(items)?.find((register) => Number(register.id) === registerId) || null
+})
 
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_PAPERWORK))
 
@@ -376,6 +384,7 @@ defineExpose({
     <ParcelStatusBulkChangeDialog
       :show="showParcelStatusBulkDialog"
       :register-id="parcelStatusBulkDialogRegisterId"
+      :register="parcelStatusBulkDialogRegister"
       :status-options="parcelStatusOptions"
       :disabled="runningAction || loading || isInitializing"
       @update:show="showParcelStatusBulkDialog = $event"

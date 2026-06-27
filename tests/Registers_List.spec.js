@@ -249,9 +249,9 @@ vi.mock('vuetify-use-dialog', () => ({
 vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
   default: {
     name: 'ParcelStatusBulkChangeDialog',
-    props: ['show', 'registerId', 'statusOptions', 'disabled'],
+    props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
     emits: ['update:show', 'updated'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
   }
 }))
 
@@ -1237,7 +1237,7 @@ describe('Registers_List.vue', () => {
     })
 
     it('opens parcel status bulk dialog and refreshes after dialog updates', async () => {
-      mockItems.value = [{ id: 1 }]
+      mockItems.value = [{ id: 1, registerType: OZON_COMPANY_ID }]
       mockIsSrLogistPlus.value = true
       getAll.mockResolvedValue()
 
@@ -1250,7 +1250,7 @@ describe('Registers_List.vue', () => {
       await flushPromises()
       const actionButtons = wrapper.findAllComponents(ActionButton)
       const bulkButton = actionButtons.find(button =>
-        button.props('tooltipText') === 'Выбрать и изменить статус посылок'
+        button.props('tooltipText') === 'Выбрать посылки и изменить статус'
       )
 
       await bulkButton.find('button').trigger('click')
@@ -1259,6 +1259,7 @@ describe('Registers_List.vue', () => {
       const dialog = wrapper.find('[data-testid="parcel-status-bulk-dialog"]')
       expect(dialog.attributes('data-show')).toBe('true')
       expect(dialog.attributes('data-register-id')).toBe('1')
+      expect(dialog.attributes('data-register-type')).toBe(String(OZON_COMPANY_ID))
 
       await wrapper.find('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
       await flushPromises()

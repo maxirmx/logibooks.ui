@@ -708,6 +708,7 @@ function getGenericTemplateHeaders() {
     <ParcelStatusBulkChangeDialog
       :show="showParcelStatusBulkDialog"
       :register-id="props.registerId"
+      :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
       :disabled="runningAction || loading || isInitializing"
       @update:show="showParcelStatusBulkDialog = $event"

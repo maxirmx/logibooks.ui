@@ -108,14 +108,6 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
           }
         ]"
       />
-      <ActionButton
-        :item="item"
-        icon="fa-solid fa-pen-to-square"
-        tooltip-text="Выбрать и изменить статус"
-        :iconSize="iconSize"
-        :disabled="disabled"
-        @click="run('bulk-change-parcel-status')"
-      />
     </div>
     <div class="header-actions header-actions-group">
       <ActionButton2L
@@ -190,6 +182,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        v-if="isSrLogistPlus"
+        :item="item"
+        icon="fa-solid fa-pen-to-square"
+        tooltip-text="Выбрать посылки и изменить статус"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('bulk-change-parcel-status')"
+      />
       <ActionButton
         v-if="isShiftLeadPlus"
         :item="item"

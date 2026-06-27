@@ -18,17 +18,23 @@ const props = defineProps({
   loading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['bulk-change-parcel-status', 'close'])
 
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
 const confirm = useConfirm()
 const canExport = computed(() => Boolean(unref(authStore.isWhManagerPlus)))
+const canBulkChangeParcelStatus = computed(() => Boolean(unref(authStore.isSrLogistPlus)))
 const exportPending = ref(false)
 const exportDisabled = computed(() =>
   props.disabled ||
   props.loading ||
   exportPending.value ||
+  !props.register?.id
+)
+const actionDisabled = computed(() =>
+  props.disabled ||
+  props.loading ||
   !props.register?.id
 )
 
@@ -112,6 +118,15 @@ const exportOptions = computed(() => {
         />
     </div>
     <div class="header-actions header-actions-group">
+        <ActionButton
+          v-if="canBulkChangeParcelStatus"
+          :item="register"
+          icon="fa-solid fa-pen-to-square"
+          tooltip-text="Выбрать посылки и изменить статус"
+          :icon-size="iconSize"
+          :disabled="actionDisabled"
+          @click="emit('bulk-change-parcel-status')"
+        />
         <ActionButton
           :item="register"
           icon="fa-solid fa-xmark"

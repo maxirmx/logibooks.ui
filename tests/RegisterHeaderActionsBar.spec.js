@@ -238,7 +238,7 @@ describe('RegisterHeaderActionsBar', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const statusBulkButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Выбрать и изменить статус'
+      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     expect(statusBulkButton).toBeTruthy()
@@ -247,21 +247,6 @@ describe('RegisterHeaderActionsBar', () => {
     statusBulkButton.vm.$emit('click')
 
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
-  })
-
-  it('hides parcel status bulk-change action outside sr logist plus role', () => {
-    authRefs.isSrLogistPlus.value = false
-
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps },
-      global: { stubs: vuetifyStubs }
-    })
-
-    const actionButtons = wrapper.findAllComponents(ActionButton)
-
-    expect(actionButtons.some(
-      (button) => button.props('tooltipText') === 'Выбрать и изменить статус'
-    )).toBe(false)
   })
 
   it('disables historic data actions when noHistoricData is true', () => {

@@ -461,7 +461,7 @@ function getRegisterStatusTitle(item) {
             v-if="isSrLogistPlus"
             :item="item"
             icon="fa-solid fa-pen-to-square"
-            tooltip-text="Выбрать и изменить статус посылок"
+            tooltip-text="Выбрать посылки и изменить статус"
             :disabled="runningAction || loading"
             @click="() => openParcelStatusBulkDialog(item.id)"
           />

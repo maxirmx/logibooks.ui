@@ -2,6 +2,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { gtcRegisterColumnTitles } from '@/helpers/gtc.register.mapping.js'
+import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
+import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
+
 const PARCEL_NUMBER_SPLIT_PATTERN = /[,\t\r\n]+/
 
 export function parseParcelStatusBulkInput(value) {
@@ -47,4 +52,20 @@ export function buildParcelStatusBulkReport(missingNumbers = [], blockedItems = 
   }
 
   return lines.join('\n')
+}
+
+export function getParcelStatusBulkNumberLabel(register) {
+  const registerType = Number(register?.registerType ?? register?.companyId)
+
+  switch (registerType) {
+    case WBR_COMPANY_ID:
+    case WBR2_REGISTER_ID:
+      return wbrRegisterColumnTitles.shk
+    case OZON_COMPANY_ID:
+      return ozonRegisterColumnTitles.postingNumber
+    case GTC_COMPANY_ID:
+      return gtcRegisterColumnTitles.postingNumber
+    default:
+      return 'Номер посылки'
+  }
 }

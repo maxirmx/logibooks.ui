@@ -10,6 +10,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import {
   buildParcelStatusBulkReport,
+  getParcelStatusBulkNumberLabel,
   normalizeParcelStatusBulkIds,
   parseParcelStatusBulkInput
 } from '@/helpers/parcel.status.bulk.helpers.js'
@@ -17,6 +18,7 @@ import {
 const props = defineProps({
   show: { type: Boolean, required: true },
   registerId: { type: Number, default: null },
+  register: { type: Object, default: null },
   statusOptions: { type: Array, default: () => [] },
   disabled: { type: Boolean, default: false }
 })
@@ -42,6 +44,33 @@ const parsedNumbers = computed(() => parseParcelStatusBulkInput(parcelNumbersInp
 const statusId = computed(() => Number(selectedStatusId.value))
 const hasStatus = computed(() => Number.isInteger(statusId.value) && statusId.value > 0)
 const hasRegister = computed(() => Number.isInteger(Number(props.registerId)) && Number(props.registerId) > 0)
+const currentRegister = computed(() => {
+  const registerId = Number(props.registerId)
+  const matchesRegisterId = (register) =>
+    register &&
+    Number.isInteger(registerId) &&
+    registerId > 0 &&
+    Number(register.id) === registerId
+
+  if (matchesRegisterId(props.register)) {
+    return props.register
+  }
+
+  const registerFromItems = registersStore.items?.find(matchesRegisterId)
+  if (registerFromItems) {
+    return registerFromItems
+  }
+
+  if (matchesRegisterId(registersStore.item)) {
+    return registersStore.item
+  }
+
+  if (Number.isInteger(registerId) && registerId > 0) {
+    return null
+  }
+
+  return props.register || null
+})
 const busy = computed(() =>
   props.disabled ||
   findInProgress.value ||
@@ -54,10 +83,11 @@ const blockedCount = computed(() => blockedItems.value.length)
 const canFind = computed(() => hasRegister.value && parsedNumbers.value.length > 0 && !busy.value)
 const canUpdateFound = computed(() => hasRegister.value && hasStatus.value && foundCount.value > 0 && !busy.value)
 const canUpdateAll = computed(() => hasRegister.value && hasStatus.value && !busy.value)
+const parcelNumberLabel = computed(() => getParcelStatusBulkNumberLabel(currentRegister.value))
 const notFoundReport = computed(() => buildParcelStatusBulkReport(missingNumbers.value, blockedItems.value))
 const searchSummary = computed(() => {
   if (lastSearchCount.value <= 0) {
-    return 'Введите номера посылок и нажмите "Найти". Либро выберите статус и нажмите "Изменить статус всех посылок" для применения статуса ко всем посылкам в реестре.'
+    return 'Введите номера посылок и нажмите "Найти". Либо выберите статус и нажмите "Изменить статус всех посылок" для применения статуса ко всем посылкам в реестре.'
   }
 
   return `Обработано: ${lastSearchCount.value}. Найдено: ${foundCount.value}. Не найдено: ${missingCount.value}. Недоступно: ${blockedCount.value}.`
@@ -209,6 +239,8 @@ defineExpose({
                 data-testid="parcel-status-bulk-update-found"
                 @click="updateFound"
               />
+            </div>
+            <div class="header-actions header-actions-group">
               <ActionButton
                 :item="{}"
                 icon="fa-solid fa-check-double"
@@ -219,8 +251,6 @@ defineExpose({
                 data-testid="parcel-status-bulk-update-all"
                 @click="updateAll"
               />
-            </div>
-            <div class="header-actions header-actions-group">
               <ActionButton
                 :item="{}"
                 icon="fa-solid fa-xmark"
@@ -252,7 +282,7 @@ defineExpose({
         />
 
         <label for="parcel-status-bulk-input" class="parcel-status-bulk-label">
-          ШК / номер отправления
+          {{ parcelNumberLabel }}
         </label>
         <textarea
           id="parcel-status-bulk-input"
@@ -273,7 +303,7 @@ defineExpose({
           class="input parcel-status-bulk-report"
           :value="notFoundReport"
           readonly
-          placeholder="После поиска здесь появятся номера посылок, которые не удалось нйти или которые недоступны для изменения статуса."
+          placeholder="После поиска здесь появятся номера посылок, которые не удалось найти или которые недоступны для изменения статуса."
           data-testid="parcel-status-bulk-report"
         ></textarea>
 
@@ -305,16 +335,11 @@ defineExpose({
   margin: 0;
 }
 
-.parcel-status-bulk-header .hr {
-  top: 0;
-  margin: 0;
-}
-
 .parcel-status-bulk-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 18px;
+  padding-top: 0;
 }
 
 .parcel-status-bulk-label {

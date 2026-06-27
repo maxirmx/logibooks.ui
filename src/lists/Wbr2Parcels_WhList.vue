@@ -24,6 +24,7 @@ import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
+import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -74,6 +75,7 @@ const registerLoading = ref(true)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
+const showParcelStatusBulkDialog = ref(false)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value)))
 
@@ -142,6 +144,10 @@ async function loadParcelsWrapper() {
   await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
     showMarkedByPartner: true
   })
+}
+
+async function handleParcelStatusBulkUpdated() {
+  await loadParcelsWrapper()
 }
 
 const statusOptions = computed(() => [
@@ -284,6 +290,7 @@ async function clearParcelDefect(item) {
         :zones="ops.zones"
         :loading="registerLoading || isInitializing"
         icon-size="2x"
+        @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @close="closeList"
       />
     </div>
@@ -453,6 +460,15 @@ async function clearParcelDefect(item) {
       <button @click="alertStore.clear()" class="btn btn-link close">×</button>
       {{ alert.message }}
     </div>
+    <ParcelStatusBulkChangeDialog
+      :show="showParcelStatusBulkDialog"
+      :register-id="props.registerId"
+      :register="registersStore.item"
+      :status-options="parcelStatusStore.parcelStatuses"
+      :disabled="runningAction || loading || isInitializing"
+      @update:show="showParcelStatusBulkDialog = $event"
+      @updated="handleParcelStatusBulkUpdated"
+    />
   </div>
 </template>
 

@@ -208,9 +208,9 @@ vi.mock('vuetify-use-dialog', () => ({
 vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
   default: {
     name: 'ParcelStatusBulkChangeDialog',
-    props: ['show', 'registerId', 'statusOptions', 'disabled'],
+    props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
     emits: ['update:show', 'updated'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
   }
 }))
 
@@ -397,7 +397,7 @@ describe('Registers_WhList.vue', () => {
     expect(hasDelete).toBe(true)
 
     const hasStatusBulkAction = actionButtons.some(button =>
-      button.props('tooltipText') === 'Выбрать и изменить статус посылок'
+      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
     expect(hasStatusBulkAction).toBe(true)
   })
@@ -632,7 +632,7 @@ describe('Registers_WhList.vue', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const bulkStatusButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Выбрать и изменить статус посылок'
+      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     expect(bulkStatusButton).toBeTruthy()
@@ -682,7 +682,7 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('opens parcel status bulk dialog and refreshes after dialog updates', async () => {
-    mockItems.value = [{ id: 1 }]
+    mockItems.value = [{ id: 1, registerType: 2 }]
     getAll.mockResolvedValue()
 
     const wrapper = createWrapper()
@@ -691,7 +691,7 @@ describe('Registers_WhList.vue', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const bulkButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Выбрать и изменить статус посылок'
+      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     await bulkButton.find('button').trigger('click')
@@ -700,6 +700,7 @@ describe('Registers_WhList.vue', () => {
     const dialog = wrapper.find('[data-testid="parcel-status-bulk-dialog"]')
     expect(dialog.attributes('data-show')).toBe('true')
     expect(dialog.attributes('data-register-id')).toBe('1')
+    expect(dialog.attributes('data-register-type')).toBe('2')
 
     await wrapper.find('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
     await flushPromises()

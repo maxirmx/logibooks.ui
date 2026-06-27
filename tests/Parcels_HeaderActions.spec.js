@@ -10,6 +10,7 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 vi.mock('vue-router', () => ({
@@ -298,20 +299,21 @@ vi.mock('@/l2/AssignTnvedDialog.vue', () => ({
 vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
   default: {
     name: 'ParcelStatusBulkChangeDialog',
-    props: ['show', 'registerId', 'statusOptions', 'disabled'],
-    template: '<div class="parcel-status-bulk-dialog-stub" :data-show="String(show)" :data-register-id="registerId"></div>'
+    props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
+    template: '<div class="parcel-status-bulk-dialog-stub" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"></div>'
   }
 }))
 
 describe.each([
-  ['OzonParcels_List', OzonParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true }],
-  ['WbrParcels_List', WbrParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true }],
-  ['Wbr2Parcels_List', Wbr2ParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: true }],
-  ['GtcParcels_List', GtcParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: false }]
+  ['OzonParcels_List', OzonParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true, registerType: OZON_COMPANY_ID }],
+  ['WbrParcels_List', WbrParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true, registerType: WBR_COMPANY_ID }],
+  ['Wbr2Parcels_List', Wbr2ParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: true, registerType: WBR2_REGISTER_ID }],
+  ['GtcParcels_List', GtcParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: false, registerType: GTC_COMPANY_ID }]
 ])('%s header actions', (name, Component, capabilities) => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupStores()
+    stores.registers.item.registerType = capabilities.registerType
     loadParcelsMock.mockClear()
     registerHeaderActionsMock = createRegisterHeaderActionsMock()
   })
@@ -327,6 +329,11 @@ describe.each([
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // Header actions include logist actions + status bulk button + xml split button + export/download + invoice split button + close button
     expect(buttons).toHaveLength(12)
+    const findButtonByIcon = (icon) => {
+      const button = buttons.find((item) => item.attributes('data-icon') === icon)
+      expect(button).toBeTruthy()
+      return button
+    }
 
     const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
     const stopWordsMenu = actionMenus.find(
@@ -350,7 +357,7 @@ describe.each([
       expect(registerHeaderActionsMock.validateRegisterSwEx).not.toHaveBeenCalled()
     }
 
-    await buttons[1].trigger('click')
+    await findButtonByIcon('fa-solid fa-anchor-circle-check').trigger('click')
     expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
 
     const lookupMenu = actionMenus.find(
@@ -374,8 +381,9 @@ describe.each([
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
     }
 
-    await buttons[3].trigger('click')
+    await findButtonByIcon('fa-solid fa-pen-to-square').trigger('click')
     expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-show')).toBe('true')
+    expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-register-type')).toBe(String(capabilities.registerType))
 
     const xmlExportMenu = actionMenus.find(
       (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
@@ -399,17 +407,16 @@ describe.each([
     await notificationsOption.action()
     expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
 
-    await buttons[5].trigger('click')
+    await findButtonByIcon('fa-solid fa-file-export').trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    await buttons[6].trigger('click')
+    await findButtonByIcon('fa-solid fa-person-circle-xmark').trigger('click')
     expect(registerHeaderActionsMock.downloadAdditionalRestrictions).toHaveBeenCalled()
 
-    await buttons[9].trigger('click')
+    await findButtonByIcon('fa-solid fa-xmarks-lines').trigger('click')
     expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
 
-    // The close button is the last button (index 11); clicking it should emit 'close' from the list
-    await buttons[11].trigger('click')
+    await findButtonByIcon('fa-solid fa-xmark').trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 
@@ -492,8 +499,10 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // When user lacks logist role the first group is hidden, leaving xml split + export/download/invoice/close actions
+    // When user lacks logist and shift-lead roles, the logist and freeze actions are hidden.
     expect(buttons).toHaveLength(6)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-xmarks-lines')).toBe(false)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-arrows-to-eye')).toBe(false)
   })
 
   it('calls stop handler on unmount', async () => {

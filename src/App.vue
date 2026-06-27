@@ -30,6 +30,9 @@ const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
   minimumFractionDigits: 4,
   maximumFractionDigits: 4,
 })
+const unitNumberFormatter = new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: 0,
+})
 
 function findRate(code) {
   return statusStore.exchangeRates?.find(r => r?.alphabeticCode?.toUpperCase() === code) || null
@@ -47,6 +50,8 @@ const exchangeRatesLine = computed(() => {
 
   const usd = findRate('USD')
   const eur = findRate('EUR')
+  const uzs = findRate('UZS')
+  const eurUzs = statusStore.eurUzs
 
   const FAIL_MSG = 'не удалось получить курс'
   function formatEntry(rateObj) {
@@ -58,10 +63,21 @@ const exchangeRatesLine = computed(() => {
     return rateNumberFormatter.format(rateObj.rate)
   }
 
+  function formatUzsLabel(rateObj) {
+    if (!rateObj || typeof rateObj.units !== 'number' || rateObj.units <= 0) {
+      return 'UZS'
+    }
+
+    return `UZS (за ${unitNumberFormatter.format(rateObj.units)})`
+  }
+
   const usdText = formatEntry(usd)
   const eurText = formatEntry(eur)
+  const uzsText = formatEntry(uzs)
+  const eurUzsText = formatEntry(eurUzs)
+  const uzsLabel = formatUzsLabel(uzs)
 
-  return `${todayStr} USD ${usdText} EUR ${eurText}`
+  return `${todayStr} USD ${usdText} EUR ${eurText} ${uzsLabel} ${uzsText} EUR/UZS ${eurUzsText}`
 })
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'

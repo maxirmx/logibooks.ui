@@ -6,12 +6,6 @@
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import {
-  toggleBulkStatusEditMode,
-  cancelBulkStatusChange,
-  applyBulkStatusToAllOrders,
-  isBulkStatusEditMode,
-  getBulkStatusSelectedId,
-  setBulkStatusSelectedId,
   startRegisterStatusEditMode,
   cancelRegisterStatusChange,
   applyRegisterStatusChange,
@@ -37,6 +31,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
+import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 
 const registersStore = useRegistersStore()
 const { items, loading, totalCount } = storeToRefs(registersStore)
@@ -76,6 +71,16 @@ const {
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
+const parcelStatusBulkDialogRegisterId = ref(null)
+const showParcelStatusBulkDialog = ref(false)
+const parcelStatusBulkDialogRegister = computed(() => {
+  const registerId = Number(parcelStatusBulkDialogRegisterId.value)
+  if (!Number.isInteger(registerId) || registerId <= 0) {
+    return null
+  }
+
+  return unref(items)?.find((register) => Number(register.id) === registerId) || null
+})
 
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_PAPERWORK))
 
@@ -84,7 +89,6 @@ const registers_search = paperworkRegistersSearch
 const registers_sort_by = paperworkRegistersSortBy
 const registers_page = paperworkRegistersPage
 
-const bulkStatusState = reactive({})
 const registerStatusState = reactive({})
 
 const localSearch = ref('')
@@ -111,37 +115,6 @@ const uploadMenuOptions = computed(() => {
 })
 
 const isUploadDisabled = computed(() => uploadMenuOptions.value.length === 0)
-
-function bulkChangeStatus(registerId) {
-  toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
-}
-
-function cancelStatusChange(registerId) {
-  cancelBulkStatusChange(registerId, bulkStatusState)
-}
-
-async function applyStatusToAllOrders(registerId, statusId) {
-  await applyBulkStatusToAllOrders(
-    registerId,
-    statusId,
-    bulkStatusState,
-    registersStore,
-    alertStore,
-    { mode: OP_MODE_PAPERWORK }
-  )
-}
-
-function isInEditMode(registerId) {
-  return isBulkStatusEditMode(registerId, bulkStatusState)
-}
-
-function getSelectedStatusId(registerId) {
-  return getBulkStatusSelectedId(registerId, bulkStatusState)
-}
-
-function setSelectedStatusId(registerId, statusId) {
-  setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
-}
 
 function startRegisterStatusChange(registerId, currentStatusId) {
   startRegisterStatusEditMode(
@@ -272,6 +245,16 @@ async function loadRegisters() {
   }
 }
 
+function openParcelStatusBulkDialog(registerId) {
+  if (runningAction.value || loading.value || isInitializing.value) return
+  parcelStatusBulkDialogRegisterId.value = registerId
+  showParcelStatusBulkDialog.value = true
+}
+
+async function handleParcelStatusBulkUpdated() {
+  await loadRegisters()
+}
+
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: registers_search }],
   loadFn: loadRegisters,
@@ -384,13 +367,7 @@ defineExpose({
       :running-action="runningAction"
       :is-shift-lead-plus="isShiftLeadPlus"
       :is-sr-logist-plus="isSrLogistPlus"
-      :status-options="parcelStatusOptions"
-      :is-in-edit-mode="isInEditMode"
-      :get-selected-status-id="getSelectedStatusId"
-      :set-selected-status-id="setSelectedStatusId"
-      :bulk-change-status="bulkChangeStatus"
-      :cancel-status-change="cancelStatusChange"
-      :apply-status-to-all-orders="applyStatusToAllOrders"
+      :open-parcel-status-bulk-dialog="openParcelStatusBulkDialog"
       :register-status-options="registerStatusOptions"
       :can-change-register-status="isSrLogistPlus"
       :is-register-status-edit-mode="isInRegisterStatusEditMode"
@@ -402,6 +379,16 @@ defineExpose({
       @open-parcels="openParcels"
       @edit-register="editRegister"
       @delete-register="deleteRegister"
+    />
+
+    <ParcelStatusBulkChangeDialog
+      :show="showParcelStatusBulkDialog"
+      :register-id="parcelStatusBulkDialogRegisterId"
+      :register="parcelStatusBulkDialogRegister"
+      :status-options="parcelStatusOptions"
+      :disabled="runningAction || loading || isInitializing"
+      @update:show="showParcelStatusBulkDialog = $event"
+      @updated="handleParcelStatusBulkUpdated"
     />
 
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">

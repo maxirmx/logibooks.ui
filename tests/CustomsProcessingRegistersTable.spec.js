@@ -199,6 +199,20 @@ describe('CustomsProcessingRegistersTable', () => {
     expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 7, statusId: 2 }])
   })
 
+  it('opens parcel status bulk dialog from the independent action', async () => {
+    const openParcelStatusBulkDialog = vi.fn()
+    const wrapper = mountTable({
+      items: [{ id: 7, statusId: 2 }],
+      isSrLogistPlus: true,
+      openParcelStatusBulkDialog
+    })
+
+    await wrapper.find('[data-icon="fa-solid fa-pen-to-square"]').trigger('click')
+
+    expect(openParcelStatusBulkDialog).toHaveBeenCalledWith(7)
+    expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(false)
+  })
+
   it('keeps navigation cells and copied weight display behavior', async () => {
     const wrapper = mountTable({
       items: [{

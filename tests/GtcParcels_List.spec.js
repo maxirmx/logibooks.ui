@@ -130,7 +130,8 @@ vi.mock('@/stores/alert.store.js', () => ({
 const globalStubs = {
   ...vuetifyStubs,
   RegisterHeadingWithStats: { template: '<div data-testid="register-heading"></div>' },
-  PaginationFooter: { template: '<div data-testid="pagination-footer"></div>' }
+  PaginationFooter: { template: '<div data-testid="pagination-footer"></div>' },
+  ParcelStatusBulkChangeDialog: { template: '<div></div>' }
 }
 
 function createMockItem(overrides = {}) {

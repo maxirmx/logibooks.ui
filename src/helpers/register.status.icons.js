@@ -3,13 +3,22 @@
 // This file is a part of Logibooks ui application
 
 import collectedIcon from '@/assets/register-status-icons/collected.svg'
+import customsBaggageCheckIcon from '@/assets/register-status-icons/customs-baggage-check.svg'
+import customsCheckExamineSecurityIcon from '@/assets/register-status-icons/customs-check-examine-security.svg'
+import customsControlIcon from '@/assets/register-status-icons/customs-control.svg'
 import customsEndIcon from '@/assets/register-status-icons/customs-end.svg'
 import customsStartIcon from '@/assets/register-status-icons/customs-start.svg'
+import customsIcon from '@/assets/register-status-icons/customs.svg'
+import cuttingEuroPapperBillIcon from '@/assets/register-status-icons/cutting-euro-papper-bill.svg'
 import deliveredIcon from '@/assets/register-status-icons/delivered.svg'
+import documentBusinessPaperFilePaperworkJob2Icon from '@/assets/register-status-icons/document-business-paper-file-paperwork-job-2.svg'
+import documentBusinessPaperFilePaperworkJob3Icon from '@/assets/register-status-icons/document-business-paper-file-paperwork-job-3.svg'
+import documentBusinessPaperFilePaperworkJobIcon from '@/assets/register-status-icons/document-business-paper-file-paperwork-job.svg'
 import inStorageIcon from '@/assets/register-status-icons/in-storage.svg'
 import inTransitIcon from '@/assets/register-status-icons/in-transit.svg'
 import intoCountryOfDestinationIcon from '@/assets/register-status-icons/into-country-of-destination.svg'
 import intoCountryOfTransitIcon from '@/assets/register-status-icons/into-country-of-transit.svg'
+import importIcon from '@/assets/register-status-icons/import.svg'
 import outOfCountryOfOriginIcon from '@/assets/register-status-icons/out-of-country-of-origin.svg'
 import outOfCountryOfTransitIcon from '@/assets/register-status-icons/out-of-country-of-transit.svg'
 import outOfStorageIcon from '@/assets/register-status-icons/out-of-storage.svg'
@@ -48,6 +57,15 @@ export const registerStatusIconOptions = [
   { value: 'svg:into-country-of-destination', kind: REGISTER_STATUS_ICON_KIND_SVG, src: intoCountryOfDestinationIcon },
   { value: 'svg:delivered', kind: REGISTER_STATUS_ICON_KIND_SVG, src: deliveredIcon },
   { value: 'svg:very-delivered', kind: REGISTER_STATUS_ICON_KIND_SVG, src: veryDeliveredIcon },
+  { value: 'svg:customs-baggage-check', kind: REGISTER_STATUS_ICON_KIND_SVG, src: customsBaggageCheckIcon },
+  { value: 'svg:customs-check-examine-security', kind: REGISTER_STATUS_ICON_KIND_SVG, src: customsCheckExamineSecurityIcon },
+  { value: 'svg:customs-control', kind: REGISTER_STATUS_ICON_KIND_SVG, src: customsControlIcon },
+  { value: 'svg:customs', kind: REGISTER_STATUS_ICON_KIND_SVG, src: customsIcon },
+  { value: 'svg:cutting-euro-papper-bill', kind: REGISTER_STATUS_ICON_KIND_SVG, src: cuttingEuroPapperBillIcon },
+  { value: 'svg:document-business-paper-file-paperwork-job', kind: REGISTER_STATUS_ICON_KIND_SVG, src: documentBusinessPaperFilePaperworkJobIcon },
+  { value: 'svg:document-business-paper-file-paperwork-job-2', kind: REGISTER_STATUS_ICON_KIND_SVG, src: documentBusinessPaperFilePaperworkJob2Icon },
+  { value: 'svg:document-business-paper-file-paperwork-job-3', kind: REGISTER_STATUS_ICON_KIND_SVG, src: documentBusinessPaperFilePaperworkJob3Icon },
+  { value: 'svg:import', kind: REGISTER_STATUS_ICON_KIND_SVG, src: importIcon },
   fontAwesomeQuestionIcon
 ]
 

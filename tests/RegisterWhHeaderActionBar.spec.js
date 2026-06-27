@@ -8,6 +8,7 @@ import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vu
 const confirmMock = vi.hoisted(() => vi.fn())
 const download = vi.fn().mockResolvedValue(true)
 let isWhManagerPlus = true
+let isSrLogistPlus = true
 
 vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
@@ -21,7 +22,8 @@ vi.mock('@/stores/registers.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    isWhManagerPlus
+    isWhManagerPlus,
+    isSrLogistPlus
   })
 }))
 
@@ -33,10 +35,13 @@ const ActionButton2LStub = {
 
 const ActionButtonStub = {
   name: 'ActionButton',
-  props: ['icon'],
+  props: ['icon', 'disabled', 'tooltipText'],
+  emits: ['click'],
   template: `<button
     type="button"
-    :data-testid="icon?.includes('xmark') ? 'close-btn' : 'action-btn'"
+    :data-testid="icon?.includes('xmark') ? 'close-btn' : icon?.includes('pen-to-square') ? 'bulk-status-btn' : 'action-btn'"
+    :title="tooltipText"
+    :disabled="disabled"
     @click="$emit('click')"
   />`
 }
@@ -67,6 +72,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     vi.clearAllMocks()
     confirmMock.mockReset()
     isWhManagerPlus = true
+    isSrLogistPlus = true
   })
 
   it('builds export options with "Все посылки" and normalized zone names', () => {
@@ -108,6 +114,62 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     expect(wrapper.findComponent(ActionButton2LStub).exists()).toBe(false)
     expect(wrapper.find('[data-testid="export-btn"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="close-btn"]').exists()).toBe(true)
+  })
+
+  it('shows bulk status change action when user is senior logist plus', () => {
+    isSrLogistPlus = true
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, fileName: 'register_77.xlsx' },
+      zones: []
+    })
+
+    const action = wrapper.get('[data-testid="bulk-status-btn"]')
+    expect(action.attributes('title')).toBe('Выбрать посылки и изменить статус')
+    expect(action.attributes('disabled')).toBeUndefined()
+  })
+
+  it('groups bulk status change action with close action', () => {
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, fileName: 'register_77.xlsx' },
+      zones: []
+    })
+
+    const groups = wrapper.findAll('.header-actions.header-actions-group')
+    const lastGroup = groups.at(-1)
+
+    expect(lastGroup.find('[data-testid="bulk-status-btn"]').exists()).toBe(true)
+    expect(lastGroup.find('[data-testid="close-btn"]').exists()).toBe(true)
+  })
+
+  it('hides bulk status change action when user is not senior logist plus', () => {
+    isSrLogistPlus = false
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, fileName: 'register_77.xlsx' },
+      zones: []
+    })
+
+    expect(wrapper.find('[data-testid="bulk-status-btn"]').exists()).toBe(false)
+  })
+
+  it('emits bulk status change event from header action', async () => {
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, fileName: 'register_77.xlsx' },
+      zones: []
+    })
+
+    await wrapper.get('[data-testid="bulk-status-btn"]').trigger('click')
+
+    expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
+  })
+
+  it('disables bulk status change action while loading', () => {
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, fileName: 'register_77.xlsx' },
+      zones: [],
+      loading: true
+    })
+
+    expect(wrapper.get('[data-testid="bulk-status-btn"]').attributes('disabled')).toBeDefined()
   })
 
   it('downloads all parcels without zone arguments', async () => {

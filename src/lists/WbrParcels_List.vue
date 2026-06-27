@@ -43,6 +43,7 @@ import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
 import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
+import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
@@ -121,6 +122,7 @@ const {
 })
 
 const showAssignTnvedDialog = ref(false)
+const showParcelStatusBulkDialog = ref(false)
 
 async function handleAssignTnvedConfirm(ids, tnVed) {
   if (runningAction.value) return
@@ -135,6 +137,10 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
   } finally {
     runningAction.value = false
   }
+}
+
+async function handleParcelStatusBulkUpdated() {
+  await loadParcelsWrapper()
 }
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
@@ -451,6 +457,7 @@ function getGenericTemplateHeaders() {
         @download="downloadRegisterFile"
         @download-additional-restrictions="downloadAdditionalRestrictionsFile"
         @download-techdoc="downloadTechdocFile"
+        @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
         @close="closeList"
@@ -683,6 +690,14 @@ function getGenericTemplateHeaders() {
       :selected-ids="[...selectedParcelIds]"
       @update:show="showAssignTnvedDialog = $event"
       @confirm="handleAssignTnvedConfirm"
+    />
+    <ParcelStatusBulkChangeDialog
+      :show="showParcelStatusBulkDialog"
+      :register-id="props.registerId"
+      :status-options="parcelStatusStore.parcelStatuses"
+      :disabled="runningAction || loading || isInitializing"
+      @update:show="showParcelStatusBulkDialog = $event"
+      @updated="handleParcelStatusBulkUpdated"
     />
 
   </div>

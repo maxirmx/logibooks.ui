@@ -444,6 +444,35 @@ describe('parcels store', () => {
     })
   })
 
+  describe('status selection methods', () => {
+    it('resolves parcel numbers for status bulk change', async () => {
+      fetchWrapper.post.mockResolvedValue({ parcelIds: [1], missingNumbers: ['P-2'] })
+      const store = useParcelsStore()
+
+      const result = await store.resolveStatusSelection(9, ['P-1', 'P-2'])
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/status-selection/resolve`, {
+        registerId: 9,
+        numbers: ['P-1', 'P-2']
+      })
+      expect(result).toEqual({ parcelIds: [1], missingNumbers: ['P-2'] })
+    })
+
+    it('updates selected parcel statuses for status bulk change', async () => {
+      fetchWrapper.post.mockResolvedValue({ updatedCount: 2, skippedCount: 0 })
+      const store = useParcelsStore()
+
+      const result = await store.updateStatusSelection(9, 4, [1, 2])
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/status-selection/update`, {
+        registerId: 9,
+        statusId: 4,
+        parcelIds: [1, 2]
+      })
+      expect(result).toEqual({ updatedCount: 2, skippedCount: 0 })
+    })
+  })
+
   describe('update method', () => {
     it('updates order and calls API with correct parameters', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })

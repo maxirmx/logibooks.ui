@@ -179,6 +179,22 @@ describe('WarehouseRegistersTable matching-count column', () => {
     expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 1, statusId: 2 }])
   })
 
+  it('opens parcel status bulk dialog from the independent action', async () => {
+    const openParcelStatusBulkDialog = vi.fn()
+    const wrapper = mountTable({
+      isSrLogistPlus: true,
+      openParcelStatusBulkDialog,
+      items: [
+        { id: 1, statusId: 2 }
+      ]
+    })
+
+    await wrapper.find('[data-icon="fa-solid fa-pen-to-square"]').trigger('click')
+
+    expect(openParcelStatusBulkDialog).toHaveBeenCalledWith(1)
+    expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(false)
+  })
+
   it('renders and applies inline register status selector', async () => {
     const setSelectedRegisterStatusId = vi.fn()
     const applyRegisterStatusChange = vi.fn()

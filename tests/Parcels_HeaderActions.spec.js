@@ -295,6 +295,14 @@ vi.mock('@/l2/AssignTnvedDialog.vue', () => ({
   default: { name: 'AssignTnvedDialog', template: '<div class="assign-tnved-dialog-stub"></div>' }
 }))
 
+vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
+  default: {
+    name: 'ParcelStatusBulkChangeDialog',
+    props: ['show', 'registerId', 'statusOptions', 'disabled'],
+    template: '<div class="parcel-status-bulk-dialog-stub" :data-show="String(show)" :data-register-id="registerId"></div>'
+  }
+}))
+
 describe.each([
   ['OzonParcels_List', OzonParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true }],
   ['WbrParcels_List', WbrParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true }],
@@ -317,8 +325,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // Header actions include logist actions + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(11)
+    // Header actions include logist actions + status bulk button + xml split button + export/download + invoice split button + close button
+    expect(buttons).toHaveLength(12)
 
     const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
     const stopWordsMenu = actionMenus.find(
@@ -366,6 +374,9 @@ describe.each([
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
     }
 
+    await buttons[3].trigger('click')
+    expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-show')).toBe('true')
+
     const xmlExportMenu = actionMenus.find(
       (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
     )
@@ -388,17 +399,17 @@ describe.each([
     await notificationsOption.action()
     expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
 
-    await buttons[4].trigger('click')
+    await buttons[5].trigger('click')
     expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
 
-    await buttons[5].trigger('click')
+    await buttons[6].trigger('click')
     expect(registerHeaderActionsMock.downloadAdditionalRestrictions).toHaveBeenCalled()
 
-    await buttons[8].trigger('click')
+    await buttons[9].trigger('click')
     expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
 
-    // The close button is the last button (index 10); clicking it should emit 'close' from the list
-    await buttons[10].trigger('click')
+    // The close button is the last button (index 11); clicking it should emit 'close' from the list
+    await buttons[11].trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 

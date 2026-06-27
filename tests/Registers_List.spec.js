@@ -246,6 +246,15 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
+vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
+  default: {
+    name: 'ParcelStatusBulkChangeDialog',
+    props: ['show', 'registerId', 'statusOptions', 'disabled'],
+    emits: ['update:show', 'updated'],
+    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+  }
+}))
+
 function getTableHeaders(wrapper) {
   return wrapper.findComponent({ name: 'v-data-table-server' }).props('headers')
 }
@@ -1227,10 +1236,9 @@ describe('Registers_List.vue', () => {
       expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'price', order: 'desc' }])
     })
 
-    it('renders bulk edit controls and applies or cancels status changes', async () => {
+    it('opens parcel status bulk dialog and refreshes after dialog updates', async () => {
       mockItems.value = [{ id: 1 }]
       mockIsSrLogistPlus.value = true
-      setOrderStatusesFn.mockResolvedValue()
       getAll.mockResolvedValue()
 
       const wrapper = mount(RegistersList, {
@@ -1240,46 +1248,22 @@ describe('Registers_List.vue', () => {
       })
 
       await flushPromises()
-      let actionButtons = wrapper.findAllComponents(ActionButton)
-      let bulkButton = actionButtons.find(button =>
-        String(button.props('tooltipText') || '').includes('Изменить статус')
+      const actionButtons = wrapper.findAllComponents(ActionButton)
+      const bulkButton = actionButtons.find(button =>
+        button.props('tooltipText') === 'Выбрать и изменить статус посылок'
       )
 
       await bulkButton.find('button').trigger('click')
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.find('[data-testid="v-select"]').exists()).toBe(true)
-      const select = wrapper.findComponent(vuetifyStubs['v-select'])
-      select.vm.$emit('update:modelValue', 6)
-      await wrapper.vm.$nextTick()
+      const dialog = wrapper.find('[data-testid="parcel-status-bulk-dialog"]')
+      expect(dialog.attributes('data-show')).toBe('true')
+      expect(dialog.attributes('data-register-id')).toBe('1')
 
-      actionButtons = wrapper.findAllComponents(ActionButton)
-      const cancelButton = actionButtons.find(button =>
-        button.props('tooltipText') === 'Отменить'
-      )
-      await cancelButton.find('button').trigger('click')
-      await wrapper.vm.$nextTick()
-
-      actionButtons = wrapper.findAllComponents(ActionButton)
-      bulkButton = actionButtons.find(button =>
-        String(button.props('tooltipText') || '').includes('Изменить статус')
-      )
-      await bulkButton.find('button').trigger('click')
-      await wrapper.vm.$nextTick()
-
-      wrapper.vm.setSelectedStatusId(1, 5)
-      await wrapper.vm.$nextTick()
-
-      actionButtons = wrapper.findAllComponents(ActionButton)
-      const applyButton = actionButtons.find(button =>
-        button.props('tooltipText') === 'Применить статус'
-      )
-      await applyButton.find('button').trigger('click')
+      await wrapper.find('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
       await flushPromises()
 
-      expect(setOrderStatusesFn).toHaveBeenCalledWith(1, 5)
       expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
-      expect(wrapper.vm.isInEditMode(1)).toBe(false)
     })
 
     it('shows and clears alert messages', async () => {
@@ -1351,47 +1335,6 @@ describe('Registers_List.vue', () => {
     })
   })
 
-  describe('error handling in applyStatusToAllOrders', () => {
-    let wrapper
-
-    beforeEach(() => {
-      wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-    })
-
-    it('handles error with store error message', async () => {
-      const registerId = 1
-      const statusId = 2
-      const storeErrorMessage = 'Store specific error'
-
-      // Mock store with error property
-      const mockStoreWithError = {
-        setParcelStatuses: setOrderStatusesFn,
-        error: { message: storeErrorMessage }
-      }
-
-      setOrderStatusesFn.mockRejectedValueOnce(new Error('Generic error'))
-
-      // Temporarily replace the store
-      const originalStore = wrapper.vm.registersStore
-      wrapper.vm.registersStore = mockStoreWithError
-
-      // Set up edit state
-      wrapper.vm.bulkChangeStatus(registerId)
-      wrapper.vm.bulkStatusState[registerId].selectedStatusId = statusId
-
-      await wrapper.vm.applyStatusToAllOrders(registerId, statusId)
-
-      expect(alertErrorFn).toHaveBeenCalledWith('Generic error')
-      expect(wrapper.vm.bulkStatusState[registerId].editMode).toBe(false)
-
-      // Restore original store
-      wrapper.vm.registersStore = originalStore
-    })
-  })
 })
 
 describe('formatInvoiceDate function', () => {

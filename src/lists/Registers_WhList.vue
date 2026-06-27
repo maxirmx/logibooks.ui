@@ -5,12 +5,6 @@
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import {
-  toggleBulkStatusEditMode,
-  cancelBulkStatusChange,
-  applyBulkStatusToAllOrders,
-  isBulkStatusEditMode,
-  getBulkStatusSelectedId,
-  setBulkStatusSelectedId,
   startRegisterStatusEditMode,
   cancelRegisterStatusChange,
   applyRegisterStatusChange,
@@ -37,6 +31,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
+import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 
 const registersStore = useRegistersStore()
 const { items, loading, totalCount } = storeToRefs(registersStore)
@@ -80,45 +75,15 @@ const {
 
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 
-const bulkStatusState = reactive({})
 const registerStatusState = reactive({})
+const parcelStatusBulkDialogRegisterId = ref(null)
+const showParcelStatusBulkDialog = ref(false)
 
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
 
 const parcelStatusOptions = computed(() => unref(parcelStatuses) || [])
 const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
-
-function bulkChangeStatus(registerId) {
-  toggleBulkStatusEditMode(registerId, bulkStatusState, loading.value)
-}
-
-function cancelStatusChange(registerId) {
-  cancelBulkStatusChange(registerId, bulkStatusState)
-}
-
-async function applyStatusToAllOrders(registerId, statusId) {
-  await applyBulkStatusToAllOrders(
-    registerId,
-    statusId,
-    bulkStatusState,
-    registersStore,
-    alertStore,
-    { mode: OP_MODE_WAREHOUSE }
-  )
-}
-
-function isInEditMode(registerId) {
-  return isBulkStatusEditMode(registerId, bulkStatusState)
-}
-
-function getSelectedStatusId(registerId) {
-  return getBulkStatusSelectedId(registerId, bulkStatusState)
-}
-
-function setSelectedStatusId(registerId, statusId) {
-  setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
-}
 
 function startRegisterStatusChange(registerId, currentStatusId) {
   startRegisterStatusEditMode(
@@ -207,6 +172,16 @@ async function loadRegisters() {
   if (storeError) {
     alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
   }
+}
+
+function openParcelStatusBulkDialog(registerId) {
+  if (runningAction.value || loading.value || isInitializing.value) return
+  parcelStatusBulkDialogRegisterId.value = registerId
+  showParcelStatusBulkDialog.value = true
+}
+
+async function handleParcelStatusBulkUpdated() {
+  await loadRegisters()
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
@@ -336,13 +311,7 @@ defineExpose({
       :is-shift-lead-plus="isShiftLeadPlus"
       :is-sr-logist-plus="isSrLogistPlus"
       :is-wh-manager-plus="isWhManagerPlus"
-      :status-options="parcelStatusOptions"
-      :is-in-edit-mode="isInEditMode"
-      :get-selected-status-id="getSelectedStatusId"
-      :set-selected-status-id="setSelectedStatusId"
-      :bulk-change-status="bulkChangeStatus"
-      :cancel-status-change="cancelStatusChange"
-      :apply-status-to-all-orders="applyStatusToAllOrders"
+      :open-parcel-status-bulk-dialog="openParcelStatusBulkDialog"
       :register-status-options="registerStatusOptions"
       :can-change-register-status="isSrLogistPlus"
       :is-register-status-edit-mode="isInRegisterStatusEditMode"
@@ -357,6 +326,15 @@ defineExpose({
       @delete-register="deleteRegister"
       @open-unregistered-parcels="openUnregisteredParcels"
       @open-scanjob-create="openScanjobCreate"
+    />
+
+    <ParcelStatusBulkChangeDialog
+      :show="showParcelStatusBulkDialog"
+      :register-id="parcelStatusBulkDialogRegisterId"
+      :status-options="parcelStatusOptions"
+      :disabled="runningAction || loading || isInitializing"
+      @update:show="showParcelStatusBulkDialog = $event"
+      @updated="handleParcelStatusBulkUpdated"
     />
 
     <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">

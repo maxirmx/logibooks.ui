@@ -98,10 +98,6 @@ describe('App exchange rates display', () => {
     const isoToday = today.toISOString()
     const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
     const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
-    const rateFormatter = new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    })
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: isoToday },
       { alphabeticCode: 'EUR', rate: 101.9876, date: isoToday },
@@ -113,7 +109,7 @@ describe('App exchange rates display', () => {
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321 EUR/UZS ${rateFormatter.format(20000.1234)}`)
+    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`)
   })
 
   it('shows rates when API returns date-only values for today', async () => {
@@ -123,10 +119,6 @@ describe('App exchange rates display', () => {
 
     const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
     const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
-    const rateFormatter = new Intl.NumberFormat('ru-RU', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    })
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: '2024-06-24' },
       { alphabeticCode: 'EUR', rate: 101.9876, date: '2024-06-24' },
@@ -138,7 +130,7 @@ describe('App exchange rates display', () => {
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321 EUR/UZS ${rateFormatter.format(20000.1234)}`)
+    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`)
   })
 
   it('shows failure text when rate date is stale', async () => {
@@ -153,6 +145,6 @@ describe('App exchange rates display', () => {
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD не удалось получить курс EUR не удалось получить курс UZS не удалось получить курс EUR/UZS не удалось получить курс`)
+    expect(line).toBe(`${ruDate} USD не удалось получить курс EUR не удалось получить курс UZS не удалось получить курс`)
   })
 })

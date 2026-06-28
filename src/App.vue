@@ -90,10 +90,10 @@ const exchangeRatesLine = computed(() => {
   const usdText = formatEntry(usd)
   const eurText = formatEntry(eur)
   const uzsText = formatEntry(uzs)
-  const eurUzsText = formatEntry(eurUzs)
   const uzsLabel = formatUzsLabel(uzs)
+//  const eurUzsText = formatEntry(eurUzs)
 
-  return `${todayStr} USD ${usdText} EUR ${eurText} ${uzsLabel} ${uzsText} EUR/UZS ${eurUzsText}`
+  return `${todayStr} USD ${usdText} EUR ${eurText} ${uzsLabel} ${uzsText}`
 })
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'

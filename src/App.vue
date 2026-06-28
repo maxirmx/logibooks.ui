@@ -69,7 +69,6 @@ const exchangeRatesLine = computed(() => {
   const usd = findRate('USD')
   const eur = findRate('EUR')
   const uzs = findRate('UZS')
-  const eurUzs = statusStore.eurUzs
 
   const FAIL_MSG = 'не удалось получить курс'
   function formatEntry(rateObj) {

@@ -30,6 +30,10 @@ const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
   minimumFractionDigits: 4,
   maximumFractionDigits: 4,
 })
+const unitNumberFormatter = new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: 0,
+})
+const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/
 
 function findRate(code) {
   return statusStore.exchangeRates?.find(r => r?.alphabeticCode?.toUpperCase() === code) || null
@@ -41,27 +45,54 @@ function isSameDay(dateA, dateB) {
     dateA.getDate() === dateB.getDate()
 }
 
+function toLocalDateKey(date) {
+  const year = String(date.getFullYear()).padStart(4, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function isSameRateDate(rateDate, today) {
+  if (typeof rateDate === 'string' && dateOnlyPattern.test(rateDate)) {
+    return rateDate === toLocalDateKey(today)
+  }
+
+  const d = new Date(rateDate)
+  if (Number.isNaN(d.getTime())) return false
+  return isSameDay(d, today)
+}
+
 const exchangeRatesLine = computed(() => {
   const today = new Date()
   const todayStr = ruDateFormatter.format(today)
 
   const usd = findRate('USD')
   const eur = findRate('EUR')
+  const uzs = findRate('UZS')
 
   const FAIL_MSG = 'не удалось получить курс'
   function formatEntry(rateObj) {
     if (!rateObj) return FAIL_MSG
-    const d = new Date(rateObj.date)
-    if (Number.isNaN(d.getTime())) return FAIL_MSG
-    if (!isSameDay(d, today)) return FAIL_MSG
+    if (!isSameRateDate(rateObj.date, today)) return FAIL_MSG
     if (typeof rateObj.rate !== 'number') return FAIL_MSG
     return rateNumberFormatter.format(rateObj.rate)
   }
 
+  function formatUzsLabel(rateObj) {
+    if (!rateObj || typeof rateObj.units !== 'number' || rateObj.units <= 0) {
+      return 'UZS'
+    }
+
+    return `UZS (за ${unitNumberFormatter.format(rateObj.units)})`
+  }
+
   const usdText = formatEntry(usd)
   const eurText = formatEntry(eur)
+  const uzsText = formatEntry(uzs)
+  const uzsLabel = formatUzsLabel(uzs)
+//  const eurUzsText = formatEntry(eurUzs)
 
-  return `${todayStr} USD ${usdText} EUR ${eurText}`
+  return `${todayStr} USD ${usdText} EUR ${eurText} ${uzsLabel} ${uzsText}`
 })
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'

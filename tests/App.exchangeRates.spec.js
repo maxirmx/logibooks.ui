@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 /* @vitest-environment jsdom */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
@@ -61,6 +61,10 @@ describe('App exchange rates display', () => {
     await router.isReady()
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   function mountApp() {
     return mount(App, {
       global: {
@@ -89,25 +93,49 @@ describe('App exchange rates display', () => {
     })
   }
 
-  it('shows current date with both rates when they are for today', async () => {
+  it('shows current date with rates and EUR/UZS cross rate when they are for today', async () => {
     const today = new Date()
     const isoToday = today.toISOString()
-  const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: isoToday },
       { alphabeticCode: 'EUR', rate: 101.9876, date: isoToday },
+      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: isoToday },
     ]
+    statusStore.eurUzs = { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 20000.1234, date: isoToday }
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876`)
+    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`)
+  })
+
+  it('shows rates when API returns date-only values for today', async () => {
+    vi.useFakeTimers()
+    const today = new Date(2024, 5, 24, 12, 0, 0)
+    vi.setSystemTime(today)
+
+    const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
+    statusStore.exchangeRates = [
+      { alphabeticCode: 'USD', rate: 92.1234, date: '2024-06-24' },
+      { alphabeticCode: 'EUR', rate: 101.9876, date: '2024-06-24' },
+      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: '2024-06-24' },
+    ]
+    statusStore.eurUzs = { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 20000.1234, date: '2024-06-24' }
+
+    const wrapper = mountApp()
+    await wrapper.vm.$nextTick()
+
+    const line = wrapper.find('.exchange-rates').text()
+    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`)
   })
 
   it('shows failure text when rate date is stale', async () => {
     const today = new Date()
-  const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
     const yesterday = new Date(today.getTime() - 24*60*60*1000).toISOString()
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 95.5, date: yesterday },
@@ -117,6 +145,6 @@ describe('App exchange rates display', () => {
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD не удалось получить курс EUR не удалось получить курс`)
+    expect(line).toBe(`${ruDate} USD не удалось получить курс EUR не удалось получить курс UZS не удалось получить курс`)
   })
 })

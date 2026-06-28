@@ -99,11 +99,18 @@ This file is a part of Logibooks ui application
 }
 
 /* Tables: users */
-/* Forms: register  */
 .table-2,
 .form-3 {
   width: 100%;
   max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Tables: users */
+/* Forms: register  */
+.form-3x {
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
 }
 

@@ -853,7 +853,7 @@ const loadReportFields = computed(() => {
 </script>
 
 <template>
-  <div class="settings form-3 form-compact">
+  <div class="settings form-3x form-compact">
    
     <Form
       @submit="onSubmit"

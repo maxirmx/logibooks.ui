@@ -1,0 +1,678 @@
+<script setup>
+// Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application 
+
+import router from '@/router'
+import { Form, Field } from 'vee-validate'
+import * as Yup from 'yup'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useStopWordsStore } from '@/stores/stop.words.store.js'
+import { useKeyWordsStore } from '@/stores/key.words.store.js'
+import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
+import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
+import { useParcelViewsStore } from '@/stores/parcel.views.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { storeToRefs } from 'pinia'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
+import { wbrnRegisterColumnTitles, wbrnRegisterColumnTooltips } from '@/helpers/wbrn.register.mapping.js'
+import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import WbrNFormField from '@/components/WbrNFormField.vue'
+import ActionButton from '@/components/ActionButton.vue'
+import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
+import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
+import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import ArticleWithH from '@/components/ArticleWithH.vue'
+import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
+import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
+import DTagSection from '@/components/DTagSection.vue'
+import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
+import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
+import {
+  validateParcelData,
+  approveParcel as approveParcelHelper,
+  approveParcelWithExcise as approveParcelWithExciseHelper,
+  approveParcelWithNotification as approveParcelWithNotificationHelper,
+  generateXml as generateXmlHelper,
+  deleteProductImage as deleteProductImageHelper,
+  runCheckStatusAction as runCheckStatusActionHelper
+} from '@/helpers/parcel.actions.helpers.js'
+import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
+import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+import { useParcelImageOverlay } from '@/helpers/parcel.image.overlay.js'
+import { useRoute } from 'vue-router'
+
+const props = defineProps({
+  registerId: { type: Number, required: true },
+  id: { type: Number, required: true }
+})
+
+// track current parcel id so we can swap inline without changing route
+const currentParcelId = ref(props.id)
+const isComponentMounted = ref(true)
+const route = useRoute()
+
+const parcelsStore = useParcelsStore()
+const registersStore = useRegistersStore()
+const authStore = useAuthStore()
+const statusStore = useParcelStatusesStore()
+const stopWordsStore = useStopWordsStore()
+const keyWordsStore = useKeyWordsStore()
+const feacnOrdersStore = useFeacnOrdersStore()
+const feacnPrefixesStore = useFeacnPrefixesStore()
+const parcelViewsStore = useParcelViewsStore()
+
+await statusStore.ensureLoaded()
+await stopWordsStore.ensureLoaded()
+await keyWordsStore.ensureLoaded()
+await feacnOrdersStore.ensureLoaded()
+await feacnPrefixesStore.ensureLoaded()
+await registersStore.getById(props.registerId)
+// load initial parcel by currentParcelId
+await parcelsStore.getById(currentParcelId.value)
+await parcelViewsStore.add(currentParcelId.value)
+
+const alertStore = useAlertStore()
+const { alert } = storeToRefs(alertStore)
+const confirm = useConfirm()
+const {
+  imageOverlayOpen,
+  imageUrl,
+  imageLoading,
+  openImageOverlay,
+  closeImageOverlay
+} = useParcelImageOverlay(parcelsStore, alertStore)
+
+// Set the selected parcel ID in auth store
+authStore.selectedParcelId = currentParcelId.value
+
+const { item } = storeToRefs(parcelsStore)
+const { item: registerItem } = storeToRefs(registersStore)
+const { stopWords } = storeToRefs(stopWordsStore)
+const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
+const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
+
+// Track loading state from store and running actions
+const { loading } = storeToRefs(parcelsStore)
+const runningAction = ref(false)
+
+// Pre-fetch next parcels - will be populated in onMounted
+const nextParcelsResult = ref({ withoutIssues: null, withIssues: null })
+let nextParcelsPromise = null
+let nextParcelsParcelId = null
+
+function initNextParcelsPromise(id) {
+  if (nextParcelsPromise != null && nextParcelsParcelId === id) {
+    // already initialized for this parcel
+    return
+  }
+
+  nextParcelsParcelId = id
+  nextParcelsResult.value = { withoutIssues: null, withIssues: null }
+
+  nextParcelsPromise = registersStore
+    .nextParcels(id)
+    .then(result => {
+      nextParcelsResult.value = result
+      return result
+    })
+}
+
+function ensureNextParcelsPromise() {
+  if (!nextParcelsPromise) {
+    initNextParcelsPromise(currentParcelId.value)
+  }
+  return nextParcelsPromise
+}
+
+function getModeQueryParam() {
+  return typeof route.query.mode === 'string' && route.query.mode.length > 0
+    ? route.query.mode
+    : undefined
+}
+
+function goToParcelsList() {
+  const mode = getModeQueryParam()
+  const query = {
+    selectedParcelId: String(currentParcelId.value)
+  }
+  if (mode) {
+    query.mode = mode
+  }
+
+  router.push({
+    path: `/registers/${props.registerId}/parcels`,
+    query
+  })
+}
+
+// Track overlay state for disabling form elements
+const overlayActive = ref(false)
+
+const isDescriptionVisible = ref(false)
+
+// Pre-fetch next parcels after component is mounted
+onMounted(async () => {
+  window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
+  initNextParcelsPromise(currentParcelId.value)
+})
+
+onUnmounted(() => {
+  isComponentMounted.value = false
+  window.removeEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
+  // Clean up keyboard event listener if still attached
+  document.removeEventListener('keydown', handleImageOverlayEscape)
+})
+
+function handleImageOverlayEscape(event) {
+  if (event.key === 'Escape' && imageOverlayOpen.value) {
+    closeImageOverlay()
+  }
+}
+
+watch(imageOverlayOpen, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('keydown', handleImageOverlayEscape)
+  } else {
+    document.removeEventListener('keydown', handleImageOverlayEscape)
+  }
+})
+
+const schema = Yup.object().shape({
+  statusId: Yup.number().required('Необходимо выбрать статус'),
+  tnVed: Yup.string()
+    .required('Необходимо указать ТН ВЭД')
+    .matches(/^\d{10}$/, 'Код ТН ВЭД должен содержать ровно 10 цифр'),
+  invoiceDate: Yup.date().nullable(),
+  weightKg: Yup.number().nullable().min(0, 'Вес не может быть отрицательным'),
+  quantity: Yup.number().nullable().min(0, 'Количество не может быть отрицательным'),
+  unitPrice: Yup.number().nullable().min(0, 'Цена не может быть отрицательной')
+})
+
+async function deleteProductImage(values) {
+  await deleteProductImageHelper(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore)
+}
+
+async function viewProductImage() {
+  await openImageOverlay(item.value?.id)
+}
+
+async function validateParcel(values, sw, matchMode) {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+  try {
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
+    
+    await validateParcelData(values, item, parcelsStore, sw, matchMode)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+async function runCheckStatusAction(values, actionFn) {
+  return runCheckStatusActionHelper(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore)
+}
+
+// Approve the parcel
+async function approveParcel(values) {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+  try {
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
+    
+    await approveParcelHelper(values, item, parcelsStore)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+// Approve the parcel with excise
+async function approveParcelWithExcise(values, setFieldValue) {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+  try {
+    // Wait for next parcels info to complete before calling helper
+    await ensureNextParcelsPromise()
+
+    const result = await approveParcelWithExciseHelper(values, item, parcelsStore)
+    if (result?.tnVed != null) {
+      setFieldValue('tnVed', result.tnVed)
+    }
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+async function approveParcelWithNotification(values) {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+  try {
+    await ensureNextParcelsPromise()
+
+    await approveParcelWithNotificationHelper(values, item, parcelsStore)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+async function refreshParcelAfterReportUpload() {
+  if (!isComponentMounted.value || runningAction.value) return
+  runningAction.value = true
+
+  try {
+    await parcelsStore.getById(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+// Handle saving and moving to the next parcel
+async function onSubmit(values, useTheNext = false) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    await parcelsStore.update(currentParcelId.value, values)
+
+    // Wait for the appropriate next parcel promise to resolve
+    const nextParcels = await ensureNextParcelsPromise()
+    const nextParcel = useTheNext
+      ? nextParcels?.withoutIssues
+      : nextParcels?.withIssues
+
+    if (nextParcel) {
+      // Inline swap: set item, update current id and authStore,
+      // re-init neighbor promises.
+      item.value = nextParcel
+      currentParcelId.value = nextParcel.id
+      authStore.selectedParcelId = nextParcel.id
+
+      // re-init neighbor promises for the newly active parcel
+      initNextParcelsPromise(currentParcelId.value)
+
+      // update URL without remount
+      const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
+      router.replace(newUrl)
+
+      // fetch full parcel data 
+      // await parcelsStore.getById(nextParcel.id)
+    } else {
+      goToParcelsList()
+    }
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+function onSave(values) {
+  return parcelsStore
+    .update(currentParcelId.value, values)
+    .then(() => {
+      goToParcelsList()
+    })
+    .catch((error) => {
+      alertStore.error(error?.message || String(error))
+    })
+}
+
+// Save current parcel and navigate to the previous one if available
+async function onBack(values) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    // Wait for next parcels info to complete before processing
+    await ensureNextParcelsPromise()
+    await parcelsStore.update(currentParcelId.value, values)
+    const prevParcel = await parcelViewsStore.back()
+
+    if (prevParcel) {
+      // Inline swap to previous parcel: preview -> set item, update id and auth
+      item.value = prevParcel
+      currentParcelId.value = prevParcel.id
+      authStore.selectedParcelId = prevParcel.id
+
+      // re-init next parcels promise for the newly active parcel
+      initNextParcelsPromise(currentParcelId.value)
+
+      // fetch full parcel data in background
+      // update URL without remount
+      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
+      router.replace(prevUrl)
+
+    } else {
+      goToParcelsList()
+    }
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+// Generate XML for this parcel
+async function generateXml(values) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    // Wait for next parcels info to complete before calling helper
+    const updatePromise = parcelsStore.update(currentParcelId.value, values)
+    await Promise.all([ensureNextParcelsPromise(), updatePromise])
+    await registersStore.getById(props.registerId)
+    
+    await generateXmlHelper(
+      item,
+      parcelsStore,
+      String(item.value?.shk || '').padStart(20, '0'),
+      { confirm, register: registersStore.item }
+    )
+    await parcelsStore.getById(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
+}
+
+// Handle fellows click - redirect to parcels list with filter
+function handleFellows() {
+  if (!isComponentMounted.value) return
+  handleFellowsClick(item.value.registerId, item.value.shk)
+}
+
+// Lookup FEACN codes triggered from header actions
+async function onLookup(values) {
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  runningAction.value = true
+  try {
+    // Wait for neighbor promises if present
+    await ensureNextParcelsPromise()
+
+    await parcelsStore.update(currentParcelId.value, values)
+    await parcelsStore.lookupFeacnCode(currentParcelId.value)
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) {
+      await parcelsStore.getById(currentParcelId.value)
+      runningAction.value = false
+    }
+  }
+}
+</script>
+
+<template>
+  <div class="settings form-4 form-compact">
+    <Form
+      @submit="onSubmit" 
+      :initial-values="item" 
+      :validation-schema="schema" 
+      v-slot="{ errors, values, isSubmitting, setFieldValue }" 
+      :class="{ 'form-disabled': overlayActive || imageOverlayOpen }"
+    >
+    <div class="header-with-actions">
+      <h1 class="primary-heading">
+        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.shk ? item.shk : '[без номера]' }}
+      </h1>
+      <!-- Action buttons moved inside Form scope -->
+      <ParcelHeaderActionsBar
+        :disabled="isSubmitting || runningAction || loading"
+        :download-disabled="
+          isSubmitting ||
+          runningAction ||
+          loading ||
+          CheckStatusCode.hasIssues(item?.checkStatus) ||
+          CheckStatusCode.isDuplicate(item?.checkStatus) ||
+          item?.blockedByFellowItem ||
+          isCustomsProcessingDisabled(values.statusId, statusStore)
+        "
+        :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
+        @next-parcel="onSubmit(values, true)"
+        @next-issue="onSubmit(values, false)"
+        @back="onBack(values)"
+        @save="onSave(values)"
+        @lookup="onLookup(values)"
+        @cancel="goToParcelsList()"
+        @download="generateXml(values)"
+      />
+    </div>
+    
+    <hr class="hr" />
+      
+      <!-- Order Identification & Status Section -->
+      <ParcelStatusSection
+        :item="item"
+        :values="values"
+        :parcel-statuses="statusStore.parcelStatuses"
+        :get-check-status-class="getCheckStatusClass"
+        :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
+        :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
+        :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)"
+        :clear-check-status-disabled="isSubmitting || runningAction || loading"
+        @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
+        @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
+        @validate-fc="(vals) => validateParcel(vals, false)"
+        @approve="approveParcel"
+        @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
+        @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
+        @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
+      />
+      <!-- Feacn Code Section -->
+      <FeacnCodeEditor
+        :item="item"
+        :values="values"
+        :errors="errors"
+        :isSubmitting="isSubmitting"
+        :columnTitles="wbrnRegisterColumnTitles"
+        :columnTooltips="wbrnRegisterColumnTooltips"
+        :setFieldValue="setFieldValue"
+        :runningAction="runningAction"
+        :disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
+        @update:item="(updatedItem) => (item.value = updatedItem)"
+        @overlay-state-changed="overlayActive = $event"
+        @set-running-action="runningAction = $event"
+      />
+
+      <!-- Product Name and description Section -->
+      <div class="form-section">
+        <div class="form-row-1 product-name-row">
+          <ActionButton
+            :item="item"
+            :icon="isDescriptionVisible ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
+            @click="isDescriptionVisible = !isDescriptionVisible"
+            :iconSize="'1x'"
+          />
+          <label for="productName" class="label-1 product-name-label">
+            {{ wbrnRegisterColumnTitles.productName }}:
+          </label>
+          <Field
+            name="productName"
+            id="productName"
+            :class="['form-control', 'input-1', { 'is-invalid': errors && errors.productName }]"
+          />
+        </div>
+        <div class="form-row-0" v-show="isDescriptionVisible">
+          <div class="form-group-0">
+            <label for="description" class="label-0">Описание:</label>
+            <Field
+              as="textarea"
+              name="description"
+              id="description"
+              rows="5"
+              class="form-control input-0"
+              :class="{ 'is-invalid': errors && errors.description }"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Identification & Details Section -->
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="shk" class="label">{{ wbrnRegisterColumnTitles.shk }}:</label>
+            <ParcelNumberExt 
+              :item="item"
+              field-name="shk"
+              :disabled="isSubmitting || runningAction || loading"
+              class="readonly-parcel-number"
+              @click="() => {/* No action needed for readonly display */}"
+              @fellows="handleFellows"
+            />
+          </div>
+          <ArticleWithH
+            :item="item"
+            :errors="errors"
+            :disabled="isSubmitting || runningAction || loading"
+            :column-titles="wbrnRegisterColumnTitles"
+            input-readonly
+            :fullWidth="false"
+            @approve-notification="approveParcelWithNotification(values)"
+          />
+          <ProductLinkWithActions
+            :label="wbrnRegisterColumnTitles.productLink"
+            :item="item"
+            :disabled="isSubmitting || runningAction || loading"
+            @view-image="viewProductImage"
+            @delete-image="() => deleteProductImage(values)"
+          />
+          <WbrNFormField name="productCountryName" :errors="errors" :fullWidth="false" />
+          <ParcelWeightAutoField
+            :field-component="WbrNFormField"
+            :item="item"
+            :register="registerItem"
+            :label="wbrnRegisterColumnTitles.weightKg"
+            :errors="errors"
+            :fullWidth="false"
+          />
+          <WbrNFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="currency" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <WbrNFormField name="recipientLastName" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="recipientFirstName" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="recipientPatronymic" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+        </div>
+        <div class="form-row">
+          <WbrNFormField name="recipientCountryName" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="recipientCity" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="recipientAddress" :errors="errors" :fullWidth="false" />
+        </div>
+      </div>
+      <!-- DTag -->
+      <DTagSection :item="item" />
+
+    </Form>
+    <div v-if="item?.error" class="text-center m-5">
+      <div class="text-danger">Ошибка: {{ item.error }}</div>
+    </div>
+    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
+      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
+      {{ alert.message }}
+    </div>
+  </div>
+  <ParcelImageOverlay
+    :open="imageOverlayOpen"
+    :image-url="imageUrl"
+    :loading="imageLoading"
+    @close="closeImageOverlay"
+  />
+</template>
+
+<style scoped>
+/* Header with actions layout */
+.header-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Primary heading with ellipsis */
+.primary-heading {
+  margin: 0;
+  flex: 1;
+  min-width: 0; /* Allow shrinking */
+  
+  /* Ellipsis on overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  /* Ensure it takes available space but can shrink */
+  max-width: calc(100% - 300px); /* Reserve space for buttons */
+}
+
+.form-section,
+.form-row,
+.form-group {
+  overflow: visible !important;
+}
+
+/* On small screens, ensure full width for heading and buttons flow below */
+@media (max-width: 768px) {
+  .header-with-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .primary-heading {
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Product name styling */
+.product-name-label {
+  width: calc(18.5% - 50px);
+  min-width: 140px;
+}
+
+/* Override product name row alignment */
+.product-name-row {
+  display: flex;
+  align-items: center;
+}
+
+/* Overlay state styling */
+.form-disabled .form-control,
+.form-disabled button,
+.form-disabled select,
+.form-disabled textarea,
+.form-disabled .v-field,
+.form-disabled .v-btn {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-disabled .feacn-search-wrapper {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+</style>

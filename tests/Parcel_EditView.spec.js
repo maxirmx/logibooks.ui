@@ -10,8 +10,9 @@ import ParcelEditView from '@/views/Parcel_EditView.vue'
 import OzonParcelEditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrParcelEditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
 import Wbr2ParcelsEditDialog from '@/dialogs/Wbr2Parcel_EditDialog.vue'
+import WbrNParcelEditDialog from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcParcelEditDialog from '@/dialogs/GtcParcel_EditDialog.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 // Mock fetchWrapper
 const mockGet = vi.fn()
@@ -30,6 +31,7 @@ const commonStubs = {
   OzonParcelEditDialog: true,
   WbrParcelEditDialog: true,
   Wbr2ParcelsEditDialog: true,
+  WbrNParcelEditDialog: true,
   GtcParcelEditDialog: true,
   Suspense: false
 }
@@ -68,6 +70,13 @@ describe('Parcel_EditView.vue', () => {
       expectedComponent: Wbr2ParcelsEditDialog,
       registerId: 3,
       parcelId: 300
+    },
+    {
+      name: 'maps WBRN_REGISTER_ID to WbrNParcelEditDialog',
+      registerType: WBRN_REGISTER_ID,
+      expectedComponent: WbrNParcelEditDialog,
+      registerId: 33,
+      parcelId: 330
     },
     {
       name: 'returns null for unknown register type',

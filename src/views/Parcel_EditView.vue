@@ -7,8 +7,9 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import OzonParcelEditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrParcelEditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
 import Wbr2ParcelsEditDialog from '@/dialogs/Wbr2Parcel_EditDialog.vue'
+import WbrNParcelEditDialog from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcParcelEditDialog from '@/dialogs/GtcParcel_EditDialog.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
@@ -29,6 +30,7 @@ const editComponent = computed(() => {
   if (registerType === WBR_COMPANY_ID) return WbrParcelEditDialog
   if (registerType === GTC_COMPANY_ID) return GtcParcelEditDialog
   if (registerType === WBR2_REGISTER_ID) return Wbr2ParcelsEditDialog
+  if (registerType === WBRN_REGISTER_ID) return WbrNParcelEditDialog
   return null
 })
 

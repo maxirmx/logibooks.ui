@@ -6,6 +6,7 @@ import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { scanjobCheckStatusText } from '@/helpers/scanjob.check-status.helpers.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
+import { wbrnRegisterColumnTitles } from '@/helpers/wbrn.register.mapping.js'
 
 export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / запретов'
 
@@ -75,6 +76,17 @@ export const scanjobWbr2ParcelHeaders = [
   { title: wbr2RegisterColumnTitles.quantity, key: 'quantity', align: 'start' }
 ]
 
+export const scanjobWbrNParcelHeaders = [
+  ...scanjobParcelScanHeaders,
+  { title: wbrnRegisterColumnTitles.extId, key: 'extId', align: 'start' },
+  { title: wbrnRegisterColumnTitles.shk, key: 'shk', align: 'start' },
+  { title: wbrnRegisterColumnTitles.article, key: 'article', align: 'start' },
+  { title: wbrnRegisterColumnTitles.sticker, key: 'sticker', align: 'start' },
+  { title: wbrnRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
+  { title: wbrnRegisterColumnTitles.productName, key: 'productName', align: 'start' },
+  { title: wbrnRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },
+  { title: wbrnRegisterColumnTitles.quantity, key: 'quantity', align: 'start' }
+]
 export const scanjobMonitorArea = {
   Boxes: 0,
   Box: 1,

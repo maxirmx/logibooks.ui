@@ -9,6 +9,7 @@ import { ref } from 'vue'
 import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
 import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor_Table.vue'
 import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monitor_Table.vue'
+import ScanjobWbrNParcelsMonitorTable from '@/dialogs/Scanjob_WbrN_Parcels_Monitor_Table.vue'
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
@@ -224,6 +225,52 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const statusCell = wrapper.get('.status-cell.has-issues')
     expect(statusCell.text()).toBe('Запрет')
+  })
+
+  it('renders WBRN scan and WH columns without box number', () => {
+    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
+      props: {
+        parcels: [{
+          stickerScanned: true,
+          extId: 'KGT-51',
+          shk: 'SHK-51',
+          article: '29817781',
+          sticker: 'STICKER-51',
+          stickerCode: 'CODE-51',
+          productName: 'Very long WBRN product name',
+          weightKg: 1.11,
+          quantity: 3,
+          zoneName: 'Blue',
+          statusTitle: 'Ready',
+          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+        }]
+      },
+      global
+    })
+
+    const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
+    expect(headers.map((header) => header.key)).toEqual([
+      'actions',
+      'stickerScanned',
+      'checkStatusProjection',
+      'zone',
+      'statusId',
+      'scannedInfo',
+      'extId',
+      'shk',
+      'article',
+      'sticker',
+      'stickerCode',
+      'productName',
+      'weightKg',
+      'quantity'
+    ])
+    expect(headers.map((header) => header.key)).not.toContain('boxNumber')
+    expect(wrapper.text()).toContain('KGT-51')
+    expect(wrapper.text()).toContain('SHK-51')
+    expect(wrapper.text()).toContain('29817781')
+    expect(wrapper.text()).toContain('STICKER-51')
+    expect(wrapper.text()).toContain('CODE-51')
   })
 
   it('renders corrected monitor parcel weights from register correction data', () => {

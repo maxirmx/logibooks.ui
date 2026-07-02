@@ -21,3 +21,4 @@ export const THE_LAST_VISIBLE_COMPANY = 1024 * 1024;
  *   register type to the real Wildberries company (WBR_COMPANY_ID = 2).
  */
 export const WBR2_REGISTER_ID = THE_LAST_VISIBLE_COMPANY + WBR_COMPANY_ID;      // Wildberries format 2 [TJ, GE]
+export const WBRN_REGISTER_ID = 2 * THE_LAST_VISIBLE_COMPANY + WBR_COMPANY_ID;  // Wildberries new format

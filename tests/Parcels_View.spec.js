@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ParcelsView from '@/views/Parcels_View.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const pushMock = vi.hoisted(() => vi.fn())
@@ -51,6 +51,22 @@ vi.mock('@/lists/Wbr2Parcels_WhList.vue', () => ({
     name: 'Wbr2Parcels_WhList',
     props: ['register-id'],
     template: '<div data-test="wbr2-wh-list">WBR2 WH: {{ registerId }}</div>'
+  }
+}))
+
+vi.mock('@/lists/WbrNParcels_List.vue', () => ({
+  default: {
+    name: 'WbrNParcels_List',
+    props: ['register-id'],
+    template: '<div data-test="wbrn-list">WBRN: {{ registerId }}</div>'
+  }
+}))
+
+vi.mock('@/lists/WbrNParcels_WhList.vue', () => ({
+  default: {
+    name: 'WbrNParcels_WhList',
+    props: ['register-id'],
+    template: '<div data-test="wbrn-wh-list">WBRN WH: {{ registerId }}</div>'
   }
 }))
 
@@ -205,6 +221,41 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
+  })
+
+  it('renders WbrNParcels_List when register has WBRN registerType', async () => {
+    mockGet.mockResolvedValue({ registerType: WBRN_REGISTER_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 7
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-test="wbrn-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
+  })
+
+  it('renders WbrNParcels_WhList when register has WBRN registerType in warehouse mode', async () => {
+    mockGet.mockResolvedValue({ registerType: WBRN_REGISTER_ID })
+
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 8,
+        mode: OP_MODE_WAREHOUSE
+      }
+    })
+
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('[data-test="wbrn-wh-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="wbrn-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="wbr2-wh-list"]').exists()).toBe(false)
   })
 
   it('renders GtcParcels_List when register has GTC registerType', async () => {

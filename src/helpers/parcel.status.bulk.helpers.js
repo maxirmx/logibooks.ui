@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { gtcRegisterColumnTitles } from '@/helpers/gtc.register.mapping.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
@@ -60,6 +60,7 @@ export function getParcelStatusBulkNumberLabel(register) {
   switch (registerType) {
     case WBR_COMPANY_ID:
     case WBR2_REGISTER_ID:
+    case WBRN_REGISTER_ID:
       return wbrRegisterColumnTitles.shk
     case OZON_COMPANY_ID:
       return ozonRegisterColumnTitles.postingNumber

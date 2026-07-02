@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -877,6 +877,19 @@ describe('Registers_List.vue', () => {
         expect(router.push).toHaveBeenCalledWith('/register/load')
       })
 
+      it('handles file selection with single file input for WBRN', async () => {
+        const file = new File(['data'], 'wbrn.xlsx')
+        wrapper.vm.selectedRegisterType = WBRN_REGISTER_ID
+
+        await wrapper.vm.fileSelected(file)
+
+        expect(registersStore.item.fileName).toBe('wbrn.xlsx')
+        expect(registersStore.item.registerType).toBe(WBRN_REGISTER_ID)
+        expect(registersStore.item.companyId).toBe(WBR_COMPANY_ID)
+        expect(registersStore.uploadFile).toBe(file)
+        expect(router.push).toHaveBeenCalledWith('/register/load')
+      })
+
       it('handles empty file selection', async () => {
         wrapper.vm.selectedRegisterType = WBR_COMPANY_ID
 
@@ -919,10 +932,11 @@ describe('Registers_List.vue', () => {
 
         const options = wrapper.vm.uploadMenuOptions
 
-        expect(options).toHaveLength(3)
+        expect(options).toHaveLength(4)
         expect(options.map((option) => option.label)).toEqual([
           'Озон',
           'РВБ',
+          'WbrN / Wildberries new',
           'Импорт и реэкспорт (тест)'
         ])
         expect(options.every((option) => typeof option.action === 'function')).toBe(true)
@@ -955,7 +969,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(3)
+        expect(options).toHaveLength(4)
 
         const [firstOption] = options
         expect(firstOption.label).toBe('Озон')
@@ -963,6 +977,26 @@ describe('Registers_List.vue', () => {
         await firstOption.action()
 
         expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
+        expect(mockClick).toHaveBeenCalled()
+      })
+
+      it('provides WbrN menu option that triggers upload', async () => {
+        const mockClick = vi.fn()
+        wrapper.vm.fileInput = { click: mockClick }
+
+        mockCompanies.value = [
+          { id: OZON_COMPANY_ID, name: 'ООО "Интернет решения"', shortName: 'Озон' },
+          { id: WBR_COMPANY_ID, name: 'ООО "РВБ"', shortName: 'РВБ' }
+        ]
+
+        await wrapper.vm.$nextTick()
+
+        const option = wrapper.vm.uploadMenuOptions.find((item) => item.label === 'WbrN / Wildberries new')
+        expect(option).toBeTruthy()
+
+        await option.action()
+
+        expect(wrapper.vm.selectedRegisterType).toBe(WBRN_REGISTER_ID)
         expect(mockClick).toHaveBeenCalled()
       })
 

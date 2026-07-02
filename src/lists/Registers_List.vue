@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import {
   startRegisterStatusEditMode,
   cancelRegisterStatusChange,
@@ -106,6 +106,12 @@ const uploadMenuOptions = computed(() => {
       action: () => startRegisterUpload(company.id)
     }))
 
+  if (companies.value.some((company) => company.id === WBR_COMPANY_ID)) {
+    list.push({
+      label: 'WbrN / Wildberries new',
+      action: () => startRegisterUpload(WBRN_REGISTER_ID)
+    })
+  }
   list.push({
     label: 'Импорт и реэкспорт (тест)',
     action: () => startRegisterUpload(GTC_COMPANY_ID)
@@ -210,7 +216,7 @@ async function fileSelected(files) {
     return
   }
 
-  const customerId = selectedRegisterType.value === WBR2_REGISTER_ID ? WBR_COMPANY_ID : selectedRegisterType.value
+  const customerId = [WBR2_REGISTER_ID, WBRN_REGISTER_ID].includes(selectedRegisterType.value) ? WBR_COMPANY_ID : selectedRegisterType.value
   registersStore.item = {
     fileName: file.name,
     registerType: selectedRegisterType.value,

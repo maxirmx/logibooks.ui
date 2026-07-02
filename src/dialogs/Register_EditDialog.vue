@@ -15,7 +15,7 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
-import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
+import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ErrorDialog from '@/l2/ErrorDialog.vue'
@@ -105,9 +105,10 @@ const warehouseOptions = computed(() => {
     : [{ id: 0, name: 'Не задано' }, ...available]
 })
 const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
+const isWbrNRegister = computed(() => item.value?.registerType === WBRN_REGISTER_ID)
 const isWbrRegister = computed(() => item.value?.registerType === WBR_COMPANY_ID)
 const isOzonRegister = computed(() => item.value?.registerType === OZON_COMPANY_ID)
-const isWarehouseCapableRegister = computed(() => isWbrRegister.value || isWbr2Register.value || isOzonRegister.value)
+const isWarehouseCapableRegister = computed(() => isWbrRegister.value || isWbr2Register.value || isWbrNRegister.value || isOzonRegister.value)
 const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
 const selectedCustomsProcedure = computed(() => {
   const procedureCode = selectedCustomsProcedureCode.value
@@ -117,7 +118,7 @@ const fixedCompanyId = computed(() => {
   if (isOzonRegister.value && selectedCustomsProcedure.value?.isGtc) {
     return GTC_COMPANY_ID
   }
-  if (isWbr2Register.value) {
+  if (isWbr2Register.value || isWbrNRegister.value) {
     return WBR_COMPANY_ID
   }
   return item.value?.registerType || item.value?.companyId || null
@@ -213,7 +214,7 @@ function normalizeDecimalSeparator(value) {
 }
 
 function ensureDefaultOtherCountry() {
-  if (!item.value) return
+  if (!item.value || isWbrNRegister.value) return
   const countryCode = item.value.theOtherCountryCode
   if (countryCode === null || countryCode === undefined || countryCode === '') {
     item.value.theOtherCountryCode = DEFAULT_OTHER_COUNTRY_CODE

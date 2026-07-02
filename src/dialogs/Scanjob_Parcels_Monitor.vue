@@ -9,7 +9,8 @@ import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.
 import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
 import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor_Table.vue'
 import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monitor_Table.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import ScanjobWbrNParcelsMonitorTable from '@/dialogs/Scanjob_WbrN_Parcels_Monitor_Table.vue'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import {
   formatParcelProgress,
   isUnassignedMonitorBox,
@@ -47,6 +48,8 @@ const typedTableComponent = computed(() => {
       return ScanjobWbrParcelsMonitorTable
     case WBR2_REGISTER_ID:
       return ScanjobWbr2ParcelsMonitorTable
+    case WBRN_REGISTER_ID:
+      return ScanjobWbrNParcelsMonitorTable
     default:
       return null
   }

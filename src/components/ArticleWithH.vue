@@ -14,7 +14,9 @@ const props = defineProps({
   errors: { type: Object, default: () => ({}) },
   disabled: { type: Boolean, default: false },
   nme: { type: String, default: 'article' },
-  fullWidth: { type: Boolean, default: false }
+  fullWidth: { type: Boolean, default: false },
+  columnTitles: { type: Object, default: () => ozonRegisterColumnTitles },
+  inputReadonly: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['approve-notification'])
@@ -46,7 +48,7 @@ function emitApproveWithNotification() {
 <template>
   <div :class="fullWidth ? 'form-group-1' : 'form-group'">
     <label :for="nme" :class="fullWidth ? 'label-1' : 'label'">
-      {{ ozonRegisterColumnTitles[nme] }}:
+      {{ columnTitles[nme] || ozonRegisterColumnTitles[nme] || nme }}:
     </label>
     <Field
       :name="nme"
@@ -58,6 +60,7 @@ function emitApproveWithNotification() {
         { 'is-invalid': errors && errors[nme] }
       ]"
       :disabled="disabled"
+      :readonly="inputReadonly"
     />
     <div v-if="showNotificationButton" class="action-buttons">
       <ActionButton

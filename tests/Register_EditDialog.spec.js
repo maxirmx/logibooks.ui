@@ -11,7 +11,7 @@ import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
-import { WBR_COMPANY_ID, WBR2_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
+import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.helpers.js'
 
@@ -480,6 +480,28 @@ describe('Register_EditDialog', () => {
     const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
     expect(optionTexts).toContain('Не задано')
     expect(optionTexts).toContain('Main Warehouse')
+  })
+
+  it('renders warehouse selector for WBRN register type', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBRN_REGISTER_ID
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
+    const warehouseSelect = wrapper.find('select#warehouseId')
+    expect(warehouseSelect.exists()).toBe(true)
   })
 
   it('renders warehouse selector for WBR register type', async () => {
@@ -1752,10 +1774,10 @@ describe('Register_EditDialog', () => {
     mockOps.value = {
       ...mockOps.value,
       customsProcedures: [
-        { value: 10, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID] },
+        { value: 10, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID] },
         { value: 31, charCode: 'ЭК31', name: 'Реэкспорт', isExport: true, isRe: true, isGtc: true, allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID] },
         { value: 40, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: true, allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID] },
-        { value: 60, charCode: 'ИМ60', name: 'Реимпорт', isExport: false, isRe: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID] }
+        { value: 60, charCode: 'ИМ60', name: 'Реимпорт', isExport: false, isRe: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID] }
       ]
     }
     mockItem.value = {

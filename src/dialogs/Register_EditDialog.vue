@@ -222,6 +222,23 @@ function ensureDefaultOtherCountry() {
   }
 }
 
+function getDefaultRegisterStatusId() {
+  const statuses = registerStatusesStore.registerStatuses
+  if (!Array.isArray(statuses) || statuses.length === 0) {
+    return null
+  }
+
+  return parseNumber(statuses[0]?.id ?? statuses[0]?.Id, null)
+}
+
+function ensureDefaultRegisterStatus() {
+  if (!props.create || !item.value) return
+  const statusId = item.value.statusId
+  if (statusId === null || statusId === undefined || statusId === '') {
+    item.value.statusId = getDefaultRegisterStatusId()
+  }
+}
+
 const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
   if (!Array.isArray(all)) return []
@@ -393,6 +410,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       }
       originalCustomsProcedureCode.value = null
       ensureDefaultOtherCountry()
+      ensureDefaultRegisterStatus()
     }
 
 
@@ -408,6 +426,7 @@ onMounted(async () => {
 
     await registerStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
+    ensureDefaultRegisterStatus()
 
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
@@ -522,6 +541,10 @@ const typesLoaded = computed(
   () => Array.isArray(ops.value?.transportationTypes) && ops.value.transportationTypes.length > 0
 )
 
+const registerStatusesLoaded = computed(
+  () => Array.isArray(registerStatusesStore.registerStatuses) && registerStatusesStore.registerStatuses.length > 0
+)
+
 function updateDirection() {
   item.value.companyId = fixedCompanyId.value
   if (isExport.value) {
@@ -556,6 +579,12 @@ watch(proceduresLoaded, (loaded) => {
 watch(typesLoaded, (loaded) => {
   if (loaded && item.value.transportationTypeCode == null) {
     item.value.transportationTypeCode = getDefaultTransportationTypeCode()
+  }
+})
+
+watch(registerStatusesLoaded, (loaded) => {
+  if (loaded) {
+    ensureDefaultRegisterStatus()
   }
 })
 
@@ -919,15 +948,17 @@ const loadReportFields = computed(() => {
           <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
-              <RegisterStatusSelect
-                id="statusId"
-                :model-value="getStatusFieldValue(field?.value)"
-                :items="registerStatusesStore.registerStatuses"
-                variant="outlined"
-                density="compact"
-                hide-details
-                @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
-              />
+              <div id="statusId" class="form-control input register-status-input">
+                <RegisterStatusSelect
+                  class="register-status-input-select"
+                  :model-value="getStatusFieldValue(field?.value)"
+                  :items="registerStatusesStore.registerStatuses"
+                  variant="plain"
+                  density="compact"
+                  hide-details
+                  @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
+                />
+              </div>
             </Field>
           </div>
         </div>
@@ -1410,6 +1441,65 @@ const loadReportFields = computed(() => {
 .form-disabled .feacn-search-wrapper {
   pointer-events: auto;
   opacity: 1;
+}
+
+.register-status-input {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.register-status-input:focus-within {
+  background-color: #fff;
+  border: 1px solid var(--primary-color);
+  box-shadow: none;
+}
+
+.register-status-input :deep(.register-status-input-select) {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.register-status-input :deep(.v-input),
+.register-status-input :deep(.v-input__control),
+.register-status-input :deep(.v-field),
+.register-status-input :deep(.v-field__field),
+.register-status-input :deep(.v-field__input) {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.register-status-input :deep(.v-field) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.register-status-input :deep(.v-field__overlay),
+.register-status-input :deep(.v-field__outline) {
+  display: none;
+}
+
+.register-status-input :deep(.v-field__input) {
+  align-items: center;
+  padding: 0 0.35rem;
+}
+
+.register-status-input :deep(.v-field__append-inner) {
+  align-items: center;
+  height: 100%;
+  padding-top: 0;
+}
+
+.register-status-input :deep(.v-select__selection) {
+  margin: 0;
 }
 
 .custom-checkbox {

@@ -1657,6 +1657,44 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.item.transportationTypeCode).toBe(1)
   })
 
+  it('defaults missing register status to the first status for uploads', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.statusId).toBe(1)
+  })
+
+  it('keeps existing register status for uploads', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: 2
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.statusId).toBe(2)
+  })
+
   it('defaults missing country to Uzbekistan for WbrN uploads', async () => {
     mockItem.value = {
       ...baseRegisterItem,

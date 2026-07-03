@@ -379,9 +379,9 @@ const headers = computed(() => {
     { title: wbrnRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
 
     // Recipient Information - Who receives the parcel
-    { title: wbrnRegisterColumnTitles.recipientLastName, sortable: false, key: 'recipientLastName', align: 'start', width: '120px' },
-    { title: wbrnRegisterColumnTitles.recipientFirstName, sortable: false, key: 'recipientFirstName', align: 'start', width: '120px' },
-    { title: wbrnRegisterColumnTitles.recipientPatronymic, sortable: false, key: 'recipientPatronymic', align: 'start', width: '120px' },
+    { title: wbrnRegisterColumnTitles.lastName, sortable: false, key: 'lastName', align: 'start', width: '120px' },
+    { title: wbrnRegisterColumnTitles.firstName, sortable: false, key: 'firstName', align: 'start', width: '120px' },
+    { title: wbrnRegisterColumnTitles.patronymic, sortable: false, key: 'patronymic', align: 'start', width: '120px' },
     { title: wbrnRegisterColumnTitles.recipientCountryName, sortable: false, key: 'recipientCountryName', align: 'start', width: '140px' },
     { title: wbrnRegisterColumnTitles.recipientCity, sortable: false, key: 'recipientCity', align: 'start', width: '140px' },
     { title: wbrnRegisterColumnTitles.recipientAddress, sortable: false, key: 'recipientAddress', align: 'start', width: '220px' },

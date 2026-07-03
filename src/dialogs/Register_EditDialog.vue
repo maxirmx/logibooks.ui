@@ -29,6 +29,7 @@ import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.he
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
+const DEFAULT_TRANSPORTATION_TYPE_NAME = 'Авто'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -214,7 +215,7 @@ function normalizeDecimalSeparator(value) {
 }
 
 function ensureDefaultOtherCountry() {
-  if (!item.value || isWbrNRegister.value) return
+  if (!item.value) return
   const countryCode = item.value.theOtherCountryCode
   if (countryCode === null || countryCode === undefined || countryCode === '') {
     item.value.theOtherCountryCode = DEFAULT_OTHER_COUNTRY_CODE
@@ -248,6 +249,20 @@ function getTransportationTypeByValue(typeValue) {
     return null
   }
   return ops.value?.transportationTypes?.find((type) => Number(type.value) === numericId) || null
+}
+
+function getDefaultTransportationTypeCode() {
+  const transportationTypes = ops.value?.transportationTypes
+  if (!Array.isArray(transportationTypes) || transportationTypes.length === 0) {
+    return null
+  }
+
+  const defaultType =
+    transportationTypes.find((type) => type.name === DEFAULT_TRANSPORTATION_TYPE_NAME) ||
+    transportationTypes.find((type) => type.isAvia === false) ||
+    transportationTypes[0]
+
+  return defaultType?.value ?? null
 }
 
 // Track current form transportation type for reactive UI updates
@@ -359,7 +374,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
         item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
       }
       if (item.value.transportationTypeCode == null) {
-        item.value.transportationTypeCode = ops.value?.transportationTypes?.[0]?.value ?? null
+        item.value.transportationTypeCode = getDefaultTransportationTypeCode()
       }
       if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
         item.value.departureAirportId = 0
@@ -540,7 +555,7 @@ watch(proceduresLoaded, (loaded) => {
 
 watch(typesLoaded, (loaded) => {
   if (loaded && item.value.transportationTypeCode == null) {
-    item.value.transportationTypeCode = ops.value?.transportationTypes?.[0]?.value ?? null
+    item.value.transportationTypeCode = getDefaultTransportationTypeCode()
   }
 })
 

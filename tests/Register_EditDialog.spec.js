@@ -1590,6 +1590,94 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.item.lookupByArticle).toBe(false)
   })
 
+  it.each([
+    ['Ozon', OZON_COMPANY_ID, OZON_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
+    ['WBR', WBR_COMPANY_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
+    ['WBR2', WBR2_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
+    ['WbrN', WBRN_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
+    ['GTC', GTC_COMPANY_ID, GTC_COMPANY_ID, CUSTOMS_PROCEDURE_GTC_IMPORT]
+  ])('defaults missing transportation type to Auto for %s uploads', async (_label, registerType, companyId, customsProcedureCode) => {
+    mockOps.value = {
+      ...mockOps.value,
+      transportationTypes: [
+        { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
+        { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
+      ]
+    }
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType,
+      companyId,
+      customsProcedureCode,
+      transportationTypeCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.transportationTypeCode).toBe(1)
+  })
+
+  it('defaults missing transportation type to Auto when transportation types load later', async () => {
+    mockOps.value = {
+      ...mockOps.value,
+      transportationTypes: []
+    }
+    mockItem.value = {
+      ...baseRegisterItem,
+      transportationTypeCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    mockOps.value = {
+      ...mockOps.value,
+      transportationTypes: [
+        { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
+        { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
+      ]
+    }
+    await nextTick()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.transportationTypeCode).toBe(1)
+  })
+
+  it('defaults missing country to Uzbekistan for WbrN uploads', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      registerType: WBRN_REGISTER_ID,
+      companyId: WBR_COMPANY_ID,
+      theOtherCountryCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.theOtherCountryCode).toBe(860)
+  })
+
   it('defaults missing country to Uzbekistan when loaded', async () => {
     mockItem.value = {
       ...baseRegisterItem,

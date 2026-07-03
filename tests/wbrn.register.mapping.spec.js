@@ -15,9 +15,9 @@ describe('wbrn.register.mapping', () => {
       article: 'Артикул WB',
       productCountryName: 'Страна',
       productLink: 'Ссылка на товар',
-      recipientLastName: 'Фамилия',
-      recipientFirstName: 'Имя',
-      recipientPatronymic: 'Отчество',
+      lastName: 'Фамилия',
+      firstName: 'Имя',
+      patronymic: 'Отчество',
       recipientCountryName: 'Страна получателя',
       recipientCity: 'Город получателя',
       recipientAddress: 'Адрес получателя'

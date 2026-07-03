@@ -8,12 +8,12 @@ defineProps({
 })
 
 function formatCharge(value) {
-  if (value === null || value === undefined) {
+  if (value === null || value === undefined || value === '') {
     return '-'
   }
 
-  const numericValue = Number(value ?? 0)
-  return Number.isFinite(numericValue) ? numericValue.toFixed(2) : '0.00'
+  const numericValue = typeof value === 'string' ? Number(value.trim().replace(',', '.')) : Number(value)
+  return Number.isFinite(numericValue) ? numericValue.toFixed(2) : '-'
 }
 </script>
 

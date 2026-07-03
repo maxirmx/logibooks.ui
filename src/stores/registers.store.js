@@ -615,6 +615,42 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  function patchRegisterCharges(result) {
+    if (!result || result.registerId === undefined || result.registerId === null) {
+      return
+    }
+
+    const registerId = Number(result.registerId)
+    const charges = {
+      customsFee: result.customsFee ?? 0,
+      customsDuty: result.customsDuty ?? 0
+    }
+
+    if (item.value && Number(item.value.id) === registerId) {
+      item.value = { ...item.value, ...charges }
+    }
+
+    const idx = items.value.findIndex((register) => Number(register.id) === registerId)
+    if (idx !== -1) {
+      items.value[idx] = { ...items.value[idx], ...charges }
+    }
+  }
+
+  async function calculateCustomCharges(id) {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await fetchWrapper.post(`${baseUrl}/${id}/calculate-custom-charges`)
+      patchRegisterCharges(result)
+      return result
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   function normalizeDownloadSuffix(forZone, zoneLabel) {
     if (forZone === null || forZone === undefined || forZone === 0) {
       return ''
@@ -744,6 +780,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadAdditionalRestrictions,
     freezeCheckStatus,
     freezeTnVedOrder,
+    calculateCustomCharges,
     nextParcels,
     remove,
     uploadFile,

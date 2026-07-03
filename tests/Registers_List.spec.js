@@ -75,6 +75,7 @@ const mockAlert = ref(null)
 const validateFn = vi.fn()
 const getValidationProgressFn = vi.fn()
 const cancelValidationFn = vi.fn()
+const calculateCustomChargesFn = vi.fn()
 const removeFn = vi.fn()
 const confirmMock = vi.fn()
 const mockIsShiftLeadPlus = ref(false)
@@ -139,6 +140,7 @@ const registersStore = {
   validate: validateFn,
   getValidationProgress: getValidationProgressFn,
   cancelValidation: cancelValidationFn,
+  calculateCustomCharges: calculateCustomChargesFn,
   remove: removeFn,
   generate: generateFn,
   items: mockItems,

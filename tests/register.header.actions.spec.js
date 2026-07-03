@@ -5,7 +5,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
-import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import { createRegisterActionHandlers, useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 
@@ -58,6 +59,7 @@ describe('useRegisterHeaderActions', () => {
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
+      calculateCustomCharges: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
     }
 
@@ -446,5 +448,15 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('calculates custom charges and refreshes register list', async () => {
+    const actions = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
+
+    await actions.calculateCustomCharges({ id: 7 })
+
+    expect(registersStore.calculateCustomCharges).toHaveBeenCalledWith(7)
+    expect(registersStore.getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+    expect(alertStore.error).not.toHaveBeenCalled()
   })
 })

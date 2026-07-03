@@ -263,6 +263,15 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.freezeCheckStatus(item.id)
   }
 
+  async function calculateCustomCharges(item) {
+    try {
+      await registersStore.calculateCustomCharges(item.id)
+      await registersStore.getAll(getAllOptions())
+    } catch (err) {
+      alertStore.error(err?.message || String(err))
+    }
+  }
+
   function cancelValidationWrapper() {
     const isFeacnLookup =
       validationState.operation === 'lookup-feacn-codes'
@@ -299,6 +308,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     downloadTechdoc,
     freezeCheckStatus,
     freezeTnVedOrder,
+    calculateCustomCharges,
     cancelValidation: cancelValidationWrapper,
     stopPolling
   }

@@ -45,7 +45,8 @@ const props = defineProps({
   setSelectedRegisterStatusId: { type: Function, default: () => {} },
   startRegisterStatusChange: { type: Function, default: () => {} },
   cancelRegisterStatusChange: { type: Function, default: () => {} },
-  applyRegisterStatusChange: { type: Function, default: () => {} }
+  applyRegisterStatusChange: { type: Function, default: () => {} },
+  calculateCustomCharges: { type: Function, default: () => {} }
 })
 
 const emit = defineEmits([
@@ -96,7 +97,7 @@ const headers = [
   { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
   { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
   { title: 'Вес, кг, общий / К оформлению', key: 'weight', sortable: true, align: 'end', minWidth: '220px', width: '220px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
+  { title: 'Стоимость, руб, общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
   { title: 'Дата загрузки', key: 'date', sortable: true }
 ]
 
@@ -320,7 +321,7 @@ function getRegisterStatusTitle(item) {
 
       <template #[`header.price`]="{ column, isSorted, getSortIcon }">
         <SortableMultilineHeader
-          :lines="['Стоимость общая', 'К оформлению']"
+          :lines="['Стоимость, руб, общая', 'К оформлению']"
           :column="column"
           :is-sorted="isSorted"
           :get-sort-icon="getSortIcon"
@@ -358,6 +359,14 @@ function getRegisterStatusTitle(item) {
             tooltip-text="Список посылок"
             @click="(row) => emit('open-parcels', row)"
             :disabled="runningAction || loading"
+          />
+          <ActionButton
+            v-if="isSrLogistPlus"
+            :item="item"
+            icon="fa-solid fa-calculator"
+            tooltip-text="Рассчитать сборы и пошлины"
+            :disabled="runningAction || loading"
+            @click="(row) => calculateCustomCharges(row)"
           />
           <ActionButton
             v-if="isSrLogistPlus"

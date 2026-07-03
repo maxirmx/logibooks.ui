@@ -1835,4 +1835,42 @@ describe('registers store', () => {
       expect(store.loading).toBe(false)
     })
   })
+
+  describe('calculateCustomCharges', () => {
+    it('calls calculate endpoint and patches loaded register charges', async () => {
+      fetchWrapper.post.mockResolvedValueOnce({
+        registerId: 77,
+        parcelsTotal: 2,
+        customsFee: 689,
+        customsDuty: 750
+      })
+
+      const store = useRegistersStore()
+      store.items = [{ id: 77, fileName: 'register.xlsx', customsFee: 0, customsDuty: 0 }]
+      store.item = { id: 77, fileName: 'register.xlsx', customsFee: 0, customsDuty: 0 }
+
+      const result = await store.calculateCustomCharges(77)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/calculate-custom-charges`)
+      expect(result.customsFee).toBe(689)
+      expect(store.items[0].customsFee).toBe(689)
+      expect(store.items[0].customsDuty).toBe(750)
+      expect(store.item.customsFee).toBe(689)
+      expect(store.item.customsDuty).toBe(750)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('stores and rethrows calculate endpoint errors', async () => {
+      const err = new Error('Calculation failed')
+      fetchWrapper.post.mockRejectedValueOnce(err)
+
+      const store = useRegistersStore()
+      await expect(store.calculateCustomCharges(55)).rejects.toThrow('Calculation failed')
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/55/calculate-custom-charges`)
+      expect(store.error).toBe(err)
+      expect(store.loading).toBe(false)
+    })
+  })
 })

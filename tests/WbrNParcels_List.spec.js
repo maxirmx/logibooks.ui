@@ -489,23 +489,20 @@ describe('WbrNParcels_List.vue', () => {
       'frozenOrder',
       'id',
       'shk',
-      'article',
       'checkStatus',
       'tnVed',
       'feacnLookup',
       'productName',
       'productLink',
+      'article',
       'productCountryName',
       'weightKg',
-      'quantity',
       'unitPrice',
       'currency',
+      'quantity',
       'lastName',
       'firstName',
       'patronymic',
-      'recipientCountryName',
-      'recipientCity',
-      'recipientAddress',
       'passportNumber',
       'statusId',
       'dTag'
@@ -529,10 +526,6 @@ describe('WbrNParcels_List.vue', () => {
     expect(text).toContain('Ivanov')
     expect(text).toContain('Ivan')
     expect(text).toContain('Ivanovich')
-    expect(text).toContain('Узбекистан')
-    expect(text).toContain('Ташкент')
-    expect(text).toContain('ул. Навои, 1')
-    expect(text).not.toContain('paymentAmount')
     expect(wrapper.get('a.product-link-in-list').attributes('href')).toBe('https://www.wildberries.ru/catalog/29817781/detail.aspx')
   })
 

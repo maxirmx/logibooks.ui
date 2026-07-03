@@ -300,7 +300,13 @@ const stubs = {
     template: '<button type="button" data-testid="parcel-number-ext" :disabled="disabled" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\')">fellows</span></button>'
   },
   ArticleWithH: {
-    props: ['item', 'disabled', 'columnTitles', 'inputReadonly', 'fullWidth'],
+    props: {
+      item: { type: Object, required: true },
+      disabled: { type: Boolean, default: false },
+      columnTitles: { type: Object, required: true },
+      inputReadonly: { type: Boolean, default: false },
+      fullWidth: { type: Boolean, default: false }
+    },
     emits: ['approve-notification'],
     template: '<div data-testid="article-with-h" :data-title="columnTitles.article" :data-readonly="String(inputReadonly)" :data-full-width="String(fullWidth)">{{ item.article }}<button type="button" data-testid="approve-notification" @click="$emit(\'approve-notification\')"></button></div>'
   },
@@ -389,8 +395,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(authStore.selectedParcelId).toBe(3)
 
     expect(wrapper.text()).toContain('посылка SHK-N-EDIT')
-    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-title')).toBe('Артикул WB')
-    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-readonly')).toBe('')
+    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-title')).toBe('Артикул')
+    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-readonly')).toBe('false')
     expect(wrapper.text()).toContain('29817781')
     expect(wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-label')).toBe('Ссылка на товар')
     expect(wrapper.get('[data-testid="parcel-weight-auto-field"]').attributes('data-label')).toBe('Вес, кг')

@@ -552,7 +552,6 @@ async function onLookup(values) {
             :errors="errors"
             :disabled="isSubmitting || runningAction || loading"
             :column-titles="wbrnRegisterColumnTitles"
-            input-readonly
             :fullWidth="false"
             @approve-notification="approveParcelWithNotification(values)"
           />

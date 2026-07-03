@@ -359,7 +359,6 @@ const headers = computed(() => {
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
     { title: wbrnRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrnRegisterColumnTitles.article, sortable: false, key: 'article', align: 'start', width: '120px' },
     { title: wbrnRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
     { title: wbrnRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     // Insert FEACN lookup column only when not reimport procedure
@@ -368,23 +367,21 @@ const headers = computed(() => {
     // Product Identification & Details - What the parcel contains
     { title: wbrnRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
     { title: wbrnRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    { title: wbrnRegisterColumnTitles.article, sortable: false, key: 'article', align: 'start', width: '120px' },
 
     // Physical Properties - Tangible characteristics
     { title: wbrnRegisterColumnTitles.productCountryName, sortable: false, key: 'productCountryName', align: 'start', width: '100px' },
     { title: wbrnRegisterColumnTitles.weightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: wbrnRegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
 
     // Financial Information - Pricing and currency
     { title: wbrnRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
     { title: wbrnRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
+    { title: wbrnRegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
 
     // Recipient Information - Who receives the parcel
     { title: wbrnRegisterColumnTitles.lastName, sortable: false, key: 'lastName', align: 'start', width: '120px' },
     { title: wbrnRegisterColumnTitles.firstName, sortable: false, key: 'firstName', align: 'start', width: '120px' },
     { title: wbrnRegisterColumnTitles.patronymic, sortable: false, key: 'patronymic', align: 'start', width: '120px' },
-    { title: wbrnRegisterColumnTitles.recipientCountryName, sortable: false, key: 'recipientCountryName', align: 'start', width: '140px' },
-    { title: wbrnRegisterColumnTitles.recipientCity, sortable: false, key: 'recipientCity', align: 'start', width: '140px' },
-    { title: wbrnRegisterColumnTitles.recipientAddress, sortable: false, key: 'recipientAddress', align: 'start', width: '220px' },
     { title: wbrnRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
 
     // Status Information - Current state of the parcel

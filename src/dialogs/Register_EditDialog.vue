@@ -1004,8 +1004,9 @@ const loadReportFields = computed(() => {
           <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
-              <div id="statusId" class="form-control input register-status-input">
+              <div class="form-control input register-status-input">
                 <RegisterStatusSelect
+                  id="statusId"
                   class="register-status-input-select"
                   :model-value="getStatusFieldValue(field?.value)"
                   :items="registerStatusesStore.registerStatuses"

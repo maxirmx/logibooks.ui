@@ -577,11 +577,6 @@ async function onLookup(values) {
           <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
-        <div class="form-row">
-          <WbrNFormField name="recipientCountryName" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="recipientCity" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="recipientAddress" :errors="errors" :fullWidth="false" />
-        </div>
       </div>
       <!-- DTag -->
       <DTagSection :item="item" />

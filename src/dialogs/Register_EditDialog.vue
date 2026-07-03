@@ -239,11 +239,40 @@ function ensureDefaultRegisterStatus() {
   }
 }
 
+function isMissingCustomsProcedureCode(value) {
+  const procedureCode = parseNumber(value, null)
+  return procedureCode === null || procedureCode === 0
+}
+
+function getDefaultCustomsProcedureCode() {
+  return parseNumber(filteredCustomsProcedures.value[0]?.value, null)
+}
+
+function getCustomsProcedureCodeOrDefault(value) {
+  const procedureCode = parseNumber(value, null)
+  return isMissingCustomsProcedureCode(procedureCode)
+    ? getDefaultCustomsProcedureCode()
+    : procedureCode
+}
+
+function ensureDefaultCustomsProcedure() {
+  if (!item.value || !isMissingCustomsProcedureCode(item.value.customsProcedureCode)) return
+  const defaultProcedureCode = getDefaultCustomsProcedureCode()
+  if (defaultProcedureCode !== null) {
+    item.value.customsProcedureCode = defaultProcedureCode
+  }
+}
+
 const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
   if (!Array.isArray(all)) return []
   const registerType = item.value?.registerType
   return all.filter((procedure) => {
+    const procedureCode = parseNumber(procedure.value, null)
+    if (procedureCode === null || procedureCode === 0) {
+      return false
+    }
+
     if (Array.isArray(procedure.allowedRegisterTypes)) {
       if (!procedure.allowedRegisterTypes.map(Number).includes(Number(registerType))) {
         return false
@@ -297,9 +326,13 @@ const isAviaTransportation = computed(() => {
 })
 
 // Watch for form field changes to update UI reactively
-function handleTransportationTypeChange(e, setFieldValue) {
+function handleTransportationTypeChange(e, setFieldValue, handleChange) {
   const newValue = e.target.value
   currentTransportationTypeId.value = newValue ? parseInt(newValue, 10) : null
+  item.value.transportationTypeCode = currentTransportationTypeId.value
+  if (handleChange && typeof handleChange === 'function') {
+    handleChange(currentTransportationTypeId.value)
+  }
   
   // Handle airport field updates based on transportation type
   const type = getTransportationTypeByValue(currentTransportationTypeId.value)
@@ -355,14 +388,7 @@ watch(
       return
     }
     if (newVal === null || newVal === undefined) {
-      item.value.departureAirportId = 0
-      item.value.arrivalAirportId = 0
       return
-    }
-    const type = getTransportationTypeByValue(newVal)
-    if (!type?.isAvia) {
-      item.value.departureAirportId = 0
-      item.value.arrivalAirportId = 0
     }
   },
   { immediate: true }
@@ -387,9 +413,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       ensureDefaultOtherCountry()
     } else {
       // Set default values for new records
-      if (item.value.customsProcedureCode == null) {
-        item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
-      }
+      ensureDefaultCustomsProcedure()
       if (item.value.transportationTypeCode == null) {
         item.value.transportationTypeCode = getDefaultTransportationTypeCode()
       }
@@ -516,7 +540,8 @@ const shouldUpdateExportStatus = computed(() => {
 // Function to update export status based on the procedure
 function updateExportStatusFromProc() {
   if (Array.isArray(ops.value?.customsProcedures) && ops.value.customsProcedures.length > 0) {
-    const proc = ops.value.customsProcedures.find(p => Number(p.value) === Number(item.value?.customsProcedureCode || ops.value.customsProcedures[0]?.value))
+    const procedureCode = getCustomsProcedureCodeOrDefault(item.value?.customsProcedureCode)
+    const proc = ops.value.customsProcedures.find(p => Number(p.value) === procedureCode)
     if (proc) {
       isExport.value = proc.isExport
       isRe.value = proc.isRe || false
@@ -571,8 +596,8 @@ watch(
 )
 
 watch(proceduresLoaded, (loaded) => {
-  if (loaded && item.value.customsProcedureCode == null) {
-    item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
+  if (loaded) {
+    ensureDefaultCustomsProcedure()
   }
 })
 
@@ -588,9 +613,15 @@ watch(registerStatusesLoaded, (loaded) => {
   }
 })
 
-function handleProcedureChange(e, setFieldValue) {
-  const procedureCode = parseNumber(e.target.value, null)
+function handleProcedureChange(e, setFieldValue, handleChange) {
+  const procedureCode = getCustomsProcedureCodeOrDefault(e.target.value)
+  if (e.target) {
+    e.target.value = procedureCode === null ? '' : String(procedureCode)
+  }
   item.value.customsProcedureCode = procedureCode
+  if (handleChange && typeof handleChange === 'function') {
+    handleChange(procedureCode)
+  }
   const proc = procedureCode === null
     ? null
     : ops.value?.customsProcedures?.find((p) => Number(p.value) === procedureCode)
@@ -610,8 +641,26 @@ function handleWarehouseChange(e) {
   item.value.warehouseId = parseNumber(e.target.value, 0)
 }
 
+function getFieldOrItemValue(fieldValue, itemValue) {
+  return fieldValue === '' || fieldValue === null || fieldValue === undefined
+    ? itemValue
+    : fieldValue
+}
+
+function getTransportationTypeFieldValue(fieldValue) {
+  const value = parseNumber(getFieldOrItemValue(fieldValue, item.value?.transportationTypeCode), null)
+  return value === null ? '' : value
+}
+
+function getCustomsProcedureFieldValue(fieldValue) {
+  const value = getCustomsProcedureCodeOrDefault(
+    getFieldOrItemValue(fieldValue, item.value?.customsProcedureCode)
+  )
+  return value === null ? '' : value
+}
+
 function getStatusFieldValue(fieldValue) {
-  return parseNumber(fieldValue ?? item.value?.statusId, null)
+  return parseNumber(getFieldOrItemValue(fieldValue, item.value?.statusId), null)
 }
 
 function handleRegisterStatusChange(value, handleChange) {
@@ -691,14 +740,20 @@ function parseRealWeightPayloadValue(value) {
 }
 
 function prepareRegisterPayload(formValues) {
+  ensureDefaultCustomsProcedure()
   const payload = { ...formValues }
   delete payload.checkForDuplicates
 
-  const selectedTransportationTypeId = parseNumber(formValues.transportationTypeCode ?? item.value?.transportationTypeCode, null)
+  const selectedTransportationTypeId = parseNumber(
+    getFieldOrItemValue(formValues.transportationTypeCode, item.value?.transportationTypeCode),
+    null
+  )
   payload.transportationTypeCode = selectedTransportationTypeId
   payload.theOtherCompanyId = parseNumber(formValues.theOtherCompanyId, null)
   payload.theOtherCountryCode = parseNumber(formValues.theOtherCountryCode, null)
-  payload.customsProcedureCode = parseNumber(formValues.customsProcedureCode, null)
+  payload.customsProcedureCode = getCustomsProcedureCodeOrDefault(
+    getFieldOrItemValue(formValues.customsProcedureCode, item.value?.customsProcedureCode)
+  )
 
   // Handle boolean checkbox value
   payload.lookupByArticle = Boolean(formValues.lookupByArticle ?? item.value?.lookupByArticle ?? false)
@@ -714,7 +769,7 @@ function prepareRegisterPayload(formValues) {
     ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
   payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
-  payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
+  payload.statusId = parseNumber(getFieldOrItemValue(formValues.statusId, item.value?.statusId), null)
   payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
   payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
   if (hasProcedureChangedToNonReturn(payload.customsProcedureCode)) {
@@ -735,6 +790,7 @@ async function onSubmit(values) {
   // Set submitting state
   isSubmitting.value = true
 
+  ensureDefaultCustomsProcedure()
   const payload = prepareRegisterPayload(values)
 
   try {
@@ -744,7 +800,7 @@ async function onSubmit(values) {
         const result = await registersStore.upload(
           uploadFile.value,
           item.value.registerType,
-          item.value.customsProcedureCode,
+          payload.customsProcedureCode,
           Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
           Boolean(isRe.value && values.transfer2Re)
         )
@@ -1075,34 +1131,35 @@ const loadReportFields = computed(() => {
         <div class="form-row">
           <div class="form-group">
             <label for="transportationTypeCode" class="label">Транспорт:</label>
-            <Field
-              as="select"
-              name="transportationTypeCode"
-              id="transportationTypeCode"
-              class="form-control input"
-              :disabled="!typesLoaded"
-              @change="(e) => handleTransportationTypeChange(e, setFieldValue)"
-            >
-              <option value="">Выберите тип</option>
-              <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
-                {{ t.name }}
-              </option>
+            <Field name="transportationTypeCode" v-slot="{ field, handleChange }">
+              <select
+                id="transportationTypeCode"
+                class="form-control input"
+                :disabled="!typesLoaded"
+                :value="getTransportationTypeFieldValue(field?.value)"
+                @change="(e) => handleTransportationTypeChange(e, setFieldValue, handleChange)"
+              >
+                <option value="">Выберите тип</option>
+                <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
+                  {{ t.name }}
+                </option>
+              </select>
             </Field>
           </div>
           <div class="form-group">
             <label for="customsProcedureCode" class="label">Процедура:</label>
-            <Field
-              as="select"
-              name="customsProcedureCode"
-              id="customsProcedureCode"
-              class="form-control input"
-              :disabled="!proceduresLoaded"
-              @change="(e) => handleProcedureChange(e, setFieldValue)"
-            >
-              <option value="">Выберите процедуру</option>
-              <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
-                {{ p.name }}
-              </option>
+            <Field name="customsProcedureCode" v-slot="{ field, handleChange }">
+              <select
+                id="customsProcedureCode"
+                class="form-control input"
+                :disabled="!proceduresLoaded"
+                :value="getCustomsProcedureFieldValue(field?.value)"
+                @change="(e) => handleProcedureChange(e, setFieldValue, handleChange)"
+              >
+                <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
+                  {{ p.name }}
+                </option>
+              </select>
             </Field>
           </div>
         </div>

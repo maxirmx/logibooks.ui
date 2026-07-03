@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -932,22 +932,19 @@ describe('Registers_List.vue', () => {
 
         const options = wrapper.vm.uploadMenuOptions
 
-        expect(options).toHaveLength(4)
+        expect(options).toHaveLength(3)
         expect(options.map((option) => option.label)).toEqual([
           'Озон',
           'РВБ',
-          'WbrN / Wildberries new',
-          'Импорт и реэкспорт (тест)'
+          'РВБ новый формат'
         ])
         expect(options.every((option) => typeof option.action === 'function')).toBe(true)
       })
 
-      it('returns static import/re-export option when no companies loaded', () => {
+      it('returns empty upload options when no companies loaded', () => {
         mockCompanies.value = []
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(1)
-        expect(options[0].label).toBe('Импорт и реэкспорт (тест)')
-        expect(typeof options[0].action).toBe('function')
+        expect(options).toEqual([])
       })
 
       it('returns empty array when companies is null', () => {
@@ -969,7 +966,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(4)
+        expect(options).toHaveLength(3)
 
         const [firstOption] = options
         expect(firstOption.label).toBe('Озон')
@@ -991,7 +988,7 @@ describe('Registers_List.vue', () => {
 
         await wrapper.vm.$nextTick()
 
-        const option = wrapper.vm.uploadMenuOptions.find((item) => item.label === 'WbrN / Wildberries new')
+        const option = wrapper.vm.uploadMenuOptions.find((item) => item.label === 'РВБ новый формат')
         expect(option).toBeTruthy()
 
         await option.action()
@@ -1000,27 +997,11 @@ describe('Registers_List.vue', () => {
         expect(mockClick).toHaveBeenCalled()
       })
 
-      it('provides static import/re-export menu option that triggers upload', async () => {
-        const mockClick = vi.fn()
-        wrapper.vm.fileInput = { click: mockClick }
-        mockCompanies.value = []
-
-        await wrapper.vm.$nextTick()
-
-        const [option] = wrapper.vm.uploadMenuOptions
-        expect(option.label).toBe('Импорт и реэкспорт (тест)')
-
-        await option.action()
-
-        expect(wrapper.vm.selectedRegisterType).toBe(GTC_COMPANY_ID)
-        expect(mockClick).toHaveBeenCalled()
-      })
-
-      it('keeps upload enabled when only the static import/re-export option is available', async () => {
+      it('disables upload when no company upload options are available', async () => {
         mockCompanies.value = []
         await wrapper.vm.$nextTick()
 
-        expect(wrapper.vm.isUploadDisabled).toBe(false)
+        expect(wrapper.vm.isUploadDisabled).toBe(true)
       })
     })
   })

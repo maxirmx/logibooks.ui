@@ -630,7 +630,7 @@ describe('Register_EditDialog', () => {
     expect(recipientGroup.find('select#theOtherCompanyId').exists()).toBe(true)
   })
 
-  it('normalizes empty customs procedure to null and boolean flags', async () => {
+  it('normalizes empty customs procedure to the first available procedure and boolean flags', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
       components: { RegisterEditDialog }
@@ -646,8 +646,8 @@ describe('Register_EditDialog', () => {
     dialog.vm.handleProcedureChange({ target: { value: '' } })
     await nextTick()
 
-    expect(dialog.vm.item.customsProcedureCode).toBeNull()
-    expect(dialog.vm.isExport).toBe(false)
+    expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
+    expect(dialog.vm.isExport).toBe(true)
     expect(dialog.vm.isRe).toBe(false)
   })
 
@@ -1625,6 +1625,66 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.item.transportationTypeCode).toBe(1)
   })
 
+  it('renders default transportation type and customs procedure in upload selectors', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      customsProcedureCode: null,
+      transportationTypeCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.transportationTypeCode).toBe(1)
+    expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
+    expect(wrapper.find('#transportationTypeCode').element.value).toBe('1')
+    expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
+    expect(wrapper.find('#customsProcedureCode option[value=""]').exists()).toBe(false)
+    expect(wrapper.find('#customsProcedureCode option[value="0"]').exists()).toBe(false)
+  })
+
+  it('defaults zero customs procedure to the first filtered procedure for uploads', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      customsProcedureCode: 0
+    }
+    upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
+    expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
+
+    await dialog.vm.onSubmit({ customsProcedureCode: 0, checkForDuplicates: true }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(upload).toHaveBeenCalledWith(
+      registersStore.uploadFile.value,
+      mockItem.value.registerType,
+      CUSTOMS_PROCEDURE_EXPORT,
+      true,
+      false
+    )
+    expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
+      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
+    }))
+  })
+
   it('defaults missing transportation type to Auto when transportation types load later', async () => {
     mockOps.value = {
       ...mockOps.value,
@@ -1655,6 +1715,37 @@ describe('Register_EditDialog', () => {
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(dialog.vm.item.transportationTypeCode).toBe(1)
+  })
+
+  it('renders default customs procedure when procedures load later', async () => {
+    const customsProcedures = mockOps.value.customsProcedures
+    mockOps.value = {
+      ...mockOps.value,
+      customsProcedures: []
+    }
+    mockItem.value = {
+      ...baseRegisterItem,
+      customsProcedureCode: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    mockOps.value = {
+      ...mockOps.value,
+      customsProcedures
+    }
+    await nextTick()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
+    expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
   })
 
   it('defaults missing register status to the first status for uploads', async () => {

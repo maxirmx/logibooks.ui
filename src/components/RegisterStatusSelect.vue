@@ -97,7 +97,8 @@ function getRegisterStatusListItemProps(itemProps) {
     return {}
   }
 
-  const { title, ...listItemProps } = itemProps
+  const listItemProps = { ...itemProps }
+  delete listItemProps.title
   return listItemProps
 }
 </script>

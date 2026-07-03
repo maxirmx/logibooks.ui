@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import { resolveAll } from './helpers/test-utils.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
+import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 let WbrNParcelEditDialog
 let confirmMock = null
@@ -247,39 +248,39 @@ const stubs = {
     template: '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
-    props: ['downloadDisabled', 'lookupDisabled', 'disabled'],
+    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled'],
     emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'cancel', 'download'],
     template: `
-      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)">
-        <button data-testid="next-parcel" @click="$emit('next-parcel')"></button>
-        <button data-testid="next-issue" @click="$emit('next-issue')"></button>
-        <button data-testid="back" @click="$emit('back')"></button>
-        <button data-testid="save" @click="$emit('save')"></button>
-        <button data-testid="lookup" @click="$emit('lookup')"></button>
-        <button data-testid="cancel" @click="$emit('cancel')"></button>
-        <button data-testid="download" @click="$emit('download')"></button>
+      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)">
+        <button data-testid="next-parcel" :disabled="disabled || actionsDisabled" @click="$emit('next-parcel')"></button>
+        <button data-testid="next-issue" :disabled="disabled || actionsDisabled" @click="$emit('next-issue')"></button>
+        <button data-testid="back" :disabled="disabled || actionsDisabled" @click="$emit('back')"></button>
+        <button data-testid="save" :disabled="disabled || actionsDisabled" @click="$emit('save')"></button>
+        <button data-testid="lookup" :disabled="disabled || actionsDisabled" @click="$emit('lookup')"></button>
+        <button data-testid="cancel" :disabled="disabled" @click="$emit('cancel')"></button>
+        <button data-testid="download" :disabled="disabled || actionsDisabled" @click="$emit('download')"></button>
       </div>
     `
   },
   ParcelStatusSection: {
-    props: ['item', 'values', 'disabled'],
+    props: ['item', 'values', 'disabled', 'clearCheckStatusDisabled'],
     emits: ['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve-excise', 'clear-check-status', 'check-for-duplicate'],
     template: `
-      <div data-testid="parcel-status-section">
-        <button data-testid="validate-sw" @click="$emit('validate-sw', values)"></button>
-        <button data-testid="validate-sw-ex" @click="$emit('validate-sw-ex', values)"></button>
-        <button data-testid="validate-fc" @click="$emit('validate-fc', values)"></button>
-        <button data-testid="approve" @click="$emit('approve', values)"></button>
-        <button data-testid="approve-excise" @click="$emit('approve-excise', values)"></button>
-        <button data-testid="clear-check-status" @click="$emit('clear-check-status', values)"></button>
-        <button data-testid="check-for-duplicate" @click="$emit('check-for-duplicate', values)"></button>
+      <div data-testid="parcel-status-section" :data-disabled="String(disabled)" :data-clear-disabled="String(clearCheckStatusDisabled)">
+        <button data-testid="validate-sw" :disabled="disabled" @click="$emit('validate-sw', values)"></button>
+        <button data-testid="validate-sw-ex" :disabled="disabled" @click="$emit('validate-sw-ex', values)"></button>
+        <button data-testid="validate-fc" :disabled="disabled" @click="$emit('validate-fc', values)"></button>
+        <button data-testid="approve" :disabled="disabled" @click="$emit('approve', values)"></button>
+        <button data-testid="approve-excise" :disabled="disabled" @click="$emit('approve-excise', values)"></button>
+        <button data-testid="clear-check-status" :disabled="clearCheckStatusDisabled" @click="$emit('clear-check-status', values)"></button>
+        <button data-testid="check-for-duplicate" :disabled="disabled" @click="$emit('check-for-duplicate', values)"></button>
       </div>
     `
   },
   FeacnCodeEditor: {
-    props: ['columnTitles', 'columnTooltips'],
+    props: ['columnTitles', 'columnTooltips', 'disabled'],
     emits: ['update:item', 'overlay-state-changed', 'set-running-action'],
-    template: '<div data-testid="feacn-code-editor" :data-tnved-title="columnTitles.tnVed" :data-weight-tooltip="columnTooltips.weightKg"><button data-testid="update-item" @click="$emit(\'update:item\', { id: 99, shk: \'SHK-UPDATED\' })"></button><button data-testid="overlay-on" @click="$emit(\'overlay-state-changed\', true)"></button><button data-testid="overlay-off" @click="$emit(\'overlay-state-changed\', false)"></button><button data-testid="running-on" @click="$emit(\'set-running-action\', true)"></button><button data-testid="running-off" @click="$emit(\'set-running-action\', false)"></button></div>'
+    template: '<div data-testid="feacn-code-editor" :data-tnved-title="columnTitles.tnVed" :data-weight-tooltip="columnTooltips.weightKg" :data-disabled="String(disabled)"><button data-testid="update-item" @click="$emit(\'update:item\', { id: 99, shk: \'SHK-UPDATED\' })"></button><button data-testid="overlay-on" @click="$emit(\'overlay-state-changed\', true)"></button><button data-testid="overlay-off" @click="$emit(\'overlay-state-changed\', false)"></button><button data-testid="running-on" @click="$emit(\'set-running-action\', true)"></button><button data-testid="running-off" @click="$emit(\'set-running-action\', false)"></button></div>'
   },
   WbrNFormField: {
     props: ['name', 'fullWidth', 'type', 'step'],
@@ -308,12 +309,12 @@ const stubs = {
       fullWidth: { type: Boolean, default: false }
     },
     emits: ['approve-notification'],
-    template: '<div data-testid="article-with-h" :data-title="columnTitles.article" :data-readonly="String(inputReadonly)" :data-full-width="String(fullWidth)">{{ item.article }}<button type="button" data-testid="approve-notification" @click="$emit(\'approve-notification\')"></button></div>'
+    template: '<div data-testid="article-with-h" :data-title="columnTitles.article" :data-readonly="String(inputReadonly)" :data-full-width="String(fullWidth)" :data-disabled="String(disabled)">{{ item.article }}<button type="button" data-testid="approve-notification" :disabled="disabled" @click="$emit(\'approve-notification\')"></button></div>'
   },
   ProductLinkWithActions: {
     props: ['label', 'item', 'disabled'],
     emits: ['view-image', 'delete-image'],
-    template: '<div data-testid="product-link-with-actions" :data-label="label">{{ item.productLink }}<button type="button" data-testid="view-image" @click="$emit(\'view-image\')"></button><button type="button" data-testid="delete-image" @click="$emit(\'delete-image\')"></button></div>'
+    template: '<div data-testid="product-link-with-actions" :data-label="label" :data-disabled="String(disabled)">{{ item.productLink }}<button type="button" data-testid="view-image" :disabled="disabled" @click="$emit(\'view-image\')"></button><button type="button" data-testid="delete-image" :disabled="disabled" @click="$emit(\'delete-image\')"></button></div>'
   },
   DTagSection: {
     props: ['item'],
@@ -419,6 +420,43 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(fieldNames).not.toContain('countryCode')
     expect(fieldNames).not.toContain('paymentAmount')
     expect(fieldNames).not.toContain('paymentCurrency')
+  })
+
+  it('disables WbrN parcel action buttons except cancel for MarkedByPartner parcels', async () => {
+    const markedByPartner = CheckStatusCode.MarkedByPartner.value
+    formValues = { ...baseParcel, checkStatus: markedByPartner }
+    parcelItem.value = { ...baseParcel, checkStatus: markedByPartner }
+
+    const wrapper = await mountDialog()
+
+    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-actions-disabled')).toBe('true')
+    for (const testId of ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'download']) {
+      expect(wrapper.get(`[data-testid="${testId}"]`).attributes('disabled')).toBeDefined()
+    }
+    expect(wrapper.get('[data-testid="cancel"]').attributes('disabled')).toBeUndefined()
+
+    expect(wrapper.get('[data-testid="parcel-status-section"]').attributes('data-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-status-section"]').attributes('data-clear-disabled')).toBe('true')
+    for (const testId of [
+      'validate-sw',
+      'validate-sw-ex',
+      'validate-fc',
+      'approve',
+      'approve-excise',
+      'clear-check-status',
+      'check-for-duplicate'
+    ]) {
+      expect(wrapper.get(`[data-testid="${testId}"]`).attributes('disabled')).toBeDefined()
+    }
+
+    expect(wrapper.get('[data-testid="feacn-code-editor"]').attributes('data-disabled')).toBe('true')
+    expect(wrapper.get('[data-tooltip="Показать описание"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="parcel-number-ext"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="view-image"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="delete-image"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="approve-notification"]').attributes('disabled')).toBeDefined()
   })
 
   it('saves, cancels, and generates XML using the WbrN SHK number', async () => {

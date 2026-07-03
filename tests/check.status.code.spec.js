@@ -186,6 +186,27 @@ describe('CheckStatusCode', () => {
     })
   })
 
+  describe('isMarkedByPartner method', () => {
+    it('should return true for MarkedByPartner status', () => {
+      expect(CheckStatusCode.isMarkedByPartner(CheckStatusCode.MarkedByPartner.value)).toBe(true)
+    })
+
+    it('should return false for non-MarkedByPartner statuses', () => {
+      expect(CheckStatusCode.isMarkedByPartner(CheckStatusCode.NotChecked.value)).toBe(false)
+      expect(CheckStatusCode.isMarkedByPartner(CheckStatusCode.NoIssues.value)).toBe(false)
+      expect(CheckStatusCode.isMarkedByPartner(CheckStatusCode.Duplicate.value)).toBe(false)
+      expect(CheckStatusCode.isMarkedByPartner(CheckStatusCode.Defect.value)).toBe(false)
+    })
+
+    it('should return false when only one component is MarkedByPartner', () => {
+      const onlyFc = CheckStatusCode.compose(FCCheckStatus.MarkedByPartner, SWCheckStatus.NotChecked)
+      const onlySw = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.MarkedByPartner)
+
+      expect(CheckStatusCode.isMarkedByPartner(onlyFc)).toBe(false)
+      expect(CheckStatusCode.isMarkedByPartner(onlySw)).toBe(false)
+    })
+  })
+
   describe('compose method', () => {
     it('should compose FC and SW correctly', () => {
       expect(CheckStatusCode.compose(0x0230, 0x0010)).toBe(0x02300010)

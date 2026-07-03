@@ -29,6 +29,7 @@ function handleFellowsClick(item) {
       :item="item" 
       :display-value="item[fieldName] || ''" 
       cell-class="truncated-cell clickable-cell" 
+      :disabled="disabled"
       @click="handleClick" 
     />
     <ActionButton 

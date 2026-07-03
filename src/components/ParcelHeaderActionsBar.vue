@@ -10,6 +10,7 @@ import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.stor
 
 const props = defineProps({
   disabled: { type: Boolean, default: false },
+  actionsDisabled: { type: Boolean, default: false },
   downloadDisabled: { type: Boolean, default: false },
   lookupDisabled: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' }
@@ -82,16 +83,17 @@ onBeforeUnmount(() => {
 
 function emitEvent(event) {
   if (props.disabled) return
+  if (props.actionsDisabled && event !== 'cancel') return
   emit(event)
 }
 
 function emitLookup() {
-  if (props.disabled || props.lookupDisabled) return
+  if (props.disabled || props.actionsDisabled || props.lookupDisabled) return
   emit('lookup')
 }
 
 function emitDownload() {
-  if (props.disabled || props.downloadDisabled) return
+  if (props.disabled || props.actionsDisabled || props.downloadDisabled) return
   emit('download')
 }
 
@@ -114,7 +116,7 @@ function handleKeydown(e) {
       } else if (action.event === 'lookup') {
         emitLookup()
       } else {
-        emit(action.event)
+        emitEvent(action.event)
       }
       break
     }
@@ -130,7 +132,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-arrow-right"
         :iconSize="iconSize"
         tooltip-text="Следующая посылка"
-        :disabled="disabled"
+        :disabled="disabled || actionsDisabled"
         @click="emitEvent('next-parcel')"
       />
       <ActionButton
@@ -138,7 +140,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-play"
         :iconSize="iconSize"
         tooltip-text="Следующая проблема"
-        :disabled="disabled"
+        :disabled="disabled || actionsDisabled"
         @click="emitEvent('next-issue')"
       />
       <ActionButton
@@ -146,7 +148,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-arrow-left"
         :iconSize="iconSize"
         tooltip-text="Назад"
-        :disabled="disabled"
+        :disabled="disabled || actionsDisabled"
         @click="emitEvent('back')"
       />
     </div>
@@ -156,7 +158,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-magnifying-glass"
         :iconSize="iconSize"
         tooltip-text="Сохранить и подобрать код ТН ВЭД"
-        :disabled="disabled || lookupDisabled"
+        :disabled="disabled || actionsDisabled || lookupDisabled"
         @click="emitLookup"
       />
     </div>
@@ -166,7 +168,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-upload"
         :iconSize="iconSize"
         tooltip-text="Сохранить и выгрузить XML накладную"
-        :disabled="disabled || downloadDisabled"
+        :disabled="disabled || actionsDisabled || downloadDisabled"
         @click="emitDownload"
       />
     </div>
@@ -176,7 +178,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-check-double"
         :iconSize="iconSize"
         tooltip-text="Сохранить"
-        :disabled="disabled"
+        :disabled="disabled || actionsDisabled"
         @click="emitEvent('save')"
       />
       <ActionButton

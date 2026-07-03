@@ -91,6 +91,16 @@ function getRegisterStatusSelectItem(selectItem) {
 function getRegisterStatusSelectTitle(selectItem) {
   return getRegisterStatusSelectItem(selectItem)?.title || ''
 }
+
+function getRegisterStatusListItemProps(itemProps) {
+  if (!itemProps || typeof itemProps !== 'object') {
+    return {}
+  }
+
+  const listItemProps = { ...itemProps }
+  delete listItemProps.title
+  return listItemProps
+}
 </script>
 
 <template>
@@ -119,10 +129,14 @@ function getRegisterStatusSelectTitle(selectItem) {
       </div>
     </template>
     <template #item="{ props: itemProps, item: option }">
-      <div class="register-status-select-row register-status-select-option" v-bind="itemProps">
-        <RegisterStatusIcon :status="getRegisterStatusSelectItem(option)" size="sm" />
-        <span data-testid="register-status-option-title">{{ getRegisterStatusSelectTitle(option) }}</span>
-      </div>
+      <v-list-item v-bind="getRegisterStatusListItemProps(itemProps)" class="register-status-select-option">
+        <template #prepend>
+          <RegisterStatusIcon :status="getRegisterStatusSelectItem(option)" size="sm" />
+        </template>
+        <v-list-item-title class="register-status-select-option-title" data-testid="register-status-option-title">
+          {{ getRegisterStatusSelectTitle(option) }}
+        </v-list-item-title>
+      </v-list-item>
     </template>
   </v-select>
 </template>
@@ -133,13 +147,50 @@ function getRegisterStatusSelectTitle(selectItem) {
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .register-status-select-option {
-  display: flex;
-  width: 100%;
-  padding: 0.375rem 0.75rem;
+  min-height: 2rem;
+  font-family: Roboto, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell,
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.4;
   cursor: pointer;
+}
+
+.register-status-select-option :deep(.v-list-item-title),
+.register-status-select-option-title {
+  font-family: inherit;
+  font-size: inherit !important;
+  line-height: inherit;
+}
+
+.register-status-select-option.v-list-item--active,
+.register-status-select-option.v-list-item--selected,
+.register-status-select-option[aria-selected='true'] {
+  background-color: var(--primary-color, #1976d2);
+  color: #fff;
+}
+
+.register-status-select-option.v-list-item--active :deep(.v-list-item__overlay),
+.register-status-select-option.v-list-item--selected :deep(.v-list-item__overlay),
+.register-status-select-option[aria-selected='true'] :deep(.v-list-item__overlay) {
+  opacity: 0;
+}
+
+.register-status-select-option.v-list-item--active :deep(.v-list-item-title),
+.register-status-select-option.v-list-item--selected :deep(.v-list-item-title),
+.register-status-select-option[aria-selected='true'] :deep(.v-list-item-title),
+.register-status-select-option.v-list-item--active .register-status-select-option-title,
+.register-status-select-option.v-list-item--selected .register-status-select-option-title,
+.register-status-select-option[aria-selected='true'] .register-status-select-option-title {
+  color: #fff !important;
+}
+
+.register-status-select-option :deep(.v-list-item__prepend) {
+  margin-inline-end: 0.5rem;
 }
 
 .register-status-select :deep(.register-status-icon) {

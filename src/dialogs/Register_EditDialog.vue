@@ -29,6 +29,7 @@ import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.he
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
+const DEFAULT_TRANSPORTATION_TYPE_NAME = 'Авто'
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -214,10 +215,51 @@ function normalizeDecimalSeparator(value) {
 }
 
 function ensureDefaultOtherCountry() {
-  if (!item.value || isWbrNRegister.value) return
+  if (!item.value) return
   const countryCode = item.value.theOtherCountryCode
   if (countryCode === null || countryCode === undefined || countryCode === '') {
     item.value.theOtherCountryCode = DEFAULT_OTHER_COUNTRY_CODE
+  }
+}
+
+function getDefaultRegisterStatusId() {
+  const statuses = registerStatusesStore.registerStatuses
+  if (!Array.isArray(statuses) || statuses.length === 0) {
+    return null
+  }
+
+  return parseNumber(statuses[0]?.id ?? statuses[0]?.Id, null)
+}
+
+function ensureDefaultRegisterStatus() {
+  if (!props.create || !item.value) return
+  const statusId = item.value.statusId
+  if (statusId === null || statusId === undefined || statusId === '') {
+    item.value.statusId = getDefaultRegisterStatusId()
+  }
+}
+
+function isMissingCustomsProcedureCode(value) {
+  const procedureCode = parseNumber(value, null)
+  return procedureCode === null || procedureCode === 0
+}
+
+function getDefaultCustomsProcedureCode() {
+  return parseNumber(filteredCustomsProcedures.value[0]?.value, null)
+}
+
+function getCustomsProcedureCodeOrDefault(value) {
+  const procedureCode = parseNumber(value, null)
+  return isMissingCustomsProcedureCode(procedureCode)
+    ? getDefaultCustomsProcedureCode()
+    : procedureCode
+}
+
+function ensureDefaultCustomsProcedure() {
+  if (!item.value || !isMissingCustomsProcedureCode(item.value.customsProcedureCode)) return
+  const defaultProcedureCode = getDefaultCustomsProcedureCode()
+  if (defaultProcedureCode !== null) {
+    item.value.customsProcedureCode = defaultProcedureCode
   }
 }
 
@@ -226,6 +268,11 @@ const filteredCustomsProcedures = computed(() => {
   if (!Array.isArray(all)) return []
   const registerType = item.value?.registerType
   return all.filter((procedure) => {
+    const procedureCode = parseNumber(procedure.value, null)
+    if (procedureCode === null || procedureCode === 0) {
+      return false
+    }
+
     if (Array.isArray(procedure.allowedRegisterTypes)) {
       if (!procedure.allowedRegisterTypes.map(Number).includes(Number(registerType))) {
         return false
@@ -250,6 +297,20 @@ function getTransportationTypeByValue(typeValue) {
   return ops.value?.transportationTypes?.find((type) => Number(type.value) === numericId) || null
 }
 
+function getDefaultTransportationTypeCode() {
+  const transportationTypes = ops.value?.transportationTypes
+  if (!Array.isArray(transportationTypes) || transportationTypes.length === 0) {
+    return null
+  }
+
+  const defaultType =
+    transportationTypes.find((type) => type.name === DEFAULT_TRANSPORTATION_TYPE_NAME) ||
+    transportationTypes.find((type) => type.isAvia === false) ||
+    transportationTypes[0]
+
+  return defaultType?.value ?? null
+}
+
 // Track current form transportation type for reactive UI updates
 const currentTransportationTypeId = ref(null)
 
@@ -265,9 +326,13 @@ const isAviaTransportation = computed(() => {
 })
 
 // Watch for form field changes to update UI reactively
-function handleTransportationTypeChange(e, setFieldValue) {
+function handleTransportationTypeChange(e, setFieldValue, handleChange) {
   const newValue = e.target.value
   currentTransportationTypeId.value = newValue ? parseInt(newValue, 10) : null
+  item.value.transportationTypeCode = currentTransportationTypeId.value
+  if (handleChange && typeof handleChange === 'function') {
+    handleChange(currentTransportationTypeId.value)
+  }
   
   // Handle airport field updates based on transportation type
   const type = getTransportationTypeByValue(currentTransportationTypeId.value)
@@ -323,14 +388,7 @@ watch(
       return
     }
     if (newVal === null || newVal === undefined) {
-      item.value.departureAirportId = 0
-      item.value.arrivalAirportId = 0
       return
-    }
-    const type = getTransportationTypeByValue(newVal)
-    if (!type?.isAvia) {
-      item.value.departureAirportId = 0
-      item.value.arrivalAirportId = 0
     }
   },
   { immediate: true }
@@ -355,11 +413,9 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       ensureDefaultOtherCountry()
     } else {
       // Set default values for new records
-      if (item.value.customsProcedureCode == null) {
-        item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
-      }
+      ensureDefaultCustomsProcedure()
       if (item.value.transportationTypeCode == null) {
-        item.value.transportationTypeCode = ops.value?.transportationTypes?.[0]?.value ?? null
+        item.value.transportationTypeCode = getDefaultTransportationTypeCode()
       }
       if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
         item.value.departureAirportId = 0
@@ -378,6 +434,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
       }
       originalCustomsProcedureCode.value = null
       ensureDefaultOtherCountry()
+      ensureDefaultRegisterStatus()
     }
 
 
@@ -393,6 +450,7 @@ onMounted(async () => {
 
     await registerStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
+    ensureDefaultRegisterStatus()
 
     await companiesStore.getAll()
     if (!isComponentMounted.value) return
@@ -482,7 +540,8 @@ const shouldUpdateExportStatus = computed(() => {
 // Function to update export status based on the procedure
 function updateExportStatusFromProc() {
   if (Array.isArray(ops.value?.customsProcedures) && ops.value.customsProcedures.length > 0) {
-    const proc = ops.value.customsProcedures.find(p => Number(p.value) === Number(item.value?.customsProcedureCode || ops.value.customsProcedures[0]?.value))
+    const procedureCode = getCustomsProcedureCodeOrDefault(item.value?.customsProcedureCode)
+    const proc = ops.value.customsProcedures.find(p => Number(p.value) === procedureCode)
     if (proc) {
       isExport.value = proc.isExport
       isRe.value = proc.isRe || false
@@ -505,6 +564,10 @@ const proceduresLoaded = computed(
 
 const typesLoaded = computed(
   () => Array.isArray(ops.value?.transportationTypes) && ops.value.transportationTypes.length > 0
+)
+
+const registerStatusesLoaded = computed(
+  () => Array.isArray(registerStatusesStore.registerStatuses) && registerStatusesStore.registerStatuses.length > 0
 )
 
 function updateDirection() {
@@ -533,20 +596,32 @@ watch(
 )
 
 watch(proceduresLoaded, (loaded) => {
-  if (loaded && item.value.customsProcedureCode == null) {
-    item.value.customsProcedureCode = filteredCustomsProcedures.value[0]?.value ?? null
+  if (loaded) {
+    ensureDefaultCustomsProcedure()
   }
 })
 
 watch(typesLoaded, (loaded) => {
   if (loaded && item.value.transportationTypeCode == null) {
-    item.value.transportationTypeCode = ops.value?.transportationTypes?.[0]?.value ?? null
+    item.value.transportationTypeCode = getDefaultTransportationTypeCode()
   }
 })
 
-function handleProcedureChange(e, setFieldValue) {
-  const procedureCode = parseNumber(e.target.value, null)
+watch(registerStatusesLoaded, (loaded) => {
+  if (loaded) {
+    ensureDefaultRegisterStatus()
+  }
+})
+
+function handleProcedureChange(e, setFieldValue, handleChange) {
+  const procedureCode = getCustomsProcedureCodeOrDefault(e.target.value)
+  if (e.target) {
+    e.target.value = procedureCode === null ? '' : String(procedureCode)
+  }
   item.value.customsProcedureCode = procedureCode
+  if (handleChange && typeof handleChange === 'function') {
+    handleChange(procedureCode)
+  }
   const proc = procedureCode === null
     ? null
     : ops.value?.customsProcedures?.find((p) => Number(p.value) === procedureCode)
@@ -566,8 +641,26 @@ function handleWarehouseChange(e) {
   item.value.warehouseId = parseNumber(e.target.value, 0)
 }
 
+function getFieldOrItemValue(fieldValue, itemValue) {
+  return fieldValue === '' || fieldValue === null || fieldValue === undefined
+    ? itemValue
+    : fieldValue
+}
+
+function getTransportationTypeFieldValue(fieldValue) {
+  const value = parseNumber(getFieldOrItemValue(fieldValue, item.value?.transportationTypeCode), null)
+  return value === null ? '' : value
+}
+
+function getCustomsProcedureFieldValue(fieldValue) {
+  const value = getCustomsProcedureCodeOrDefault(
+    getFieldOrItemValue(fieldValue, item.value?.customsProcedureCode)
+  )
+  return value === null ? '' : value
+}
+
 function getStatusFieldValue(fieldValue) {
-  return parseNumber(fieldValue ?? item.value?.statusId, null)
+  return parseNumber(getFieldOrItemValue(fieldValue, item.value?.statusId), null)
 }
 
 function handleRegisterStatusChange(value, handleChange) {
@@ -647,14 +740,20 @@ function parseRealWeightPayloadValue(value) {
 }
 
 function prepareRegisterPayload(formValues) {
+  ensureDefaultCustomsProcedure()
   const payload = { ...formValues }
   delete payload.checkForDuplicates
 
-  const selectedTransportationTypeId = parseNumber(formValues.transportationTypeCode ?? item.value?.transportationTypeCode, null)
+  const selectedTransportationTypeId = parseNumber(
+    getFieldOrItemValue(formValues.transportationTypeCode, item.value?.transportationTypeCode),
+    null
+  )
   payload.transportationTypeCode = selectedTransportationTypeId
   payload.theOtherCompanyId = parseNumber(formValues.theOtherCompanyId, null)
   payload.theOtherCountryCode = parseNumber(formValues.theOtherCountryCode, null)
-  payload.customsProcedureCode = parseNumber(formValues.customsProcedureCode, null)
+  payload.customsProcedureCode = getCustomsProcedureCodeOrDefault(
+    getFieldOrItemValue(formValues.customsProcedureCode, item.value?.customsProcedureCode)
+  )
 
   // Handle boolean checkbox value
   payload.lookupByArticle = Boolean(formValues.lookupByArticle ?? item.value?.lookupByArticle ?? false)
@@ -670,7 +769,7 @@ function prepareRegisterPayload(formValues) {
     ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
   payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
-  payload.statusId = parseNumber(formValues.statusId ?? item.value?.statusId, null)
+  payload.statusId = parseNumber(getFieldOrItemValue(formValues.statusId, item.value?.statusId), null)
   payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
   payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
   if (hasProcedureChangedToNonReturn(payload.customsProcedureCode)) {
@@ -691,6 +790,7 @@ async function onSubmit(values) {
   // Set submitting state
   isSubmitting.value = true
 
+  ensureDefaultCustomsProcedure()
   const payload = prepareRegisterPayload(values)
 
   try {
@@ -700,7 +800,7 @@ async function onSubmit(values) {
         const result = await registersStore.upload(
           uploadFile.value,
           item.value.registerType,
-          item.value.customsProcedureCode,
+          payload.customsProcedureCode,
           Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
           Boolean(isRe.value && values.transfer2Re)
         )
@@ -904,15 +1004,18 @@ const loadReportFields = computed(() => {
           <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
-              <RegisterStatusSelect
-                id="statusId"
-                :model-value="getStatusFieldValue(field?.value)"
-                :items="registerStatusesStore.registerStatuses"
-                variant="outlined"
-                density="compact"
-                hide-details
-                @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
-              />
+              <div class="form-control input register-status-input">
+                <RegisterStatusSelect
+                  id="statusId"
+                  class="register-status-input-select"
+                  :model-value="getStatusFieldValue(field?.value)"
+                  :items="registerStatusesStore.registerStatuses"
+                  variant="plain"
+                  density="compact"
+                  hide-details
+                  @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
+                />
+              </div>
             </Field>
           </div>
         </div>
@@ -1029,34 +1132,35 @@ const loadReportFields = computed(() => {
         <div class="form-row">
           <div class="form-group">
             <label for="transportationTypeCode" class="label">Транспорт:</label>
-            <Field
-              as="select"
-              name="transportationTypeCode"
-              id="transportationTypeCode"
-              class="form-control input"
-              :disabled="!typesLoaded"
-              @change="(e) => handleTransportationTypeChange(e, setFieldValue)"
-            >
-              <option value="">Выберите тип</option>
-              <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
-                {{ t.name }}
-              </option>
+            <Field name="transportationTypeCode" v-slot="{ field, handleChange }">
+              <select
+                id="transportationTypeCode"
+                class="form-control input"
+                :disabled="!typesLoaded"
+                :value="getTransportationTypeFieldValue(field?.value)"
+                @change="(e) => handleTransportationTypeChange(e, setFieldValue, handleChange)"
+              >
+                <option value="">Выберите тип</option>
+                <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
+                  {{ t.name }}
+                </option>
+              </select>
             </Field>
           </div>
           <div class="form-group">
             <label for="customsProcedureCode" class="label">Процедура:</label>
-            <Field
-              as="select"
-              name="customsProcedureCode"
-              id="customsProcedureCode"
-              class="form-control input"
-              :disabled="!proceduresLoaded"
-              @change="(e) => handleProcedureChange(e, setFieldValue)"
-            >
-              <option value="">Выберите процедуру</option>
-              <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
-                {{ p.name }}
-              </option>
+            <Field name="customsProcedureCode" v-slot="{ field, handleChange }">
+              <select
+                id="customsProcedureCode"
+                class="form-control input"
+                :disabled="!proceduresLoaded"
+                :value="getCustomsProcedureFieldValue(field?.value)"
+                @change="(e) => handleProcedureChange(e, setFieldValue, handleChange)"
+              >
+                <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
+                  {{ p.name }}
+                </option>
+              </select>
             </Field>
           </div>
         </div>
@@ -1395,6 +1499,65 @@ const loadReportFields = computed(() => {
 .form-disabled .feacn-search-wrapper {
   pointer-events: auto;
   opacity: 1;
+}
+
+.register-status-input {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.register-status-input:focus-within {
+  background-color: #fff;
+  border: 1px solid var(--primary-color);
+  box-shadow: none;
+}
+
+.register-status-input :deep(.register-status-input-select) {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.register-status-input :deep(.v-input),
+.register-status-input :deep(.v-input__control),
+.register-status-input :deep(.v-field),
+.register-status-input :deep(.v-field__field),
+.register-status-input :deep(.v-field__input) {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.register-status-input :deep(.v-field) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.register-status-input :deep(.v-field__overlay),
+.register-status-input :deep(.v-field__outline) {
+  display: none;
+}
+
+.register-status-input :deep(.v-field__input) {
+  align-items: center;
+  padding: 0 0.35rem;
+}
+
+.register-status-input :deep(.v-field__append-inner) {
+  align-items: center;
+  height: 100%;
+  padding-top: 0;
+}
+
+.register-status-input :deep(.v-select__selection) {
+  margin: 0;
 }
 
 .custom-checkbox {

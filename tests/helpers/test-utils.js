@@ -263,6 +263,14 @@ export const vuetifyStubs = {
     template: '<i class="v-icon-stub" data-testid="v-icon" :data-icon="icon" v-bind="$attrs"></i>',
     props: ['icon', 'size', 'color', 'style'],
     inheritAttrs: false
+  },
+  'v-list-item': {
+    template: '<div class="v-list-item-stub" data-testid="v-list-item" v-bind="$attrs"><slot name="prepend"></slot><slot></slot></div>',
+    inheritAttrs: false
+  },
+  'v-list-item-title': {
+    template: '<span class="v-list-item-title-stub" data-testid="v-list-item-title" v-bind="$attrs"><slot></slot></span>',
+    inheritAttrs: false
   }
 }
 

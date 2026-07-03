@@ -563,6 +563,7 @@ describe('WbrNParcels_List.vue', () => {
     headerKeys = wrapper.vm.headers.map(header => header.key)
     expect(headerKeys).toContain('customsFee')
     expect(headerKeys).not.toContain('customsDuty')
+    wrapper.unmount()
   })
 
   it('renders WbrN article, raw product country, split recipient fields, and product link', () => {

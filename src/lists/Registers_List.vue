@@ -257,7 +257,7 @@ async function handleParcelStatusBulkUpdated() {
   await loadRegisters()
 }
 
-async function runcalculateCustomsCharges(item) {
+async function runCalculateCustomsCharges(item) {
   if (runningAction.value || loading.value || isInitializing.value) return
   runningAction.value = true
   try {
@@ -388,7 +388,7 @@ defineExpose({
       :start-register-status-change="startRegisterStatusChange"
       :cancel-register-status-change="cancelRegisterStatusEdit"
       :apply-register-status-change="applyRegisterStatusToRegister"
-      :calculate-customs-charges="runcalculateCustomsCharges"
+      :calculate-customs-charges="runCalculateCustomsCharges"
       @open-parcels="openParcels"
       @edit-register="editRegister"
       @delete-register="deleteRegister"

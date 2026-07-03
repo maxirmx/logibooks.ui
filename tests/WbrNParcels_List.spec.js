@@ -90,7 +90,7 @@ const headerActions = {
   downloadTechdoc: vi.fn(),
   freezeCheckStatus: vi.fn().mockResolvedValue(),
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
-  calculateCustomCharges: vi.fn().mockResolvedValue(),
+  calculateCustomsCharges: vi.fn().mockResolvedValue(),
   cancelValidation: vi.fn(),
 }
 
@@ -340,7 +340,7 @@ const globalStubs = {
       'download',
       'download-additional-restrictions',
       'download-techdoc',
-      'calculate-custom-charges',
+      'calculate-customs-charges',
       'bulk-change-parcel-status',
       'freeze-check-status',
       'freeze-tnved-order',
@@ -359,7 +359,7 @@ const globalStubs = {
         <button data-testid="download" @click="$emit('download')"></button>
         <button data-testid="download-additional-restrictions" @click="$emit('download-additional-restrictions')"></button>
         <button data-testid="download-techdoc" @click="$emit('download-techdoc')"></button>
-        <button data-testid="calculate-custom-charges" @click="$emit('calculate-custom-charges')"></button>
+        <button data-testid="calculate-customs-charges" @click="$emit('calculate-customs-charges')"></button>
         <button data-testid="bulk-status" @click="$emit('bulk-change-parcel-status')"></button>
         <button data-testid="freeze-check-status" @click="$emit('freeze-check-status')"></button>
         <button data-testid="freeze-tnved-order" @click="$emit('freeze-tnved-order')"></button>
@@ -624,7 +624,7 @@ describe('WbrNParcels_List.vue', () => {
     await wrapper.get('[data-testid="download"]').trigger('click')
     await wrapper.get('[data-testid="download-additional-restrictions"]').trigger('click')
     await wrapper.get('[data-testid="download-techdoc"]').trigger('click')
-    await wrapper.get('[data-testid="calculate-custom-charges"]').trigger('click')
+    await wrapper.get('[data-testid="calculate-customs-charges"]').trigger('click')
     await wrapper.get('[data-testid="freeze-check-status"]').trigger('click')
     await wrapper.get('[data-testid="freeze-tnved-order"]').trigger('click')
 
@@ -639,7 +639,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(headerActions.downloadRegister).toHaveBeenCalled()
     expect(headerActions.downloadAdditionalRestrictions).toHaveBeenCalled()
     expect(headerActions.downloadTechdoc).toHaveBeenCalled()
-    expect(headerActions.calculateCustomCharges).toHaveBeenCalled()
+    expect(headerActions.calculateCustomsCharges).toHaveBeenCalled()
     expect(headerActions.freezeCheckStatus).toHaveBeenCalled()
     expect(headerActions.freezeTnVedOrder).toHaveBeenCalled()
     expect(getRegisterById).toHaveBeenCalledWith(7)

@@ -225,16 +225,16 @@ describe('CustomsProcessingRegistersTable', () => {
   })
 
   it('runs custom charges calculation from the calculator action', async () => {
-    const calculateCustomCharges = vi.fn()
+    const calculateCustomsCharges = vi.fn()
     const wrapper = mountTable({
       items: [{ id: 7, statusId: 2 }],
       isSrLogistPlus: true,
-      calculateCustomCharges
+      calculateCustomsCharges
     })
 
     await wrapper.find('[data-icon="fa-solid fa-calculator"]').trigger('click')
 
-    expect(calculateCustomCharges).toHaveBeenCalledWith({ id: 7, statusId: 2 })
+    expect(calculateCustomsCharges).toHaveBeenCalledWith({ id: 7, statusId: 2 })
   })
 
   it('opens parcel status bulk dialog from the independent action', async () => {

@@ -636,11 +636,11 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function calculateCustomCharges(id) {
+  async function calculateCustomsCharges(id) {
     loading.value = true
     error.value = null
     try {
-      const result = await fetchWrapper.post(`${baseUrl}/${id}/calculate-custom-charges`)
+      const result = await fetchWrapper.post(`${baseUrl}/${id}/calculate-customs-charges`)
       patchRegisterCharges(result)
       return result
     } catch (err) {
@@ -780,7 +780,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadAdditionalRestrictions,
     freezeCheckStatus,
     freezeTnVedOrder,
-    calculateCustomCharges,
+    calculateCustomsCharges,
     nextParcels,
     remove,
     uploadFile,

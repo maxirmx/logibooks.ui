@@ -46,7 +46,7 @@ const props = defineProps({
   startRegisterStatusChange: { type: Function, default: () => {} },
   cancelRegisterStatusChange: { type: Function, default: () => {} },
   applyRegisterStatusChange: { type: Function, default: () => {} },
-  calculateCustomCharges: { type: Function, default: () => {} }
+  calculateCustomsCharges: { type: Function, default: () => {} }
 })
 
 const emit = defineEmits([
@@ -409,7 +409,7 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-calculator"
             tooltip-text="Рассчитать сборы и пошлины"
             :disabled="runningAction || loading"
-            @click="(row) => calculateCustomCharges(row)"
+            @click="(row) => calculateCustomsCharges(row)"
           />
           <ActionButton
             v-if="isSrLogistPlus"

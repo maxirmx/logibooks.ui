@@ -228,7 +228,7 @@ const {
   downloadTechdoc: downloadTechdocFile,
   freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
-  calculateCustomCharges: calculateCustomChargesHeader,
+  calculateCustomsCharges: calculateCustomsChargesHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -458,7 +458,7 @@ function getGenericTemplateHeaders() {
         @download="downloadRegisterFile"
         @download-additional-restrictions="downloadAdditionalRestrictionsFile"
         @download-techdoc="downloadTechdocFile"
-        @calculate-custom-charges="calculateCustomChargesHeader"
+        @calculate-customs-charges="calculateCustomsChargesHeader"
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"

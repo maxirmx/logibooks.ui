@@ -263,9 +263,9 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.freezeCheckStatus(item.id)
   }
 
-  async function calculateCustomCharges(item) {
+  async function calculateCustomsCharges(item) {
     try {
-      await registersStore.calculateCustomCharges(item.id)
+      await registersStore.calculateCustomsCharges(item.id)
       await registersStore.getAll(getAllOptions())
     } catch (err) {
       alertStore.error(err?.message || String(err))
@@ -308,7 +308,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     downloadTechdoc,
     freezeCheckStatus,
     freezeTnVedOrder,
-    calculateCustomCharges,
+    calculateCustomsCharges,
     cancelValidation: cancelValidationWrapper,
     stopPolling
   }
@@ -501,8 +501,8 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
   }
 
-  async function calculateCustomChargesForCurrentRegister(register) {
-    await registersStore.calculateCustomCharges(register.id)
+  async function calculateCustomsChargesForCurrentRegister(register) {
+    await registersStore.calculateCustomsCharges(register.id)
     await registersStore.getById(register.id)
 
     if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
@@ -510,8 +510,8 @@ export function useRegisterHeaderActions({
     }
   }
 
-  const runCalculateCustomCharges = async () => {
-    await runActionWithDialog(calculateCustomChargesForCurrentRegister, 'calculate-custom-charges')
+  const runcalculateCustomsCharges = async () => {
+    await runActionWithDialog(calculateCustomsChargesForCurrentRegister, 'calculate-customs-charges')
   }
 
   function handleValidationDialogClose(show, previous) {
@@ -556,7 +556,7 @@ export function useRegisterHeaderActions({
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     freezeTnVedOrder: runFreezeTnVedOrder,
-    calculateCustomCharges: runCalculateCustomCharges,
+    calculateCustomsCharges: runcalculateCustomsCharges,
     cancelValidation,
     stop
   }

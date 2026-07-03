@@ -255,7 +255,7 @@ describe('RegisterHeaderActionsBar', () => {
     calculateChargesButton.vm.$emit('click')
     statusBulkButton.vm.$emit('click')
 
-    expect(wrapper.emitted('calculate-custom-charges')).toHaveLength(1)
+    expect(wrapper.emitted('calculate-customs-charges')).toHaveLength(1)
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
   })
 

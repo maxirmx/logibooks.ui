@@ -10,7 +10,7 @@ export const ACTION_DIALOG_TITLES = {
   'download-invoice': 'Подготовка файла инвойса',
   'freeze-check-status': 'Применение запретов',
   'freeze-tnved-order': 'Сортировка',
-  'calculate-custom-charges': 'Расчёт сборов и пошлин',
+  'calculate-customs-charges': 'Расчёт сборов и пошлин',
 }
 
 const DEFAULT_TITLE = 'Пожалуйста, подождите'

@@ -1836,7 +1836,7 @@ describe('registers store', () => {
     })
   })
 
-  describe('calculateCustomCharges', () => {
+  describe('calculateCustomsCharges', () => {
     it('calls calculate endpoint and patches loaded register charges', async () => {
       fetchWrapper.post.mockResolvedValueOnce({
         registerId: 77,
@@ -1849,9 +1849,9 @@ describe('registers store', () => {
       store.items = [{ id: 77, fileName: 'register.xlsx', customsFee: 0, customsDuty: 0 }]
       store.item = { id: 77, fileName: 'register.xlsx', customsFee: 0, customsDuty: 0 }
 
-      const result = await store.calculateCustomCharges(77)
+      const result = await store.calculateCustomsCharges(77)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/calculate-custom-charges`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/calculate-customs-charges`)
       expect(result.customsFee).toBe(689)
       expect(store.items[0].customsFee).toBe(689)
       expect(store.items[0].customsDuty).toBe(750)
@@ -1872,7 +1872,7 @@ describe('registers store', () => {
       store.items = [{ id: 77, fileName: 'register.xlsx', customsFee: 689, customsDuty: 750 }]
       store.item = { id: 77, fileName: 'register.xlsx', customsFee: 689, customsDuty: 750 }
 
-      const result = await store.calculateCustomCharges(77)
+      const result = await store.calculateCustomsCharges(77)
 
       expect(result.customsFee).toBeNull()
       expect(store.items[0].customsFee).toBeNull()
@@ -1886,9 +1886,9 @@ describe('registers store', () => {
       fetchWrapper.post.mockRejectedValueOnce(err)
 
       const store = useRegistersStore()
-      await expect(store.calculateCustomCharges(55)).rejects.toThrow('Calculation failed')
+      await expect(store.calculateCustomsCharges(55)).rejects.toThrow('Calculation failed')
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/55/calculate-custom-charges`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/55/calculate-customs-charges`)
       expect(store.error).toBe(err)
       expect(store.loading).toBe(false)
     })

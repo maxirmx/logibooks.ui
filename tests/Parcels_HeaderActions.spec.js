@@ -54,7 +54,7 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlNotifications: vi.fn(),    
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
-    calculateCustomCharges: vi.fn().mockResolvedValue(),
+    calculateCustomsCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
     cancelValidation: vi.fn(),
@@ -395,7 +395,7 @@ describe.each([
     }
 
     await findButtonByIcon('fa-solid fa-calculator').trigger('click')
-    expect(registerHeaderActionsMock.calculateCustomCharges).toHaveBeenCalled()
+    expect(registerHeaderActionsMock.calculateCustomsCharges).toHaveBeenCalled()
 
     await findButtonByIcon('fa-solid fa-pen-to-square').trigger('click')
     expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-show')).toBe('true')

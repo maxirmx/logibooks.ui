@@ -59,7 +59,7 @@ describe('useRegisterHeaderActions', () => {
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
-      calculateCustomCharges: vi.fn().mockResolvedValue(),
+      calculateCustomsCharges: vi.fn().mockResolvedValue(),
       getById: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
     }
@@ -453,7 +453,7 @@ describe('useRegisterHeaderActions', () => {
 
   it('shows action dialog while custom charges are calculated and refreshes current data', async () => {
     const deferred = createDeferred()
-    registersStore.calculateCustomCharges.mockReturnValueOnce(deferred.promise)
+    registersStore.calculateCustomsCharges.mockReturnValueOnce(deferred.promise)
 
     const actions = useRegisterHeaderActions({
       registersStore,
@@ -465,11 +465,11 @@ describe('useRegisterHeaderActions', () => {
       isComponentMounted
     })
 
-    const promise = actions.calculateCustomCharges()
+    const promise = actions.calculateCustomsCharges()
 
     expect(actions.actionDialog.show).toBe(true)
     expect(actions.actionDialog.title).toBe('Расчёт сборов и пошлин')
-    expect(registersStore.calculateCustomCharges).toHaveBeenCalledWith(1)
+    expect(registersStore.calculateCustomsCharges).toHaveBeenCalledWith(1)
 
     deferred.resolve()
     await promise
@@ -483,9 +483,9 @@ describe('useRegisterHeaderActions', () => {
   it('calculates custom charges and refreshes register list', async () => {
     const actions = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
 
-    await actions.calculateCustomCharges({ id: 7 })
+    await actions.calculateCustomsCharges({ id: 7 })
 
-    expect(registersStore.calculateCustomCharges).toHaveBeenCalledWith(7)
+    expect(registersStore.calculateCustomsCharges).toHaveBeenCalledWith(7)
     expect(registersStore.getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
     expect(alertStore.error).not.toHaveBeenCalled()
   })

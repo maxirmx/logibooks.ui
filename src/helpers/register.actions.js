@@ -501,6 +501,19 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
   }
 
+  async function calculateCustomChargesForCurrentRegister(register) {
+    await registersStore.calculateCustomCharges(register.id)
+    await registersStore.getById(register.id)
+
+    if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
+      await loadParcels()
+    }
+  }
+
+  const runCalculateCustomCharges = async () => {
+    await runActionWithDialog(calculateCustomChargesForCurrentRegister, 'calculate-custom-charges')
+  }
+
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
@@ -543,6 +556,7 @@ export function useRegisterHeaderActions({
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     freezeTnVedOrder: runFreezeTnVedOrder,
+    calculateCustomCharges: runCalculateCustomCharges,
     cancelValidation,
     stop
   }

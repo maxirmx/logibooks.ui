@@ -51,6 +51,7 @@ import {
   updateParcelTnVed,
   loadParcels,
   formatPassport,
+  formatCustomsCharge,
   hasParcelEditRouteAccess,
   buildParcelEditCellClass
 } from '../src/helpers/parcels.list.helpers.js'
@@ -302,6 +303,8 @@ describe('Parcels List Helpers', () => {
         { key: 'countryCode', title: 'Country' },
         { key: 'feacnLookup', title: 'FEACN Lookup' },
         { key: 'tnVed', title: 'TN VED' },
+        { key: 'customsFee', title: 'Customs Fee' },
+        { key: 'customsDuty', title: 'Customs Duty' },
         { key: 'productName', title: 'Product Name' },
         { key: 'quantity', title: 'Quantity' }
       ]
@@ -343,6 +346,18 @@ describe('Parcels List Helpers', () => {
       expect(formatPassport({ passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe('123 выдан 01.01.2020')
       expect(formatPassport({})).toBe('')
       expect(formatPassport(null)).toBe('')
+    })
+  })
+
+  describe('formatCustomsCharge', () => {
+    it('formats present charge values', () => {
+      expect(formatCustomsCharge(689)).toBe('689.00')
+      expect(formatCustomsCharge(0)).toBe('0.00')
+    })
+
+    it('keeps missing charge values empty', () => {
+      expect(formatCustomsCharge(null)).toBe('')
+      expect(formatCustomsCharge(undefined)).toBe('')
     })
   })
 

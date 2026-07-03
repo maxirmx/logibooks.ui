@@ -1148,6 +1148,7 @@ describe('Registers_List.vue', () => {
       expect(sortableByKey.parcelsTotal).toBe(true)
       expect(sortableByKey.weight).toBe(true)
       expect(sortableByKey.price).toBe(true)
+      expect(sortableByKey.customsCharges).toBe(false)
       expect(sortableByKey.date).toBe(true)
       expect(sortableByKey.statusId).toBeUndefined()
       expect(sortableByKey.warehouseId).toBeUndefined()
@@ -1168,9 +1169,11 @@ describe('Registers_List.vue', () => {
       expect(headersByKey.parcelsTotal.align).toBe('end')
       expect(headersByKey.weight.align).toBe('end')
       expect(headersByKey.price.align).toBe('end')
+      expect(headersByKey.customsCharges.align).toBe('end')
       expect(headersByKey.parcelsTotal.width).toBe('150px')
       expect(headersByKey.weight.width).toBe('220px')
       expect(headersByKey.price.width).toBe('240px')
+      expect(headersByKey.customsCharges.width).toBe('160px')
     })
 
     it('does not render warehouse-only actions', () => {

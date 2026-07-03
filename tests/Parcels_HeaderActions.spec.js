@@ -54,6 +54,7 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlNotifications: vi.fn(),    
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
+    calculateCustomCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
     cancelValidation: vi.fn(),
@@ -244,6 +245,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
     return entry?.key === 'frozenOrder' ? entry.order : null
   }),
   getFeacnCodesForKeywords: vi.fn(() => []),
+  formatCustomsCharge: vi.fn(() => ''),
   loadParcels: vi.fn((...args) => {
     loadParcelsMock(...args)
     return Promise.resolve()
@@ -327,8 +329,8 @@ describe.each([
     await resolveAll()
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // Header actions include logist actions + status bulk button + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(12)
+    // Header actions include logist actions + charges/status buttons + xml split button + export/download + invoice split button + close button
+    expect(buttons).toHaveLength(13)
     const findButtonByIcon = (icon) => {
       const button = buttons.find((item) => item.attributes('data-icon') === icon)
       expect(button).toBeTruthy()
@@ -380,6 +382,9 @@ describe.each([
     } else {
       expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
     }
+
+    await findButtonByIcon('fa-solid fa-calculator').trigger('click')
+    expect(registerHeaderActionsMock.calculateCustomCharges).toHaveBeenCalled()
 
     await findButtonByIcon('fa-solid fa-pen-to-square').trigger('click')
     expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-show')).toBe('true')
@@ -442,6 +447,32 @@ describe.each([
     await resolveAll()
 
     expect(wrapper.vm.headers[0]?.key).toBe('frozenOrder')
+  })
+
+  it('places customs fee and duty immediately after the DTEG column', async () => {
+    const wrapper = mount(Component, {
+      props: { registerId: 14 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
+    const dTagIndex = headerKeys.indexOf('dTag')
+    expect(headerKeys[dTagIndex + 1]).toBe('customsFee')
+    expect(headerKeys[dTagIndex + 2]).toBe('customsDuty')
+    expect(wrapper.vm.headers[dTagIndex + 1]).toMatchObject({
+      title: 'Сбор, руб',
+      sortable: false,
+      align: 'end',
+      width: '120px'
+    })
+    expect(wrapper.vm.headers[dTagIndex + 2]).toMatchObject({
+      title: 'Пошлина, руб',
+      sortable: false,
+      align: 'end',
+      width: '120px'
+    })
   })
 
   it('refetches parcels after freeze only when frozenOrder sorting is active', async () => {

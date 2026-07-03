@@ -32,6 +32,7 @@ import {
   getFrozenOrderSortDir,
   loadParcels,
   formatPassport,
+  formatCustomsCharge,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -240,6 +241,7 @@ const {
   downloadTechdoc: downloadTechdocFile,
   freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
+  calculateCustomCharges: calculateCustomChargesHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -394,6 +396,8 @@ const headers = computed(() => {
     // Status Information - Current state of the order
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
+    { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },
+    { title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' },
   ]
 
   // Append previousDTagComment at the end only for reimport procedure
@@ -461,6 +465,7 @@ function getGenericTemplateHeaders() {
           @download="downloadRegisterFile"
           @download-additional-restrictions="downloadAdditionalRestrictionsFile"
           @download-techdoc="downloadTechdocFile"
+          @calculate-custom-charges="calculateCustomChargesHeader"
           @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
           @freeze-check-status="freezeCheckStatusAndRefetch"
           @freeze-tnved-order="freezeTnVedOrderAndRefetch"
@@ -544,6 +549,24 @@ function getGenericTemplateHeaders() {
             cell-class="truncated-cell clickable-cell" 
             :display-value="item.dTag || ''" 
             @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.customsFee`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatCustomsCharge(item.customsFee)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.customsDuty`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatCustomsCharge(item.customsDuty)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
           />
         </template>
 

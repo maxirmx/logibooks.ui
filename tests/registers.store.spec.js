@@ -1861,6 +1861,26 @@ describe('registers store', () => {
       expect(store.error).toBeNull()
     })
 
+    it('preserves null calculated register charges for empty register-list display', async () => {
+      fetchWrapper.post.mockResolvedValueOnce({
+        registerId: 77,
+        customsFee: null,
+        customsDuty: null
+      })
+
+      const store = useRegistersStore()
+      store.items = [{ id: 77, fileName: 'register.xlsx', customsFee: 689, customsDuty: 750 }]
+      store.item = { id: 77, fileName: 'register.xlsx', customsFee: 689, customsDuty: 750 }
+
+      const result = await store.calculateCustomCharges(77)
+
+      expect(result.customsFee).toBeNull()
+      expect(store.items[0].customsFee).toBeNull()
+      expect(store.items[0].customsDuty).toBeNull()
+      expect(store.item.customsFee).toBeNull()
+      expect(store.item.customsDuty).toBeNull()
+    })
+
     it('stores and rethrows calculate endpoint errors', async () => {
       const err = new Error('Calculation failed')
       fetchWrapper.post.mockRejectedValueOnce(err)

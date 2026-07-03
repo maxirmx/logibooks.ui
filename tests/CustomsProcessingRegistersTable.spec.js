@@ -74,7 +74,12 @@ vi.mock('@/components/ClickableCell.vue', () => ({
 
 vi.mock('@/components/RegisterInvoiceCell.vue', () => ({ default: { template: '<span />' } }))
 vi.mock('@/components/SenderRecipientCell.vue', () => ({ default: { template: '<span />' } }))
-vi.mock('@/components/SortableMultilineHeader.vue', () => ({ default: { template: '<span />' } }))
+vi.mock('@/components/SortableMultilineHeader.vue', () => ({
+  default: {
+    props: ['lines'],
+    template: '<span class="sortable-multiline-header-stub"><span v-for="line in lines" :key="line">{{ line }}</span></span>'
+  }
+}))
 
 const registerStatusOptions = [
   { id: 2, title: 'Current' },
@@ -102,13 +107,29 @@ function mountTable(props = {}) {
           template: `
             <div>
               <div data-testid="header-keys">{{ headers.map(header => header.key).join(',') }}</div>
+              <div data-testid="headers">
+                <div v-for="header in headers" :key="header.key" :data-testid="'header-' + header.key">
+                  <slot :name="'header.' + header.key" :column="header" :is-sorted="isSorted" :get-sort-icon="getSortIcon">
+                    {{ header.title }}
+                  </slot>
+                </div>
+              </div>
               <div v-for="item in items" :key="item.id" data-testid="row">
                 <slot name="item.actions" :item="item" />
                 <slot name="item.dealNumber" :item="item" />
                 <slot name="item.weight" :item="item" />
+                <slot name="item.customsCharges" :item="item" />
               </div>
             </div>
-          `
+          `,
+          methods: {
+            isSorted() {
+              return false
+            },
+            getSortIcon() {
+              return null
+            }
+          }
         },
         'v-select': {
           props: ['modelValue', 'items', 'itemTitle', 'itemValue', 'disabled'],
@@ -135,8 +156,12 @@ describe('CustomsProcessingRegistersTable', () => {
     })
 
     expect(wrapper.find('[data-testid="header-keys"]').text()).toBe(
-      'actions,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,date'
+      'actions,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,customsCharges,date'
     )
+    expect(wrapper.find('[data-testid="header-customsCharges"]').findAll('.sortable-multiline-header-stub > span').map(line => line.text())).toEqual([
+      'Сборы, руб.',
+      'Пошлины'
+    ])
     expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
     expect(wrapper.find('.register-status-action-button--readonly').attributes('title')).toBe('Register Status 2')
   })
@@ -234,7 +259,9 @@ describe('CustomsProcessingRegistersTable', () => {
         statusId: 2,
         totalWeightKg: 12.345,
         totalWeightKgToRelease: 10,
-        realWeightKg: 5
+        realWeightKg: 5,
+        customsFee: 689,
+        customsDuty: 750
       }]
     })
 
@@ -244,5 +271,34 @@ describe('CustomsProcessingRegistersTable', () => {
     expect(wrapper.find('[data-testid="register-weight-cell"]').text()).toContain('12.345')
     expect(wrapper.find('[data-testid="register-weight-cell"]').text()).toContain('10.000')
     expect(wrapper.find('[data-testid="register-weight-cell"]').text()).toContain('5.000')
+    expect(wrapper.find('[data-testid="register-customs-charges-cell"]').text()).toContain('689.00')
+    expect(wrapper.find('[data-testid="register-customs-charges-cell"]').text()).toContain('750.00')
+  })
+
+  it('renders dash for a missing customs charge when the other charge is present', () => {
+    const wrapper = mountTable({
+      items: [{
+        id: 4,
+        customsFee: null,
+        customsDuty: 750
+      }]
+    })
+
+    expect(wrapper.find('[data-testid="register-customs-charges-cell"]').findAll('div').map(line => line.text())).toEqual([
+      '-',
+      '750.00'
+    ])
+  })
+
+  it('keeps customs charges cell empty when both values are missing', () => {
+    const wrapper = mountTable({
+      items: [{
+        id: 5,
+        customsFee: null,
+        customsDuty: null
+      }]
+    })
+
+    expect(wrapper.find('[data-testid="register-customs-charges-cell"]').text()).toBe('')
   })
 })

@@ -60,6 +60,7 @@ describe('useRegisterHeaderActions', () => {
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       calculateCustomCharges: vi.fn().mockResolvedValue(),
+      getById: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
     }
 
@@ -448,6 +449,35 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('shows action dialog while custom charges are calculated and refreshes current data', async () => {
+    const deferred = createDeferred()
+    registersStore.calculateCustomCharges.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.calculateCustomCharges()
+
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Расчёт сборов и пошлин')
+    expect(registersStore.calculateCustomCharges).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await promise
+
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+    expect(actions.actionDialog.title).toBe('')
   })
 
   it('calculates custom charges and refreshes register list', async () => {

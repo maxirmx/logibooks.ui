@@ -622,8 +622,8 @@ export const useRegistersStore = defineStore('registers', () => {
 
     const registerId = Number(result.registerId)
     const charges = {
-      customsFee: result.customsFee ?? 0,
-      customsDuty: result.customsDuty ?? 0
+      customsFee: result.customsFee ?? null,
+      customsDuty: result.customsDuty ?? null
     }
 
     if (item.value && Number(item.value.id) === registerId) {

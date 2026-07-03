@@ -79,6 +79,7 @@ vi.mock('@/helpers/register.actions.js', () => ({
     downloadTechdoc: vi.fn(),
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
+    calculateCustomCharges: vi.fn().mockResolvedValue(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
   })

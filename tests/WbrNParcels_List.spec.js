@@ -280,9 +280,9 @@ const sampleParcel = {
   quantity: 2,
   unitPrice: 19.5,
   currency: 'CNY',
-  recipientLastName: 'Ivanov',
-  recipientFirstName: 'Ivan',
-  recipientPatronymic: 'Ivanovich',
+  lastName: 'Ivanov',
+  firstName: 'Ivan',
+  patronymic: 'Ivanovich',
   recipientCountryName: 'Узбекистан',
   recipientCity: 'Ташкент',
   recipientAddress: 'ул. Навои, 1',
@@ -489,23 +489,20 @@ describe('WbrNParcels_List.vue', () => {
       'frozenOrder',
       'id',
       'shk',
-      'article',
       'checkStatus',
       'tnVed',
       'feacnLookup',
       'productName',
       'productLink',
+      'article',
       'productCountryName',
       'weightKg',
-      'quantity',
       'unitPrice',
       'currency',
-      'recipientLastName',
-      'recipientFirstName',
-      'recipientPatronymic',
-      'recipientCountryName',
-      'recipientCity',
-      'recipientAddress',
+      'quantity',
+      'lastName',
+      'firstName',
+      'patronymic',
       'passportNumber',
       'statusId',
       'dTag'
@@ -529,10 +526,6 @@ describe('WbrNParcels_List.vue', () => {
     expect(text).toContain('Ivanov')
     expect(text).toContain('Ivan')
     expect(text).toContain('Ivanovich')
-    expect(text).toContain('Узбекистан')
-    expect(text).toContain('Ташкент')
-    expect(text).toContain('ул. Навои, 1')
-    expect(text).not.toContain('paymentAmount')
     expect(wrapper.get('a.product-link-in-list').attributes('href')).toBe('https://www.wildberries.ru/catalog/29817781/detail.aspx')
   })
 

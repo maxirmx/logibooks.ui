@@ -24,7 +24,7 @@ const statusOptions = [
   }
 ]
 
-function mountSelect(props = {}) {
+function mountSelect(props = {}, attrs = {}) {
   return mount(RegisterStatusSelect, {
     props: {
       modelValue: 2,
@@ -32,6 +32,7 @@ function mountSelect(props = {}) {
       placeholder: 'Статус партии',
       ...props
     },
+    attrs,
     global: {
       stubs: {
         'v-select': {
@@ -42,6 +43,7 @@ function mountSelect(props = {}) {
               data-testid="register-status-select"
               :data-placeholder="placeholder"
               :data-disabled="String(disabled)"
+              v-bind="$attrs"
             >
               <slot name="selection" :item="{ raw: modelValue }" />
               <button
@@ -53,7 +55,7 @@ function mountSelect(props = {}) {
               >
                 <slot
                   name="item"
-                  :props="{ 'data-option-id': option.id ?? option.Id }"
+                  :props="{ title: option.title ?? option.Title, 'data-option-id': option.id ?? option.Id }"
                   :item="{ raw: option }"
                 />
               </button>
@@ -63,6 +65,15 @@ function mountSelect(props = {}) {
         'font-awesome-icon': {
           props: ['icon'],
           template: '<i data-testid="fa-icon" :data-icon="icon"></i>'
+        },
+        'v-list-item': {
+          props: ['title'],
+          template: '<div data-testid="v-list-item" v-bind="$attrs"><span v-if="title" data-testid="v-list-item-prop-title">{{ title }}</span><slot name="prepend"></slot><slot></slot></div>',
+          inheritAttrs: false
+        },
+        'v-list-item-title': {
+          template: '<span data-testid="v-list-item-title" v-bind="$attrs"><slot></slot></span>',
+          inheritAttrs: false
         }
       }
     }
@@ -106,5 +117,24 @@ describe('RegisterStatusSelect', () => {
       'Completed'
     ])
     expect(wrapper.findAll('[data-testid="register-status-icon"]')).toHaveLength(3)
+  })
+
+  it('does not duplicate option titles from generated Vuetify list-item props', () => {
+    const wrapper = mountSelect()
+
+    expect(wrapper.find('[data-testid="v-list-item-prop-title"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="register-status-option-title"]').map(item => item.text())).toEqual([
+      'In Progress',
+      'Completed'
+    ])
+  })
+
+  it('forwards custom classes while keeping custom status content', () => {
+    const wrapper = mountSelect({}, { class: 'register-status-inline-select' })
+    const select = wrapper.find('[data-testid="register-status-select"]')
+
+    expect(select.classes()).toEqual(expect.arrayContaining(['register-status-select', 'register-status-inline-select']))
+    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe('In Progress')
   })
 })

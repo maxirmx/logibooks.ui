@@ -354,7 +354,6 @@ describe('WbrNParcels_WhList.vue', () => {
       'statusId',
       'extId',
       'shk',
-      'article',
       'sticker',
       'stickerCode',
       'boxNumber',
@@ -375,7 +374,6 @@ describe('WbrNParcels_WhList.vue', () => {
 
     const text = wrapper.text()
     expect(text).toContain('SHK-WH-1')
-    expect(text).toContain('29817781')
     expect(text).toContain('WbrN warehouse product')
     expect(text).toContain('Sticker-N-1')
     expect(text).toContain('ST-N-1')

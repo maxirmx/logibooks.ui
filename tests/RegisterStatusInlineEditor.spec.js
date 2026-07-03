@@ -67,6 +67,15 @@ function mountEditor(props = {}) {
         'font-awesome-icon': {
           props: ['icon'],
           template: '<i data-testid="fa-icon" :data-icon="icon"></i>'
+        },
+        'v-list-item': {
+          props: ['title'],
+          template: '<div data-testid="v-list-item" v-bind="$attrs"><span v-if="title" data-testid="v-list-item-prop-title">{{ title }}</span><slot name="prepend"></slot><slot></slot></div>',
+          inheritAttrs: false
+        },
+        'v-list-item-title': {
+          template: '<span data-testid="v-list-item-title" v-bind="$attrs"><slot></slot></span>',
+          inheritAttrs: false
         }
       }
     }

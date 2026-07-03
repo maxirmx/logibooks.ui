@@ -540,21 +540,20 @@ async function onLookup(values) {
               @fellows="handleFellows"
             />
           </div>
-          <ArticleWithH
-            :item="item"
-            :errors="errors"
-            :disabled="isSubmitting || runningAction || loading"
-            :column-titles="wbrnRegisterColumnTitles"
-            input-readonly
-            :fullWidth="false"
-            @approve-notification="approveParcelWithNotification(values)"
-          />
           <ProductLinkWithActions
             :label="wbrnRegisterColumnTitles.productLink"
             :item="item"
             :disabled="isSubmitting || runningAction || loading"
             @view-image="viewProductImage"
             @delete-image="() => deleteProductImage(values)"
+          />
+          <ArticleWithH
+            :item="item"
+            :errors="errors"
+            :disabled="isSubmitting || runningAction || loading"
+            :column-titles="wbrnRegisterColumnTitles"
+            :fullWidth="false"
+            @approve-notification="approveParcelWithNotification(values)"
           />
           <WbrNFormField name="productCountryName" :errors="errors" :fullWidth="false" />
           <ParcelWeightAutoField
@@ -570,9 +569,9 @@ async function onLookup(values) {
           <WbrNFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <WbrNFormField name="recipientLastName" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="recipientFirstName" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="recipientPatronymic" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="firstName" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="passportNumber" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">

@@ -12,12 +12,12 @@ describe('wbrn.register.mapping', () => {
   it('defines WbrN product and recipient replacement fields', () => {
     expect(wbrnRegisterColumnTitles).toMatchObject({
       shk: 'ШК',
-      article: 'Артикул WB',
+      article: 'Артикул',
       productCountryName: 'Страна',
       productLink: 'Ссылка на товар',
-      recipientLastName: 'Фамилия',
-      recipientFirstName: 'Имя',
-      recipientPatronymic: 'Отчество',
+      lastName: 'Фамилия',
+      firstName: 'Имя',
+      patronymic: 'Отчество',
       recipientCountryName: 'Страна получателя',
       recipientCity: 'Город получателя',
       recipientAddress: 'Адрес получателя'

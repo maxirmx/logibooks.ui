@@ -113,7 +113,6 @@ const headers = computed(() =>[
   { title: wbrnRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: wbrnRegisterColumnTitles.extId, key: 'extId', align: 'start' },
   { title: wbrnRegisterColumnTitles.shk, key: 'shk', align: 'start' },
-  { title: wbrnRegisterColumnTitles.article, key: 'article', align: 'start', sortable: false },
   { title: wbrnRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
   { title: wbrnRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
   { title: wbrnRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },

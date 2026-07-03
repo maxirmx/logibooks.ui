@@ -143,6 +143,18 @@ export function formatCustomsCharge(value) {
   return value == null ? '' : formatPrice(value)
 }
 
+const customsChargeHeaders = [
+  { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },
+  { title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' }
+]
+
+export function getCustomsChargeHeaders(register) {
+  const registerValue = unrefValue(register)
+  return customsChargeHeaders
+    .filter(header => registerValue?.[header.key] != null)
+    .map(header => ({ ...header }))
+}
+
 /**
  * Returns sort direction for frozen order column based on the effective primary sort.
  * @param {Array<{key: string, order: 'asc'|'desc'}>} sortBy - Current sort state.

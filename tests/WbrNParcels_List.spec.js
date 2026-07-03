@@ -50,7 +50,9 @@ const registerItem = {
   fileName: 'wbrn.xlsx',
   dealNumber: 'D-7',
   customsProcedureCode: 1,
-  registerType: 2097154
+  registerType: 2097154,
+  customsFee: 689,
+  customsDuty: 750
 }
 const registerOps = {
   customsProcedures: [
@@ -465,6 +467,8 @@ function resetState() {
   registerItem.customsProcedureCode = 1
   registerItem.fileName = 'wbrn.xlsx'
   registerItem.dealNumber = 'D-7'
+  registerItem.customsFee = 689
+  registerItem.customsDuty = 750
   routeQuery = {}
   restoreSelectedParcelIdSnapshot.mockReturnValue(null)
   ensureOpsLoaded.mockResolvedValue()
@@ -533,6 +537,32 @@ describe('WbrNParcels_List.vue', () => {
       align: 'end',
       width: '120px'
     })
+  })
+
+  it('hides WbrN customs charge columns when register values are missing', () => {
+    registerItem.customsFee = null
+    registerItem.customsDuty = 750
+
+    let wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+
+    let headerKeys = wrapper.vm.headers.map(header => header.key)
+    expect(headerKeys).not.toContain('customsFee')
+    expect(headerKeys).toContain('customsDuty')
+    wrapper.unmount()
+
+    registerItem.customsFee = 689
+    registerItem.customsDuty = null
+    wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+
+    headerKeys = wrapper.vm.headers.map(header => header.key)
+    expect(headerKeys).toContain('customsFee')
+    expect(headerKeys).not.toContain('customsDuty')
   })
 
   it('renders WbrN article, raw product country, split recipient fields, and product link', () => {

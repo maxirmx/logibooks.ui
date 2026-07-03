@@ -246,6 +246,17 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   }),
   getFeacnCodesForKeywords: vi.fn(() => []),
   formatCustomsCharge: vi.fn(() => ''),
+  getCustomsChargeHeaders: vi.fn((register) => {
+    const registerValue = register?.value ?? register
+    const headers = []
+    if (registerValue?.customsFee != null) {
+      headers.push({ title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' })
+    }
+    if (registerValue?.customsDuty != null) {
+      headers.push({ title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' })
+    }
+    return headers
+  }),
   loadParcels: vi.fn((...args) => {
     loadParcelsMock(...args)
     return Promise.resolve()
@@ -450,6 +461,9 @@ describe.each([
   })
 
   it('places customs fee and duty immediately after the DTEG column', async () => {
+    stores.registers.item.customsFee = 689
+    stores.registers.item.customsDuty = 750
+
     const wrapper = mount(Component, {
       props: { registerId: 14 },
       global: { stubs: vuetifyStubs }
@@ -473,6 +487,40 @@ describe.each([
       align: 'end',
       width: '120px'
     })
+  })
+
+  it('hides the customs fee column when the register fee is missing', async () => {
+    stores.registers.item.customsFee = null
+    stores.registers.item.customsDuty = 750
+
+    const wrapper = mount(Component, {
+      props: { registerId: 15 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
+    const dTagIndex = headerKeys.indexOf('dTag')
+    expect(headerKeys).not.toContain('customsFee')
+    expect(headerKeys[dTagIndex + 1]).toBe('customsDuty')
+  })
+
+  it('hides the customs duty column when the register duty is missing', async () => {
+    stores.registers.item.customsFee = 689
+    stores.registers.item.customsDuty = null
+
+    const wrapper = mount(Component, {
+      props: { registerId: 16 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
+    const dTagIndex = headerKeys.indexOf('dTag')
+    expect(headerKeys[dTagIndex + 1]).toBe('customsFee')
+    expect(headerKeys).not.toContain('customsDuty')
   })
 
   it('refetches parcels after freeze only when frozenOrder sorting is active', async () => {

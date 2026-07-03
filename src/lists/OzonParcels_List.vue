@@ -33,6 +33,7 @@ import {
   loadParcels,
   formatPassport,
   formatCustomsCharge,
+  getCustomsChargeHeaders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -396,8 +397,7 @@ const headers = computed(() => {
     // Status Information - Current state of the order
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-    { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },
-    { title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' },
+    ...getCustomsChargeHeaders(registersStore.item),
   ]
 
   // Append previousDTagComment at the end only for reimport procedure

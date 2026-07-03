@@ -172,7 +172,7 @@ function handleMouseEnter(code) {
             :item="entry"
             :icon="entry.feacnCode === item.tnVed ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
             :tooltip-text="entry.feacnCode === item.tnVed ? 'Выбрано' : 'Выбрать этот код ТН ВЭД'"
-            :disabled="entry.feacnCode === item.tnVed"
+            :disabled="props.disabled || entry.feacnCode === item.tnVed"
             @click="() => handleCodeSelect(entry.feacnCode)"
           />
         </div>

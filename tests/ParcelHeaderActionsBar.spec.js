@@ -129,6 +129,62 @@ describe('ParcelHeaderActionsBar', () => {
     }
   })
 
+  it('disables all action buttons except cancel when actionsDisabled is true', () => {
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { actionsDisabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    const buttons = wrapper.findAll('button')
+    expect(buttons).toHaveLength(7)
+
+    const disabledIndexes = [0, 1, 2, 3, 4, 5]
+    for (const index of disabledIndexes) {
+      expect(buttons[index].attributes('disabled')).toBeDefined()
+    }
+
+    expect(buttons[6].attributes('disabled')).toBeUndefined()
+  })
+
+  it('blocks non-cancel hotkeys when actionsDisabled is true but allows cancel', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Actions Disabled Scheme',
+      actions: [
+        { id: 1, action: 1, keyCode: 'F1', shift: false, ctrl: false, alt: false, schemeId: 1 },
+        { id: 2, action: 5, keyCode: 'Escape', shift: false, ctrl: false, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { actionsDisabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'F1',
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['next-parcel']).toBeUndefined()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'Escape',
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false
+    }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['cancel']?.length ?? 0).toBeGreaterThan(0)
+  })
+
   it('prevents only download when downloadDisabled is true', async () => {
     const wrapper = mount(ParcelHeaderActionsBar, {
       props: { downloadDisabled: true },

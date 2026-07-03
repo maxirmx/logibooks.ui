@@ -18,7 +18,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { wbr2RegisterColumnTitles, wbr2RegisterColumnTooltips } from '@/helpers/wbr2.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
@@ -99,6 +99,7 @@ const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
+const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedByPartner(item.value?.checkStatus))
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -422,6 +423,7 @@ async function onLookup(values) {
       <!-- Action buttons moved inside Form scope -->
       <ParcelHeaderActionsBar
         :disabled="isSubmitting || runningAction || loading"
+        :actions-disabled="markedByPartnerActionsDisabled"
         :download-disabled="
           isSubmitting ||
           runningAction ||
@@ -452,8 +454,8 @@ async function onLookup(values) {
         :get-check-status-class="getCheckStatusClass"
         :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
-        :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus)"
-        :clear-check-status-disabled="isSubmitting || runningAction || loading"
+        :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
+        :clear-check-status-disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
         :no-historic-data="true"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
@@ -473,7 +475,7 @@ async function onLookup(values) {
         :columnTooltips="wbr2RegisterColumnTooltips"
         :setFieldValue="setFieldValue"
         :runningAction="runningAction"
-        :disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
+        :disabled="CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
         @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"
         @set-running-action="runningAction = $event"
@@ -501,7 +503,7 @@ async function onLookup(values) {
             <ParcelNumberExt 
               :item="item"
               field-name="shk"
-              :disabled="isSubmitting || runningAction || loading"
+              :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
               class="readonly-parcel-number"
               @click="() => {/* No action needed for readonly display */}"
               @fellows="handleFellows"
@@ -511,7 +513,7 @@ async function onLookup(values) {
           <ProductLinkWithActions
             :label="wbr2RegisterColumnTitles.productLink"
             :item="item"
-            :disabled="isSubmitting || runningAction || loading"
+            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
             @view-image="viewProductImage"
             @delete-image="() => deleteProductImage(values)"
           />

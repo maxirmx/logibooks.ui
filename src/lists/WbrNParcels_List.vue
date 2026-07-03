@@ -30,6 +30,8 @@ import {
   getFeacnCodesForKeywords,
   getFrozenOrderSortDir,
   loadParcels,
+  formatCustomsCharge,
+  getCustomsChargeHeaders,
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -226,6 +228,7 @@ const {
   downloadTechdoc: downloadTechdocFile,
   freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
+  calculateCustomsCharges: calculateCustomsChargesHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -387,6 +390,7 @@ const headers = computed(() => {
     // Status Information - Current state of the parcel
     { title: wbrnRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
+    ...getCustomsChargeHeaders(registersStore.item),
   ]
 
   // Append previousDTagComment at the end only for reimport procedure
@@ -454,6 +458,7 @@ function getGenericTemplateHeaders() {
         @download="downloadRegisterFile"
         @download-additional-restrictions="downloadAdditionalRestrictionsFile"
         @download-techdoc="downloadTechdocFile"
+        @calculate-customs-charges="calculateCustomsChargesHeader"
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
@@ -527,6 +532,24 @@ function getGenericTemplateHeaders() {
             :display-value="item.dTag || ''" 
             cell-class="truncated-cell clickable-cell" 
             @click="editParcel" 
+          />
+        </template>
+
+        <template #[`item.customsFee`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatCustomsCharge(item.customsFee)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
+          />
+        </template>
+
+        <template #[`item.customsDuty`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatCustomsCharge(item.customsDuty)"
+            cell-class="truncated-cell clickable-cell numeric-panel"
+            @click="editParcel"
           />
         </template>
 

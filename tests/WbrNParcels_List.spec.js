@@ -50,7 +50,9 @@ const registerItem = {
   fileName: 'wbrn.xlsx',
   dealNumber: 'D-7',
   customsProcedureCode: 1,
-  registerType: 2097154
+  registerType: 2097154,
+  customsFee: 689,
+  customsDuty: 750
 }
 const registerOps = {
   customsProcedures: [
@@ -88,6 +90,7 @@ const headerActions = {
   downloadTechdoc: vi.fn(),
   freezeCheckStatus: vi.fn().mockResolvedValue(),
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
+  calculateCustomsCharges: vi.fn().mockResolvedValue(),
   cancelValidation: vi.fn(),
 }
 
@@ -144,6 +147,8 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
       'shk',
       'statusId',
       'dTag',
+      'customsFee',
+      'customsDuty',
       'previousDTagComment'
     ].includes(header.key)),
     getFeacnCodesForKeywords: (ids) => (ids || []).map(id => `TN-${id}`),
@@ -289,6 +294,8 @@ const sampleParcel = {
   passportNumber: 'AA1234567',
   statusId: 5,
   dTag: 'DT-1',
+  customsFee: 689,
+  customsDuty: 750,
   previousDTagComment: 'previous comment'
 }
 
@@ -333,6 +340,7 @@ const globalStubs = {
       'download',
       'download-additional-restrictions',
       'download-techdoc',
+      'calculate-customs-charges',
       'bulk-change-parcel-status',
       'freeze-check-status',
       'freeze-tnved-order',
@@ -351,6 +359,7 @@ const globalStubs = {
         <button data-testid="download" @click="$emit('download')"></button>
         <button data-testid="download-additional-restrictions" @click="$emit('download-additional-restrictions')"></button>
         <button data-testid="download-techdoc" @click="$emit('download-techdoc')"></button>
+        <button data-testid="calculate-customs-charges" @click="$emit('calculate-customs-charges')"></button>
         <button data-testid="bulk-status" @click="$emit('bulk-change-parcel-status')"></button>
         <button data-testid="freeze-check-status" @click="$emit('freeze-check-status')"></button>
         <button data-testid="freeze-tnved-order" @click="$emit('freeze-tnved-order')"></button>
@@ -458,6 +467,8 @@ function resetState() {
   registerItem.customsProcedureCode = 1
   registerItem.fileName = 'wbrn.xlsx'
   registerItem.dealNumber = 'D-7'
+  registerItem.customsFee = 689
+  registerItem.customsDuty = 750
   routeQuery = {}
   restoreSelectedParcelIdSnapshot.mockReturnValue(null)
   ensureOpsLoaded.mockResolvedValue()
@@ -505,11 +516,53 @@ describe('WbrNParcels_List.vue', () => {
       'patronymic',
       'passportNumber',
       'statusId',
-      'dTag'
+      'dTag',
+      'customsFee',
+      'customsDuty'
     ])
     expect(headerKeys).not.toContain('countryCode')
     expect(headerKeys).not.toContain('paymentAmount')
     expect(headerKeys).not.toContain('paymentCurrency')
+    const customsFeeHeader = wrapper.vm.headers.find(header => header.key === 'customsFee')
+    expect(customsFeeHeader).toMatchObject({
+      title: 'Сбор, руб',
+      sortable: false,
+      align: 'end',
+      width: '120px'
+    })
+    const customsDutyHeader = wrapper.vm.headers.find(header => header.key === 'customsDuty')
+    expect(customsDutyHeader).toMatchObject({
+      title: 'Пошлина, руб',
+      sortable: false,
+      align: 'end',
+      width: '120px'
+    })
+  })
+
+  it('hides WbrN customs charge columns when register values are missing', () => {
+    registerItem.customsFee = null
+    registerItem.customsDuty = 750
+
+    let wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+
+    let headerKeys = wrapper.vm.headers.map(header => header.key)
+    expect(headerKeys).not.toContain('customsFee')
+    expect(headerKeys).toContain('customsDuty')
+    wrapper.unmount()
+
+    registerItem.customsFee = 689
+    registerItem.customsDuty = null
+    wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+
+    headerKeys = wrapper.vm.headers.map(header => header.key)
+    expect(headerKeys).toContain('customsFee')
+    expect(headerKeys).not.toContain('customsDuty')
   })
 
   it('renders WbrN article, raw product country, split recipient fields, and product link', () => {
@@ -526,6 +579,8 @@ describe('WbrNParcels_List.vue', () => {
     expect(text).toContain('Ivanov')
     expect(text).toContain('Ivan')
     expect(text).toContain('Ivanovich')
+    expect(text).toContain('689.00')
+    expect(text).toContain('750.00')
     expect(wrapper.get('a.product-link-in-list').attributes('href')).toBe('https://www.wildberries.ru/catalog/29817781/detail.aspx')
   })
 
@@ -569,6 +624,7 @@ describe('WbrNParcels_List.vue', () => {
     await wrapper.get('[data-testid="download"]').trigger('click')
     await wrapper.get('[data-testid="download-additional-restrictions"]').trigger('click')
     await wrapper.get('[data-testid="download-techdoc"]').trigger('click')
+    await wrapper.get('[data-testid="calculate-customs-charges"]').trigger('click')
     await wrapper.get('[data-testid="freeze-check-status"]').trigger('click')
     await wrapper.get('[data-testid="freeze-tnved-order"]').trigger('click')
 
@@ -583,6 +639,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(headerActions.downloadRegister).toHaveBeenCalled()
     expect(headerActions.downloadAdditionalRestrictions).toHaveBeenCalled()
     expect(headerActions.downloadTechdoc).toHaveBeenCalled()
+    expect(headerActions.calculateCustomsCharges).toHaveBeenCalled()
     expect(headerActions.freezeCheckStatus).toHaveBeenCalled()
     expect(headerActions.freezeTnVedOrder).toHaveBeenCalled()
     expect(getRegisterById).toHaveBeenCalledWith(7)

@@ -29,6 +29,7 @@ const emit = defineEmits([
   'download-additional-restrictions',
   'download-techdoc',
   'bulk-change-parcel-status',
+  'calculate-customs-charges',
   'freeze-check-status',
   'freeze-tnved-order',
   'close',
@@ -182,6 +183,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        v-if="isSrLogistPlus"
+        :item="item"
+        icon="fa-solid fa-calculator"
+        tooltip-text="Рассчитать сборы и пошлины"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('calculate-customs-charges')"
+      />
       <ActionButton
         v-if="isSrLogistPlus"
         :item="item"

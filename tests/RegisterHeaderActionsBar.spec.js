@@ -230,22 +230,32 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('lookup-ex')).toHaveLength(1)
   })
 
-  it('emits parcel status bulk-change action with approved icon', async () => {
+  it('emits custom charges calculation and parcel status bulk-change actions in order', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
       global: { stubs: vuetifyStubs }
     })
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
+    const calculateChargesButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Рассчитать сборы и пошлины'
+    )
     const statusBulkButton = actionButtons.find(
       (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
+    expect(calculateChargesButton).toBeTruthy()
     expect(statusBulkButton).toBeTruthy()
+    expect(calculateChargesButton.props('icon')).toBe('fa-solid fa-calculator')
     expect(statusBulkButton.props('icon')).toBe('fa-solid fa-pen-to-square')
+    expect(actionButtons.indexOf(calculateChargesButton)).toBeLessThan(
+      actionButtons.indexOf(statusBulkButton)
+    )
 
+    calculateChargesButton.vm.$emit('click')
     statusBulkButton.vm.$emit('click')
 
+    expect(wrapper.emitted('calculate-customs-charges')).toHaveLength(1)
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
   })
 

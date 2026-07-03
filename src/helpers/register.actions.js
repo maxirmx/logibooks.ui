@@ -263,6 +263,15 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.freezeCheckStatus(item.id)
   }
 
+  async function calculateCustomsCharges(item) {
+    try {
+      await registersStore.calculateCustomsCharges(item.id)
+      await registersStore.getAll(getAllOptions())
+    } catch (err) {
+      alertStore.error(err?.message || String(err))
+    }
+  }
+
   function cancelValidationWrapper() {
     const isFeacnLookup =
       validationState.operation === 'lookup-feacn-codes'
@@ -299,6 +308,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     downloadTechdoc,
     freezeCheckStatus,
     freezeTnVedOrder,
+    calculateCustomsCharges,
     cancelValidation: cancelValidationWrapper,
     stopPolling
   }
@@ -491,6 +501,19 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
   }
 
+  async function calculateCustomsChargesForCurrentRegister(register) {
+    await registersStore.calculateCustomsCharges(register.id)
+    await registersStore.getById(register.id)
+
+    if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
+      await loadParcels()
+    }
+  }
+
+  const runcalculateCustomsCharges = async () => {
+    await runActionWithDialog(calculateCustomsChargesForCurrentRegister, 'calculate-customs-charges')
+  }
+
   function handleValidationDialogClose(show, previous) {
     const dialogClosed = previous && !show
     const componentMounted = isComponentMounted?.value ?? true
@@ -533,6 +556,7 @@ export function useRegisterHeaderActions({
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     freezeTnVedOrder: runFreezeTnVedOrder,
+    calculateCustomsCharges: runcalculateCustomsCharges,
     cancelValidation,
     stop
   }

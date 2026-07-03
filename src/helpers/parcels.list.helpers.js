@@ -9,6 +9,7 @@
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 import { formatDate } from '@/helpers/date.formatters.js'
+import { formatPrice } from '@/helpers/number.formatters.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -118,6 +119,8 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     'shk',
     'weightKg',
     'unitPrice',
+    'customsFee',
+    'customsDuty',
     'quantity',
     'passport',
     'frozenOrder'
@@ -134,6 +137,22 @@ export function formatPassport(item) {
     if (item.passportIssueDate) parts.push(formatDate(item.passportIssueDate))
   }
   return parts.filter(Boolean).join(' ')
+}
+
+export function formatCustomsCharge(value) {
+  return value == null ? '' : formatPrice(value)
+}
+
+const customsChargeHeaders = [
+  { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },
+  { title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' }
+]
+
+export function getCustomsChargeHeaders(register) {
+  const registerValue = unrefValue(register)
+  return customsChargeHeaders
+    .filter(header => registerValue?.[header.key] != null)
+    .map(header => ({ ...header }))
 }
 
 /**

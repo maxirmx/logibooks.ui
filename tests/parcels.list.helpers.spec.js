@@ -51,6 +51,8 @@ import {
   updateParcelTnVed,
   loadParcels,
   formatPassport,
+  formatCustomsCharge,
+  getCustomsChargeHeaders,
   hasParcelEditRouteAccess,
   buildParcelEditCellClass
 } from '../src/helpers/parcels.list.helpers.js'
@@ -302,6 +304,8 @@ describe('Parcels List Helpers', () => {
         { key: 'countryCode', title: 'Country' },
         { key: 'feacnLookup', title: 'FEACN Lookup' },
         { key: 'tnVed', title: 'TN VED' },
+        { key: 'customsFee', title: 'Customs Fee' },
+        { key: 'customsDuty', title: 'Customs Duty' },
         { key: 'productName', title: 'Product Name' },
         { key: 'quantity', title: 'Quantity' }
       ]
@@ -343,6 +347,43 @@ describe('Parcels List Helpers', () => {
       expect(formatPassport({ passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe('123 выдан 01.01.2020')
       expect(formatPassport({})).toBe('')
       expect(formatPassport(null)).toBe('')
+    })
+  })
+
+  describe('formatCustomsCharge', () => {
+    it('formats present charge values', () => {
+      expect(formatCustomsCharge(689)).toBe('689.00')
+      expect(formatCustomsCharge(0)).toBe('0.00')
+    })
+
+    it('keeps missing charge values empty', () => {
+      expect(formatCustomsCharge(null)).toBe('')
+      expect(formatCustomsCharge(undefined)).toBe('')
+    })
+  })
+
+  describe('getCustomsChargeHeaders', () => {
+    it('returns both charge headers when both register values are present', () => {
+      expect(getCustomsChargeHeaders({ customsFee: 689, customsDuty: 750 })).toEqual([
+        { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },
+        { title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' }
+      ])
+    })
+
+    it('returns only headers with non-null register values', () => {
+      expect(getCustomsChargeHeaders({ customsFee: null, customsDuty: 750 }).map(header => header.key)).toEqual([
+        'customsDuty'
+      ])
+      expect(getCustomsChargeHeaders({ customsFee: 689, customsDuty: null }).map(header => header.key)).toEqual([
+        'customsFee'
+      ])
+      expect(getCustomsChargeHeaders({ customsFee: null, customsDuty: null })).toEqual([])
+    })
+
+    it('accepts ref-like register values', () => {
+      expect(getCustomsChargeHeaders({ value: { customsFee: 689, customsDuty: null } }).map(header => header.key)).toEqual([
+        'customsFee'
+      ])
     })
   })
 

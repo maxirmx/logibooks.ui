@@ -45,7 +45,8 @@ const props = defineProps({
   setSelectedRegisterStatusId: { type: Function, default: () => {} },
   startRegisterStatusChange: { type: Function, default: () => {} },
   cancelRegisterStatusChange: { type: Function, default: () => {} },
-  applyRegisterStatusChange: { type: Function, default: () => {} }
+  applyRegisterStatusChange: { type: Function, default: () => {} },
+  calculateCustomsCharges: { type: Function, default: () => {} }
 })
 
 const emit = defineEmits([
@@ -96,7 +97,8 @@ const headers = [
   { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
   { title: 'Товаров/Посылок', key: 'parcelsTotal', sortable: true, align: 'end', minWidth: '150px', width: '150px' },
   { title: 'Вес, кг, общий / К оформлению', key: 'weight', sortable: true, align: 'end', minWidth: '220px', width: '220px' },
-  { title: 'Стоимость общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
+  { title: 'Стоимость, руб, общая / К оформлению', key: 'price', sortable: true, align: 'end', minWidth: '240px', width: '240px' },
+  { title: 'Сборы, руб./Пошлины', key: 'customsCharges', sortable: false, align: 'end', minWidth: '160px', width: '160px' },
   { title: 'Дата загрузки', key: 'date', sortable: true }
 ]
 
@@ -126,6 +128,14 @@ function parseWeightValue(value) {
 function hasRealWeightKg(item) {
   const realWeightKg = parseWeightValue(item?.realWeightKg)
   return realWeightKg !== null && realWeightKg > 0
+}
+
+function hasCustomsCharges(item) {
+  return item?.customsFee != null || item?.customsDuty != null
+}
+
+function formatCustomsCharge(value) {
+  return value == null ? '-' : formatPrice(value)
 }
 
 function getRegisterStatus(item) {
@@ -282,6 +292,23 @@ function getRegisterStatusTitle(item) {
         </ClickableCell>
       </template>
 
+      <template #[`item.customsCharges`]="{ item }">
+        <ClickableCell
+          :item="item"
+          cell-class="truncated-cell clickable-cell data-panel numeric-panel"
+          @click="(row) => emit('edit-register', row)"
+        >
+          <template #default>
+            <div class="data-box" data-testid="register-customs-charges-cell">
+              <template v-if="hasCustomsCharges(item)">
+                <div>{{ formatCustomsCharge(item.customsFee) }}</div>
+                <div>{{ formatCustomsCharge(item.customsDuty) }}</div>
+              </template>
+            </div>
+          </template>
+        </ClickableCell>
+      </template>
+
       <template #[`header.dealNumber`]="{ column, isSorted, getSortIcon }">
         <SortableMultilineHeader
           :lines="['Номер', 'сделки']"
@@ -320,7 +347,16 @@ function getRegisterStatusTitle(item) {
 
       <template #[`header.price`]="{ column, isSorted, getSortIcon }">
         <SortableMultilineHeader
-          :lines="['Стоимость общая', 'К оформлению']"
+          :lines="['Стоимость, руб, общая', 'К оформлению']"
+          :column="column"
+          :is-sorted="isSorted"
+          :get-sort-icon="getSortIcon"
+        />
+      </template>
+
+      <template #[`header.customsCharges`]="{ column, isSorted, getSortIcon }">
+        <SortableMultilineHeader
+          :lines="['Сборы, руб.', 'Пошлины']"
           :column="column"
           :is-sorted="isSorted"
           :get-sort-icon="getSortIcon"
@@ -366,6 +402,14 @@ function getRegisterStatusTitle(item) {
             :tooltip-text="`Редактировать ${registerNouns.accusative}`"
             @click="(row) => emit('edit-register', row)"
             :disabled="runningAction || loading"
+          />
+          <ActionButton
+            v-if="isSrLogistPlus"
+            :item="item"
+            icon="fa-solid fa-calculator"
+            tooltip-text="Рассчитать сборы и пошлины"
+            :disabled="runningAction || loading"
+            @click="(row) => calculateCustomsCharges(row)"
           />
           <ActionButton
             v-if="isSrLogistPlus"

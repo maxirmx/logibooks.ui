@@ -5,7 +5,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
-import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import { createRegisterActionHandlers, useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 
@@ -58,6 +59,8 @@ describe('useRegisterHeaderActions', () => {
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
+      calculateCustomsCharges: vi.fn().mockResolvedValue(),
+      getById: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
     }
 
@@ -446,5 +449,44 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('shows action dialog while custom charges are calculated and refreshes current data', async () => {
+    const deferred = createDeferred()
+    registersStore.calculateCustomsCharges.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.calculateCustomsCharges()
+
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Расчёт сборов и пошлин')
+    expect(registersStore.calculateCustomsCharges).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await promise
+
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+    expect(actions.actionDialog.title).toBe('')
+  })
+
+  it('calculates custom charges and refreshes register list', async () => {
+    const actions = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
+
+    await actions.calculateCustomsCharges({ id: 7 })
+
+    expect(registersStore.calculateCustomsCharges).toHaveBeenCalledWith(7)
+    expect(registersStore.getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+    expect(alertStore.error).not.toHaveBeenCalled()
   })
 })

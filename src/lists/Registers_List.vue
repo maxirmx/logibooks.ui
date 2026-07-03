@@ -56,6 +56,7 @@ const confirm = useConfirm()
 const {
   validationState,
   progressPercent,
+  calculateCustomsCharges,
   stopPolling
 } = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
 
@@ -256,6 +257,16 @@ async function handleParcelStatusBulkUpdated() {
   await loadRegisters()
 }
 
+async function runCalculateCustomsCharges(item) {
+  if (runningAction.value || loading.value || isInitializing.value) return
+  runningAction.value = true
+  try {
+    await calculateCustomsCharges(item)
+  } finally {
+    runningAction.value = false
+  }
+}
+
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: registers_search }],
   loadFn: loadRegisters,
@@ -377,6 +388,7 @@ defineExpose({
       :start-register-status-change="startRegisterStatusChange"
       :cancel-register-status-change="cancelRegisterStatusEdit"
       :apply-register-status-change="applyRegisterStatusToRegister"
+      :calculate-customs-charges="runCalculateCustomsCharges"
       @open-parcels="openParcels"
       @edit-register="editRegister"
       @delete-register="deleteRegister"

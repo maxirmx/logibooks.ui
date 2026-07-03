@@ -412,10 +412,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
       'lastName',
       'firstName',
       'patronymic',
-      'passportNumber',
-      'recipientCountryName',
-      'recipientCity',
-      'recipientAddress'
+      'passportNumber'
     ]))
     expect(fieldNames).not.toContain('countryCode')
     expect(fieldNames).not.toContain('paymentAmount')

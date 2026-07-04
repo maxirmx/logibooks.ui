@@ -23,7 +23,13 @@ export const procedureFilterItems = [
 ]
 
 export function normalizeCustomsProcedureCode(value) {
-  if (value === null || value === undefined || value === '') return null
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed === '') return null
+    const code = Number(trimmed)
+    return Number.isFinite(code) ? code : null
+  }
   const code = Number(value)
   return Number.isFinite(code) ? code : null
 }

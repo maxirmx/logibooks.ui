@@ -25,7 +25,7 @@ import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.helpers.js'
+import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/procedure.helpers.js'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ

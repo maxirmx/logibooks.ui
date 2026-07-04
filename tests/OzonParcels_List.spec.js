@@ -6,6 +6,10 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createPinia } from 'pinia'
 import OzonParcels_List from '@/lists/OzonParcels_List.vue'
+import {
+  CUSTOMS_PROCEDURE_IMPORT,
+  CUSTOMS_PROCEDURE_REEXPORT
+} from '@/helpers/procedure.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 const mockItems = ref([
@@ -26,8 +30,8 @@ const parcelsSortBy = ref([])
 const parcelsPage = ref(1)
 const mockRegisterItem = ref({ dealNumber: 'D-1' })
 const mockCustomsProcedures = [
-  { value: 31, isRe: true },
-  { value: 40, isRe: false }
+  { value: CUSTOMS_PROCEDURE_REEXPORT, isRe: true },
+  { value: CUSTOMS_PROCEDURE_IMPORT, isRe: false }
 ]
 
 vi.mock('pinia', async () => {
@@ -396,7 +400,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
   })
 
   it('shows INN and combined passport columns for import and reexport registers', async () => {
-    for (const customsProcedureCode of [40, 31]) {
+    for (const customsProcedureCode of [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REEXPORT]) {
       wrapper.unmount()
       mockRegisterItem.value = { dealNumber: 'D-1', customsProcedureCode }
       wrapper = mount(OzonParcels_List, {

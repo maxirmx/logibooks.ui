@@ -2,11 +2,57 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+export const CUSTOMS_PROCEDURE = Object.freeze({
+  Return: 1,
+  Export: 10,
+  Reexport: 31,
+  Import: 40,
+  Reimport: 60
+})
+
+export const CUSTOMS_PROCEDURE_RETURN = CUSTOMS_PROCEDURE.Return
+export const CUSTOMS_PROCEDURE_EXPORT = CUSTOMS_PROCEDURE.Export
+export const CUSTOMS_PROCEDURE_REEXPORT = CUSTOMS_PROCEDURE.Reexport
+export const CUSTOMS_PROCEDURE_IMPORT = CUSTOMS_PROCEDURE.Import
+export const CUSTOMS_PROCEDURE_REIMPORT = CUSTOMS_PROCEDURE.Reimport
+
 export const procedureFilterItems = [
   { title: 'Любая', value: 'all' },
   { title: 'Экспорт из РФ', value: 'export' },
   { title: 'Импорт в РФ', value: 'import' }
 ]
+
+export function normalizeCustomsProcedureCode(value) {
+  if (value === null || value === undefined || value === '') return null
+  const code = Number(value)
+  return Number.isFinite(code) ? code : null
+}
+
+export function isReturnCustomsProcedure(value) {
+  return normalizeCustomsProcedureCode(value) === CUSTOMS_PROCEDURE_RETURN
+}
+
+export function isReexportCustomsProcedure(value) {
+  return normalizeCustomsProcedureCode(value) === CUSTOMS_PROCEDURE_REEXPORT
+}
+
+export function isImportCustomsProcedure(value) {
+  return normalizeCustomsProcedureCode(value) === CUSTOMS_PROCEDURE_IMPORT
+}
+
+export function isReimportCustomsProcedure(value) {
+  return normalizeCustomsProcedureCode(value) === CUSTOMS_PROCEDURE_REIMPORT
+}
+
+export function isImportOrReexportCustomsProcedure(value) {
+  const code = normalizeCustomsProcedureCode(value)
+  return code === CUSTOMS_PROCEDURE_IMPORT || code === CUSTOMS_PROCEDURE_REEXPORT
+}
+
+export function isCustomsChargesCalculationProcedure(value) {
+  const code = normalizeCustomsProcedureCode(value)
+  return code === CUSTOMS_PROCEDURE_IMPORT || code === CUSTOMS_PROCEDURE_REIMPORT
+}
 
 export function getProcedureLabels(item) {
   const labels = []

@@ -4,6 +4,13 @@ import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
+import {
+  CUSTOMS_PROCEDURE_EXPORT,
+  CUSTOMS_PROCEDURE_IMPORT,
+  CUSTOMS_PROCEDURE_REEXPORT,
+  CUSTOMS_PROCEDURE_REIMPORT,
+  CUSTOMS_PROCEDURE_RETURN
+} from '@/helpers/procedure.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
@@ -41,7 +48,7 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 describe('RegisterHeaderActionsBar', () => {
   const baseProps = {
-    item: { id: 1, invoiceNumber: 'INV-1', customsProcedureCode: 40 },
+    item: { id: 1, invoiceNumber: 'INV-1', customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT },
     disabled: false,
     iconSize: '1x'
   }
@@ -266,7 +273,7 @@ describe('RegisterHeaderActionsBar', () => {
   })
 
   it('shows custom charges calculation for import and reimport procedures', () => {
-    for (const customsProcedureCode of [40, 60]) {
+    for (const customsProcedureCode of [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REIMPORT]) {
       const wrapper = mount(RegisterHeaderActionsBar, {
         props: {
           ...baseProps,
@@ -284,9 +291,9 @@ describe('RegisterHeaderActionsBar', () => {
     const cases = [
       { title: 'missing procedure', item: { id: 1, invoiceNumber: 'INV-1' } },
       { title: 'null procedure', item: { ...baseProps.item, customsProcedureCode: null } },
-      { title: 'return procedure', item: { ...baseProps.item, customsProcedureCode: 1 } },
-      { title: 'export procedure', item: { ...baseProps.item, customsProcedureCode: 10 } },
-      { title: 'reexport procedure', item: { ...baseProps.item, customsProcedureCode: 31 } }
+      { title: 'return procedure', item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_RETURN } },
+      { title: 'export procedure', item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT } },
+      { title: 'reexport procedure', item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT } }
     ]
 
     for (const testCase of cases) {

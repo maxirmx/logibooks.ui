@@ -7,10 +7,8 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { isCustomsChargesCalculationProcedure } from '@/helpers/procedure.helpers.js'
 const authStore = useAuthStore()
-
-const CUSTOMS_PROCEDURE_IMPORT = 40
-const CUSTOMS_PROCEDURE_REIMPORT = 60
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -47,9 +45,7 @@ const {
 } = storeToRefs(authStore)
 
 const canCalculateCustomsCharges = computed(() => {
-  const customsProcedureCode = Number(props.item?.customsProcedureCode)
-  return customsProcedureCode === CUSTOMS_PROCEDURE_IMPORT ||
-    customsProcedureCode === CUSTOMS_PROCEDURE_REIMPORT
+  return isCustomsChargesCalculationProcedure(props.item?.customsProcedureCode)
 })
 
 function run(evt) {

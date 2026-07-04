@@ -6,6 +6,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
+import {
+  CUSTOMS_PROCEDURE_EXPORT,
+  CUSTOMS_PROCEDURE_IMPORT,
+  CUSTOMS_PROCEDURE_REEXPORT,
+  CUSTOMS_PROCEDURE_REIMPORT,
+  CUSTOMS_PROCEDURE_RETURN
+} from '@/helpers/procedure.helpers.js'
 
 const opsRef = vi.hoisted(() => ({ value: { customsProcedures: [], transportationTypes: [] } }))
 const companiesRef = vi.hoisted(() => ({ value: [] }))
@@ -227,14 +234,57 @@ describe('CustomsProcessingRegistersTable', () => {
   it('runs custom charges calculation from the calculator action', async () => {
     const calculateCustomsCharges = vi.fn()
     const wrapper = mountTable({
-      items: [{ id: 7, statusId: 2 }],
+      items: [{ id: 7, statusId: 2, customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT }],
       isSrLogistPlus: true,
       calculateCustomsCharges
     })
 
     await wrapper.find('[data-icon="fa-solid fa-calculator"]').trigger('click')
 
-    expect(calculateCustomsCharges).toHaveBeenCalledWith({ id: 7, statusId: 2 })
+    expect(calculateCustomsCharges).toHaveBeenCalledWith({
+      id: 7,
+      statusId: 2,
+      customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT
+    })
+  })
+
+  it('enables custom charges calculation for import, reimport, or existing charges', () => {
+    const cases = [
+      { id: 1, customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT },
+      { id: 2, customsProcedureCode: CUSTOMS_PROCEDURE_REIMPORT },
+      { id: 3, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT, customsFee: 0, customsDuty: null },
+      { id: 4, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT, customsFee: null, customsDuty: 750 }
+    ]
+
+    for (const item of cases) {
+      const wrapper = mountTable({
+        items: [item],
+        isSrLogistPlus: true
+      })
+
+      expect(wrapper.find('[data-icon="fa-solid fa-calculator"]').attributes('disabled')).toBeUndefined()
+      wrapper.unmount()
+    }
+  })
+
+  it('disables custom charges calculation for non-chargeable rows without charges', () => {
+    const cases = [
+      { id: 1 },
+      { id: 2, customsProcedureCode: null, customsFee: null, customsDuty: null },
+      { id: 3, customsProcedureCode: CUSTOMS_PROCEDURE_RETURN, customsFee: null, customsDuty: null },
+      { id: 4, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT, customsFee: null, customsDuty: null },
+      { id: 5, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT, customsFee: null, customsDuty: null }
+    ]
+
+    for (const item of cases) {
+      const wrapper = mountTable({
+        items: [item],
+        isSrLogistPlus: true
+      })
+
+      expect(wrapper.find('[data-icon="fa-solid fa-calculator"]').attributes('disabled')).toBeDefined()
+      wrapper.unmount()
+    }
   })
 
   it('opens parcel status bulk dialog from the independent action', async () => {

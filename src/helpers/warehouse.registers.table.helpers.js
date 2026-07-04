@@ -3,8 +3,12 @@
 // This file is a part of Logibooks ui application
 
 import { formatIntegerThousands } from '@/helpers/number.formatters.js'
+import {
+  CUSTOMS_PROCEDURE_RETURN,
+  isReturnCustomsProcedure
+} from '@/helpers/procedure.helpers.js'
 
-export const CUSTOMS_PROCEDURE_RETURN = 1
+export { CUSTOMS_PROCEDURE_RETURN }
 export const RETURN_REGISTER_MATCHING_COUNT_HEADER = 'К возврату'
 
 export const warehouseZoneDistribution = [
@@ -14,7 +18,7 @@ export const warehouseZoneDistribution = [
 ]
 
 export function isReturnRegister(item) {
-  return Number(item?.customsProcedureCode) === CUSTOMS_PROCEDURE_RETURN
+  return isReturnCustomsProcedure(item?.customsProcedureCode)
 }
 
 export function createWarehouseRegisterHeaders({

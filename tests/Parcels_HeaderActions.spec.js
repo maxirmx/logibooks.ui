@@ -11,6 +11,7 @@ import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/procedure.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 vi.mock('vue-router', () => ({
@@ -71,9 +72,21 @@ function setupStores() {
   }
 
   stores.registers = {
-    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1', customsProcedureCode: 40 },
+    item: {
+      id: 1,
+      fileName: 'register.xlsx',
+      invoiceNumber: 'INV-1',
+      dealNumber: 'D-1',
+      customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT
+    },
     ops: {
-      customsProcedures: [{ value: 40, charCode: 'ИМ40', name: 'Импорт', isRe: false, isExport: false }],
+      customsProcedures: [{
+        value: CUSTOMS_PROCEDURE_IMPORT,
+        charCode: 'ИМ40',
+        name: 'Импорт',
+        isRe: false,
+        isExport: false
+      }],
       transportationTypes: []
     },
     getById: vi.fn().mockResolvedValue(),

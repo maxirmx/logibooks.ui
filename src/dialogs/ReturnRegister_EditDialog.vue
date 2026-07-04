@@ -17,11 +17,16 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
+import {
+  CUSTOMS_PROCEDURE_REEXPORT,
+  CUSTOMS_PROCEDURE_REIMPORT,
+  CUSTOMS_PROCEDURE_RETURN
+} from '@/helpers/procedure.helpers.js'
 
 const RETURN_REGISTER_CUSTOMS_PROCEDURE = Object.freeze({
-  Return: 1,
-  Reexport: 31,
-  Reimport: 60
+  Return: CUSTOMS_PROCEDURE_RETURN,
+  Reexport: CUSTOMS_PROCEDURE_REEXPORT,
+  Reimport: CUSTOMS_PROCEDURE_REIMPORT
 })
 const RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER = [
   RETURN_REGISTER_CUSTOMS_PROCEDURE.Return,

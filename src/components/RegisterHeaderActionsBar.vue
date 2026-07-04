@@ -1,5 +1,6 @@
 <script setup>
 
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ActionButton from '@/components/ActionButton.vue'
@@ -7,6 +8,9 @@ import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
+
+const CUSTOMS_PROCEDURE_IMPORT = 40
+const CUSTOMS_PROCEDURE_REIMPORT = 60
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -41,6 +45,12 @@ const {
   isSrLogistPlus,
   isShiftLeadPlus
 } = storeToRefs(authStore)
+
+const canCalculateCustomsCharges = computed(() => {
+  const customsProcedureCode = Number(props.item?.customsProcedureCode)
+  return customsProcedureCode === CUSTOMS_PROCEDURE_IMPORT ||
+    customsProcedureCode === CUSTOMS_PROCEDURE_REIMPORT
+})
 
 function run(evt) {
   if (props.disabled) return
@@ -184,7 +194,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
     </div>
     <div class="header-actions header-actions-group">
       <ActionButton
-        v-if="isSrLogistPlus"
+        v-if="isSrLogistPlus && canCalculateCustomsCharges"
         :item="item"
         icon="fa-solid fa-calculator"
         tooltip-text="Рассчитать сборы и пошлины"

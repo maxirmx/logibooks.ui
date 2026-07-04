@@ -71,9 +71,9 @@ function setupStores() {
   }
 
   stores.registers = {
-    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1', customsProcedureCode: 1 },
+    item: { id: 1, fileName: 'register.xlsx', invoiceNumber: 'INV-1', dealNumber: 'D-1', customsProcedureCode: 40 },
     ops: {
-      customsProcedures: [{ value: 1, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }],
+      customsProcedures: [{ value: 40, charCode: 'ИМ40', name: 'Импорт', isRe: false, isExport: false }],
       transportationTypes: []
     },
     getById: vi.fn().mockResolvedValue(),

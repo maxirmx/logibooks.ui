@@ -41,9 +41,15 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 describe('RegisterHeaderActionsBar', () => {
   const baseProps = {
-    item: { id: 1, invoiceNumber: 'INV-1' },
+    item: { id: 1, invoiceNumber: 'INV-1', customsProcedureCode: 40 },
     disabled: false,
     iconSize: '1x'
+  }
+
+  function findActionButtonByTooltip(wrapper, tooltipText) {
+    return wrapper.findAllComponents(ActionButton).find(
+      (button) => button.props('tooltipText') === tooltipText
+    )
   }
 
   beforeEach(() => {
@@ -257,6 +263,55 @@ describe('RegisterHeaderActionsBar', () => {
 
     expect(wrapper.emitted('calculate-customs-charges')).toHaveLength(1)
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
+  })
+
+  it('shows custom charges calculation for import and reimport procedures', () => {
+    for (const customsProcedureCode of [40, 60]) {
+      const wrapper = mount(RegisterHeaderActionsBar, {
+        props: {
+          ...baseProps,
+          item: { ...baseProps.item, customsProcedureCode }
+        },
+        global: { stubs: vuetifyStubs }
+      })
+
+      expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины')).toBeTruthy()
+      wrapper.unmount()
+    }
+  })
+
+  it('hides custom charges calculation for non-chargeable procedures', () => {
+    const cases = [
+      { title: 'missing procedure', item: { id: 1, invoiceNumber: 'INV-1' } },
+      { title: 'null procedure', item: { ...baseProps.item, customsProcedureCode: null } },
+      { title: 'return procedure', item: { ...baseProps.item, customsProcedureCode: 1 } },
+      { title: 'export procedure', item: { ...baseProps.item, customsProcedureCode: 10 } },
+      { title: 'reexport procedure', item: { ...baseProps.item, customsProcedureCode: 31 } }
+    ]
+
+    for (const testCase of cases) {
+      const wrapper = mount(RegisterHeaderActionsBar, {
+        props: {
+          ...baseProps,
+          item: testCase.item
+        },
+        global: { stubs: vuetifyStubs }
+      })
+
+      expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины'), testCase.title).toBeUndefined()
+      wrapper.unmount()
+    }
+  })
+
+  it('hides custom charges calculation when sr logist permission is missing', () => {
+    authRefs.isSrLogistPlus.value = false
+
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps },
+      global: { stubs: vuetifyStubs }
+    })
+
+    expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины')).toBeUndefined()
   })
 
   it('disables historic data actions when noHistoricData is true', () => {

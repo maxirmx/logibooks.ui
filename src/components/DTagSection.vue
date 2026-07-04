@@ -64,12 +64,6 @@ function formatCharge(value) {
   white-space: nowrap;
 }
 
-.customs-charges-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-}
-
 .customs-charge-group {
   min-width: 0;
 }
@@ -77,11 +71,5 @@ function formatCharge(value) {
 .customs-charge-field {
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 640px) {
-  .customs-charges-row {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

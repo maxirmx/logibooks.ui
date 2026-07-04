@@ -35,6 +35,7 @@ import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
+import { isImportOrReexportCustomsProcedure } from '@/helpers/procedure.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
@@ -53,9 +54,6 @@ const props = defineProps({
   registerId: { type: Number, required: true },
   id: { type: Number, required: true }
 })
-
-const CUSTOMS_PROCEDURE_IMPORT = 40
-const CUSTOMS_PROCEDURE_REEXPORT = 31
 
 // track current parcel id so we can swap inline without changing route
 const currentParcelId = ref(props.id)
@@ -108,9 +106,7 @@ const { countries } = storeToRefs(countriesStore)
 const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedByPartner(item.value?.checkStatus))
 
 const showImportConsigneeFields = computed(() => {
-  const customsProcedureCode = Number(registerItem.value?.customsProcedureCode)
-  return customsProcedureCode === CUSTOMS_PROCEDURE_IMPORT ||
-    customsProcedureCode === CUSTOMS_PROCEDURE_REEXPORT
+  return isImportOrReexportCustomsProcedure(registerItem.value?.customsProcedureCode)
 })
 
 // Track loading state from store and running actions

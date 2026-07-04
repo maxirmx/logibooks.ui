@@ -24,6 +24,7 @@ import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import { isImportOrReexportCustomsProcedure } from '@/helpers/procedure.helpers.js'
 import {
   navigateToEditParcel,
   getRowPropsForParcel,
@@ -57,9 +58,6 @@ const props = defineProps({
   registerId: { type: Number, required: true }
 })
 const emit = defineEmits(['close'])
-
-const CUSTOMS_PROCEDURE_IMPORT = 40
-const CUSTOMS_PROCEDURE_REEXPORT = 31
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -157,9 +155,7 @@ const isReProcedure = computed(() => {
 })
 
 const showImportConsigneeColumns = computed(() => {
-  const customsProcedureCode = Number(registersStore.item?.customsProcedureCode)
-  return customsProcedureCode === CUSTOMS_PROCEDURE_IMPORT ||
-    customsProcedureCode === CUSTOMS_PROCEDURE_REEXPORT
+  return isImportOrReexportCustomsProcedure(registersStore.item?.customsProcedureCode)
 })
 
 // Provide page options for a select control. For very large page counts, return a compact set

@@ -13,13 +13,12 @@ import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { getWeightCorrection } from '@/helpers/weight.correction.helpers.js'
+import { isReexportCustomsProcedure } from '@/helpers/procedure.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: true },
   selection: { type: String, required: false }
 })
-
-const CUSTOMS_PROCEDURE_REEXPORT = 31
 
 const registersStore = useRegistersStore()
 const { item, loading } = storeToRefs(registersStore)
@@ -67,7 +66,7 @@ const heading = computed(() => {
 })
 
 const isReexportRegister = computed(() =>
-  Number(currentRegister.value?.customsProcedureCode) === CUSTOMS_PROCEDURE_REEXPORT
+  isReexportCustomsProcedure(currentRegister.value?.customsProcedureCode)
 )
 const optionalColumnOptions = computed(() =>
   isReexportRegister.value

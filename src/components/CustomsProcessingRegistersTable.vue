@@ -15,6 +15,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
+import { isCustomsChargesCalculationProcedure } from '@/helpers/procedure.helpers.js'
 import {
   createAirportsById,
   createTransportationTypesById,
@@ -132,6 +133,11 @@ function hasRealWeightKg(item) {
 
 function hasCustomsCharges(item) {
   return item?.customsFee != null || item?.customsDuty != null
+}
+
+function canCalculateCustomsCharges(item) {
+  return isCustomsChargesCalculationProcedure(item?.customsProcedureCode) ||
+    hasCustomsCharges(item)
 }
 
 function formatCustomsCharge(value) {
@@ -408,7 +414,7 @@ function getRegisterStatusTitle(item) {
             :item="item"
             icon="fa-solid fa-calculator"
             tooltip-text="Рассчитать сборы и пошлины"
-            :disabled="runningAction || loading"
+            :disabled="runningAction || loading || !canCalculateCustomsCharges(item)"
             @click="(row) => calculateCustomsCharges(row)"
           />
           <ActionButton

@@ -40,6 +40,16 @@ const fontAwesomeQuestionIcon = {
   icon: REGISTER_STATUS_DEFAULT_ICON
 }
 
+const fontAwesomeStatusIconOptions = [
+  'fa-solid fa-circle-exclamation',
+  'fa-solid fa-plane-departure',
+  'fa-solid fa-plane-circle-check'
+].map(icon => ({
+  value: icon,
+  kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
+  icon
+}))
+
 export const registerStatusIconOptions = [
   { value: 'svg:registered', kind: REGISTER_STATUS_ICON_KIND_SVG, src: registeredIcon },
   { value: 'svg:waiting-for-shipment', kind: REGISTER_STATUS_ICON_KIND_SVG, src: waitingForShipmentIcon },
@@ -66,6 +76,7 @@ export const registerStatusIconOptions = [
   { value: 'svg:document-business-paper-file-paperwork-job-2', kind: REGISTER_STATUS_ICON_KIND_SVG, src: documentBusinessPaperFilePaperworkJob2Icon },
   { value: 'svg:document-business-paper-file-paperwork-job-3', kind: REGISTER_STATUS_ICON_KIND_SVG, src: documentBusinessPaperFilePaperworkJob3Icon },
   { value: 'svg:import', kind: REGISTER_STATUS_ICON_KIND_SVG, src: importIcon },
+  ...fontAwesomeStatusIconOptions,
   fontAwesomeQuestionIcon
 ]
 

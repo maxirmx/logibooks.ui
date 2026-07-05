@@ -20,8 +20,8 @@ import {
 } from '@/helpers/register.status.icons.js'
 
 describe('register.status.icons helper', () => {
-  it('contains the supported copied SVG status icons and manual Font Awesome fallback', () => {
-    expect(registerStatusIconOptions).toHaveLength(26)
+  it('contains the supported copied SVG status icons and Font Awesome status icons', () => {
+    expect(registerStatusIconOptions).toHaveLength(29)
     expect(registerStatusIconOptions.map(option => option.value)).toEqual([
       'svg:registered',
       'svg:waiting-for-shipment',
@@ -48,11 +48,17 @@ describe('register.status.icons helper', () => {
       'svg:document-business-paper-file-paperwork-job-2',
       'svg:document-business-paper-file-paperwork-job-3',
       'svg:import',
+      'fa-solid fa-circle-exclamation',
+      'fa-solid fa-plane-departure',
+      'fa-solid fa-plane-circle-check',
       REGISTER_STATUS_DEFAULT_ICON
     ])
     expect(registerStatusIconOptions.every(option => !('title' in option))).toBe(true)
-    expect(registerStatusIconOptions.slice(0, -1).every(option =>
+    expect(registerStatusIconOptions.slice(0, 25).every(option =>
       option.kind === REGISTER_STATUS_ICON_KIND_SVG && typeof option.src === 'string'
+    )).toBe(true)
+    expect(registerStatusIconOptions.slice(25).every(option =>
+      option.kind === REGISTER_STATUS_ICON_KIND_FONT_AWESOME && option.icon === option.value
     )).toBe(true)
     expect(registerStatusIconOptions.at(-1)).toMatchObject({
       kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
@@ -64,12 +70,20 @@ describe('register.status.icons helper', () => {
     expect(isSupportedRegisterStatusIcon('svg:delivered')).toBe(true)
     expect(isSupportedRegisterStatusIcon('svg:customs-baggage-check')).toBe(true)
     expect(isSupportedRegisterStatusIcon('svg:import')).toBe(true)
+    expect(isSupportedRegisterStatusIcon('fa-solid fa-circle-exclamation')).toBe(true)
+    expect(isSupportedRegisterStatusIcon('fa-solid fa-plane-departure')).toBe(true)
+    expect(isSupportedRegisterStatusIcon('fa-solid fa-plane-circle-check')).toBe(true)
     expect(isSupportedRegisterStatusIcon(REGISTER_STATUS_DEFAULT_ICON)).toBe(true)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-box-open')).toBe(false)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-not-real')).toBe(false)
     expect(resolveRegisterStatusIcon('svg:delivered')).toMatchObject({
       value: 'svg:delivered',
       kind: REGISTER_STATUS_ICON_KIND_SVG
+    })
+    expect(resolveRegisterStatusIcon('fa-solid fa-plane-departure')).toMatchObject({
+      value: 'fa-solid fa-plane-departure',
+      kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
+      icon: 'fa-solid fa-plane-departure'
     })
     expect(resolveRegisterStatusIcon('fa-solid fa-not-real')).toMatchObject({
       value: REGISTER_STATUS_DEFAULT_ICON,
@@ -155,6 +169,20 @@ describe('RegisterStatusIcon', () => {
     expect(wrapper.find('[data-testid="register-status-svg-icon"]').classes()).toContain('register-status-icon__svg')
     expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe('svg:customs-baggage-check')
     expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_SVG)
+  })
+
+  it('renders supported Font Awesome register status icons', () => {
+    const wrapper = mountIcon({
+      title: 'Отправлен',
+      icon: 'fa-solid fa-plane-circle-check',
+      bkColor: '#FFFFFF',
+      fgColor: '#004488'
+    })
+
+    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe('fa-solid fa-plane-circle-check')
+    expect(wrapper.find('[data-testid="register-status-svg-icon"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe('fa-solid fa-plane-circle-check')
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_FONT_AWESOME)
   })
 
   it('renders neutral placeholder for missing status', () => {

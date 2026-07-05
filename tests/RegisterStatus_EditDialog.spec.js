@@ -203,7 +203,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.find('.register-status-form').exists()).toBe(true)
       expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="fg-color-swatch"]').exists()).toBe(true)
-      expect(wrapper.findAll('.status-icon-option')).toHaveLength(26)
+      expect(wrapper.findAll('.status-icon-option')).toHaveLength(29)
     })
 
     it('renders form labels correctly', async () => {
@@ -257,7 +257,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.find('[data-testid="fg-color-swatch"]').attributes('style')).toContain('background-color: rgb(171, 205, 239)')
     })
 
-    it('selects the manual Font Awesome question mark from the visual icon selector', async () => {
+    it('selects a Font Awesome status icon from the visual icon selector', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
         global: {
@@ -268,7 +268,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       const option = wrapper.findAll('.status-icon-option').find(button =>
-        button.attributes('aria-label') === 'fa-solid fa-circle-question'
+        button.attributes('aria-label') === 'fa-solid fa-plane-departure'
       )
       expect(option.exists()).toBe(true)
       expect(option.attributes('title')).toBeUndefined()
@@ -276,7 +276,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       await option.trigger('click')
 
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-circle-question')
+      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-plane-departure')
     })
 
     it('rejects unsupported icon values in the validation schema', async () => {

@@ -603,8 +603,9 @@ describe('Registers_WhList.vue', () => {
   it('syncs selected warehouse procedure and reloads warehouse registers', async () => {
     vi.useFakeTimers()
     getAll.mockResolvedValue()
+    let wrapper
     try {
-      const wrapper = mount(RegistersWhList, {
+      wrapper = mount(RegistersWhList, {
         global: {
           stubs: {
             ...vuetifyStubs,
@@ -633,6 +634,7 @@ describe('Registers_WhList.vue', () => {
 
       expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
     } finally {
+      wrapper?.unmount()
       vi.useRealTimers()
     }
   })

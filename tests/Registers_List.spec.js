@@ -1310,8 +1310,9 @@ describe('Registers_List.vue', () => {
     it('syncs selected procedure and reloads paperwork registers', async () => {
       vi.useFakeTimers()
       getAll.mockResolvedValue()
+      let wrapper
       try {
-        const wrapper = mount(RegistersList, {
+        wrapper = mount(RegistersList, {
           global: {
             stubs: {
               ...vuetifyStubs,
@@ -1340,6 +1341,7 @@ describe('Registers_List.vue', () => {
 
         expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
       } finally {
+        wrapper?.unmount()
         vi.useRealTimers()
       }
     })

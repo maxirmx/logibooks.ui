@@ -12,7 +12,7 @@ import {
   CUSTOMS_PROCEDURE_REEXPORT,
   CUSTOMS_PROCEDURE_REIMPORT,
   CUSTOMS_PROCEDURE_RETURN
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/customs.procedure.helpers.js'
 
 const opsRef = vi.hoisted(() => ({ value: { customsProcedures: [], transportationTypes: [] } }))
 const companiesRef = vi.hoisted(() => ({ value: [] }))

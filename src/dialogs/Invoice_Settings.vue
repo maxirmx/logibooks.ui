@@ -13,7 +13,7 @@ import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { getWeightCorrection } from '@/helpers/weight.correction.helpers.js'
-import { isReexportCustomsProcedure } from '@/helpers/procedure.helpers.js'
+import { isReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: true },

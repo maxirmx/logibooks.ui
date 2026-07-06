@@ -24,7 +24,7 @@ import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
-import { isImportOrReexportCustomsProcedure } from '@/helpers/procedure.helpers.js'
+import { isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import {
   navigateToEditParcel,
   getRowPropsForParcel,

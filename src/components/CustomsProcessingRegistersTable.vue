@@ -15,7 +15,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatWeight, formatPrice, formatIntegerThousands } from '@/helpers/number.formatters.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
-import { isCustomsChargesCalculationProcedure } from '@/helpers/procedure.helpers.js'
+import { isCustomsChargesCalculationProcedure } from '@/helpers/customs.procedure.helpers.js'
 import {
   createAirportsById,
   createTransportationTypesById,

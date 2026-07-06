@@ -10,7 +10,7 @@ import {
   CUSTOMS_PROCEDURE_REEXPORT,
   CUSTOMS_PROCEDURE_REIMPORT,
   CUSTOMS_PROCEDURE_RETURN
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()

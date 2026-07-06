@@ -18,21 +18,9 @@ import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
 import {
-  CUSTOMS_PROCEDURE_REEXPORT,
-  CUSTOMS_PROCEDURE_REIMPORT,
-  CUSTOMS_PROCEDURE_RETURN
-} from '@/helpers/procedure.helpers.js'
-
-const RETURN_REGISTER_CUSTOMS_PROCEDURE = Object.freeze({
-  Return: CUSTOMS_PROCEDURE_RETURN,
-  Reexport: CUSTOMS_PROCEDURE_REEXPORT,
-  Reimport: CUSTOMS_PROCEDURE_REIMPORT
-})
-const RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER = [
-  RETURN_REGISTER_CUSTOMS_PROCEDURE.Return,
-  RETURN_REGISTER_CUSTOMS_PROCEDURE.Reimport,
-  RETURN_REGISTER_CUSTOMS_PROCEDURE.Reexport
-]
+  RETURN_REGISTER_CUSTOMS_PROCEDURE,
+  buildReturnRegisterProcedureOptions
+} from '@/helpers/customs.procedure.helpers.js'
 
 // API enum values for the two return-register parcel initialization modes.
 const RETURN_REGISTER_PARCEL_SELECTION_MODE = Object.freeze({
@@ -87,28 +75,13 @@ const hasValidParcelCriteria = computed(() =>
 const selectedPair = computed(() => pairs.value.find((pair) => getPairKey(pair) === selectedPairKey.value) || null)
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 const returnRegisterProcedureOptions = computed(() => {
-  const supported = new Set(Object.values(RETURN_REGISTER_CUSTOMS_PROCEDURE))
-  const fromOps = Array.isArray(registersStore.ops?.customsProcedures)
-    ? registersStore.ops.customsProcedures
-      .filter((procedure) => supported.has(Number(procedure.value)))
-      .sort((left, right) =>
-        RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER.indexOf(Number(left.value)) -
-        RETURN_REGISTER_CUSTOMS_PROCEDURE_ORDER.indexOf(Number(right.value))
-      )
-      .map((procedure) => ({
-        value: String(procedure.value),
-        label: procedure.name || procedure.charCode || String(procedure.value)
-      }))
-    : []
-
-  return fromOps.length > 0
-    ? fromOps
-    : [
-        { value: String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Return), label: 'Возврат' },
-        { value: String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Reimport), label: 'Реимпорт' },
-        { value: String(RETURN_REGISTER_CUSTOMS_PROCEDURE.Reexport), label: 'Реэкспорт' }
-      ]
+  return buildReturnRegisterProcedureOptions(registersStore.ops?.customsProcedures)
 })
+const hasValidCustomsProcedure = computed(() =>
+  returnRegisterProcedureOptions.value.some(
+    (option) => Number(option.value) === selectedCustomsProcedureNumber.value
+  )
+)
 const parcelSelectionModeOptions = [
   { value: String(RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone), label: 'Красная зона' },
   { value: String(RETURN_REGISTER_PARCEL_SELECTION_MODE.ParcelStatus), label: 'Статус посылки' }
@@ -125,6 +98,7 @@ const returnRegisterCriteria = computed(() => ({
 }))
 const canSubmit = computed(() =>
   selectedWarehouseNumber.value > 0 &&
+  hasValidCustomsProcedure.value &&
   hasValidParcelCriteria.value &&
   selectedPair.value !== null &&
   selectedRegisterIds.value.length > 0 &&
@@ -171,7 +145,7 @@ onUnmounted(() => {
   clearSourceSearchTimer()
 })
 
-watch([selectedWarehouseId, returnRegisterCriteria], async () => {
+watch([selectedWarehouseId, returnRegisterCriteria, hasValidCustomsProcedure], async () => {
   // Invalidate any in-flight async requests tied to the previous selection.
   pairRequestId += 1
   registerRequestId += 1
@@ -182,7 +156,7 @@ watch([selectedWarehouseId, returnRegisterCriteria], async () => {
   pairs.value = []
   clearSourceRegisters()
 
-  if (!selectedWarehouseNumber.value || !hasValidParcelCriteria.value) return
+  if (!selectedWarehouseNumber.value || !hasValidCustomsProcedure.value || !hasValidParcelCriteria.value) return
 
   await loadPairs()
 })
@@ -465,7 +439,7 @@ function cancel() {
             id="return-register-pair"
             v-model="selectedPairKey"
             class="form-control input"
-            :disabled="!selectedWarehouseNumber || !hasValidParcelCriteria || pairsLoading || isSubmitting"
+            :disabled="!selectedWarehouseNumber || !hasValidCustomsProcedure || !hasValidParcelCriteria || pairsLoading || isSubmitting"
             data-testid="pair-select"
           >
             <option value="">Не выбрано</option>

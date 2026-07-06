@@ -2,27 +2,35 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
+  CUSTOMS_PROCEDURE_ALL,
   CUSTOMS_PROCEDURE,
   CUSTOMS_PROCEDURE_RETURN,
   CUSTOMS_PROCEDURE_EXPORT,
   CUSTOMS_PROCEDURE_REEXPORT,
   CUSTOMS_PROCEDURE_IMPORT,
   CUSTOMS_PROCEDURE_REIMPORT,
-  procedureFilterItems,
+  buildCustomsProcedureOptions,
+  buildRegisterProcedureFilterOptions,
+  buildReturnRegisterProcedureOptions,
+  getCustomsProcedureOptionTitle,
   normalizeCustomsProcedureCode,
   isReturnCustomsProcedure,
   isReexportCustomsProcedure,
   isImportCustomsProcedure,
   isReimportCustomsProcedure,
   isImportOrReexportCustomsProcedure,
-  isCustomsChargesCalculationProcedure,
-  getProcedureLabels,
-  getProcedureSortOrder,
-  getProcedureRows,
+  isCustomsChargesCalculationProcedure
+} from '@/helpers/customs.procedure.helpers.js'
+import {
+  PROHIBITION_SCOPE,
+  prohibitionScopeFilterItems,
+  getProhibitionScopeLabels,
+  getProhibitionScopeSortOrder,
+  getProhibitionScopeRows,
   getProhibitionReasonLines
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/prohibition.scope.helpers.js'
 
 describe('procedure.helpers', () => {
   describe('constants', () => {
@@ -46,11 +54,87 @@ describe('procedure.helpers', () => {
       expect(CUSTOMS_PROCEDURE_REIMPORT).toBe(CUSTOMS_PROCEDURE.Reimport)
     })
 
-    it('procedureFilterItems has correct structure', () => {
-      expect(procedureFilterItems).toHaveLength(3)
-      expect(procedureFilterItems[0]).toEqual({ title: 'Любая', value: 'all' })
-      expect(procedureFilterItems[1]).toEqual({ title: 'Экспорт из РФ', value: 'export' })
-      expect(procedureFilterItems[2]).toEqual({ title: 'Импорт в РФ', value: 'import' })
+    it('CUSTOMS_PROCEDURE_ALL uses the persisted all sentinel', () => {
+      expect(CUSTOMS_PROCEDURE_ALL).toBe('all')
+    })
+  })
+
+  describe('customs procedure option builders', () => {
+    const opsProcedures = [
+      { value: 1, charCode: '01', name: 'Возврат' },
+      { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
+      { value: 31, charCode: 'ЭК 31', name: 'Реэкспорт' },
+      { value: 40, charCode: 'ИМ 40', name: 'Импорт' },
+      { value: 60, charCode: 'ИМ 60', name: 'Реимпорт' }
+    ]
+
+    it('formats titles from backend char code and name', () => {
+      expect(getCustomsProcedureOptionTitle(opsProcedures[1])).toBe('ЭК 10 Экспорт')
+    })
+
+    it('falls back to backend value when metadata is missing', () => {
+      expect(getCustomsProcedureOptionTitle({ value: 99 })).toBe('99')
+    })
+
+    it('builds paperwork register selector options without Return', () => {
+      expect(buildRegisterProcedureFilterOptions(opsProcedures, { includeReturn: false })).toEqual([
+        { title: 'Все', value: 'all' },
+        { title: 'ЭК 10 Экспорт', value: 10 },
+        { title: 'ЭК 31 Реэкспорт', value: 31 },
+        { title: 'ИМ 40 Импорт', value: 40 },
+        { title: 'ИМ 60 Реимпорт', value: 60 }
+      ])
+    })
+
+    it('builds warehouse register selector options with Return', () => {
+      expect(buildRegisterProcedureFilterOptions(opsProcedures, { includeReturn: true })).toEqual([
+        { title: 'Все', value: 'all' },
+        { title: '01 Возврат', value: 1 },
+        { title: 'ЭК 10 Экспорт', value: 10 },
+        { title: 'ЭК 31 Реэкспорт', value: 31 },
+        { title: 'ИМ 40 Импорт', value: 40 },
+        { title: 'ИМ 60 Реимпорт', value: 60 }
+      ])
+    })
+
+    it('returns only all option when register procedure ops are unavailable', () => {
+      expect(buildRegisterProcedureFilterOptions(null, { includeReturn: true })).toEqual([
+        { title: 'Все', value: 'all' }
+      ])
+    })
+
+    it('builds return-register options from backend ops and explicit supported order', () => {
+      expect(buildReturnRegisterProcedureOptions(opsProcedures)).toEqual([
+        { label: '01 Возврат', value: '1' },
+        { label: 'ИМ 60 Реимпорт', value: '60' },
+        { label: 'ЭК 31 Реэкспорт', value: '31' }
+      ])
+    })
+
+    it('does not invent return-register fallback options when ops are unavailable', () => {
+      expect(buildReturnRegisterProcedureOptions(null)).toEqual([])
+    })
+
+    it('supports custom option keys for backend metadata', () => {
+      expect(buildCustomsProcedureOptions([opsProcedures[1]], { titleKey: 'label' })).toEqual([
+        { label: 'ЭК 10 Экспорт', value: 10 }
+      ])
+    })
+
+    it('preserves backend order without calling sort when no explicit order is provided', () => {
+      const sortSpy = vi.spyOn(Array.prototype, 'sort')
+      try {
+        const options = buildCustomsProcedureOptions([
+          opsProcedures[3],
+          opsProcedures[1],
+          opsProcedures[4]
+        ])
+
+        expect(options.map(option => option.value)).toEqual([40, 10, 60])
+        expect(sortSpy).not.toHaveBeenCalled()
+      } finally {
+        sortSpy.mockRestore()
+      }
     })
   })
 
@@ -200,100 +284,115 @@ describe('procedure.helpers', () => {
     })
   })
 
-  describe('getProcedureLabels', () => {
+  describe('prohibition scope filter items', () => {
+    it('preserves all/export/import filter options', () => {
+      expect(PROHIBITION_SCOPE).toEqual({
+        All: 'all',
+        Export: 'export',
+        Import: 'import'
+      })
+      expect(prohibitionScopeFilterItems).toEqual([
+        { title: 'Любая', value: 'all' },
+        { title: 'Экспорт из РФ', value: 'export' },
+        { title: 'Импорт в РФ', value: 'import' }
+      ])
+    })
+  })
+
+  describe('getProhibitionScopeLabels', () => {
     it('returns empty array for null', () => {
-      expect(getProcedureLabels(null)).toEqual([])
+      expect(getProhibitionScopeLabels(null)).toEqual([])
     })
 
     it('returns empty array for undefined', () => {
-      expect(getProcedureLabels(undefined)).toEqual([])
+      expect(getProhibitionScopeLabels(undefined)).toEqual([])
     })
 
     it('returns empty array when neither forExport nor forImport', () => {
-      expect(getProcedureLabels({})).toEqual([])
-      expect(getProcedureLabels({ forExport: false, forImport: false })).toEqual([])
+      expect(getProhibitionScopeLabels({})).toEqual([])
+      expect(getProhibitionScopeLabels({ forExport: false, forImport: false })).toEqual([])
     })
 
     it('returns export label when forExport is true', () => {
-      expect(getProcedureLabels({ forExport: true })).toEqual(['Экспорт из РФ'])
+      expect(getProhibitionScopeLabels({ forExport: true })).toEqual(['Экспорт из РФ'])
     })
 
     it('returns import label when forImport is true', () => {
-      expect(getProcedureLabels({ forImport: true })).toEqual(['Импорт в РФ'])
+      expect(getProhibitionScopeLabels({ forImport: true })).toEqual(['Импорт в РФ'])
     })
 
     it('returns both labels when both are true', () => {
-      expect(getProcedureLabels({ forExport: true, forImport: true })).toEqual([
+      expect(getProhibitionScopeLabels({ forExport: true, forImport: true })).toEqual([
         'Экспорт из РФ',
         'Импорт в РФ'
       ])
     })
   })
 
-  describe('getProcedureSortOrder', () => {
+  describe('getProhibitionScopeSortOrder', () => {
     it('returns 0 for null', () => {
-      expect(getProcedureSortOrder(null)).toBe(0)
+      expect(getProhibitionScopeSortOrder(null)).toBe(0)
     })
 
     it('returns 0 for undefined', () => {
-      expect(getProcedureSortOrder(undefined)).toBe(0)
+      expect(getProhibitionScopeSortOrder(undefined)).toBe(0)
     })
 
     it('returns 0 when neither forImport nor forExport', () => {
-      expect(getProcedureSortOrder({})).toBe(0)
-      expect(getProcedureSortOrder({ forImport: false, forExport: false })).toBe(0)
+      expect(getProhibitionScopeSortOrder({})).toBe(0)
+      expect(getProhibitionScopeSortOrder({ forImport: false, forExport: false })).toBe(0)
     })
 
     it('returns 1 when only forExport is true', () => {
-      expect(getProcedureSortOrder({ forExport: true, forImport: false })).toBe(1)
-      expect(getProcedureSortOrder({ forExport: true })).toBe(1)
+      expect(getProhibitionScopeSortOrder({ forExport: true, forImport: false })).toBe(1)
+      expect(getProhibitionScopeSortOrder({ forExport: true })).toBe(1)
     })
 
     it('returns 2 when both forImport and forExport are true', () => {
-      expect(getProcedureSortOrder({ forImport: true, forExport: true })).toBe(2)
+      expect(getProhibitionScopeSortOrder({ forImport: true, forExport: true })).toBe(2)
     })
 
     it('returns 3 when only forImport is true', () => {
-      expect(getProcedureSortOrder({ forImport: true, forExport: false })).toBe(3)
-      expect(getProcedureSortOrder({ forImport: true })).toBe(3)
+      expect(getProhibitionScopeSortOrder({ forImport: true, forExport: false })).toBe(3)
+      expect(getProhibitionScopeSortOrder({ forImport: true })).toBe(3)
     })
   })
 
-  describe('getProcedureRows', () => {
+  describe('getProhibitionScopeRows', () => {
     it('returns empty array for null', () => {
-      expect(getProcedureRows(null)).toEqual([])
+      expect(getProhibitionScopeRows(null)).toEqual([])
     })
 
     it('returns empty array for undefined', () => {
-      expect(getProcedureRows(undefined)).toEqual([])
+      expect(getProhibitionScopeRows(undefined)).toEqual([])
     })
 
     it('returns empty array when neither forExport nor forImport', () => {
-      expect(getProcedureRows({})).toEqual([])
+      expect(getProhibitionScopeRows({})).toEqual([])
     })
 
     it('returns export row when forExport is true', () => {
-      const rows = getProcedureRows({ forExport: true, explanationForExport: 'Reason A' })
+      const rows = getProhibitionScopeRows({ forExport: true, explanationForExport: 'Reason A' })
       expect(rows).toEqual([{ key: 'export', label: 'Экспорт из РФ', reason: 'Reason A' }])
     })
 
     it('returns export row with empty reason when explanation is missing', () => {
-      const rows = getProcedureRows({ forExport: true })
+      const rows = getProhibitionScopeRows({ forExport: true })
       expect(rows).toEqual([{ key: 'export', label: 'Экспорт из РФ', reason: '' }])
     })
 
     it('returns import row when forImport is true', () => {
-      const rows = getProcedureRows({ forImport: true, explanationForImport: 'Reason B' })
+      const rows = getProhibitionScopeRows({ forImport: true, explanationForImport: 'Reason B' })
       expect(rows).toEqual([{ key: 'import', label: 'Импорт в РФ', reason: 'Reason B' }])
     })
 
     it('returns import row with empty reason when explanation is missing', () => {
-      const rows = getProcedureRows({ forImport: true })
+      const rows = getProhibitionScopeRows({ forImport: true })
       expect(rows).toEqual([{ key: 'import', label: 'Импорт в РФ', reason: '' }])
     })
 
     it('returns both rows when both are true', () => {
-      const rows = getProcedureRows({
+      const rows = getProhibitionScopeRows({
         forExport: true,
         forImport: true,
         explanationForExport: 'Export reason',

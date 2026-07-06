@@ -104,10 +104,12 @@ export const useAuthStore = defineStore('auth', () => {
   const hotkeyactionschemes_page = ref(1)
   const registers_per_page = ref(50)
   const registers_search = ref('')
+  const registers_procedure = ref('all')
   const registers_sort_by = ref([{ key: 'id', order: 'desc' }])
   const registers_page = ref(1)
   const registers_wh_per_page = ref(50)
   const registers_wh_search = ref('')
+  const registers_wh_procedure = ref('all')
   const registers_wh_sort_by = ref([{ key: 'id', order: 'desc' }])
   const registers_wh_page = ref(1)
   const registerevents_per_page = ref(50)
@@ -348,10 +350,12 @@ export const useAuthStore = defineStore('auth', () => {
     hotkeyactionschemes_page,
     registers_per_page,
     registers_search,
+    registers_procedure,
     registers_sort_by,
     registers_page,
     registers_wh_per_page,
     registers_wh_search,
+    registers_wh_procedure,
     registers_wh_sort_by,
     registers_wh_page,
     parcels_per_page,

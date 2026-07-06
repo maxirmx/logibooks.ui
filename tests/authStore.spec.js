@@ -99,10 +99,12 @@ describe('auth store', () => {
       expect(store.users_page).toBe(1)
       expect(store.registers_per_page).toBe(50)
       expect(store.registers_search).toBe('')
+      expect(store.registers_procedure).toBe('all')
       expect(store.registers_sort_by).toEqual([{ key: 'id', order: 'desc' }])
       expect(store.registers_page).toBe(1)
       expect(store.registers_wh_per_page).toBe(50)
       expect(store.registers_wh_search).toBe('')
+      expect(store.registers_wh_procedure).toBe('all')
       expect(store.registers_wh_sort_by).toEqual([{ key: 'id', order: 'desc' }])
       expect(store.registers_wh_page).toBe(1)
       expect(store.scanjobmonitor_boxes_per_page).toBe(100)
@@ -453,6 +455,24 @@ describe('auth store', () => {
       expect(store.registers_search).toBe('')
     })
 
+    it('allows updating registers_procedure', () => {
+      const store = useAuthStore()
+      store.registers_procedure = 10
+      expect(store.registers_procedure).toBe(10)
+
+      store.registers_procedure = 'all'
+      expect(store.registers_procedure).toBe('all')
+    })
+
+    it('allows updating registers_wh_procedure', () => {
+      const store = useAuthStore()
+      store.registers_wh_procedure = 1
+      expect(store.registers_wh_procedure).toBe(1)
+
+      store.registers_wh_procedure = 'all'
+      expect(store.registers_wh_procedure).toBe('all')
+    })
+
     it('allows updating registers_sort_by', () => {
       const store = useAuthStore()
       
@@ -528,6 +548,7 @@ describe('auth store', () => {
 
       store.registers_wh_per_page = 25
       store.registers_wh_search = 'warehouse search'
+      store.registers_wh_procedure = 1
       store.registers_wh_sort_by = [{ key: 'warehouseArrivalDate', order: 'asc' }]
       store.registers_wh_page = 4
 
@@ -538,6 +559,7 @@ describe('auth store', () => {
 
       expect(store.registers_wh_per_page).toBe(25)
       expect(store.registers_wh_search).toBe('warehouse search')
+      expect(store.registers_wh_procedure).toBe(1)
       expect(store.registers_wh_sort_by).toEqual([{ key: 'warehouseArrivalDate', order: 'asc' }])
       expect(store.registers_wh_page).toBe(4)
     })

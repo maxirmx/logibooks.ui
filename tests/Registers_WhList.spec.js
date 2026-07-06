@@ -41,6 +41,7 @@ const alertClearFn = vi.fn()
 const mockAlert = ref(null)
 const mockWhPerPage = ref(25)
 const mockWhSearch = ref('warehouse search')
+const mockWhProcedure = ref('all')
 const mockWhSortBy = ref([{ key: 'warehouseArrivalDate', order: 'asc' }])
 const mockWhPage = ref(3)
 const mockIsShiftLeadPlus = ref(true)
@@ -108,6 +109,7 @@ vi.mock('pinia', async () => {
         registers_page: ref(1),
         registers_wh_per_page: mockWhPerPage,
         registers_wh_search: mockWhSearch,
+        registers_wh_procedure: mockWhProcedure,
         registers_wh_sort_by: mockWhSortBy,
         registers_wh_page: mockWhPage,
         isShiftLeadPlus: mockIsShiftLeadPlus,
@@ -192,6 +194,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_page: ref(1),
     registers_wh_per_page: mockWhPerPage,
     registers_wh_search: mockWhSearch,
+    registers_wh_procedure: mockWhProcedure,
     registers_wh_sort_by: mockWhSortBy,
     registers_wh_page: mockWhPage,
     isShiftLeadPlus: mockIsShiftLeadPlus,
@@ -244,6 +247,7 @@ describe('Registers_WhList.vue', () => {
     registersStore.setRegisterStatus.mockReset()
     mockWhPerPage.value = 25
     mockWhSearch.value = 'warehouse search'
+    mockWhProcedure.value = 'all'
     mockWhSortBy.value = [{ key: 'warehouseArrivalDate', order: 'asc' }]
     mockWhPage.value = 3
     mockIsShiftLeadPlus.value = true
@@ -521,6 +525,7 @@ describe('Registers_WhList.vue', () => {
       { key: 'warehouseArrivalDate', order: 'asc' }
     ])
     expect(wrapper.vm.localSearch).toBe('warehouse search')
+    expect(wrapper.vm.localProcedure).toBe('all')
   })
 
   it('enables the register-status icon column on the warehouse table', async () => {
@@ -557,6 +562,79 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.registers_per_page).toBe(75)
     expect(wrapper.vm.registers_page).toBe(5)
     expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'warehouseId', order: 'desc' }])
+  })
+
+  it('renders ops-backed procedure selector with Return to the left of search field', async () => {
+    mockOps.value = {
+      customsProcedures: [
+        { value: 1, charCode: '01', name: 'Возврат' },
+        { value: 10, charCode: 'ЭК10', name: 'Экспорт' },
+        { value: 40, charCode: 'ИМ40', name: 'Импорт' }
+      ],
+      transportationTypes: []
+    }
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const filters = wrapper.find('.registers-filter-row')
+    expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+    expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
+    expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
+    expect(wrapper.vm.procedureFilterItems).toEqual([
+      { title: 'Все', value: 'all' },
+      { title: '01 Возврат', value: 1 },
+      { title: 'ЭК10 Экспорт', value: 10 },
+      { title: 'ИМ40 Импорт', value: 40 }
+    ])
+  })
+
+  it('falls back to only all-procedures option when warehouse ops procedures are missing', async () => {
+    mockOps.value = { customsProcedures: null, transportationTypes: [] }
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(wrapper.vm.procedureFilterItems).toEqual([
+      { title: 'Все', value: 'all' }
+    ])
+  })
+
+  it('syncs selected warehouse procedure and reloads warehouse registers', async () => {
+    vi.useFakeTimers()
+    getAll.mockResolvedValue()
+    try {
+      const wrapper = mount(RegistersWhList, {
+        global: {
+          stubs: {
+            ...vuetifyStubs,
+            'v-select': {
+              name: 'v-select',
+              props: ['modelValue', 'items'],
+              emits: ['update:modelValue'],
+              template: '<select data-testid="v-select" :value="modelValue"></select>'
+            }
+          }
+        }
+      })
+
+      await flushPromises()
+      getAll.mockClear()
+
+      const procedureSelect = wrapper.findComponent({ name: 'v-select' })
+      procedureSelect.vm.$emit('update:modelValue', 1)
+      await wrapper.vm.$nextTick()
+
+      expect(mockWhProcedure.value).toBe(1)
+      expect(getAll).not.toHaveBeenCalled()
+
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+
+      expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('marks warehouse visible columns as sortable', async () => {

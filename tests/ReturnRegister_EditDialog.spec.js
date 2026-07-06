@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import ReturnRegisterEditDialog from '@/dialogs/ReturnRegister_EditDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -22,9 +22,9 @@ const getRegisters = vi.hoisted(() => vi.fn())
 const createReturnRegister = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
 const registerOps = vi.hoisted(() => ({
-  customsProcedures: [],
-  transportationTypes: []
+  current: null
 }))
+const mountedWrappers = []
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -49,15 +49,25 @@ vi.mock('@/stores/warehouses.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({
-    ops: registerOps,
-    ensureOpsLoaded,
-    getReturnRegisterPairs,
-    getRegisters,
-    createReturnRegister
-  })
-}))
+vi.mock('@/stores/registers.store.js', async () => {
+  const { reactive } = await vi.importActual('vue')
+  if (!registerOps.current) {
+    registerOps.current = reactive({
+      customsProcedures: [],
+      transportationTypes: []
+    })
+  }
+
+  return {
+    useRegistersStore: () => ({
+      ops: registerOps.current,
+      ensureOpsLoaded,
+      getReturnRegisterPairs,
+      getRegisters,
+      createReturnRegister
+    })
+  }
+})
 
 vi.mock('@/stores/companies.store.js', () => ({
   useCompaniesStore: () => ({
@@ -176,13 +186,15 @@ vi.mock('@/components/WarehouseRegistersTable.vue', () => ({
 }))
 
 function mountDialog() {
-  return mount(ReturnRegisterEditDialog, {
+  const wrapper = mount(ReturnRegisterEditDialog, {
     global: {
       stubs: {
         ...vuetifyStubs
       }
     }
   })
+  mountedWrappers.push(wrapper)
+  return wrapper
 }
 
 async function selectWarehouse(wrapper, warehouseId) {
@@ -231,16 +243,22 @@ function defaultSourceQuery(overrides = {}) {
   }
 }
 
+afterEach(() => {
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
+})
+
 describe('ReturnRegister_EditDialog.vue', () => {
   beforeEach(() => {
-    registerOps.customsProcedures = [
+    registerOps.current.customsProcedures = [
       { value: 1, charCode: '01', name: 'Возврат' },
       { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
       { value: 31, charCode: 'ЭК 31', name: 'Реэкспорт' },
       { value: 40, charCode: 'ИМ 40', name: 'Импорт' },
       { value: 60, charCode: 'ИМ 60', name: 'Реимпорт' }
     ]
-    registerOps.transportationTypes = []
+    registerOps.current.transportationTypes = []
     warehousesRef.value = [
       { id: 1, name: 'Warehouse One' },
       { id: 2, name: 'Warehouse Two' }
@@ -284,7 +302,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(okButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-check-double')
     expect(cancelButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-xmark')
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
-    wrapper.unmount()
   })
 
   it('builds return procedure options from backend register ops', async () => {
@@ -306,7 +323,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
   })
 
   it('does not load pairs or enable submit when return procedure ops are unavailable', async () => {
-    registerOps.customsProcedures = null
+    registerOps.current.customsProcedures = null
 
     const wrapper = mountDialog()
     await flushPromises()
@@ -317,6 +334,28 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(getReturnRegisterPairs).not.toHaveBeenCalled()
     expect(wrapper.find('[data-testid="pair-select"]').attributes('disabled')).toBeDefined()
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
+  })
+
+  it('loads pairs when backend procedure ops become valid after criteria are selected', async () => {
+    registerOps.current.customsProcedures = null
+    getReturnRegisterPairs.mockResolvedValueOnce([
+      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+    ])
+
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    await selectWarehouse(wrapper, 1)
+    expect(getReturnRegisterPairs).not.toHaveBeenCalled()
+
+    registerOps.current.customsProcedures = [
+      { value: 1, charCode: '01', name: 'Возврат' }
+    ]
+    await wrapper.vm.$nextTick()
+    await flushPromises()
+
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria())
+    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver')
   })
 
   it('shows no-selection labels for warehouse and pair selects', async () => {

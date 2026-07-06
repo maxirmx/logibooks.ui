@@ -102,7 +102,7 @@ export function buildCustomsProcedureOptions(customsProcedures, {
     ? new Map(sortOrder.map((value, index) => [Number(value), index]))
     : null
 
-  const procedures = customsProcedures
+  let procedures = customsProcedures
     .map((procedure) => ({
       procedure,
       code: normalizeCustomsProcedureCode(procedure?.value)
@@ -113,11 +113,13 @@ export function buildCustomsProcedureOptions(customsProcedures, {
       if (allowed && !allowed.has(code)) return false
       return true
     })
-    .sort((left, right) => {
-      if (!order) return 0
-      return (order.get(left.code) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(right.code) ?? Number.MAX_SAFE_INTEGER)
-    })
+
+  if (order) {
+    procedures = procedures.sort((left, right) =>
+      (order.get(left.code) ?? Number.MAX_SAFE_INTEGER) -
+      (order.get(right.code) ?? Number.MAX_SAFE_INTEGER)
+    )
+  }
 
   return [
     ...options,

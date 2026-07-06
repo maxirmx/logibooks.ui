@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   CUSTOMS_PROCEDURE_ALL,
   CUSTOMS_PROCEDURE,
@@ -119,6 +119,22 @@ describe('procedure.helpers', () => {
       expect(buildCustomsProcedureOptions([opsProcedures[1]], { titleKey: 'label' })).toEqual([
         { label: 'ЭК 10 Экспорт', value: 10 }
       ])
+    })
+
+    it('preserves backend order without calling sort when no explicit order is provided', () => {
+      const sortSpy = vi.spyOn(Array.prototype, 'sort')
+      try {
+        const options = buildCustomsProcedureOptions([
+          opsProcedures[3],
+          opsProcedures[1],
+          opsProcedures[4]
+        ])
+
+        expect(options.map(option => option.value)).toEqual([40, 10, 60])
+        expect(sortSpy).not.toHaveBeenCalled()
+      } finally {
+        sortSpy.mockRestore()
+      }
     })
   })
 

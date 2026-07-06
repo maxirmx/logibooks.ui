@@ -145,7 +145,7 @@ onUnmounted(() => {
   clearSourceSearchTimer()
 })
 
-watch([selectedWarehouseId, returnRegisterCriteria], async () => {
+watch([selectedWarehouseId, returnRegisterCriteria, hasValidCustomsProcedure], async () => {
   // Invalidate any in-flight async requests tied to the previous selection.
   pairRequestId += 1
   registerRequestId += 1

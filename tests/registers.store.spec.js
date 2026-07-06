@@ -66,10 +66,12 @@ describe('registers store', () => {
     registers_per_page: 10,
     registers_sort_by: [{ key: 'id', order: 'asc' }],
     registers_search: '',
+    registers_procedure: 'all',
     registers_wh_page: 1,
     registers_wh_per_page: 10,
     registers_wh_sort_by: [{ key: 'id', order: 'asc' }],
     registers_wh_search: '',
+    registers_wh_procedure: 'all',
     parcels_sort_by: [{ key: 'id', order: 'asc' }],
     parcels_status: null,
     parcels_check_status_sw: null,
@@ -199,7 +201,8 @@ describe('registers store', () => {
           registers_page: 1,
           registers_per_page: 10,
           registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: ''
+          registers_search: '',
+          registers_procedure: 'all'
         })
 
         const store = useRegistersStore()
@@ -457,6 +460,7 @@ describe('registers store', () => {
 
         const calledUrl = fetchWrapper.get.mock.calls[1][0]
         expect(calledUrl).not.toContain('search=')
+        expect(calledUrl).not.toContain('customsProcedureCode=')
       })
 
       it('includes search parameter when provided', async () => {
@@ -470,7 +474,8 @@ describe('registers store', () => {
           registers_page: 1,
           registers_per_page: 10,
           registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: 'test search'
+          registers_search: 'test search',
+          registers_procedure: 'all'
         })
 
         const store = useRegistersStore()
@@ -478,6 +483,69 @@ describe('registers store', () => {
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&search=test+search`
+        )
+      })
+
+      it('includes customsProcedureCode when paperwork procedure is selected', async () => {
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+        })
+
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_procedure: 10
+        })
+
+        const store = useRegistersStore()
+        await store.getAll()
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&customsProcedureCode=10`
+        )
+      })
+
+      it('uses warehouse procedure in warehouse mode instead of paperwork procedure', async () => {
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+        })
+
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_procedure: 10,
+          registers_wh_page: 3,
+          registers_wh_per_page: 25,
+          registers_wh_sort_by: [{ key: 'warehouseArrivalDate', order: 'asc' }],
+          registers_wh_search: 'warehouse search',
+          registers_wh_procedure: 1
+        })
+
+        const store = useRegistersStore()
+        await store.getAll({ mode: OP_MODE_WAREHOUSE })
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=3&pageSize=25&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&customsProcedureCode=1&search=warehouse+search`
+        )
+      })
+
+      it('omits customsProcedureCode in warehouse mode when all procedures selected', async () => {
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
+        })
+
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_procedure: 10,
+          registers_wh_procedure: 'all'
+        })
+
+        const store = useRegistersStore()
+        await store.getAll({ mode: OP_MODE_WAREHOUSE })
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=true`
         )
       })
 

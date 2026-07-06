@@ -159,6 +159,8 @@ export const useRegistersStore = defineStore('registers', () => {
           parcelSelectionMode,
           parcelStatusId
         })
+      } else {
+        appendDefinedParam(queryParams, 'customsProcedureCode', customsProcedureCode)
       }
       appendDefinedParam(queryParams, 'warehouseId', warehouseId)
       appendDefinedParam(queryParams, 'senderCompanyId', senderCompanyId)
@@ -189,6 +191,10 @@ export const useRegistersStore = defineStore('registers', () => {
     const pageSize = warehouseMode ? authStore.registers_wh_per_page : authStore.registers_per_page
     const sortBy = warehouseMode ? authStore.registers_wh_sort_by : authStore.registers_sort_by
     const search = warehouseMode ? authStore.registers_wh_search : authStore.registers_search
+    const procedure = warehouseMode ? authStore.registers_wh_procedure : authStore.registers_procedure
+    const customsProcedureCode = procedure !== 'all'
+      ? procedure
+      : undefined
 
     try {
       const response = await getRegisters({
@@ -197,7 +203,8 @@ export const useRegistersStore = defineStore('registers', () => {
         sortBy: sortBy?.[0]?.key || 'id',
         sortOrder: sortBy?.[0]?.order || 'desc',
         whOnly: warehouseMode,
-        search
+        search,
+        customsProcedureCode
       })
 
       // API format with pagination metadata

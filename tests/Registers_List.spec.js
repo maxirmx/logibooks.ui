@@ -80,6 +80,7 @@ const removeFn = vi.fn()
 const confirmMock = vi.fn()
 const mockIsShiftLeadPlus = ref(false)
 const mockIsSrLogistPlus = ref(false)
+const mockPaperworkRegistersProcedure = ref('all')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -113,6 +114,7 @@ vi.mock('pinia', async () => {
         return {
           registers_per_page: ref(10),
           registers_search: ref(''),
+          registers_procedure: mockPaperworkRegistersProcedure,
           registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
           registers_page: ref(1),
           registers_wh_per_page: ref(25),
@@ -223,6 +225,7 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     registers_per_page: ref(10),
     registers_search: ref(''),
+    registers_procedure: mockPaperworkRegistersProcedure,
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
     registers_wh_per_page: ref(25),
@@ -278,6 +281,7 @@ describe('Registers_List.vue', () => {
     mockAlert.value = null
     mockIsShiftLeadPlus.value = false
     mockIsSrLogistPlus.value = false
+    mockPaperworkRegistersProcedure.value = 'all'
     getAirportsAll.mockClear()
     ensureOrderStatusesLoadedFn.mockClear()
     ensureRegisterStatusesLoadedFn.mockClear()
@@ -1254,6 +1258,128 @@ describe('Registers_List.vue', () => {
       expect(wrapper.vm.registers_per_page).toBe(75)
       expect(wrapper.vm.registers_page).toBe(5)
       expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'price', order: 'desc' }])
+    })
+
+    it('renders ops-backed procedure selector to the left of search field', async () => {
+      mockOps.value = {
+        customsProcedures: [
+          { value: 1, charCode: '01', name: 'Возврат' },
+          { value: 10, charCode: 'ЭК10', name: 'Экспорт' },
+          { value: 31, charCode: 'ЭК31', name: 'Реэкспорт' },
+          { value: 40, charCode: 'ИМ40', name: 'Импорт' }
+        ],
+        transportationTypes: []
+      }
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+
+      const filters = wrapper.find('.registers-filter-row')
+      expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+      expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
+      expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
+      expect(wrapper.vm.procedureFilterItems).toEqual([
+        { title: 'Все', value: 'all' },
+        { title: 'ЭК10 Экспорт', value: 10 },
+        { title: 'ЭК31 Реэкспорт', value: 31 },
+        { title: 'ИМ40 Импорт', value: 40 }
+      ])
+    })
+
+    it('falls back to only all-procedures option when ops procedures are missing', async () => {
+      mockOps.value = { customsProcedures: null, transportationTypes: [] }
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+
+      expect(wrapper.vm.procedureFilterItems).toEqual([
+        { title: 'Все', value: 'all' }
+      ])
+    })
+
+    it('syncs selected procedure and reloads paperwork registers', async () => {
+      vi.useFakeTimers()
+      getAll.mockResolvedValue()
+      let wrapper
+      try {
+        wrapper = mount(RegistersList, {
+          global: {
+            stubs: {
+              ...vuetifyStubs,
+              'v-select': {
+                name: 'v-select',
+                props: ['modelValue', 'items'],
+                emits: ['update:modelValue'],
+                template: '<select data-testid="v-select" :value="modelValue"></select>'
+              }
+            }
+          }
+        })
+
+        await flushPromises()
+        getAll.mockClear()
+
+        const procedureSelect = wrapper.findComponent({ name: 'v-select' })
+        procedureSelect.vm.$emit('update:modelValue', 10)
+        await wrapper.vm.$nextTick()
+
+        expect(mockPaperworkRegistersProcedure.value).toBe(10)
+        expect(getAll).not.toHaveBeenCalled()
+
+        vi.advanceTimersByTime(300)
+        await flushPromises()
+
+        expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+      } finally {
+        wrapper?.unmount()
+        vi.useRealTimers()
+      }
+    })
+
+    it('passes parcel status dialog close events back into local state', async () => {
+      mockItems.value = [{ id: 1, registerType: OZON_COMPANY_ID }]
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+      wrapper.vm.openParcelStatusBulkDialog(1)
+      await wrapper.vm.$nextTick()
+
+      const dialog = wrapper.findComponent({ name: 'ParcelStatusBulkChangeDialog' })
+      dialog.vm.$emit('update:show', false)
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.showParcelStatusBulkDialog).toBe(false)
+    })
+
+    it('runs customs charge calculation and resets running state', async () => {
+      calculateCustomsChargesFn.mockResolvedValue()
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+      const item = { id: 10 }
+
+      await wrapper.vm.runCalculateCustomsCharges(item)
+
+      expect(calculateCustomsChargesFn).toHaveBeenCalledWith(10)
+      expect(wrapper.vm.runningAction).toBe(false)
     })
 
     it('opens parcel status bulk dialog and refreshes after dialog updates', async () => {

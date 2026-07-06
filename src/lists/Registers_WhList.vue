@@ -65,6 +65,7 @@ const authStore = useAuthStore()
 const {
   registers_wh_per_page: registers_per_page,
   registers_wh_search: registers_search,
+  registers_wh_procedure: registers_procedure,
   registers_wh_sort_by: registers_sort_by,
   registers_wh_page: registers_page,
   isShiftLeadPlus,
@@ -89,9 +90,27 @@ const parcelStatusBulkDialogRegister = computed(() => {
 
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
+const REGISTER_PROCEDURE_ALL = 'all'
+const localProcedure = ref(REGISTER_PROCEDURE_ALL)
+localProcedure.value = registers_procedure.value || REGISTER_PROCEDURE_ALL
 
 const parcelStatusOptions = computed(() => unref(parcelStatuses) || [])
 const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
+const procedureFilterItems = computed(() => {
+  const procedures = unref(registersStore.ops)?.customsProcedures
+  const options = [{ title: 'Все', value: REGISTER_PROCEDURE_ALL }]
+  if (!Array.isArray(procedures)) {
+    return options
+  }
+
+  return [
+    ...options,
+    ...procedures.map((procedure) => ({
+      title: [procedure.charCode, procedure.name].filter(Boolean).join(' '),
+      value: Number(procedure.value)
+    }))
+  ]
+})
 
 function startRegisterStatusChange(registerId, currentStatusId) {
   startRegisterStatusEditMode(
@@ -193,7 +212,10 @@ async function handleParcelStatusBulkUpdated() {
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
-  filters: [{ local: localSearch, store: registers_search }],
+  filters: [
+    { local: localSearch, store: registers_search },
+    { local: localProcedure, store: registers_procedure }
+  ],
   loadFn: loadRegisters,
   isComponentMounted,
   debounceMs: 300
@@ -267,7 +289,8 @@ function openScanjobCreate(item) {
 
 defineExpose({
   validationState,
-  progressPercent
+  progressPercent,
+  procedureFilterItems
 })
 
 </script>
@@ -295,7 +318,17 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div>
+    <div class="registers-filter-row">
+      <v-select
+        v-model="localProcedure"
+        :items="procedureFilterItems"
+        label="Таможенная процедура"
+        variant="solo"
+        hide-details
+        :loading="loading || isInitializing"
+        :disabled="runningAction || isInitializing"
+        class="procedure-filter"
+      />
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
@@ -355,4 +388,39 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.registers-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.registers-filter-row .v-text-field-stub,
+.registers-filter-row :deep(.v-text-field) {
+  flex: 1 1 auto;
+}
+
+.procedure-filter {
+  flex: 0 0 220px !important;
+  width: 220px;
+  max-width: 220px;
+  min-width: 220px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .registers-filter-row {
+    flex-direction: column;
+  }
+
+  .procedure-filter {
+    flex: 0 1 auto !important;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}
 </style>

@@ -23,7 +23,10 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
-import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/procedure.helpers.js'
+import {
+  CUSTOMS_PROCEDURE_ALL,
+  buildRegisterProcedureFilterOptions
+} from '@/helpers/customs.procedure.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -95,31 +98,18 @@ const registers_page = paperworkRegistersPage
 
 const registerStatusState = reactive({})
 
-const REGISTER_PROCEDURE_ALL = 'all'
-
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
-const localProcedure = ref(REGISTER_PROCEDURE_ALL)
-localProcedure.value = registers_procedure.value || REGISTER_PROCEDURE_ALL
+const localProcedure = ref(CUSTOMS_PROCEDURE_ALL)
+localProcedure.value = registers_procedure.value || CUSTOMS_PROCEDURE_ALL
 
 const parcelStatusOptions = computed(() => unref(parcelStatusesStore.parcelStatuses) || [])
 const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
 const procedureFilterItems = computed(() => {
-  const procedures = unref(registersStore.ops)?.customsProcedures
-  const options = [{ title: 'Все', value: REGISTER_PROCEDURE_ALL }]
-  if (!Array.isArray(procedures)) {
-    return options
-  }
-
-  return [
-    ...options,
-    ...procedures
-      .filter((procedure) => Number(procedure.value) !== CUSTOMS_PROCEDURE_RETURN)
-      .map((procedure) => ({
-        title: [procedure.charCode, procedure.name].filter(Boolean).join(' '),
-        value: Number(procedure.value)
-      }))
-  ]
+  return buildRegisterProcedureFilterOptions(
+    unref(registersStore.ops)?.customsProcedures,
+    { includeReturn: false }
+  )
 })
 
 const uploadMenuOptions = computed(() => {

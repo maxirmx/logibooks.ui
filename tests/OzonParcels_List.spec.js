@@ -9,7 +9,7 @@ import OzonParcels_List from '@/lists/OzonParcels_List.vue'
 import {
   CUSTOMS_PROCEDURE_IMPORT,
   CUSTOMS_PROCEDURE_REEXPORT
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 const mockItems = ref([

@@ -13,7 +13,7 @@ import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
 import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { formatDate } from '@/helpers/date.formatters.js'
-import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/warehouse.registers.table.helpers.js'
+import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 const CUSTOMS_PROCEDURE_EXPORT = 10

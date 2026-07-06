@@ -14,12 +14,12 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
-  procedureFilterItems,
-  getProcedureLabels,
-  getProcedureSortOrder,
-  getProcedureRows,
+  prohibitionScopeFilterItems,
+  getProhibitionScopeLabels,
+  getProhibitionScopeSortOrder,
+  getProhibitionScopeRows,
   getProhibitionReasonLines
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 
 const stopWordsStore = useStopWordsStore()
@@ -42,7 +42,7 @@ function filterStopWords(value, query, item) {
     return false
   }
   const q = query.toLocaleUpperCase()
-  const procedureText = getProcedureLabels(i).join(' ')
+  const procedureText = getProhibitionScopeLabels(i).join(' ')
   const reasonText = getProhibitionReasonLines(i).join(' ')
   const matchTypeText = getMatchTypeText(i.matchTypeId)
 
@@ -69,7 +69,7 @@ const filteredStopWords = computed(() => {
 
 const tableStopWords = computed(() => filteredStopWords.value.map(word => ({
   ...word,
-  procedure: getProcedureSortOrder(word)
+  procedure: getProhibitionScopeSortOrder(word)
 })))
 
 // Table headers
@@ -142,11 +142,11 @@ defineExpose({
   openEditDialog,
   deleteStopWord,
   getMatchTypeText,
-  getProcedureLabels,
-  getProcedureSortOrder,
-  getProcedureRows,
+  getProhibitionScopeLabels,
+  getProhibitionScopeSortOrder,
+  getProhibitionScopeRows,
   getProhibitionReasonLines,
-  procedureFilterItems,
+  prohibitionScopeFilterItems,
   filteredStopWords,
   tableStopWords,
   filterStopWords,
@@ -180,7 +180,7 @@ defineExpose({
     <div class="stopwords-filter-row">
       <v-select
         v-model="authStore.stopwords_procedure"
-        :items="procedureFilterItems"
+        :items="prohibitionScopeFilterItems"
         label="Таможенная процедура"
         variant="solo"
         hide-details
@@ -238,7 +238,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.procedure`]="{ item }">
-          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
             <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
               <span
                 v-for="row in procedureRows"
@@ -253,7 +253,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
-          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
             <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="reason-lines">
               <span
                 v-for="row in procedureRows"

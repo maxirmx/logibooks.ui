@@ -13,12 +13,12 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
-  procedureFilterItems,
-  getProcedureLabels,
-  getProcedureSortOrder,
-  getProcedureRows,
+  prohibitionScopeFilterItems,
+  getProhibitionScopeLabels,
+  getProhibitionScopeSortOrder,
+  getProhibitionScopeRows,
   getProhibitionReasonLines
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 import {
   preloadFeacnInfo,
@@ -56,7 +56,7 @@ function filterLocalPrefixes(value, query, item) {
     return false
   }
   const q = query.toLocaleUpperCase()
-  const procedureText = getProcedureLabels(i).join(' ')
+  const procedureText = getProhibitionScopeLabels(i).join(' ')
   const reasonText = getProhibitionReasonLines(i).join(' ')
 
   return (
@@ -88,7 +88,7 @@ const filteredPrefixes = computed(() => {
 
 const tablePrefixes = computed(() => filteredPrefixes.value.map(prefix => ({
   ...prefix,
-  procedure: getProcedureSortOrder(prefix)
+  procedure: getProhibitionScopeSortOrder(prefix)
 })))
 
 const headers = [
@@ -165,11 +165,11 @@ defineExpose({
   deletePrefix,
   getExceptionCode,
   getExceptionKey,
-  getProcedureLabels,
-  getProcedureSortOrder,
-  getProcedureRows,
+  getProhibitionScopeLabels,
+  getProhibitionScopeSortOrder,
+  getProhibitionScopeRows,
   getProhibitionReasonLines,
-  procedureFilterItems,
+  prohibitionScopeFilterItems,
   filteredPrefixes,
   tablePrefixes,
   filterLocalPrefixes
@@ -202,7 +202,7 @@ defineExpose({
     <div class="prefix-filter-row">
       <v-select
         v-model="authStore.feacnlocalprefixes_procedure"
-        :items="procedureFilterItems"
+        :items="prohibitionScopeFilterItems"
         label="Таможенная процедура"
         variant="solo"
         hide-details
@@ -241,7 +241,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.procedure`]="{ item }">
-          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
             <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
               <span
                 v-for="row in procedureRows"
@@ -285,7 +285,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
-          <template v-for="procedureRows in [getProcedureRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
             <span v-if="procedureRows.length" class="reason-lines">
               <span
                 v-for="row in procedureRows"

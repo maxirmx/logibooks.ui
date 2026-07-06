@@ -281,7 +281,7 @@ describe('StopWords_List.vue', () => {
       const filters = wrapper.find('.stopwords-filter-row')
       expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
       expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
-      expect(wrapper.vm.procedureFilterItems).toEqual([
+      expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
         { title: 'Любая', value: 'all' },
         { title: 'Экспорт из РФ', value: 'export' },
         { title: 'Импорт в РФ', value: 'import' }
@@ -498,7 +498,7 @@ describe('StopWords_List.vue', () => {
         { forImport: true, forExport: false }
       ]
 
-      expect(combinations.map(item => wrapper.vm.getProcedureSortOrder(item))).toEqual([0, 1, 2, 3])
+      expect(combinations.map(item => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([0, 1, 2, 3])
       expect(wrapper.vm.tableStopWords.map(item => item.procedure)).toEqual([1, 3, 2, 2])
     })
 

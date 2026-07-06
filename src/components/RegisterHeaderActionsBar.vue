@@ -7,7 +7,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { isCustomsChargesCalculationProcedure } from '@/helpers/procedure.helpers.js'
+import { isCustomsChargesCalculationProcedure } from '@/helpers/customs.procedure.helpers.js'
 const authStore = useAuthStore()
 
 const props = defineProps({

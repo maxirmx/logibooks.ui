@@ -35,7 +35,7 @@ import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
-import { isImportOrReexportCustomsProcedure } from '@/helpers/procedure.helpers.js'
+import { isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,

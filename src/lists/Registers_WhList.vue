@@ -23,6 +23,10 @@ import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
+import {
+  CUSTOMS_PROCEDURE_ALL,
+  buildRegisterProcedureFilterOptions
+} from '@/helpers/customs.procedure.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -90,26 +94,16 @@ const parcelStatusBulkDialogRegister = computed(() => {
 
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
-const REGISTER_PROCEDURE_ALL = 'all'
-const localProcedure = ref(REGISTER_PROCEDURE_ALL)
-localProcedure.value = registers_procedure.value || REGISTER_PROCEDURE_ALL
+const localProcedure = ref(CUSTOMS_PROCEDURE_ALL)
+localProcedure.value = registers_procedure.value || CUSTOMS_PROCEDURE_ALL
 
 const parcelStatusOptions = computed(() => unref(parcelStatuses) || [])
 const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
 const procedureFilterItems = computed(() => {
-  const procedures = unref(registersStore.ops)?.customsProcedures
-  const options = [{ title: 'Все', value: REGISTER_PROCEDURE_ALL }]
-  if (!Array.isArray(procedures)) {
-    return options
-  }
-
-  return [
-    ...options,
-    ...procedures.map((procedure) => ({
-      title: [procedure.charCode, procedure.name].filter(Boolean).join(' '),
-      value: Number(procedure.value)
-    }))
-  ]
+  return buildRegisterProcedureFilterOptions(
+    unref(registersStore.ops)?.customsProcedures,
+    { includeReturn: true }
+  )
 })
 
 function startRegisterStatusChange(registerId, currentStatusId) {

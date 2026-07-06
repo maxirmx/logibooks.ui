@@ -21,6 +21,10 @@ const getReturnRegisterPairs = vi.hoisted(() => vi.fn())
 const getRegisters = vi.hoisted(() => vi.fn())
 const createReturnRegister = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
+const registerOps = vi.hoisted(() => ({
+  customsProcedures: [],
+  transportationTypes: []
+}))
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -47,14 +51,7 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
-    ops: {
-      customsProcedures: [
-        { value: 1, name: 'Возврат' },
-        { value: 31, name: 'Реэкспорт' },
-        { value: 60, name: 'Реимпорт' }
-      ],
-      transportationTypes: []
-    },
+    ops: registerOps,
     ensureOpsLoaded,
     getReturnRegisterPairs,
     getRegisters,
@@ -236,6 +233,14 @@ function defaultSourceQuery(overrides = {}) {
 
 describe('ReturnRegister_EditDialog.vue', () => {
   beforeEach(() => {
+    registerOps.customsProcedures = [
+      { value: 1, charCode: '01', name: 'Возврат' },
+      { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
+      { value: 31, charCode: 'ЭК 31', name: 'Реэкспорт' },
+      { value: 40, charCode: 'ИМ 40', name: 'Импорт' },
+      { value: 60, charCode: 'ИМ 60', name: 'Реимпорт' }
+    ]
+    registerOps.transportationTypes = []
     warehousesRef.value = [
       { id: 1, name: 'Warehouse One' },
       { id: 2, name: 'Warehouse Two' }
@@ -280,6 +285,38 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(cancelButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-xmark')
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
     wrapper.unmount()
+  })
+
+  it('builds return procedure options from backend register ops', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    const options = wrapper.find('[data-testid="return-type-select"]').findAll('option')
+
+    expect(options.map(option => ({
+      value: option.element.value,
+      text: option.text()
+    }))).toEqual([
+      { value: '1', text: '01 Возврат' },
+      { value: '60', text: 'ИМ 60 Реимпорт' },
+      { value: '31', text: 'ЭК 31 Реэкспорт' }
+    ])
+    expect(options.map(option => option.element.value)).not.toContain('10')
+    expect(options.map(option => option.element.value)).not.toContain('40')
+  })
+
+  it('does not load pairs or enable submit when return procedure ops are unavailable', async () => {
+    registerOps.customsProcedures = null
+
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    await selectWarehouse(wrapper, 1)
+
+    expect(wrapper.find('[data-testid="return-type-select"]').findAll('option')).toHaveLength(0)
+    expect(getReturnRegisterPairs).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="pair-select"]').attributes('disabled')).toBeDefined()
+    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
   it('shows no-selection labels for warehouse and pair selects', async () => {

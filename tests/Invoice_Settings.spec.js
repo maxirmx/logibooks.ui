@@ -9,7 +9,7 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import router from '@/router'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
-import { CUSTOMS_PROCEDURE_REEXPORT } from '@/helpers/procedure.helpers.js'
+import { CUSTOMS_PROCEDURE_REEXPORT } from '@/helpers/customs.procedure.helpers.js'
 
 const itemRef = ref({ id: 77, invoiceNumber: 'INV-77' })
 const loadingRef = ref(false)

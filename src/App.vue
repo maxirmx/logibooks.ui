@@ -163,7 +163,7 @@ function getUserName() {
 
         <!-- Пользователи -->
         <v-list-item v-if="!authStore.isAdmin">
-          <RouterLink :to="'/user/edit/' + authStore.user.id" class="link">Настройки</RouterLink>
+          <RouterLink :to="'/user/edit/' + authStore.user.id" class="link">Пользователь</RouterLink>
         </v-list-item>
         <v-list-item v-if="authStore.isAdmin">
           <RouterLink to="/users" class="link">Пользователи</RouterLink>

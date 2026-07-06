@@ -23,6 +23,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
+import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/procedure.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -64,6 +65,7 @@ const authStore = useAuthStore()
 const {
   registers_per_page: paperworkRegistersPerPage,
   registers_search: paperworkRegistersSearch,
+  registers_procedure: paperworkRegistersProcedure,
   registers_sort_by: paperworkRegistersSortBy,
   registers_page: paperworkRegistersPage,
   isShiftLeadPlus,
@@ -87,16 +89,38 @@ const registerNouns = computed(() => getRegisterNouns(OP_MODE_PAPERWORK))
 
 const registers_per_page = paperworkRegistersPerPage
 const registers_search = paperworkRegistersSearch
+const registers_procedure = paperworkRegistersProcedure
 const registers_sort_by = paperworkRegistersSortBy
 const registers_page = paperworkRegistersPage
 
 const registerStatusState = reactive({})
 
+const REGISTER_PROCEDURE_ALL = 'all'
+
 const localSearch = ref('')
 localSearch.value = registers_search.value || ''
+const localProcedure = ref(REGISTER_PROCEDURE_ALL)
+localProcedure.value = registers_procedure.value || REGISTER_PROCEDURE_ALL
 
 const parcelStatusOptions = computed(() => unref(parcelStatusesStore.parcelStatuses) || [])
 const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
+const procedureFilterItems = computed(() => {
+  const procedures = unref(registersStore.ops)?.customsProcedures
+  const options = [{ title: 'Все', value: REGISTER_PROCEDURE_ALL }]
+  if (!Array.isArray(procedures)) {
+    return options
+  }
+
+  return [
+    ...options,
+    ...procedures
+      .filter((procedure) => Number(procedure.value) !== CUSTOMS_PROCEDURE_RETURN)
+      .map((procedure) => ({
+        title: [procedure.charCode, procedure.name].filter(Boolean).join(' '),
+        value: Number(procedure.value)
+      }))
+  ]
+})
 
 const uploadMenuOptions = computed(() => {
   if (!companies.value) return []
@@ -268,7 +292,10 @@ async function runCalculateCustomsCharges(item) {
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
-  filters: [{ local: localSearch, store: registers_search }],
+  filters: [
+    { local: localSearch, store: registers_search },
+    { local: localProcedure, store: registers_procedure }
+  ],
   loadFn: loadRegisters,
   isComponentMounted,
   debounceMs: 300
@@ -322,7 +349,8 @@ async function deleteRegister(item) {
 
 defineExpose({
   validationState,
-  progressPercent
+  progressPercent,
+  procedureFilterItems
 })
 </script>
 
@@ -357,7 +385,17 @@ defineExpose({
 
     <hr class="hr" />
 
-    <div>
+    <div class="registers-filter-row">
+      <v-select
+        v-model="localProcedure"
+        :items="procedureFilterItems"
+        label="Таможенная процедура"
+        variant="solo"
+        hide-details
+        :loading="loading || isInitializing"
+        :disabled="runningAction || isInitializing"
+        class="procedure-filter"
+      />
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
@@ -413,4 +451,39 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.registers-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.registers-filter-row .v-text-field-stub,
+.registers-filter-row :deep(.v-text-field) {
+  flex: 1 1 auto;
+}
+
+.procedure-filter {
+  flex: 0 0 220px !important;
+  width: 220px;
+  max-width: 220px;
+  min-width: 220px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .registers-filter-row {
+    flex-direction: column;
+  }
+
+  .procedure-filter {
+    flex: 0 1 auto !important;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}
 </style>

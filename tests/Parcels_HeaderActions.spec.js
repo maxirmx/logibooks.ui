@@ -11,7 +11,7 @@ import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
-import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/procedure.helpers.js'
+import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 vi.mock('vue-router', () => ({

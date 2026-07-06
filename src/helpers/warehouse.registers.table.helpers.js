@@ -6,7 +6,7 @@ import { formatIntegerThousands } from '@/helpers/number.formatters.js'
 import {
   CUSTOMS_PROCEDURE_RETURN,
   isReturnCustomsProcedure
-} from '@/helpers/procedure.helpers.js'
+} from '@/helpers/customs.procedure.helpers.js'
 
 export { CUSTOMS_PROCEDURE_RETURN }
 export const RETURN_REGISTER_MATCHING_COUNT_HEADER = 'К возврату'

@@ -31,12 +31,12 @@ describe('parcel.statuses.store.js', () => {
   let pinia
 
   const mockParcelStatuses = [
-    { id: 1, title: 'Черновик' },
-    { id: 2, title: 'Подтвержден' },
-    { id: 3, title: 'Выполнен' }
+    { id: 1, title: 'Черновик', bkColor: '#112233', restrictionReason: 'Стоп-слово' },
+    { id: 2, title: 'Подтвержден', bkColor: '#445566', restrictionReason: 'Запрет' },
+    { id: 3, title: 'Выполнен', bkColor: null, restrictionReason: '' }
   ]
 
-  const mockParcelStatus = { id: 1, title: 'Черновик' }
+  const mockParcelStatus = { id: 1, title: 'Черновик', bkColor: '#112233', restrictionReason: 'Стоп-слово' }
 
   beforeEach(() => {
     pinia = createPinia()
@@ -146,7 +146,7 @@ describe('parcel.statuses.store.js', () => {
 
   describe('create', () => {
     it('creates order status successfully', async () => {
-      const newOrderStatus = { title: 'Новый статус' }
+      const newOrderStatus = { title: 'Новый статус', bkColor: '#ABCDEF', restrictionReason: 'Новая причина' }
       const createdOrderStatus = { id: 4, ...newOrderStatus }
 
       mockPost.mockResolvedValue(createdOrderStatus)
@@ -169,7 +169,7 @@ describe('parcel.statuses.store.js', () => {
 
   describe('update', () => {
     it('updates order status successfully', async () => {
-      const updateData = { title: 'Обновленный заголовок' }
+      const updateData = { title: 'Обновленный заголовок', bkColor: '#ABCDEF', restrictionReason: 'Новая причина' }
       const updatedOrderStatus = { ...mockParcelStatus, ...updateData }
 
       mockPut.mockResolvedValue(updatedOrderStatus)

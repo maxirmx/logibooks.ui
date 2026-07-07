@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Suspense } from 'vue'
+import { Suspense, ref } from 'vue'
 import ParcelStatusSettings from '@/dialogs/ParcelStatus_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
@@ -14,7 +14,9 @@ import { resolveAll } from './helpers/test-utils.js'
 const mockParcelStatus = {
   id: 1,
   title: 'Черновик',
-  useAtCustomsProcessing: true
+  useAtCustomsProcessing: true,
+  bkColor: '#112233',
+  restrictionReason: 'Причина запрета'
 }
 
 // Mock stores using test-utils
@@ -47,7 +49,7 @@ vi.mock('@/router', () => ({
 vi.mock('pinia', () => ({
   storeToRefs: (store) => {
     if (store.parcelStatus !== undefined) {
-      return { parcelStatus: { value: store.parcelStatus } }
+      return { parcelStatus: ref(store.parcelStatus) }
     }
     return {}
   }
@@ -61,7 +63,7 @@ vi.mock('vee-validate', () => ({
     emits: ['submit'],
     template: `
       <form @submit.prevent="handleSubmit">
-        <slot :errors="errors" :isSubmitting="isSubmitting" />
+        <slot :errors="errors" :isSubmitting="isSubmitting" :handleSubmit="runSubmit" />
       </form>
     `,
     data() {
@@ -77,6 +79,12 @@ vi.mock('vee-validate', () => ({
         }
         this.$emit('submit', this.$props.initialValues || {}, actions)
       },
+      runSubmit(callback) {
+        const actions = {
+          setErrors: this.setErrors.bind(this)
+        }
+        return callback(this.$props.initialValues || {}, actions)
+      },
       setErrors(newErrors) {
         this.errors = { ...this.errors, ...newErrors }
       }
@@ -86,12 +94,23 @@ vi.mock('vee-validate', () => ({
     name: 'Field',
     props: ['name', 'id', 'type', 'as', 'class', 'placeholder', 'rows'],
     template: `
-      <input v-if="!as || as === 'input'" v-bind="$props" />
+      <slot v-if="$slots.default" :field="{ value }" :handleChange="handleChange" />
+      <input v-else-if="!as || as === 'input'" v-bind="$props" />
       <textarea v-else-if="as === 'textarea'" v-bind="$props"></textarea>
       <component v-else :is="as" v-bind="$props">
         <slot />
       </component>
-    `
+    `,
+    data() {
+      return {
+        value: undefined
+      }
+    },
+    methods: {
+      handleChange(value) {
+        this.value = value
+      }
+    }
   }
 }))
 
@@ -109,6 +128,12 @@ const AsyncWrapper = {
   `
 }
 
+function findActionButton(wrapper, icon) {
+  return wrapper
+    .findAllComponents({ name: 'ActionButton' })
+    .find(button => button.props('icon') === icon)
+}
+
 // Import router after mocking
 let mockRouter
 beforeEach(async () => {
@@ -116,6 +141,10 @@ beforeEach(async () => {
   mockRouter = router.default
   vi.clearAllMocks()
   // Reset store states
+  mockParcelStatusesStore.parcelStatus = { ...mockParcelStatus }
+  mockParcelStatusesStore.getById.mockResolvedValue(mockParcelStatusesStore.parcelStatus)
+  mockParcelStatusesStore.create.mockResolvedValue(mockParcelStatusesStore.parcelStatus)
+  mockParcelStatusesStore.update.mockResolvedValue()
   mockParcelStatusesStore.loading = false
   mockParcelStatusesStore.error = null
   mockAlertStore.loading = false
@@ -135,7 +164,10 @@ describe('ParcelStatus_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
+      expect(wrapper.find('[data-testid="parcel-status-header-actions"]').exists()).toBe(true)
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
+      expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
+      expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
       expect(mockParcelStatusesStore.getById).not.toHaveBeenCalled()
     })
 
@@ -150,7 +182,7 @@ describe('ParcelStatus_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
 
     it('renders all form fields', async () => {
@@ -165,7 +197,12 @@ describe('ParcelStatus_Settings.vue', () => {
 
       // Check that the title form field is present
       expect(wrapper.find('#title').exists()).toBe(true)
+      expect(wrapper.find('#bkColor').exists()).toBe(true)
+      expect(wrapper.find('#restrictionReason').exists()).toBe(true)
       expect(wrapper.find('#useAtCustomsProcessing').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
+      expect(wrapper.find('#restrictionReason').element.tagName).toBe('INPUT')
+      expect(wrapper.find('#restrictionReason').attributes('type')).toBe('text')
     })
 
     it('renders form labels correctly', async () => {
@@ -180,6 +217,51 @@ describe('ParcelStatus_Settings.vue', () => {
 
       expect(wrapper.text()).toContain('Название статуса:')
       expect(wrapper.text()).toContain('Таможенное оформление:')
+      expect(wrapper.text()).toContain('Цвет при выгрузке:')
+      expect(wrapper.text()).toContain('Причина запрета:')
+      expect(wrapper.findAll('label.label').map(label => label.text())).toEqual([
+        'Название статуса:',
+        'Таможенное оформление:',
+        'Цвет при выгрузке:',
+        'Причина запрета:'
+      ])
+    })
+
+    it('renders empty export color as no color in create mode', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      expect(wrapper.find('.status-color-value').text()).toBe('Не задан')
+      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain('status-color-swatch--empty')
+      expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(true)
+    })
+
+    it('clears export color to null in edit mode', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', parcelStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      expect(wrapper.find('.status-color-value').text()).toBe('#112233')
+      expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(false)
+
+      await findActionButton(wrapper, 'fa-solid fa-broom').find('button').trigger('click')
+      await resolveAll()
+
+      expect(mockParcelStatusesStore.parcelStatus.bkColor).toBeNull()
+      expect(wrapper.find('.status-color-value').text()).toBe('Не задан')
+      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain('status-color-swatch--empty')
+      expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(true)
     })
 
     it('shows loading fallback initially', async () => {
@@ -211,13 +293,15 @@ describe('ParcelStatus_Settings.vue', () => {
 
       await resolveAll()
 
-      const form = wrapper.find('form')
-      await form.trigger('submit')
+      const saveButton = findActionButton(wrapper, 'fa-solid fa-check-double')
+      await saveButton.find('button').trigger('click')
 
       expect(mockParcelStatusesStore.create).toHaveBeenCalled()
       expect(mockParcelStatusesStore.create).toHaveBeenCalledWith({
         title: '',
-        useAtCustomsProcessing: false
+        useAtCustomsProcessing: false,
+        bkColor: null,
+        restrictionReason: ''
       })
     })
 
@@ -293,7 +377,7 @@ describe('ParcelStatus_Settings.vue', () => {
       const form = wrapper.find('form')
       await form.trigger('submit')
 
-      expect(mockParcelStatusesStore.update).toHaveBeenCalledWith(1, { value: mockParcelStatus })
+      expect(mockParcelStatusesStore.update).toHaveBeenCalledWith(1, mockParcelStatus)
     })
 
     it('shows success message and redirects after successful update', async () => {
@@ -361,11 +445,10 @@ describe('ParcelStatus_Settings.vue', () => {
 
       await resolveAll()
 
-      const cancelButton = wrapper.find('button.secondary')
+      const cancelButton = findActionButton(wrapper, 'fa-solid fa-xmark')
       expect(cancelButton.exists()).toBe(true)
-      expect(cancelButton.text()).toBe('Отменить')
 
-      await cancelButton.trigger('click')
+      await cancelButton.find('button').trigger('click')
       expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
     })
   })
@@ -500,7 +583,7 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
     })
 
     it('displays correct button text for edit mode', async () => {
@@ -512,7 +595,7 @@ describe('ParcelStatus_Settings.vue', () => {
       })
 
       await resolveAll()
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
   })
 

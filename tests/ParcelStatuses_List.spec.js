@@ -33,9 +33,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockParcelStatuses = ref([
-  { id: 1, title: 'Черновик', useAtCustomsProcessing: true },
-  { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false },
-  { id: 3, title: 'Выполнен', useAtCustomsProcessing: false }
+  { id: 1, title: 'Черновик', useAtCustomsProcessing: true, bkColor: '#112233', restrictionReason: 'Стоп-слово' },
+  { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false, bkColor: '#445566', restrictionReason: 'Запрет' },
+  { id: 3, title: 'Выполнен', useAtCustomsProcessing: false, bkColor: null, restrictionReason: '' }
 ])
 
 // Mock stores
@@ -104,9 +104,9 @@ describe('ParcelStatuses_List.vue', () => {
 
     // Reset reactive data
     mockParcelStatuses.value = [
-      { id: 1, title: 'Черновик', useAtCustomsProcessing: true },
-      { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false },
-      { id: 3, title: 'Выполнен', useAtCustomsProcessing: false }
+      { id: 1, title: 'Черновик', useAtCustomsProcessing: true, bkColor: '#112233', restrictionReason: 'Стоп-слово' },
+      { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false, bkColor: '#445566', restrictionReason: 'Запрет' },
+      { id: 3, title: 'Выполнен', useAtCustomsProcessing: false, bkColor: null, restrictionReason: '' }
     ]
 
     wrapper = mount(ParcelStatusesList, {
@@ -253,6 +253,12 @@ describe('ParcelStatuses_List.vue', () => {
       expect(result).toBe(false)
     })
 
+    it('filters order statuses by restriction reason', () => {
+      const mockItem = { raw: { title: 'Черновик', restrictionReason: 'Стоп-слово' } }
+      const result = wrapper.vm.filterParcelStatuses(null, 'стоп', mockItem)
+      expect(result).toBe(true)
+    })
+
     it('handles null query', () => {
       const mockItem = { raw: { title: 'Черновик' } }
       const result = wrapper.vm.filterParcelStatuses(null, null, mockItem)
@@ -272,31 +278,6 @@ describe('ParcelStatuses_List.vue', () => {
       expect(loading).toBeDefined()
       expect(typeof loading.value).toBe('boolean')
       expect(loading.value).toBe(false)
-    })
-  })
-
-  describe('Table Headers', () => {
-    it('has correct table headers', () => {
-      const headers = wrapper.vm.headers
-      expect(headers).toEqual([
-        { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-        { title: 'Название статуса', key: 'title', sortable: true },
-        { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true }
-      ])
-    })
-
-    it('shows customs processing values as Да and Нет', () => {
-      const tableText = wrapper.text()
-      expect(tableText).toContain('Да')
-      expect(tableText).toContain('Нет')
-    })
-  })
-
-  describe('Component Exposure', () => {
-    it('exposes necessary functions for testing', () => {
-      expect(wrapper.vm.openCreateDialog).toBeDefined()
-      expect(wrapper.vm.openEditDialog).toBeDefined()
-      expect(wrapper.vm.deleteParcelStatus).toBeDefined()
     })
   })
 

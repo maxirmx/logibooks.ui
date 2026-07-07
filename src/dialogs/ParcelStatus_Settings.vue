@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   mode: {
@@ -29,7 +30,9 @@ const isCreate = computed(() => props.mode === 'create')
 
 let parcelStatus = ref({
   title: '',
-  useAtCustomsProcessing: false
+  useAtCustomsProcessing: false,
+  bkColor: null,
+  restrictionReason: ''
 })
 
 if (!isCreate.value) {
@@ -49,8 +52,46 @@ function getButtonText() {
 
 // Validation schema
 const schema = Yup.object({
-  title: Yup.string().required('Название статуса обязательно')
+  title: Yup.string().required('Название статуса обязательно'),
+  bkColor: Yup.string()
+    .nullable()
+    .matches(/^#[0-9A-Fa-f]{6}$/, {
+      message: 'Цвет при выгрузке должен быть в формате #RRGGBB',
+      excludeEmptyString: true
+    })
 })
+
+function getBackgroundColorValue(fieldValue) {
+  const value = fieldValue === undefined ? parcelStatus.value?.bkColor : fieldValue
+  return /^#[0-9A-Fa-f]{6}$/.test(value || '') ? value : null
+}
+
+function getBackgroundColorPickerValue(fieldValue) {
+  return getBackgroundColorValue(fieldValue) || '#ffffff'
+}
+
+function getBackgroundColorDisplay(fieldValue) {
+  return getBackgroundColorValue(fieldValue) || 'Не задан'
+}
+
+function hasBackgroundColor(fieldValue) {
+  return getBackgroundColorValue(fieldValue) !== null
+}
+
+function handleBackgroundColorInput(event, handleChange) {
+  const value = event.target.value || null
+  if (parcelStatus.value) {
+    parcelStatus.value.bkColor = value
+  }
+  handleChange(value)
+}
+
+function handleBackgroundColorClear(handleChange) {
+  if (parcelStatus.value) {
+    parcelStatus.value.bkColor = null
+  }
+  handleChange(null)
+}
 
 // Form submission
 function onSubmit(values, { setErrors }) {
@@ -82,14 +123,38 @@ function onSubmit(values, { setErrors }) {
 
 <template>
   <div class="settings form-2">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
-    <hr class="hr" />
     <Form
+      class="parcel-status-form"
       @submit="onSubmit"
       :initial-values="parcelStatus"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, isSubmitting, handleSubmit }"
     >
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ getTitle() }}</h1>
+        <div class="header-actions" data-testid="parcel-status-header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            :iconSize="'2x'"
+            :tooltip-text="getButtonText()"
+            :disabled="isSubmitting"
+            data-testid="parcel-status-save-action"
+            @click="handleSubmit(onSubmit)"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            :iconSize="'2x'"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            data-testid="parcel-status-cancel-action"
+            @click="router.push('/parcelstatuses')"
+          />
+        </div>
+      </div>
+      <hr class="hr" />
+
       <div class="form-group">
         <label for="title" class="label">Название статуса:</label>
         <Field
@@ -116,29 +181,69 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
 
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButtonText() }}
-        </button>
-        <button
-          class="button secondary"
-          type="button"
-          @click="$router.push('/parcelstatuses')"
-        >
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
+      <Field name="bkColor" v-slot="{ field, handleChange }">
+        <div class="form-group">
+          <label for="bkColor" class="label">Цвет при выгрузке:</label>
+          <div class="status-color-actions">
+            <label
+              class="status-color-control"
+              :class="{ 'status-color-control--empty': !hasBackgroundColor(field?.value) }"
+              for="bkColor"
+            >
+              <span
+                class="status-color-swatch"
+                :class="{ 'status-color-swatch--empty': !hasBackgroundColor(field?.value) }"
+                :style="{ backgroundColor: getBackgroundColorValue(field?.value) || 'transparent' }"
+                data-testid="bk-color-swatch"
+              ></span>
+              <span class="status-color-value">{{ getBackgroundColorDisplay(field?.value) }}</span>
+              <input
+                id="bkColor"
+                type="color"
+                class="status-color-native"
+                :class="{ 'is-invalid': errors.bkColor }"
+                aria-label="Цвет при выгрузке"
+                :value="getBackgroundColorPickerValue(field?.value)"
+                @input="(event) => handleBackgroundColorInput(event, handleChange)"
+              />
+            <ActionButton
+              :item="{}"
+              icon="fa-solid fa-broom"
+              tooltip-text="Очистить"
+              :disabled="!hasBackgroundColor(field?.value)"
+              data-testid="bk-color-clear-action"
+              @click="handleBackgroundColorClear(handleChange)"
+            />
+            </label>
+          </div>
+        </div>
+      </Field>
+
+      <div class="form-group">
+        <label for="restrictionReason" class="label">Причина запрета:</label>
+        <Field
+          id="restrictionReason"
+          name="restrictionReason"
+          type="text"
+          class="form-control input"
+          placeholder="Причина запрета"
+        />
       </div>
 
       <div v-if="errors.title" class="alert alert-danger mt-3 mb-0">{{ errors.title }}</div>
+      <div v-if="errors.bkColor" class="alert alert-danger mt-3 mb-0">{{ errors.bkColor }}</div>
       <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>
 
 <style scoped>  
+.primary-heading {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .checkbox-item {
   display: flex;
   align-items: center;
@@ -167,4 +272,81 @@ function onSubmit(values, { setErrors }) {
   right: 12px;
 }
 
+.status-color-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  min-width: 9.5rem;
+  min-height: 2.25rem;
+  border: 1px solid #c7ccd1;
+  border-radius: 4px;
+  background: #fff;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+.status-color-control:focus-within {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.18);
+}
+
+.status-color-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-color-control--empty {
+  color: #6c757d;
+}
+
+.status-color-swatch {
+  position: relative;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid #74777c;
+  border-radius: 4px;
+}
+
+.status-color-swatch--empty::after {
+  content: '';
+  position: absolute;
+  left: 0.2rem;
+  right: 0.2rem;
+  top: 50%;
+  border-top: 2px solid #d3223f;
+  transform: rotate(-45deg);
+}
+
+.status-color-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.status-color-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .header-with-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primary-heading {
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .header-actions {
+    align-self: flex-end;
+  }
+}
 </style>

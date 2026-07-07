@@ -35,7 +35,8 @@ function filterParcelStatuses(value, query, item) {
   const q = query.toLocaleUpperCase()
 
   return (
-    i.title?.toLocaleUpperCase().indexOf(q) !== -1
+    i.title?.toLocaleUpperCase().includes(q) === true ||
+    i.restrictionReason?.toLocaleUpperCase().includes(q) === true
   )
 }
 
@@ -43,7 +44,9 @@ function filterParcelStatuses(value, query, item) {
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: 'Название статуса', key: 'title', sortable: true },
-  { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true }
+  { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true },
+  { title: 'Цвет при выгрузке', align: 'center', key: 'bkColor', sortable: false },
+  { title: 'Причина запрета', key: 'restrictionReason', sortable: true }
 ]
 
 function openEditDialog(item) {
@@ -172,6 +175,18 @@ defineExpose({
             />
           </div>
         </template>
+        <template v-slot:[`item.bkColor`]="{ item }">
+          <span
+            v-if="item.bkColor"
+            class="parcel-status-color-swatch"
+            :style="{ backgroundColor: item.bkColor }"
+            :title="item.bkColor"
+            data-testid="parcel-status-color-swatch"
+          ></span>
+        </template>
+        <template v-slot:[`item.restrictionReason`]="{ item }">
+          <span class="restriction-reason-cell">{{ item.restrictionReason || '' }}</span>
+        </template>
         <template v-slot:[`item.useAtCustomsProcessing`]="{ item }">
           {{ item.useAtCustomsProcessing ? 'Да' : 'Нет' }}
         </template>
@@ -188,4 +203,17 @@ defineExpose({
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.parcel-status-color-swatch {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid #74777c;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.restriction-reason-cell {
+  white-space: pre-wrap;
+}
 </style>

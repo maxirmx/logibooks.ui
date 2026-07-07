@@ -9,18 +9,22 @@ import router from '@/router'
 import { useEventsStore } from '@/stores/events.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { CUSTOMS_PROCEDURE, normalizeCustomsProcedureCode } from '@/helpers/customs.procedure.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const eventsStore = useEventsStore()
 const parcelStatusesStore = useParcelStatusesStore()
 const warehousesStore = useWarehousesStore()
+const registersStore = useRegistersStore()
 const authStore = useAuthStore()
 
 const { parcelEvents: events, parcelLoading: loading } = storeToRefs(eventsStore)
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
-const { ops } = storeToRefs(warehousesStore)
+const { ops: warehouseOps } = storeToRefs(warehousesStore)
+const { ops: registerOps } = storeToRefs(registersStore)
 const { parcelevents_per_page, parcelevents_page } = storeToRefs(authStore)
 
 const statusSelections = ref({})
@@ -30,7 +34,39 @@ const saving = ref(false)
 const initializing = ref(true)
 const errorMessage = ref('')
 
+const parcelEventProcedureSet = new Set(Object.values(CUSTOMS_PROCEDURE))
+const selectedCustomsProcedureCode = ref(null)
+
 const hasEvents = computed(() => events.value?.length > 0)
+const procedureOptions = computed(() => {
+  const customsProcedures = Array.isArray(registerOps.value?.customsProcedures)
+    ? registerOps.value.customsProcedures
+    : []
+
+  const seen = new Set()
+
+  return customsProcedures
+    .map((procedure) => {
+      const code = normalizeCustomsProcedureCode(procedure?.value)
+      if (!parcelEventProcedureSet.has(code) || seen.has(code)) return null
+
+      seen.add(code)
+
+      const charCode = typeof procedure?.charCode === 'string' ? procedure.charCode.trim() : ''
+      const name = typeof procedure?.name === 'string' ? procedure.name.trim() : ''
+
+      return charCode && name
+        ? { value: code, title: `${charCode} ${name}` }
+        : null
+    })
+    .filter(Boolean)
+})
+const hasProcedureOptions = computed(() => procedureOptions.value.length === parcelEventProcedureSet.size)
+const filteredEvents = computed(() =>
+  events.value?.filter(
+    (item) => normalizeCustomsProcedureCode(item.customsProcedureCode) === selectedCustomsProcedureCode.value
+  ) ?? []
+)
 
 // Headers for events settings table
 const headers = [
@@ -42,6 +78,28 @@ const headers = [
 
 function getEventTitle(event) {
   return event.eventName || event.eventId
+}
+
+function ensureProcedureOptionsLoaded() {
+  if (!hasProcedureOptions.value) {
+    throw new Error('Не удалось загрузить таможенные процедуры')
+  }
+}
+
+function ensureSelectedCustomsProcedure() {
+  if (procedureOptions.value.some((option) => option.value === selectedCustomsProcedureCode.value)) {
+    return
+  }
+
+  selectedCustomsProcedureCode.value = procedureOptions.value[0]?.value ?? null
+}
+
+function onCustomsProcedureChange(value) {
+  const code = normalizeCustomsProcedureCode(value)
+  if (!procedureOptions.value.some((option) => option.value === code)) return
+
+  selectedCustomsProcedureCode.value = code
+  parcelevents_page.value = 1
 }
 
 function onStatusChange(eventId, value) {
@@ -73,6 +131,10 @@ async function loadData() {
   try {
     await parcelStatusesStore.ensureLoaded()
     await warehousesStore.ensureOpsLoaded()
+    await registersStore.ensureOpsLoaded()
+    ensureProcedureOptionsLoaded()
+    ensureSelectedCustomsProcedure()
+    parcelevents_page.value = 1
     await eventsStore.parcelGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.parcelStatusId ?? null
@@ -160,13 +222,28 @@ onMounted(async () => {
         <span class="spinner-border spinner-border-lg align-center"></span>
       </div>
 
-      <div v-else-if="hasEvents">
+      <div v-else-if="hasEvents && hasProcedureOptions">
+        <div class="parcel-events-filter-row mb-3">
+          <v-select
+            :model-value="selectedCustomsProcedureCode"
+            :items="procedureOptions"
+            label="Таможенная процедура"
+            variant="solo"
+            hide-details
+            :loading="loading || initializing"
+            :disabled="saving || initializing"
+            class="procedure-filter"
+            data-testid="customs-procedure-select"
+            @update:model-value="onCustomsProcedureChange"
+          />
+        </div>
+
         <v-data-table
           v-model:items-per-page="parcelevents_per_page"
           v-model:page="parcelevents_page"
           :items-per-page-options="itemsPerPageOptions"
           :headers="headers"
-          :items="events"
+          :items="filteredEvents"
           item-value="id"
           class="interlaced-table single-line-table parcel-events-table"
           density="compact"
@@ -199,7 +276,7 @@ onMounted(async () => {
             >
               <option value="0">Не менять</option>
               <option
-                v-for="zone in ops.zones"
+                v-for="zone in warehouseOps.zones"
                 :key="zone.value"
                 :value="zone.value"
               >
@@ -229,6 +306,23 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.parcel-events-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.procedure-filter {
+  flex: 0 0 220px !important;
+  width: 220px;
+  max-width: 220px;
+  min-width: 220px;
+}
+
+.procedure-filter :deep(.v-field__input) {
+  min-width: 0;
+}
+
 /* Ensure select and option elements in the parcel events table match text styling */
 .parcel-events-table .form-control,
 .parcel-events-table .form-control option,
@@ -250,5 +344,18 @@ onMounted(async () => {
   width: 100%;
   box-sizing: border-box;
   margin: 0;
+}
+
+@media (max-width: 700px) {
+  .parcel-events-filter-row {
+    flex-direction: column;
+  }
+
+  .procedure-filter {
+    flex: 0 1 auto !important;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
 }
 </style>

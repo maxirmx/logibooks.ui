@@ -54,10 +54,9 @@ const procedureOptions = computed(() => {
 
       const charCode = typeof procedure?.charCode === 'string' ? procedure.charCode.trim() : ''
       const name = typeof procedure?.name === 'string' ? procedure.name.trim() : ''
+      const title = [charCode, name].filter(Boolean).join(' ')
 
-      return charCode && name
-        ? { value: code, title: `${charCode} ${name}` }
-        : null
+      return { value: code, title: title || String(code) }
     })
     .filter(Boolean)
 })
@@ -222,7 +221,7 @@ onMounted(async () => {
         <span class="spinner-border spinner-border-lg align-center"></span>
       </div>
 
-      <div v-else-if="hasEvents && hasProcedureOptions">
+      <div v-else-if="hasEvents && hasProcedureOptions && !errorMessage">
         <div class="parcel-events-filter-row mb-3">
           <v-select
             :model-value="selectedCustomsProcedureCode"

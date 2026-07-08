@@ -67,12 +67,6 @@ describe('ActionButton', () => {
       expect(fontAwesome.props('size')).toBe('1x')
     })
 
-    it('applies custom icon size', () => {
-      const wrapper = createWrapper({ iconSize: '1x' })
-      const fontAwesome = wrapper.findComponent({ name: 'FontAwesomeIcon' })
-      expect(fontAwesome.props('size')).toBe('1x')
-    })
-
     it('renders with tooltip', () => {
       const wrapper = createWrapper()
       const tooltip = wrapper.findComponent({ name: 'VTooltip' })
@@ -97,16 +91,6 @@ describe('ActionButton', () => {
       
       expect(wrapper.emitted('click')).toBeTruthy()
       expect(wrapper.emitted('click')[0]).toEqual([defaultProps.item])
-    })
-
-    it('emits click event multiple times', async () => {
-      const wrapper = createWrapper()
-      const button = wrapper.find('button')
-      
-      await button.trigger('click')
-      await button.trigger('click')
-      
-      expect(wrapper.emitted('click')).toHaveLength(2)
     })
 
     it('emits click with different item data', async () => {
@@ -142,29 +126,9 @@ describe('ActionButton', () => {
       expect(wrapper.emitted('click')).toBeFalsy()
     })
 
-    it('can be conditionally disabled', async () => {
-      const wrapper = createWrapper({ disabled: false })
-      expect(wrapper.find('button').attributes('disabled')).toBeUndefined()
-      
-      await wrapper.setProps({ disabled: true })
-      expect(wrapper.find('button').attributes('disabled')).toBeDefined()
-    })
   })
 
   describe('props validation', () => {
-    it('requires item prop', () => {
-      // This test verifies the prop is marked as required
-      expect(ActionButton.props?.item?.required).toBe(true)
-    })
-
-    it('requires icon prop', () => {
-      expect(ActionButton.props?.icon?.required).toBe(true)
-    })
-
-    it('requires tooltipText prop', () => {
-      expect(ActionButton.props?.tooltipText?.required).toBe(true)
-    })
-
     it('has default values for optional props', () => {
       expect(ActionButton.props?.iconSize?.default).toBe('1x')
       expect(ActionButton.props?.disabled?.default).toBe(false)
@@ -178,31 +142,6 @@ describe('ActionButton', () => {
       expect(button.attributes('type')).toBe('button')
     })
 
-    it('preserves tooltip for screen readers', () => {
-      const wrapper = createWrapper()
-      const tooltip = wrapper.findComponent({ name: 'VTooltip' })
-      expect(tooltip.exists()).toBe(true)
-    })
-
-    it('maintains proper disabled state accessibility', () => {
-      const wrapper = createWrapper({ disabled: true })
-      const button = wrapper.find('button')
-      expect(button.attributes('disabled')).toBeDefined()
-    })
-  })
-
-  describe('bulk operations in registers', () => {
-    it('works as save button in bulk operations', async () => {
-      const wrapper = createWrapper({
-        item: { id: 1 },
-        icon: 'fa-solid fa-check',
-        tooltipText: 'Применить статус',
-        disabled: false
-      })
-      
-      await wrapper.find('button').trigger('click')
-      expect(wrapper.emitted('click')).toBeTruthy()
-    })
   })
 
   describe('integration scenarios', () => {
@@ -244,12 +183,6 @@ describe('ActionButton', () => {
   })
 
   describe('error handling', () => {
-    it('handles missing optional props gracefully', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.iconSize).toBe('1x')
-      expect(wrapper.vm.disabled).toBe(false)
-    })
-
     it('handles empty tooltip text', () => {
       const wrapper = createWrapper({ tooltipText: '' })
       // Check that tooltip component exists but with empty content

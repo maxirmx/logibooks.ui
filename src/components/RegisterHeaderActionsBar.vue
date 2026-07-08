@@ -186,7 +186,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
           {
             label: 'реестр дополнительных изъятий',
             icon: 'fa-solid fa-person-circle-xmark',
-            color: 'order-has-issues',
+            color: 'parcel-has-issues',
             action: () => run('download-additional-restrictions')
           },
           {

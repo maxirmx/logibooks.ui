@@ -244,7 +244,7 @@ describe('Parcels List Helpers', () => {
 
       const result = getRowPropsForParcel(data)
 
-      expect(result).toEqual({ class: 'order-has-issues' })
+      expect(result).toEqual({ class: 'parcel-has-issues' })
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(0x00010002)
     })
 
@@ -274,7 +274,7 @@ describe('Parcels List Helpers', () => {
 
       const result = getRowPropsForParcel(data)
 
-      expect(result).toEqual({ class: 'order-has-issues' })
+      expect(result).toEqual({ class: 'parcel-has-issues' })
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicateValue)
     })
 

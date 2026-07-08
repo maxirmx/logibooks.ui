@@ -7,7 +7,7 @@ defineOptions({ inheritAttrs: false })
 
 const menuId = `action-button-2l-menu-${Math.random().toString(36).slice(2, 10)}`
 const optionColorClasses = {
-  'order-has-issues': 'action-button-2l__menu-icon--order-has-issues',
+  'parcel-has-issues': 'action-button-2l__menu-icon--parcel-has-issues',
   'has-issues': 'action-button-2l__menu-icon--has-issues',
   'not-checked': 'action-button-2l__menu-icon--not-checked',
   'no-issues': 'action-button-2l__menu-icon--no-issues',
@@ -27,7 +27,7 @@ const props = defineProps({
       if (!Array.isArray(options)) return false
       if (options.length === 0) return true
       const optionColors = [
-        'order-has-issues',
+        'parcel-has-issues',
         'has-issues',
         'not-checked',
         'no-issues',
@@ -359,8 +359,8 @@ defineExpose({
   color: var(--check-status-has-issues-color);
 }
 
-.action-button-2l__menu-icon--order-has-issues {
-  color: var(--order-has-issues-color);
+.action-button-2l__menu-icon--parcel-has-issues {
+  color: var(--parcel-has-issues-color);
 }
 
 .action-button-2l__menu-icon--not-checked {

@@ -228,6 +228,7 @@ describe('RegisterHeaderActionsBar', () => {
     })
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+    expect(documentMenu).toBeTruthy()
     const additionalRestrictionsOption = documentMenu.props('options').find(
       (option) => option.label === 'реестр дополнительных изъятий'
     )
@@ -245,6 +246,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
     const disabledDocumentMenu = findActionMenuByTooltip(disabledWrapper, 'Сформировать документы')
+    expect(disabledDocumentMenu).toBeTruthy()
     const disabledAdditionalRestrictionsOption = disabledDocumentMenu.props('options').find(
       (option) => option.label === 'реестр дополнительных изъятий'
     )

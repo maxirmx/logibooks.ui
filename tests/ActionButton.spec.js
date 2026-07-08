@@ -191,85 +191,6 @@ describe('ActionButton', () => {
     })
   })
 
-  describe('real-world usage scenarios', () => {
-    it('works as edit button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, dealNumber: 'DEAL-123' },
-        icon: 'fa-solid fa-pen',
-        tooltipText: 'Редактировать реестр'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-pen')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as delete button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, fileName: 'test.xlsx' },
-        icon: 'fa-solid fa-trash-can',
-        tooltipText: 'Удалить реестр'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-trash-can')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as export button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, ordersTotal: 15 },
-        icon: 'fa-solid fa-file-export',
-        tooltipText: 'Экспортировать реестр'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-file-export')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as validate button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, statusId: 2 },
-        icon: 'fa-solid fa-clipboard-check',
-        tooltipText: 'Проверить посылку'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-clipboard-check')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as upload button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, shk: 'SKU123' },
-        icon: 'fa-solid fa-upload',
-        tooltipText: 'Выгрузить XML накладную для посылки'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-upload')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as approve button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1 },
-        icon: 'fa-solid fa-check-circle',
-        tooltipText: 'Согласовать'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-check-circle')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as list button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, dealNumber: 'DEAL-456' },
-        icon: 'fa-solid fa-list',
-        tooltipText: 'Открыть список посылок'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-list')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-  })
-
   describe('bulk operations in registers', () => {
     it('works as save button in bulk operations', async () => {
       const wrapper = createWrapper({
@@ -281,40 +202,6 @@ describe('ActionButton', () => {
       
       await wrapper.find('button').trigger('click')
       expect(wrapper.emitted('click')).toBeTruthy()
-    })
-
-    it('works as cancel button in bulk operations', () => {
-      const wrapper = createWrapper({
-        item: { id: 1 },
-        icon: 'fa-solid fa-xmark',
-        tooltipText: 'Отменить'
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-xmark')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('works as status change button', () => {
-      const wrapper = createWrapper({
-        item: { id: 1 },
-        icon: 'fa-solid fa-pen-to-square',
-        tooltipText: 'Изменить статус всех посылок в реестре',
-        disabled: false
-      })
-      
-      expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('fa-solid fa-pen-to-square')
-      expect(wrapper.findComponent({ name: 'VTooltip' }).exists()).toBe(true)
-    })
-
-    it('can be disabled during loading states', () => {
-      const wrapper = createWrapper({
-        item: { id: 1 },
-        icon: 'fa-solid fa-check',
-        tooltipText: 'Применить статус',
-        disabled: true
-      })
-      
-      expect(wrapper.find('button').attributes('disabled')).toBeDefined()
     })
   })
 

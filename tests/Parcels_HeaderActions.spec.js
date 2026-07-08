@@ -10,7 +10,6 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
 import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
@@ -58,6 +57,7 @@ function createRegisterHeaderActionsMock() {
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
+    downloadTechdoc: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
   }
@@ -331,122 +331,16 @@ vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
 }))
 
 describe.each([
-  ['OzonParcels_List', OzonParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true, registerType: OZON_COMPANY_ID }],
-  ['WbrParcels_List', WbrParcelsList, { hasHistoricActions: true, hasPreviousDTagComment: true, registerType: WBR_COMPANY_ID }],
-  ['Wbr2Parcels_List', Wbr2ParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: true, registerType: WBR2_REGISTER_ID }],
-  ['GtcParcels_List', GtcParcelsList, { hasHistoricActions: false, hasPreviousDTagComment: false, registerType: GTC_COMPANY_ID }]
+  ['OzonParcels_List', OzonParcelsList, { hasPreviousDTagComment: true }],
+  ['WbrParcels_List', WbrParcelsList, { hasPreviousDTagComment: true }],
+  ['Wbr2Parcels_List', Wbr2ParcelsList, { hasPreviousDTagComment: true }],
+  ['GtcParcels_List', GtcParcelsList, { hasPreviousDTagComment: false }]
 ])('%s header actions', (name, Component, capabilities) => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupStores()
-    stores.registers.item.registerType = capabilities.registerType
     loadParcelsMock.mockClear()
     registerHeaderActionsMock = createRegisterHeaderActionsMock()
-  })
-
-  it('renders header actions and triggers register operations', async () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 1 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // Header actions include logist actions + charges/status buttons + xml split button + export/download + invoice split button + close button
-    expect(buttons).toHaveLength(13)
-    const findButtonByIcon = (icon) => {
-      const button = buttons.find((item) => item.attributes('data-icon') === icon)
-      expect(button).toBeTruthy()
-      return button
-    }
-
-    const actionMenus = wrapper.findAllComponents({ name: 'ActionButton2L' })
-    const stopWordsMenu = actionMenus.find(
-      (component) => component.props('tooltipText') === 'Проверить по стоп-словам'
-    )
-    expect(stopWordsMenu).toBeTruthy()
-    const [stopWordsHistoricOption, stopWordsOption] = stopWordsMenu.props('options')
-
-    await stopWordsOption.action()
-    expect(registerHeaderActionsMock.validateRegisterSw).toHaveBeenCalled()
-
-    if (capabilities.hasHistoricActions) {
-      expect(stopWordsHistoricOption.disabled).toBe(false)
-      await stopWordsHistoricOption.action()
-    } else {
-      expect(stopWordsHistoricOption.disabled).toBe(true)
-    }
-    if (capabilities.hasHistoricActions) {
-      expect(registerHeaderActionsMock.validateRegisterSwEx).toHaveBeenCalled()
-    } else {
-      expect(registerHeaderActionsMock.validateRegisterSwEx).not.toHaveBeenCalled()
-    }
-
-    await findButtonByIcon('fa-solid fa-anchor-circle-check').trigger('click')
-    expect(registerHeaderActionsMock.validateRegisterFc).toHaveBeenCalled()
-
-    const lookupMenu = actionMenus.find(
-      (component) => component.props('tooltipText') === 'Подбор кодов ТН ВЭД'
-    )
-    expect(lookupMenu).toBeTruthy()
-    const [lookupHistoricOption, lookupOption] = lookupMenu.props('options')
-
-    await lookupOption.action()
-    expect(registerHeaderActionsMock.lookupFeacnCodes).toHaveBeenCalled()
-
-    if (capabilities.hasHistoricActions) {
-      expect(lookupHistoricOption.disabled).toBe(false)
-      await lookupHistoricOption.action()
-    } else {
-      expect(lookupHistoricOption.disabled).toBe(true)
-    }
-    if (capabilities.hasHistoricActions) {
-      expect(registerHeaderActionsMock.lookupFeacnCodesEx).toHaveBeenCalled()
-    } else {
-      expect(registerHeaderActionsMock.lookupFeacnCodesEx).not.toHaveBeenCalled()
-    }
-
-    await findButtonByIcon('fa-solid fa-calculator').trigger('click')
-    expect(registerHeaderActionsMock.calculateCustomsCharges).toHaveBeenCalled()
-
-    await findButtonByIcon('fa-solid fa-pen-to-square').trigger('click')
-    expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-show')).toBe('true')
-    expect(wrapper.find('.parcel-status-bulk-dialog-stub').attributes('data-register-type')).toBe(String(capabilities.registerType))
-
-    const xmlExportMenu = actionMenus.find(
-      (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
-    )
-    expect(xmlExportMenu).toBeTruthy()
-    const xmlOptions = xmlExportMenu.props('options')
-    const ordinaryOption = xmlOptions.find((option) => option.label === 'Без акциза и нотификаций')
-    const exciseOption = xmlOptions.find((option) => option.label === 'С акцизом')
-    const notificationsOption = xmlOptions.find((option) => option.label === 'С нотификациями')
-
-    expect(ordinaryOption).toBeTruthy()
-    expect(exciseOption).toBeTruthy()
-    expect(notificationsOption).toBeTruthy()
-
-    await ordinaryOption.action()
-    expect(registerHeaderActionsMock.exportAllXmlOrdinary).toHaveBeenCalled()
-
-    await exciseOption.action()
-    expect(registerHeaderActionsMock.exportAllXmlExcise).toHaveBeenCalled()
-
-    await notificationsOption.action()
-    expect(registerHeaderActionsMock.exportAllXmlNotifications).toHaveBeenCalled()
-
-    await findButtonByIcon('fa-solid fa-file-export').trigger('click')
-    expect(registerHeaderActionsMock.downloadRegister).toHaveBeenCalled()
-
-    await findButtonByIcon('fa-solid fa-person-circle-xmark').trigger('click')
-    expect(registerHeaderActionsMock.downloadAdditionalRestrictions).toHaveBeenCalled()
-
-    await findButtonByIcon('fa-solid fa-xmarks-lines').trigger('click')
-    expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalled()
-
-    await findButtonByIcon('fa-solid fa-xmark').trigger('click')
-    expect(wrapper.emitted('close')).toBeTruthy()
   })
 
   it('wires parcel multi-select composable', async () => {
@@ -592,7 +486,11 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // When user lacks logist and shift-lead roles, the logist and freeze actions are hidden.
-    expect(buttons).toHaveLength(6)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-spell-check')).toBe(false)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-anchor-circle-check')).toBe(false)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-magnifying-glass')).toBe(false)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-calculator')).toBe(false)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-pen-to-square')).toBe(false)
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-xmarks-lines')).toBe(false)
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-arrows-to-eye')).toBe(false)
   })

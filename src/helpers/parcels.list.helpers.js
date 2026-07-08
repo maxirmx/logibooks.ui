@@ -97,7 +97,7 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
  * @returns {Object} Props object with CSS class
  */
 export function getRowPropsForParcel(data) {
-  return { class: '' + (CheckStatusCode.hasIssues(data.item.checkStatus) ? 'order-has-issues' : '') }
+  return { class: '' + (CheckStatusCode.hasIssues(data.item.checkStatus) ? 'parcel-has-issues' : '') }
 }
 
 /**

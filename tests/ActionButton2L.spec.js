@@ -100,7 +100,7 @@ describe('ActionButton2L', () => {
       {
         label: 'Issue action',
         icon: 'fa-solid fa-person-circle-xmark',
-        color: 'order-has-issues',
+        color: 'parcel-has-issues',
         action: vi.fn().mockResolvedValue(undefined)
       },
       {
@@ -124,7 +124,7 @@ describe('ActionButton2L', () => {
     expect(items.map(item => item.text())).toEqual(['Issue action', 'Excise action', 'Plain action'])
     expect(icons).toHaveLength(2)
     expect(icons[0].attributes('data-icon')).toBe('fa-solid fa-person-circle-xmark')
-    expect(icons[0].classes()).toContain('action-button-2l__menu-icon--order-has-issues')
+    expect(icons[0].classes()).toContain('action-button-2l__menu-icon--parcel-has-issues')
     expect(icons[1].attributes('data-icon')).toBe('fa-solid fa-file-invoice')
     expect(icons[1].classes()).toContain('action-button-2l__menu-icon--approved-with-excise')
     expect(items[2].find('.action-button-2l__menu-icon').exists()).toBe(false)

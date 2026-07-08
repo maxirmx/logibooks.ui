@@ -263,14 +263,14 @@ describe('useParcelMultiSelect', () => {
 
     it('preserves issue row class when an issue row is selected', () => {
       const opts = makeOptions({
-        getBaseRowClass: () => 'order-has-issues'
+        getBaseRowClass: () => 'parcel-has-issues'
       })
       const { handleRowClick, getRowProps } = useParcelMultiSelect(opts)
 
       handleRowClick(clickEvent(), { item: { id: 2 } })
 
       const rowClass = getRowProps({ item: { id: 2 } }).class
-      expect(rowClass).toContain('order-has-issues')
+      expect(rowClass).toContain('parcel-has-issues')
       expect(rowClass).toContain('selected-parcel-row')
     })
   })

@@ -43,7 +43,9 @@ const fontAwesomeQuestionIcon = {
 const fontAwesomeStatusIconOptions = [
   'fa-solid fa-circle-exclamation',
   'fa-solid fa-plane-departure',
-  'fa-solid fa-plane-circle-check'
+  'fa-solid fa-plane-circle-check',
+  'fa-solid fa-route',
+  'fa-solid fa-lock'
 ].map(icon => ({
   value: icon,
   kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,

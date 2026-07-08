@@ -203,7 +203,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.find('.register-status-form').exists()).toBe(true)
       expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="fg-color-swatch"]').exists()).toBe(true)
-      expect(wrapper.findAll('.status-icon-option')).toHaveLength(29)
+      expect(wrapper.findAll('.status-icon-option')).toHaveLength(31)
     })
 
     it('renders form labels correctly', async () => {

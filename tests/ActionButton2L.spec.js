@@ -12,8 +12,8 @@ import ActionButton2L from '@/components/ActionButton2L.vue'
 vi.mock('@fortawesome/vue-fontawesome', () => ({
   FontAwesomeIcon: {
     name: 'FontAwesomeIcon',
-    template: '<i class="fa-icon" :class="[icon]"></i>',
-    props: ['icon', 'size', 'class']
+    template: '<i class="fa-icon" :data-icon="icon"></i>',
+    props: ['icon', 'size']
   }
 }))
 
@@ -25,8 +25,8 @@ const vuetify = createVuetify({
 const globalComponents = {
   'font-awesome-icon': {
     name: 'FontAwesomeIcon',
-    template: '<i class="fa-icon" :class="[icon]"></i>',
-    props: ['icon', 'size', 'class']
+    template: '<i class="fa-icon" :data-icon="icon"></i>',
+    props: ['icon', 'size']
   }
 }
 
@@ -92,6 +92,42 @@ describe('ActionButton2L', () => {
     const items = wrapper.findAll('.action-button-2l__menu-item')
     expect(items).toHaveLength(options.length)
     expect(items[0].text()).toBe('First action')
+    expect(wrapper.find('.action-button-2l__menu-icon').exists()).toBe(false)
+  })
+
+  it('renders optional menu icons with symbolic color classes', async () => {
+    options = [
+      {
+        label: 'Issue action',
+        icon: 'fa-solid fa-person-circle-xmark',
+        color: 'order-has-issues',
+        action: vi.fn().mockResolvedValue(undefined)
+      },
+      {
+        label: 'Excise action',
+        icon: 'fa-solid fa-file-invoice',
+        color: 'approved-with-excise',
+        action: vi.fn().mockResolvedValue(undefined)
+      },
+      {
+        label: 'Plain action',
+        action: vi.fn().mockResolvedValue(undefined)
+      }
+    ]
+    const wrapper = createWrapper({ options })
+    await wrapper.find('button').trigger('click')
+    await settle(wrapper)
+
+    const items = wrapper.findAll('.action-button-2l__menu-item')
+    const icons = wrapper.findAll('.action-button-2l__menu-icon')
+
+    expect(items.map(item => item.text())).toEqual(['Issue action', 'Excise action', 'Plain action'])
+    expect(icons).toHaveLength(2)
+    expect(icons[0].attributes('data-icon')).toBe('fa-solid fa-person-circle-xmark')
+    expect(icons[0].classes()).toContain('action-button-2l__menu-icon--order-has-issues')
+    expect(icons[1].attributes('data-icon')).toBe('fa-solid fa-file-invoice')
+    expect(icons[1].classes()).toContain('action-button-2l__menu-icon--approved-with-excise')
+    expect(items[2].find('.action-button-2l__menu-icon').exists()).toBe(false)
   })
 
   it('calls dedicated function when option is selected and closes afterwards', async () => {

@@ -25,6 +25,12 @@ This file is a part of Logibooks ui application
   --parcel-row-selected-bg: #b7d5fe;
   --parcel-row-selected-hover-bg: #a9caf6;
   --checkbox-label-width: 220px;
+  --order-has-issues-color: #d3223f;
+  --check-status-has-issues-color: #d32f2f;
+  --check-status-not-checked-color: #1976d2;
+  --check-status-no-issues-color: #388e3c;
+  --check-status-approved-with-excise-color: #d84315;
+  --check-status-approved-with-notification-color: #ce15d8;
 }
 
 /*
@@ -135,7 +141,7 @@ This file is a part of Logibooks ui application
 
 /* Highlight rows that have issues */
 .order-has-issues {
-  color: #d3223f !important;
+  color: var(--order-has-issues-color) !important;
   background-color: #dc7786;
 }
 
@@ -1296,13 +1302,13 @@ a,
 /* Highlight status when there are issues */
 .status-cell.has-issues {
   background-color: rgba(244, 67, 54, 0.25);
-  color: #d32f2f;
+  color: var(--check-status-has-issues-color);
   border: 1px solid rgba(201, 17, 4, 0.3);
 }
 
 .status-cell.has-issues-with-inheritance {
   background-color: rgba(244, 67, 54, 0.25);
-  color: #d32f2f;
+  color: var(--check-status-has-issues-color);
   border: 3px solid rgba(201, 17, 4, 0.765);
 }
 
@@ -1310,21 +1316,21 @@ a,
 /* Status cell styling for different check statuses */
 .status-cell.not-checked {
   background-color: rgba(33, 150, 243, 0.25);
-  color: #1976d2;
+  color: var(--check-status-not-checked-color);
   border: 1px solid rgba(33, 150, 243, 0.3);
   overflow: ellipsis;
 }
 
 .status-cell.no-issues {
   background-color: rgba(76, 175, 80, 0.25);
-  color: #388e3c;
+  color: var(--check-status-no-issues-color);
   border: 1px solid rgba(76, 175, 80, 0.3);
   overflow: ellipsis;
 }
  
 .status-cell.is-approved-with-excise {
   background-color: rgba(255, 107, 53, 0.25);
-  color: #d84315;
+  color: var(--check-status-approved-with-excise-color);
   border: 1px solid rgba(255, 107, 53, 0.5);
   font-weight: 600;
   overflow: ellipsis;
@@ -1332,7 +1338,7 @@ a,
 
 .status-cell.is-approved-with-notification {
   background-color: rgba(154, 53, 255, 0.25);
-  color: #ce15d8;
+  color: var(--check-status-approved-with-notification-color);
   border: 1px solid rgba(154, 53, 255, 0.5);
   font-weight: 600;
   overflow: ellipsis;

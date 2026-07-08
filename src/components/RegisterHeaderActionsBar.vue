@@ -126,14 +126,20 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :options="[
           {
             label: 'С акцизом',
+            icon: 'fa-solid fa-upload',
+            color: 'approved-with-excise',
             action: () => run('export-excise')
           },
           {
             label: 'С нотификациями',
+            icon: 'fa-solid fa-upload',
+            color: 'approved-with-notification',
             action: () => run('export-notifications')
           },
           {
             label: 'Без акциза и нотификаций',
+            icon: 'fa-solid fa-upload',
+            color: 'no-issues',
             action: () => run('export-ordinary')
           }
         ]"
@@ -146,46 +152,50 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :disabled="disabled"
         @click="run('download')"
       />
-      <ActionButton
-        :item="item"
-        icon="fa-solid fa-person-circle-xmark"
-        tooltip-text="Сформировать реестр дополнительных изъятий"
-        :iconSize="iconSize"
-        :disabled="disabled"
-        @click="run('download-additional-restrictions')"
-      />
       <ActionButton2L
         :item="item"
         icon="fa-solid fa-file-invoice"
-        tooltip-text="Сформировать инвойс-манифест"
+        tooltip-text="Сформировать документы"
         :iconSize="iconSize"
         :disabled="disabled"
         :options="[
           {
-            label: 'Все',
+            label: 'инвойс-манифест (все)',
+            icon: 'fa-solid fa-file-invoice',
+            color: 'not-checked',
             action: () => openInvoiceSettings(InvoiceParcelSelection.All)
           },
           {
-            label: 'С акцизом',
+            label: 'инвойс-манифест (с акцизом)',
+            icon: 'fa-solid fa-file-invoice',
+            color: 'approved-with-excise',
             action: () => openInvoiceSettings(InvoiceParcelSelection.WithExcise)
           },
           {
-            label: 'С нотификациями',
+            label: 'инвойс-манифест (с нотификациями)',
+            icon: 'fa-solid fa-file-invoice',
+            color: 'approved-with-notification',
             action: () => openInvoiceSettings(InvoiceParcelSelection.WithNotifications)
           },
           {
-            label: 'Без акциза и нотификаций',
+            label: 'инвойс-манифест (без акциза и нотификаций)',
+            icon: 'fa-solid fa-file-invoice',
+            color: 'no-issues',
             action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
+          },
+          {
+            label: 'реестр дополнительных изъятий',
+            icon: 'fa-solid fa-person-circle-xmark',
+            color: 'order-has-issues',
+            action: () => run('download-additional-restrictions')
+          },
+          {
+            label: 'тех. документацию (с акцизом)',
+            icon: 'fa-solid fa-file-image',
+            color: 'approved-with-excise',
+            action: () => run('download-techdoc')
           }
         ]"
-      />
-      <ActionButton
-        :item="item"
-        icon="fa-solid fa-file-image"
-        tooltip-text="Сформировать тех. документацию (акциз)"
-        :iconSize="iconSize"
-        :disabled="disabled"
-        @click="run('download-techdoc')"
       />
     </div>
     <div class="header-actions header-actions-group">

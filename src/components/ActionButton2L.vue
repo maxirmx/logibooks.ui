@@ -6,6 +6,14 @@ import { actionButtonProps } from './actionButtonShared'
 defineOptions({ inheritAttrs: false })
 
 const menuId = `action-button-2l-menu-${Math.random().toString(36).slice(2, 10)}`
+const optionColorClasses = {
+  'order-has-issues': 'action-button-2l__menu-icon--order-has-issues',
+  'has-issues': 'action-button-2l__menu-icon--has-issues',
+  'not-checked': 'action-button-2l__menu-icon--not-checked',
+  'no-issues': 'action-button-2l__menu-icon--no-issues',
+  'approved-with-excise': 'action-button-2l__menu-icon--approved-with-excise',
+  'approved-with-notification': 'action-button-2l__menu-icon--approved-with-notification'
+}
 
 const props = defineProps({
   ...actionButtonProps,
@@ -18,7 +26,21 @@ const props = defineProps({
       if (options == null) return true
       if (!Array.isArray(options)) return false
       if (options.length === 0) return true
-      return options.every(option => option && typeof option.label === 'string' && typeof option.action === 'function')
+      const optionColors = [
+        'order-has-issues',
+        'has-issues',
+        'not-checked',
+        'no-issues',
+        'approved-with-excise',
+        'approved-with-notification'
+      ]
+      return options.every(option =>
+        option &&
+        typeof option.label === 'string' &&
+        typeof option.action === 'function' &&
+        (option.icon === undefined || typeof option.icon === 'string') &&
+        (option.color === undefined || optionColors.includes(option.color))
+      )
     }
   }
 })
@@ -49,6 +71,13 @@ async function focusOption(index) {
 
 function setOptionRef(el, index) {
   optionRefs.value[index] = el || null
+}
+
+function getOptionIconClasses(option) {
+  return [
+    'action-button-2l__menu-icon',
+    optionColorClasses[option?.color]
+  ]
 }
 
 function firstEnabledIndex() {
@@ -265,7 +294,14 @@ defineExpose({
             @click="handleOptionClick(index)"
             :ref="el => setOptionRef(el, index)"
           >
-            {{ option.label }}
+            <font-awesome-icon
+              v-if="option.icon"
+              :icon="option.icon"
+              :class="getOptionIconClasses(option)"
+              size="sm"
+              aria-hidden="true"
+            />
+            <span class="action-button-2l__menu-label">{{ option.label }}</span>
           </button>
         </li>
       </ul>
@@ -290,7 +326,8 @@ defineExpose({
   border-radius: 4px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   z-index: 10;
-  min-width: 160px;
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 24px));
 }
 
 .action-button-2l__menu-item {
@@ -302,6 +339,44 @@ defineExpose({
   font-size: 0.9rem;
   color: #333;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.25;
+}
+
+.action-button-2l__menu-icon {
+  width: 1.1em;
+  flex: 0 0 auto;
+}
+
+.action-button-2l__menu-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.action-button-2l__menu-icon--has-issues {
+  color: var(--check-status-has-issues-color);
+}
+
+.action-button-2l__menu-icon--order-has-issues {
+  color: var(--order-has-issues-color);
+}
+
+.action-button-2l__menu-icon--not-checked {
+  color: var(--check-status-not-checked-color);
+}
+
+.action-button-2l__menu-icon--no-issues {
+  color: var(--check-status-no-issues-color);
+}
+
+.action-button-2l__menu-icon--approved-with-excise {
+  color: var(--check-status-approved-with-excise-color);
+}
+
+.action-button-2l__menu-icon--approved-with-notification {
+  color: var(--check-status-approved-with-notification-color);
 }
 
 .action-button-2l__menu-item:not([disabled]):not([aria-disabled="true"]):hover,

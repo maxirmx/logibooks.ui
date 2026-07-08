@@ -59,6 +59,16 @@ describe('RegisterHeaderActionsBar', () => {
     )
   }
 
+  function findActionMenuByTooltip(wrapper, tooltipText) {
+    return wrapper.findAllComponents(ActionButton2L).find(
+      (component) => component.props('tooltipText') === tooltipText
+    )
+  }
+
+  function optionPresentation(options) {
+    return options.map(({ label, icon, color }) => ({ label, icon, color }))
+  }
+
   beforeEach(() => {
     pushMock.mockClear()
     authRefs.hasLogistRole.value = true
@@ -75,13 +85,44 @@ describe('RegisterHeaderActionsBar', () => {
     const actionButtons = wrapper.findAllComponents(ActionButton)
     expect(actionButtons.length).toBeGreaterThan(0)
 
-    const actionMenus = wrapper.findAllComponents(ActionButton2L)
-    const invoiceMenu = actionMenus.find(
-      (component) => component.props('tooltipText') === 'Сформировать инвойс-манифест'
-    )
+    const invoiceMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(invoiceMenu).toBeTruthy()
 
     const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption] = invoiceMenu.props('options')
+
+    expect(invoiceMenu.props('icon')).toBe('fa-solid fa-file-invoice')
+    expect(optionPresentation(invoiceMenu.props('options'))).toEqual([
+      {
+        label: 'инвойс-манифест (все)',
+        icon: 'fa-solid fa-file-invoice',
+        color: 'not-checked'
+      },
+      {
+        label: 'инвойс-манифест (с акцизом)',
+        icon: 'fa-solid fa-file-invoice',
+        color: 'approved-with-excise'
+      },
+      {
+        label: 'инвойс-манифест (с нотификациями)',
+        icon: 'fa-solid fa-file-invoice',
+        color: 'approved-with-notification'
+      },
+      {
+        label: 'инвойс-манифест (без акциза и нотификаций)',
+        icon: 'fa-solid fa-file-invoice',
+        color: 'no-issues'
+      },
+      {
+        label: 'реестр дополнительных изъятий',
+        icon: 'fa-solid fa-person-circle-xmark',
+        color: 'order-has-issues'
+      },
+      {
+        label: 'тех. документацию (с акцизом)',
+        icon: 'fa-solid fa-file-image',
+        color: 'approved-with-excise'
+      }
+    ])
 
     await allOption.action(baseProps.item)
     expect(pushMock).toHaveBeenCalledWith({
@@ -124,10 +165,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
 
-    const actionMenus = wrapper.findAllComponents(ActionButton2L)
-    const invoiceMenu = actionMenus.find(
-      (component) => component.props('tooltipText') === 'Сформировать инвойс-манифест'
-    )
+    const invoiceMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(invoiceMenu).toBeTruthy()
 
     const [allOption] = invoiceMenu.props('options')
@@ -143,10 +181,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
 
-    const actionMenus = wrapper.findAllComponents(ActionButton2L)
-    const exportMenu = actionMenus.find(
-      (component) => component.props('tooltipText') === 'Выгрузить XML накладные'
-    )
+    const exportMenu = findActionMenuByTooltip(wrapper, 'Выгрузить XML накладные')
 
     expect(exportMenu).toBeTruthy()
 
@@ -154,6 +189,24 @@ describe('RegisterHeaderActionsBar', () => {
     const ordinaryOption = options.find((option) => option.label === 'Без акциза и нотификаций')
     const exciseOption = options.find((option) => option.label === 'С акцизом')
     const notificationsOption = options.find((option) => option.label === 'С нотификациями')
+
+    expect(optionPresentation(options)).toEqual([
+      {
+        label: 'С акцизом',
+        icon: 'fa-solid fa-upload',
+        color: 'approved-with-excise'
+      },
+      {
+        label: 'С нотификациями',
+        icon: 'fa-solid fa-upload',
+        color: 'approved-with-notification'
+      },
+      {
+        label: 'Без акциза и нотификаций',
+        icon: 'fa-solid fa-upload',
+        color: 'no-issues'
+      }
+    ])
 
     expect(ordinaryOption).toBeTruthy()
     expect(exciseOption).toBeTruthy()
@@ -168,33 +221,41 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('export-notifications')).toHaveLength(1)
   })
 
-  it('emits additional restrictions download action and respects disabled state', async () => {
+  it('emits merged document download actions and respects disabled state', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
       global: { stubs: vuetifyStubs }
     })
 
-    const actionButtons = wrapper.findAllComponents(ActionButton)
-    const additionalRestrictionsButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Сформировать реестр дополнительных изъятий'
+    const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+    const additionalRestrictionsOption = documentMenu.props('options').find(
+      (option) => option.label === 'реестр дополнительных изъятий'
+    )
+    const techdocOption = documentMenu.props('options').find(
+      (option) => option.label === 'тех. документацию (с акцизом)'
     )
 
-    expect(additionalRestrictionsButton).toBeTruthy()
-    expect(additionalRestrictionsButton.props('icon')).toBe('fa-solid fa-person-circle-xmark')
-
-    additionalRestrictionsButton.vm.$emit('click')
+    await additionalRestrictionsOption.action(baseProps.item)
+    await techdocOption.action(baseProps.item)
     expect(wrapper.emitted('download-additional-restrictions')).toHaveLength(1)
+    expect(wrapper.emitted('download-techdoc')).toHaveLength(1)
 
     const disabledWrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, disabled: true },
       global: { stubs: vuetifyStubs }
     })
-    const disabledButton = disabledWrapper.findAllComponents(ActionButton).find(
-      (button) => button.props('tooltipText') === 'Сформировать реестр дополнительных изъятий'
+    const disabledDocumentMenu = findActionMenuByTooltip(disabledWrapper, 'Сформировать документы')
+    const disabledAdditionalRestrictionsOption = disabledDocumentMenu.props('options').find(
+      (option) => option.label === 'реестр дополнительных изъятий'
+    )
+    const disabledTechdocOption = disabledDocumentMenu.props('options').find(
+      (option) => option.label === 'тех. документацию (с акцизом)'
     )
 
-    disabledButton.vm.$emit('click')
+    await disabledAdditionalRestrictionsOption.action(baseProps.item)
+    await disabledTechdocOption.action(baseProps.item)
     expect(disabledWrapper.emitted('download-additional-restrictions')).toBeUndefined()
+    expect(disabledWrapper.emitted('download-techdoc')).toBeUndefined()
   })
 
   it('emits stop-word validation events when corresponding menu options are used', async () => {

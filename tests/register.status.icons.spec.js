@@ -21,7 +21,7 @@ import {
 
 describe('register.status.icons helper', () => {
   it('contains the supported copied SVG status icons and Font Awesome status icons', () => {
-    expect(registerStatusIconOptions).toHaveLength(29)
+    expect(registerStatusIconOptions).toHaveLength(31)
     expect(registerStatusIconOptions.map(option => option.value)).toEqual([
       'svg:registered',
       'svg:waiting-for-shipment',
@@ -51,6 +51,8 @@ describe('register.status.icons helper', () => {
       'fa-solid fa-circle-exclamation',
       'fa-solid fa-plane-departure',
       'fa-solid fa-plane-circle-check',
+      'fa-solid fa-route',
+      'fa-solid fa-lock',
       REGISTER_STATUS_DEFAULT_ICON
     ])
     expect(registerStatusIconOptions.every(option => !('title' in option))).toBe(true)
@@ -73,6 +75,8 @@ describe('register.status.icons helper', () => {
     expect(isSupportedRegisterStatusIcon('fa-solid fa-circle-exclamation')).toBe(true)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-plane-departure')).toBe(true)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-plane-circle-check')).toBe(true)
+    expect(isSupportedRegisterStatusIcon('fa-solid fa-route')).toBe(true)
+    expect(isSupportedRegisterStatusIcon('fa-solid fa-lock')).toBe(true)
     expect(isSupportedRegisterStatusIcon(REGISTER_STATUS_DEFAULT_ICON)).toBe(true)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-box-open')).toBe(false)
     expect(isSupportedRegisterStatusIcon('fa-solid fa-not-real')).toBe(false)

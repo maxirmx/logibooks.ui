@@ -54,6 +54,7 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlNotifications: vi.fn(),    
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
+    checkPassports: vi.fn().mockResolvedValue(),
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
@@ -87,7 +88,11 @@ function setupStores() {
         isRe: false,
         isExport: false
       }],
-      transportationTypes: []
+      transportationTypes: [],
+      passportCheckStatuses: [
+        { value: 0, code: 'NotChecked', name: 'Не проверен' },
+        { value: 30, code: 'Checked', name: 'Проверен' }
+      ]
     },
     getById: vi.fn().mockResolvedValue(),
     generate: vi.fn(),
@@ -105,7 +110,8 @@ function setupStores() {
 
   stores.parcelStatuses = {
     ensureLoaded: vi.fn().mockResolvedValue(),
-    parcelStatuses: []
+    parcelStatuses: [],
+    getStatusTitle: vi.fn((id) => `Status ${id}`)
   }
 
   stores.customsProcedures = {
@@ -147,6 +153,7 @@ function setupStores() {
     parcels_status: ref(null),
     parcels_check_status_sw: ref(null),
     parcels_check_status_fc: ref(null),
+    parcels_passport_check_status: ref(null),
     parcels_hide_legacy_restrictions: ref(false),
     parcels_tnved: ref(''),
     parcels_number: ref(''),
@@ -186,6 +193,7 @@ vi.mock('pinia', async () => {
             parcels_status: stores.auth.parcels_status,
             parcels_check_status_sw: stores.auth.parcels_check_status_sw,
             parcels_check_status_fc: stores.auth.parcels_check_status_fc,
+            parcels_passport_check_status: stores.auth.parcels_passport_check_status,
             parcels_hide_legacy_restrictions: stores.auth.parcels_hide_legacy_restrictions,
             parcels_tnved: stores.auth.parcels_tnved,
             parcels_number: stores.auth.parcels_number,
@@ -258,6 +266,12 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
     return entry?.key === 'frozenOrder' ? entry.order : null
   }),
   getFeacnCodesForKeywords: vi.fn(() => []),
+  formatPassport: vi.fn((item) => [
+    item.passportSeries,
+    item.passportNumber,
+    item.passportIssuedBy ? `выдан ${item.passportIssuedBy}` : null,
+    item.passportIssueDate ? '01.01.2020' : null
+  ].filter(Boolean).join(' ')),
   formatCustomsCharge: vi.fn(() => ''),
   getCustomsChargeHeaders: vi.fn((register) => {
     const registerValue = register?.value ?? register
@@ -473,6 +487,45 @@ describe.each([
     expect(loadParcelsMock).toHaveBeenCalledTimes(1)
   })
 
+  it('shows passport verification controls and indicator for import SrLogistPlus users', async () => {
+    stores.parcels.items.value = [{
+      id: 21,
+      postingNumber: 'POST-21',
+      shk: 'SHK-21',
+      passportSeries: 'AA',
+      passportNumber: '123456',
+      passportIssuedBy: 'ОВД',
+      passportIssueDate: '2020-01-01',
+      passportCheckStatus: 30,
+      checkStatus: 0
+    }]
+
+    const wrapper = mount(Component, {
+      props: { registerId: 21 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const passportAction = wrapper.findAll('.header-actions .action-button-stub').find(
+      (button) => button.attributes('data-icon') === 'fa-solid fa-passport'
+    )
+    expect(passportAction).toBeTruthy()
+
+    await passportAction.trigger('click')
+    expect(registerHeaderActionsMock.checkPassports).toHaveBeenCalledTimes(1)
+
+    const filterSelectors = wrapper.findComponent({ name: 'ParcelFilterSelectors' })
+    expect(filterSelectors.props('showPassportCheckStatus')).toBe(true)
+    expect(filterSelectors.props('passportCheckStatusOptions')).toEqual([
+      { value: null, title: 'Все' },
+      { value: 0, title: 'Не проверен' },
+      { value: 30, title: 'Проверен' }
+    ])
+    expect(wrapper.find('.passport-check-status__dot--color-no-issues').exists()).toBe(true)
+    expect(wrapper.text()).toContain('123456')
+  })
+
   it('hides header actions when user lacks permissions', async () => {
     stores.auth.isSrLogistPlus.value = false
     stores.auth.isShiftLeadPlus.value = false
@@ -488,6 +541,7 @@ describe.each([
     // When user lacks logist and shift-lead roles, the logist and freeze actions are hidden.
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-spell-check')).toBe(false)
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-anchor-circle-check')).toBe(false)
+    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-passport')).toBe(false)
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-magnifying-glass')).toBe(false)
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-calculator')).toBe(false)
     expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-pen-to-square')).toBe(false)

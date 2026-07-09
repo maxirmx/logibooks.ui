@@ -263,6 +263,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.freezeCheckStatus(item.id)
   }
 
+  async function checkPassports(item) {
+    await registersStore.checkPassports(item.id)
+  }
+
   async function calculateCustomsCharges(item) {
     try {
       await registersStore.calculateCustomsCharges(item.id)
@@ -307,6 +311,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     downloadAdditionalRestrictions,
     downloadTechdoc,
     freezeCheckStatus,
+    checkPassports,
     freezeTnVedOrder,
     calculateCustomsCharges,
     cancelValidation: cancelValidationWrapper,
@@ -338,6 +343,7 @@ export function useRegisterHeaderActions({
     downloadAdditionalRestrictions,
     downloadTechdoc,
     freezeCheckStatus,
+    checkPassports,
     freezeTnVedOrder,
     cancelValidation,
     stopPolling
@@ -501,6 +507,13 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
   }
 
+  const runCheckPassports = async () => {
+    await runActionWithDialog(checkPassports, 'check-passports')
+    if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
+      await loadParcels()
+    }
+  }
+
   async function calculateCustomsChargesForCurrentRegister(register) {
     await registersStore.calculateCustomsCharges(register.id)
     await registersStore.getById(register.id)
@@ -555,6 +568,7 @@ export function useRegisterHeaderActions({
     downloadAdditionalRestrictions: runDownloadAdditionalRestrictions,
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
+    checkPassports: runCheckPassports,
     freezeTnVedOrder: runFreezeTnVedOrder,
     calculateCustomsCharges: runcalculateCustomsCharges,
     cancelValidation,

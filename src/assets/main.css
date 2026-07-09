@@ -1327,6 +1327,101 @@ a,
   border: 1px solid rgba(76, 175, 80, 0.3);
   overflow: ellipsis;
 }
+
+.passport-check-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.passport-check-status__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.passport-check-status__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
+.passport-check-status__dot--color-has-issues {
+  color: var(--check-status-has-issues-color);
+  background-color: var(--check-status-has-issues-color);
+}
+
+.passport-check-status__dot--color-no-issues {
+  color: var(--check-status-no-issues-color);
+  background-color: var(--check-status-no-issues-color);
+}
+
+.passport-check-status__dot--color-not-checked {
+  color: var(--check-status-not-checked-color);
+  background-color: var(--check-status-not-checked-color);
+}
+
+.passport-check-status__dot--border-has-issues {
+  border-color: var(--check-status-has-issues-color);
+}
+
+.passport-check-status__dot--border-no-issues {
+  border-color: var(--check-status-no-issues-color);
+}
+
+.passport-check-status__dot--border-not-checked {
+  border-color: var(--check-status-not-checked-color);
+}
+
+.passport-number-with-actions {
+  width: 100%;
+}
+
+.passport-number-with-actions__control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.passport-number-with-actions__input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.passport-number-with-actions__input-wrap > .input {
+  width: 100%;
+}
+
+.passport-number-with-actions__input-wrap > .passport-check-status {
+  position: absolute;
+  top: 50%;
+  left: 0.45rem;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.passport-number-with-actions__input-wrap:has(> .passport-check-status) > .input {
+  padding-left: 1.45rem;
+}
+
+.passport-number-with-actions__actions {
+  display: flex;
+  gap: 0.25rem;
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+}
  
 .status-cell.is-approved-with-excise {
   background-color: rgba(255, 107, 53, 0.25);

@@ -13,9 +13,11 @@ describe('ParcelFilterSelectors', () => {
       statusOptions: [{ title: 'Все', value: null }],
       checkStatusOptionsSw: [{ title: 'Все', value: null }],
       checkStatusOptionsFc: [{ title: 'Все', value: null }],
+      passportCheckStatusOptions: [{ title: 'Все', value: null }],
       parcelsStatus: null,
       parcelsCheckStatusSw: null,
       parcelsCheckStatusFc: null,
+      parcelsPassportCheckStatus: null,
       parcelsHideLegacyRestrictions: false,
       localTnvedSearch: '',
       localParcelNumberSearch: '',
@@ -81,6 +83,7 @@ describe('ParcelFilterSelectors', () => {
     wrapper.vm.parcelsStatusModel = 'status'
     wrapper.vm.parcelsCheckStatusSwModel = 'sw'
     wrapper.vm.parcelsCheckStatusFcModel = 'fc'
+    wrapper.vm.parcelsPassportCheckStatusModel = 'passport'
     wrapper.vm.parcelsHideLegacyRestrictionsModel = true
     wrapper.vm.localTnvedSearchModel = '1234'
     wrapper.vm.localParcelNumberSearchModel = 'ABC'
@@ -91,6 +94,7 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:parcelsStatus')?.[0]).toEqual(['status'])
     expect(wrapper.emitted('update:parcelsCheckStatusSw')?.[0]).toEqual(['sw'])
     expect(wrapper.emitted('update:parcelsCheckStatusFc')?.[0]).toEqual(['fc'])
+    expect(wrapper.emitted('update:parcelsPassportCheckStatus')?.[0]).toEqual(['passport'])
     expect(wrapper.emitted('update:parcelsHideLegacyRestrictions')?.[0]).toEqual([true])
     expect(wrapper.emitted('update:localTnvedSearch')?.[0]).toEqual(['1234'])
     expect(wrapper.emitted('update:localParcelNumberSearch')?.[0]).toEqual(['ABC'])
@@ -120,6 +124,22 @@ describe('ParcelFilterSelectors', () => {
       expect(select.attributes('data-item-title')).toBe('title')
       expect(select.attributes('data-item-value')).toBe('value')
     })
+  })
+
+  it('shows passport check status selector only when enabled', () => {
+    const hiddenWrapper = mountComponent()
+    expect(hiddenWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(false)
+    expect(hiddenWrapper.findAll('.v-select-stub')).toHaveLength(4)
+
+    const visibleWrapper = mountComponent({
+      showPassportCheckStatus: true,
+      passportCheckStatusOptions: [
+        { title: 'Все', value: null },
+        { title: 'Проверен', value: 30 }
+      ]
+    })
+    expect(visibleWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(true)
+    expect(visibleWrapper.findAll('.v-select-stub')).toHaveLength(5)
   })
 
   it('keeps controls disabled when multiple blocking flags are active', () => {

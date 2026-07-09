@@ -306,6 +306,39 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('lookup-ex')).toHaveLength(1)
   })
 
+  it('shows passport check action for SrLogistPlus when enabled and emits event', () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, showPassportCheck: true },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const passportButton = findActionButtonByTooltip(wrapper, 'Проверить паспорта')
+
+    expect(passportButton).toBeTruthy()
+    expect(passportButton.props('icon')).toBe('fa-solid fa-passport')
+
+    passportButton.vm.$emit('click')
+    expect(wrapper.emitted('check-passports')).toHaveLength(1)
+  })
+
+  it('hides passport check action when disabled by procedure or role', () => {
+    let wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, showPassportCheck: false },
+      global: { stubs: vuetifyStubs }
+    })
+
+    expect(findActionButtonByTooltip(wrapper, 'Проверить паспорта')).toBeUndefined()
+    wrapper.unmount()
+
+    authRefs.isSrLogistPlus.value = false
+    wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, showPassportCheck: true },
+      global: { stubs: vuetifyStubs }
+    })
+
+    expect(findActionButtonByTooltip(wrapper, 'Проверить паспорта')).toBeUndefined()
+  })
+
   it('emits custom charges calculation and parcel status bulk-change actions in order', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },

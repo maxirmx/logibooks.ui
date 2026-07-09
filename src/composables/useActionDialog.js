@@ -10,6 +10,7 @@ export const ACTION_DIALOG_TITLES = {
   'download-invoice': 'Подготовка файла инвойса',
   'freeze-check-status': 'Применение запретов',
   'freeze-tnved-order': 'Сортировка',
+  'check-passports': 'Проверка паспортов',
   'calculate-customs-charges': 'Расчёт сборов и пошлин',
 }
 

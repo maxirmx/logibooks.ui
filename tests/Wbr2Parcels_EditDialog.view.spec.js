@@ -13,7 +13,10 @@ const parcelsMock = {
   loading: ref(false),
   getImageProcessingUrl: vi.fn(() => 'http://test/api/parcels/3/image'),
   getImageBlob: vi.fn(),
-  getById: vi.fn().mockResolvedValue({ id: 3, hasImage: true })
+  getById: vi.fn().mockResolvedValue({ id: 3, hasImage: true }),
+  update: vi.fn().mockResolvedValue(),
+  checkPassport: vi.fn().mockResolvedValue(),
+  clearPassportCheck: vi.fn().mockResolvedValue()
 }
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => parcelsMock
@@ -29,13 +32,20 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () =
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] }) }))
 vi.mock('@/stores/parcel.views.store.js', () => ({ useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue() }) }))
 const registersMock = {
-  item: ref({ id: 1 }),
-  getById: vi.fn().mockResolvedValue({ id: 1 }),
+  item: ref({ id: 1, customsProcedureCode: 40 }),
+  ops: {
+    passportCheckStatuses: [
+      { value: 0, code: 'NotChecked', name: 'Не проверен' },
+      { value: 30, code: 'Checked', name: 'Проверен' }
+    ]
+  },
+  getById: vi.fn().mockResolvedValue({ id: 1, customsProcedureCode: 40 }),
   nextParcels: vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null })
 }
 vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersMock }))
 
-vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ selectedParcelId: null }) }))
+const authMock = { selectedParcelId: null, isSrLogistPlus: true }
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 const alertErrorMock = vi.fn()
 vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() }) }))
 
@@ -58,6 +68,22 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
     parcelStatusesMock.length = 0
+    authMock.selectedParcelId = null
+    authMock.isSrLogistPlus = true
+    parcelsMock.item.value = {
+      id: 3,
+      statusId: 1,
+      checkStatus: 0,
+      productLink: 'http://example.com',
+      passportNumber: 'AA1234567',
+      passportCheckStatus: 30,
+      hasImage: true
+    }
+    parcelsMock.update.mockResolvedValue()
+    parcelsMock.checkPassport.mockResolvedValue()
+    parcelsMock.clearPassportCheck.mockResolvedValue()
+    registersMock.item.value = { id: 1, customsProcedureCode: 40 }
+    registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
     parcelsMock.getImageBlob.mockResolvedValue(new Blob(['test'], { type: 'image/png' }))
     global.URL.createObjectURL = vi.fn(() => 'blob:mock')
     global.URL.revokeObjectURL = vi.fn()
@@ -89,6 +115,18 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
 
     await nextTick()
     await resolveAll()
+
+    expect(wrapper.get('[data-testid="passport-check-actions"]').exists()).toBe(true)
+
+    const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
+    expect(passportField.exists()).toBe(true)
+    passportField.vm.$emit('check')
+    await resolveAll()
+    expect(parcelsMock.checkPassport).toHaveBeenCalledWith(3)
+
+    passportField.vm.$emit('clear')
+    await resolveAll()
+    expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(3)
 
     await wrapper.find('[data-test="view-btn"]').trigger('click')
     await resolveAll()

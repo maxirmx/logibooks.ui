@@ -21,7 +21,9 @@ const parcelsMock = {
   getImageProcessingUrl: vi.fn(() => 'http://test/api/parcels/2/image'),
   getImageBlob: vi.fn(),
   getById: vi.fn().mockResolvedValue({ id: 2, hasImage: true }),
-  update: vi.fn().mockResolvedValue()
+  update: vi.fn().mockResolvedValue(),
+  checkPassport: vi.fn().mockResolvedValue(),
+  clearPassportCheck: vi.fn().mockResolvedValue()
 }
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => parcelsMock
@@ -42,12 +44,19 @@ const parcelViewsMock = {
 vi.mock('@/stores/parcel.views.store.js', () => ({ useParcelViewsStore: () => parcelViewsMock }))
 const registersMock = {
   item: ref({ id: 1, customsProcedureCode: 40 }),
+  ops: {
+    passportCheckStatuses: [
+      { value: 0, code: 'NotChecked', name: 'Не проверен' },
+      { value: 30, code: 'Checked', name: 'Проверен' }
+    ]
+  },
   getById: vi.fn().mockResolvedValue({ id: 1, customsProcedureCode: 40 }),
   nextParcels: vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null })
 }
 vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersMock }))
 
-vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ selectedParcelId: null }) }))
+const authMock = { selectedParcelId: null, isSrLogistPlus: true }
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 const alertErrorMock = vi.fn()
 vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() }) }))
 
@@ -71,6 +80,9 @@ describe('OzonParcel_EditDialog image overlay', () => {
     confirmMock = vi.fn()
     parcelStatusesMock.length = 0
     parcelsMock.item.value = { id: 2, registerId: 1, productLink: 'http://example.com', hasImage: true }
+    parcelsMock.checkPassport.mockResolvedValue()
+    parcelsMock.clearPassportCheck.mockResolvedValue()
+    parcelsMock.update.mockResolvedValue()
     registersMock.item.value = { id: 1, customsProcedureCode: 40 }
     registersMock.getById.mockImplementation(async (id) => {
       registersMock.item.value = { ...registersMock.item.value, id }
@@ -79,6 +91,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
     registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
     parcelViewsMock.add.mockResolvedValue()
     parcelViewsMock.back.mockResolvedValue(null)
+    authMock.selectedParcelId = null
+    authMock.isSrLogistPlus = true
     parcelsMock.getImageBlob.mockResolvedValue(new Blob(['test'], { type: 'image/png' }))
     global.URL.createObjectURL = vi.fn(() => 'blob:mock')
     global.URL.revokeObjectURL = vi.fn()
@@ -175,7 +189,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
       email: 'recipient@example.com',
       postalCode: '101000',
       city: 'Москва',
-      address: 'Москва, ул. Тестовая, 1'
+      address: 'Москва, ул. Тестовая, 1',
+      passportCheckStatus: 30
     }
 
     const TestWrapper = {
@@ -215,6 +230,17 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(wrapper.text()).toContain('Индекс')
     expect(wrapper.text()).toContain('Населенный пункт')
     expect(wrapper.text()).toContain('Адрес')
+    expect(wrapper.get('[data-testid="passport-check-actions"]').exists()).toBe(true)
+
+    const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
+    expect(passportField.exists()).toBe(true)
+    passportField.vm.$emit('check')
+    await resolveAll()
+    expect(parcelsMock.checkPassport).toHaveBeenCalledWith(2)
+
+    passportField.vm.$emit('clear')
+    await resolveAll()
+    expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(2)
     expect(registersMock.getById).toHaveBeenCalledWith(1)
     expect(registersMock.getById.mock.invocationCallOrder[0])
       .toBeLessThan(parcelsMock.getById.mock.invocationCallOrder[0])

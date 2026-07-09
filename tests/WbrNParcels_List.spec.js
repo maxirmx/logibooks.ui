@@ -445,7 +445,7 @@ const globalStubs = {
   },
   'font-awesome-icon': {
     props: ['icon'],
-    template: '<i data-testid="fa-icon" :data-icon="icon"></i>'
+    template: '<i data-testid="fa-icon" :data-icon="icon" v-bind="$attrs"></i>'
   },
   PaginationFooter: {
     emits: ['update:itemsPerPage', 'update:page'],
@@ -700,9 +700,10 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('true')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('true')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('3')
-    expect(wrapper.get('[data-testid="passport-check-status-dot"]').classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__dot--color-no-issues',
-      'passport-check-status__dot--border-no-issues'
+    const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
+    expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
+    expect(icon.classes()).toEqual(expect.arrayContaining([
+      'passport-check-status__icon--color-no-issues'
     ]))
 
     await wrapper.get('[data-testid="check-passports"]').trigger('click')
@@ -720,7 +721,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
     expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="passport-check-status-dot"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
     wrapper.unmount()
 
     registerItem.customsProcedureCode = CUSTOMS_PROCEDURE_IMPORT
@@ -732,7 +733,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
     expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="passport-check-status-dot"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
   })
 
   it('edits parcels and opens fellow lookup by SHK', async () => {

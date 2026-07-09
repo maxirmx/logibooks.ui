@@ -21,10 +21,9 @@ const statusItem = computed(() => props.status ?? resolvePassportCheckStatus(pro
 const statusName = computed(() => statusItem.value?.name || '')
 const presentation = computed(() => getPassportCheckStatusPresentation(statusItem.value))
 const hasDefaultSlot = computed(() => Boolean(slots.default))
-const dotClasses = computed(() => [
-  'passport-check-status__dot',
-  presentation.value.colorClass,
-  presentation.value.borderClass
+const iconClasses = computed(() => [
+  'passport-check-status__icon',
+  presentation.value.colorClass
 ])
 </script>
 
@@ -36,11 +35,12 @@ const dotClasses = computed(() => [
       :disabled="!statusName"
     >
       <template #activator="{ props: tooltipProps }">
-        <span
+        <font-awesome-icon
           v-bind="tooltipProps"
-          :class="dotClasses"
+          :icon="presentation.icon"
+          :class="iconClasses"
           :aria-label="statusName || undefined"
-          data-testid="passport-check-status-dot"
+          data-testid="passport-check-status-icon"
         />
       </template>
     </v-tooltip>

@@ -14,13 +14,13 @@ import {
 describe('passport check status helpers', () => {
   it('maps backend status codes to named UI presentation entities', () => {
     expect(getPassportCheckStatusPresentation(PassportCheckStatusCode.Invalid)).toBe(
-      PassportCheckStatusPresentation.HasIssues
+      PassportCheckStatusPresentation.Invalid
     )
     expect(getPassportCheckStatusPresentation(PassportCheckStatusCode.NotExists)).toBe(
-      PassportCheckStatusPresentation.HasIssues
+      PassportCheckStatusPresentation.NotExists
     )
     expect(getPassportCheckStatusPresentation(PassportCheckStatusCode.Checked)).toBe(
-      PassportCheckStatusPresentation.NoIssues
+      PassportCheckStatusPresentation.Checked
     )
     expect(getPassportCheckStatusPresentation(PassportCheckStatusCode.NotChecked)).toBe(
       PassportCheckStatusPresentation.NotChecked
@@ -33,14 +33,30 @@ describe('passport check status helpers', () => {
     )
   })
 
-  it('keeps mixed presentation entities explicit for error and in-progress states', () => {
+  it('maps backend status codes to requested Font Awesome icons and icon color classes', () => {
+    expect(PassportCheckStatusPresentation.NotChecked).toMatchObject({
+      icon: 'fa-solid fa-circle-question',
+      colorClass: 'passport-check-status__icon--color-not-checked'
+    })
     expect(PassportCheckStatusPresentation.CheckError).toMatchObject({
-      colorClass: 'passport-check-status__dot--color-not-checked',
-      borderClass: 'passport-check-status__dot--border-has-issues'
+      icon: 'fa-solid fa-triangle-exclamation',
+      colorClass: 'passport-check-status__icon--color-has-issues'
     })
     expect(PassportCheckStatusPresentation.InProgress).toMatchObject({
-      colorClass: 'passport-check-status__dot--color-not-checked',
-      borderClass: 'passport-check-status__dot--border-no-issues'
+      icon: 'fa-solid fa-arrow-rotate-left',
+      colorClass: 'passport-check-status__icon--color-not-checked'
+    })
+    expect(PassportCheckStatusPresentation.Checked).toMatchObject({
+      icon: 'fa-solid fa-circle-check',
+      colorClass: 'passport-check-status__icon--color-no-issues'
+    })
+    expect(PassportCheckStatusPresentation.Invalid).toMatchObject({
+      icon: 'fa-solid fa-circle-exclamation',
+      colorClass: 'passport-check-status__icon--color-has-issues'
+    })
+    expect(PassportCheckStatusPresentation.NotExists).toMatchObject({
+      icon: 'fa-solid fa-circle-xmark',
+      colorClass: 'passport-check-status__icon--color-has-issues'
     })
   })
 

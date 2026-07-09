@@ -46,6 +46,7 @@ function emitClear() {
           :name="name"
           :id="name"
           type="text"
+          :disabled="disabled"
           :class="['form-control', 'input', { 'is-invalid': errors && errors[name] }]"
         />
       </div>

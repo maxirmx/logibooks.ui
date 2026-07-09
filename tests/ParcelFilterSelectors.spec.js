@@ -142,6 +142,49 @@ describe('ParcelFilterSelectors', () => {
     expect(visibleWrapper.findAll('.v-select-stub')).toHaveLength(5)
   })
 
+  it('clears passport check status when the selector is hidden after initialization', async () => {
+    const wrapper = mountComponent({
+      parcelsPassportCheckStatus: 30,
+      showPassportCheckStatus: false,
+      isInitializing: false,
+    })
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toEqual([[null]])
+  })
+
+  it('keeps passport check status while initializing and clears it if still hidden afterwards', async () => {
+    const wrapper = mountComponent({
+      parcelsPassportCheckStatus: 30,
+      showPassportCheckStatus: false,
+      isInitializing: true,
+    })
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toBeUndefined()
+
+    await wrapper.setProps({ isInitializing: false })
+
+    expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toEqual([[null]])
+  })
+
+  it('keeps passport check status when the selector becomes visible before initialization completes', async () => {
+    const wrapper = mountComponent({
+      parcelsPassportCheckStatus: 30,
+      showPassportCheckStatus: false,
+      isInitializing: true,
+    })
+
+    await wrapper.setProps({
+      showPassportCheckStatus: true,
+      isInitializing: false,
+    })
+
+    expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toBeUndefined()
+  })
+
   it('keeps controls disabled when multiple blocking flags are active', () => {
     const wrapper = mountComponent({ runningAction: true, loading: true, isInitializing: true })
     assertDisabledState(wrapper, true, true)

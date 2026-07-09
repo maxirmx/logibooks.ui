@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps({
   statusOptions: { type: Array, required: true },
@@ -61,6 +61,23 @@ const parcelsPassportCheckStatusModel = computed({
   get: () => props.parcelsPassportCheckStatus,
   set: (value) => emit('update:parcelsPassportCheckStatus', value),
 })
+
+function clearHiddenPassportCheckStatus() {
+  if (
+    !props.showPassportCheckStatus &&
+    !props.isInitializing &&
+    props.parcelsPassportCheckStatus !== null &&
+    props.parcelsPassportCheckStatus !== undefined
+  ) {
+    emit('update:parcelsPassportCheckStatus', null)
+  }
+}
+
+watch(
+  () => [props.showPassportCheckStatus, props.isInitializing, props.parcelsPassportCheckStatus],
+  clearHiddenPassportCheckStatus,
+  { immediate: true }
+)
 
 const parcelsHideLegacyRestrictionsOptions = [
   { title: 'Показать', value: false },

@@ -18,6 +18,11 @@ const tooltipStub = {
   `
 }
 
+const fontAwesomeIconStub = {
+  props: ['icon'],
+  template: '<i :data-icon="icon" v-bind="$attrs"></i>'
+}
+
 describe('PassportCheckStatusIndicator', () => {
   const statuses = [
     { value: 0, code: PassportCheckStatusCode.NotChecked, name: 'Не проверен' },
@@ -36,18 +41,19 @@ describe('PassportCheckStatusIndicator', () => {
       },
       global: {
         stubs: {
+          'font-awesome-icon': fontAwesomeIconStub,
           'v-tooltip': tooltipStub
         }
       }
     })
 
-    const dot = wrapper.get('[data-testid="passport-check-status-dot"]')
-    expect(dot.attributes('aria-label')).toBe('Проверен')
-    expect(dot.attributes('title')).toBe('Проверен')
-    expect(dot.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__dot',
-      'passport-check-status__dot--color-no-issues',
-      'passport-check-status__dot--border-no-issues'
+    const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
+    expect(icon.attributes('aria-label')).toBe('Проверен')
+    expect(icon.attributes('title')).toBe('Проверен')
+    expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
+    expect(icon.classes()).toEqual(expect.arrayContaining([
+      'passport-check-status__icon',
+      'passport-check-status__icon--color-no-issues'
     ]))
     expect(wrapper.get('.tooltip-stub').attributes('data-text')).toBe('Проверен')
     expect(wrapper.text()).toContain('AB1234567')
@@ -61,16 +67,17 @@ describe('PassportCheckStatusIndicator', () => {
       },
       global: {
         stubs: {
+          'font-awesome-icon': fontAwesomeIconStub,
           'v-tooltip': tooltipStub
         }
       }
     })
 
-    const dot = wrapper.get('[data-testid="passport-check-status-dot"]')
-    expect(dot.attributes('aria-label')).toBeUndefined()
-    expect(dot.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__dot--color-not-checked',
-      'passport-check-status__dot--border-not-checked'
+    const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
+    expect(icon.attributes('aria-label')).toBeUndefined()
+    expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-question')
+    expect(icon.classes()).toEqual(expect.arrayContaining([
+      'passport-check-status__icon--color-not-checked'
     ]))
     expect(wrapper.get('.tooltip-stub').attributes('data-disabled')).toBe('true')
   })

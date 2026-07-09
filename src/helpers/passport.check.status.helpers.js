@@ -12,37 +12,42 @@ export const PassportCheckStatusCode = Object.freeze({
 })
 
 export const PassportCheckStatusPresentation = Object.freeze({
-  HasIssues: Object.freeze({
-    name: 'HasIssues',
-    colorClass: 'passport-check-status__dot--color-has-issues',
-    borderClass: 'passport-check-status__dot--border-has-issues'
-  }),
-  NoIssues: Object.freeze({
-    name: 'NoIssues',
-    colorClass: 'passport-check-status__dot--color-no-issues',
-    borderClass: 'passport-check-status__dot--border-no-issues'
-  }),
   NotChecked: Object.freeze({
     name: 'NotChecked',
-    colorClass: 'passport-check-status__dot--color-not-checked',
-    borderClass: 'passport-check-status__dot--border-not-checked'
+    icon: 'fa-solid fa-circle-question',
+    colorClass: 'passport-check-status__icon--color-not-checked'
   }),
   CheckError: Object.freeze({
     name: 'CheckError',
-    colorClass: 'passport-check-status__dot--color-not-checked',
-    borderClass: 'passport-check-status__dot--border-has-issues'
+    icon: 'fa-solid fa-triangle-exclamation',
+    colorClass: 'passport-check-status__icon--color-has-issues'
   }),
   InProgress: Object.freeze({
     name: 'InProgress',
-    colorClass: 'passport-check-status__dot--color-not-checked',
-    borderClass: 'passport-check-status__dot--border-no-issues'
+    icon: 'fa-solid fa-arrow-rotate-left',
+    colorClass: 'passport-check-status__icon--color-not-checked'
+  }),
+  Checked: Object.freeze({
+    name: 'Checked',
+    icon: 'fa-solid fa-circle-check',
+    colorClass: 'passport-check-status__icon--color-no-issues'
+  }),
+  Invalid: Object.freeze({
+    name: 'Invalid',
+    icon: 'fa-solid fa-circle-exclamation',
+    colorClass: 'passport-check-status__icon--color-has-issues'
+  }),
+  NotExists: Object.freeze({
+    name: 'NotExists',
+    icon: 'fa-solid fa-circle-xmark',
+    colorClass: 'passport-check-status__icon--color-has-issues'
   })
 })
 
 export const PassportCheckStatusPresentationByCode = Object.freeze({
-  [PassportCheckStatusCode.Invalid]: PassportCheckStatusPresentation.HasIssues,
-  [PassportCheckStatusCode.NotExists]: PassportCheckStatusPresentation.HasIssues,
-  [PassportCheckStatusCode.Checked]: PassportCheckStatusPresentation.NoIssues,
+  [PassportCheckStatusCode.Invalid]: PassportCheckStatusPresentation.Invalid,
+  [PassportCheckStatusCode.NotExists]: PassportCheckStatusPresentation.NotExists,
+  [PassportCheckStatusCode.Checked]: PassportCheckStatusPresentation.Checked,
   [PassportCheckStatusCode.NotChecked]: PassportCheckStatusPresentation.NotChecked,
   [PassportCheckStatusCode.CheckError]: PassportCheckStatusPresentation.CheckError,
   [PassportCheckStatusCode.InProgress]: PassportCheckStatusPresentation.InProgress

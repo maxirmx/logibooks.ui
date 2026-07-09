@@ -9,6 +9,10 @@ import { nextTick, ref } from 'vue'
 import { resolveAll } from './helpers/test-utils.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import {
+  CUSTOMS_PROCEDURE_EXPORT,
+  CUSTOMS_PROCEDURE_IMPORT
+} from '@/helpers/customs.procedure.helpers.js'
 
 let WbrNParcelEditDialog
 let confirmMock = null
@@ -50,6 +54,7 @@ const parcelUpdate = vi.fn().mockResolvedValue()
 const parcelLookupFeacnCode = vi.fn().mockResolvedValue()
 const parcelClearCheckStatus = vi.fn().mockResolvedValue()
 const parcelCheckForDuplicate = vi.fn().mockResolvedValue()
+const parcelCheckPassport = vi.fn().mockResolvedValue()
 const parcelViewsAdd = vi.fn().mockResolvedValue()
 const parcelViewsBack = vi.fn().mockResolvedValue(null)
 const nextParcels = vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null })
@@ -59,9 +64,19 @@ const setFieldValue = vi.fn((name, value) => {
   formValues[name] = value
 })
 
+const authIsSrLogistPlus = ref(true)
 const authStore = {
   selectedParcelId: null,
-  isAdmin: ref(false)
+  isAdmin: ref(false),
+  get isSrLogistPlus() {
+    return authIsSrLogistPlus.value
+  }
+}
+const registerOps = {
+  passportCheckStatuses: [
+    { value: 0, code: 'NotChecked', name: 'Не проверен' },
+    { value: 30, code: 'Checked', name: 'Проверен' }
+  ]
 }
 
 vi.mock('vuetify-use-dialog', () => ({
@@ -132,7 +147,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
     update: parcelUpdate,
     lookupFeacnCode: parcelLookupFeacnCode,
     clearCheckStatus: parcelClearCheckStatus,
-    checkForDuplicate: parcelCheckForDuplicate
+    checkForDuplicate: parcelCheckForDuplicate,
+    checkPassport: parcelCheckPassport
   })
 }))
 
@@ -183,6 +199,7 @@ vi.mock('@/stores/parcel.views.store.js', () => ({
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     item: registerItem,
+    ops: registerOps,
     getById: registerGetById,
     nextParcels
   })
@@ -224,6 +241,7 @@ const baseParcel = {
   recipientCity: 'Ташкент',
   recipientAddress: 'ул. Навои, 1',
   passportNumber: 'AA1234567',
+  passportCheckStatus: 30,
   hasImage: true
 }
 
@@ -248,15 +266,16 @@ const stubs = {
     template: '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
-    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled'],
-    emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'cancel', 'download'],
+    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled', 'showPassportCheck'],
+    emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'check-passport', 'cancel', 'download'],
     template: `
-      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)">
+      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)" :data-show-passport-check="String(showPassportCheck)">
         <button data-testid="next-parcel" :disabled="disabled || actionsDisabled" @click="$emit('next-parcel')"></button>
         <button data-testid="next-issue" :disabled="disabled || actionsDisabled" @click="$emit('next-issue')"></button>
         <button data-testid="back" :disabled="disabled || actionsDisabled" @click="$emit('back')"></button>
         <button data-testid="save" :disabled="disabled || actionsDisabled" @click="$emit('save')"></button>
         <button data-testid="lookup" :disabled="disabled || actionsDisabled" @click="$emit('lookup')"></button>
+        <button v-if="showPassportCheck" data-testid="check-passport" :disabled="disabled || actionsDisabled" @click="$emit('check-passport')"></button>
         <button data-testid="cancel" :disabled="disabled" @click="$emit('cancel')"></button>
         <button data-testid="download" :disabled="disabled || actionsDisabled" @click="$emit('download')"></button>
       </div>
@@ -327,6 +346,10 @@ const stubs = {
   },
   'font-awesome-icon': {
     template: '<i data-testid="fa-icon"></i>'
+  },
+  'v-tooltip': {
+    props: ['text', 'disabled'],
+    template: '<span data-testid="v-tooltip" :data-text="text" :data-disabled="String(disabled)"><slot name="activator" :props="{ title: text }"></slot><slot></slot></span>'
   }
 }
 
@@ -337,12 +360,13 @@ function resetState() {
   formValues = { ...baseParcel }
   parcelItem.value = { ...baseParcel }
   parcelLoading.value = false
-  registerItem.value = { id: 12, registerType: 2097154, dealNumber: 'WBRN-12' }
+  registerItem.value = { id: 12, registerType: 2097154, dealNumber: 'WBRN-12', customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT }
   stopWords.value = []
   feacnOrders.value = []
   feacnPrefixes.value = []
   alertRef.value = null
   authStore.selectedParcelId = null
+  authIsSrLogistPlus.value = true
   imageOverlayOpen.value = false
   imageUrl.value = null
   imageLoading.value = false
@@ -357,6 +381,7 @@ function resetState() {
   approveParcelWithNotification.mockResolvedValue()
   generateXml.mockResolvedValue()
   deleteProductImage.mockResolvedValue()
+  parcelCheckPassport.mockResolvedValue()
   runCheckStatusAction.mockResolvedValue()
 }
 
@@ -417,6 +442,47 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(fieldNames).not.toContain('countryCode')
     expect(fieldNames).not.toContain('paymentAmount')
     expect(fieldNames).not.toContain('paymentCurrency')
+  })
+
+  it('shows passport verification action and indicator only for Import SrLogistPlus users', async () => {
+    let wrapper = await mountDialog()
+
+    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-show-passport-check')).toBe('true')
+    expect(wrapper.get('[data-testid="passport-check-status-dot"]').classes()).toEqual(expect.arrayContaining([
+      'passport-check-status__dot--color-no-issues',
+      'passport-check-status__dot--border-no-issues'
+    ]))
+
+    await wrapper.get('[data-testid="check-passport"]').trigger('click')
+    await resolveAll()
+    expect(runCheckStatusAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelCheckPassport,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Function),
+      expect.any(Object)
+    )
+    wrapper.unmount()
+
+    resetState()
+    registerItem.value = {
+      ...registerItem.value,
+      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
+    }
+    wrapper = await mountDialog()
+    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-show-passport-check')).toBe('false')
+    expect(wrapper.find('[data-testid="check-passport"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-status-dot"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    resetState()
+    authIsSrLogistPlus.value = false
+    wrapper = await mountDialog()
+    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-show-passport-check')).toBe('false')
+    expect(wrapper.find('[data-testid="check-passport"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-status-dot"]').exists()).toBe(false)
   })
 
   it('disables WbrN parcel action buttons except cancel for MarkedByPartner parcels', async () => {

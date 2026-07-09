@@ -16,6 +16,7 @@ const props = defineProps({
   iconSize: { type: String, default: '2x' },
   loading: { type: Boolean, default: false },
   noHistoricData: { type: Boolean, default: false },
+  showPassportCheck: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -24,6 +25,7 @@ const emit = defineEmits([
   'validate-fc',
   'lookup',
   'lookup-ex',
+  'check-passports',
   'export-ordinary',
   'export-excise',
   'export-notifications',
@@ -96,6 +98,15 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         :iconSize="iconSize"
         :disabled="disabled"
         @click="run('validate-fc')"
+      />
+      <ActionButton
+        v-if="showPassportCheck"
+        :item="item"
+        icon="fa-solid fa-passport"
+        tooltip-text="Проверить паспорта"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        @click="run('check-passports')"
       />
       <ActionButton2L
         :item="item"

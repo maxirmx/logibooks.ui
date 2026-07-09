@@ -1327,6 +1327,89 @@ a,
   border: 1px solid rgba(76, 175, 80, 0.3);
   overflow: ellipsis;
 }
+
+.passport-check-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.passport-check-status__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.passport-check-status__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
+.passport-check-status__dot--color-has-issues {
+  color: var(--check-status-has-issues-color);
+  background-color: var(--check-status-has-issues-color);
+}
+
+.passport-check-status__dot--color-no-issues {
+  color: var(--check-status-no-issues-color);
+  background-color: var(--check-status-no-issues-color);
+}
+
+.passport-check-status__dot--color-not-checked {
+  color: var(--check-status-not-checked-color);
+  background-color: var(--check-status-not-checked-color);
+}
+
+.passport-check-status__dot--border-has-issues {
+  border-color: var(--check-status-has-issues-color);
+}
+
+.passport-check-status__dot--border-no-issues {
+  border-color: var(--check-status-no-issues-color);
+}
+
+.passport-check-status__dot--border-not-checked {
+  border-color: var(--check-status-not-checked-color);
+}
+
+.passport-check-field {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.passport-check-field > .form-group,
+.passport-check-field > .form-group-1 {
+  width: 100%;
+  min-width: 0;
+}
+
+.passport-check-field > .passport-check-status {
+  position: absolute;
+  top: 50%;
+  left: calc(40% + 0.875rem);
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.passport-check-field:has(> .passport-check-status) > .form-group > .input {
+  padding-left: 1.45rem;
+}
+
+.passport-check-field:has(> .passport-check-status) > .form-group-1 > .input-1 {
+  padding-left: 1.45rem;
+}
+
+.passport-check-field:has(> .form-group-1) > .passport-check-status {
+  left: calc(18.5% + 0.875rem);
+}
  
 .status-cell.is-approved-with-excise {
   background-color: rgba(255, 107, 53, 0.25);

@@ -22,9 +22,11 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { gtcRegisterColumnTitles, gtcRegisterColumnTooltips } from '@/helpers/gtc.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import GtcFormField from '@/components/GtcFormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
 import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -101,6 +103,10 @@ const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
 const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedByPartner(item.value?.checkStatus))
+const showPassportVerification = computed(() =>
+  authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
+)
+const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -463,11 +469,13 @@ async function onLookup(values) {
           isCustomsProcessingDisabled(values.statusId, statusStore)
         "
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
+        :show-passport-check="showPassportVerification"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"
         @back="onBack(values)"
         @save="onSave(values)"
         @lookup="onLookup(values)"
+        @check-passport="runCheckStatusAction(values, parcelsStore.checkPassport)"
         @cancel="goToParcelsList()"
         @download="generateXml(values)"
       />
@@ -572,7 +580,14 @@ async function onLookup(values) {
         </div>
         <div class="form-row">
           <GtcFormField name="passportSeries" :errors="errors" :fullWidth="false" />
-          <GtcFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          <div class="passport-check-field">
+            <PassportCheckStatusIndicator
+              v-if="showPassportVerification"
+              :value="item?.passportCheckStatus"
+              :statuses="passportCheckStatuses"
+            />
+            <GtcFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          </div>
           <GtcFormField name="passportIssueDate" type="date" :errors="errors" :fullWidth="false" />
           <GtcFormField name="passportIssuedBy" :errors="errors" :fullWidth="false" />
         </div>

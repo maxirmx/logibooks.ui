@@ -31,6 +31,10 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
     params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
   }
 
+  if (authStore.parcels_passport_check_status !== null && authStore.parcels_passport_check_status !== undefined) {
+    params.append('passportCheckStatus', authStore.parcels_passport_check_status.toString())
+  }
+
   if (authStore.parcels_hide_legacy_restrictions === true) {
     params.append('hideLegacyRestrictions', 'true')
   }
@@ -267,6 +271,11 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
+  async function checkPassport(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/check-passport`)
+    return true
+  }
+
   async function setDefect(id) {
     await fetchWrapper.post(`${baseUrl}/${id}/set-defect`)
     return true
@@ -385,6 +394,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     lookupFeacnCode,
     clearCheckStatus,
     checkForDuplicate,
+    checkPassport,
     setDefect,
     clearDefect,
     clearExtId,

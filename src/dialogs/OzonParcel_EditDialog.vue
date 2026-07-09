@@ -25,6 +25,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import OzonFormField from '@/components/OzonFormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
 import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -35,7 +36,7 @@ import ParcelImageOverlay from '@/components/ParcelImageOverlay.vue'
 import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
-import { isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { isImportCustomsProcedure, isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import {
   validateParcelData,
   approveParcel as approveParcelHelper,
@@ -108,6 +109,10 @@ const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedBy
 const showImportConsigneeFields = computed(() => {
   return isImportOrReexportCustomsProcedure(registerItem.value?.customsProcedureCode)
 })
+const showPassportVerification = computed(() =>
+  authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
+)
+const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -470,11 +475,13 @@ async function onLookup(values) {
           isCustomsProcessingDisabled(values.statusId, statusStore)
         "
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
+        :show-passport-check="showPassportVerification"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"
         @back="onBack(values)"
         @save="onSave(values)"
         @lookup="onLookup(values)"
+        @check-passport="runCheckStatusAction(values, parcelsStore.checkPassport)"
         @cancel="goToParcelsList()"
         @download="generateXml(values)"
       />
@@ -580,12 +587,26 @@ async function onLookup(values) {
           <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
           <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <OzonFormField v-if="showImportConsigneeFields" name="inn" :errors="errors" :fullWidth="false" />
-          <OzonFormField v-else name="passportNumber" :errors="errors" :fullWidth="false" />
+          <div v-else class="passport-check-field">
+            <PassportCheckStatusIndicator
+              v-if="showPassportVerification"
+              :value="item?.passportCheckStatus"
+              :statuses="passportCheckStatuses"
+            />
+            <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          </div>
         </div>
         <template v-if="showImportConsigneeFields">
           <div class="form-row">
             <OzonFormField name="passportSeries" :errors="errors" :fullWidth="false" />
-            <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+            <div class="passport-check-field">
+              <PassportCheckStatusIndicator
+                v-if="showPassportVerification"
+                :value="item?.passportCheckStatus"
+                :statuses="passportCheckStatuses"
+              />
+              <OzonFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+            </div>
             <OzonFormField name="passportIssueDate" type="date" :errors="errors" :fullWidth="false" />
             <OzonFormField name="passportIssuedBy" :errors="errors" :fullWidth="false" />
           </div>

@@ -28,7 +28,8 @@ export const useRegistersStore = defineStore('registers', () => {
   const hasPreviousPage = ref(false)
   const ops = ref({
     customsProcedures: [],
-    transportationTypes: []
+    transportationTypes: [],
+    passportCheckStatuses: []
   })
   const opsLoading = ref(false)
   const opsError = ref(null)
@@ -83,7 +84,12 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       const response = await fetchWrapper.get(`${baseUrl}/ops`)
       if (response && Array.isArray(response.customsProcedures) && Array.isArray(response.transportationTypes)) {
-        ops.value = response
+        ops.value = {
+          ...response,
+          passportCheckStatuses: Array.isArray(response.passportCheckStatuses)
+            ? response.passportCheckStatuses
+            : []
+        }
         opsInitialized = true
       }
       return ops.value
@@ -367,6 +373,16 @@ export const useRegistersStore = defineStore('registers', () => {
       const url = `${baseUrl}/${registerId}/lookup-feacn-codes?withFCMatch=${withFCMatch}`
       const result = await fetchWrapper.post(url)
       return result
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function checkPassports(registerId) {
+    try {
+      await fetchWrapper.post(`${baseUrl}/${registerId}/check-passports`)
+      return true
     } catch (err) {
       error.value = err
       throw err
@@ -777,6 +793,7 @@ export const useRegistersStore = defineStore('registers', () => {
     lookupFeacnCodes,
     getLookupFeacnCodesProgress,
     cancelLookupFeacnCodes,
+    checkPassports,
     generate,
     generateExcise,
     generateNotifications,

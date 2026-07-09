@@ -32,6 +32,7 @@ const mockAuthStore = {
   parcels_status: null,
   parcels_check_status_sw: null,
   parcels_check_status_fc: null,
+  parcels_passport_check_status: null,
   parcels_hide_legacy_restrictions: false,
   parcels_tnved: '',
   parcels_number: '',
@@ -63,6 +64,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_status = null
     mockAuthStore.parcels_check_status_sw = null
     mockAuthStore.parcels_check_status_fc = null
+    mockAuthStore.parcels_passport_check_status = null
     mockAuthStore.parcels_hide_legacy_restrictions = false
     mockAuthStore.parcels_tnved = ''
     mockAuthStore.parcels_number = ''
@@ -179,6 +181,17 @@ describe('parcels store', () => {
     await store.getAll(3)
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels?registerId=3&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=2&checkStatusFc=4&tnVed=BB`
+    )
+  })
+
+  it('fetches data with passport check status filtering', async () => {
+    mockAuthStore.parcels_passport_check_status = 30
+
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+    await store.getAll(1)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&passportCheckStatus=30`
     )
   })
 
@@ -319,6 +332,16 @@ describe('parcels store', () => {
     const result = await store.checkForDuplicate(12)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/check-duplicate`)
+    expect(result).toBe(true)
+  })
+
+  it('checks parcel passport through the passport endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+
+    const result = await store.checkPassport(12)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/check-passport`)
     expect(result).toBe(true)
   })
 

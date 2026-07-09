@@ -10,7 +10,7 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 
 const actionButtonStub = {
   inheritAttrs: false,
-  template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+  template: '<button :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
   props: {
     disabled: { type: Boolean, default: false },
     item: { type: Object, default: () => ({}) },
@@ -27,6 +27,7 @@ const mockUser = ref({
   email: 'test@test.com',
   schemeId: 1
 })
+const mockIsSrLogistPlus = ref(true)
 
 const mockScheme = {
   id: 1,
@@ -56,7 +57,10 @@ const getOpsEventMock = vi.fn()
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    user: mockUser.value
+    user: mockUser.value,
+    get isSrLogistPlus() {
+      return mockIsSrLogistPlus.value
+    }
   })
 }))
 
@@ -77,6 +81,7 @@ describe('ParcelHeaderActionsBar', () => {
       email: 'test@test.com',
       schemeId: 1
     }
+    mockIsSrLogistPlus.value = true
     ensureOpsLoadedMock.mockResolvedValue(mockOps)
     getByIdMock.mockResolvedValue(mockScheme)
     getOpsEventMock.mockImplementation((actions, actionValue) => {
@@ -239,6 +244,34 @@ describe('ParcelHeaderActionsBar', () => {
     await buttons[3].trigger('click')
     const lookupAfter = wrapper.emitted()['lookup']?.length ?? 0
     expect(lookupAfter).toBe(lookupBefore)
+  })
+
+  it('shows passport check action only for SrLogistPlus when enabled', async () => {
+    let wrapper = mount(ParcelHeaderActionsBar, {
+      props: { showPassportCheck: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+
+    const passportButton = wrapper.get('[data-tooltip="Проверить паспорт"]')
+    expect(passportButton.attributes('data-icon')).toBe('fa-solid fa-passport')
+
+    await passportButton.trigger('click')
+    expect(wrapper.emitted()['check-passport']).toHaveLength(1)
+    wrapper.unmount()
+
+    wrapper = mount(ParcelHeaderActionsBar, {
+      props: { showPassportCheck: false },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+    expect(wrapper.find('[data-tooltip="Проверить паспорт"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    mockIsSrLogistPlus.value = false
+    wrapper = mount(ParcelHeaderActionsBar, {
+      props: { showPassportCheck: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+    expect(wrapper.find('[data-tooltip="Проверить паспорт"]').exists()).toBe(false)
   })
 
   it('respects lookupDisabled for lookup hotkeys', async () => {

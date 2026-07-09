@@ -13,6 +13,7 @@ const props = defineProps({
   actionsDisabled: { type: Boolean, default: false },
   downloadDisabled: { type: Boolean, default: false },
   lookupDisabled: { type: Boolean, default: false },
+  showPassportCheck: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' }
 })
 
@@ -23,6 +24,7 @@ const emit = defineEmits([
   'save',
   'cancel',
   'lookup',
+  'check-passport',
   'download'
 ])
 
@@ -160,6 +162,15 @@ function handleKeydown(e) {
         tooltip-text="Сохранить и подобрать код ТН ВЭД"
         :disabled="disabled || actionsDisabled || lookupDisabled"
         @click="emitLookup"
+      />
+      <ActionButton
+        v-if="authStore.isSrLogistPlus && showPassportCheck"
+        :item="{}"
+        icon="fa-solid fa-passport"
+        :iconSize="iconSize"
+        tooltip-text="Проверить паспорт"
+        :disabled="disabled || actionsDisabled"
+        @click="emitEvent('check-passport')"
       />
     </div>
     <div class="header-actions header-actions-group">

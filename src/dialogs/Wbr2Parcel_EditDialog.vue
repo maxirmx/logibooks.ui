@@ -26,7 +26,7 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
-import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
+import PassportNumberWithActions from '@/components/PassportNumberWithActions.vue'
 import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -440,13 +440,11 @@ async function onLookup(values) {
           isCustomsProcessingDisabled(values.statusId, statusStore)
         "
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
-        :show-passport-check="showPassportVerification"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"
         @back="onBack(values)"
         @save="onSave(values)"
         @lookup="onLookup(values)"
-        @check-passport="runCheckStatusAction(values, parcelsStore.checkPassport)"
         @cancel="goToParcelsList()"
         @download="generateXml(values)"
       />
@@ -546,14 +544,16 @@ async function onLookup(values) {
         </div>
         <div class="form-row">
           <Wbr2FormField name="recipientName" :errors="errors" :fullWidth="false" />
-          <div class="passport-check-field">
-            <PassportCheckStatusIndicator
-              v-if="showPassportVerification"
-              :value="item?.passportCheckStatus"
-              :statuses="passportCheckStatuses"
-            />
-            <Wbr2FormField name="passportNumber" :errors="errors" :fullWidth="false" />
-          </div>
+          <PassportNumberWithActions
+            :label="wbr2RegisterColumnTitles.passportNumber"
+            :errors="errors"
+            :show-actions="showPassportVerification"
+            :status-value="item?.passportCheckStatus"
+            :statuses="passportCheckStatuses"
+            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
+            @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
+          />
         </div>
       </div>
       <!-- DTag -->

@@ -26,7 +26,7 @@ import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js
 import WbrNFormField from '@/components/WbrNFormField.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
-import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
+import PassportNumberWithActions from '@/components/PassportNumberWithActions.vue'
 import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -454,13 +454,11 @@ async function onLookup(values) {
           isCustomsProcessingDisabled(values.statusId, statusStore)
         "
         :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
-        :show-passport-check="showPassportVerification"
         @next-parcel="onSubmit(values, true)"
         @next-issue="onSubmit(values, false)"
         @back="onBack(values)"
         @save="onSave(values)"
         @lookup="onLookup(values)"
-        @check-passport="runCheckStatusAction(values, parcelsStore.checkPassport)"
         @cancel="goToParcelsList()"
         @download="generateXml(values)"
       />
@@ -583,14 +581,16 @@ async function onLookup(values) {
           <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="firstName" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
-          <div class="passport-check-field">
-            <PassportCheckStatusIndicator
-              v-if="showPassportVerification"
-              :value="item?.passportCheckStatus"
-              :statuses="passportCheckStatuses"
-            />
-            <WbrNFormField name="passportNumber" :errors="errors" :fullWidth="false" />
-          </div>
+          <PassportNumberWithActions
+            :label="wbrnRegisterColumnTitles.passportNumber"
+            :errors="errors"
+            :show-actions="showPassportVerification"
+            :status-value="item?.passportCheckStatus"
+            :statuses="passportCheckStatuses"
+            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
+            @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
+          />
         </div>
       </div>
       <!-- DTag -->

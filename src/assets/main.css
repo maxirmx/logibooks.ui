@@ -1379,36 +1379,48 @@ a,
   border-color: var(--check-status-not-checked-color);
 }
 
-.passport-check-field {
-  position: relative;
-  min-width: 0;
-  flex: 1 1 0;
-}
-
-.passport-check-field > .form-group,
-.passport-check-field > .form-group-1 {
+.passport-number-with-actions {
   width: 100%;
+}
+
+.passport-number-with-actions__control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   min-width: 0;
 }
 
-.passport-check-field > .passport-check-status {
+.passport-number-with-actions__input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.passport-number-with-actions__input-wrap > .input {
+  width: 100%;
+}
+
+.passport-number-with-actions__input-wrap > .passport-check-status {
   position: absolute;
   top: 50%;
-  left: calc(40% + 0.875rem);
+  left: 0.45rem;
   transform: translateY(-50%);
   z-index: 2;
 }
 
-.passport-check-field:has(> .passport-check-status) > .form-group > .input {
+.passport-number-with-actions__input-wrap:has(> .passport-check-status) > .input {
   padding-left: 1.45rem;
 }
 
-.passport-check-field:has(> .passport-check-status) > .form-group-1 > .input-1 {
-  padding-left: 1.45rem;
-}
-
-.passport-check-field:has(> .form-group-1) > .passport-check-status {
-  left: calc(18.5% + 0.875rem);
+.passport-number-with-actions__actions {
+  display: flex;
+  gap: 0.25rem;
+  background: #ffffff;
+  border: 1px solid #74777c;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
 }
  
 .status-cell.is-approved-with-excise {

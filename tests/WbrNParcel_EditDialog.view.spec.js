@@ -55,6 +55,7 @@ const parcelLookupFeacnCode = vi.fn().mockResolvedValue()
 const parcelClearCheckStatus = vi.fn().mockResolvedValue()
 const parcelCheckForDuplicate = vi.fn().mockResolvedValue()
 const parcelCheckPassport = vi.fn().mockResolvedValue()
+const parcelClearPassportCheck = vi.fn().mockResolvedValue()
 const parcelViewsAdd = vi.fn().mockResolvedValue()
 const parcelViewsBack = vi.fn().mockResolvedValue(null)
 const nextParcels = vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null })
@@ -148,7 +149,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
     lookupFeacnCode: parcelLookupFeacnCode,
     clearCheckStatus: parcelClearCheckStatus,
     checkForDuplicate: parcelCheckForDuplicate,
-    checkPassport: parcelCheckPassport
+    checkPassport: parcelCheckPassport,
+    clearPassportCheck: parcelClearPassportCheck
   })
 }))
 
@@ -266,16 +268,15 @@ const stubs = {
     template: '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
-    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled', 'showPassportCheck'],
-    emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'check-passport', 'cancel', 'download'],
+    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled'],
+    emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'cancel', 'download'],
     template: `
-      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)" :data-show-passport-check="String(showPassportCheck)">
+      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)">
         <button data-testid="next-parcel" :disabled="disabled || actionsDisabled" @click="$emit('next-parcel')"></button>
         <button data-testid="next-issue" :disabled="disabled || actionsDisabled" @click="$emit('next-issue')"></button>
         <button data-testid="back" :disabled="disabled || actionsDisabled" @click="$emit('back')"></button>
         <button data-testid="save" :disabled="disabled || actionsDisabled" @click="$emit('save')"></button>
         <button data-testid="lookup" :disabled="disabled || actionsDisabled" @click="$emit('lookup')"></button>
-        <button v-if="showPassportCheck" data-testid="check-passport" :disabled="disabled || actionsDisabled" @click="$emit('check-passport')"></button>
         <button data-testid="cancel" :disabled="disabled" @click="$emit('cancel')"></button>
         <button data-testid="download" :disabled="disabled || actionsDisabled" @click="$emit('download')"></button>
       </div>
@@ -374,6 +375,7 @@ function resetState() {
   parcelViewsBack.mockResolvedValue(null)
   parcelUpdate.mockResolvedValue()
   parcelGetById.mockResolvedValue({ ...baseParcel })
+  parcelClearPassportCheck.mockResolvedValue()
   registerGetById.mockResolvedValue({ id: 12 })
   validateParcelData.mockResolvedValue()
   approveParcel.mockResolvedValue()
@@ -436,9 +438,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
       'currency',
       'lastName',
       'firstName',
-      'patronymic',
-      'passportNumber'
+      'patronymic'
     ]))
+    expect(wrapper.get('input[name="passportNumber"]').exists()).toBe(true)
     expect(fieldNames).not.toContain('countryCode')
     expect(fieldNames).not.toContain('paymentAmount')
     expect(fieldNames).not.toContain('paymentCurrency')
@@ -447,17 +449,29 @@ describe('WbrNParcel_EditDialog.vue', () => {
   it('shows passport verification action and indicator only for Import SrLogistPlus users', async () => {
     let wrapper = await mountDialog()
 
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-show-passport-check')).toBe('true')
+    expect(wrapper.find('[data-tooltip="Проверить паспорт"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="passport-check-actions"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="passport-check-status-dot"]').classes()).toEqual(expect.arrayContaining([
       'passport-check-status__dot--color-no-issues',
       'passport-check-status__dot--border-no-issues'
     ]))
 
-    await wrapper.get('[data-testid="check-passport"]').trigger('click')
+    await wrapper.get('[data-tooltip="Проверить"]').trigger('click')
     await resolveAll()
     expect(runCheckStatusAction).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelCheckPassport,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Function),
+      expect.any(Object)
+    )
+    await wrapper.get('[data-tooltip="Очистить"]').trigger('click')
+    await resolveAll()
+    expect(runCheckStatusAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelClearPassportCheck,
       expect.any(Object),
       expect.any(Object),
       expect.any(Object),
@@ -472,16 +486,16 @@ describe('WbrNParcel_EditDialog.vue', () => {
       customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
     }
     wrapper = await mountDialog()
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-show-passport-check')).toBe('false')
-    expect(wrapper.find('[data-testid="check-passport"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-actions"]').exists()).toBe(false)
+    expect(wrapper.find('[data-tooltip="Проверить"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-dot"]').exists()).toBe(false)
     wrapper.unmount()
 
     resetState()
     authIsSrLogistPlus.value = false
     wrapper = await mountDialog()
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-show-passport-check')).toBe('false')
-    expect(wrapper.find('[data-testid="check-passport"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-actions"]').exists()).toBe(false)
+    expect(wrapper.find('[data-tooltip="Проверить"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-dot"]').exists()).toBe(false)
   })
 

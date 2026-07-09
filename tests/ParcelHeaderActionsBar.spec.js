@@ -246,34 +246,6 @@ describe('ParcelHeaderActionsBar', () => {
     expect(lookupAfter).toBe(lookupBefore)
   })
 
-  it('shows passport check action only for SrLogistPlus when enabled', async () => {
-    let wrapper = mount(ParcelHeaderActionsBar, {
-      props: { showPassportCheck: true },
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    const passportButton = wrapper.get('[data-tooltip="Проверить паспорт"]')
-    expect(passportButton.attributes('data-icon')).toBe('fa-solid fa-passport')
-
-    await passportButton.trigger('click')
-    expect(wrapper.emitted()['check-passport']).toHaveLength(1)
-    wrapper.unmount()
-
-    wrapper = mount(ParcelHeaderActionsBar, {
-      props: { showPassportCheck: false },
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-    expect(wrapper.find('[data-tooltip="Проверить паспорт"]').exists()).toBe(false)
-    wrapper.unmount()
-
-    mockIsSrLogistPlus.value = false
-    wrapper = mount(ParcelHeaderActionsBar, {
-      props: { showPassportCheck: true },
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-    expect(wrapper.find('[data-tooltip="Проверить паспорт"]').exists()).toBe(false)
-  })
-
   it('respects lookupDisabled for lookup hotkeys', async () => {
     getByIdMock.mockResolvedValue({
       id: 1,

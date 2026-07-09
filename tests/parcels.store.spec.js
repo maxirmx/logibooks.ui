@@ -345,6 +345,16 @@ describe('parcels store', () => {
     expect(result).toBe(true)
   })
 
+  it('clears parcel passport check through the passport endpoint', async () => {
+    fetchWrapper.post.mockResolvedValue(undefined)
+    const store = useParcelsStore()
+
+    const result = await store.clearPassportCheck(12)
+
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/clear-passport-check`)
+    expect(result).toBe(true)
+  })
+
   it('sets parcel defect status', async () => {
     fetchWrapper.post.mockResolvedValue(undefined)
     const store = useParcelsStore()

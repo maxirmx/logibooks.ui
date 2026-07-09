@@ -276,6 +276,11 @@ export const useParcelsStore = defineStore('parcels', () => {
     return true
   }
 
+  async function clearPassportCheck(id) {
+    await fetchWrapper.post(`${baseUrl}/${id}/clear-passport-check`)
+    return true
+  }
+
   async function setDefect(id) {
     await fetchWrapper.post(`${baseUrl}/${id}/set-defect`)
     return true
@@ -395,6 +400,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     clearCheckStatus,
     checkForDuplicate,
     checkPassport,
+    clearPassportCheck,
     setDefect,
     clearDefect,
     clearExtId,

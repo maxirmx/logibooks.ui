@@ -8,6 +8,10 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { CheckStatusCode, FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
+import {
+  CUSTOMS_PROCEDURE_EXPORT,
+  CUSTOMS_PROCEDURE_IMPORT
+} from '@/helpers/customs.procedure.helpers.js'
 
 let WbrNParcelsList
 
@@ -37,6 +41,7 @@ const parcelsPage = ref(1)
 const parcelsStatus = ref(null)
 const parcelsCheckStatusSw = ref(null)
 const parcelsCheckStatusFc = ref(null)
+const parcelsPassportCheckStatus = ref(null)
 const parcelsHideLegacyRestrictions = ref(false)
 const parcelsTnved = ref('')
 const parcelsNumber = ref('')
@@ -44,6 +49,7 @@ const parcelsProductName = ref('')
 const selectedParcelId = ref(null)
 const selectedParcelIds = ref(new Set([10, 11]))
 const lastClickedId = ref(null)
+const authIsSrLogistPlus = ref(true)
 
 const registerItem = {
   id: 7,
@@ -57,9 +63,15 @@ const registerItem = {
 const registerOps = {
   customsProcedures: [
     { value: 1, isRe: false },
-    { value: 2, isRe: true }
+    { value: 2, isRe: true },
+    { value: CUSTOMS_PROCEDURE_IMPORT, isRe: false },
+    { value: CUSTOMS_PROCEDURE_EXPORT, isRe: false }
   ],
-  transportationTypes: []
+  transportationTypes: [],
+  passportCheckStatuses: [
+    { value: 0, code: 'NotChecked', name: 'Не проверен' },
+    { value: 30, code: 'Checked', name: 'Проверен' }
+  ]
 }
 const getRegisterById = vi.fn().mockResolvedValue()
 const ensureOpsLoaded = vi.fn().mockResolvedValue()
@@ -91,6 +103,7 @@ const headerActions = {
   freezeCheckStatus: vi.fn().mockResolvedValue(),
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
   calculateCustomsCharges: vi.fn().mockResolvedValue(),
+  checkPassports: vi.fn().mockResolvedValue(),
   cancelValidation: vi.fn(),
 }
 
@@ -149,6 +162,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
       'dTag',
       'customsFee',
       'customsDuty',
+      'passportNumber',
       'previousDTagComment'
     ].includes(header.key)),
     getFeacnCodesForKeywords: (ids) => (ids || []).map(id => `TN-${id}`),
@@ -254,11 +268,15 @@ vi.mock('@/stores/auth.store.js', () => ({
     parcels_status: parcelsStatus,
     parcels_check_status_sw: parcelsCheckStatusSw,
     parcels_check_status_fc: parcelsCheckStatusFc,
+    parcels_passport_check_status: parcelsPassportCheckStatus,
     parcels_hide_legacy_restrictions: parcelsHideLegacyRestrictions,
     parcels_tnved: parcelsTnved,
     parcels_number: parcelsNumber,
     parcels_product_name: parcelsProductName,
-    selectedParcelId
+    selectedParcelId,
+    get isSrLogistPlus() {
+      return authIsSrLogistPlus.value
+    }
   })
 }))
 
@@ -292,6 +310,7 @@ const sampleParcel = {
   recipientCity: 'Ташкент',
   recipientAddress: 'ул. Навои, 1',
   passportNumber: 'AA1234567',
+  passportCheckStatus: 30,
   statusId: 5,
   dTag: 'DT-1',
   customsFee: 689,
@@ -328,12 +347,14 @@ const globalStubs = {
     template: '<div data-testid="register-heading">{{ heading }}</div>'
   },
   RegisterHeaderActionsBar: {
+    props: ['showPassportCheck'],
     emits: [
       'validate-sw',
       'validate-sw-ex',
       'validate-fc',
       'lookup',
       'lookup-ex',
+      'check-passports',
       'export-ordinary',
       'export-excise',
       'export-notifications',
@@ -347,10 +368,11 @@ const globalStubs = {
       'close'
     ],
     template: `
-      <div data-testid="register-header-actions">
+      <div data-testid="register-header-actions" :data-show-passport-check="String(showPassportCheck)">
         <button data-testid="validate-sw" @click="$emit('validate-sw')"></button>
         <button data-testid="validate-sw-ex" @click="$emit('validate-sw-ex')"></button>
         <button data-testid="validate-fc" @click="$emit('validate-fc')"></button>
+        <button v-if="showPassportCheck" data-testid="check-passports" @click="$emit('check-passports')"></button>
         <button data-testid="lookup" @click="$emit('lookup')"></button>
         <button data-testid="lookup-ex" @click="$emit('lookup-ex')"></button>
         <button data-testid="export-ordinary" @click="$emit('export-ordinary')"></button>
@@ -368,22 +390,24 @@ const globalStubs = {
     `
   },
   ParcelFilterSelectors: {
-    props: ['statusOptions', 'checkStatusOptionsSw', 'checkStatusOptionsFc'],
+    props: ['statusOptions', 'checkStatusOptionsSw', 'checkStatusOptionsFc', 'passportCheckStatusOptions', 'showPassportCheckStatus'],
     emits: [
       'update:parcelsStatus',
       'update:parcelsCheckStatusSw',
       'update:parcelsCheckStatusFc',
+      'update:parcelsPassportCheckStatus',
       'update:parcelsHideLegacyRestrictions',
       'update:localTnvedSearch',
       'update:localParcelNumberSearch',
       'update:localProductNameSearch'
     ],
     template: `
-      <div data-testid="parcel-filter-selectors">
+      <div data-testid="parcel-filter-selectors" :data-show-passport-check-status="String(showPassportCheckStatus)" :data-passport-options="String(passportCheckStatusOptions?.length || 0)">
         {{ statusOptions.length }} {{ checkStatusOptionsSw.length }} {{ checkStatusOptionsFc.length }}
         <button data-testid="update-parcels-status" @click="$emit('update:parcelsStatus', 5)"></button>
         <button data-testid="update-parcels-check-status-sw" @click="$emit('update:parcelsCheckStatusSw', 16)"></button>
         <button data-testid="update-parcels-check-status-fc" @click="$emit('update:parcelsCheckStatusFc', 16)"></button>
+        <button data-testid="update-passport-check-status" @click="$emit('update:parcelsPassportCheckStatus', 30)"></button>
         <button data-testid="update-hide-legacy" @click="$emit('update:parcelsHideLegacyRestrictions', true)"></button>
         <button data-testid="update-tnved-search" @click="$emit('update:localTnvedSearch', '6403')"></button>
         <button data-testid="update-number-search" @click="$emit('update:localParcelNumberSearch', 'SHK')"></button>
@@ -421,7 +445,7 @@ const globalStubs = {
   },
   'font-awesome-icon': {
     props: ['icon'],
-    template: '<i data-testid="fa-icon" :data-icon="icon"></i>'
+    template: '<i data-testid="fa-icon" :data-icon="icon" v-bind="$attrs"></i>'
   },
   PaginationFooter: {
     emits: ['update:itemsPerPage', 'update:page'],
@@ -456,6 +480,7 @@ function resetState() {
   parcelsStatus.value = null
   parcelsCheckStatusSw.value = null
   parcelsCheckStatusFc.value = null
+  parcelsPassportCheckStatus.value = null
   parcelsHideLegacyRestrictions.value = false
   parcelsTnved.value = ''
   parcelsNumber.value = ''
@@ -463,6 +488,7 @@ function resetState() {
   selectedParcelId.value = null
   selectedParcelIds.value = new Set([10, 11])
   lastClickedId.value = null
+  authIsSrLogistPlus.value = true
   parcelMultiSelectOptions = null
   registerItem.customsProcedureCode = 1
   registerItem.fileName = 'wbrn.xlsx'
@@ -478,6 +504,7 @@ function resetState() {
   ensureFeacnOrdersLoaded.mockResolvedValue()
   headerActions.freezeCheckStatus.mockResolvedValue()
   headerActions.freezeTnVedOrder.mockResolvedValue()
+  headerActions.checkPassports.mockResolvedValue()
   loadParcels.mockResolvedValue()
   bulkAssignTnved.mockResolvedValue()
 }
@@ -660,6 +687,53 @@ describe('WbrNParcels_List.vue', () => {
 
     await wrapper.get('[data-testid="close-list"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('shows passport verification controls and indicator only for Import SrLogistPlus users', async () => {
+    registerItem.customsProcedureCode = CUSTOMS_PROCEDURE_IMPORT
+    let wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+    await resolveAll()
+
+    expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('3')
+    const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
+    expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
+    expect(icon.classes()).toEqual(expect.arrayContaining([
+      'passport-check-status__icon--color-no-issues'
+    ]))
+
+    await wrapper.get('[data-testid="check-passports"]').trigger('click')
+    expect(headerActions.checkPassports).toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="update-passport-check-status"]').trigger('click')
+    expect(parcelsPassportCheckStatus.value).toBe(30)
+    wrapper.unmount()
+
+    registerItem.customsProcedureCode = CUSTOMS_PROCEDURE_EXPORT
+    wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+    expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
+    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
+    expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    registerItem.customsProcedureCode = CUSTOMS_PROCEDURE_IMPORT
+    authIsSrLogistPlus.value = false
+    wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+    expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
+    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
+    expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
   })
 
   it('edits parcels and opens fellow lookup by SHK', async () => {

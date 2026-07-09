@@ -36,6 +36,10 @@ vi.mock('@/stores/parcels.store.js', () => ({
     if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
       params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
     }
+
+    if (authStore.parcels_passport_check_status !== null && authStore.parcels_passport_check_status !== undefined) {
+      params.append('passportCheckStatus', authStore.parcels_passport_check_status.toString())
+    }
     
     if (authStore.parcels_tnved) {
       params.append('tnVed', authStore.parcels_tnved)
@@ -76,6 +80,7 @@ describe('registers store', () => {
     parcels_status: null,
     parcels_check_status_sw: null,
     parcels_check_status_fc: null,
+    parcels_passport_check_status: null,
     parcels_tnved: ''
   }
 
@@ -1141,6 +1146,28 @@ describe('registers store', () => {
     })
   })
 
+  describe('passport check API', () => {
+    it('posts register passport check request to the dedicated endpoint', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useRegistersStore()
+      const result = await store.checkPassports(42)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/42/check-passports`)
+      expect(result).toBe(true)
+    })
+
+    it('sets error when register passport check fails', async () => {
+      const error = new Error('Passport check failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.checkPassports(42)).rejects.toThrow('Passport check failed')
+      expect(store.error).toBe(error)
+    })
+  })
+
   describe('remove', () => {
     it('removes register successfully', async () => {
       fetchWrapper.delete.mockResolvedValue({})
@@ -1594,6 +1621,7 @@ describe('registers store', () => {
         parcels_status: 1,
         parcels_check_status_sw: 100,
         parcels_check_status_fc: 200,
+        parcels_passport_check_status: 30,
         parcels_tnved: '12345678'
       }
       useAuthStore.mockReturnValueOnce(customAuthStore)
@@ -1603,7 +1631,7 @@ describe('registers store', () => {
       const store = useRegistersStore()
       const result = await store.nextParcels(8)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusSw=100&checkStatusFc=200&tnVed=12345678`
+        `${apiUrl}/registers/nextparcels/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusSw=100&checkStatusFc=200&passportCheckStatus=30&tnVed=12345678`
       )
       expect(result).toEqual({ withoutIssues: response.WithoutIssues, withIssues: response.WithIssues })
     })
@@ -1682,6 +1710,10 @@ describe('registers store', () => {
         transportationTypes: [
           { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
           { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
+        ],
+        passportCheckStatuses: [
+          { value: 0, code: 'NotChecked', name: 'Не проверен' },
+          { value: 30, code: 'Checked', name: 'Проверен' }
         ]
       }
       fetchWrapper.get.mockResolvedValue(opsData)
@@ -1693,6 +1725,21 @@ describe('registers store', () => {
       expect(result).toEqual(opsData)
       expect(store.ops.customsProcedures).toHaveLength(2)
       expect(store.ops.transportationTypes).toHaveLength(2)
+      expect(store.ops.passportCheckStatuses).toEqual(opsData.passportCheckStatuses)
+    })
+
+    it('getOps normalizes missing passport status metadata to an empty list', async () => {
+      const opsData = {
+        customsProcedures: [],
+        transportationTypes: []
+      }
+      fetchWrapper.get.mockResolvedValue(opsData)
+
+      const store = useRegistersStore()
+      const result = await store.getOps()
+
+      expect(result.passportCheckStatuses).toEqual([])
+      expect(store.ops.passportCheckStatuses).toEqual([])
     })
 
     it('getOps sets opsError on failure', async () => {

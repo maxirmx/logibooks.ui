@@ -27,8 +27,12 @@ import {
   faToggleOn,
   faToggleOff,
   faCheckCircle,
+  faCircleCheck,
   faCircleQuestion,
   faCircleExclamation,
+  faCircleXmark,
+  faTriangleExclamation,
+  faArrowRotateLeft,
   faPlaneDeparture,
   faPlaneCircleCheck,
   faRoute,
@@ -74,7 +78,8 @@ import {
   faAnglesDown,
   faAnglesUp,
   faPersonWalkingArrowLoopLeft,
-  faCalculator
+  faCalculator,
+  faPassport
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -94,8 +99,12 @@ library.add(
   faToggleOn,
   faToggleOff,
   faCheckCircle,
+  faCircleCheck,
   faCircleQuestion,
   faCircleExclamation,
+  faCircleXmark,
+  faTriangleExclamation,
+  faArrowRotateLeft,
   faPlaneDeparture,
   faPlaneCircleCheck,
   faRoute,
@@ -141,7 +150,8 @@ library.add(
   faAnglesDown,
   faAnglesUp,
   faPersonWalkingArrowLoopLeft,
-  faCalculator
+  faCalculator,
+  faPassport
 )
 
 import 'vuetify/styles'

@@ -10,7 +10,7 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 
 const actionButtonStub = {
   inheritAttrs: false,
-  template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+  template: '<button :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
   props: {
     disabled: { type: Boolean, default: false },
     item: { type: Object, default: () => ({}) },
@@ -27,6 +27,7 @@ const mockUser = ref({
   email: 'test@test.com',
   schemeId: 1
 })
+const mockIsSrLogistPlus = ref(true)
 
 const mockScheme = {
   id: 1,
@@ -56,7 +57,10 @@ const getOpsEventMock = vi.fn()
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    user: mockUser.value
+    user: mockUser.value,
+    get isSrLogistPlus() {
+      return mockIsSrLogistPlus.value
+    }
   })
 }))
 
@@ -77,6 +81,7 @@ describe('ParcelHeaderActionsBar', () => {
       email: 'test@test.com',
       schemeId: 1
     }
+    mockIsSrLogistPlus.value = true
     ensureOpsLoadedMock.mockResolvedValue(mockOps)
     getByIdMock.mockResolvedValue(mockScheme)
     getOpsEventMock.mockImplementation((actions, actionValue) => {

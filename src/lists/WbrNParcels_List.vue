@@ -23,6 +23,8 @@ import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
+import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { createPassportCheckStatusOptions } from '@/helpers/passport.check.status.helpers.js'
 import {
   navigateToEditParcel,
   getRowPropsForParcel,
@@ -37,6 +39,7 @@ import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
+import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
@@ -77,6 +80,7 @@ const {
   parcels_status,
   parcels_check_status_sw,
   parcels_check_status_fc,
+  parcels_passport_check_status,
   parcels_hide_legacy_restrictions,
   parcels_tnved,
   parcels_number,
@@ -150,6 +154,11 @@ const isReProcedure = computed(() => {
   const procedure = registersStore.ops?.customsProcedures?.find((proc) => Number(proc.value) === Number(procedureId))
   return procedure?.isRe
 })
+const showPassportVerification = computed(() =>
+  authStore.isSrLogistPlus && isImportCustomsProcedure(registersStore.item?.customsProcedureCode)
+)
+const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
+const passportCheckStatusOptions = computed(() => createPassportCheckStatusOptions(passportCheckStatuses.value))
 
 // Provide page options for a select control. For very large page counts, return a compact set
 const pageOptions = computed(() => {
@@ -229,6 +238,7 @@ const {
   freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
   calculateCustomsCharges: calculateCustomsChargesHeader,
+  checkPassports: checkPassportsHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -252,7 +262,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_hide_legacy_restrictions],
+  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_passport_check_status, parcels_hide_legacy_restrictions],
   () => triggerLoad(),
   { immediate: false }
 )
@@ -447,6 +457,7 @@ function getGenericTemplateHeaders() {
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         :loading="runningAction || loading || isInitializing"
+        :show-passport-check="showPassportVerification"
         @validate-sw="validateRegisterSwHeader"
         @validate-sw-ex="validateRegisterSwHeaderEx"
         @validate-fc="validateRegisterFcHeader"
@@ -459,6 +470,7 @@ function getGenericTemplateHeaders() {
         @download-additional-restrictions="downloadAdditionalRestrictionsFile"
         @download-techdoc="downloadTechdocFile"
         @calculate-customs-charges="calculateCustomsChargesHeader"
+        @check-passports="checkPassportsHeader"
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
@@ -473,6 +485,7 @@ function getGenericTemplateHeaders() {
         v-model:parcels-status="parcels_status"
         v-model:parcels-check-status-sw="parcels_check_status_sw"
         v-model:parcels-check-status-fc="parcels_check_status_fc"
+        v-model:parcels-passport-check-status="parcels_passport_check_status"
         v-model:parcels-hide-legacy-restrictions="parcels_hide_legacy_restrictions"
         v-model:local-tnved-search="localTnvedSearch"
         v-model:local-parcel-number-search="localParcelNumberSearch"
@@ -480,6 +493,8 @@ function getGenericTemplateHeaders() {
         :status-options="statusOptions"
         :check-status-options-sw="checkStatusOptionsSw"
         :check-status-options-fc="checkStatusOptionsFc"
+        :passport-check-status-options="passportCheckStatusOptions"
+        :show-passport-check-status="showPassportVerification"
         :running-action="runningAction"
         :loading="loading"
         :is-initializing="isInitializing"
@@ -628,6 +643,26 @@ function getGenericTemplateHeaders() {
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
           />
+        </template>
+
+        <template #[`item.passportNumber`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="item.passportNumber || ''"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
+          >
+            <template #default>
+              <PassportCheckStatusIndicator
+                v-if="showPassportVerification"
+                :value="item.passportCheckStatus"
+                :statuses="passportCheckStatuses"
+              >
+                {{ item.passportNumber || '' }}
+              </PassportCheckStatusIndicator>
+              <span v-else>{{ item.passportNumber || '' }}</span>
+            </template>
+          </ClickableCell>
         </template>
 
         <template #[`item.shk`]="{ item }">

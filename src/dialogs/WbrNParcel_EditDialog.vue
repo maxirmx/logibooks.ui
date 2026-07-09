@@ -22,9 +22,11 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { wbrnRegisterColumnTitles, wbrnRegisterColumnTooltips } from '@/helpers/wbrn.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import WbrNFormField from '@/components/WbrNFormField.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
+import PassportNumberWithActions from '@/components/PassportNumberWithActions.vue'
 import ParcelWeightAutoField from '@/components/ParcelWeightAutoField.vue'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import FeacnCodeEditor from '@/components/FeacnCodeEditor.vue'
@@ -99,6 +101,10 @@ const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedByPartner(item.value?.checkStatus))
+const showPassportVerification = computed(() =>
+  authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
+)
+const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -575,7 +581,16 @@ async function onLookup(values) {
           <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="firstName" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="passportNumber" :errors="errors" :fullWidth="false" />
+          <PassportNumberWithActions
+            :label="wbrnRegisterColumnTitles.passportNumber"
+            :errors="errors"
+            :show-actions="showPassportVerification"
+            :status-value="item?.passportCheckStatus"
+            :statuses="passportCheckStatuses"
+            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
+            @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
+          />
         </div>
       </div>
       <!-- DTag -->

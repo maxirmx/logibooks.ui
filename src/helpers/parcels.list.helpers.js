@@ -123,6 +123,7 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     'customsDuty',
     'quantity',
     'passport',
+    'passportNumber',
     'frozenOrder'
   ])
   

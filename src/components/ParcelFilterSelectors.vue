@@ -1,16 +1,19 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps({
   statusOptions: { type: Array, required: true },
   checkStatusOptionsSw: { type: Array, required: true },
   checkStatusOptionsFc: { type: Array, required: true },
+  passportCheckStatusOptions: { type: Array, default: () => [] },
+  showPassportCheckStatus: { type: Boolean, default: false },
   runningAction: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
   isInitializing: { type: Boolean, default: false },
   parcelsStatus: { type: [String, Number], default: null },
   parcelsCheckStatusSw: { type: [String, Number], default: null },
   parcelsCheckStatusFc: { type: [String, Number], default: null },
+  parcelsPassportCheckStatus: { type: [String, Number], default: null },
   parcelsHideLegacyRestrictions: { type: Boolean, default: false },
   localTnvedSearch: { type: String, default: '' },
   localParcelNumberSearch: { type: String, default: '' },
@@ -21,6 +24,7 @@ const emit = defineEmits([
   'update:parcelsStatus',
   'update:parcelsCheckStatusSw',
   'update:parcelsCheckStatusFc',
+  'update:parcelsPassportCheckStatus',
   'update:parcelsHideLegacyRestrictions',
   'update:localTnvedSearch',
   'update:localParcelNumberSearch',
@@ -52,6 +56,28 @@ const parcelsCheckStatusFcModel = computed({
   get: () => props.parcelsCheckStatusFc,
   set: (value) => emit('update:parcelsCheckStatusFc', value),
 })
+
+const parcelsPassportCheckStatusModel = computed({
+  get: () => props.parcelsPassportCheckStatus,
+  set: (value) => emit('update:parcelsPassportCheckStatus', value),
+})
+
+function clearHiddenPassportCheckStatus() {
+  if (
+    !props.showPassportCheckStatus &&
+    !props.isInitializing &&
+    props.parcelsPassportCheckStatus !== null &&
+    props.parcelsPassportCheckStatus !== undefined
+  ) {
+    emit('update:parcelsPassportCheckStatus', null)
+  }
+}
+
+watch(
+  () => [props.showPassportCheckStatus, props.isInitializing, props.parcelsPassportCheckStatus],
+  clearHiddenPassportCheckStatus,
+  { immediate: true }
+)
 
 const parcelsHideLegacyRestrictionsOptions = [
   { title: 'Показать', value: false },
@@ -116,6 +142,17 @@ const localProductNameSearchModel = computed({
       item-title="title"
       item-value="value"
       label="Статус проверки по ТН ВЭД"
+      density="compact"
+      style="min-width: 250px"
+      :disabled="disabledState.selectsDisabled"
+    />
+    <v-select
+      v-if="showPassportCheckStatus"
+      v-model="parcelsPassportCheckStatusModel"
+      :items="passportCheckStatusOptions"
+      item-title="title"
+      item-value="value"
+      label="Статус проверки паспорта"
       density="compact"
       style="min-width: 250px"
       :disabled="disabledState.selectsDisabled"

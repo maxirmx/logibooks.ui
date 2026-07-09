@@ -306,6 +306,7 @@ describe('Parcels List Helpers', () => {
         { key: 'tnVed', title: 'TN VED' },
         { key: 'customsFee', title: 'Customs Fee' },
         { key: 'customsDuty', title: 'Customs Duty' },
+        { key: 'passportNumber', title: 'Passport Number' },
         { key: 'productName', title: 'Product Name' },
         { key: 'quantity', title: 'Quantity' }
       ]

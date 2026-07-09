@@ -255,7 +255,7 @@ export const vuetifyStubs = {
     emits: ['update:modelValue']
   },
   'font-awesome-icon': {
-    template: '<i class="fa-icon-stub" data-testid="fa-icon"></i>',
+    template: '<i class="fa-icon-stub" data-testid="fa-icon" :data-icon="icon" v-bind="$attrs"></i>',
     props: ['icon', 'size', 'color', 'style'],
     inheritAttrs: false
   },

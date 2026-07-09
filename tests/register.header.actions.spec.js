@@ -59,6 +59,7 @@ describe('useRegisterHeaderActions', () => {
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
+      checkPassports: vi.fn().mockResolvedValue(),
       calculateCustomsCharges: vi.fn().mockResolvedValue(),
       getById: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
@@ -449,6 +450,42 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('checks register passports and refreshes parcels after completion', async () => {
+    const deferred = createDeferred()
+    registersStore.checkPassports.mockReturnValueOnce(deferred.promise)
+
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.checkPassports()
+
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Проверка паспортов')
+    expect(registersStore.checkPassports).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await promise
+
+    expect(loadParcels).toHaveBeenCalledTimes(1)
+    expect(actions.actionDialog.show).toBe(false)
+    expect(actions.actionDialog.title).toBe('')
+  })
+
+  it('checks register passports through list action handlers', async () => {
+    const actions = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
+
+    await actions.checkPassports({ id: 7 })
+
+    expect(registersStore.checkPassports).toHaveBeenCalledWith(7)
   })
 
   it('shows action dialog while custom charges are calculated and refreshes current data', async () => {

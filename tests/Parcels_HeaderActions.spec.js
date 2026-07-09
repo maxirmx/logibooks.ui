@@ -522,7 +522,9 @@ describe.each([
       { value: 0, title: 'Не проверен' },
       { value: 30, title: 'Проверен' }
     ])
-    expect(wrapper.find('.passport-check-status__dot--color-no-issues').exists()).toBe(true)
+    const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
+    expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
+    expect(icon.classes()).toContain('passport-check-status__icon--color-no-issues')
     expect(wrapper.text()).toContain('123456')
   })
 

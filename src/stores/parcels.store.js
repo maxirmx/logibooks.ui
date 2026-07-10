@@ -11,6 +11,9 @@ import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 const baseUrl = `${apiUrl}/parcels`
+const parcelCheckStatusPropertyByCode = new Map([
+  ['passport', 'passportCheckStatus']
+])
 
 export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
@@ -101,6 +104,90 @@ export const useParcelsStore = defineStore('parcels', () => {
   const hasNextPage = ref(false)
   const hasPreviousPage = ref(false)
   const extIdRevisionByParcelId = new Map()
+  const liveCheckStatusesByParcelId = new Map()
+  const responseCheckStatusWatermarks = new WeakMap()
+  let liveCheckStatusArrival = 0
+
+  function mergeLiveParcelCheckStatuses(parcel, requestWatermark) {
+    const parcelId = Number(parcel?.id)
+    const changes = liveCheckStatusesByParcelId.get(parcelId)
+    if (!changes) return parcel
+
+    let merged = parcel
+    for (const change of changes.values()) {
+      if (change.arrival <= requestWatermark) continue
+      merged = { ...merged, [change.property]: change.status }
+    }
+    return merged
+  }
+
+  function resetLiveParcelCheckStatuses() {
+    liveCheckStatusesByParcelId.clear()
+  }
+
+  function applyParcelCheckStatusChanges(change) {
+    const registerId = Number(change?.registerId)
+    if (!Number.isInteger(registerId) || !Array.isArray(change?.updates)) return []
+
+    const accepted = []
+    const acceptedByParcelId = new Map()
+    for (const update of change.updates) {
+      const parcelId = Number(update?.parcelId)
+      const checkCode = String(update?.checkCode ?? '')
+      const property = parcelCheckStatusPropertyByCode.get(checkCode)
+      const status = Number(update?.status)
+      const revision = Number(update?.revision)
+      if (!Number.isInteger(parcelId) || parcelId <= 0 || !property ||
+          !Number.isFinite(status) || !Number.isSafeInteger(revision) || revision <= 0) {
+        continue
+      }
+
+      let parcelChanges = liveCheckStatusesByParcelId.get(parcelId)
+      if (!parcelChanges) {
+        parcelChanges = new Map()
+        liveCheckStatusesByParcelId.set(parcelId, parcelChanges)
+      }
+      const previous = parcelChanges.get(checkCode)
+      if (previous && previous.revision >= revision) continue
+
+      const normalized = {
+        registerId,
+        parcelId,
+        checkCode,
+        property,
+        status,
+        revision,
+        arrival: ++liveCheckStatusArrival
+      }
+      parcelChanges.set(checkCode, normalized)
+      accepted.push(normalized)
+
+      let parcelUpdates = acceptedByParcelId.get(parcelId)
+      if (!parcelUpdates) {
+        parcelUpdates = []
+        acceptedByParcelId.set(parcelId, parcelUpdates)
+      }
+      parcelUpdates.push(normalized)
+    }
+
+    function patchParcel(parcel) {
+      if (Number(parcel?.registerId) !== registerId) return parcel
+      const updates = acceptedByParcelId.get(Number(parcel?.id))
+      if (!updates) return parcel
+
+      return updates.reduce(
+        (current, update) => ({ ...current, [update.property]: update.status }),
+        parcel
+      )
+    }
+
+    if (accepted.length > 0) {
+      items.value = items.value.map(patchParcel)
+      if (item.value?.id != null) item.value = patchParcel(item.value)
+    }
+
+    return accepted
+  }
 
   async function getAll(registerId, options = {}) {
     const {
@@ -108,6 +195,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       showMarkedByPartner = false
     } = options
     const authStore = useAuthStore()
+    const checkStatusWatermark = liveCheckStatusArrival
     if (updateStore) {
       loading.value = true
     }
@@ -126,7 +214,8 @@ export const useParcelsStore = defineStore('parcels', () => {
 
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
       const response = await fetchWrapper.get(`${listEndpoint}?${params.toString()}`)
-      const responseItems = response.items || []
+      const responseItems = (response.items || [])
+        .map(parcel => mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark))
       
       if (updateStore) {
         items.value = responseItems
@@ -135,7 +224,7 @@ export const useParcelsStore = defineStore('parcels', () => {
         hasPreviousPage.value = response.pagination?.hasPreviousPage || false
       }
       
-      return {
+      const result = {
         items: responseItems,
         pagination: {
           totalCount: response.pagination?.totalCount || 0,
@@ -143,6 +232,8 @@ export const useParcelsStore = defineStore('parcels', () => {
           hasPreviousPage: response.pagination?.hasPreviousPage || false
         }
       }
+      responseCheckStatusWatermarks.set(result, checkStatusWatermark)
+      return result
     } catch (err) {
       error.value = err
       throw err
@@ -172,7 +263,9 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   function updateItems(responseData) {
     if (responseData) {
-      items.value = responseData.items || []
+      const checkStatusWatermark = responseCheckStatusWatermarks.get(responseData) ?? liveCheckStatusArrival
+      items.value = (responseData.items || [])
+        .map(parcel => mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark))
       totalCount.value = responseData.pagination?.totalCount || 0
       hasNextPage.value = responseData.pagination?.hasNextPage || false
       hasPreviousPage.value = responseData.pagination?.hasPreviousPage || false
@@ -181,11 +274,13 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function getById(id) {
+    const checkStatusWatermark = liveCheckStatusArrival
     item.value = { loading: true }
     try {
       const result = await fetchWrapper.get(`${baseUrl}/a/${id}`)
-      item.value = result
-      return result
+      const merged = mergeLiveParcelCheckStatuses(result, checkStatusWatermark)
+      item.value = merged
+      return merged
     } catch (err) {
       item.value = { error: err }
       return null
@@ -405,6 +500,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     clearDefect,
     clearExtId,
     applyExtIdChange,
+    applyParcelCheckStatusChanges,
+    resetLiveParcelCheckStatuses,
     bulkAssignTnved,
     resolveStatusSelection,
     updateStatusSelection,

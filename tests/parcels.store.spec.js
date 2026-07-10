@@ -454,6 +454,75 @@ describe('parcels store', () => {
     expect(store.applyExtIdChange({ parcelId: 12, extId: 'X', revision: 0 })).toBe(false)
   })
 
+  it('applies revision-ordered parcel check statuses to loaded rows and current item', () => {
+    const store = useParcelsStore()
+    store.items = [
+      { id: 12, registerId: 7, passportCheckStatus: 0 },
+      { id: 13, registerId: 8, passportCheckStatus: 0 }
+    ]
+    store.item = { id: 12, registerId: 7, passportCheckStatus: 0 }
+
+    const accepted = store.applyParcelCheckStatusChanges({
+      registerId: 7,
+      updates: [
+        { parcelId: 12, checkCode: 'passport', status: 10, revision: 5 },
+        { parcelId: 99, checkCode: 'future-check', status: 20, revision: 5 }
+      ]
+    })
+    const stale = store.applyParcelCheckStatusChanges({
+      registerId: 7,
+      updates: [{ parcelId: 12, checkCode: 'passport', status: 30, revision: 4 }]
+    })
+
+    expect(accepted).toHaveLength(1)
+    expect(stale).toEqual([])
+    expect(store.items[0].passportCheckStatus).toBe(10)
+    expect(store.items[1].passportCheckStatus).toBe(0)
+    expect(store.item.passportCheckStatus).toBe(10)
+  })
+
+  it('rejects inherited object property names as parcel check codes', () => {
+    const store = useParcelsStore()
+    store.items = [{ id: 12, registerId: 7, passportCheckStatus: 0 }]
+
+    const accepted = store.applyParcelCheckStatusChanges({
+      registerId: 7,
+      updates: ['toString', '__proto__', 'constructor'].map((checkCode, index) => ({
+        parcelId: 12,
+        checkCode,
+        status: 10,
+        revision: index + 1
+      }))
+    })
+
+    expect(accepted).toEqual([])
+    expect(store.items[0]).toEqual({ id: 12, registerId: 7, passportCheckStatus: 0 })
+  })
+
+  it('preserves live check updates that arrive during a list REST request', async () => {
+    let resolveRequest
+    fetchWrapper.get.mockReturnValue(new Promise(resolve => { resolveRequest = resolve }))
+    const store = useParcelsStore()
+
+    const request = store.getAll(7, { updateStore: false })
+    store.applyParcelCheckStatusChanges({
+      registerId: 7,
+      updates: [{ parcelId: 12, checkCode: 'passport', status: 30, revision: 8 }]
+    })
+    resolveRequest({
+      items: [{ id: 12, registerId: 7, passportCheckStatus: 10 }],
+      pagination: { totalCount: 1 }
+    })
+    const response = await request
+    store.applyParcelCheckStatusChanges({
+      registerId: 7,
+      updates: [{ parcelId: 12, checkCode: 'passport', status: 40, revision: 9 }]
+    })
+    store.updateItems(response)
+
+    expect(store.items[0].passportCheckStatus).toBe(40)
+  })
+
   describe('bulkAssignTnved method', () => {
     it('calls assign-tnved endpoint with payload', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)

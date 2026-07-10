@@ -4,8 +4,9 @@
 // This file is a part of Logibooks ui application 
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import ParcelsView from '@/views/Parcels_View.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
@@ -13,6 +14,11 @@ import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 const pushMock = vi.hoisted(() => vi.fn())
 const backMock = vi.hoisted(() => vi.fn())
 const mockGet = vi.hoisted(() => vi.fn())
+const subscriptionOptions = vi.hoisted(() => [])
+
+vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
+  useParcelCheckStatusSubscription: (options) => subscriptionOptions.push(options)
+}))
 
 vi.mock('@/lists/WbrParcels_List.vue', () => ({
   default: {
@@ -106,9 +112,69 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
 
 describe('Parcels_View', () => {
   beforeEach(async () => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    subscriptionOptions.length = 0
     const { fetchWrapper } = await import('@/helpers/fetch.wrapper.js')
     fetchWrapper.get.mockImplementation(mockGet)
+  })
+
+  it('enables passport subscriptions only for SrLogist Plus import paperwork', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    useAuthStore().user = { roles: ['sr-logist'] }
+    mockGet.mockResolvedValue({
+      registerType: WBR_COMPANY_ID,
+      customsProcedureCode: 40
+    })
+
+    mount(ParcelsView, { props: { id: 15, mode: OP_MODE_PAPERWORK } })
+    await nextTick()
+    await nextTick()
+
+    expect(subscriptionOptions).toHaveLength(1)
+    expect(subscriptionOptions[0].enabled.value).toBe(true)
+  })
+
+  it.each([
+    ['warehouse mode', OP_MODE_WAREHOUSE, 40, ['sr-logist']],
+    ['non-import procedure', OP_MODE_PAPERWORK, 10, ['sr-logist']],
+    ['ineligible role', OP_MODE_PAPERWORK, 40, ['logist']]
+  ])('does not enable passport subscriptions for %s', async (_name, mode, customsProcedureCode, roles) => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    useAuthStore().user = { roles }
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode })
+
+    mount(ParcelsView, { props: { id: 16, mode } })
+    await nextTick()
+    await nextTick()
+
+    expect(subscriptionOptions[0].enabled.value).toBe(false)
+  })
+
+  it('coalesces filtered passport updates into one authoritative refresh', async () => {
+    let wrapper
+    vi.useFakeTimers()
+    try {
+      const { useAuthStore } = await import('@/stores/auth.store.js')
+      const authStore = useAuthStore()
+      authStore.user = { roles: ['sr-logist'] }
+      authStore.parcels_passport_check_status = 30
+      mockGet
+        .mockResolvedValueOnce({ registerType: WBR_COMPANY_ID, customsProcedureCode: 40 })
+        .mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+
+      wrapper = mount(ParcelsView, { props: { id: 17, mode: OP_MODE_PAPERWORK } })
+      await flushPromises()
+      subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
+      subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
+      await vi.runOnlyPendingTimersAsync()
+
+      expect(mockGet).toHaveBeenCalledTimes(2)
+    } finally {
+      wrapper?.unmount()
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
   })
 
   it('renders WbrParcels_List when register has WBR registerType', async () => {

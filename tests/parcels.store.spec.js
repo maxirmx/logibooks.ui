@@ -481,6 +481,24 @@ describe('parcels store', () => {
     expect(store.item.passportCheckStatus).toBe(10)
   })
 
+  it('rejects inherited object property names as parcel check codes', () => {
+    const store = useParcelsStore()
+    store.items = [{ id: 12, registerId: 7, passportCheckStatus: 0 }]
+
+    const accepted = store.applyParcelCheckStatusChanges({
+      registerId: 7,
+      updates: ['toString', '__proto__', 'constructor'].map((checkCode, index) => ({
+        parcelId: 12,
+        checkCode,
+        status: 10,
+        revision: index + 1
+      }))
+    })
+
+    expect(accepted).toEqual([])
+    expect(store.items[0]).toEqual({ id: 12, registerId: 7, passportCheckStatus: 0 })
+  })
+
   it('preserves live check updates that arrive during a list REST request', async () => {
     let resolveRequest
     fetchWrapper.get.mockReturnValue(new Promise(resolve => { resolveRequest = resolve }))

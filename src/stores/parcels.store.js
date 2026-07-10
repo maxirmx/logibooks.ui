@@ -11,9 +11,9 @@ import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 const baseUrl = `${apiUrl}/parcels`
-const parcelCheckStatusPropertyByCode = Object.freeze({
-  passport: 'passportCheckStatus'
-})
+const parcelCheckStatusPropertyByCode = new Map([
+  ['passport', 'passportCheckStatus']
+])
 
 export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
@@ -134,7 +134,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     for (const update of change.updates) {
       const parcelId = Number(update?.parcelId)
       const checkCode = String(update?.checkCode ?? '')
-      const property = parcelCheckStatusPropertyByCode[checkCode]
+      const property = parcelCheckStatusPropertyByCode.get(checkCode)
       const status = Number(update?.status)
       const revision = Number(update?.revision)
       if (!Number.isInteger(parcelId) || parcelId <= 0 || !property ||

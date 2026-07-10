@@ -152,6 +152,7 @@ describe('Parcels_View', () => {
   })
 
   it('coalesces filtered passport updates into one authoritative refresh', async () => {
+    let wrapper
     vi.useFakeTimers()
     try {
       const { useAuthStore } = await import('@/stores/auth.store.js')
@@ -162,15 +163,16 @@ describe('Parcels_View', () => {
         .mockResolvedValueOnce({ registerType: WBR_COMPANY_ID, customsProcedureCode: 40 })
         .mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
 
-      const wrapper = mount(ParcelsView, { props: { id: 17, mode: OP_MODE_PAPERWORK } })
+      wrapper = mount(ParcelsView, { props: { id: 17, mode: OP_MODE_PAPERWORK } })
       await flushPromises()
       subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
       subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
       await vi.runOnlyPendingTimersAsync()
 
       expect(mockGet).toHaveBeenCalledTimes(2)
-      wrapper.unmount()
     } finally {
+      wrapper?.unmount()
+      vi.clearAllTimers()
       vi.useRealTimers()
     }
   })

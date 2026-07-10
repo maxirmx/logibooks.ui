@@ -12,6 +12,10 @@ import GtcParcelEditDialog from '@/dialogs/GtcParcel_EditDialog.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
+import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useParcelCheckStatusSubscription } from '@/composables/useParcelCheckStatusSubscription.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
@@ -22,6 +26,18 @@ const register = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const isComponentMounted = ref(true)
+const authStore = useAuthStore()
+const parcelsStore = useParcelsStore()
+const passportSubscriptionEnabled = computed(() =>
+  authStore.isSrLogistPlus &&
+  isImportCustomsProcedure(register.value?.customsProcedureCode)
+)
+
+useParcelCheckStatusSubscription({
+  registerId: computed(() => props.registerId),
+  enabled: passportSubscriptionEnabled,
+  refresh: () => parcelsStore.getById(props.id)
+})
 
 const editComponent = computed(() => {
   if (!isComponentMounted.value || !register.value) return null

@@ -14,6 +14,11 @@ import WbrNParcelEditDialog from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcParcelEditDialog from '@/dialogs/GtcParcel_EditDialog.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
+const subscriptionOptions = vi.hoisted(() => [])
+vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
+  useParcelCheckStatusSubscription: (options) => subscriptionOptions.push(options)
+}))
+
 // Mock fetchWrapper
 const mockGet = vi.fn()
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
@@ -40,6 +45,47 @@ describe('Parcel_EditView.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    subscriptionOptions.length = 0
+  })
+
+  it('enables passport subscription for an SrLogist Plus import dialog', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    useAuthStore().user = { roles: ['sr-logist'] }
+    mockGet.mockResolvedValue({
+      id: 5,
+      registerType: WBR_COMPANY_ID,
+      customsProcedureCode: 40
+    })
+
+    mount(ParcelEditView, {
+      props: { registerId: 5, id: 50 },
+      global: { stubs: commonStubs }
+    })
+    await flushPromises()
+
+    expect(subscriptionOptions).toHaveLength(1)
+    expect(subscriptionOptions[0].enabled.value).toBe(true)
+  })
+
+  it.each([
+    ['non-import procedure', 10, ['sr-logist']],
+    ['ineligible role', 40, ['logist']]
+  ])('does not enable passport subscription for %s', async (_name, customsProcedureCode, roles) => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    useAuthStore().user = { roles }
+    mockGet.mockResolvedValue({
+      id: 6,
+      registerType: WBR_COMPANY_ID,
+      customsProcedureCode
+    })
+
+    mount(ParcelEditView, {
+      props: { registerId: 6, id: 60 },
+      global: { stubs: commonStubs }
+    })
+    await flushPromises()
+
+    expect(subscriptionOptions[0].enabled.value).toBe(false)
   })
 
   it.each([

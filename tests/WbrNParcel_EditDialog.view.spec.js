@@ -76,6 +76,7 @@ const authStore = {
 const registerOps = {
   passportCheckStatuses: [
     { value: 0, code: 'NotChecked', name: 'Не проверен' },
+    { value: 10, code: 'InProgress', name: 'В процессе' },
     { value: 30, code: 'Checked', name: 'Проверен' }
   ]
 }
@@ -303,8 +304,8 @@ const stubs = {
     template: '<div data-testid="feacn-code-editor" :data-tnved-title="columnTitles.tnVed" :data-weight-tooltip="columnTooltips.weightKg" :data-disabled="String(disabled)"><button data-testid="update-item" @click="$emit(\'update:item\', { id: 99, shk: \'SHK-UPDATED\' })"></button><button data-testid="overlay-on" @click="$emit(\'overlay-state-changed\', true)"></button><button data-testid="overlay-off" @click="$emit(\'overlay-state-changed\', false)"></button><button data-testid="running-on" @click="$emit(\'set-running-action\', true)"></button><button data-testid="running-off" @click="$emit(\'set-running-action\', false)"></button></div>'
   },
   WbrNFormField: {
-    props: ['name', 'fullWidth', 'type', 'step'],
-    template: '<div data-testid="wbrn-form-field" :data-name="name" :data-full-width="String(fullWidth)" :data-type="type" :data-step="step">{{ name }}</div>'
+    props: ['name', 'fullWidth', 'type', 'step', 'disabled'],
+    template: '<div data-testid="wbrn-form-field" :data-name="name" :data-full-width="String(fullWidth)" :data-type="type" :data-step="step" :data-disabled="String(disabled)">{{ name }}</div>'
   },
   ParcelWeightAutoField: {
     props: ['fieldComponent', 'label'],
@@ -458,7 +459,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
       'passport-check-status__icon--color-no-issues'
     ]))
 
-    await wrapper.get('[data-tooltip="Проверить"]').trigger('click')
+    await wrapper.get('[data-tooltip="Сохранить и проверить паспорт"]').trigger('click')
     await resolveAll()
     expect(runCheckStatusAction).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
@@ -489,7 +490,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     }
     wrapper = await mountDialog()
     expect(wrapper.find('[data-testid="passport-check-actions"]').exists()).toBe(false)
-    expect(wrapper.find('[data-tooltip="Проверить"]').exists()).toBe(false)
+    expect(wrapper.find('[data-tooltip="Сохранить и проверить паспорт"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
     wrapper.unmount()
 
@@ -497,8 +498,41 @@ describe('WbrNParcel_EditDialog.vue', () => {
     authIsSrLogistPlus.value = false
     wrapper = await mountDialog()
     expect(wrapper.find('[data-testid="passport-check-actions"]').exists()).toBe(false)
-    expect(wrapper.find('[data-tooltip="Проверить"]').exists()).toBe(false)
+    expect(wrapper.find('[data-tooltip="Сохранить и проверить паспорт"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
+  })
+
+  it('locks identity fields during passport checking but keeps clear available', async () => {
+    parcelItem.value.passportCheckStatus = 10
+    formValues.passportCheckStatus = 10
+
+    const wrapper = await mountDialog()
+    const fields = wrapper.findAll('[data-testid="wbrn-form-field"]')
+    const fieldByName = (name) => fields.find((field) => field.attributes('data-name') === name)
+
+    expect(fieldByName('lastName').attributes('data-disabled')).toBe('true')
+    expect(fieldByName('firstName').attributes('data-disabled')).toBe('true')
+    expect(fieldByName('patronymic').attributes('data-disabled')).toBe('undefined')
+
+    const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
+    expect(passportField.props('inputDisabled')).toBe(true)
+    expect(passportField.props('checkDisabled')).toBe(true)
+    expect(wrapper.get('[data-testid="passport-check-run"]').element.disabled).toBe(true)
+    expect(wrapper.get('[data-testid="passport-check-clear"]').element.disabled).toBe(false)
+  })
+
+  it('shows NotChecked locally when an identity field changes', async () => {
+    formValues.firstName = 'Changed name'
+
+    const wrapper = await mountDialog()
+    const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
+
+    expect(passportField.props('status')).toEqual(expect.objectContaining({
+      code: 'NotChecked',
+      value: 0
+    }))
+    expect(wrapper.get('[data-testid="passport-check-status-icon"]').attributes('data-icon'))
+      .toBe('fa-solid fa-circle-question')
   })
 
   it('disables WbrN parcel action buttons except cancel for MarkedByPartner parcels', async () => {

@@ -60,6 +60,33 @@ export function resolvePassportCheckStatus(statuses, value) {
   return statuses.find((status) => Number(status?.value) === numericValue) ?? null
 }
 
+export function resolvePassportCheckStatusByCode(statuses, code) {
+  if (!Array.isArray(statuses)) return null
+  return statuses.find((status) => status?.code === code) ?? null
+}
+
+export function isPassportCheckInProgress(statuses, value) {
+  return resolvePassportCheckStatus(statuses, value)?.code === PassportCheckStatusCode.InProgress
+}
+
+export function hasPassportIdentityChanged(initialValues, currentValues, fields) {
+  if (!Array.isArray(fields)) return false
+
+  return fields.some((field) => normalizeIdentityValue(initialValues?.[field]) !== normalizeIdentityValue(currentValues?.[field]))
+}
+
+export function resolveEffectivePassportCheckStatus(statuses, value, initialValues, currentValues, fields) {
+  if (hasPassportIdentityChanged(initialValues, currentValues, fields)) {
+    return resolvePassportCheckStatusByCode(statuses, PassportCheckStatusCode.NotChecked)
+  }
+
+  return resolvePassportCheckStatus(statuses, value)
+}
+
+function normalizeIdentityValue(value) {
+  return value == null ? '' : String(value).trim()
+}
+
 export function getPassportCheckStatusPresentation(statusOrCode) {
   const code = typeof statusOrCode === 'string'
     ? statusOrCode

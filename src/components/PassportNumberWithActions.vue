@@ -14,13 +14,16 @@ const props = defineProps({
   showActions: { type: Boolean, default: false },
   statusValue: { type: [String, Number], default: null },
   statuses: { type: Array, default: () => [] },
-  disabled: { type: Boolean, default: false }
+  status: { type: Object, default: null },
+  disabled: { type: Boolean, default: false },
+  inputDisabled: { type: Boolean, default: false },
+  checkDisabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['check', 'clear'])
 
 function emitCheck() {
-  if (props.disabled) return
+  if (props.disabled || props.checkDisabled) return
   emit('check')
 }
 
@@ -41,12 +44,13 @@ function emitClear() {
           v-if="showActions"
           :value="statusValue"
           :statuses="statuses"
+          :status="status"
         />
         <Field
           :name="name"
           :id="name"
           type="text"
-          :disabled="disabled"
+          :disabled="disabled || inputDisabled"
           :class="['form-control', 'input', { 'is-invalid': errors && errors[name] }]"
         />
       </div>
@@ -59,8 +63,8 @@ function emitClear() {
           :item="{}"
           icon="fa-solid fa-passport"
           iconSize="1x"
-          tooltip-text="Проверить"
-          :disabled="disabled"
+          tooltip-text="Сохранить и проверить паспорт"
+          :disabled="disabled || checkDisabled"
           data-testid="passport-check-run"
           @click="emitCheck"
         />

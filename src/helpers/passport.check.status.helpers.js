@@ -77,7 +77,7 @@ export function hasPassportIdentityChanged(initialValues, currentValues, fields)
 
 export function resolveEffectivePassportCheckStatus(statuses, value, initialValues, currentValues, fields) {
   if (hasPassportIdentityChanged(initialValues, currentValues, fields)) {
-    return resolvePassportCheckStatusByCode(statuses, PassportCheckStatusCode.NotChecked)
+    return resolvePassportCheckStatusByCode(statuses, PassportCheckStatusCode.NotChecked) ?? { code: PassportCheckStatusCode.NotChecked }
   }
 
   return resolvePassportCheckStatus(statuses, value)

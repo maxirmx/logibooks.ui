@@ -519,6 +519,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(passportField.props('checkDisabled')).toBe(true)
     expect(wrapper.get('[data-testid="passport-check-run"]').element.disabled).toBe(true)
     expect(wrapper.get('[data-testid="passport-check-clear"]').element.disabled).toBe(false)
+    wrapper.unmount()
   })
 
   it('shows NotChecked locally when an identity field changes', async () => {
@@ -533,6 +534,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     }))
     expect(wrapper.get('[data-testid="passport-check-status-icon"]').attributes('data-icon'))
       .toBe('fa-solid fa-circle-question')
+    wrapper.unmount()
   })
 
   it('disables WbrN parcel action buttons except cancel for MarkedByPartner parcels', async () => {

@@ -203,6 +203,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            name: 'Form',
+            props: { keepValues: Boolean },
             template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
@@ -220,6 +222,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
     await nextTick()
     await resolveAll()
 
+    expect(wrapper.findComponent({ name: 'Form' }).props('keepValues')).toBe(true)
     expect(wrapper.text()).toContain('Серия паспорта')
     expect(wrapper.text()).toContain('Номер паспорта')
     expect(wrapper.text()).toContain('ИНН')

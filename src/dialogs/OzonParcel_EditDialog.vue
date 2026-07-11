@@ -453,6 +453,7 @@ async function onLookup(values) {
     <Form
       @submit="onSubmit" 
       :initial-values="item" 
+      keep-values
       :validation-schema="schema" 
       v-slot="{ errors, values, isSubmitting, setFieldValue }" 
       :class="{ 'form-disabled': overlayActive || imageOverlayOpen }"

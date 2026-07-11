@@ -23,6 +23,10 @@ import { gtcRegisterColumnTitles, gtcRegisterColumnTooltips } from '@/helpers/gt
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import {
+  isPassportCheckInProgress,
+  resolveEffectivePassportCheckStatus
+} from '@/helpers/passport.check.status.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import GtcFormField from '@/components/GtcFormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
@@ -107,6 +111,20 @@ const showPassportVerification = computed(() =>
   authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
+const passportIdentityFields = ['lastName', 'firstName', 'passportSeries', 'passportNumber']
+const passportCheckInProgress = computed(() =>
+  isPassportCheckInProgress(passportCheckStatuses.value, item.value?.passportCheckStatus)
+)
+
+function effectivePassportCheckStatus(values) {
+  return resolveEffectivePassportCheckStatus(
+    passportCheckStatuses.value,
+    item.value?.passportCheckStatus,
+    item.value,
+    values,
+    passportIdentityFields
+  )
+}
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -567,8 +585,8 @@ async function onLookup(values) {
       <!-- Customer Identification & Details Section -->
       <div class="form-section">
         <div class="form-row">
-          <GtcFormField name="lastName" :errors="errors" :fullWidth="false" />
-          <GtcFormField name="firstName" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="lastName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
+          <GtcFormField name="firstName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
           <GtcFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <GtcFormField name="inn" :errors="errors" :fullWidth="false" />
         </div>
@@ -577,14 +595,17 @@ async function onLookup(values) {
           <GtcFormField name="email" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <GtcFormField name="passportSeries" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="passportSeries" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
           <PassportNumberWithActions
             :label="gtcRegisterColumnTitles.passportNumber"
             :errors="errors"
             :show-actions="showPassportVerification"
             :status-value="item?.passportCheckStatus"
             :statuses="passportCheckStatuses"
+            :status="effectivePassportCheckStatus(values)"
             :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :input-disabled="passportCheckInProgress"
+            :check-disabled="passportCheckInProgress"
             @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
             @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
           />

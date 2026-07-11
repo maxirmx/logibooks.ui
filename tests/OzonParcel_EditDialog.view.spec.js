@@ -47,6 +47,7 @@ const registersMock = {
   ops: {
     passportCheckStatuses: [
       { value: 0, code: 'NotChecked', name: 'Не проверен' },
+      { value: 10, code: 'InProgress', name: 'В процессе' },
       { value: 30, code: 'Checked', name: 'Проверен' }
     ]
   },
@@ -244,6 +245,19 @@ describe('OzonParcel_EditDialog image overlay', () => {
     passportField.vm.$emit('clear')
     await resolveAll()
     expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(2)
+
+    parcelsMock.item.value = { ...parcelsMock.item.value, passportCheckStatus: 10 }
+    await nextTick()
+    expect(passportField.props('inputDisabled')).toBe(true)
+    expect(passportField.props('checkDisabled')).toBe(true)
+    for (const name of ['lastName', 'firstName', 'passportSeries']) {
+      const field = wrapper.findAllComponents({ name: 'OzonFormField' })
+        .find(component => component.props('name') === name)
+      expect(field.props('disabled')).toBe(true)
+    }
+    const patronymicField = wrapper.findAllComponents({ name: 'OzonFormField' })
+      .find(component => component.props('name') === 'patronymic')
+    expect(patronymicField.props('disabled')).toBe(false)
     expect(registersMock.getById).toHaveBeenCalledWith(1)
     expect(registersMock.getById.mock.invocationCallOrder[0])
       .toBeLessThan(parcelsMock.getById.mock.invocationCallOrder[0])

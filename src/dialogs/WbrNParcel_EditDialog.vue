@@ -23,6 +23,10 @@ import { wbrnRegisterColumnTitles, wbrnRegisterColumnTooltips } from '@/helpers/
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import {
+  isPassportCheckInProgress,
+  resolveEffectivePassportCheckStatus
+} from '@/helpers/passport.check.status.helpers.js'
 import WbrNFormField from '@/components/WbrNFormField.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
@@ -105,6 +109,20 @@ const showPassportVerification = computed(() =>
   authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
+const passportIdentityFields = ['lastName', 'firstName', 'passportNumber']
+const passportCheckInProgress = computed(() =>
+  isPassportCheckInProgress(passportCheckStatuses.value, item.value?.passportCheckStatus)
+)
+
+function effectivePassportCheckStatus(values) {
+  return resolveEffectivePassportCheckStatus(
+    passportCheckStatuses.value,
+    item.value?.passportCheckStatus,
+    item.value,
+    values,
+    passportIdentityFields
+  )
+}
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -578,8 +596,8 @@ async function onLookup(values) {
           <WbrNFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="firstName" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
+          <WbrNFormField name="firstName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
           <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <PassportNumberWithActions
             :label="wbrnRegisterColumnTitles.passportNumber"
@@ -587,7 +605,10 @@ async function onLookup(values) {
             :show-actions="showPassportVerification"
             :status-value="item?.passportCheckStatus"
             :statuses="passportCheckStatuses"
+            :status="effectivePassportCheckStatus(values)"
             :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :input-disabled="passportCheckInProgress"
+            :check-disabled="passportCheckInProgress"
             @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
             @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
           />

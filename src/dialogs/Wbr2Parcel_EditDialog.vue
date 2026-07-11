@@ -24,6 +24,10 @@ import { wbr2RegisterColumnTitles, wbr2RegisterColumnTooltips } from '@/helpers/
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import {
+  isPassportCheckInProgress,
+  resolveEffectivePassportCheckStatus
+} from '@/helpers/passport.check.status.helpers.js'
 import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 import PassportNumberWithActions from '@/components/PassportNumberWithActions.vue'
@@ -106,6 +110,20 @@ const showPassportVerification = computed(() =>
   authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
+const passportIdentityFields = ['recipientName', 'passportNumber']
+const passportCheckInProgress = computed(() =>
+  isPassportCheckInProgress(passportCheckStatuses.value, item.value?.passportCheckStatus)
+)
+
+function effectivePassportCheckStatus(values) {
+  return resolveEffectivePassportCheckStatus(
+    passportCheckStatuses.value,
+    item.value?.passportCheckStatus,
+    item.value,
+    values,
+    passportIdentityFields
+  )
+}
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -543,14 +561,22 @@ async function onLookup(values) {
           <Wbr2FormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <Wbr2FormField name="recipientName" :errors="errors" :fullWidth="false" />
+          <Wbr2FormField
+            name="recipientName"
+            :errors="errors"
+            :fullWidth="false"
+            :disabled="passportCheckInProgress"
+          />
           <PassportNumberWithActions
             :label="wbr2RegisterColumnTitles.passportNumber"
             :errors="errors"
             :show-actions="showPassportVerification"
             :status-value="item?.passportCheckStatus"
             :statuses="passportCheckStatuses"
+            :status="effectivePassportCheckStatus(values)"
             :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :input-disabled="passportCheckInProgress"
+            :check-disabled="passportCheckInProgress"
             @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
             @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
           />

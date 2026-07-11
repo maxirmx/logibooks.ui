@@ -38,6 +38,10 @@ import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
 import { isImportCustomsProcedure, isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import {
+  isPassportCheckInProgress,
+  resolveEffectivePassportCheckStatus
+} from '@/helpers/passport.check.status.helpers.js'
+import {
   validateParcelData,
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
@@ -113,6 +117,20 @@ const showPassportVerification = computed(() =>
   authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
+const passportIdentityFields = ['lastName', 'firstName', 'passportSeries', 'passportNumber']
+const passportCheckInProgress = computed(() =>
+  isPassportCheckInProgress(passportCheckStatuses.value, item.value?.passportCheckStatus)
+)
+
+function effectivePassportCheckStatus(values) {
+  return resolveEffectivePassportCheckStatus(
+    passportCheckStatuses.value,
+    item.value?.passportCheckStatus,
+    item.value,
+    values,
+    passportIdentityFields
+  )
+}
 
 // Track loading state from store and running actions
 const { loading } = storeToRefs(parcelsStore)
@@ -582,8 +600,8 @@ async function onLookup(values) {
           <OzonFormField name="currency" :errors="errors" :fullWidth="false" />
         </div>
         <div class="form-row">
-          <OzonFormField name="lastName" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="firstName" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="lastName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
+          <OzonFormField name="firstName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
           <OzonFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <OzonFormField v-if="showImportConsigneeFields" name="inn" :errors="errors" :fullWidth="false" />
           <PassportNumberWithActions
@@ -593,21 +611,27 @@ async function onLookup(values) {
             :show-actions="showPassportVerification"
             :status-value="item?.passportCheckStatus"
             :statuses="passportCheckStatuses"
+            :status="effectivePassportCheckStatus(values)"
             :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :input-disabled="passportCheckInProgress"
+            :check-disabled="passportCheckInProgress"
             @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
             @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
           />
         </div>
         <template v-if="showImportConsigneeFields">
           <div class="form-row">
-            <OzonFormField name="passportSeries" :errors="errors" :fullWidth="false" />
+            <OzonFormField name="passportSeries" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
             <PassportNumberWithActions
               :label="ozonRegisterColumnTitles.passportNumber"
               :errors="errors"
               :show-actions="showPassportVerification"
               :status-value="item?.passportCheckStatus"
               :statuses="passportCheckStatuses"
+              :status="effectivePassportCheckStatus(values)"
               :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+              :input-disabled="passportCheckInProgress"
+              :check-disabled="passportCheckInProgress"
               @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
               @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
             />

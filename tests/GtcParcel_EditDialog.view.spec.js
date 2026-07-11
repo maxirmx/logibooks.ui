@@ -47,6 +47,7 @@ const registersMock = {
   ops: {
     passportCheckStatuses: [
       { value: 0, code: 'NotChecked', name: 'Не проверен' },
+      { value: 10, code: 'InProgress', name: 'В процессе' },
       { value: 30, code: 'Checked', name: 'Проверен' }
     ]
   },
@@ -126,7 +127,10 @@ describe('GtcParcel_EditDialog passport verification', () => {
           FeacnCodeEditor: true,
           ParcelNumberExt: true,
           ParcelWeightAutoField: true,
-          GtcFormField: { props: ['name'], template: '<div>{{ name }}</div>' },
+          GtcFormField: {
+            props: ['name', 'disabled'],
+            template: '<div data-testid="gtc-form-field" :data-name="name" :data-disabled="String(disabled)">{{ name }}</div>'
+          },
           ActionButton: true,
           DTagSection: true,
           'font-awesome-icon': true,
@@ -149,5 +153,16 @@ describe('GtcParcel_EditDialog passport verification', () => {
     passportField.vm.$emit('clear')
     await resolveAll()
     expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(5)
+
+    parcelsMock.item.value = { ...parcelsMock.item.value, passportCheckStatus: 10 }
+    await nextTick()
+    expect(passportField.props('inputDisabled')).toBe(true)
+    expect(passportField.props('checkDisabled')).toBe(true)
+    const fields = wrapper.findAll('[data-testid="gtc-form-field"]')
+    const fieldByName = (name) => fields.find((field) => field.attributes('data-name') === name)
+    for (const name of ['lastName', 'firstName', 'passportSeries']) {
+      expect(fieldByName(name).attributes('data-disabled')).toBe('true')
+    }
+    expect(fieldByName('patronymic').attributes('data-disabled')).toBe('undefined')
   })
 })

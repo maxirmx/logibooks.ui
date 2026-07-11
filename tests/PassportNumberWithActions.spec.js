@@ -73,7 +73,7 @@ describe('PassportNumberWithActions', () => {
     ]))
 
     const buttons = wrapper.findAll('button')
-    expect(buttons.map(button => button.attributes('data-tooltip'))).toEqual(['Проверить', 'Очистить'])
+    expect(buttons.map(button => button.attributes('data-tooltip'))).toEqual(['Сохранить и проверить паспорт', 'Очистить'])
     expect(buttons.map(button => button.attributes('data-icon'))).toEqual(['fa-solid fa-passport', 'fa-solid fa-broom'])
 
     await buttons[0].trigger('click')
@@ -107,5 +107,20 @@ describe('PassportNumberWithActions', () => {
 
     expect(wrapper.emitted('check')).toBeUndefined()
     expect(wrapper.emitted('clear')).toBeUndefined()
+  })
+
+  it('locks the passport input and check action while leaving clear available', async () => {
+    const wrapper = mountComponent({ showActions: true, inputDisabled: true, checkDisabled: true })
+
+    expect(wrapper.get('input[name="passportNumber"]').element.disabled).toBe(true)
+    const buttons = wrapper.findAll('button')
+    expect(buttons[0].element.disabled).toBe(true)
+    expect(buttons[1].element.disabled).toBe(false)
+
+    await buttons[0].trigger('click')
+    await buttons[1].trigger('click')
+
+    expect(wrapper.emitted('check')).toBeUndefined()
+    expect(wrapper.emitted('clear')).toHaveLength(1)
   })
 })

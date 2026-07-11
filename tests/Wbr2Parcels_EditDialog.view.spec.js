@@ -36,6 +36,7 @@ const registersMock = {
   ops: {
     passportCheckStatuses: [
       { value: 0, code: 'NotChecked', name: 'Не проверен' },
+      { value: 10, code: 'InProgress', name: 'В процессе' },
       { value: 30, code: 'Checked', name: 'Проверен' }
     ]
   },
@@ -127,6 +128,14 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
     passportField.vm.$emit('clear')
     await resolveAll()
     expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(3)
+
+    parcelsMock.item.value = { ...parcelsMock.item.value, passportCheckStatus: 10 }
+    await nextTick()
+    expect(passportField.props('inputDisabled')).toBe(true)
+    expect(passportField.props('checkDisabled')).toBe(true)
+    const recipientNameField = wrapper.findAllComponents({ name: 'Wbr2FormField' })
+      .find(field => field.props('name') === 'recipientName')
+    expect(recipientNameField.props('disabled')).toBe(true)
 
     await wrapper.find('[data-test="view-btn"]').trigger('click')
     await resolveAll()

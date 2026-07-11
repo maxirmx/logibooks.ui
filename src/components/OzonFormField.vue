@@ -12,7 +12,8 @@ defineProps({
   step: { type: String, default: null },
   as: { type: String, default: null },
   errors: { type: Object, default: () => ({}) },
-  fullWidth: { type: Boolean, default: true }
+  fullWidth: { type: Boolean, default: true },
+  disabled: { type: Boolean, default: false }
 })
 </script>
 <template>
@@ -28,6 +29,7 @@ defineProps({
       :name="name" 
       :id="name" 
       as="select"
+      :disabled="disabled"
       :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     >
       <slot />
@@ -38,6 +40,7 @@ defineProps({
       :id="name" 
       :type="type || 'text'"
       :step="step"
+      :disabled="disabled"
       :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     />
   </div>

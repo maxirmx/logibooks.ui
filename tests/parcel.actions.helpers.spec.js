@@ -265,6 +265,8 @@ describe('parcel actions helpers', () => {
       expect(mockEnsureNextParcelsPromise).toHaveBeenCalled()
       expect(mockParcelsStore.update).toHaveBeenCalledWith(parcelId, mockValues)
       expect(mockActionFn).toHaveBeenCalledWith(parcelId)
+      expect(mockParcelsStore.update.mock.invocationCallOrder[0])
+        .toBeLessThan(mockActionFn.mock.invocationCallOrder[0])
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
       expect(mockRunningAction.value).toBe(false)
     })

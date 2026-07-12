@@ -681,8 +681,7 @@ async function onLookup(values) {
 
 /* Product name styling */
 .product-name-label {
-  width: calc(18.5% - 50px);
-  min-width: 140px;
+  width: calc(18.5% - 30px);
 }
 
 /* Override product name row alignment */

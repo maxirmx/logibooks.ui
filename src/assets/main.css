@@ -1606,6 +1606,11 @@ a,
   padding: 0.2rem;
 }
 
+.form-compact .readonly-parcel-number {
+  font-size: 0.875rem;
+  margin-inline: 0;
+}
+
 /* Allow textareas in compact forms to use their natural height */
 .form-compact .form-control[rows] {
   height: auto;
@@ -1781,7 +1786,6 @@ a,
 }
 
 .tnved-cell.matched {
-  font-size: 1em;
   padding: 1px 4px;
   background-color: #d4edda;
   border-radius: 3px;
@@ -1793,7 +1797,6 @@ a,
 }
 
 .tnved-cell.matched-weak {
-  font-size: 1em;
   padding: 1px 4px;
   background-color: #ebedd4;
   border-radius: 3px;
@@ -1805,7 +1808,6 @@ a,
 }
 
 .tnved-cell.unmatched {
-  font-size: 1em;
   padding: 1px 4px;
   background-color: #fff3cd;
   border-radius: 3px;
@@ -1817,7 +1819,6 @@ a,
 }
 
 .tnved-cell.orphan {
-  font-size: 1em;
   padding: 1px 4px;
   background-color: #dddddd;
   border-radius: 3px;
@@ -1829,7 +1830,6 @@ a,
 }
 
 .tnved-cell.not-exists {
-  font-size: 1em;
   padding: 1px 4px;
   background-color: #fbecec;
   border-radius: 3px;

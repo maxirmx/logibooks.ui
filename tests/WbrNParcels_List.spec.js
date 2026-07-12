@@ -699,7 +699,7 @@ describe('WbrNParcels_List.vue', () => {
 
     expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('true')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('true')
-    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('3')
+    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('4')
     const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
     expect(icon.classes()).toEqual(expect.arrayContaining([

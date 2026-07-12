@@ -519,6 +519,7 @@ describe.each([
     expect(filterSelectors.props('showPassportCheckStatus')).toBe(true)
     expect(filterSelectors.props('passportCheckStatusOptions')).toEqual([
       { value: null, title: 'Все' },
+      { value: 'problems', title: 'С проблемами' },
       { value: 0, title: 'Не проверен' },
       { value: 30, title: 'Проверен' }
     ])

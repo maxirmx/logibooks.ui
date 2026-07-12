@@ -9,6 +9,7 @@ import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
+import { PassportCheckStatusFilterValue } from '@/helpers/passport.check.status.helpers.js'
 
 const baseUrl = `${apiUrl}/parcels`
 const parcelCheckStatusPropertyByCode = new Map([
@@ -35,7 +36,11 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   }
 
   if (authStore.parcels_passport_check_status !== null && authStore.parcels_passport_check_status !== undefined) {
-    params.append('passportCheckStatus', authStore.parcels_passport_check_status.toString())
+    if (authStore.parcels_passport_check_status === PassportCheckStatusFilterValue.Problems) {
+      params.append('passportCheckWithProblems', 'true')
+    } else {
+      params.append('passportCheckStatus', authStore.parcels_passport_check_status.toString())
+    }
   }
 
   if (authStore.parcels_hide_legacy_restrictions === true) {

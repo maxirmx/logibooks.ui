@@ -11,6 +11,10 @@ export const PassportCheckStatusCode = Object.freeze({
   Invalid: 'Invalid'
 })
 
+export const PassportCheckStatusFilterValue = Object.freeze({
+  Problems: 'problems'
+})
+
 export const PassportCheckStatusPresentation = Object.freeze({
   NotChecked: Object.freeze({
     name: 'NotChecked',
@@ -97,6 +101,7 @@ export function getPassportCheckStatusPresentation(statusOrCode) {
 export function createPassportCheckStatusOptions(statuses = []) {
   return [
     { value: null, title: 'Все' },
+    { value: PassportCheckStatusFilterValue.Problems, title: 'С проблемами' },
     ...(Array.isArray(statuses)
       ? statuses.map((status) => ({
           value: status.value,

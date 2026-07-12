@@ -195,6 +195,18 @@ describe('parcels store', () => {
     )
   })
 
+  it('fetches data with passport problems filtering', async () => {
+    mockAuthStore.parcels_passport_check_status = 'problems'
+
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+    await store.getAll(1)
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&passportCheckWithProblems=true`
+    )
+  })
+
   it('fetches data with hidden legacy restrictions filter', async () => {
     mockAuthStore.parcels_hide_legacy_restrictions = true
 

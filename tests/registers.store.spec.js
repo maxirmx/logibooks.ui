@@ -38,7 +38,11 @@ vi.mock('@/stores/parcels.store.js', () => ({
     }
 
     if (authStore.parcels_passport_check_status !== null && authStore.parcels_passport_check_status !== undefined) {
-      params.append('passportCheckStatus', authStore.parcels_passport_check_status.toString())
+      if (authStore.parcels_passport_check_status === 'problems') {
+        params.append('passportCheckWithProblems', 'true')
+      } else {
+        params.append('passportCheckStatus', authStore.parcels_passport_check_status.toString())
+      }
     }
     
     if (authStore.parcels_tnved) {
@@ -1654,6 +1658,21 @@ describe('registers store', () => {
         `${apiUrl}/registers/nextparcels/9?sortBy=id&sortOrder=asc&statusId=2`
       )
       expect(result).toEqual({ withoutIssues: null, withIssues: response.WithIssues })
+    })
+
+    it('requests next parcels with passport problems filter', async () => {
+      useAuthStore.mockReturnValueOnce({
+        ...defaultAuthStore,
+        parcels_passport_check_status: 'problems'
+      })
+      fetchWrapper.get.mockResolvedValue({ WithoutIssues: { id: 10 }, WithIssues: null })
+
+      const store = useRegistersStore()
+      await store.nextParcels(10)
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextparcels/10?sortBy=id&sortOrder=asc&passportCheckWithProblems=true`
+      )
     })
 
     it('returns null parcels when API call fails', async () => {

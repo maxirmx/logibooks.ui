@@ -7,6 +7,7 @@ import {
   createPassportCheckStatusOptions,
   getPassportCheckStatusPresentation,
   PassportCheckStatusCode,
+  PassportCheckStatusFilterValue,
   PassportCheckStatusPresentation,
   hasPassportIdentityChanged,
   isPassportCheckInProgress,
@@ -83,10 +84,14 @@ describe('passport check status helpers', () => {
 
     expect(createPassportCheckStatusOptions(statuses)).toEqual([
       { value: null, title: 'Все' },
+      { value: PassportCheckStatusFilterValue.Problems, title: 'С проблемами' },
       { value: 0, title: 'Не проверен' },
       { value: 30, title: 'Проверен' }
     ])
-    expect(createPassportCheckStatusOptions(null)).toEqual([{ value: null, title: 'Все' }])
+    expect(createPassportCheckStatusOptions(null)).toEqual([
+      { value: null, title: 'Все' },
+      { value: PassportCheckStatusFilterValue.Problems, title: 'С проблемами' }
+    ])
   })
 
   it('resolves workflow states by backend code without numeric assumptions', () => {

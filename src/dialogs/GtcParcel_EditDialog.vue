@@ -577,7 +577,7 @@ async function onLookup(values) {
             :fullWidth="false"
           />
           <GtcFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <GtcFormField name="currency" :errors="errors" :fullWidth="false" />
+          <GtcFormField name="currency" :errors="errors" :fullWidth="false" readonly />
           <GtcFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
         </div>
       </div>

@@ -597,7 +597,7 @@ async function onLookup(values) {
           />
           <OzonFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <OzonFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <OzonFormField name="currency" :errors="errors" :fullWidth="false" />
+          <OzonFormField name="currency" :errors="errors" :fullWidth="false" readonly />
         </div>
         <div class="form-row">
           <OzonFormField name="lastName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />

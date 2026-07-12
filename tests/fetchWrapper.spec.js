@@ -184,6 +184,25 @@ describe('fetchWrapper', () => {
         .rejects.toThrow('Invalid JSON response {')
     })
 
+    it('returns structured register validation data for HTTP 422', async () => {
+      const payload = {
+        success: false,
+        errMsg: 'В реестре указаны разные валюты: RUB, UZS. Загрузка реестра невозможна',
+        missingHeaders: [],
+        missingColumns: []
+      }
+      const response = {
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        text: () => Promise.resolve(JSON.stringify(payload))
+      }
+      global.fetch = vi.fn(() => Promise.resolve(response))
+
+      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData()))
+        .resolves.toEqual(payload)
+    })
+
     it('returns handleResponse result for successful requests', async () => {
       const response = { 
         ok: true, 

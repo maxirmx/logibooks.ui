@@ -1519,6 +1519,56 @@ describe('Register_EditDialog', () => {
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
+  it('keeps a structured upload error visible until the user closes it', async () => {
+    const currencyError = 'В реестре указаны разные валюты: RUB, UZS. Загрузка реестра невозможна'
+    upload.mockResolvedValueOnce({
+      success: false,
+      errMsg: currencyError,
+      missingHeaders: [],
+      missingColumns: []
+    })
+    registersStore.uploadFile.value = new File(['data'], 'mixed.xlsx')
+    mockItem.value = { ...baseRegisterItem, fileName: 'mixed.xlsx', registerType: 2, companyId: 2 }
+
+    const PersistentErrorDialog = {
+      name: 'ErrorDialog',
+      props: ['show', 'title', 'message', 'missingHeaders', 'missingColumns'],
+      template: '<div data-testid="persistent-upload-error" v-if="show">{{ message }}</div>'
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: PersistentErrorDialog
+        }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    const submission = dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    const errorDialog = wrapper.findComponent(PersistentErrorDialog)
+    expect(errorDialog.props('show')).toBe(true)
+    expect(errorDialog.props('message')).toBe(currencyError)
+    expect(wrapper.find('[data-testid="persistent-upload-error"]').text()).toBe(currencyError)
+    expect(dialog.vm.actionDialogState.show).toBe(false)
+    expect(update).not.toHaveBeenCalled()
+
+    errorDialog.vm.$emit('close')
+    await submission
+    await resolveAll()
+
+    expect(errorDialog.props('show')).toBe(false)
+  })
+
   it('shows action dialog while upload is in progress', async () => {
     const deferred = createDeferred()
     upload.mockReturnValueOnce(deferred.promise)

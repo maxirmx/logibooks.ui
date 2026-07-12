@@ -13,7 +13,8 @@ defineProps({
   as: { type: String, default: null },
   errors: { type: Object, default: () => ({}) },
   fullWidth: { type: Boolean, default: true },
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  readonly: { type: Boolean, default: false }
 })
 </script>
 
@@ -42,6 +43,7 @@ defineProps({
       :type="type || 'text'"
       :step="step"
       :disabled="disabled"
+      :readonly="readonly"
       :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
     />
   </div>

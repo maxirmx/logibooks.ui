@@ -579,7 +579,7 @@ async function onLookup(values) {
           />
           <WbrFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <WbrFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <WbrFormField name="currency" :errors="errors" :fullWidth="false" />
+          <WbrFormField name="currency" :errors="errors" :fullWidth="false" readonly />
         </div>
         <div class="form-row">
           <WbrFormField

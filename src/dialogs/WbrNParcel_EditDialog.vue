@@ -593,7 +593,7 @@ async function onLookup(values) {
           />
           <WbrNFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
           <WbrNFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="currency" :errors="errors" :fullWidth="false" />
+          <WbrNFormField name="currency" :errors="errors" :fullWidth="false" readonly />
         </div>
         <div class="form-row">
           <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />

@@ -1749,7 +1749,7 @@ describe('registers store', () => {
       expect(store.ops.initialRegisterStatusId).toBe(2)
     })
 
-    it('getOps normalizes missing passport status metadata to an empty list', async () => {
+    it('getOps normalizes missing optional metadata', async () => {
       const opsData = {
         customsProcedures: [],
         transportationTypes: []
@@ -1761,6 +1761,8 @@ describe('registers store', () => {
 
       expect(result.passportCheckStatuses).toEqual([])
       expect(store.ops.passportCheckStatuses).toEqual([])
+      expect(result.initialRegisterStatusId).toBeNull()
+      expect(store.ops.initialRegisterStatusId).toBeNull()
     })
 
     it('getOps sets opsError on failure', async () => {

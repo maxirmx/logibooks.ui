@@ -908,6 +908,25 @@ describe('Register_EditDialog', () => {
     ).resolves.toBeDefined()
   })
 
+  it('allows a null register status when operations metadata is unavailable', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await expect(
+      dialog.vm.schema.validate({ statusId: null, theOtherCountryCode: 840 })
+    ).resolves.toBeDefined()
+  })
+
   it('handles create mode with upload', async () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 2 }

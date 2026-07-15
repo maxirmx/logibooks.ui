@@ -87,6 +87,7 @@ export const useRegistersStore = defineStore('registers', () => {
       if (response && Array.isArray(response.customsProcedures) && Array.isArray(response.transportationTypes)) {
         ops.value = {
           ...response,
+          initialRegisterStatusId: response.initialRegisterStatusId ?? null,
           passportCheckStatuses: Array.isArray(response.passportCheckStatuses)
             ? response.passportCheckStatuses
             : []

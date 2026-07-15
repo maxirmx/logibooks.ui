@@ -479,7 +479,7 @@ onUnmounted(() => {
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
-  statusId: Yup.number(),
+  statusId: Yup.number().nullable(),
   invoiceDate: Yup.date().nullable(),
   warehouseArrivalDate: Yup.date().nullable(),
   invoiceNumber: Yup.string()

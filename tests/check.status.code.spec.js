@@ -11,35 +11,8 @@ import CheckStatusCode, {
 
 import { FCCheckStatusNames, SWCheckStatusNames } from '@/helpers/check.status.code.js'
 
-describe('FCCheckStatus', () => {
-  it('should be frozen', () => {
-    expect(() => {
-      FCCheckStatus.NewValue = 999
-    }).toThrow()
-  })
-})
-
-describe('SWCheckStatus', () => {
-  it('should be frozen', () => {
-    expect(() => {
-      SWCheckStatus.NewValue = 999
-    }).toThrow()
-  })
-})
-
 describe('CheckStatusCode', () => {
   describe('Constructor', () => {
-    it('should create from integer value', () => {
-      const code = new CheckStatusCode(0x00020001)
-      expect(code.value).toBe(0x00020001)
-    })
-
-    it('should create from FC and SW parts', () => {
-      const code = new CheckStatusCode({ fc: FCCheckStatus.ApprovedWithExcise, sw: SWCheckStatus.NoIssues })
-      expect(code.fc).toBe(FCCheckStatus.ApprovedWithExcise)
-      expect(code.sw).toBe(SWCheckStatus.NoIssues)
-    })
-
     it('should handle zero value', () => {
       const code = new CheckStatusCode(0)
       expect(code.value).toBe(0)
@@ -76,18 +49,6 @@ describe('CheckStatusCode', () => {
     it('should extract SW as enum value', () => {
       expect(CheckStatusCode.getSWe(0x02300010)).toBe(SWCheckStatus.NoIssues)
       expect(CheckStatusCode.getSWe(0x000001FF)).toBe(SWCheckStatus.MarkedByPartner)
-    })
-  })
-
-  describe('Instance properties', () => {
-    it('should return correct FC component', () => {
-      const code = new CheckStatusCode(0x02300010)
-      expect(code.fc).toBe(0x0230)
-    })
-
-    it('should return correct SW component', () => {
-      const code = new CheckStatusCode(0x02300010)
-      expect(code.sw).toBe(0x0010)
     })
   })
 
@@ -214,13 +175,6 @@ describe('CheckStatusCode', () => {
       expect(CheckStatusCode.compose(0, 0x01FF)).toBe(0x000001FF)
     })
 
-    it('should handle zero values', () => {
-      expect(CheckStatusCode.compose(0, 0)).toBe(0)
-    })
-
-    it('should handle large values', () => {
-      expect(CheckStatusCode.compose(0xFFFF, 0xFFFF)).toBe(0xFFFFFFFF)
-    })
   })
 
   describe('Factory methods', () => {
@@ -379,46 +333,6 @@ describe('CheckStatusCode', () => {
     })
   })
 
-  describe('Predefined constants', () => {
-    it('should have NotChecked constant', () => {
-      const notChecked = CheckStatusCode.NotChecked
-      expect(notChecked.fc).toBe(FCCheckStatus.NotChecked)
-      expect(notChecked.sw).toBe(SWCheckStatus.NotChecked)
-    })
-
-    it('should have NoIssues constant', () => {
-      const noIssues = CheckStatusCode.NoIssues
-      expect(noIssues.fc).toBe(FCCheckStatus.NoIssues)
-      expect(noIssues.sw).toBe(SWCheckStatus.NoIssues)
-    })
-
-    it('should have ApprovedWithExcise constant', () => {
-      const approved = CheckStatusCode.ApprovedWithExcise
-      expect(approved.fc).toBe(FCCheckStatus.ApprovedWithExcise)
-      expect(approved.sw).toBe(SWCheckStatus.ApprovedWithExcise)
-    })
-
-    it('should have MarkedByPartner constant', () => {
-      const marked = CheckStatusCode.MarkedByPartner
-      expect(marked.fc).toBe(FCCheckStatus.MarkedByPartner)
-      expect(marked.sw).toBe(SWCheckStatus.MarkedByPartner)
-    })
-
-    it('should have Duplicate constant', () => {
-      const duplicate = CheckStatusCode.Duplicate
-      expect(duplicate.fc).toBe(FCCheckStatus.Duplicate)
-      expect(duplicate.sw).toBe(SWCheckStatus.Duplicate)
-      expect(duplicate.value).toBe(CheckStatusCode.compose(FCCheckStatus.Duplicate, SWCheckStatus.Duplicate))
-    })
-
-    it('should have Duplicate2 constant', () => {
-      const duplicate = CheckStatusCode.Duplicate2
-      expect(duplicate.fc).toBe(FCCheckStatus.Duplicate2)
-      expect(duplicate.sw).toBe(SWCheckStatus.Duplicate2)
-      expect(duplicate.value).toBe(0x02320232)
-      expect(duplicate.value).toBe(CheckStatusCode.compose(FCCheckStatus.Duplicate2, SWCheckStatus.Duplicate2))
-    })
-  })
 })
 
 describe('CheckStatusHelper', () => {

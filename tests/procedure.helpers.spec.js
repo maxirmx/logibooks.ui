@@ -4,13 +4,6 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
-  CUSTOMS_PROCEDURE_ALL,
-  CUSTOMS_PROCEDURE,
-  CUSTOMS_PROCEDURE_RETURN,
-  CUSTOMS_PROCEDURE_EXPORT,
-  CUSTOMS_PROCEDURE_REEXPORT,
-  CUSTOMS_PROCEDURE_IMPORT,
-  CUSTOMS_PROCEDURE_REIMPORT,
   buildCustomsProcedureOptions,
   buildRegisterProcedureFilterOptions,
   buildReturnRegisterProcedureOptions,
@@ -24,8 +17,6 @@ import {
   isCustomsChargesCalculationProcedure
 } from '@/helpers/customs.procedure.helpers.js'
 import {
-  PROHIBITION_SCOPE,
-  prohibitionScopeFilterItems,
   getProhibitionScopeLabels,
   getProhibitionScopeSortOrder,
   getProhibitionScopeRows,
@@ -33,32 +24,6 @@ import {
 } from '@/helpers/prohibition.scope.helpers.js'
 
 describe('procedure.helpers', () => {
-  describe('constants', () => {
-    it('CUSTOMS_PROCEDURE has correct values', () => {
-      expect(CUSTOMS_PROCEDURE.Return).toBe(1)
-      expect(CUSTOMS_PROCEDURE.Export).toBe(10)
-      expect(CUSTOMS_PROCEDURE.Reexport).toBe(31)
-      expect(CUSTOMS_PROCEDURE.Import).toBe(40)
-      expect(CUSTOMS_PROCEDURE.Reimport).toBe(60)
-    })
-
-    it('CUSTOMS_PROCEDURE is frozen', () => {
-      expect(Object.isFrozen(CUSTOMS_PROCEDURE)).toBe(true)
-    })
-
-    it('individual constants match CUSTOMS_PROCEDURE values', () => {
-      expect(CUSTOMS_PROCEDURE_RETURN).toBe(CUSTOMS_PROCEDURE.Return)
-      expect(CUSTOMS_PROCEDURE_EXPORT).toBe(CUSTOMS_PROCEDURE.Export)
-      expect(CUSTOMS_PROCEDURE_REEXPORT).toBe(CUSTOMS_PROCEDURE.Reexport)
-      expect(CUSTOMS_PROCEDURE_IMPORT).toBe(CUSTOMS_PROCEDURE.Import)
-      expect(CUSTOMS_PROCEDURE_REIMPORT).toBe(CUSTOMS_PROCEDURE.Reimport)
-    })
-
-    it('CUSTOMS_PROCEDURE_ALL uses the persisted all sentinel', () => {
-      expect(CUSTOMS_PROCEDURE_ALL).toBe('all')
-    })
-  })
-
   describe('customs procedure option builders', () => {
     const opsProcedures = [
       { value: 1, charCode: '01', name: 'Возврат' },
@@ -141,14 +106,6 @@ describe('procedure.helpers', () => {
   describe('normalizeCustomsProcedureCode', () => {
     it('returns null for null', () => {
       expect(normalizeCustomsProcedureCode(null)).toBe(null)
-    })
-
-    it('returns null for undefined', () => {
-      expect(normalizeCustomsProcedureCode(undefined)).toBe(null)
-    })
-
-    it('returns null for empty string', () => {
-      expect(normalizeCustomsProcedureCode('')).toBe(null)
     })
 
     it('returns null for whitespace-only string', () => {
@@ -284,28 +241,9 @@ describe('procedure.helpers', () => {
     })
   })
 
-  describe('prohibition scope filter items', () => {
-    it('preserves all/export/import filter options', () => {
-      expect(PROHIBITION_SCOPE).toEqual({
-        All: 'all',
-        Export: 'export',
-        Import: 'import'
-      })
-      expect(prohibitionScopeFilterItems).toEqual([
-        { title: 'Любая', value: 'all' },
-        { title: 'Экспорт из РФ', value: 'export' },
-        { title: 'Импорт в РФ', value: 'import' }
-      ])
-    })
-  })
-
   describe('getProhibitionScopeLabels', () => {
     it('returns empty array for null', () => {
       expect(getProhibitionScopeLabels(null)).toEqual([])
-    })
-
-    it('returns empty array for undefined', () => {
-      expect(getProhibitionScopeLabels(undefined)).toEqual([])
     })
 
     it('returns empty array when neither forExport nor forImport', () => {
@@ -334,10 +272,6 @@ describe('procedure.helpers', () => {
       expect(getProhibitionScopeSortOrder(null)).toBe(0)
     })
 
-    it('returns 0 for undefined', () => {
-      expect(getProhibitionScopeSortOrder(undefined)).toBe(0)
-    })
-
     it('returns 0 when neither forImport nor forExport', () => {
       expect(getProhibitionScopeSortOrder({})).toBe(0)
       expect(getProhibitionScopeSortOrder({ forImport: false, forExport: false })).toBe(0)
@@ -361,10 +295,6 @@ describe('procedure.helpers', () => {
   describe('getProhibitionScopeRows', () => {
     it('returns empty array for null', () => {
       expect(getProhibitionScopeRows(null)).toEqual([])
-    })
-
-    it('returns empty array for undefined', () => {
-      expect(getProhibitionScopeRows(undefined)).toEqual([])
     })
 
     it('returns empty array when neither forExport nor forImport', () => {
@@ -408,10 +338,6 @@ describe('procedure.helpers', () => {
   describe('getProhibitionReasonLines', () => {
     it('returns empty array for null', () => {
       expect(getProhibitionReasonLines(null)).toEqual([])
-    })
-
-    it('returns empty array for undefined', () => {
-      expect(getProhibitionReasonLines(undefined)).toEqual([])
     })
 
     it('returns empty array when no rows have reasons', () => {

@@ -53,7 +53,8 @@ const mockOps = ref({
   transportationTypes: [
     { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
     { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
-  ]
+  ],
+  initialRegisterStatusId: 1
 })
 
 const registersStore = createMockStore({
@@ -308,7 +309,8 @@ describe('Register_EditDialog', () => {
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
         { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
-      ]
+      ],
+      initialRegisterStatusId: 1
     }
   })
 
@@ -903,6 +905,25 @@ describe('Register_EditDialog', () => {
 
     await expect(
       dialog.vm.schema.validate({ theOtherCountryCode: 643 })
+    ).resolves.toBeDefined()
+  })
+
+  it('allows a null register status when operations metadata is unavailable', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await expect(
+      dialog.vm.schema.validate({ statusId: null, theOtherCountryCode: 840 })
     ).resolves.toBeDefined()
   })
 
@@ -1798,7 +1819,8 @@ describe('Register_EditDialog', () => {
     expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
   })
 
-  it('defaults missing register status to the first status for uploads', async () => {
+  it('defaults missing register status to the event-derived status for uploads', async () => {
+    mockOps.value.initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
       statusId: null
@@ -1814,7 +1836,85 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
-    expect(dialog.vm.item.statusId).toBe(1)
+    expect(dialog.vm.item.statusId).toBe(2)
+  })
+
+  it('submits the unchanged event-derived status after upload', async () => {
+    upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    mockOps.value.initialRegisterStatusId = 2
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(42, expect.objectContaining({ statusId: 2 }))
+  })
+
+  it('submits a user-selected status instead of the event-derived default', async () => {
+    upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    mockOps.value.initialRegisterStatusId = 2
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    dialog.vm.handleRegisterStatusChange(3, vi.fn())
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(42, expect.objectContaining({ statusId: 3 }))
+  })
+
+  it('does not fall back to the first status when operations omit the initial status', async () => {
+    mockOps.value.initialRegisterStatusId = null
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    expect(dialog.vm.item.statusId).toBeNull()
+
+    upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
+    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(42, expect.objectContaining({ statusId: null }))
   })
 
   it('keeps existing register status for uploads', async () => {
@@ -1834,6 +1934,28 @@ describe('Register_EditDialog', () => {
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(dialog.vm.item.statusId).toBe(2)
+  })
+
+  it('continues to submit the existing status in edit mode', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: 2
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ statusId: 2 }))
   })
 
   it('defaults missing country to Uzbekistan for WbrN uploads', async () => {

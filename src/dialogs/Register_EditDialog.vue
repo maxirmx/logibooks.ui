@@ -223,12 +223,7 @@ function ensureDefaultOtherCountry() {
 }
 
 function getDefaultRegisterStatusId() {
-  const statuses = registerStatusesStore.registerStatuses
-  if (!Array.isArray(statuses) || statuses.length === 0) {
-    return null
-  }
-
-  return parseNumber(statuses[0]?.id ?? statuses[0]?.Id, null)
+  return parseNumber(ops.value?.initialRegisterStatusId, null)
 }
 
 function ensureDefaultRegisterStatus() {
@@ -484,7 +479,7 @@ onUnmounted(() => {
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
-  statusId: Yup.number(),
+  statusId: Yup.number().nullable(),
   invoiceDate: Yup.date().nullable(),
   warehouseArrivalDate: Yup.date().nullable(),
   invoiceNumber: Yup.string()

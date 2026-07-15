@@ -11,6 +11,7 @@ import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import ActionButton from '@/components/ActionButton.vue'
+import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const eventsStore = useEventsStore()
 const registerStatusesStore = useRegisterStatusesStore()
@@ -26,6 +27,10 @@ const initializing = ref(true)
 const errorMessage = ref('')
 
 const hasEvents = computed(() => events.value?.length > 0)
+const registerStatusOptions = computed(() => [
+  { id: 0, title: 'Не менять' },
+  ...(registerStatuses.value ?? [])
+])
 
 // Headers for events settings table
 const headers = [
@@ -143,18 +148,20 @@ onMounted(async () => {
             <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
           </template>
           <template #[`item.status`]="{ item }">
-            <select
-              class="form-control input-0"
+            <RegisterStatusSelect
               :id="`status-select-${item.id}`"
-              :value="statusSelections[item.id] ?? '0'"
-              @change="onStatusChange(item.id, $event.target.value)"
+              class="register-event-status-select"
+              :model-value="statusSelections[item.id] ?? 0"
+              :items="registerStatusOptions"
+              variant="outlined"
+              density="compact"
+              hide-details
+              hide-no-data
+              :disabled="saving || loading"
+              :menu-props="{ minWidth: 260 }"
+              @update:model-value="onStatusChange(item.id, $event)"
               :data-testid="`status-select-${item.id}`"
-            >
-              <option value="0">Не менять</option>
-              <option v-for="status in registerStatuses" :key="status.id" :value="status.id">
-                {{ status.title }}
-              </option>
-            </select>
+            />
           </template>
           <template #no-data>
             <div class="text-center m-5">Список событий пуст</div>
@@ -168,24 +175,12 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Ensure select and option elements in the register events table match text styling */
-.register-events-table .form-control,
-.register-events-table .form-control option,
-.register-events-table select,
-.register-events-table select option {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-}
-
-/* Ensure inputs and selects take full column width */
 .register-events-table :deep(td) {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-.register-events-table :deep(input[type='text']),
-.register-events-table :deep(select) {
+.register-events-table :deep(.register-event-status-select) {
   width: 100%;
   box-sizing: border-box;
   margin: 0;

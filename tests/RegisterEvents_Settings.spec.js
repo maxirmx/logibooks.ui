@@ -26,8 +26,8 @@ const mockEvents = ref([
 ])
 
 const mockStatuses = ref([
-  { id: 1, title: 'Новый' },
-  { id: 3, title: 'В пути' }
+  { id: 1, title: 'Новый', icon: 'svg:registered', bkColor: '#FFEEDD', fgColor: '#111111' },
+  { id: 3, title: 'В пути', icon: 'svg:in-transit', bkColor: '#DDEEFF', fgColor: '#222222' }
 ])
 
 const ensureLoaded = vi.hoisted(() => vi.fn())
@@ -89,6 +89,22 @@ const mountComponent = () =>
         ActionButton: {
           template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
           props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
+        },
+        RegisterStatusSelect: {
+          name: 'RegisterStatusSelect',
+          inheritAttrs: false,
+          props: ['modelValue', 'items', 'disabled'],
+          emits: ['update:modelValue'],
+          template: `
+            <select
+              v-bind="$attrs"
+              :value="modelValue"
+              :disabled="disabled"
+              @change="$emit('update:modelValue', $event.target.value)"
+            >
+              <option v-for="item in items" :key="item.id" :value="item.id">{{ item.title }}</option>
+            </select>
+          `
         }
       }
     }
@@ -102,8 +118,8 @@ describe('RegisterEvents_Settings.vue', () => {
       { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
     ]
     mockStatuses.value = [
-      { id: 1, title: 'Новый' },
-      { id: 3, title: 'В пути' }
+      { id: 1, title: 'Новый', icon: 'svg:registered', bkColor: '#FFEEDD', fgColor: '#111111' },
+      { id: 3, title: 'В пути', icon: 'svg:in-transit', bkColor: '#DDEEFF', fgColor: '#222222' }
     ]
     ensureLoaded.mockResolvedValue()
     getAll.mockImplementation(async () => {
@@ -127,6 +143,12 @@ describe('RegisterEvents_Settings.vue', () => {
     const optionTexts = options.map((o) => o.text())
     expect(optionTexts).toContain('Новый')
     expect(optionTexts).toContain('В пути')
+
+    const statusSelect = wrapper.findComponent({ name: 'RegisterStatusSelect' })
+    expect(statusSelect.props('items')).toEqual([
+      { id: 0, title: 'Не менять' },
+      ...mockStatuses.value
+    ])
   })
 
   it('updates selections and saves changes', async () => {

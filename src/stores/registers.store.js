@@ -29,7 +29,8 @@ export const useRegistersStore = defineStore('registers', () => {
   const ops = ref({
     customsProcedures: [],
     transportationTypes: [],
-    passportCheckStatuses: []
+    passportCheckStatuses: [],
+    initialRegisterStatusId: null
   })
   const opsLoading = ref(false)
   const opsError = ref(null)

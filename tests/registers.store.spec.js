@@ -1733,7 +1733,8 @@ describe('registers store', () => {
         passportCheckStatuses: [
           { value: 0, code: 'NotChecked', name: 'Не проверен' },
           { value: 30, code: 'Checked', name: 'Проверен' }
-        ]
+        ],
+        initialRegisterStatusId: 2
       }
       fetchWrapper.get.mockResolvedValue(opsData)
 
@@ -1745,6 +1746,7 @@ describe('registers store', () => {
       expect(store.ops.customsProcedures).toHaveLength(2)
       expect(store.ops.transportationTypes).toHaveLength(2)
       expect(store.ops.passportCheckStatuses).toEqual(opsData.passportCheckStatuses)
+      expect(store.ops.initialRegisterStatusId).toBe(2)
     })
 
     it('getOps normalizes missing passport status metadata to an empty list', async () => {

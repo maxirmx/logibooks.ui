@@ -8,6 +8,7 @@ export const ACTION_DIALOG_TITLES = {
   'upload-register': 'Загрузка реестра',
   'upload-report': 'Загрузка отчёта',
   'download-invoice': 'Подготовка файла инвойса',
+  'download-do1': 'Подготовка файла ДО1',
   'freeze-check-status': 'Применение запретов',
   'freeze-tnved-order': 'Сортировка',
   'check-passports': 'Проверка паспортов',

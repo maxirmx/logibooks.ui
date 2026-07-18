@@ -1590,6 +1590,64 @@ describe('registers store', () => {
     })
   })
 
+  describe('downloadDo1File method', () => {
+    it('uses the ДО1 endpoint and register id fallback filename', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      const result = await store.downloadDo1File(17)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/17/download-do1`,
+        'ДО1_17.xlsx'
+      )
+      expect(result).toBe(true)
+    })
+
+    it('uses the register id when invoice number is blank', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.downloadDo1File(17, '   ')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/17/download-do1`,
+        'ДО1_17.xlsx'
+      )
+    })
+
+    it('passes only supported optional columns and weight-correction opt-out', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      const requestedColumns =
+        InvoiceOptionalColumns.BagNumber |
+        InvoiceOptionalColumns.FullName |
+        InvoiceOptionalColumns.PreviousDteg |
+        InvoiceOptionalColumns.Uin |
+        InvoiceOptionalColumns.Url
+      const expectedColumns =
+        InvoiceOptionalColumns.BagNumber |
+        InvoiceOptionalColumns.Uin |
+        InvoiceOptionalColumns.Url
+
+      await store.downloadDo1File(18, 'INV-18', requestedColumns, false)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/18/download-do1?optionalColumns=${expectedColumns}&applyWeightCorrection=false`,
+        'ДО1_INV-18.xlsx'
+      )
+    })
+
+    it('stores and rethrows download errors', async () => {
+      const store = useRegistersStore()
+      const error = new Error('do1 failed')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+
+      await expect(store.downloadDo1File(19, 'INV-19')).rejects.toThrow(error)
+      expect(store.error).toBe(error)
+    })
+  })
+
   describe('nextParcels method', () => {
     it('requests next parcels with correct id and default parameters', async () => {
       const response = { WithoutIssues: { id: 2 }, WithIssues: { id: 3 } }

@@ -17,7 +17,8 @@ import { isReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.
 
 const props = defineProps({
   id: { type: Number, required: true },
-  selection: { type: String, required: false }
+  selection: { type: String, required: false },
+  documentType: { type: String, default: 'invoice' }
 })
 
 const registersStore = useRegistersStore()
@@ -53,6 +54,11 @@ const allOptionalColumnOptions = [
   { id: 4, label: 'УИН', value: InvoiceOptionalColumns.Uin },
   { id: 5, label: 'Ссылка', value: InvoiceOptionalColumns.Url }
 ]
+const do1OptionalColumnValues = [
+  InvoiceOptionalColumns.BagNumber,
+  InvoiceOptionalColumns.Uin,
+  InvoiceOptionalColumns.Url
+]
 
 const currentRegister = computed(() => {
   const r = item.value
@@ -60,24 +66,36 @@ const currentRegister = computed(() => {
   return r
 })
 
+const isDo1 = computed(() => props.documentType === 'do1')
 const heading = computed(() => {
   const number = currentRegister.value?.invoiceNumber
-  return number ? `Настройки инвойса (${number})` : 'Настройки инвойса'
+  const title = isDo1.value ? 'Настройки формы ДО1' : 'Настройки инвойса'
+  return number ? `${title} (${number})` : title
 })
 
 const isReexportRegister = computed(() =>
   isReexportCustomsProcedure(currentRegister.value?.customsProcedureCode)
 )
-const optionalColumnOptions = computed(() =>
-  isReexportRegister.value
+const optionalColumnOptions = computed(() => {
+  if (isDo1.value) {
+    return allOptionalColumnOptions.filter((column) =>
+      do1OptionalColumnValues.includes(column.value)
+    )
+  }
+
+  return isReexportRegister.value
     ? allOptionalColumnOptions.filter((column) => column.value !== InvoiceOptionalColumns.PreviousDteg)
     : allOptionalColumnOptions
-)
-const sanitizedOptionalColumns = computed(() =>
-  isReexportRegister.value
+})
+const sanitizedOptionalColumns = computed(() => {
+  if (isDo1.value) {
+    return optionalColumns.value & do1OptionalColumnValues.reduce((mask, value) => mask | value, 0)
+  }
+
+  return isReexportRegister.value
     ? optionalColumns.value & ~InvoiceOptionalColumns.PreviousDteg
     : optionalColumns.value
-)
+})
 const invoiceWeightCorrection = computed(() => getWeightCorrection(currentRegister.value))
 const showInvoiceWeightCorrection = computed(() => invoiceWeightCorrection.value.canCorrect)
 const invoiceWeightCorrectionLabel = computed(() =>
@@ -126,23 +144,34 @@ const schema = Yup.object().shape({}) // no form-bound fields; using external st
 async function onSubmit() {
   if (!currentRegister.value || isSubmitting.value) return
   isSubmitting.value = true
-  // show global action dialog while preparing invoice
   try {
-    showActionDialog('download-invoice')
+    showActionDialog(isDo1.value ? 'download-do1' : 'download-invoice')
     const applyWeightCorrection = showInvoiceWeightCorrection.value
       ? applyInvoiceWeightCorrection.value
       : true
-    await registersStore.downloadInvoiceFile(
-      currentRegister.value.id,
-      currentRegister.value.invoiceNumber,
-      parcelSelection.value,
-      sanitizedOptionalColumns.value,
-      applyWeightCorrection
-    )
+    if (isDo1.value) {
+      await registersStore.downloadDo1File(
+        currentRegister.value.id,
+        currentRegister.value.invoiceNumber,
+        sanitizedOptionalColumns.value,
+        applyWeightCorrection
+      )
+    } else {
+      await registersStore.downloadInvoiceFile(
+        currentRegister.value.id,
+        currentRegister.value.invoiceNumber,
+        parcelSelection.value,
+        sanitizedOptionalColumns.value,
+        applyWeightCorrection
+      )
+    }
     router.go(-1)
   } catch (err) {
-    // report error via alert store and keep dialog hidden
-    const msg = normalizeError(err) || 'Не удалось сформировать инвойс'
+    const msg = normalizeError(err) || (
+      isDo1.value
+        ? 'Не удалось сформировать форму ДО1'
+        : 'Не удалось сформировать инвойс'
+    )
     alertStore.error(msg)
   } finally {
     hideActionDialog()
@@ -195,7 +224,7 @@ onMounted(() => {
       <!-- action dialog shown during invoice preparation -->
 
       <div class="form-section">
-        <div class="form-row-1">
+        <div v-if="!isDo1" class="form-row-1">
           <div class="form-group">
             <label class="label" for="parcelSelection">Выбор посылок:</label>
             <select

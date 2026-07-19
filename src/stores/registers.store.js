@@ -594,11 +594,12 @@ export const useRegistersStore = defineStore('registers', () => {
     loading.value = true
     error.value = null
     try {
+      const trimmedInvoiceNumber =
+        typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
       const hasInvoiceNumber =
-        typeof invoiceNumber === 'string'
-          ? invoiceNumber.trim().length > 0
-          : invoiceNumber !== null && invoiceNumber !== undefined
-      const filename = `ДО1_${hasInvoiceNumber ? invoiceNumber : id}.xlsx`
+        trimmedInvoiceNumber !== null && trimmedInvoiceNumber !== undefined &&
+        String(trimmedInvoiceNumber).length > 0
+      const filename = `ДО1_${hasInvoiceNumber ? trimmedInvoiceNumber : id}.xlsx`
       return await fetchWrapper.downloadFile(
         buildInvoiceRequestUrl(
           id,

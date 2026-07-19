@@ -1616,6 +1616,18 @@ describe('registers store', () => {
       )
     })
 
+    it('trims invoice number before building filename', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.downloadDo1File(18, ' INV-18 ')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/18/download-do1`,
+        'ДО1_INV-18.xlsx'
+      )
+    })
+
     it('passes only supported optional columns and weight-correction opt-out', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)

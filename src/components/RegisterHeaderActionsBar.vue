@@ -83,8 +83,8 @@ const documentOptions = computed(() => {
 
   if (isImportCustomsProcedure(props.item?.customsProcedureCode)) {
     options.push({
-      label: 'Форма ДО1 (все)',
-      icon: 'fa-solid fa-file-invoice',
+      label: 'отчёт ДО1 (все)',
+      icon: 'fa-solid fa-check-to-slot',
       color: 'not-checked',
       action: openDo1Settings
     })
@@ -98,7 +98,7 @@ const documentOptions = computed(() => {
       action: () => run('download-additional-restrictions')
     },
     {
-      label: 'тех. документацию (с акцизом)',
+      label: 'тех. документация (с акцизом)',
       icon: 'fa-solid fa-file-image',
       color: 'approved-with-excise',
       action: () => run('download-techdoc')

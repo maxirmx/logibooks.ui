@@ -113,8 +113,8 @@ describe('RegisterHeaderActionsBar', () => {
         color: 'no-issues'
       },
       {
-        label: 'Форма ДО1 (все)',
-        icon: 'fa-solid fa-file-invoice',
+        label: 'отчёт ДО1 (все)',
+        icon: 'fa-solid fa-check-to-slot',
         color: 'not-checked'
       },
       {
@@ -123,7 +123,7 @@ describe('RegisterHeaderActionsBar', () => {
         color: 'parcel-has-issues'
       },
       {
-        label: 'тех. документацию (с акцизом)',
+        label: 'тех. документация (с акцизом)',
         icon: 'fa-solid fa-file-image',
         color: 'approved-with-excise'
       }
@@ -185,7 +185,7 @@ describe('RegisterHeaderActionsBar', () => {
       option => option.label === 'инвойс-манифест (все)'
     )
     const do1Option = invoiceMenu.props('options').find(
-      option => option.label === 'Форма ДО1 (все)'
+      option => option.label === 'отчёт ДО1 (все)'
     )
 
     await allOption.action(baseProps.item)
@@ -210,14 +210,14 @@ describe('RegisterHeaderActionsBar', () => {
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     const labels = documentMenu.props('options').map(option => option.label)
-    expect(labels).not.toContain('Форма ДО1 (все)')
+    expect(labels).not.toContain('отчёт ДО1 (все)')
     expect(labels).toEqual([
       'инвойс-манифест (все)',
       'инвойс-манифест (с акцизом)',
       'инвойс-манифест (с нотификациями)',
       'инвойс-манифест (без акциза и нотификаций)',
       'реестр дополнительных изъятий',
-      'тех. документацию (с акцизом)'
+      'тех. документация (с акцизом)'
     ])
   })
 
@@ -279,7 +279,7 @@ describe('RegisterHeaderActionsBar', () => {
       (option) => option.label === 'реестр дополнительных изъятий'
     )
     const techdocOption = documentMenu.props('options').find(
-      (option) => option.label === 'тех. документацию (с акцизом)'
+      (option) => option.label === 'тех. документация (с акцизом)'
     )
 
     await additionalRestrictionsOption.action(baseProps.item)
@@ -297,7 +297,7 @@ describe('RegisterHeaderActionsBar', () => {
       (option) => option.label === 'реестр дополнительных изъятий'
     )
     const disabledTechdocOption = disabledDocumentMenu.props('options').find(
-      (option) => option.label === 'тех. документацию (с акцизом)'
+      (option) => option.label === 'тех. документация (с акцизом)'
     )
 
     await disabledAdditionalRestrictionsOption.action(baseProps.item)

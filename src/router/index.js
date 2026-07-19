@@ -523,6 +523,15 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/register/:id/cmr-settings',
+      name: 'Настройки CMR',
+      component: () => import('@/views/Register_CmrSettingsView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),

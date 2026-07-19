@@ -479,6 +479,19 @@ describe('router guards', () => {
     })
   })
 
+  describe('CMR settings route', () => {
+    it('uses invoice-equivalent protection and numeric id props', () => {
+      const route = router.getRoutes().find(value => value.name === 'Настройки CMR')
+
+      expect(route?.path).toBe('/register/:id/cmr-settings')
+      expect(route?.meta).toMatchObject({
+        reqLogistOrSrLogist: true,
+        hideSidebar: true
+      })
+      expect(route?.props.default({ params: { id: '42' } })).toEqual({ id: 42 })
+    })
+  })
+
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {
       authStore.user = null

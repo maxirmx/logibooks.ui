@@ -493,6 +493,30 @@ describe('fetchWrapper', () => {
       const anchor = global.document.createElement.mock.results[0].value;
       expect(anchor.download).toBe('default-name.txt');
     });
+
+    it('supports authenticated JSON POST downloads without changing GET defaults', async () => {
+      const mockResponse = mockDownloadResponse(null);
+      const payload = { documentDate: '2026-07-19', senderCompanyId: 4 };
+
+      await fetchWrapper.downloadFile(
+        `${baseUrl}/registers/7/download-cmr`,
+        'CMR_7.docx',
+        { method: 'post', body: payload }
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${baseUrl}/registers/7/download-cmr`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer abc',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+      expect(mockResponse.blob).toHaveBeenCalled();
+    });
     
     it('should parse filename correctly when Content-Disposition format varies', async () => {
       // Test different Content-Disposition header formats

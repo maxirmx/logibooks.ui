@@ -174,11 +174,15 @@ function authHeader(url) {
 }
 
 function requestBlob(method) {
-    return async (url) => {
+    return async (url, body) => {
         const requestOptions = {
             method,
             headers: authHeader(url)
         };
+        if (body !== undefined) {
+            requestOptions.headers['Content-Type'] = 'application/json';
+            requestOptions.body = JSON.stringify(body);
+        }
         
         let response;
         try {
@@ -342,10 +346,12 @@ function parseContentDispositionFilename(disposition) {
  * Downloads a file from the server and initiates browser download
  * @param {string} fileUrl - The URL to download from
  * @param {string} defaultFilename - Fallback filename if none provided in headers
+ * @param {{ method?: string, body?: object }} options - Optional authenticated request options
  * @returns {Promise<boolean>} - True if download initiated successfully
  */
-async function downloadFile(fileUrl, defaultFilename) {
-  const response = await requestBlob('GET')(fileUrl)
+async function downloadFile(fileUrl, defaultFilename, options = {}) {
+  const method = String(options.method || 'GET').toUpperCase()
+  const response = await requestBlob(method)(fileUrl, options.body)
   
   let filename = defaultFilename
   const disposition = response.headers.get('Content-Disposition')

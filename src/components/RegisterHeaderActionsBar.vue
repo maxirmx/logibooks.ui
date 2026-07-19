@@ -90,6 +90,15 @@ const documentOptions = computed(() => {
     })
   }
 
+  if (Number(props.item?.transportationTypeCode) === 1) {
+    options.push({
+      label: 'товарно-транспортная накладная (все)',
+      icon: 'fa-solid fa-file-signature',
+      color: 'not-checked',
+      action: openCmrSettings
+    })
+  }
+
   options.push(
     {
       label: 'реестр дополнительных изъятий',
@@ -130,6 +139,16 @@ function openDo1Settings() {
   if (!registerId) return
   router.push({
     name: 'Настройки формы ДО1',
+    params: { id: registerId }
+  })
+}
+
+function openCmrSettings() {
+  if (props.disabled || Number(props.item?.transportationTypeCode) !== 1) return
+  const registerId = props.item?.id
+  if (!registerId) return
+  router.push({
+    name: 'Настройки CMR',
     params: { id: registerId }
   })
 }

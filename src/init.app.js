@@ -80,7 +80,8 @@ import {
   faPersonWalkingArrowLoopLeft,
   faCalculator,
   faPassport,
-  faCheckToSlot
+  faCheckToSlot,
+  faFileSignature
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -154,6 +155,7 @@ library.add(
   faCalculator,
   faPassport,
   faCheckToSlot,
+  faFileSignature
 )
 
 import 'vuetify/styles'

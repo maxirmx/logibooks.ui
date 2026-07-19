@@ -1660,6 +1660,57 @@ describe('registers store', () => {
     })
   })
 
+  describe('downloadCmrFile method', () => {
+    const payload = {
+      senderCompanyId: 1,
+      recipientCompanyId: 2,
+      documentDate: '2026-07-19'
+    }
+
+    it('uses an authenticated JSON POST download and updates local invoice dates', async () => {
+      const store = useRegistersStore()
+      store.item = { id: 21, invoiceNumber: ' INV-21 ', invoiceDate: null }
+      store.items = [
+        { id: 20, invoiceDate: null },
+        { id: 21, invoiceDate: null }
+      ]
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      const result = await store.downloadCmrFile(21, ' INV-21 ', payload)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/21/download-cmr`,
+        'CMR_INV-21.docx',
+        { method: 'POST', body: payload }
+      )
+      expect(store.item.invoiceDate).toBe('2026-07-19')
+      expect(store.items[1].invoiceDate).toBe('2026-07-19')
+      expect(store.items[0].invoiceDate).toBeNull()
+      expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+    })
+
+    it('uses the register id fallback and preserves local dates on failure', async () => {
+      const store = useRegistersStore()
+      store.item = { id: 22, invoiceDate: '2026-01-01' }
+      store.items = [{ id: 22, invoiceDate: '2026-01-01' }]
+      const error = new Error('CMR failed')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+
+      await expect(store.downloadCmrFile(22, '  ', payload)).rejects.toThrow(error)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/22/download-cmr`,
+        'CMR_22.docx',
+        { method: 'POST', body: payload }
+      )
+      expect(store.item.invoiceDate).toBe('2026-01-01')
+      expect(store.items[0].invoiceDate).toBe('2026-01-01')
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+  })
+
   describe('nextParcels method', () => {
     it('requests next parcels with correct id and default parameters', async () => {
       const response = { WithoutIssues: { id: 2 }, WithIssues: { id: 3 } }

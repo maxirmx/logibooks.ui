@@ -617,6 +617,38 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function downloadCmrFile(id, invoiceNumber, payload) {
+    loading.value = true
+    error.value = null
+    try {
+      const trimmedInvoiceNumber =
+        typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
+      const hasInvoiceNumber =
+        trimmedInvoiceNumber !== null && trimmedInvoiceNumber !== undefined &&
+        String(trimmedInvoiceNumber).length > 0
+      const filename = `CMR_${hasInvoiceNumber ? trimmedInvoiceNumber : id}.docx`
+      const result = await fetchWrapper.downloadFile(
+        `${baseUrl}/${id}/download-cmr`,
+        filename,
+        { method: 'POST', body: payload }
+      )
+
+      if (item.value?.id === id) {
+        item.value = { ...item.value, invoiceDate: payload.documentDate }
+      }
+      const index = items.value.findIndex(register => register.id === id)
+      if (index !== -1) {
+        items.value[index] = { ...items.value[index], invoiceDate: payload.documentDate }
+      }
+      return result
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadTechdoc(id, invoiceNumber) {
     loading.value = true
     error.value = null
@@ -840,6 +872,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateOrdinary,
     downloadInvoiceFile,
     downloadDo1File,
+    downloadCmrFile,
     download,
     downloadTechdoc,
     downloadAdditionalRestrictions,

@@ -194,6 +194,60 @@ describe('RegisterHeaderActionsBar', () => {
     expect(pushMock).not.toHaveBeenCalled()
   })
 
+  it('shows CMR only for Auto registers and routes to CMR settings', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        item: { ...baseProps.item, transportationTypeCode: 1 }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+    const cmrOption = documentMenu.props('options').find(
+      option => option.label === 'товарно-транспортная накладная (все)'
+    )
+    expect(cmrOption).toMatchObject({
+      label: 'товарно-транспортная накладная (все)',
+      icon: 'fa-solid fa-file-signature',
+      color: 'not-checked'
+    })
+
+    await cmrOption.action()
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки CMR',
+      params: { id: baseProps.item.id }
+    })
+
+    const nonAutoWrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        item: { ...baseProps.item, transportationTypeCode: 2 }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+    const nonAutoMenu = findActionMenuByTooltip(nonAutoWrapper, 'Сформировать документы')
+    expect(nonAutoMenu.props('options').map(option => option.label))
+      .not.toContain('товарно-транспортная накладная (все)')
+  })
+
+  it('does not route to CMR settings when the action bar is disabled', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        disabled: true,
+        item: { ...baseProps.item, transportationTypeCode: 1 }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+    await documentMenu.props('options').find(
+      option => option.label === 'товарно-транспортная накладная (все)'
+    ).action()
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+
   it.each([
     CUSTOMS_PROCEDURE_RETURN,
     CUSTOMS_PROCEDURE_EXPORT,

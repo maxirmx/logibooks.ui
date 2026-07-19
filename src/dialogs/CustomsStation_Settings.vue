@@ -45,9 +45,8 @@ let customsStation = ref({
 
 if (!isCreate.value) {
   ;({ customsStation } = storeToRefs(customsStationsStore))
-  try {
-    await customsStationsStore.getById(props.customsStationId)
-  } catch {
+  const loadedCustomsStation = await customsStationsStore.getById(props.customsStationId)
+  if (!loadedCustomsStation) {
     alertStore.error('Ошибка при загрузке данных таможенного поста')
     router.push('/customsstations')
   }

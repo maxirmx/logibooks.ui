@@ -158,7 +158,7 @@ describe('CustomsStation_Settings.vue', () => {
   })
 
   it('reports an edit loading failure through the alert store and returns to the list', async () => {
-    getById.mockRejectedValueOnce(new Error('load failed'))
+    getById.mockResolvedValueOnce(null)
 
     await mountSettings({ mode: 'edit', customsStationId: 7 })
 

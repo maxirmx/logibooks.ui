@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   resolveStatusSelection: vi.fn(),
   updateStatusSelection: vi.fn(),
   setParcelStatuses: vi.fn(),
+  confirm: vi.fn(),
   alertSuccess: vi.fn(),
   alertError: vi.fn(),
   registerItems: [],
@@ -38,6 +39,10 @@ vi.mock('@/stores/alert.store.js', () => ({
     success: mocks.alertSuccess,
     error: mocks.alertError
   })
+}))
+
+vi.mock('vuetify-use-dialog', () => ({
+  useConfirm: () => mocks.confirm
 }))
 
 vi.mock('@/components/ActionButton.vue', () => ({
@@ -102,6 +107,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     })
     mocks.updateStatusSelection.mockResolvedValue({ updatedCount: 0, skippedCount: 0 })
     mocks.setParcelStatuses.mockResolvedValue()
+    mocks.confirm.mockResolvedValue(true)
     mocks.registerItems = []
     mocks.registerItem = null
   })
@@ -145,6 +151,10 @@ describe('ParcelStatusBulkChangeDialog', () => {
     ]) {
       expect(wrapper.find(`[data-testid="${testId}"]`).attributes('data-icon-size')).toBe('2x')
     }
+
+    const updateAllButton = wrapper.find('[data-testid="parcel-status-bulk-update-all"]')
+    expect(updateAllButton.attributes('data-icon')).toBe('fa-solid fa-list-check')
+    expect(updateAllButton.attributes('title')).toBe('Изменить статус всех посылок')
   })
 
   it('renders the parcel-number label from the current register type', async () => {
@@ -272,9 +282,36 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
     await flushPromises()
 
+    expect(mocks.confirm).toHaveBeenCalledWith({
+      title: 'Подтверждение',
+      confirmationText: 'Изменить',
+      cancellationText: 'Не изменять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: 'Изменить статус всех посылок в реестре на "Status 4"?'
+    })
     expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 4)
     expect(mocks.alertSuccess).toHaveBeenCalledWith('Статус успешно применен ко всем посылкам в реестре')
     expect(wrapper.emitted('updated')).toHaveLength(1)
+  })
+
+  it('does not update all parcels when confirmation is declined', async () => {
+    mocks.confirm.mockResolvedValue(false)
+    const wrapper = mountDialog()
+
+    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('4')
+    await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.confirm).toHaveBeenCalledOnce()
+    expect(mocks.setParcelStatuses).not.toHaveBeenCalled()
+    expect(mocks.alertSuccess).not.toHaveBeenCalled()
+    expect(wrapper.emitted('updated')).toBeUndefined()
   })
 
   it('reports update-all errors from backend reason fields', async () => {
@@ -321,6 +358,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.resolveStatusSelection).not.toHaveBeenCalled()
     expect(mocks.updateStatusSelection).not.toHaveBeenCalled()
     expect(mocks.setParcelStatuses).not.toHaveBeenCalled()
+    expect(mocks.confirm).not.toHaveBeenCalled()
   })
 
   it('closes and resets state when hidden', async () => {

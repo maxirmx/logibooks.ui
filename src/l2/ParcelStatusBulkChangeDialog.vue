@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, nextTick, ref, watch } from 'vue'
+import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -28,6 +29,7 @@ const emit = defineEmits(['update:show', 'updated'])
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
+const confirm = useConfirm()
 
 const inputRef = ref(null)
 const selectedStatusId = ref(null)
@@ -186,6 +188,28 @@ async function updateAll() {
 
   updateAllInProgress.value = true
   try {
+    const selectedStatus = props.statusOptions.find((option) => Number(option.id) === statusId.value)
+    const statusDescription = selectedStatus?.title
+      ? ` на "${selectedStatus.title}"`
+      : ''
+    const confirmed = await confirm({
+      title: 'Подтверждение',
+      confirmationText: 'Изменить',
+      cancellationText: 'Не изменять',
+      dialogProps: {
+        width: '30%',
+        minWidth: '250px'
+      },
+      confirmationButtonProps: {
+        color: 'orange-darken-3'
+      },
+      content: `Изменить статус всех посылок в реестре${statusDescription}?`
+    })
+
+    if (!confirmed) {
+      return
+    }
+
     await registersStore.setParcelStatuses(Number(props.registerId), statusId.value)
     alertStore.success('Статус успешно применен ко всем посылкам в реестре')
     emit('updated')
@@ -244,7 +268,7 @@ defineExpose({
             <div class="header-actions header-actions-group">
               <ActionButton
                 :item="{}"
-                icon="fa-solid fa-check-double"
+                icon="fa-solid fa-list-check"
                 tooltip-text="Изменить статус всех посылок"
                 iconSize="2x"
                 :disabled="!canUpdateAll"

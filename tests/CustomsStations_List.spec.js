@@ -122,7 +122,7 @@ describe('CustomsStations_List.vue', () => {
     expect(runningStore.getAll).toHaveBeenCalled()
     expect(ensureLoaded).toHaveBeenCalled()
     expect(wrapper.text()).toContain('Таможенные посты')
-    expect(wrapper.text()).toContain('Номер')
+    expect(wrapper.text()).toContain('Код поста')
     expect(wrapper.text()).toContain('Название')
     expect(wrapper.text()).toContain('Страна')
     expect(wrapper.text()).toContain('Город')

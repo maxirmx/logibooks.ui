@@ -51,7 +51,7 @@ const headers = [
   ...(authStore.isSrLogistPlus
     ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
     : []),
-  { title: 'Номер', key: 'number', sortable: true },
+  { title: 'Код поста', key: 'number', sortable: true },
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
   { title: 'Город', key: 'city', sortable: true }

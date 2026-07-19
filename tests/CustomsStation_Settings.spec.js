@@ -141,7 +141,7 @@ describe('CustomsStation_Settings.vue', () => {
     expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
     expect(ensureLoaded).toHaveBeenCalled()
     expect(getById).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Номер:')
+    expect(wrapper.text()).toContain('Код поста:')
     expect(wrapper.text()).toContain('Название:')
     expect(wrapper.text()).toContain('Страна:')
     expect(wrapper.text()).toContain('Почтовый индекс:')
@@ -198,7 +198,7 @@ describe('CustomsStation_Settings.vue', () => {
       number: '',
       name: 'Пост',
       countryIsoNumeric: 643
-    })).rejects.toThrow('Номер таможенного поста обязателен')
+    })).rejects.toThrow('Код поста обязателен')
     await expect(schema.validate({
       id: 0,
       number: '001',
@@ -266,7 +266,7 @@ describe('CustomsStation_Settings.vue', () => {
   })
 
   it('shows the precise server conflict message', async () => {
-    const error = Object.assign(new Error('Таможенный пост с таким номером уже существует'), {
+    const error = Object.assign(new Error('Таможенный пост с таким кодом уже существует'), {
       status: 409
     })
     create.mockRejectedValueOnce(error)

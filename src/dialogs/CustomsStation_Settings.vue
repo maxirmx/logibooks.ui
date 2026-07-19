@@ -56,8 +56,8 @@ if (!isCreate.value) {
 const schema = Yup.object({
   id: Yup.number().required(),
   number: Yup.string()
-    .required('Номер таможенного поста обязателен')
-    .matches(/^[0-9]+$/, 'Номер таможенного поста должен содержать только цифры'),
+    .required('Код поста обязателен')
+    .matches(/^[0-9]+$/, 'Код поста должен содержать только цифры'),
   name: Yup.string().required('Название обязательно'),
   countryIsoNumeric: Yup.number().required('Страна обязательна'),
   postalCode: Yup.string(),
@@ -121,7 +121,7 @@ function onSubmit(values, { setErrors }) {
       v-slot="{ errors, isSubmitting }"
     >
       <div class="form-group">
-        <label for="number" class="label">Номер:</label>
+        <label for="number" class="label">Код поста:</label>
         <Field
           name="number"
           id="number"
@@ -130,7 +130,7 @@ function onSubmit(values, { setErrors }) {
           pattern="[0-9]*"
           class="form-control input"
           :class="{ 'is-invalid': errors.number }"
-          placeholder="Номер таможенного поста"
+          placeholder="Код поста"
         />
         <div v-if="errors.number" class="invalid-feedback">{{ errors.number }}</div>
       </div>

@@ -351,8 +351,10 @@ function parseContentDispositionFilename(disposition) {
  */
 async function downloadFile(fileUrl, defaultFilename, options = {}) {
   const method = String(options.method || 'GET').toUpperCase()
+  if ((method === 'GET' || method === 'HEAD') && options.body !== undefined) {
+    throw new Error('downloadFile does not support request bodies for GET/HEAD requests')
+  }
   const response = await requestBlob(method)(fileUrl, options.body)
-  
   let filename = defaultFilename
   const disposition = response.headers.get('Content-Disposition')
   const dispositionFilename = parseContentDispositionFilename(disposition)

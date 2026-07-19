@@ -88,7 +88,7 @@ describe('RegisterHeaderActionsBar', () => {
     const invoiceMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(invoiceMenu).toBeTruthy()
 
-    const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption] = invoiceMenu.props('options')
+    const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption, do1Option] = invoiceMenu.props('options')
 
     expect(invoiceMenu.props('icon')).toBe('fa-solid fa-file-invoice')
     expect(optionPresentation(invoiceMenu.props('options'))).toEqual([
@@ -113,12 +113,17 @@ describe('RegisterHeaderActionsBar', () => {
         color: 'no-issues'
       },
       {
+        label: 'отчёт ДО1 (все)',
+        icon: 'fa-solid fa-check-to-slot',
+        color: 'not-checked'
+      },
+      {
         label: 'реестр дополнительных изъятий',
         icon: 'fa-solid fa-person-circle-xmark',
         color: 'parcel-has-issues'
       },
       {
-        label: 'тех. документацию (с акцизом)',
+        label: 'тех. документация (с акцизом)',
         icon: 'fa-solid fa-file-image',
         color: 'approved-with-excise'
       }
@@ -157,6 +162,14 @@ describe('RegisterHeaderActionsBar', () => {
       params: { id: baseProps.item.id },
       query: { selection: InvoiceParcelSelection.Ordinal }
     })
+
+    pushMock.mockClear()
+
+    await do1Option.action(baseProps.item)
+    expect(pushMock).toHaveBeenCalledWith({
+      name: 'Настройки формы ДО1',
+      params: { id: baseProps.item.id }
+    })
   })
 
   it('does not navigate when disabled', async () => {
@@ -168,11 +181,44 @@ describe('RegisterHeaderActionsBar', () => {
     const invoiceMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(invoiceMenu).toBeTruthy()
 
-    const [allOption] = invoiceMenu.props('options')
+    const allOption = invoiceMenu.props('options').find(
+      option => option.label === 'инвойс-манифест (все)'
+    )
+    const do1Option = invoiceMenu.props('options').find(
+      option => option.label === 'отчёт ДО1 (все)'
+    )
 
     await allOption.action(baseProps.item)
+    await do1Option.action(baseProps.item)
 
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    CUSTOMS_PROCEDURE_RETURN,
+    CUSTOMS_PROCEDURE_EXPORT,
+    CUSTOMS_PROCEDURE_REEXPORT,
+    CUSTOMS_PROCEDURE_REIMPORT
+  ])('hides ДО1 for non-import procedure %s', (customsProcedureCode) => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        item: { ...baseProps.item, customsProcedureCode }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+    const labels = documentMenu.props('options').map(option => option.label)
+    expect(labels).not.toContain('отчёт ДО1 (все)')
+    expect(labels).toEqual([
+      'инвойс-манифест (все)',
+      'инвойс-манифест (с акцизом)',
+      'инвойс-манифест (с нотификациями)',
+      'инвойс-манифест (без акциза и нотификаций)',
+      'реестр дополнительных изъятий',
+      'тех. документация (с акцизом)'
+    ])
   })
 
   it('emits xml export events when corresponding menu options are used', async () => {
@@ -233,7 +279,7 @@ describe('RegisterHeaderActionsBar', () => {
       (option) => option.label === 'реестр дополнительных изъятий'
     )
     const techdocOption = documentMenu.props('options').find(
-      (option) => option.label === 'тех. документацию (с акцизом)'
+      (option) => option.label === 'тех. документация (с акцизом)'
     )
 
     await additionalRestrictionsOption.action(baseProps.item)
@@ -251,7 +297,7 @@ describe('RegisterHeaderActionsBar', () => {
       (option) => option.label === 'реестр дополнительных изъятий'
     )
     const disabledTechdocOption = disabledDocumentMenu.props('options').find(
-      (option) => option.label === 'тех. документацию (с акцизом)'
+      (option) => option.label === 'тех. документация (с акцизом)'
     )
 
     await disabledAdditionalRestrictionsOption.action(baseProps.item)

@@ -7,7 +7,10 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { isCustomsChargesCalculationProcedure } from '@/helpers/customs.procedure.helpers.js'
+import {
+  isCustomsChargesCalculationProcedure,
+  isImportCustomsProcedure
+} from '@/helpers/customs.procedure.helpers.js'
 const authStore = useAuthStore()
 
 const props = defineProps({
@@ -50,6 +53,61 @@ const canCalculateCustomsCharges = computed(() => {
   return isCustomsChargesCalculationProcedure(props.item?.customsProcedureCode)
 })
 
+const documentOptions = computed(() => {
+  const options = [
+    {
+      label: 'инвойс-манифест (все)',
+      icon: 'fa-solid fa-file-invoice',
+      color: 'not-checked',
+      action: () => openInvoiceSettings(InvoiceParcelSelection.All)
+    },
+    {
+      label: 'инвойс-манифест (с акцизом)',
+      icon: 'fa-solid fa-file-invoice',
+      color: 'approved-with-excise',
+      action: () => openInvoiceSettings(InvoiceParcelSelection.WithExcise)
+    },
+    {
+      label: 'инвойс-манифест (с нотификациями)',
+      icon: 'fa-solid fa-file-invoice',
+      color: 'approved-with-notification',
+      action: () => openInvoiceSettings(InvoiceParcelSelection.WithNotifications)
+    },
+    {
+      label: 'инвойс-манифест (без акциза и нотификаций)',
+      icon: 'fa-solid fa-file-invoice',
+      color: 'no-issues',
+      action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
+    }
+  ]
+
+  if (isImportCustomsProcedure(props.item?.customsProcedureCode)) {
+    options.push({
+      label: 'отчёт ДО1 (все)',
+      icon: 'fa-solid fa-check-to-slot',
+      color: 'not-checked',
+      action: openDo1Settings
+    })
+  }
+
+  options.push(
+    {
+      label: 'реестр дополнительных изъятий',
+      icon: 'fa-solid fa-person-circle-xmark',
+      color: 'parcel-has-issues',
+      action: () => run('download-additional-restrictions')
+    },
+    {
+      label: 'тех. документация (с акцизом)',
+      icon: 'fa-solid fa-file-image',
+      color: 'approved-with-excise',
+      action: () => run('download-techdoc')
+    }
+  )
+
+  return options
+})
+
 function run(evt) {
   if (props.disabled) return
   emit(evt)
@@ -63,6 +121,16 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
     name: 'Настройки инвойса',
     params: { id: registerId },
     query: { selection }
+  })
+}
+
+function openDo1Settings() {
+  if (props.disabled || !isImportCustomsProcedure(props.item?.customsProcedureCode)) return
+  const registerId = props.item?.id
+  if (!registerId) return
+  router.push({
+    name: 'Настройки формы ДО1',
+    params: { id: registerId }
   })
 }
 </script>
@@ -169,44 +237,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
         tooltip-text="Сформировать документы"
         :iconSize="iconSize"
         :disabled="disabled"
-        :options="[
-          {
-            label: 'инвойс-манифест (все)',
-            icon: 'fa-solid fa-file-invoice',
-            color: 'not-checked',
-            action: () => openInvoiceSettings(InvoiceParcelSelection.All)
-          },
-          {
-            label: 'инвойс-манифест (с акцизом)',
-            icon: 'fa-solid fa-file-invoice',
-            color: 'approved-with-excise',
-            action: () => openInvoiceSettings(InvoiceParcelSelection.WithExcise)
-          },
-          {
-            label: 'инвойс-манифест (с нотификациями)',
-            icon: 'fa-solid fa-file-invoice',
-            color: 'approved-with-notification',
-            action: () => openInvoiceSettings(InvoiceParcelSelection.WithNotifications)
-          },
-          {
-            label: 'инвойс-манифест (без акциза и нотификаций)',
-            icon: 'fa-solid fa-file-invoice',
-            color: 'no-issues',
-            action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
-          },
-          {
-            label: 'реестр дополнительных изъятий',
-            icon: 'fa-solid fa-person-circle-xmark',
-            color: 'parcel-has-issues',
-            action: () => run('download-additional-restrictions')
-          },
-          {
-            label: 'тех. документацию (с акцизом)',
-            icon: 'fa-solid fa-file-image',
-            color: 'approved-with-excise',
-            action: () => run('download-techdoc')
-          }
-        ]"
+        :options="documentOptions"
       />
     </div>
     <div class="header-actions header-actions-group">

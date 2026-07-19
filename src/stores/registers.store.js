@@ -579,6 +579,44 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function downloadDo1File(
+    id,
+    invoiceNumber,
+    optionalColumns = InvoiceOptionalColumns.None,
+    applyWeightCorrection = true
+  ) {
+    const allowedOptionalColumns =
+      InvoiceOptionalColumns.BagNumber |
+      InvoiceOptionalColumns.Uin |
+      InvoiceOptionalColumns.Url
+    const sanitizedOptionalColumns = optionalColumns & allowedOptionalColumns
+
+    loading.value = true
+    error.value = null
+    try {
+      const trimmedInvoiceNumber =
+        typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
+      const hasInvoiceNumber =
+        trimmedInvoiceNumber !== null && trimmedInvoiceNumber !== undefined &&
+        String(trimmedInvoiceNumber).length > 0
+      const filename = `ДО1_${hasInvoiceNumber ? trimmedInvoiceNumber : id}.xlsx`
+      return await fetchWrapper.downloadFile(
+        buildInvoiceRequestUrl(
+          id,
+          'download-do1',
+          sanitizedOptionalColumns,
+          applyWeightCorrection
+        ),
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadTechdoc(id, invoiceNumber) {
     loading.value = true
     error.value = null
@@ -801,6 +839,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateNotifications,
     generateOrdinary,
     downloadInvoiceFile,
+    downloadDo1File,
     download,
     downloadTechdoc,
     downloadAdditionalRestrictions,

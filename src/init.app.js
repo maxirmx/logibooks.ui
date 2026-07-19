@@ -79,7 +79,8 @@ import {
   faAnglesUp,
   faPersonWalkingArrowLoopLeft,
   faCalculator,
-  faPassport
+  faPassport,
+  faCheckToSlot
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -151,7 +152,8 @@ library.add(
   faAnglesUp,
   faPersonWalkingArrowLoopLeft,
   faCalculator,
-  faPassport
+  faPassport,
+  faCheckToSlot,
 )
 
 import 'vuetify/styles'

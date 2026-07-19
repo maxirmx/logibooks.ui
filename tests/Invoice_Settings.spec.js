@@ -16,6 +16,7 @@ const loadingRef = ref(false)
 const errorRef = ref(null)
 const getByIdMock = vi.fn(() => Promise.resolve())
 const downloadInvoiceFileMock = vi.fn(() => Promise.resolve())
+const downloadDo1FileMock = vi.fn(() => Promise.resolve())
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -40,7 +41,8 @@ vi.mock('@/stores/registers.store.js', () => ({
     loading: loadingRef,
     error: errorRef,
     getById: getByIdMock,
-    downloadInvoiceFile: downloadInvoiceFileMock
+    downloadInvoiceFile: downloadInvoiceFileMock,
+    downloadDo1File: downloadDo1FileMock
   })
 }))
 
@@ -94,6 +96,8 @@ describe('Invoice_Settings.vue', () => {
     itemRef.value = { id: 77, invoiceNumber: 'INV-77' }
     loadingRef.value = false
     errorRef.value = null
+    downloadInvoiceFileMock.mockResolvedValue(undefined)
+    downloadDo1FileMock.mockResolvedValue(undefined)
   })
 
   it('loads register by id and renders heading', async () => {
@@ -277,5 +281,75 @@ describe('Invoice_Settings.vue', () => {
     await comp.onCancel()
     // Implementation now uses router.go(-1) instead of router.push
     expect(router.go).toHaveBeenCalledWith(-1)
+  })
+
+  it('renders ДО1 settings with fixed hidden selection and only supported columns', async () => {
+    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
+    await resolveAll()
+
+    expect(wrapper.find('h1').text()).toContain('Настройки формы ДО1')
+    expect(wrapper.find('#parcelSelection').exists()).toBe(false)
+    const labels = wrapper.findAll('.optional-columns-row .custom-checkbox-label').map(label => label.text())
+    expect(labels).toEqual(['Номер мешка', 'УИН', 'Ссылка'])
+  })
+
+  it('submits ДО1 with masked optional columns and weight correction', async () => {
+    itemRef.value = {
+      id: 77,
+      invoiceNumber: 'INV-77',
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    }
+    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
+    await resolveAll()
+    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
+    comp.optionalColumns =
+      InvoiceOptionalColumns.BagNumber |
+      InvoiceOptionalColumns.FullName |
+      InvoiceOptionalColumns.PreviousDteg |
+      InvoiceOptionalColumns.Uin |
+      InvoiceOptionalColumns.Url
+    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
+
+    await comp.onSubmit()
+
+    expect(downloadDo1FileMock).toHaveBeenCalledWith(
+      77,
+      'INV-77',
+      InvoiceOptionalColumns.BagNumber |
+        InvoiceOptionalColumns.Uin |
+        InvoiceOptionalColumns.Url,
+      false
+    )
+    expect(downloadInvoiceFileMock).not.toHaveBeenCalled()
+  })
+
+  it('shows ДО1 progress title while file is prepared', async () => {
+    let resolveDownload
+    downloadDo1FileMock.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveDownload = resolve
+    }))
+    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
+    await resolveAll()
+    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
+
+    const submitPromise = comp.onSubmit()
+    await nextTick()
+    expect(comp.actionDialogState.show).toBe(true)
+    expect(comp.actionDialogState.title).toBe('Подготовка файла ДО1')
+
+    resolveDownload()
+    await submitPromise
+  })
+
+  it('shows ДО1-specific fallback error', async () => {
+    downloadDo1FileMock.mockRejectedValueOnce(null)
+    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
+    await resolveAll()
+    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
+
+    await comp.onSubmit()
+
+    expect(comp.alertStore.alert.value.message).toBe('Не удалось сформировать форму ДО1')
   })
 })

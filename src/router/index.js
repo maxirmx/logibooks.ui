@@ -492,6 +492,16 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/register/:id/do1-settings',
+      name: 'Настройки формы ДО1',
+      component: () => import('@/views/Register_InvoiceSettingsView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id),
+        documentType: 'do1'
+      }),
+      meta: { reqLogistOrSrLogist: true, hideSidebar: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),

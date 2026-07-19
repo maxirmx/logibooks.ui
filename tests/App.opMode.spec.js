@@ -55,6 +55,7 @@ const router = createRouter({
     { path: '/keywords', component: { template: '<div>Keywords</div>' } },
     { path: '/feacn/insertitems', component: { template: '<div>FEACN Insert Items</div>' } },
     { path: '/companies', component: { template: '<div>Companies</div>' } },
+    { path: '/customsstations', component: { template: '<div>Customs Stations</div>' } },
     { path: '/airports', component: { template: '<div>Airports</div>' } },
     { path: '/notifications', component: { template: '<div>Notifications</div>' } },
     { path: '/parcelstatuses', component: { template: '<div>Parcel Statuses</div>' } },
@@ -148,6 +149,18 @@ describe('App navigation for registers', () => {
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toBe('/export-fees')
+  })
+
+  it('renders a customs stations reference link', async () => {
+    const wrapper = mountApp()
+    await wrapper.vm.$nextTick()
+
+    const link = wrapper.findAll('a').find((item) =>
+      item.text().includes('Таможенные посты')
+    )
+
+    expect(link).toBeTruthy()
+    expect(link?.attributes('href')).toBe('/customsstations')
   })
 
   it('renders a WD4 scanner guide link in the downloads group', async () => {

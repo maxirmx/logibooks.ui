@@ -199,6 +199,9 @@ function getUserName() {
             <RouterLink to="/companies" class="link">Компании</RouterLink>
           </v-list-item>
           <v-list-item>
+            <RouterLink to="/customsstations" class="link">Таможенные посты</RouterLink>
+          </v-list-item>
+          <v-list-item>
             <RouterLink to="/warehouses" class="link">Склады</RouterLink>
           </v-list-item>
           <v-list-item>

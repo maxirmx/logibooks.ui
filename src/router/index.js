@@ -58,6 +58,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/customsstations',
+      name: 'Таможенные посты',
+      component: () => import('@/views/CustomsStations_View.vue'),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/warehouses',
       name: 'Склады',
       component: () => import('@/views/Warehouses_View.vue'),
@@ -97,6 +103,21 @@ const router = createRouter({
       path: '/company/edit/:id',
       name: 'Изменить информацию о компании',
       component: () => import('@/views/Company_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/customsstation/create',
+      name: 'Регистрация таможенного поста',
+      component: () => import('@/views/CustomsStation_CreateView.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/customsstation/edit/:id',
+      name: 'Изменить информацию о таможенном посте',
+      component: () => import('@/views/CustomsStation_EditView.vue'),
       props: (route) => ({
         id: Number(route.params.id)
       }),

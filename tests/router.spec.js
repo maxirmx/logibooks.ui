@@ -464,6 +464,21 @@ describe('router guards', () => {
     })
   })
 
+  describe('customs station routes', () => {
+    it('exposes the role-protected list and mutation routes', () => {
+      const routes = router.getRoutes()
+      const list = routes.find((route) => route.path === '/customsstations')
+      const create = routes.find((route) => route.path === '/customsstation/create')
+      const edit = routes.find((route) => route.path === '/customsstation/edit/:id')
+
+      expect(list?.name).toBe('Таможенные посты')
+      expect(list?.meta.reqAnyRole).toBe(true)
+      expect(create?.meta.reqAdminOrSrLogist).toBe(true)
+      expect(edit?.meta.reqAdminOrSrLogist).toBe(true)
+      expect(edit?.props.default({ params: { id: '42' } })).toEqual({ id: 42 })
+    })
+  })
+
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {
       authStore.user = null

@@ -205,10 +205,10 @@ describe('RegisterHeaderActionsBar', () => {
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     const cmrOption = documentMenu.props('options').find(
-      option => option.label === 'товарно-транспортная накладная (все)'
+      option => option.label === 'CMR (все)'
     )
     expect(cmrOption).toMatchObject({
-      label: 'товарно-транспортная накладная (все)',
+      label: 'CMR (все)',
       icon: 'fa-solid fa-file-signature',
       color: 'not-checked'
     })
@@ -228,7 +228,7 @@ describe('RegisterHeaderActionsBar', () => {
     })
     const nonAutoMenu = findActionMenuByTooltip(nonAutoWrapper, 'Сформировать документы')
     expect(nonAutoMenu.props('options').map(option => option.label))
-      .not.toContain('товарно-транспортная накладная (все)')
+      .not.toContain('CMR (все)')
   })
 
   it('does not route to CMR settings when the action bar is disabled', async () => {
@@ -243,7 +243,7 @@ describe('RegisterHeaderActionsBar', () => {
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     await documentMenu.props('options').find(
-      option => option.label === 'товарно-транспортная накладная (все)'
+      option => option.label === 'CMR (все)'
     ).action()
     expect(pushMock).not.toHaveBeenCalled()
   })

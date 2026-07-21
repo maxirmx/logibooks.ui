@@ -92,7 +92,7 @@ const documentOptions = computed(() => {
 
   if (Number(props.item?.transportationTypeCode) === 1) {
     options.push({
-      label: 'товарно-транспортная накладная (все)',
+      label: 'CMR (все)',
       icon: 'fa-solid fa-file-signature',
       color: 'not-checked',
       action: openCmrSettings

@@ -29,6 +29,7 @@ const emit = defineEmits([
   'lookup',
   'lookup-ex',
   'check-passports',
+  'finish-passport-check',
   'export-ordinary',
   'export-excise',
   'export-notifications',
@@ -186,14 +187,27 @@ function openCmrSettings() {
         :disabled="disabled"
         @click="run('validate-fc')"
       />
-      <ActionButton
+      <ActionButton2L
         v-if="showPassportCheck"
         :item="item"
         icon="fa-solid fa-passport"
-        tooltip-text="Проверить паспорта"
+        tooltip-text="Проверка паспортов"
         :iconSize="iconSize"
         :disabled="disabled"
-        @click="run('check-passports')"
+        :options="[
+          {
+            label: 'Проверить паспорта',
+            icon: 'fa-solid fa-passport',
+            color: 'not-checked',
+            action: () => run('check-passports')
+          },
+          {
+            label: 'Закончить проверку паспортов',
+            icon: 'fa-solid fa-passport',
+            color: 'parcel-has-issues',
+            action: () => run('finish-passport-check')
+          }
+        ]"
       />
       <ActionButton2L
         :item="item"

@@ -105,6 +105,7 @@ const headerActions = {
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
   calculateCustomsCharges: vi.fn().mockResolvedValue(),
   checkPassports: vi.fn().mockResolvedValue(),
+  finishPassportCheck: vi.fn().mockResolvedValue(),
   cancelValidation: vi.fn(),
 }
 
@@ -361,6 +362,7 @@ const globalStubs = {
       'lookup',
       'lookup-ex',
       'check-passports',
+      'finish-passport-check',
       'export-ordinary',
       'export-excise',
       'export-notifications',
@@ -379,6 +381,7 @@ const globalStubs = {
         <button data-testid="validate-sw-ex" @click="$emit('validate-sw-ex')"></button>
         <button data-testid="validate-fc" @click="$emit('validate-fc')"></button>
         <button v-if="showPassportCheck" data-testid="check-passports" @click="$emit('check-passports')"></button>
+        <button v-if="showPassportCheck" data-testid="finish-passport-check" @click="$emit('finish-passport-check')"></button>
         <button data-testid="lookup" @click="$emit('lookup')"></button>
         <button data-testid="lookup-ex" @click="$emit('lookup-ex')"></button>
         <button data-testid="export-ordinary" @click="$emit('export-ordinary')"></button>
@@ -717,6 +720,8 @@ describe('WbrNParcels_List.vue', () => {
 
     await wrapper.get('[data-testid="check-passports"]').trigger('click')
     expect(headerActions.checkPassports).toHaveBeenCalled()
+    await wrapper.get('[data-testid="finish-passport-check"]').trigger('click')
+    expect(headerActions.finishPassportCheck).toHaveBeenCalled()
 
     await wrapper.get('[data-testid="update-passport-check-status"]').trigger('click')
     expect(parcelsPassportCheckStatus.value).toBe(30)
@@ -730,6 +735,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
     expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="finish-passport-check"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
     expect(parcelMultiSelectOptions.getBaseRowClass({
       item: { ...sampleParcel, passportCheckStatus: 10 }

@@ -12,6 +12,7 @@ export const ACTION_DIALOG_TITLES = {
   'freeze-check-status': 'Применение запретов',
   'freeze-tnved-order': 'Сортировка',
   'check-passports': 'Проверка паспортов',
+  'finish-passport-check': 'Завершение проверки паспортов',
   'calculate-customs-charges': 'Расчёт сборов и пошлин',
 }
 

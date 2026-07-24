@@ -56,6 +56,7 @@ function createRegisterHeaderActionsMock() {
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     checkPassports: vi.fn().mockResolvedValue(),
+    finishPassportCheck: vi.fn().mockResolvedValue(),
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
@@ -514,6 +515,11 @@ describe.each([
     expect(passportAction).toBeTruthy()
 
     await passportAction.trigger('click')
+    const startPassportCheck = wrapper.findAll('.action-button-2l__menu-item').find(
+      (button) => button.text() === 'Проверить паспорта'
+    )
+    expect(startPassportCheck).toBeTruthy()
+    await startPassportCheck.trigger('click')
     expect(registerHeaderActionsMock.checkPassports).toHaveBeenCalledTimes(1)
 
     const filterSelectors = wrapper.findComponent({ name: 'ParcelFilterSelectors' })

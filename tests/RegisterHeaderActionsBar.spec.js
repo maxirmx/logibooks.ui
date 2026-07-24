@@ -406,19 +406,34 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('lookup-ex')).toHaveLength(1)
   })
 
-  it('shows passport check action for SrLogistPlus when enabled and emits event', () => {
+  it('shows passport workflow menu for SrLogistPlus and emits both actions', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, showPassportCheck: true },
       global: { stubs: vuetifyStubs }
     })
 
-    const passportButton = findActionButtonByTooltip(wrapper, 'Проверить паспорта')
+    const passportMenu = findActionMenuByTooltip(wrapper, 'Проверка паспортов')
 
-    expect(passportButton).toBeTruthy()
-    expect(passportButton.props('icon')).toBe('fa-solid fa-passport')
+    expect(passportMenu).toBeTruthy()
+    expect(passportMenu.props('icon')).toBe('fa-solid fa-passport')
+    expect(optionPresentation(passportMenu.props('options'))).toEqual([
+      {
+        label: 'Проверить паспорта',
+        icon: 'fa-solid fa-passport',
+        color: 'not-checked'
+      },
+      {
+        label: 'Закончить проверку паспортов',
+        icon: 'fa-solid fa-passport',
+        color: 'parcel-has-issues'
+      }
+    ])
 
-    passportButton.vm.$emit('click')
+    const [startOption, finishOption] = passportMenu.props('options')
+    await startOption.action()
+    await finishOption.action()
     expect(wrapper.emitted('check-passports')).toHaveLength(1)
+    expect(wrapper.emitted('finish-passport-check')).toHaveLength(1)
   })
 
   it('hides passport check action when disabled by procedure or role', () => {
@@ -427,7 +442,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
 
-    expect(findActionButtonByTooltip(wrapper, 'Проверить паспорта')).toBeUndefined()
+    expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов')).toBeUndefined()
     wrapper.unmount()
 
     authRefs.isSrLogistPlus.value = false
@@ -436,7 +451,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
 
-    expect(findActionButtonByTooltip(wrapper, 'Проверить паспорта')).toBeUndefined()
+    expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов')).toBeUndefined()
   })
 
   it('emits custom charges calculation and parcel status bulk-change actions in order', async () => {

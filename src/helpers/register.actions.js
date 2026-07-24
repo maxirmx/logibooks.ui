@@ -267,6 +267,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.checkPassports(item.id)
   }
 
+  async function finishPassportCheck(item) {
+    await registersStore.finishPassportCheck(item.id)
+  }
+
   async function calculateCustomsCharges(item) {
     try {
       await registersStore.calculateCustomsCharges(item.id)
@@ -312,6 +316,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     downloadTechdoc,
     freezeCheckStatus,
     checkPassports,
+    finishPassportCheck,
     freezeTnVedOrder,
     calculateCustomsCharges,
     cancelValidation: cancelValidationWrapper,
@@ -344,6 +349,7 @@ export function useRegisterHeaderActions({
     downloadTechdoc,
     freezeCheckStatus,
     checkPassports,
+    finishPassportCheck,
     freezeTnVedOrder,
     cancelValidation,
     stopPolling
@@ -356,6 +362,7 @@ export function useRegisterHeaderActions({
   const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
   const confirm = useConfirm()
   const weightCorrectionChoicePending = ref(false)
+  const passportFinishConfirmationPending = ref(false)
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -373,7 +380,8 @@ export function useRegisterHeaderActions({
     runningActionRef.value ||
     validationState.show ||
     actionDialogState.show ||
-    weightCorrectionChoicePending.value
+    weightCorrectionChoicePending.value ||
+    passportFinishConfirmationPending.value
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -507,11 +515,47 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
   }
 
-  const runCheckPassports = async () => {
-    await runActionWithDialog(checkPassports, 'check-passports')
+  async function refreshPassportCheckData(register) {
+    await registersStore.getById(register.id)
     if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
       await loadParcels()
     }
+  }
+
+  async function checkPassportsForCurrentRegister(register) {
+    await checkPassports(register)
+    await refreshPassportCheckData(register)
+  }
+
+  async function finishPassportCheckForCurrentRegister(register) {
+    await finishPassportCheck(register)
+    await refreshPassportCheckData(register)
+  }
+
+  const runCheckPassports = async () => {
+    await runActionWithDialog(checkPassportsForCurrentRegister, 'check-passports')
+  }
+
+  const runFinishPassportCheck = async () => {
+    if (generalActionsDisabled.value) return
+
+    passportFinishConfirmationPending.value = true
+    let confirmed
+    try {
+      confirmed = await confirm({
+        title: 'Завершение проверки паспортов',
+        confirmationText: 'Завершить',
+        cancellationText: 'Отмена',
+        confirmationButtonProps: { color: 'orange-darken-3' },
+        dialogProps: { width: '40%', minWidth: '320px' },
+        content: 'Из таможенного оформления будут исключены все посылки, у которых статус паспорта получателя отличен от "Проверен". Запрет будет включать все посылки с незавершённой проверкой паспорта. Продолжить?'
+      })
+    } finally {
+      passportFinishConfirmationPending.value = false
+    }
+
+    if (!confirmed) return
+    await runActionWithDialog(finishPassportCheckForCurrentRegister, 'finish-passport-check')
   }
 
   async function calculateCustomsChargesForCurrentRegister(register) {
@@ -549,6 +593,7 @@ export function useRegisterHeaderActions({
     stopPolling()
     hideActionDialog()
     weightCorrectionChoicePending.value = false
+    passportFinishConfirmationPending.value = false
   }
 
   return {
@@ -569,6 +614,7 @@ export function useRegisterHeaderActions({
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     checkPassports: runCheckPassports,
+    finishPassportCheck: runFinishPassportCheck,
     freezeTnVedOrder: runFreezeTnVedOrder,
     calculateCustomsCharges: runcalculateCustomsCharges,
     cancelValidation,

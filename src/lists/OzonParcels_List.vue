@@ -123,7 +123,10 @@ const {
   selectedParcelId,
   page: parcels_page,
   dataTableRef,
-  getBaseRowClass: (data) => getRowPropsForParcel(data).class,
+  getBaseRowClass: (data) => getRowPropsForParcel(
+    data,
+    showPassportVerification.value ? passportCheckStatuses.value : []
+  ).class,
   onContextMenu: () => { showAssignTnvedDialog.value = true },
 })
 

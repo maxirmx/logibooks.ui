@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createPassportCheckStatusOptions,
   getPassportCheckStatusPresentation,
+  hasPassportCheckIssues,
   PassportCheckStatusCode,
   PassportCheckStatusFilterValue,
   PassportCheckStatusPresentation,
@@ -74,6 +75,27 @@ describe('passport check status helpers', () => {
     expect(resolvePassportCheckStatus(statuses, '30')).toEqual(statuses[1])
     expect(resolvePassportCheckStatus(statuses, 'missing')).toBeNull()
     expect(resolvePassportCheckStatus(null, 30)).toBeNull()
+  })
+
+  it('identifies passport check issue statuses using backend-defined values', () => {
+    const statuses = [
+      { value: 5, code: PassportCheckStatusCode.NotChecked },
+      { value: 10, code: PassportCheckStatusCode.CheckError },
+      { value: 20, code: PassportCheckStatusCode.InProgress },
+      { value: 30, code: PassportCheckStatusCode.Checked },
+      { value: 40, code: PassportCheckStatusCode.NotExists },
+      { value: 50, code: PassportCheckStatusCode.Invalid }
+    ]
+
+    expect(hasPassportCheckIssues(statuses, 10)).toBe(true)
+    expect(hasPassportCheckIssues(statuses, '40')).toBe(true)
+    expect(hasPassportCheckIssues(statuses, 50)).toBe(true)
+    expect(hasPassportCheckIssues(statuses, 5)).toBe(false)
+    expect(hasPassportCheckIssues(statuses, 20)).toBe(false)
+    expect(hasPassportCheckIssues(statuses, 30)).toBe(false)
+    expect(hasPassportCheckIssues(statuses, 999)).toBe(false)
+    expect(hasPassportCheckIssues([], 10)).toBe(false)
+    expect(hasPassportCheckIssues(null, 10)).toBe(false)
   })
 
   it('builds selector options from backend localized names', () => {

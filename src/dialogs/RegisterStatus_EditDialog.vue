@@ -239,7 +239,7 @@ function onSubmit(values, { setErrors }) {
             :value="true"
             :unchecked-value="false"
           />
-          <label for="readOnly" aria-label="Изменения запрещены"></label>
+          <label for="readOnly" aria-hidden="true"></label>
         </div>
       </div>
 

@@ -177,6 +177,32 @@ describe('Parcels_View', () => {
     }
   })
 
+  it('refreshes register passport state together with visible parcels on resync', async () => {
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    const { useRegistersStore } = await import('@/stores/registers.store.js')
+    const parcelsStore = useParcelsStore()
+    const registersStore = useRegistersStore()
+    const response = { items: [{ id: 101 }], pagination: { totalCount: 1 } }
+    const getParcels = vi.spyOn(parcelsStore, 'getAll').mockResolvedValue(response)
+    const updateItems = vi.spyOn(parcelsStore, 'updateItems')
+    const getRegister = vi.spyOn(registersStore, 'getById').mockResolvedValue()
+    mockGet.mockResolvedValue({
+      registerType: WBR_COMPANY_ID,
+      customsProcedureCode: 40
+    })
+
+    const wrapper = mount(ParcelsView, {
+      props: { id: 18, mode: OP_MODE_PAPERWORK }
+    })
+    await flushPromises()
+    await subscriptionOptions[0].refresh()
+
+    expect(getParcels).toHaveBeenCalledWith(18, { updateStore: false })
+    expect(updateItems).toHaveBeenCalledWith(response)
+    expect(getRegister).toHaveBeenCalledWith(18)
+    wrapper.unmount()
+  })
+
   it('renders WbrParcels_List when register has WBR registerType', async () => {
     mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
     

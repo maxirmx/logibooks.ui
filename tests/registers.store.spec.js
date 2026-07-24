@@ -1185,6 +1185,55 @@ describe('registers store', () => {
       expect(store.items[1].hasPendingPassportChecks).toBe(false)
     })
 
+    it('rejects invalid passport state and accepts it after live state is reset', () => {
+      const store = useRegistersStore()
+
+      expect(store.applyPassportCheckState(0, {
+        hasPendingPassportChecks: true,
+        revision: 1
+      })).toBe(false)
+      expect(store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: true,
+        revision: 10
+      })).toBe(true)
+
+      store.resetLivePassportCheckStates()
+
+      expect(store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: false,
+        revision: 9
+      })).toBe(true)
+    })
+
+    it('preserves hub passport state in a legacy array register response', async () => {
+      fetchWrapper.get.mockResolvedValueOnce({
+        customsProcedures: [],
+        transportationTypes: []
+      })
+      const store = useRegistersStore()
+      await store.getOps()
+
+      let resolveRequest
+      fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => {
+        resolveRequest = resolve
+      }))
+
+      const request = store.getRegisters()
+      store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: true,
+        revision: 12
+      })
+      resolveRequest([{
+        id: 42,
+        hasPendingPassportChecks: false
+      }])
+
+      await expect(request).resolves.toMatchObject([{
+        id: 42,
+        hasPendingPassportChecks: true
+      }])
+    })
+
     it('preserves hub passport state that arrives during a register REST request', async () => {
       fetchWrapper.get.mockResolvedValueOnce({
         customsProcedures: [],

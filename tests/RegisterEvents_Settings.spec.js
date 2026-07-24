@@ -21,9 +21,20 @@ if (!global.ResizeObserver) {
 }
 
 const mockEvents = ref([
-  { id: 1, eventId: 'Created', eventName: 'Создана', registerStatusId: null },
-  { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
+  { id: 1001, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 1, registerStatusId: null },
+  { id: 2001, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 1, registerStatusId: 3 },
+  { id: 1, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 10, registerStatusId: null },
+  { id: 2, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 10, registerStatusId: 3 }
 ])
+const mockRegisterOps = ref({
+  customsProcedures: [
+    { value: 1, charCode: '01', name: 'Возврат' },
+    { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
+    { value: 31, charCode: 'ЭК 31', name: 'Реэкспорт' },
+    { value: 40, charCode: 'ИМ 40', name: 'Импорт' },
+    { value: 60, charCode: 'ИМ 60', name: 'Реимпорт' }
+  ]
+})
 
 const mockStatuses = ref([
   { id: 1, title: 'Новый', icon: 'svg:registered', bkColor: '#FFEEDD', fgColor: '#111111' },
@@ -31,6 +42,7 @@ const mockStatuses = ref([
 ])
 
 const ensureLoaded = vi.hoisted(() => vi.fn())
+const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
@@ -53,6 +65,13 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     registerStatuses: mockStatuses,
     ensureLoaded
+  })
+}))
+
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: () => ({
+    ops: mockRegisterOps,
+    ensureOpsLoaded
   })
 }))
 
@@ -90,6 +109,21 @@ const mountComponent = () =>
           template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
           props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
         },
+        'v-select': {
+          name: 'v-select',
+          props: ['modelValue', 'items', 'label', 'variant', 'hideDetails', 'loading', 'disabled'],
+          emits: ['update:modelValue'],
+          template: `
+            <select
+              v-bind="$attrs"
+              :value="modelValue"
+              :disabled="disabled"
+              @change="$emit('update:modelValue', Number($event.target.value))"
+            >
+              <option v-for="item in items" :key="item.value" :value="item.value">{{ item.title }}</option>
+            </select>
+          `
+        },
         RegisterStatusSelect: {
           name: 'RegisterStatusSelect',
           inheritAttrs: false,
@@ -114,14 +148,18 @@ describe('RegisterEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
-      { id: 1, eventId: 'Created', eventName: 'Создана', registerStatusId: null },
-      { id: 2, eventId: 'Processing', eventName: 'В обработке', registerStatusId: 3 }
+      { id: 1001, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 1, registerStatusId: null },
+      { id: 2001, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 1, registerStatusId: 3 },
+      { id: 1, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 10, registerStatusId: null },
+      { id: 2, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 10, registerStatusId: 3 }
     ]
     mockStatuses.value = [
       { id: 1, title: 'Новый', icon: 'svg:registered', bkColor: '#FFEEDD', fgColor: '#111111' },
       { id: 3, title: 'В пути', icon: 'svg:in-transit', bkColor: '#DDEEFF', fgColor: '#222222' }
     ]
+    mockAuthStore.registerevents_page.value = 1
     ensureLoaded.mockResolvedValue()
+    ensureOpsLoaded.mockResolvedValue()
     getAll.mockImplementation(async () => {
       mockEvents.value = [...mockEvents.value]
     })
@@ -133,13 +171,24 @@ describe('RegisterEvents_Settings.vue', () => {
     await resolveAll()
 
     expect(ensureLoaded).toHaveBeenCalled()
+    expect(ensureOpsLoaded).toHaveBeenCalled()
     expect(getAll).toHaveBeenCalled()
+
+    const procedureSelect = wrapper.find('[data-testid="customs-procedure-select"]')
+    expect(procedureSelect.element.value).toBe('1')
+    expect(procedureSelect.findAll('option').map((option) => option.text())).toEqual([
+      '01 Возврат',
+      'ЭК 10 Экспорт',
+      'ЭК 31 Реэкспорт',
+      'ИМ 40 Импорт',
+      'ИМ 60 Реимпорт'
+    ])
 
     const selects = wrapper.findAll('select[id^="status-select-"]')
     expect(selects.length).toBe(2)
-    expect(wrapper.find('[data-testid="register-event-row-1"]').text()).toBe('Создана')
+    expect(wrapper.find('[data-testid="register-event-row-1001"]').text()).toBe('Создана')
 
-    const options = wrapper.find('#status-select-1').findAll('option')
+    const options = wrapper.find('#status-select-1001').findAll('option')
     const optionTexts = options.map((o) => o.text())
     expect(optionTexts).toContain('Новый')
     expect(optionTexts).toContain('В пути')
@@ -155,13 +204,46 @@ describe('RegisterEvents_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    const select = wrapper.find('#status-select-1')
+    const select = wrapper.find('#status-select-1001')
     await select.setValue('1')
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
-      { id: 1, registerStatusId: 1 },
+      { id: 1001, registerStatusId: 1 },
+      { id: 2001, registerStatusId: 3 },
+      { id: 1, registerStatusId: null },
+      { id: 2, registerStatusId: 3 }
+    ])
+  })
+
+  it('switches procedure and resets pagination while retaining selections', async () => {
+    mockAuthStore.registerevents_page.value = 3
+    const wrapper = mountComponent()
+    await resolveAll()
+
+    await wrapper.find('#status-select-1001').setValue('1')
+    mockAuthStore.registerevents_page.value = 4
+    await wrapper.find('[data-testid="customs-procedure-select"]').setValue('10')
+    await resolveAll()
+
+    expect(mockAuthStore.registerevents_page.value).toBe(1)
+    expect(wrapper.find('[data-testid="register-event-row-1"]').text()).toBe('Создана')
+    await wrapper.find('[data-testid="customs-procedure-select"]').setValue('1')
+    await resolveAll()
+    expect(wrapper.find('#status-select-1001').element.value).toBe('1')
+  })
+
+  it('saves all procedure variants, not only the visible procedure', async () => {
+    const wrapper = mountComponent()
+    await resolveAll()
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
+    await resolveAll()
+
+    expect(updateMany).toHaveBeenCalledWith([
+      { id: 1001, registerStatusId: null },
+      { id: 2001, registerStatusId: 3 },
+      { id: 1, registerStatusId: null },
       { id: 2, registerStatusId: 3 }
     ])
   })
@@ -182,14 +264,14 @@ describe('RegisterEvents_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    const select1 = wrapper.find('#status-select-1')
+    const select1 = wrapper.find('#status-select-1001')
     expect(select1.exists()).toBe(true)
     expect(select1.element.value).toBe('0')
 
     const optionTexts1 = select1.findAll('option').map(o => o.text())
     expect(optionTexts1).toContain('Не менять')
 
-    const select2 = wrapper.find('#status-select-2')
+    const select2 = wrapper.find('#status-select-2001')
     expect(select2.exists()).toBe(true)
     expect(select2.element.value).toBe('3')
     await select2.setValue('')
@@ -198,8 +280,10 @@ describe('RegisterEvents_Settings.vue', () => {
     await resolveAll()
 
     expect(updateMany).toHaveBeenCalledWith([
+      { id: 1001, registerStatusId: null },
+      { id: 2001, registerStatusId: 0 },
       { id: 1, registerStatusId: null },
-      { id: 2, registerStatusId: 0 }
+      { id: 2, registerStatusId: 3 }
     ])
   })
 })

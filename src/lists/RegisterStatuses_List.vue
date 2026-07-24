@@ -44,7 +44,8 @@ function filterRegisterStatuses(value, query, item) {
 const headers = [
   ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
-  { title: 'Название статуса', key: 'title', sortable: true }
+  { title: 'Название статуса', key: 'title', sortable: true },
+  { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
 ]
 
 function openEditDialog(item) {
@@ -184,6 +185,10 @@ defineExpose({
           >
             <RegisterStatusIcon :status="item" />
           </button>
+        </template>
+
+        <template v-slot:[`item.readOnly`]="{ item }">
+          <span class="register-status-read-only">{{ item.readOnly ? 'Да' : 'Нет' }}</span>
         </template>
       </v-data-table>
     </v-card>

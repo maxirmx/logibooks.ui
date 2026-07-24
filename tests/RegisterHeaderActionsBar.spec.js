@@ -436,6 +436,25 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('finish-passport-check')).toHaveLength(1)
   })
 
+  it('highlights the passport action only while passport checks are pending', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        showPassportCheck: true,
+        item: { ...baseProps.item, hasPendingPassportChecks: false }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов').props('variant')).toBe('default')
+
+    await wrapper.setProps({
+      item: { ...baseProps.item, hasPendingPassportChecks: true }
+    })
+
+    expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов').props('variant')).toBe('blue')
+  })
+
   it('hides passport check action when disabled by procedure or role', () => {
     let wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, showPassportCheck: false },

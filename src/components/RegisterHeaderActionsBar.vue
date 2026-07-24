@@ -193,6 +193,7 @@ function openCmrSettings() {
         icon="fa-solid fa-passport"
         tooltip-text="Проверка паспортов"
         :iconSize="iconSize"
+        :variant="item?.hasPendingPassportChecks ? 'blue' : 'default'"
         :disabled="disabled"
         :options="[
           {

@@ -42,6 +42,7 @@ describe('useRegisterHeaderActions', () => {
         id: 1,
         invoiceNumber: 'INV-1',
         fileName: 'register.xlsx',
+        hasPendingPassportChecks: true,
         loading: false,
         error: null
       }),
@@ -510,7 +511,7 @@ describe('useRegisterHeaderActions', () => {
       title: 'Завершение проверки паспортов',
       confirmationText: 'Завершить',
       cancellationText: 'Отмена',
-      content: 'Из таможенного оформления будут исключены все посылки, у которых статус паспорта получателя отличен от "Проверен". Запрет будет включать все посылки с незавершённой проверкой паспорта. Продолжить?'
+      content: 'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
     }))
     expect(actions.actionDialog.show).toBe(true)
     expect(actions.actionDialog.title).toBe('Завершение проверки паспортов')
@@ -542,6 +543,26 @@ describe('useRegisterHeaderActions', () => {
     expect(registersStore.getById).not.toHaveBeenCalled()
     expect(loadParcels).not.toHaveBeenCalled()
     expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('finishes passport checks without confirmation when none are pending', async () => {
+    registersStore.item.hasPendingPassportChecks = false
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.finishPassportCheck()
+
+    expect(confirmMock).not.toHaveBeenCalled()
+    expect(registersStore.finishPassportCheck).toHaveBeenCalledWith(1)
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledTimes(1)
   })
 
   it('locks other header actions while finish confirmation is pending', async () => {

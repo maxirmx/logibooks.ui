@@ -241,6 +241,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(checkbox.classes()).toContain('checkbox-styled')
       expect(wrapper.get('.status-settings-label[for="readOnly"]').text()).toBe('Изменения запрещены:')
       expect(wrapper.get('.checkbox-styled + label').attributes('aria-hidden')).toBe('true')
+    })
 
     it('renders current icon and color values in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {

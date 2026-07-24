@@ -33,9 +33,63 @@ export const useRegistersStore = defineStore('registers', () => {
   })
   const opsLoading = ref(false)
   const opsError = ref(null)
+  const livePassportCheckStateByRegisterId = new Map()
+  let livePassportCheckStateArrival = 0
 
   let opsInitialized = false
   let opsPromise = null
+
+  function mergeLivePassportCheckState(register, requestWatermark) {
+    const registerId = Number(register?.id)
+    const state = livePassportCheckStateByRegisterId.get(registerId)
+    if (!state || state.arrival <= requestWatermark) return register
+
+    return {
+      ...register,
+      hasPendingPassportChecks: state.hasPendingPassportChecks
+    }
+  }
+
+  function resetLivePassportCheckStates() {
+    livePassportCheckStateByRegisterId.clear()
+  }
+
+  function applyPassportCheckState(registerId, state) {
+    const normalizedRegisterId = Number(registerId)
+    const revision = Number(state?.revision)
+    if (!Number.isInteger(normalizedRegisterId) || normalizedRegisterId <= 0 ||
+        typeof state?.hasPendingPassportChecks !== 'boolean' ||
+        !Number.isSafeInteger(revision) || revision <= 0) {
+      return false
+    }
+
+    const previous = livePassportCheckStateByRegisterId.get(normalizedRegisterId)
+    if (previous && previous.revision >= revision) return false
+
+    const normalized = {
+      hasPendingPassportChecks: state.hasPendingPassportChecks,
+      revision,
+      arrival: ++livePassportCheckStateArrival
+    }
+    livePassportCheckStateByRegisterId.set(normalizedRegisterId, normalized)
+
+    if (Number(item.value?.id) === normalizedRegisterId) {
+      item.value = {
+        ...item.value,
+        hasPendingPassportChecks: normalized.hasPendingPassportChecks
+      }
+    }
+
+    const itemIndex = items.value.findIndex(register => Number(register?.id) === normalizedRegisterId)
+    if (itemIndex !== -1) {
+      items.value[itemIndex] = {
+        ...items.value[itemIndex],
+        hasPendingPassportChecks: normalized.hasPendingPassportChecks
+      }
+    }
+
+    return true
+  }
 
   function getOpsLabel(list, value) {
     const num = Number(value)
@@ -145,6 +199,7 @@ export const useRegistersStore = defineStore('registers', () => {
     parcelSelectionMode,
     parcelStatusId
   } = {}) {
+    const passportCheckStateWatermark = livePassportCheckStateArrival
     loading.value = true
     error.value = null
     try {
@@ -177,9 +232,17 @@ export const useRegistersStore = defineStore('registers', () => {
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
       if (Array.isArray(response)) {
-        response.forEach(setDestinationField)
+        response.forEach((register, index) => {
+          const merged = mergeLivePassportCheckState(register, passportCheckStateWatermark)
+          setDestinationField(merged)
+          response[index] = merged
+        })
       } else if (Array.isArray(response?.items)) {
-        response.items.forEach(setDestinationField)
+        response.items = response.items.map(register => {
+          const merged = mergeLivePassportCheckState(register, passportCheckStateWatermark)
+          setDestinationField(merged)
+          return merged
+        })
       }
       return response
     } catch (err) {
@@ -252,10 +315,12 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function getById(id) {
+    const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }
     try {
       await ensureOpsLoaded()
-      item.value = await fetchWrapper.get(`${baseUrl}/${id}`)
+      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
+      item.value = mergeLivePassportCheckState(response, passportCheckStateWatermark)
       setDestinationField(item.value)
     } catch (err) {
       item.value = { error: err }
@@ -895,6 +960,8 @@ export const useRegistersStore = defineStore('registers', () => {
     ensureOpsLoaded,
     getOpsLabel,
     getTransportationDocument,
-    isExportProcedure
+    isExportProcedure,
+    applyPassportCheckState,
+    resetLivePassportCheckStates
   }
 })

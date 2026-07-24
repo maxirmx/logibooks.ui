@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useParcelChecksStore } from '@/stores/parcel.checks.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 
 const signalRState = vi.hoisted(() => ({
   connections: [],
@@ -76,6 +77,8 @@ describe('parcel checks subscription store', () => {
   it('subscribes to a register, applies updates, and clears the connection', async () => {
     const parcelsStore = useParcelsStore()
     parcelsStore.items = [{ id: 12, registerId: 7, passportCheckStatus: 0 }]
+    const registersStore = useRegistersStore()
+    registersStore.item = { id: 7, hasPendingPassportChecks: false }
     const onUpdates = vi.fn()
     const onResync = vi.fn()
     const store = useParcelChecksStore()
@@ -93,14 +96,25 @@ describe('parcel checks subscription store', () => {
 
     connection.handlers.ParcelCheckStatusesChanged({
       registerId: 7,
-      updates: [{ parcelId: 12, checkCode: 'passport', status: 30, revision: 1 }]
+      updates: [{ parcelId: 12, checkCode: 'passport', status: 30, revision: 1 }],
+      passportCheckState: { hasPendingPassportChecks: true, revision: 10 }
     })
     connection.handlers.ParcelCheckStatusesChanged({
       registerId: 7,
-      updates: [{ parcelId: 12, checkCode: 'passport', status: 10, revision: 1 }]
+      updates: [{ parcelId: 12, checkCode: 'passport', status: 10, revision: 1 }],
+      passportCheckState: { hasPendingPassportChecks: false, revision: 10 }
     })
 
     expect(parcelsStore.items[0].passportCheckStatus).toBe(30)
+    expect(registersStore.item.hasPendingPassportChecks).toBe(true)
+    expect(onUpdates).toHaveBeenCalledTimes(1)
+
+    connection.handlers.ParcelCheckStatusesChanged({
+      registerId: 7,
+      updates: [],
+      passportCheckState: { hasPendingPassportChecks: false, revision: 11 }
+    })
+    expect(registersStore.item.hasPendingPassportChecks).toBe(false)
     expect(onUpdates).toHaveBeenCalledTimes(1)
 
     expect(await store.stop()).toBe(true)

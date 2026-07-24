@@ -1151,6 +1151,67 @@ describe('registers store', () => {
   })
 
   describe('passport check API', () => {
+    it('applies register passport state in revision order', () => {
+      const store = useRegistersStore()
+      store.item = { id: 42, hasPendingPassportChecks: false }
+      store.items = [
+        { id: 42, hasPendingPassportChecks: false },
+        { id: 43, hasPendingPassportChecks: false }
+      ]
+
+      expect(store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: true,
+        revision: 10
+      })).toBe(true)
+      expect(store.item.hasPendingPassportChecks).toBe(true)
+      expect(store.items[0].hasPendingPassportChecks).toBe(true)
+
+      expect(store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: false,
+        revision: 9
+      })).toBe(false)
+      expect(store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: false,
+        revision: 10
+      })).toBe(false)
+      expect(store.item.hasPendingPassportChecks).toBe(true)
+
+      expect(store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: false,
+        revision: 11
+      })).toBe(true)
+      expect(store.item.hasPendingPassportChecks).toBe(false)
+      expect(store.items[0].hasPendingPassportChecks).toBe(false)
+      expect(store.items[1].hasPendingPassportChecks).toBe(false)
+    })
+
+    it('preserves hub passport state that arrives during a register REST request', async () => {
+      fetchWrapper.get.mockResolvedValueOnce({
+        customsProcedures: [],
+        transportationTypes: []
+      })
+      const store = useRegistersStore()
+      await store.getOps()
+
+      let resolveRequest
+      fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => {
+        resolveRequest = resolve
+      }))
+
+      const request = store.getById(42)
+      store.applyPassportCheckState(42, {
+        hasPendingPassportChecks: true,
+        revision: 12
+      })
+      resolveRequest({
+        id: 42,
+        hasPendingPassportChecks: false
+      })
+      await request
+
+      expect(store.item.hasPendingPassportChecks).toBe(true)
+    })
+
     it('posts register passport check request to the dedicated endpoint', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 

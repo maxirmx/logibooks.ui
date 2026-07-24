@@ -8,6 +8,7 @@ import * as signalR from '@microsoft/signalr'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 
 const parcelChecksHubUrl = `${apiUrl.replace(/\/api\/?$/i, '')}/hubs/parcel-checks`
 
@@ -28,6 +29,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
   function handleStatusesChanged(change) {
     if (Number(change?.registerId) !== currentRegisterId) return
 
+    useRegistersStore().applyPassportCheckState(change.registerId, change.passportCheckState)
     const accepted = useParcelsStore().applyParcelCheckStatusChanges(change)
     if (accepted.length > 0) {
       updatesHandler?.(change, accepted)
@@ -38,6 +40,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     if (version !== lifecycleVersion || activeConnection !== connection || currentRegisterId == null) return
 
     useParcelsStore().resetLiveParcelCheckStatuses()
+    useRegistersStore().resetLivePassportCheckStates()
     try {
       await resyncHandler?.()
     } catch (err) {
@@ -106,6 +109,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     resyncHandler = onResync
     error.value = null
     useParcelsStore().resetLiveParcelCheckStatuses()
+    useRegistersStore().resetLivePassportCheckStates()
 
     const activeConnection = ensureConnection()
     try {
@@ -129,6 +133,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     updatesHandler = null
     resyncHandler = null
     useParcelsStore().resetLiveParcelCheckStatuses()
+    useRegistersStore().resetLivePassportCheckStates()
 
     if (!connection) return false
 

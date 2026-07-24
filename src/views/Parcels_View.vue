@@ -21,6 +21,7 @@ import { apiUrl } from '@/helpers/config.js'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelCheckStatusSubscription } from '@/composables/useParcelCheckStatusSubscription.js'
 
 const props = defineProps({
@@ -30,6 +31,7 @@ const props = defineProps({
 const router = useRouter()
 const authStore = useAuthStore()
 const parcelsStore = useParcelsStore()
+const registersStore = useRegistersStore()
 
 const register = ref(null)
 const loading = ref(true)
@@ -49,6 +51,13 @@ let lastFilteredRefreshAt = 0
 async function refreshVisibleParcels() {
   const response = await parcelsStore.getAll(props.id, { updateStore: false })
   parcelsStore.updateItems(response)
+}
+
+async function refreshPassportCheckStateAndVisibleParcels() {
+  await Promise.all([
+    refreshVisibleParcels(),
+    registersStore.getById(props.id)
+  ])
 }
 
 function scheduleFilteredRefresh() {
@@ -77,7 +86,7 @@ function scheduleFilteredRefresh() {
 useParcelCheckStatusSubscription({
   registerId: computed(() => props.id),
   enabled: passportSubscriptionEnabled,
-  refresh: refreshVisibleParcels,
+  refresh: refreshPassportCheckStateAndVisibleParcels,
   onUpdates: (_change, accepted) => {
     const passportFilter = authStore.parcels_passport_check_status
     if (passportFilter !== null && passportFilter !== undefined &&

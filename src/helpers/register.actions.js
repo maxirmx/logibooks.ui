@@ -539,22 +539,24 @@ export function useRegisterHeaderActions({
   const runFinishPassportCheck = async () => {
     if (generalActionsDisabled.value) return
 
-    passportFinishConfirmationPending.value = true
-    let confirmed
-    try {
-      confirmed = await confirm({
-        title: 'Завершение проверки паспортов',
-        confirmationText: 'Завершить',
-        cancellationText: 'Отмена',
-        confirmationButtonProps: { color: 'orange-darken-3' },
-        dialogProps: { width: '40%', minWidth: '320px' },
-        content: 'Из таможенного оформления будут исключены все посылки, у которых статус паспорта получателя отличен от "Проверен". Запрет будет включать все посылки с незавершённой проверкой паспорта. Продолжить?'
-      })
-    } finally {
-      passportFinishConfirmationPending.value = false
-    }
+    if (currentRegister.value?.hasPendingPassportChecks) {
+      passportFinishConfirmationPending.value = true
+      let confirmed
+      try {
+        confirmed = await confirm({
+          title: 'Завершение проверки паспортов',
+          confirmationText: 'Завершить',
+          cancellationText: 'Отмена',
+          confirmationButtonProps: { color: 'orange-darken-3' },
+          dialogProps: { width: '40%', minWidth: '320px' },
+          content: 'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+        })
+      } finally {
+        passportFinishConfirmationPending.value = false
+      }
 
-    if (!confirmed) return
+      if (!confirmed) return
+    }
     await runActionWithDialog(finishPassportCheckForCurrentRegister, 'finish-passport-check')
   }
 

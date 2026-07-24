@@ -1170,6 +1170,26 @@ describe('registers store', () => {
       await expect(store.checkPassports(42)).rejects.toThrow('Passport check failed')
       expect(store.error).toBe(error)
     })
+
+    it('posts passport check finish request to the dedicated endpoint', async () => {
+      fetchWrapper.post.mockResolvedValue(undefined)
+
+      const store = useRegistersStore()
+      const result = await store.finishPassportCheck(42)
+
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/42/finish-passport-check`)
+      expect(result).toBe(true)
+    })
+
+    it('sets error when finishing passport checks fails', async () => {
+      const error = new Error('Passport check finish failed')
+      fetchWrapper.post.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+
+      await expect(store.finishPassportCheck(42)).rejects.toThrow('Passport check finish failed')
+      expect(store.error).toBe(error)
+    })
   })
 
   describe('remove', () => {

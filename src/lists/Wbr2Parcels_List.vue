@@ -243,6 +243,7 @@ const {
   freezeTnVedOrder: freezeTnVedOrderHeader,
   calculateCustomsCharges: calculateCustomsChargesHeader,
   checkPassports: checkPassportsHeader,
+  finishPassportCheck: finishPassportCheckHeader,
   cancelValidation: cancelRegisterValidation,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
@@ -478,6 +479,7 @@ function getGenericTemplateHeaders() {
         @download-techdoc="downloadTechdocFile"
         @calculate-customs-charges="calculateCustomsChargesHeader"
         @check-passports="checkPassportsHeader"
+        @finish-passport-check="finishPassportCheckHeader"
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"

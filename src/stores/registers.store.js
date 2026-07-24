@@ -389,6 +389,16 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function finishPassportCheck(registerId) {
+    try {
+      await fetchWrapper.post(`${baseUrl}/${registerId}/finish-passport-check`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   async function getLookupFeacnCodesProgress(handleId) {
     try {
       return await fetchWrapper.get(`${baseUrl}/lookup-feacn-codes/${handleId}`)
@@ -864,6 +874,7 @@ export const useRegistersStore = defineStore('registers', () => {
     getLookupFeacnCodesProgress,
     cancelLookupFeacnCodes,
     checkPassports,
+    finishPassportCheck,
     generate,
     generateExcise,
     generateNotifications,

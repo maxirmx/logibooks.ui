@@ -60,6 +60,7 @@ describe('useRegisterHeaderActions', () => {
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       checkPassports: vi.fn().mockResolvedValue(),
+      finishPassportCheck: vi.fn().mockResolvedValue(),
       calculateCustomsCharges: vi.fn().mockResolvedValue(),
       getById: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
@@ -475,6 +476,7 @@ describe('useRegisterHeaderActions', () => {
     deferred.resolve()
     await promise
 
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
     expect(loadParcels).toHaveBeenCalledTimes(1)
     expect(actions.actionDialog.show).toBe(false)
     expect(actions.actionDialog.title).toBe('')
@@ -486,6 +488,84 @@ describe('useRegisterHeaderActions', () => {
     await actions.checkPassports({ id: 7 })
 
     expect(registersStore.checkPassports).toHaveBeenCalledWith(7)
+  })
+
+  it('confirms and finishes passport checks, then refreshes register and parcels', async () => {
+    const deferred = createDeferred()
+    registersStore.finishPassportCheck.mockReturnValueOnce(deferred.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.finishPassportCheck()
+    await Promise.resolve()
+
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Завершение проверки паспортов',
+      confirmationText: 'Завершить',
+      cancellationText: 'Отмена',
+      content: 'Из таможенного оформления будут исключены все посылки, у которых статус паспорта получателя получателя отличен от "Проверен". Запрет будет включать все посылки с незавершённой проверкой паспорта. Продолжить?'
+    }))
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Завершение проверки паспортов')
+    expect(registersStore.finishPassportCheck).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await promise
+
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledTimes(1)
+    expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('does not finish passport checks when confirmation is cancelled', async () => {
+    confirmMock.mockResolvedValueOnce(false)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.finishPassportCheck()
+
+    expect(registersStore.finishPassportCheck).not.toHaveBeenCalled()
+    expect(registersStore.getById).not.toHaveBeenCalled()
+    expect(loadParcels).not.toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('locks other header actions while finish confirmation is pending', async () => {
+    const confirmation = createDeferred()
+    confirmMock.mockReturnValueOnce(confirmation.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const finishPromise = actions.finishPassportCheck()
+    expect(actions.generalActionsDisabled.value).toBe(true)
+
+    await actions.checkPassports()
+    expect(registersStore.checkPassports).not.toHaveBeenCalled()
+
+    confirmation.resolve(false)
+    await finishPromise
+    expect(actions.generalActionsDisabled.value).toBe(false)
   })
 
   it('shows action dialog while custom charges are calculated and refreshes current data', async () => {

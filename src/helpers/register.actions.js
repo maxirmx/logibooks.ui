@@ -548,7 +548,7 @@ export function useRegisterHeaderActions({
         cancellationText: 'Отмена',
         confirmationButtonProps: { color: 'orange-darken-3' },
         dialogProps: { width: '40%', minWidth: '320px' },
-        content: 'Из таможенного оформления будут исключены все посылки, у которых статус паспорта получателя получателя отличен от "Проверен". Запрет будет включать все посылки с незавершённой проверкой паспорта. Продолжить?'
+        content: 'Из таможенного оформления будут исключены все посылки, у которых статус паспорта получателя отличен от "Проверен". Запрет будет включать все посылки с незавершённой проверкой паспорта. Продолжить?'
       })
     } finally {
       passportFinishConfirmationPending.value = false

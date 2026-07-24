@@ -11,6 +11,7 @@ import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
+import { getRowPropsForParcel } from '@/helpers/parcels.list.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 vi.mock('vue-router', () => ({
@@ -527,6 +528,37 @@ describe.each([
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
     expect(icon.classes()).toContain('passport-check-status__icon--color-no-issues')
     expect(wrapper.text()).toContain('123456')
+
+    const issueItem = {
+      ...stores.parcels.items.value[0],
+      passportCheckStatus: 10
+    }
+    const visibleMultiSelectOptions = useParcelMultiSelectMock.mock.calls.at(-1)[0]
+    getRowPropsForParcel.mockClear()
+
+    expect(visibleMultiSelectOptions.getBaseRowClass({ item: issueItem })).toBe('')
+    expect(getRowPropsForParcel).toHaveBeenCalledWith(
+      { item: issueItem },
+      stores.registers.ops.passportCheckStatuses
+    )
+
+    wrapper.unmount()
+    stores.registers.item.customsProcedureCode = null
+
+    const hiddenWrapper = mount(Component, {
+      props: { registerId: 22 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+
+    const hiddenMultiSelectOptions = useParcelMultiSelectMock.mock.calls.at(-1)[0]
+    getRowPropsForParcel.mockClear()
+
+    expect(hiddenMultiSelectOptions.getBaseRowClass({ item: issueItem })).toBe('')
+    expect(getRowPropsForParcel).toHaveBeenCalledWith({ item: issueItem }, [])
+
+    hiddenWrapper.unmount()
   })
 
   it('hides header actions when user lacks permissions', async () => {

@@ -90,6 +90,7 @@ const originalCustomsProcedureCode = ref(null)
 const isLoadReportExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
 const isRealWeightEdited = ref(false)
+const isRegisterStatusEdited = ref(false)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const selectedCustomsProcedureCode = computed(() => parseNumber(item.value?.customsProcedureCode, null))
@@ -223,13 +224,17 @@ function ensureDefaultOtherCountry() {
 }
 
 function getDefaultRegisterStatusId() {
-  return parseNumber(ops.value?.initialRegisterStatusId, null)
+  const procedureCode = getCustomsProcedureCodeOrDefault(item.value?.customsProcedureCode)
+  const procedure = ops.value?.customsProcedures?.find(
+    (candidate) => parseNumber(candidate?.value, null) === procedureCode
+  )
+  return parseNumber(procedure?.initialRegisterStatusId, null)
 }
 
-function ensureDefaultRegisterStatus() {
+function ensureDefaultRegisterStatus({ force = false } = {}) {
   if (!props.create || !item.value) return
   const statusId = item.value.statusId
-  if (statusId === null || statusId === undefined || statusId === '') {
+  if (force || statusId === null || statusId === undefined || statusId === '') {
     item.value.statusId = getDefaultRegisterStatusId()
   }
 }
@@ -593,6 +598,9 @@ watch(
 watch(proceduresLoaded, (loaded) => {
   if (loaded) {
     ensureDefaultCustomsProcedure()
+    if (props.create && !isRegisterStatusEdited.value) {
+      ensureDefaultRegisterStatus({ force: true })
+    }
   }
 })
 
@@ -614,6 +622,12 @@ function handleProcedureChange(e, setFieldValue, handleChange) {
     e.target.value = procedureCode === null ? '' : String(procedureCode)
   }
   item.value.customsProcedureCode = procedureCode
+  if (props.create && !isRegisterStatusEdited.value) {
+    ensureDefaultRegisterStatus({ force: true })
+    if (setFieldValue && typeof setFieldValue === 'function') {
+      setFieldValue('statusId', item.value.statusId)
+    }
+  }
   if (handleChange && typeof handleChange === 'function') {
     handleChange(procedureCode)
   }
@@ -660,6 +674,7 @@ function getStatusFieldValue(fieldValue) {
 
 function handleRegisterStatusChange(value, handleChange) {
   const statusId = parseNumber(value, null)
+  isRegisterStatusEdited.value = true
   if (item.value) {
     item.value.statusId = statusId
   }

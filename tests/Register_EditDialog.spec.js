@@ -45,16 +45,15 @@ const registerItems = ref([])
 
 const mockOps = ref({
   customsProcedures: [
-    { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false },
-    { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
-    { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false },
-    { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
+    { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
+    { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, initialRegisterStatusId: 1 },
+    { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
+    { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true, initialRegisterStatusId: 1 }
   ],
   transportationTypes: [
     { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
     { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
-  ],
-  initialRegisterStatusId: 1
+  ]
 })
 
 const registersStore = createMockStore({
@@ -301,16 +300,15 @@ describe('Register_EditDialog', () => {
     ]
     mockOps.value = {
       customsProcedures: [
-        { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false },
-        { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false },
-        { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false },
-        { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true }
+        { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
+        { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, initialRegisterStatusId: 1 },
+        { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
+        { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true, initialRegisterStatusId: 1 }
       ],
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
         { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
-      ],
-      initialRegisterStatusId: 1
+      ]
     }
   })
 
@@ -1820,7 +1818,9 @@ describe('Register_EditDialog', () => {
   })
 
   it('defaults missing register status to the event-derived status for uploads', async () => {
-    mockOps.value.initialRegisterStatusId = 2
+    mockOps.value.customsProcedures.find(
+      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+    ).initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
       statusId: null
@@ -1839,10 +1839,51 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.item.statusId).toBe(2)
   })
 
+  it('updates the procedure-derived status until the user selects a status', async () => {
+    mockOps.value.customsProcedures.find(
+      procedure => procedure.value === CUSTOMS_PROCEDURE_EXPORT
+    ).initialRegisterStatusId = 2
+    mockOps.value.customsProcedures.find(
+      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+    ).initialRegisterStatusId = 4
+    mockItem.value = {
+      ...baseRegisterItem,
+      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
+      statusId: null
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    dialog.vm.handleProcedureChange(
+      { target: { value: String(CUSTOMS_PROCEDURE_IMPORT) } },
+      vi.fn(),
+      vi.fn()
+    )
+    expect(dialog.vm.item.statusId).toBe(4)
+
+    dialog.vm.handleRegisterStatusChange(3, vi.fn())
+    dialog.vm.handleProcedureChange(
+      { target: { value: String(CUSTOMS_PROCEDURE_EXPORT) } },
+      vi.fn(),
+      vi.fn()
+    )
+    expect(dialog.vm.item.statusId).toBe(3)
+  })
+
   it('submits the unchanged event-derived status after upload', async () => {
     upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockOps.value.initialRegisterStatusId = 2
+    mockOps.value.customsProcedures.find(
+      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+    ).initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
       statusId: null
@@ -1867,7 +1908,9 @@ describe('Register_EditDialog', () => {
   it('submits a user-selected status instead of the event-derived default', async () => {
     upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockOps.value.initialRegisterStatusId = 2
+    mockOps.value.customsProcedures.find(
+      procedure => procedure.value === CUSTOMS_PROCEDURE_EXPORT
+    ).initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
       statusId: null
@@ -1891,7 +1934,9 @@ describe('Register_EditDialog', () => {
   })
 
   it('does not fall back to the first status when operations omit the initial status', async () => {
-    mockOps.value.initialRegisterStatusId = null
+    mockOps.value.customsProcedures.find(
+      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+    ).initialRegisterStatusId = null
     mockItem.value = {
       ...baseRegisterItem,
       statusId: null

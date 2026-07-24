@@ -43,7 +43,8 @@ if (isCreate.value) {
     title: '',
     icon: null,
     bkColor: null,
-    fgColor: null
+    fgColor: null,
+    readOnly: false
   })
 } else {
   const refs = storeToRefs(registerStatusesStore)
@@ -227,6 +228,21 @@ function onSubmit(values, { setErrors }) {
         </div>
       </Field>
 
+      <div class="status-settings-row">
+        <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
+        <div class="checkbox-item">
+          <Field
+            id="readOnly"
+            name="readOnly"
+            type="checkbox"
+            class="checkbox checkbox-styled"
+            :value="true"
+            :unchecked-value="false"
+          />
+          <label for="readOnly" aria-hidden="true"></label>
+        </div>
+      </div>
+
       <Field name="icon" v-slot="{ field, handleChange }">
         <div class="status-settings-row status-settings-row--icons">
           <span class="label status-settings-label">Иконка:</span>
@@ -309,6 +325,29 @@ function onSubmit(values, { setErrors }) {
 
 .status-settings-row--icons {
   align-items: start;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-item .checkbox-styled + label {
+  margin: 0;
+  padding: 0;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+}
+
+.checkbox-item .checkbox-styled + label:after {
+  margin: 0;
+}
+
+.checkbox-item .checkbox-styled + label:before {
+  top: 0;
+  right: 2px;
 }
 
 .status-settings-label {

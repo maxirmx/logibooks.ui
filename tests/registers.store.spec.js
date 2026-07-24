@@ -1844,8 +1844,8 @@ describe('registers store', () => {
     it('getOps fetches ops data from /registers/ops', async () => {
       const opsData = {
         customsProcedures: [
-          { value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10' },
-          { value: 2, name: 'Импорт', isExport: false, charCode: 'ИМ40' }
+          { value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10', initialRegisterStatusId: 2 },
+          { value: 2, name: 'Импорт', isExport: false, charCode: 'ИМ40', initialRegisterStatusId: 3 }
         ],
         transportationTypes: [
           { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
@@ -1854,8 +1854,7 @@ describe('registers store', () => {
         passportCheckStatuses: [
           { value: 0, code: 'NotChecked', name: 'Не проверен' },
           { value: 30, code: 'Checked', name: 'Проверен' }
-        ],
-        initialRegisterStatusId: 2
+        ]
       }
       fetchWrapper.get.mockResolvedValue(opsData)
 
@@ -1867,7 +1866,7 @@ describe('registers store', () => {
       expect(store.ops.customsProcedures).toHaveLength(2)
       expect(store.ops.transportationTypes).toHaveLength(2)
       expect(store.ops.passportCheckStatuses).toEqual(opsData.passportCheckStatuses)
-      expect(store.ops.initialRegisterStatusId).toBe(2)
+      expect(store.ops.customsProcedures.map(item => item.initialRegisterStatusId)).toEqual([2, 3])
     })
 
     it('getOps normalizes missing optional metadata', async () => {
@@ -1882,8 +1881,8 @@ describe('registers store', () => {
 
       expect(result.passportCheckStatuses).toEqual([])
       expect(store.ops.passportCheckStatuses).toEqual([])
-      expect(result.initialRegisterStatusId).toBeNull()
-      expect(store.ops.initialRegisterStatusId).toBeNull()
+      expect(result).not.toHaveProperty('initialRegisterStatusId')
+      expect(store.ops).not.toHaveProperty('initialRegisterStatusId')
     })
 
     it('getOps sets opsError on failure', async () => {

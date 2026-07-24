@@ -33,9 +33,9 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockRegisterStatuses = ref([
-  { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
-  { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
-  { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
+  { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000', readOnly: false },
+  { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF', readOnly: true },
+  { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
 ])
 
 // Mock stores
@@ -104,9 +104,9 @@ describe('RegisterStatuses_List.vue', () => {
 
     // Reset reactive data
     mockRegisterStatuses.value = [
-      { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
-      { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
-      { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
+      { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000', readOnly: false },
+      { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF', readOnly: true },
+      { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
     ]
 
     wrapper = mount(RegisterStatusesList, {
@@ -156,6 +156,12 @@ describe('RegisterStatuses_List.vue', () => {
     it('displays search field when order statuses exist', () => {
       const searchField = wrapper.find('[data-testid="v-text-field"]')
       expect(searchField.exists()).toBe(true)
+    })
+
+    it('displays whether changes are prohibited', () => {
+      expect(
+        wrapper.findAll('.register-status-read-only').map((cell) => cell.text())
+      ).toEqual(['Нет', 'Да', 'Нет'])
     })
   })
 
@@ -291,7 +297,8 @@ describe('RegisterStatuses_List.vue', () => {
       expect(headers).toEqual([
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
         { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
-        { title: 'Название статуса', key: 'title', sortable: true }
+        { title: 'Название статуса', key: 'title', sortable: true },
+        { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
       ])
     })
   })

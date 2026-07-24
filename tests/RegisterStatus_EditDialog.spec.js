@@ -16,7 +16,8 @@ const mockRegisterStatus = {
   title: 'Черновик',
   icon: 'svg:registered',
   bkColor: '#FFFFFF',
-  fgColor: '#000000'
+  fgColor: '#000000',
+  readOnly: true
 }
 
 // Mock stores using test-utils
@@ -200,6 +201,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.find('#title').exists()).toBe(true)
       expect(wrapper.find('#bkColor').exists()).toBe(true)
       expect(wrapper.find('#fgColor').exists()).toBe(true)
+      expect(wrapper.find('#readOnly').exists()).toBe(true)
       expect(wrapper.find('.register-status-form').exists()).toBe(true)
       expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="fg-color-swatch"]').exists()).toBe(true)
@@ -220,6 +222,25 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.text()).toContain('Цвет фона:')
       expect(wrapper.text()).toContain('Цвет иконки:')
       expect(wrapper.text()).toContain('Иконка:')
+      expect(wrapper.text()).toContain('Изменения запрещены:')
+    })
+
+    it('uses the project styled checkbox for read-only status', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', registerStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const checkbox = wrapper.get('#readOnly')
+      expect(checkbox.attributes('type')).toBe('checkbox')
+      expect(checkbox.classes()).toContain('checkbox')
+      expect(checkbox.classes()).toContain('checkbox-styled')
+      expect(wrapper.get('.status-settings-label[for="readOnly"]').text()).toBe('Изменения запрещены:')
+      expect(wrapper.get('.checkbox-styled + label').attributes('aria-hidden')).toBe('true')
     })
 
     it('renders current icon and color values in edit mode', async () => {
@@ -334,7 +355,8 @@ describe('RegisterStatus_EditDialog.vue', () => {
         title: '',
         icon: null,
         bkColor: null,
-        fgColor: null
+        fgColor: null,
+        readOnly: false
       })
     })
 

@@ -8,17 +8,21 @@ import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useEventsStore } from '@/stores/events.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { CUSTOMS_PROCEDURE, normalizeCustomsProcedureCode } from '@/helpers/customs.procedure.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const eventsStore = useEventsStore()
 const registerStatusesStore = useRegisterStatusesStore()
+const registersStore = useRegistersStore()
 const authStore = useAuthStore()
 
 const { registerEvents: events, registerLoading: loading } = storeToRefs(eventsStore)
 const { registerStatuses } = storeToRefs(registerStatusesStore)
+const { ops: registerOps } = storeToRefs(registersStore)
 const { registerevents_per_page, registerevents_page } = storeToRefs(authStore)
 
 const statusSelections = ref({})
@@ -26,7 +30,35 @@ const saving = ref(false)
 const initializing = ref(true)
 const errorMessage = ref('')
 
+const registerEventProcedureSet = new Set(Object.values(CUSTOMS_PROCEDURE))
+const selectedCustomsProcedureCode = ref(null)
+
 const hasEvents = computed(() => events.value?.length > 0)
+const procedureOptions = computed(() => {
+  const customsProcedures = Array.isArray(registerOps.value?.customsProcedures)
+    ? registerOps.value.customsProcedures
+    : []
+  const seen = new Set()
+
+  return customsProcedures
+    .map((procedure) => {
+      const code = normalizeCustomsProcedureCode(procedure?.value)
+      if (!registerEventProcedureSet.has(code) || seen.has(code)) return null
+
+      seen.add(code)
+      const charCode = typeof procedure?.charCode === 'string' ? procedure.charCode.trim() : ''
+      const name = typeof procedure?.name === 'string' ? procedure.name.trim() : ''
+      const title = [charCode, name].filter(Boolean).join(' ')
+      return { value: code, title: title || String(code) }
+    })
+    .filter(Boolean)
+})
+const hasProcedureOptions = computed(() => procedureOptions.value.length === registerEventProcedureSet.size)
+const filteredEvents = computed(() =>
+  events.value?.filter(
+    (item) => normalizeCustomsProcedureCode(item.customsProcedureCode) === selectedCustomsProcedureCode.value
+  ) ?? []
+)
 const registerStatusOptions = computed(() => [
   { id: 0, title: 'Не менять' },
   ...(registerStatuses.value ?? [])
@@ -42,6 +74,28 @@ function getEventTitle(event) {
   return event.eventName || event.eventId
 }
 
+function ensureProcedureOptionsLoaded() {
+  if (!hasProcedureOptions.value) {
+    throw new Error('Не удалось загрузить таможенные процедуры')
+  }
+}
+
+function ensureSelectedCustomsProcedure() {
+  if (procedureOptions.value.some((option) => option.value === selectedCustomsProcedureCode.value)) {
+    return
+  }
+
+  selectedCustomsProcedureCode.value = procedureOptions.value[0]?.value ?? null
+}
+
+function onCustomsProcedureChange(value) {
+  const code = normalizeCustomsProcedureCode(value)
+  if (!procedureOptions.value.some((option) => option.value === code)) return
+
+  selectedCustomsProcedureCode.value = code
+  registerevents_page.value = 1
+}
+
 function onStatusChange(eventId, value) {
   const newValue = value === '' ? 0 : Number(value)
   statusSelections.value = {
@@ -55,6 +109,10 @@ async function loadData() {
   errorMessage.value = ''
   try {
     await registerStatusesStore.ensureLoaded()
+    await registersStore.ensureOpsLoaded()
+    ensureProcedureOptionsLoaded()
+    ensureSelectedCustomsProcedure()
+    registerevents_page.value = 1
     await eventsStore.registerGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.registerStatusId ?? item.statusId ?? item.parcelStatusId ?? null
@@ -132,13 +190,28 @@ onMounted(async () => {
         <span class="spinner-border spinner-border-lg align-center"></span>
       </div>
 
-      <div v-else-if="hasEvents">
+      <div v-else-if="hasEvents && hasProcedureOptions && !errorMessage">
+        <div class="register-events-filter-row mb-3">
+          <v-select
+            :model-value="selectedCustomsProcedureCode"
+            :items="procedureOptions"
+            label="Таможенная процедура"
+            variant="solo"
+            hide-details
+            :loading="loading || initializing"
+            :disabled="saving || initializing"
+            class="procedure-filter"
+            data-testid="customs-procedure-select"
+            @update:model-value="onCustomsProcedureChange"
+          />
+        </div>
+
         <v-data-table
           v-model:items-per-page="registerevents_per_page"
           v-model:page="registerevents_page"
           :items-per-page-options="itemsPerPageOptions"
           :headers="headers"
-          :items="events"
+          :items="filteredEvents"
           item-value="id"
           class="interlaced-table single-line-table register-events-table"
           density="compact"

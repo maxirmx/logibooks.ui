@@ -234,6 +234,13 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('getRowPropsForParcel', () => {
+    const passportCheckStatuses = [
+      { value: 10, code: 'CheckError' },
+      { value: 30, code: 'Checked' },
+      { value: 40, code: 'NotExists' },
+      { value: 50, code: 'Invalid' }
+    ]
+
     it('should return class for parcel with issues', async () => {
       const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
       CheckStatusCode.hasIssues.mockReturnValue(true)
@@ -291,6 +298,53 @@ describe('Parcels List Helpers', () => {
 
       expect(result).toEqual({ class: '' })
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicate2Value)
+    })
+
+    it.each([10, 40, 50])('should return class for passport check issue status %s', async (passportCheckStatus) => {
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(false)
+
+      const result = getRowPropsForParcel(
+        { item: { checkStatus: 0x00010001, passportCheckStatus } },
+        passportCheckStatuses
+      )
+
+      expect(result).toEqual({ class: 'parcel-has-issues' })
+    })
+
+    it('should return empty class for a non-issue passport check status', async () => {
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(false)
+
+      const result = getRowPropsForParcel(
+        { item: { checkStatus: 0x00010001, passportCheckStatus: 30 } },
+        passportCheckStatuses
+      )
+
+      expect(result).toEqual({ class: '' })
+    })
+
+    it('should preserve the check status issue class when passport status metadata is omitted', async () => {
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(true)
+
+      const result = getRowPropsForParcel({
+        item: { checkStatus: 0x00010002, passportCheckStatus: 10 }
+      })
+
+      expect(result).toEqual({ class: 'parcel-has-issues' })
+    })
+
+    it('should return one issue class when both check statuses have issues', async () => {
+      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+      CheckStatusCode.hasIssues.mockReturnValue(true)
+
+      const result = getRowPropsForParcel(
+        { item: { checkStatus: 0x00010002, passportCheckStatus: 10 } },
+        passportCheckStatuses
+      )
+
+      expect(result).toEqual({ class: 'parcel-has-issues' })
     })
   })
 

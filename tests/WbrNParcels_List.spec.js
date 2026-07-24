@@ -70,6 +70,7 @@ const registerOps = {
   transportationTypes: [],
   passportCheckStatuses: [
     { value: 0, code: 'NotChecked', name: 'Не проверен' },
+    { value: 10, code: 'CheckError', name: 'Ошибка проверки' },
     { value: 30, code: 'Checked', name: 'Проверен' }
   ]
 }
@@ -147,7 +148,12 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
     ...actual,
     loadParcels,
     navigateToEditParcel,
-    getRowPropsForParcel: (data) => ({ class: data?.item?.id === selectedParcelId.value ? 'selected-parcel-row' : '' }),
+    getRowPropsForParcel: (data, passportStatuses = []) => ({
+      class: passportStatuses.some((status) =>
+        Number(status?.value) === Number(data?.item?.passportCheckStatus) &&
+        ['CheckError', 'Invalid', 'NotExists'].includes(status?.code)
+      ) ? 'parcel-has-issues' : ''
+    }),
     filterGenericTemplateHeadersForParcel: (headers) => headers.filter(header => ![
       'frozenOrder',
       'checkStatus',
@@ -699,7 +705,10 @@ describe('WbrNParcels_List.vue', () => {
 
     expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('true')
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('true')
-    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('4')
+    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('5')
+    expect(parcelMultiSelectOptions.getBaseRowClass({
+      item: { ...sampleParcel, passportCheckStatus: 10 }
+    })).toBe('parcel-has-issues')
     const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
     expect(icon.classes()).toEqual(expect.arrayContaining([
@@ -722,6 +731,9 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
     expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
+    expect(parcelMultiSelectOptions.getBaseRowClass({
+      item: { ...sampleParcel, passportCheckStatus: 10 }
+    })).toBe('')
     wrapper.unmount()
 
     registerItem.customsProcedureCode = CUSTOMS_PROCEDURE_IMPORT

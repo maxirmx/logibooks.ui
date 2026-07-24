@@ -57,11 +57,22 @@ export const PassportCheckStatusPresentationByCode = Object.freeze({
   [PassportCheckStatusCode.InProgress]: PassportCheckStatusPresentation.InProgress
 })
 
+const PassportCheckIssueCodes = new Set([
+  PassportCheckStatusCode.CheckError,
+  PassportCheckStatusCode.Invalid,
+  PassportCheckStatusCode.NotExists
+])
+
 export function resolvePassportCheckStatus(statuses, value) {
   if (!Array.isArray(statuses)) return null
   const numericValue = Number(value)
   if (!Number.isFinite(numericValue)) return null
   return statuses.find((status) => Number(status?.value) === numericValue) ?? null
+}
+
+export function hasPassportCheckIssues(statuses, value) {
+  const status = resolvePassportCheckStatus(statuses, value)
+  return PassportCheckIssueCodes.has(status?.code)
 }
 
 export function resolvePassportCheckStatusByCode(statuses, code) {

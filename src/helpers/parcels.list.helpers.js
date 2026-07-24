@@ -7,6 +7,7 @@
  */
 
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { hasPassportCheckIssues } from '@/helpers/passport.check.status.helpers.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
@@ -92,12 +93,16 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
 }
 
 /**
- * Returns CSS class props for table rows based on check status
+ * Returns CSS class props for table rows based on check and passport check statuses
  * @param {Object} data - Table row data containing item
+ * @param {Array} passportCheckStatuses - Passport check status metadata
  * @returns {Object} Props object with CSS class
  */
-export function getRowPropsForParcel(data) {
-  return { class: '' + (CheckStatusCode.hasIssues(data.item.checkStatus) ? 'parcel-has-issues' : '') }
+export function getRowPropsForParcel(data, passportCheckStatuses = []) {
+  const hasIssues = CheckStatusCode.hasIssues(data.item.checkStatus) ||
+    hasPassportCheckIssues(passportCheckStatuses, data.item.passportCheckStatus)
+
+  return { class: hasIssues ? 'parcel-has-issues' : '' }
 }
 
 /**

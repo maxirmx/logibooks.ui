@@ -407,6 +407,7 @@ defineExpose({
       :running-action="runningAction"
       :is-shift-lead-plus="isShiftLeadPlus"
       :is-sr-logist-plus="isSrLogistPlus"
+      :is-administrator="authStore.isAdmin"
       :open-parcel-status-bulk-dialog="openParcelStatusBulkDialog"
       :register-status-options="registerStatusOptions"
       :can-change-register-status="isSrLogistPlus"

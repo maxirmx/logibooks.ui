@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 import {
@@ -32,6 +33,7 @@ const props = defineProps({
 })
 
 const registerStatusesStore = useRegisterStatusesStore()
+const authStore = useAuthStore()
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
@@ -111,6 +113,11 @@ function handleColorInput(event, handleChange, fieldName) {
 // Form submission
 function onSubmit(values, { setErrors }) {
   const payload = normalizeRegisterStatusPresentationPayload(values)
+  if (!authStore.isAdmin) {
+    payload.readOnly = isCreate.value
+      ? false
+      : registerStatus.value?.readOnly === true
+  }
   if (isCreate.value) {
     return registerStatusesStore
       .create(payload)
@@ -238,6 +245,7 @@ function onSubmit(values, { setErrors }) {
             class="checkbox checkbox-styled"
             :value="true"
             :unchecked-value="false"
+            :disabled="!authStore.isAdmin"
           />
           <label for="readOnly" aria-hidden="true"></label>
         </div>

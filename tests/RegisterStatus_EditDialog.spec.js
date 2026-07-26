@@ -32,6 +32,10 @@ const mockAlertStore = createMockStore({
   success: vi.fn()
 })
 
+const mockAuthStore = {
+  isAdmin: true
+}
+
 // Mock all external dependencies
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => mockRegisterStatusesStore
@@ -39,6 +43,10 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => mockAlertStore
+}))
+
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => mockAuthStore
 }))
 
 vi.mock('@/router', () => ({
@@ -93,7 +101,7 @@ vi.mock('vee-validate', () => ({
   },
   Field: {
     name: 'Field',
-    props: ['name', 'id', 'type', 'as', 'class', 'placeholder', 'rows'],
+    props: ['name', 'id', 'type', 'as', 'class', 'placeholder', 'rows', 'disabled'],
     setup(props, { slots }) {
       const value = ref('')
       function handleChange(valueOrEvent) {
@@ -151,6 +159,7 @@ beforeEach(async () => {
   mockRegisterStatusesStore.error = null
   mockAlertStore.loading = false
   mockAlertStore.error = null
+  mockAuthStore.isAdmin = true
 })
 
 describe('RegisterStatus_EditDialog.vue', () => {
@@ -241,6 +250,30 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(checkbox.classes()).toContain('checkbox-styled')
       expect(wrapper.get('.status-settings-label[for="readOnly"]').text()).toBe('Изменения запрещены:')
       expect(wrapper.get('.checkbox-styled + label').attributes('aria-hidden')).toBe('true')
+    })
+
+    it('allows only administrators to change the read-only flag', async () => {
+      mockAuthStore.isAdmin = false
+      const nonAdminWrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', registerStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+      expect(nonAdminWrapper.get('#readOnly').attributes('disabled')).toBeDefined()
+
+      mockAuthStore.isAdmin = true
+      const adminWrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', registerStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+      expect(adminWrapper.get('#readOnly').attributes('disabled')).toBeUndefined()
     })
 
     it('renders current icon and color values in edit mode', async () => {
@@ -433,6 +466,24 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await form.trigger('submit')
 
       expect(mockRegisterStatusesStore.update).toHaveBeenCalledWith(1, mockRegisterStatus)
+    })
+
+    it('preserves the persisted read-only flag for a non-administrator update', async () => {
+      mockAuthStore.isAdmin = false
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', registerStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+      await wrapper.find('form').trigger('submit')
+
+      expect(mockRegisterStatusesStore.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ readOnly: true })
+      )
     })
 
     it('shows success message and redirects after successful update', async () => {

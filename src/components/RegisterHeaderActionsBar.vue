@@ -16,6 +16,7 @@ const authStore = useAuthStore()
 const props = defineProps({
   item: { type: Object, required: true },
   disabled: { type: Boolean, default: false },
+  mutationDisabled: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' },
   loading: { type: Boolean, default: false },
   noHistoricData: { type: Boolean, default: false },
@@ -41,6 +42,20 @@ const emit = defineEmits([
   'freeze-check-status',
   'freeze-tnved-order',
   'close',
+])
+
+const mutationEvents = new Set([
+  'validate-sw',
+  'validate-sw-ex',
+  'validate-fc',
+  'lookup',
+  'lookup-ex',
+  'check-passports',
+  'finish-passport-check',
+  'bulk-change-parcel-status',
+  'calculate-customs-charges',
+  'freeze-check-status',
+  'freeze-tnved-order'
 ])
 
 const router = useRouter()
@@ -119,7 +134,7 @@ const documentOptions = computed(() => {
 })
 
 function run(evt) {
-  if (props.disabled) return
+  if (props.disabled || (props.mutationDisabled && mutationEvents.has(evt))) return
   emit(evt)
 }
 
@@ -166,7 +181,7 @@ function openCmrSettings() {
         icon="fa-solid fa-spell-check"
         tooltip-text="Проверить по стоп-словам"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         :options="[
           {
             label: 'С учётом исторических данных',
@@ -184,7 +199,7 @@ function openCmrSettings() {
         icon="fa-solid fa-anchor-circle-check"
         tooltip-text="Проверить по кодам ТН ВЭД"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         @click="run('validate-fc')"
       />
       <ActionButton2L
@@ -194,7 +209,7 @@ function openCmrSettings() {
         tooltip-text="Проверка паспортов"
         :iconSize="iconSize"
         :variant="item?.hasPendingPassportChecks ? 'blue' : 'default'"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         :options="[
           {
             label: 'Проверить паспорта',
@@ -215,7 +230,7 @@ function openCmrSettings() {
         icon="fa-solid fa-magnifying-glass"
         tooltip-text="Подбор кодов ТН ВЭД"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         :options="[
           {
             label: 'С учётом исторических данных',
@@ -281,7 +296,7 @@ function openCmrSettings() {
         icon="fa-solid fa-calculator"
         tooltip-text="Рассчитать сборы и пошлины"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         @click="run('calculate-customs-charges')"
       />
       <ActionButton
@@ -290,7 +305,7 @@ function openCmrSettings() {
         icon="fa-solid fa-pen-to-square"
         tooltip-text="Выбрать посылки и изменить статус"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         @click="run('bulk-change-parcel-status')"
       />
       <ActionButton
@@ -299,7 +314,7 @@ function openCmrSettings() {
         icon="fa-solid fa-xmarks-lines"
         tooltip-text="Применить запреты"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         @click="run('freeze-check-status')"
       />
       <ActionButton
@@ -308,7 +323,7 @@ function openCmrSettings() {
         icon="fa-solid fa-arrows-to-eye"
         tooltip-text="Зафиксировать сортировку по кодам ТН ВЭД"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || mutationDisabled"
         @click="run('freeze-tnved-order')"
       />
       <ActionButton

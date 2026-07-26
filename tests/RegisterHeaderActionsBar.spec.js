@@ -551,6 +551,49 @@ describe('RegisterHeaderActionsBar', () => {
     expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины')).toBeUndefined()
   })
 
+  it('disables mutations but keeps downloads and documents available in read-only mode', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        mutationDisabled: true,
+        showPassportCheck: true
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    for (const tooltip of [
+      'Проверить по стоп-словам',
+      'Проверка паспортов',
+      'Подбор кодов ТН ВЭД'
+    ]) {
+      expect(findActionMenuByTooltip(wrapper, tooltip).props('disabled')).toBe(true)
+    }
+    for (const tooltip of [
+      'Проверить по кодам ТН ВЭД',
+      'Рассчитать сборы и пошлины',
+      'Выбрать посылки и изменить статус',
+      'Применить запреты',
+      'Зафиксировать сортировку по кодам ТН ВЭД'
+    ]) {
+      expect(findActionButtonByTooltip(wrapper, tooltip).props('disabled')).toBe(true)
+    }
+
+    const xmlMenu = findActionMenuByTooltip(wrapper, 'Выгрузить XML накладные')
+    const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+    const downloadButton = findActionButtonByTooltip(wrapper, 'Экспортировать реестр')
+    expect(xmlMenu.props('disabled')).toBe(false)
+    expect(documentMenu.props('disabled')).toBe(false)
+    expect(downloadButton.props('disabled')).toBe(false)
+
+    findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины').vm.$emit('click')
+    expect(wrapper.emitted('calculate-customs-charges')).toBeUndefined()
+
+    await xmlMenu.props('options')[0].action()
+    expect(wrapper.emitted('export-excise')).toHaveLength(1)
+    downloadButton.vm.$emit('click')
+    expect(wrapper.emitted('download')).toHaveLength(1)
+  })
+
   it('disables historic data actions when noHistoricData is true', () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, noHistoricData: true },

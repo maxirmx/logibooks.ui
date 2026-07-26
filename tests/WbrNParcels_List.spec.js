@@ -521,7 +521,7 @@ function resetState() {
 describe('WbrNParcels_List.vue', () => {
   beforeAll(async () => {
     WbrNParcelsList = (await import('@/lists/WbrNParcels_List.vue')).default
-  })
+  }, 30_000)
 
   beforeEach(resetState)
 

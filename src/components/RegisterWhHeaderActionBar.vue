@@ -35,6 +35,7 @@ const exportDisabled = computed(() =>
 const actionDisabled = computed(() =>
   props.disabled ||
   props.loading ||
+  props.register?.readOnly === true ||
   !props.register?.id
 )
 

@@ -644,6 +644,28 @@ describe('parcels store', () => {
       expect(store.items[2]).toEqual({ id: 6, statusId: 1, tnVed: 'Another' })
     })
 
+    it('refreshes the parcel and enters read-only mode after a stale conflict', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.put.mockRejectedValue(conflict)
+      fetchWrapper.get.mockResolvedValue({
+        id: 5,
+        statusId: 7,
+        tnVed: 'server-value',
+        readOnly: true
+      })
+      const store = useParcelsStore()
+      store.item = { id: 5, statusId: 1, tnVed: 'old', readOnly: false }
+
+      await expect(store.update(5, { tnVed: 'local-value' })).rejects.toBe(conflict)
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/5`)
+      expect(store.item).toMatchObject({
+        id: 5,
+        tnVed: 'server-value',
+        readOnly: true
+      })
+    })
+
     it('does not update item when loaded item has different id', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
 

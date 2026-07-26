@@ -366,6 +366,21 @@ describe('scanjobs store', () => {
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
+
+    it('refreshes the scan job and enters read-only mode after a stale conflict', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.put.mockRejectedValue(conflict)
+      fetchWrapper.get.mockResolvedValue({ ...mockScanjob, name: 'Server name', readOnly: true })
+      const store = useScanjobsStore()
+      store.items = [{ ...mockScanjob, readOnly: false }]
+      store.scanjob = { ...mockScanjob, readOnly: false }
+
+      await expect(store.update(mockScanjob.id, { name: 'Local name' })).rejects.toBe(conflict)
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/${mockScanjob.id}`)
+      expect(store.scanjob).toMatchObject({ name: 'Server name', readOnly: true })
+      expect(store.items[0].readOnly).toBe(true)
+    })
   })
 
   describe('remove', () => {

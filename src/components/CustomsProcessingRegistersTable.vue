@@ -38,6 +38,7 @@ const props = defineProps({
   runningAction: { type: Boolean, default: false },
   isShiftLeadPlus: { type: Boolean, default: false },
   isSrLogistPlus: { type: Boolean, default: false },
+  isAdministrator: { type: Boolean, default: false },
   openParcelStatusBulkDialog: { type: Function, default: () => {} },
   registerStatusOptions: { type: Array, default: () => [] },
   canChangeRegisterStatus: { type: Boolean, default: false },
@@ -385,7 +386,7 @@ function getRegisterStatusTitle(item) {
             :status="getRegisterStatus(item)"
             :title="getRegisterStatusTitle(item)"
             :status-options="registerStatusOptions"
-            :can-change="canChangeRegisterStatus"
+            :can-change="canChangeRegisterStatus && (!item.readOnly || isAdministrator)"
             :edit-mode="isRegisterStatusEditMode(item.id)"
             :selected-status-id="getSelectedRegisterStatusId(item.id)"
             :disabled="runningAction || loading"
@@ -414,7 +415,7 @@ function getRegisterStatusTitle(item) {
             :item="item"
             icon="fa-solid fa-calculator"
             tooltip-text="Рассчитать сборы и пошлины"
-            :disabled="runningAction || loading || !canCalculateCustomsCharges(item)"
+            :disabled="runningAction || loading || item.readOnly || !canCalculateCustomsCharges(item)"
             @click="(row) => calculateCustomsCharges(row)"
           />
           <ActionButton
@@ -422,7 +423,7 @@ function getRegisterStatusTitle(item) {
             :item="item"
             icon="fa-solid fa-pen-to-square"
             tooltip-text="Выбрать посылки и изменить статус"
-            :disabled="runningAction || loading"
+            :disabled="runningAction || loading || item.readOnly"
             @click="() => openParcelStatusBulkDialog(item.id)"
           />
           <ActionButton
@@ -431,7 +432,7 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-trash-can"
             :tooltip-text="`Удалить ${registerNouns.accusative}`"
             @click="(row) => emit('delete-register', row)"
-            :disabled="runningAction || loading"
+            :disabled="runningAction || loading || item.readOnly"
           />
         </div>
       </template>

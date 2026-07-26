@@ -91,6 +91,7 @@ const isLoadReportExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
 const isRealWeightEdited = ref(false)
 const isRegisterStatusEdited = ref(false)
+const readOnly = computed(() => !props.create && item.value?.readOnly === true)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const selectedCustomsProcedureCode = computed(() => parseNumber(item.value?.customsProcedureCode, null))
@@ -793,6 +794,7 @@ function prepareRegisterPayload(formValues) {
 
 async function onSubmit(values) {
   if (!isComponentMounted.value) return
+  if (readOnly.value && !unref(authStore.isAdmin)) return
 
   // Guard against multiple submissions
   if (isSubmitting.value) return
@@ -983,7 +985,7 @@ const loadReportFields = computed(() => {
           icon="fa-solid fa-check-double" 
           :iconSize="'2x'"
           tooltip-text="Сохранить"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || (readOnly && !authStore.isAdmin)"
           @click="handleSubmit(onSubmit)"
         />
         <ActionButton 
@@ -999,6 +1001,29 @@ const loadReportFields = computed(() => {
     
     <hr class="hr" />
       <div class="form-section">
+        <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
+          Изменения запрещены. Реестр доступен только для просмотра.
+        </div>
+        <div v-if="readOnly && authStore.isAdmin" class="form-row">
+          <div class="form-group">
+            <label for="readOnlyStatusId" class="label">Статус:</label>
+            <Field name="statusId" v-slot="{ field, handleChange }">
+              <div class="form-control input register-status-input">
+                <RegisterStatusSelect
+                  id="readOnlyStatusId"
+                  class="register-status-input-select"
+                  :model-value="getStatusFieldValue(field?.value)"
+                  :items="registerStatusesStore.registerStatuses"
+                  variant="plain"
+                  density="compact"
+                  hide-details
+                  @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
+                />
+              </div>
+            </Field>
+          </div>
+        </div>
+        <fieldset class="register-fields-fieldset" :disabled="readOnly">
         <h2
           v-if="!props.create"
           class="section-title"
@@ -1011,7 +1036,7 @@ const loadReportFields = computed(() => {
             <label for="dealNumber" class="label">Номер сделки:</label>
             <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
           </div>
-          <div class="form-group">
+          <div v-if="!readOnly" class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
               <div class="form-control input register-status-input">
@@ -1305,6 +1330,7 @@ const loadReportFields = computed(() => {
             </div>
           </Field>
         </div>
+        </fieldset>
 
         <div
           v-if="hasLoadReport"
@@ -1406,6 +1432,17 @@ const loadReportFields = computed(() => {
   
   /* Ensure it flows below heading on narrow screens */
   min-width: min-content;
+}
+
+.register-fields-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.register-read-only-notice {
+  margin-bottom: 1rem;
 }
 
 /* Primary heading with ellipsis */

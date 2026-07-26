@@ -82,6 +82,7 @@ const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
 const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
+const readOnly = computed(() => registersStore.item?.readOnly === true)
 const showParcelStatusBulkDialog = ref(false)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value)))
@@ -257,7 +258,7 @@ function editParcel(item) {
 }
 
 async function runParcelAction(item, action, getErrorMessage) {
-  if (runningAction.value || loading.value || !item?.id) return
+  if (readOnly.value || runningAction.value || loading.value || !item?.id) return
 
   runningAction.value = true
   try {
@@ -317,6 +318,9 @@ function handleParcelExtIdChanged(change) {
       />
     </div>
     <hr class="hr" />
+    <div v-if="readOnly" class="alert alert-warning read-only-notice">
+      Изменения запрещены. Просмотр, фильтрация и экспорт доступны.
+    </div>
 
     <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
       <ParcelWhFilterSelectors
@@ -363,7 +367,7 @@ function handleParcelExtIdChanged(change) {
               title="Очистить номер КГТ"
               data-testid="clear-ext-id-action"
               @click="clearParcelExtId"
-              :disabled="runningAction || loading || !canClearParcelExtId(item, authStore)"
+              :disabled="readOnly || runningAction || loading || !canClearParcelExtId(item, authStore)"
               v-if="isAdminUser"
             />
             <ActionButton
@@ -374,7 +378,7 @@ function handleParcelExtIdChanged(change) {
               title="Брак"
               data-testid="set-defect-action"
               @click="setParcelDefect"
-              :disabled="runningAction || loading || !canSetParcelDefect(item, authStore)"
+              :disabled="readOnly || runningAction || loading || !canSetParcelDefect(item, authStore)"
             />
             <ActionButton
               :item="item"
@@ -384,7 +388,7 @@ function handleParcelExtIdChanged(change) {
               title="Отменить брак"
               data-testid="clear-defect-action"
               @click="clearParcelDefect"
-              :disabled="runningAction || loading || !canClearParcelDefect(item, authStore)"
+              :disabled="readOnly || runningAction || loading || !canClearParcelDefect(item, authStore)"
             />
           </div>
         </template>
@@ -498,7 +502,7 @@ function handleParcelExtIdChanged(change) {
       :register-id="props.registerId"
       :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
-      :disabled="runningAction || loading || isInitializing"
+      :disabled="readOnly || runningAction || loading || isInitializing"
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />

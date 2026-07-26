@@ -128,6 +128,7 @@ const errorLabels = {
   errorDecisionRecords: 'Нераспознанных решений таможенного органа',
   errorProcedureMismatchRecords: 'Несовпадений таможенной процедуры с реестром',
   errorParcelNotFoundRecords: 'Ненайденных посылок',
+  errorRegisterReadOnlyRecords: 'Посылок из реестров с запретом изменений',
   errorAlreadyProcessedParcels: 'Посылок с установленным полем ДТЭГ/ПТДЭГ'
 }
 
@@ -139,6 +140,7 @@ const tableItems = computed(() =>
       (report.errorDecisionRecords || 0) +
       (report.errorProcedureMismatchRecords || 0) +
       (report.errorParcelNotFoundRecords || 0) +
+      (report.errorRegisterReadOnlyRecords || 0) +
       (report.errorAlreadyProcessedParcels || 0)
 
     // Build breakdown array only for non-zero entries

@@ -75,6 +75,7 @@ const registerLoading = ref(true)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
+const readOnly = computed(() => registersStore.item?.readOnly === true)
 const showParcelStatusBulkDialog = ref(false)
 
 const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value)))
@@ -246,7 +247,7 @@ function editParcel(item) {
 }
 
 async function runDefectAction(item, action, getErrorMessage) {
-  if (runningAction.value || loading.value || !item?.id) return
+  if (readOnly.value || runningAction.value || loading.value || !item?.id) return
 
   runningAction.value = true
   try {
@@ -295,6 +296,9 @@ async function clearParcelDefect(item) {
       />
     </div>
     <hr class="hr" />
+    <div v-if="readOnly" class="alert alert-warning read-only-notice">
+      Изменения запрещены. Просмотр, фильтрация и экспорт доступны.
+    </div>
 
     <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
       <ParcelWhFilterSelectors
@@ -341,7 +345,7 @@ async function clearParcelDefect(item) {
               title="Брак"
               data-testid="set-defect-action"
               @click="setParcelDefect"
-              :disabled="runningAction || loading || !canSetParcelDefect(item, authStore)"
+              :disabled="readOnly || runningAction || loading || !canSetParcelDefect(item, authStore)"
             />
             <ActionButton
               :item="item"
@@ -351,7 +355,7 @@ async function clearParcelDefect(item) {
               title="Отменить брак"
               data-testid="clear-defect-action"
               @click="clearParcelDefect"
-              :disabled="runningAction || loading || !canClearParcelDefect(item, authStore)"
+              :disabled="readOnly || runningAction || loading || !canClearParcelDefect(item, authStore)"
             />
           </div>
         </template>
@@ -465,7 +469,7 @@ async function clearParcelDefect(item) {
       :register-id="props.registerId"
       :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
-      :disabled="runningAction || loading || isInitializing"
+      :disabled="readOnly || runningAction || loading || isInitializing"
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />

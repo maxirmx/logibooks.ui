@@ -1915,3 +1915,15 @@ a,
   font-weight: bold;
 }
 
+.read-only-form .form-section input:not([type='hidden']),
+.read-only-form .form-section select,
+.read-only-form .form-section textarea,
+.read-only-form .form-section .v-field {
+  pointer-events: none;
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.read-only-notice {
+  margin: 0.75rem 0;
+}

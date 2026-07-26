@@ -49,6 +49,7 @@ const props = defineProps({
   isShiftLeadPlus: { type: Boolean, default: false },
   isSrLogistPlus: { type: Boolean, default: false },
   isWhManagerPlus: { type: Boolean, default: false },
+  isAdministrator: { type: Boolean, default: false },
   openParcelStatusBulkDialog: { type: Function, default: () => {} },
   showRegisterStatusIcon: { type: Boolean, default: false },
   registerStatusOptions: { type: Array, default: () => [] },
@@ -425,7 +426,7 @@ function getRegisterStatusTitle(item) {
             :status="getRegisterStatus(item)"
             :title="getRegisterStatusTitle(item)"
             :status-options="registerStatusOptions"
-            :can-change="linksEnabled && canChangeRegisterStatus"
+            :can-change="linksEnabled && canChangeRegisterStatus && (!item.readOnly || isAdministrator)"
             :edit-mode="isRegisterStatusEditMode(item.id)"
             :selected-status-id="getSelectedRegisterStatusId(item.id)"
             :disabled="runningAction || loading"
@@ -462,7 +463,7 @@ function getRegisterStatusTitle(item) {
             :item="item"
             icon="fa-solid fa-pen-to-square"
             tooltip-text="Выбрать посылки и изменить статус"
-            :disabled="runningAction || loading"
+            :disabled="runningAction || loading || item.readOnly"
             @click="() => openParcelStatusBulkDialog(item.id)"
           />
           <ActionButton
@@ -471,7 +472,7 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-trash-can"
             :tooltip-text="`Удалить ${registerNouns.accusative}`"
             @click="() => emit('delete-register', item)"
-            :disabled="runningAction || loading"
+            :disabled="runningAction || loading || item.readOnly"
           />
           <ActionButton
             v-if="isWhManagerPlus"
@@ -479,7 +480,7 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-barcode"
             tooltip-text="Создать задание на сканирование"
             @click="() => emit('open-scanjob-create', item)"
-            :disabled="runningAction || loading"
+            :disabled="runningAction || loading || item.readOnly"
           />
         </div>
       </template>

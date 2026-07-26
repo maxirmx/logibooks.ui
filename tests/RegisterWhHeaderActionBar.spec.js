@@ -172,6 +172,20 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     expect(wrapper.get('[data-testid="bulk-status-btn"]').attributes('disabled')).toBeDefined()
   })
 
+  it('disables bulk status changes but keeps export and close available for a read-only register', async () => {
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, fileName: 'register_77.xlsx', readOnly: true },
+      zones: []
+    })
+
+    expect(wrapper.get('[data-testid="bulk-status-btn"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.findComponent(ActionButton2LStub).props('disabled')).toBe(false)
+    expect(wrapper.get('[data-testid="close-btn"]').attributes('disabled')).toBeUndefined()
+
+    await wrapper.findComponent(ActionButton2LStub).props('options')[0].action()
+    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 0, undefined)
+  })
+
   it('downloads all parcels without zone arguments', async () => {
     const wrapper = mountHeaderActionBar({
       register: { id: 77, fileName: 'register_77.xlsx' },

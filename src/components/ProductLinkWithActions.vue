@@ -14,14 +14,18 @@ import { ensureHttps } from '@/helpers/url.helpers.js'
 const props = defineProps({
   item: { type: Object, required: true },
   label: { type: String, required: true },
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  mutationDisabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['select-image', 'view-image', 'delete-image'])
 
 const normalizedLink = computed(() => ensureHttps(props.item?.productLink) ?? '')
 const hasLink = computed(() => Boolean(normalizedLink.value))
-const buttonsDisabled = computed(() => props.disabled || !props.item?.hasImage)
+const viewDisabled = computed(() => props.disabled || !props.item?.hasImage)
+const deleteDisabled = computed(() => props.disabled || props.mutationDisabled || !props.item?.hasImage)
+// Keep the original public computed value for consumers and tests that inspect it.
+const buttonsDisabled = viewDisabled
 
 const extensionPresent = ref(false)
 function onMessage(e) {
@@ -39,7 +43,7 @@ onUnmounted(() => {
   window.removeEventListener('message', onMessage)
 })
 
-const selectDisabled = computed(() => props.disabled || !extensionPresent.value)
+const selectDisabled = computed(() => props.disabled || props.mutationDisabled || !extensionPresent.value)
 
 const selectTooltip = 'Выбрать изображение для тех. документации'
 const viewTooltip = 'Посмотреть изображение для тех. документации'
@@ -97,12 +101,12 @@ function handleSelectClick() {
 }
 
 function handleViewClick() {
-  if (buttonsDisabled.value) return
+  if (viewDisabled.value) return
   emit('view-image')
 }
 
 function handleDeleteClick() {
-  if (buttonsDisabled.value) return
+  if (deleteDisabled.value) return
   emit('delete-image')
 }
 </script>
@@ -141,7 +145,7 @@ function handleDeleteClick() {
           icon="fa-solid fa-eye"
           iconSize="1x"
           :tooltip-text="viewTooltip"
-          :disabled="buttonsDisabled"
+          :disabled="viewDisabled"
           data-test="product-link-view"
           @click="handleViewClick"
         />
@@ -150,7 +154,7 @@ function handleDeleteClick() {
           icon="fa-solid fa-trash-can"
           iconSize="1x"
           :tooltip-text="deleteTooltip"
-          :disabled="buttonsDisabled"
+          :disabled="deleteDisabled"
           data-test="product-link-delete"
           @click="handleDeleteClick"
         />

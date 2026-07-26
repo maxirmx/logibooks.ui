@@ -1002,7 +1002,7 @@ const loadReportFields = computed(() => {
     <hr class="hr" />
       <div class="form-section">
         <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
-          Изменения запрещены. Реестр доступен только для просмотра.
+          Изменения запрещены. Реестр доступен только для просмотра. Возможно изменение статуса пользователем с правами администратора.
         </div>
         <h2
           v-if="!props.create"

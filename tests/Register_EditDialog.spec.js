@@ -121,8 +121,12 @@ const registerStatusesStore = createMockStore({
 const mockIsAdmin = ref(true)
 const mockIsShiftLead = ref(false)
 const authStore = {
-  isAdmin: mockIsAdmin,
-  isShiftLead: mockIsShiftLead
+  get isAdmin() {
+    return mockIsAdmin.value
+  },
+  get isShiftLead() {
+    return mockIsShiftLead.value
+  }
 }
 
 vi.mock('pinia', async () => {
@@ -412,9 +416,9 @@ describe('Register_EditDialog', () => {
           Field: FieldStub,
           ErrorDialog: ErrorDialogStub,
           RegisterStatusSelect: {
-            props: ['modelValue'],
+            props: ['modelValue', 'disabled'],
             emits: ['update:modelValue'],
-            template: '<button id="readOnlyStatusId" type="button" @click="$emit(\'update:modelValue\', 3)">{{ modelValue }}</button>'
+            template: '<button id="statusId" type="button" :disabled="disabled" @click="$emit(\'update:modelValue\', 3)">{{ modelValue }}</button>'
           }
         }
       }
@@ -422,10 +426,44 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.text()).toContain('Реестр доступен только для просмотра')
-    const statusControl = wrapper.get('#readOnlyStatusId')
+    const statusControl = wrapper.get('#statusId')
     expect(statusControl.text()).toBe('2')
+    expect(statusControl.attributes('disabled')).toBeUndefined()
     await statusControl.trigger('click')
     expect(statusControl.exists()).toBe(true)
+  })
+
+  it('keeps the status in its original position but disables it for a non-administrator read-only register', async () => {
+    mockIsAdmin.value = false
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: 2,
+      readOnly: true
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub,
+          RegisterStatusSelect: {
+            props: ['modelValue', 'disabled'],
+            template: '<button id="statusId" type="button" :disabled="disabled">{{ modelValue }}</button>'
+          }
+        }
+      }
+    })
+    await resolveAll()
+
+    const statusControl = wrapper.get('#statusId')
+    expect(statusControl.text()).toBe('2')
+    expect(statusControl.attributes('disabled')).toBeDefined()
+    expect(statusControl.element.closest('.form-row')?.querySelector('#dealNumber')).not.toBeNull()
   })
 
   it('enables airport selectors when aviation transport is selected', async () => {

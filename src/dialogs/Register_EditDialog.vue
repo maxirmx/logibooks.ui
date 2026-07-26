@@ -1004,26 +1004,6 @@ const loadReportFields = computed(() => {
         <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
           Изменения запрещены. Реестр доступен только для просмотра.
         </div>
-        <div v-if="readOnly && authStore.isAdmin" class="form-row">
-          <div class="form-group">
-            <label for="readOnlyStatusId" class="label">Статус:</label>
-            <Field name="statusId" v-slot="{ field, handleChange }">
-              <div class="form-control input register-status-input">
-                <RegisterStatusSelect
-                  id="readOnlyStatusId"
-                  class="register-status-input-select"
-                  :model-value="getStatusFieldValue(field?.value)"
-                  :items="registerStatusesStore.registerStatuses"
-                  variant="plain"
-                  density="compact"
-                  hide-details
-                  @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
-                />
-              </div>
-            </Field>
-          </div>
-        </div>
-        <fieldset class="register-fields-fieldset" :disabled="readOnly">
         <h2
           v-if="!props.create"
           class="section-title"
@@ -1034,9 +1014,9 @@ const loadReportFields = computed(() => {
         <div class="form-row">
           <div class="form-group">
             <label for="dealNumber" class="label">Номер сделки:</label>
-            <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" />
+            <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" :disabled="readOnly" />
           </div>
-          <div v-if="!readOnly" class="form-group">
+          <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
               <div class="form-control input register-status-input">
@@ -1048,6 +1028,7 @@ const loadReportFields = computed(() => {
                   variant="plain"
                   density="compact"
                   hide-details
+                  :disabled="readOnly && !authStore.isAdmin"
                   @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
                 />
               </div>
@@ -1055,6 +1036,7 @@ const loadReportFields = computed(() => {
           </div>
         </div>
 
+        <fieldset class="register-fields-fieldset" :disabled="readOnly">
         <div class="form-row">
           <div class="form-group">
             <label for="invoiceNumber" class="label">Номер накладной:</label>

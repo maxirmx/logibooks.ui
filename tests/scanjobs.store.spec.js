@@ -381,6 +381,20 @@ describe('scanjobs store', () => {
       expect(store.scanjob).toMatchObject({ name: 'Server name', readOnly: true })
       expect(store.items[0].readOnly).toBe(true)
     })
+
+    it('marks the scan job read-only when conflict refresh fails', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.put.mockRejectedValue(conflict)
+      fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
+      const store = useScanjobsStore()
+      store.items = [{ ...mockScanjob, readOnly: false }]
+      store.scanjob = { ...mockScanjob, readOnly: false }
+
+      await expect(store.update(mockScanjob.id, { name: 'Local name' })).rejects.toBe(conflict)
+
+      expect(store.scanjob.readOnly).toBe(true)
+      expect(store.items[0].readOnly).toBe(true)
+    })
   })
 
   describe('remove', () => {

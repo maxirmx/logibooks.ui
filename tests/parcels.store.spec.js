@@ -666,6 +666,18 @@ describe('parcels store', () => {
       })
     })
 
+    it('falls back to marking the loaded parcel read-only when conflict refresh fails', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.put.mockRejectedValue(conflict)
+      fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
+      const store = useParcelsStore()
+      store.item = { id: 5, statusId: 1, readOnly: false }
+
+      await expect(store.update(5, { statusId: 2 })).rejects.toBe(conflict)
+
+      expect(store.item).toEqual({ id: 5, statusId: 1, readOnly: true })
+    })
+
     it('does not update item when loaded item has different id', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
 
@@ -845,6 +857,35 @@ describe('parcels store', () => {
 
       await expect(store.approve(123, ParcelApprovalMode.ApproveWithExcise)).rejects.toThrow('Approval with excise failed')
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`)
+    })
+
+    it('refreshes the loaded and listed parcel after a read-only mutation conflict', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.post.mockRejectedValue(conflict)
+      fetchWrapper.get.mockResolvedValue({ id: 123, statusId: 7, readOnly: true })
+      const store = useParcelsStore()
+      store.item = { id: 123, statusId: 1, readOnly: false }
+      store.items = [{ id: 123, statusId: 1, readOnly: false }]
+
+      await expect(store.approve(123)).rejects.toBe(conflict)
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/123`)
+      expect(store.item).toEqual({ id: 123, statusId: 7, readOnly: true })
+      expect(store.items[0]).toEqual({ id: 123, statusId: 7, readOnly: true })
+    })
+
+    it('marks loaded and listed parcels read-only when conflict refresh fails', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.post.mockRejectedValue(conflict)
+      fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
+      const store = useParcelsStore()
+      store.item = { id: 123, statusId: 1, readOnly: false }
+      store.items = [{ id: 123, statusId: 1, readOnly: false }]
+
+      await expect(store.approve(123)).rejects.toBe(conflict)
+
+      expect(store.item).toEqual({ id: 123, statusId: 1, readOnly: true })
+      expect(store.items[0]).toEqual({ id: 123, statusId: 1, readOnly: true })
     })
   })
 

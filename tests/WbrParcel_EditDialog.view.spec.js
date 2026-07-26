@@ -8,6 +8,12 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
+const routerMocks = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn()
+}))
+vi.mock('@/router', () => ({ default: routerMocks }))
+
 const parcelsMock = {
   item: ref({ id: 3, productLink: 'http://example.com', hasImage: true }),
   loading: ref(false),
@@ -15,6 +21,8 @@ const parcelsMock = {
   getImageBlob: vi.fn(),
   getById: vi.fn().mockResolvedValue({ id: 3, hasImage: true }),
   update: vi.fn().mockResolvedValue(),
+  generate: vi.fn().mockResolvedValue(),
+  lookupFeacnCode: vi.fn().mockResolvedValue(),
   checkPassport: vi.fn().mockResolvedValue(),
   clearPassportCheck: vi.fn().mockResolvedValue()
 }
@@ -35,7 +43,10 @@ vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: () => ensureLo
 vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] }) }))
-vi.mock('@/stores/parcel.views.store.js', () => ({ useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue() }) }))
+const parcelViewsBack = vi.fn().mockResolvedValue(null)
+vi.mock('@/stores/parcel.views.store.js', () => ({
+  useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue(), back: parcelViewsBack })
+}))
 const registersMock = {
   item: ref({ id: 1, customsProcedureCode: 40 }),
   ops: {
@@ -86,10 +97,13 @@ describe('WbrParcel_EditDialog image overlay', () => {
       hasImage: true
     }
     parcelsMock.update.mockResolvedValue()
+    parcelsMock.generate.mockResolvedValue()
+    parcelsMock.lookupFeacnCode.mockResolvedValue()
     parcelsMock.checkPassport.mockResolvedValue()
     parcelsMock.clearPassportCheck.mockResolvedValue()
     registersMock.item.value = { id: 1, customsProcedureCode: 40 }
     registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
+    parcelViewsBack.mockResolvedValue(null)
     parcelsMock.getImageBlob.mockResolvedValue(new Blob(['test'], { type: 'image/png' }))
     global.URL.createObjectURL = vi.fn(() => 'blob:mock')
     global.URL.revokeObjectURL = vi.fn()
@@ -190,5 +204,86 @@ describe('WbrParcel_EditDialog image overlay', () => {
     const headerActions = wrapper.findComponent({ name: 'ParcelHeaderActionsBar' })
     expect(headerActions.exists()).toBe(true)
     expect(headerActions.props('downloadDisabled')).toBe(true)
+  })
+
+  it('keeps read-only navigation and downloads while blocking all mutations', async () => {
+    const actionBarStub = {
+      props: ['mutationDisabled'],
+      emits: ['next-parcel', 'back', 'save', 'lookup', 'download'],
+      template: `
+        <div data-testid="parcel-actions" :data-mutation-disabled="String(mutationDisabled)">
+          <button data-testid="next" @click="$emit('next-parcel')"></button>
+          <button data-testid="back" @click="$emit('back')"></button>
+          <button data-testid="save" @click="$emit('save')"></button>
+          <button data-testid="lookup" @click="$emit('lookup')"></button>
+          <button data-testid="download" @click="$emit('download')"></button>
+        </div>
+      `
+    }
+    const mountDialog = async () => {
+      const wrapper = mount({
+        components: { WbrParcel_EditDialog },
+        template: '<Suspense><WbrParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
+      }, {
+        global: {
+          stubs: {
+            Field: { template: '<input />' },
+            Form: {
+              template: '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            },
+            ParcelHeaderActionsBar: actionBarStub,
+            ParcelStatusSection: true,
+            FeacnCodeEditor: true,
+            ParcelNumberExt: true,
+            ParcelWeightAutoField: true,
+            WbrFormField: true,
+            ActionButton: true,
+            DTagSection: true,
+            'font-awesome-icon': true,
+            VTooltip: true
+          }
+        }
+      })
+      await nextTick()
+      await resolveAll()
+      return wrapper
+    }
+
+    let wrapper = await mountDialog()
+    for (const testId of ['next', 'back', 'download', 'lookup']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    expect(parcelsMock.update).toHaveBeenCalled()
+    expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(3)
+    expect(parcelsMock.generate).toHaveBeenCalled()
+    wrapper.unmount()
+
+    vi.clearAllMocks()
+    parcelsMock.item.value = {
+      id: 3,
+      registerId: 1,
+      shk: 'WBR-3',
+      statusId: 1,
+      checkStatus: 0,
+      readOnly: true
+    }
+    registersMock.item.value = { id: 1, customsProcedureCode: 40 }
+    registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
+    parcelsMock.getById.mockResolvedValue({ id: 3, readOnly: true })
+    parcelsMock.generate.mockResolvedValue()
+    wrapper = await mountDialog()
+    parcelsMock.update.mockClear()
+
+    expect(wrapper.text()).toContain('Посылка доступна только для просмотра')
+    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    for (const testId of ['next', 'back', 'save', 'download', 'lookup']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
+    expect(parcelsMock.generate).toHaveBeenCalled()
+    expect(routerMocks.push).toHaveBeenCalled()
   })
 })

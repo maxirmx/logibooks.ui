@@ -33,6 +33,9 @@ const mockItems = ref([
 const mockLoading = ref(false)
 const mockError = ref(null)
 const mockTotalCount = ref(1)
+const bulkAssignTnved = vi.fn().mockResolvedValue()
+const alertSuccess = vi.fn()
+const alertError = vi.fn()
 
 const parcelsPerPage = ref(10)
 const parcelsSortBy = ref([])
@@ -72,7 +75,8 @@ vi.mock('@/stores/parcels.store.js', () => ({
     items: mockItems,
     loading: mockLoading,
     error: mockError,
-    totalCount: mockTotalCount
+    totalCount: mockTotalCount,
+    bulkAssignTnved
   })
 }))
 
@@ -86,7 +90,9 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
-    item: registerItem,
+    get item() {
+      return registerItem.value
+    },
     ops: { customsProcedures: [], transportationTypes: [] },
     getById,
     ensureOpsLoaded: vi.fn().mockResolvedValue(),
@@ -123,7 +129,8 @@ vi.mock('vue-router', async () => {
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: ref(null),
-    error: vi.fn(),
+    success: alertSuccess,
+    error: alertError,
     clear: vi.fn()
   })
 }))
@@ -159,6 +166,9 @@ describe('GtcParcels_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockItems.value = [createMockItem()]
+    registerItem.value = { dealNumber: 'D-1' }
+    bulkAssignTnved.mockResolvedValue()
+    getById.mockResolvedValue()
   })
 
   it('renders INN and formatted combined passport text', async () => {
@@ -245,5 +255,41 @@ describe('GtcParcels_List.vue', () => {
     } finally {
       wrapper?.unmount()
     }
+  })
+
+  it('handles read-only, partial, and conflicting bulk assignments', async () => {
+    const wrapper = mount(GtcParcels_List, {
+      props: { registerId: 1 },
+      global: { plugins: [createPinia()], stubs: globalStubs }
+    })
+    await resolveAll()
+
+    bulkAssignTnved.mockResolvedValue({
+      updatedCount: 1,
+      skippedReadOnlyCount: 2
+    })
+    await wrapper.vm.handleAssignTnvedConfirm([1, 2, 3], '6403999300')
+    expect(alertSuccess).toHaveBeenCalledWith(
+      'ТН ВЭД обновлен для 1 посылок. Пропущено из-за запрета изменений: 2'
+    )
+
+    registerItem.value = { dealNumber: 'D-1', readOnly: true }
+    wrapper.vm.showAssignTnvedDialog = false
+    wrapper.vm.handleRowContextMenu(
+      { preventDefault: vi.fn() },
+      { item: mockItems.value[0] }
+    )
+    bulkAssignTnved.mockClear()
+    await wrapper.vm.handleAssignTnvedConfirm([1], '6403999300')
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
+    expect(bulkAssignTnved).not.toHaveBeenCalled()
+
+    registerItem.value = { dealNumber: 'D-1' }
+    const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    bulkAssignTnved.mockRejectedValue(conflict)
+    await expect(wrapper.vm.handleAssignTnvedConfirm([1], '6403999300')).rejects.toBe(conflict)
+    expect(getById).toHaveBeenCalledWith(1)
+    expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
+    expect(wrapper.vm.runningAction).toBe(false)
   })
 })

@@ -14,6 +14,8 @@ import {
 } from '@/helpers/customs.procedure.helpers.js'
 
 let WbrNParcelsList
+let WbrParcelsList
+let Wbr2ParcelsList
 
 const loadParcels = vi.fn().mockResolvedValue()
 const navigateToEditParcel = vi.fn()
@@ -87,6 +89,7 @@ const ensureKeyWordsLoaded = vi.fn().mockResolvedValue()
 const ensureFeacnOrdersLoaded = vi.fn().mockResolvedValue()
 const bulkAssignTnved = vi.fn().mockResolvedValue()
 const alertError = vi.fn()
+const alertSuccess = vi.fn()
 const alertClear = vi.fn()
 
 const headerActions = {
@@ -267,6 +270,13 @@ vi.mock('@/stores/feacn.orders.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    getCountryAlpha2: vi.fn(code => code)
+  })
+}))
+
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     parcels_per_page: parcelsPerPage,
@@ -290,6 +300,7 @@ vi.mock('@/stores/auth.store.js', () => ({
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: mockAlert,
+    success: alertSuccess,
     error: alertError,
     clear: alertClear
   })
@@ -504,6 +515,7 @@ function resetState() {
   registerItem.dealNumber = 'D-7'
   registerItem.customsFee = 689
   registerItem.customsDuty = 750
+  delete registerItem.readOnly
   routeQuery = {}
   restoreSelectedParcelIdSnapshot.mockReturnValue(null)
   ensureOpsLoaded.mockResolvedValue()
@@ -521,6 +533,8 @@ function resetState() {
 describe('WbrNParcels_List.vue', () => {
   beforeAll(async () => {
     WbrNParcelsList = (await import('@/lists/WbrNParcels_List.vue')).default
+    WbrParcelsList = (await import('@/lists/WbrParcels_List.vue')).default
+    Wbr2ParcelsList = (await import('@/lists/Wbr2Parcels_List.vue')).default
   }, 30_000)
 
   beforeEach(resetState)
@@ -696,6 +710,77 @@ describe('WbrNParcels_List.vue', () => {
 
     await wrapper.get('[data-testid="close-list"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('reports skipped parcels and blocks assignment for read-only registers', async () => {
+    const wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+    await resolveAll()
+
+    bulkAssignTnved.mockResolvedValue({
+      updatedCount: 1,
+      skippedReadOnlyCount: 1
+    })
+    await wrapper.get('[data-testid="assign-confirm"]').trigger('click')
+    await resolveAll()
+    expect(alertSuccess).toHaveBeenCalledWith(
+      'ТН ВЭД обновлен для 1 посылок. Пропущено из-за запрета изменений: 1'
+    )
+
+    registerItem.readOnly = true
+    bulkAssignTnved.mockClear()
+    wrapper.vm.showAssignTnvedDialog = false
+    parcelMultiSelectOptions.onContextMenu()
+    await wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')
+
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
+    expect(bulkAssignTnved).not.toHaveBeenCalled()
+    delete registerItem.readOnly
+
+    const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    bulkAssignTnved.mockRejectedValue(conflict)
+    await expect(wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')).rejects.toBe(conflict)
+    expect(getRegisterById).toHaveBeenCalledWith(7)
+    expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
+    expect(wrapper.vm.runningAction).toBe(false)
+  })
+
+  it.each([
+    ['Wbr', () => WbrParcelsList],
+    ['Wbr2', () => Wbr2ParcelsList]
+  ])('enforces %s list mutation locks and refreshes conflicts', async (_name, getComponent) => {
+    const wrapper = mount(getComponent(), {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+    await resolveAll()
+
+    bulkAssignTnved.mockResolvedValue({
+      updatedCount: 1,
+      skippedReadOnlyCount: 2
+    })
+    await wrapper.vm.handleAssignTnvedConfirm([10, 11, 12], '6403999300')
+    expect(alertSuccess).toHaveBeenCalledWith(
+      'ТН ВЭД обновлен для 1 посылок. Пропущено из-за запрета изменений: 2'
+    )
+
+    registerItem.readOnly = true
+    wrapper.vm.showAssignTnvedDialog = false
+    parcelMultiSelectOptions.onContextMenu()
+    bulkAssignTnved.mockClear()
+    await wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
+    expect(bulkAssignTnved).not.toHaveBeenCalled()
+
+    delete registerItem.readOnly
+    const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    bulkAssignTnved.mockRejectedValue(conflict)
+    await expect(wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')).rejects.toBe(conflict)
+    expect(getRegisterById).toHaveBeenCalledWith(7)
+    expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
+    expect(wrapper.vm.runningAction).toBe(false)
   })
 
   it('shows passport verification controls and indicator only for Import SrLogistPlus users', async () => {

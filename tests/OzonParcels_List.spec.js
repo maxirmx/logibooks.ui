@@ -24,6 +24,8 @@ const mockError = ref(null)
 const mockTotalCount = ref(5)
 const selectedParcelId = ref(null)
 const mockBulkAssignTnved = vi.fn().mockResolvedValue(true)
+const alertSuccess = vi.fn()
+const alertError = vi.fn()
 
 const parcelsPerPage = ref(100)
 const parcelsSortBy = ref([])
@@ -192,7 +194,8 @@ vi.mock('vue-router', async () => {
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: ref(null),
-    error: vi.fn(),
+    success: alertSuccess,
+    error: alertError,
     clear: vi.fn()
   })
 }))
@@ -380,6 +383,33 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(loadParcels).toHaveBeenCalled()
     expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
     expect(wrapper.vm.selectedParcelIds.size).toBe(0)
+  })
+
+  it('reports parcels skipped by a read-only mutation lock', async () => {
+    mockBulkAssignTnved.mockResolvedValue({
+      updatedCount: 1,
+      skippedReadOnlyCount: 2
+    })
+
+    await wrapper.vm.handleAssignTnvedConfirm([1, 2, 3], '1234567890')
+
+    expect(alertSuccess).toHaveBeenCalledWith(
+      'ТН ВЭД обновлен для 1 посылок. Пропущено из-за запрета изменений: 2'
+    )
+  })
+
+  it('does not open or submit bulk assignment for a read-only register', async () => {
+    mockRegisterItem.value = { dealNumber: 'D-1', readOnly: true }
+    wrapper.vm.showAssignTnvedDialog = false
+
+    wrapper.vm.handleRowContextMenu(
+      { preventDefault: vi.fn() },
+      { item: mockItems.value[0] }
+    )
+    await wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')
+
+    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
+    expect(mockBulkAssignTnved).not.toHaveBeenCalled()
   })
 
   it('does not assign tnved when another action is running', async () => {

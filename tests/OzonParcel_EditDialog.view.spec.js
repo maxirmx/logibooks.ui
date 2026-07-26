@@ -22,6 +22,8 @@ const parcelsMock = {
   getImageBlob: vi.fn(),
   getById: vi.fn().mockResolvedValue({ id: 2, hasImage: true }),
   update: vi.fn().mockResolvedValue(),
+  generate: vi.fn().mockResolvedValue(),
+  lookupFeacnCode: vi.fn().mockResolvedValue(),
   checkPassport: vi.fn().mockResolvedValue(),
   clearPassportCheck: vi.fn().mockResolvedValue()
 }
@@ -84,6 +86,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
     parcelsMock.checkPassport.mockResolvedValue()
     parcelsMock.clearPassportCheck.mockResolvedValue()
     parcelsMock.update.mockResolvedValue()
+    parcelsMock.generate.mockResolvedValue()
+    parcelsMock.lookupFeacnCode.mockResolvedValue()
     registersMock.item.value = { id: 1, customsProcedureCode: 40 }
     registersMock.getById.mockImplementation(async (id) => {
       registersMock.item.value = { ...registersMock.item.value, id }
@@ -380,5 +384,86 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(registersMock.getById).toHaveBeenCalledWith(9)
     expect(registersMock.getById).toHaveBeenCalledTimes(2)
     expect(routerMocks.replace).toHaveBeenCalledWith('/registers/9/parcels/edit/7')
+  })
+
+  it('keeps read-only navigation and downloads while blocking all mutations', async () => {
+    const actionBarStub = {
+      props: ['mutationDisabled'],
+      emits: ['next-parcel', 'save', 'lookup', 'download'],
+      template: `
+        <div data-testid="parcel-actions" :data-mutation-disabled="String(mutationDisabled)">
+          <button data-testid="next" @click="$emit('next-parcel')"></button>
+          <button data-testid="save" @click="$emit('save')"></button>
+          <button data-testid="lookup" @click="$emit('lookup')"></button>
+          <button data-testid="download" @click="$emit('download')"></button>
+        </div>
+      `
+    }
+    const mountDialog = async () => {
+      const wrapper = mount({
+        components: { OzonParcel_EditDialog },
+        template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
+      }, {
+        global: {
+          stubs: {
+            Field: { template: '<input />' },
+            Form: {
+              template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            },
+            ParcelHeaderActionsBar: actionBarStub,
+            ParcelStatusSection: true,
+            FeacnCodeEditor: true,
+            ParcelNumberExt: true,
+            ParcelWeightAutoField: true,
+            OzonFormField: true,
+            ArticleWithH: true,
+            ActionButton: true,
+            DTagSection: true,
+            'font-awesome-icon': true,
+            VTooltip: true
+          }
+        }
+      })
+      await nextTick()
+      await resolveAll()
+      return wrapper
+    }
+
+    let wrapper = await mountDialog()
+    for (const testId of ['next', 'download', 'lookup']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    expect(parcelsMock.update).toHaveBeenCalled()
+    expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(2)
+    expect(parcelsMock.generate).toHaveBeenCalled()
+    wrapper.unmount()
+
+    vi.clearAllMocks()
+    parcelsMock.item.value = {
+      id: 2,
+      registerId: 1,
+      postingNumber: 'OZON-2',
+      statusId: 1,
+      checkStatus: 0,
+      readOnly: true
+    }
+    registersMock.item.value = { id: 1, customsProcedureCode: 40 }
+    registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
+    parcelsMock.getById.mockResolvedValue({ id: 2, readOnly: true })
+    parcelsMock.generate.mockResolvedValue()
+    wrapper = await mountDialog()
+    parcelsMock.update.mockClear()
+
+    expect(wrapper.text()).toContain('Изменения запрещены')
+    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    for (const testId of ['next', 'save', 'download', 'lookup']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
+    expect(parcelsMock.generate).toHaveBeenCalled()
+    expect(routerMocks.push).toHaveBeenCalled()
   })
 })

@@ -20,6 +20,8 @@ const parcelsMock = {
   loading: ref(false),
   getById: vi.fn().mockResolvedValue({ id: 5 }),
   update: vi.fn().mockResolvedValue(),
+  generate: vi.fn().mockResolvedValue(),
+  lookupFeacnCode: vi.fn().mockResolvedValue(),
   checkPassport: vi.fn().mockResolvedValue(),
   clearPassportCheck: vi.fn().mockResolvedValue()
 }
@@ -38,8 +40,9 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () =
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] })
 }))
+const parcelViewsBack = vi.fn().mockResolvedValue(null)
 vi.mock('@/stores/parcel.views.store.js', () => ({
-  useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue(), back: vi.fn().mockResolvedValue(null) })
+  useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue(), back: parcelViewsBack })
 }))
 
 const registersMock = {
@@ -95,10 +98,13 @@ describe('GtcParcel_EditDialog passport verification', () => {
       passportCheckStatus: 30
     }
     parcelsMock.update.mockResolvedValue()
+    parcelsMock.generate.mockResolvedValue()
+    parcelsMock.lookupFeacnCode.mockResolvedValue()
     parcelsMock.checkPassport.mockResolvedValue()
     parcelsMock.clearPassportCheck.mockResolvedValue()
     registersMock.item.value = { id: 1, customsProcedureCode: 40 }
     registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
+    parcelViewsBack.mockResolvedValue(null)
   })
 
   it('renders passport verification actions for import SrLogistPlus parcels and runs check actions', async () => {
@@ -164,5 +170,87 @@ describe('GtcParcel_EditDialog passport verification', () => {
       expect(fieldByName(name).attributes('data-disabled')).toBe('true')
     }
     expect(fieldByName('patronymic').attributes('data-disabled')).toBe('undefined')
+  })
+
+  it('allows navigation and downloads but blocks mutations for read-only parcels', async () => {
+    const actionBarStub = {
+      props: ['mutationDisabled'],
+      emits: ['next-parcel', 'back', 'save', 'lookup', 'download'],
+      template: `
+        <div data-testid="parcel-actions" :data-mutation-disabled="String(mutationDisabled)">
+          <button data-testid="next" @click="$emit('next-parcel')"></button>
+          <button data-testid="back" @click="$emit('back')"></button>
+          <button data-testid="save" @click="$emit('save')"></button>
+          <button data-testid="lookup" @click="$emit('lookup')"></button>
+          <button data-testid="download" @click="$emit('download')"></button>
+        </div>
+      `
+    }
+    const mountDialog = async () => {
+      const wrapper = mount({
+        components: { GtcParcel_EditDialog },
+        template: '<Suspense><GtcParcel_EditDialog :registerId="1" :id="5" /></Suspense>'
+      }, {
+        global: {
+          stubs: {
+            Field: { template: '<input />' },
+            Form: {
+              template: '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            },
+            ParcelHeaderActionsBar: actionBarStub,
+            ParcelStatusSection: true,
+            FeacnCodeEditor: true,
+            ParcelNumberExt: true,
+            ParcelWeightAutoField: true,
+            GtcFormField: true,
+            ActionButton: true,
+            DTagSection: true,
+            'font-awesome-icon': true,
+            VTooltip: true
+          }
+        }
+      })
+      await nextTick()
+      await resolveAll()
+      return wrapper
+    }
+
+    let wrapper = await mountDialog()
+    for (const testId of ['next', 'back', 'download', 'lookup']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    expect(parcelsMock.update).toHaveBeenCalled()
+    expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(5)
+    expect(parcelsMock.generate).toHaveBeenCalled()
+    wrapper.unmount()
+
+    vi.clearAllMocks()
+    parcelsMock.item.value = {
+      id: 5,
+      registerId: 1,
+      postingNumber: 'GTC-5',
+      statusId: 1,
+      checkStatus: 0,
+      readOnly: true
+    }
+    registersMock.item.value = { id: 1, customsProcedureCode: 40 }
+    registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
+    parcelsMock.getById.mockResolvedValue({ id: 5, readOnly: true })
+    parcelsMock.generate.mockResolvedValue()
+    wrapper = await mountDialog()
+    parcelsMock.update.mockClear()
+
+    expect(wrapper.text()).toContain('Изменения запрещены')
+    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    for (const testId of ['next', 'back', 'save', 'download', 'lookup']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+
+    expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
+    expect(parcelsMock.generate).toHaveBeenCalled()
+    expect(routerMocks.push).toHaveBeenCalled()
   })
 })

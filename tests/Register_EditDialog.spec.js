@@ -393,6 +393,41 @@ describe('Register_EditDialog', () => {
     ])
   })
 
+  it('renders the administrator status control for a read-only register', async () => {
+    mockIsAdmin.value = true
+    mockItem.value = {
+      ...baseRegisterItem,
+      statusId: 2,
+      readOnly: true
+    }
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub,
+          RegisterStatusSelect: {
+            props: ['modelValue'],
+            emits: ['update:modelValue'],
+            template: '<button id="readOnlyStatusId" type="button" @click="$emit(\'update:modelValue\', 3)">{{ modelValue }}</button>'
+          }
+        }
+      }
+    })
+    await resolveAll()
+
+    expect(wrapper.text()).toContain('Реестр доступен только для просмотра')
+    const statusControl = wrapper.get('#readOnlyStatusId')
+    expect(statusControl.text()).toBe('2')
+    await statusControl.trigger('click')
+    expect(statusControl.exists()).toBe(true)
+  })
+
   it('enables airport selectors when aviation transport is selected', async () => {
     mockItem.value = {
       ...baseRegisterItem,

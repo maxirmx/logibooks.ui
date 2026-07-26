@@ -421,6 +421,88 @@ describe('Scanjob_Settings.vue', () => {
     expect(wrapper.text()).toContain('Такое задание на сканирование уже существует')
   })
 
+  it('locks the form and all scanjob mutations for read-only data', async () => {
+    getById.mockResolvedValue({ ...mockScanjob, readOnly: true })
+    const wrapper = mountComponent({
+      mode: 'edit',
+      scanjobId: 11
+    })
+    await resolveAll()
+
+    expect(wrapper.text()).toContain('Изменения и операции сканирования запрещены')
+    expect(wrapper.get('form').classes()).toContain('read-only-form')
+    for (const testId of [
+      'scanjob-start-action',
+      'scanjob-save-action'
+    ]) {
+      expect(wrapper.get(`[data-testid="${testId}"]`).attributes('disabled')).toBeDefined()
+    }
+
+    const saved = await wrapper.vm.$.setupState.saveScanjobQuiet()
+    await wrapper.vm.$.setupState.onSubmit()
+    await wrapper.vm.$.setupState.startScanjob()
+    await wrapper.vm.$.setupState.pauseScanjob()
+    await wrapper.vm.$.setupState.finishScanjob()
+    await resolveAll()
+
+    expect(saved).toBe(false)
+    expect(alertError).toHaveBeenCalledWith('Изменения запрещены для выбранного реестра')
+    expect(update).not.toHaveBeenCalled()
+    expect(start).not.toHaveBeenCalled()
+    expect(pause).not.toHaveBeenCalled()
+    expect(finish).not.toHaveBeenCalled()
+  })
+
+  it('enters read-only mode when a status action save receives a mutation conflict', async () => {
+    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
+    update.mockRejectedValue(conflict)
+    const wrapper = mountComponent({
+      mode: 'edit',
+      scanjobId: 11
+    })
+    await resolveAll()
+
+    await wrapper.get('[data-testid="scanjob-start-action"]').trigger('click')
+    await resolveAll()
+
+    expect(start).not.toHaveBeenCalled()
+    expect(alertError).toHaveBeenCalledWith('Изменения запрещены для выбранного реестра')
+    expect(wrapper.text()).toContain('Изменения и операции сканирования запрещены')
+    expect(wrapper.get('form').classes()).toContain('read-only-form')
+  })
+
+  it('reports duplicate conflicts encountered while saving a status action', async () => {
+    const conflict = Object.assign(new Error('409 Conflict'), { status: 409 })
+    update.mockRejectedValue(conflict)
+    const wrapper = mountComponent({
+      mode: 'edit',
+      scanjobId: 11
+    })
+    await resolveAll()
+
+    await wrapper.get('[data-testid="scanjob-start-action"]').trigger('click')
+    await resolveAll()
+
+    expect(start).not.toHaveBeenCalled()
+    expect(alertError).toHaveBeenCalledWith('Такое задание на сканирование уже существует')
+  })
+
+  it('enters read-only mode when form submission receives a mutation conflict', async () => {
+    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
+    update.mockRejectedValue(conflict)
+    const wrapper = mountComponent({
+      mode: 'edit',
+      scanjobId: 11
+    })
+    await resolveAll()
+
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+
+    expect(wrapper.text()).toContain('Изменения запрещены для выбранного реестра')
+    expect(wrapper.get('form').classes()).toContain('read-only-form')
+  })
+
 
 
   it('enables and validates lookup status only for lookup operation', async () => {

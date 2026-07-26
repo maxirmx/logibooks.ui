@@ -26,6 +26,7 @@ const viewDisabled = computed(() => props.disabled || !props.item?.hasImage)
 const deleteDisabled = computed(() => props.disabled || props.mutationDisabled || !props.item?.hasImage)
 // Keep the original public computed value for consumers and tests that inspect it.
 const buttonsDisabled = viewDisabled
+defineExpose({ buttonsDisabled })
 
 const extensionPresent = ref(false)
 function onMessage(e) {

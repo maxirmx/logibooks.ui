@@ -11,6 +11,7 @@ import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.stor
 const props = defineProps({
   disabled: { type: Boolean, default: false },
   actionsDisabled: { type: Boolean, default: false },
+  mutationDisabled: { type: Boolean, default: false },
   downloadDisabled: { type: Boolean, default: false },
   lookupDisabled: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' }
@@ -84,11 +85,12 @@ onBeforeUnmount(() => {
 function emitEvent(event) {
   if (props.disabled) return
   if (props.actionsDisabled && event !== 'cancel') return
+  if (props.mutationDisabled && event === 'save') return
   emit(event)
 }
 
 function emitLookup() {
-  if (props.disabled || props.actionsDisabled || props.lookupDisabled) return
+  if (props.disabled || props.actionsDisabled || props.mutationDisabled || props.lookupDisabled) return
   emit('lookup')
 }
 
@@ -158,7 +160,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-magnifying-glass"
         :iconSize="iconSize"
         tooltip-text="Сохранить и подобрать код ТН ВЭД"
-        :disabled="disabled || actionsDisabled || lookupDisabled"
+        :disabled="disabled || actionsDisabled || mutationDisabled || lookupDisabled"
         @click="emitLookup"
       />
     </div>
@@ -178,7 +180,7 @@ function handleKeydown(e) {
         icon="fa-solid fa-check-double"
         :iconSize="iconSize"
         tooltip-text="Сохранить"
-        :disabled="disabled || actionsDisabled"
+        :disabled="disabled || actionsDisabled || mutationDisabled"
         @click="emitEvent('save')"
       />
       <ActionButton

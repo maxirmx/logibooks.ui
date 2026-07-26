@@ -120,6 +120,29 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['delete-image']).toBeUndefined()
   })
 
+  it('keeps image viewing available while image mutations are disabled', async () => {
+    const wrapper = mount(ProductLinkWithActions, {
+      props: {
+        label: 'Product Link',
+        item: { id: 12, productLink: 'example.com', hasImage: true },
+        mutationDisabled: true
+      },
+      global: { stubs: globalStubs }
+    })
+
+    wrapper.vm.extensionPresent = true
+    await nextTick()
+
+    expect(wrapper.find('[data-test="product-link-select"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-test="product-link-view"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-test="product-link-delete"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-test="product-link-view"]').trigger('click')
+    expect(wrapper.emitted()['view-image']).toHaveLength(1)
+    expect(wrapper.emitted()['select-image']).toBeUndefined()
+    expect(wrapper.emitted()['delete-image']).toBeUndefined()
+  })
+
   it('handles extension presence through window messages', async () => {
     const wrapper = mount(ProductLinkWithActions, {
       props: {

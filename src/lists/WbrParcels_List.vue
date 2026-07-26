@@ -127,22 +127,33 @@ const {
     data,
     showPassportVerification.value ? passportCheckStatuses.value : []
   ).class,
-  onContextMenu: () => { showAssignTnvedDialog.value = true },
+  onContextMenu: () => {
+    if (registersStore.item?.readOnly !== true) showAssignTnvedDialog.value = true
+  },
 })
 
 const showAssignTnvedDialog = ref(false)
 const showParcelStatusBulkDialog = ref(false)
 
 async function handleAssignTnvedConfirm(ids, tnVed) {
-  if (runningAction.value) return
+  if (registersStore.item?.readOnly === true || runningAction.value) return
   runningAction.value = true
   try {
-    await parcelsStore.bulkAssignTnved(ids, tnVed)
+    const result = await parcelsStore.bulkAssignTnved(ids, tnVed)
+    if ((result?.skippedReadOnlyCount || 0) > 0) {
+      alertStore.success(
+        `ТН ВЭД обновлен для ${result.updatedCount || 0} посылок. `
+        + `Пропущено из-за запрета изменений: ${result.skippedReadOnlyCount}`
+      )
+    }
     showAssignTnvedDialog.value = false
     selectedParcelIds.value = new Set()
     selectedParcelId.value = null
     lastClickedId.value = null
     await loadParcelsWrapper()
+  } catch (error) {
+    if (error?.status === 409) await fetchRegister()
+    alertStore.error(error?.message || 'Ошибка при назначении кода ТН ВЭД')
   } finally {
     runningAction.value = false
   }
@@ -463,6 +474,7 @@ function getGenericTemplateHeaders() {
       <RegisterHeaderActionsBar
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
+        :mutation-disabled="registersStore.item?.readOnly === true"
         :loading="runningAction || loading || isInitializing"
         :show-passport-check="showPassportVerification"
         @validate-sw="validateRegisterSwHeader"
@@ -486,6 +498,9 @@ function getGenericTemplateHeaders() {
       />
     </div>
     <hr class="hr" />
+    <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">
+      Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
+    </div>
 
 
     <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
@@ -759,7 +774,7 @@ function getGenericTemplateHeaders() {
       :register-id="props.registerId"
       :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
-      :disabled="runningAction || loading || isInitializing"
+      :disabled="registersStore.item?.readOnly === true || runningAction || loading || isInitializing"
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />

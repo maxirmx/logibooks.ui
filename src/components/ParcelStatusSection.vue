@@ -87,6 +87,7 @@ defineEmits([
           name="statusId"
           id="statusId"
           class="form-control input"
+          :disabled="disabled"
         >
           <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">{{ status.title }}</option>
         </Field>

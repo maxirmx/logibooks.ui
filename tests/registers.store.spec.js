@@ -1363,6 +1363,27 @@ describe('registers store', () => {
       expect(store.item.invoiceNumber).toBe('b')
       expect(store.items[0].invoiceNumber).toBe('b')
     })
+
+    it('refreshes the register and enters read-only mode after a stale conflict', async () => {
+      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      fetchWrapper.put.mockRejectedValue(conflict)
+      fetchWrapper.get.mockResolvedValue({
+        id: 5,
+        invoiceNumber: 'server-value',
+        readOnly: true,
+        customsProcedureCode: 10
+      })
+      const store = useRegistersStore()
+      store.items = [{ id: 5, invoiceNumber: 'old', readOnly: false }]
+      store.item = { id: 5, invoiceNumber: 'old', readOnly: false }
+
+      await expect(store.update(5, { invoiceNumber: 'local-value' })).rejects.toBe(conflict)
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/5`)
+      expect(store.item.readOnly).toBe(true)
+      expect(store.item.invoiceNumber).toBe('server-value')
+      expect(store.items[0].readOnly).toBe(true)
+    })
   })
 
   describe('download method', () => {

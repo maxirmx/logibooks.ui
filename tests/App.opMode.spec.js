@@ -13,7 +13,7 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { roleAdmin, roleLogist } from '@/helpers/user.roles.js'
+import { roleAdmin, roleLogist, roleShiftLead, roleSrLogist } from '@/helpers/user.roles.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -173,5 +173,37 @@ describe('App navigation for registers', () => {
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toBe('/scanner/wd4')
+  })
+
+  it('shows register-status settings to shift leads without exposing administrator-only settings', async () => {
+    authStore.user = {
+      id: 2,
+      firstName: 'Shift',
+      lastName: 'Lead',
+      patronymic: '',
+      email: 'shift-lead@example.com',
+      roles: [roleShiftLead]
+    }
+    const wrapper = mountApp()
+    await wrapper.vm.$nextTick()
+    const links = wrapper.findAll('a')
+
+    expect(links.some((item) => item.text().includes('Статусы партий'))).toBe(true)
+    expect(links.some((item) => item.text().includes('События/партии'))).toBe(false)
+  })
+
+  it('does not show register-status settings to senior logist users', async () => {
+    authStore.user = {
+      id: 3,
+      firstName: 'Senior',
+      lastName: 'Logist',
+      patronymic: '',
+      email: 'senior-logist@example.com',
+      roles: [roleSrLogist]
+    }
+    const wrapper = mountApp()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('a').some((item) => item.text().includes('Статусы партий'))).toBe(false)
   })
 })

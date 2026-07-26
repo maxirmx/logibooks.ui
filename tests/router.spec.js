@@ -56,6 +56,8 @@ describe('router guards', () => {
       returnUrl: null, 
       check: checkMock, 
       isAdmin: false, 
+      isShiftLead: false,
+      isShiftLeadPlus: false,
       isLogist: false, 
       permissionRedirect: false, 
       logout: logoutMock,
@@ -476,6 +478,48 @@ describe('router guards', () => {
       expect(create?.meta.reqAdminOrSrLogist).toBe(true)
       expect(edit?.meta.reqAdminOrSrLogist).toBe(true)
       expect(edit?.props.default({ params: { id: '42' } })).toEqual({ id: 42 })
+    })
+  })
+
+  describe('register status mutation routes', () => {
+    it('requires administrator or shift-lead access', () => {
+      const routes = router.getRoutes()
+      const create = routes.find((route) => route.path === '/registerstatus/create')
+      const edit = routes.find((route) => route.path === '/registerstatus/edit/:id')
+
+      expect(create?.meta.reqShiftLeadPlus).toBe(true)
+      expect(create?.meta.reqAdminOrSrLogist).toBeUndefined()
+      expect(edit?.meta.reqShiftLeadPlus).toBe(true)
+      expect(edit?.meta.reqAdminOrSrLogist).toBeUndefined()
+    })
+
+    it('allows a shift lead to open register status mutation routes', async () => {
+      authStore.user = { id: 9 }
+      authStore.isShiftLead = true
+      authStore.isShiftLeadPlus = true
+      authStore.isSrLogist = false
+      authStore.isSrLogistPlus = true
+      authStore.hasAnyRole = true
+
+      await router.push('/registerstatus/create')
+      await router.isReady()
+
+      expect(router.currentRoute.value.fullPath).toBe('/registerstatus/create')
+    })
+
+    it('redirects a senior logist away from register status mutation routes', async () => {
+      authStore.user = { id: 10 }
+      authStore.isShiftLead = false
+      authStore.isShiftLeadPlus = false
+      authStore.isSrLogist = true
+      authStore.isSrLogistPlus = true
+      authStore.hasAnyRole = true
+
+      await router.push('/registerstatus/create')
+      await router.isReady()
+
+      expect(router.currentRoute.value.fullPath).toBe('/login')
+      expect(authStore.returnUrl).toBe('/registerstatus/create')
     })
   })
 

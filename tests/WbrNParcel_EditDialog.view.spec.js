@@ -269,10 +269,10 @@ const stubs = {
     template: '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
-    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled'],
+    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled', 'mutationDisabled'],
     emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'cancel', 'download'],
     template: `
-      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)">
+      <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)" :data-mutation-disabled="String(mutationDisabled)">
         <button data-testid="next-parcel" :disabled="disabled || actionsDisabled" @click="$emit('next-parcel')"></button>
         <button data-testid="next-issue" :disabled="disabled || actionsDisabled" @click="$emit('next-issue')"></button>
         <button data-testid="back" :disabled="disabled || actionsDisabled" @click="$emit('back')"></button>
@@ -602,6 +602,24 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(routerPush).toHaveBeenCalledWith({
       path: '/registers/12/parcels',
       query: { selectedParcelId: '3', mode: 'warehouse' }
+    })
+  })
+
+  it('leaves a read-only parcel without sending an update', async () => {
+    parcelItem.value = { ...baseParcel, readOnly: true }
+    const wrapper = await mountDialog()
+    parcelUpdate.mockClear()
+
+    expect(wrapper.text()).toContain('Посылка доступна только для просмотра')
+    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-mutation-disabled')).toBe('true')
+
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+
+    expect(parcelUpdate).not.toHaveBeenCalled()
+    expect(routerPush).toHaveBeenCalledWith({
+      path: '/registers/12/parcels',
+      query: { selectedParcelId: '3' }
     })
   })
 

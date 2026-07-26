@@ -328,7 +328,36 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function update(id, data) {
-    const res = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+    let res
+    try {
+      res = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+    } catch (err) {
+      if (
+        err?.status === 409
+        && String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
+      ) {
+        let refreshed = null
+        try {
+          refreshed = await fetchWrapper.get(`${baseUrl}/${id}`)
+          setDestinationField(refreshed)
+        } catch {
+          // The conflict already proves the server-side lock; keep the UI safe
+          // even if the follow-up refresh cannot be completed.
+        }
+
+        if (item.value?.id === id) {
+          item.value = refreshed ?? { ...item.value, readOnly: true }
+        }
+
+        const existingIndex = items.value.findIndex((register) => register.id === id)
+        if (existingIndex !== -1) {
+          items.value[existingIndex] = refreshed
+            ? { ...items.value[existingIndex], ...refreshed }
+            : { ...items.value[existingIndex], readOnly: true }
+        }
+      }
+      throw err
+    }
     if (item.value && item.value.id === id) {
       item.value = { ...item.value, ...data }
     }

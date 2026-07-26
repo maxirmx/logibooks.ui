@@ -274,7 +274,7 @@ const router = createRouter({
       path: '/registerstatus/create',
       name: 'Регистрация статуса реестра',
       component: () => import('@/views/RegisterStatus_CreateView.vue'),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { reqShiftLeadPlus: true }
     },
     {
       path: '/parcelstatus/edit/:id',
@@ -292,7 +292,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { reqShiftLeadPlus: true }
     },
     {
       path: '/keywords',
@@ -603,6 +603,10 @@ router.beforeEach(async (to) => {
 
     // Check role-specific permissions
     if (to.meta.reqAdminOrSrLogist && !auth.isSrLogistPlus) {
+      return routeToLogin(to, auth)
+    }
+
+    if (to.meta.reqShiftLeadPlus && !auth.isShiftLeadPlus) {
       return routeToLogin(to, auth)
     }
 

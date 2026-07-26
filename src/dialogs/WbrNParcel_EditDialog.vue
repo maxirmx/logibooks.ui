@@ -105,6 +105,7 @@ const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedByPartner(item.value?.checkStatus))
+const readOnly = computed(() => item.value?.readOnly === true || registerItem.value?.readOnly === true)
 const showPassportVerification = computed(() =>
   authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
 )
@@ -315,7 +316,9 @@ async function onSubmit(values, useTheNext = false) {
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
-    await parcelsStore.update(currentParcelId.value, values)
+    if (!readOnly.value) {
+      await parcelsStore.update(currentParcelId.value, values)
+    }
 
     // Wait for the appropriate next parcel promise to resolve
     const nextParcels = await ensureNextParcelsPromise()
@@ -350,6 +353,10 @@ async function onSubmit(values, useTheNext = false) {
 }
 
 function onSave(values) {
+  if (readOnly.value) {
+    goToParcelsList()
+    return Promise.resolve()
+  }
   return parcelsStore
     .update(currentParcelId.value, values)
     .then(() => {
@@ -367,7 +374,9 @@ async function onBack(values) {
   try {
     // Wait for next parcels info to complete before processing
     await ensureNextParcelsPromise()
-    await parcelsStore.update(currentParcelId.value, values)
+    if (!readOnly.value) {
+      await parcelsStore.update(currentParcelId.value, values)
+    }
     const prevParcel = await parcelViewsStore.back()
 
     if (prevParcel) {
@@ -400,7 +409,9 @@ async function generateXml(values) {
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
-    const updatePromise = parcelsStore.update(currentParcelId.value, values)
+    const updatePromise = readOnly.value
+      ? Promise.resolve()
+      : parcelsStore.update(currentParcelId.value, values)
     await Promise.all([ensureNextParcelsPromise(), updatePromise])
     await registersStore.getById(props.registerId)
     
@@ -426,7 +437,7 @@ function handleFellows() {
 
 // Lookup FEACN codes triggered from header actions
 async function onLookup(values) {
-  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
     // Wait for neighbor promises if present
@@ -452,7 +463,7 @@ async function onLookup(values) {
       :initial-values="item" 
       :validation-schema="schema" 
       v-slot="{ errors, values, isSubmitting, setFieldValue }" 
-      :class="{ 'form-disabled': overlayActive || imageOverlayOpen }"
+      :class="{ 'form-disabled': overlayActive || imageOverlayOpen, 'read-only-form': readOnly }"
     >
     <div class="header-with-actions">
       <h1 class="primary-heading">
@@ -462,6 +473,7 @@ async function onLookup(values) {
       <ParcelHeaderActionsBar
         :disabled="isSubmitting || runningAction || loading"
         :actions-disabled="markedByPartnerActionsDisabled"
+        :mutation-disabled="readOnly"
         :download-disabled="
           isSubmitting ||
           runningAction ||
@@ -483,6 +495,9 @@ async function onLookup(values) {
     </div>
     
     <hr class="hr" />
+      <div v-if="readOnly" class="alert alert-warning read-only-notice">
+        Изменения запрещены. Посылка доступна только для просмотра.
+      </div>
       
       <!-- Order Identification & Status Section -->
       <ParcelStatusSection
@@ -492,8 +507,8 @@ async function onLookup(values) {
         :get-check-status-class="getCheckStatusClass"
         :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
-        :disabled="isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
-        :clear-check-status-disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+        :disabled="readOnly || isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
+        :clear-check-status-disabled="readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
         @validate-fc="(vals) => validateParcel(vals, false)"
@@ -512,7 +527,7 @@ async function onLookup(values) {
         :columnTooltips="wbrnRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
         :runningAction="runningAction"
-        :disabled="CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
+        :disabled="readOnly || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
         @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"
         @set-running-action="runningAction = $event"
@@ -571,13 +586,14 @@ async function onLookup(values) {
             :label="wbrnRegisterColumnTitles.productLink"
             :item="item"
             :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :mutation-disabled="readOnly"
             @view-image="viewProductImage"
             @delete-image="() => deleteProductImage(values)"
           />
           <ArticleWithH
             :item="item"
             :errors="errors"
-            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :disabled="readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
             :column-titles="wbrnRegisterColumnTitles"
             :fullWidth="false"
             @approve-notification="approveParcelWithNotification(values)"

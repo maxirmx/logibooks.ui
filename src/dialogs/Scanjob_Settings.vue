@@ -191,6 +191,9 @@ const statusDisplay = computed(() => {
 const canStart = computed(() => currentScanjob.value?.allowStart === true)
 const canPause = computed(() => currentScanjob.value?.allowPause === true)
 const canFinish = computed(() => currentScanjob.value?.allowFinish === true)
+const readOnly = computed(() =>
+  currentScanjob.value?.readOnly === true || currentRegister.value?.readOnly === true
+)
 
 watch(isLookupOperation, (lookup) => {
   if (!lookup) {
@@ -297,6 +300,10 @@ function buildPayload(values) {
 
 // Save without redirecting, returns true on success
 async function saveScanjobQuiet() {
+  if (readOnly.value) {
+    alertStore.error('Изменения запрещены для выбранного реестра')
+    return false
+  }
   // Validate required fields before saving to match the schema requirements
   // This ensures status transitions only happen with valid data
   if (!name.value || !name.value.trim()) {
@@ -348,7 +355,18 @@ async function saveScanjobQuiet() {
     }
     return true
   } catch (error) {
-    if (error?.message?.includes && error.message.includes('409')) {
+    if (
+      error?.status === 409
+      && String(error?.message || '').includes('Изменения запрещены')
+    ) {
+      currentScanjob.value = currentScanjob.value
+        ? { ...currentScanjob.value, readOnly: true }
+        : null
+      currentRegister.value = currentRegister.value
+        ? { ...currentRegister.value, readOnly: true }
+        : null
+      alertStore.error('Изменения запрещены для выбранного реестра')
+    } else if (error?.status === 409 || String(error?.message || '').includes('409')) {
       alertStore.error('Такое задание на сканирование уже существует')
     } else {
       alertStore.error(error.message || 'Ошибка при сохранении задания на сканирование')
@@ -358,6 +376,10 @@ async function saveScanjobQuiet() {
 }
 
 const onSubmit = handleSubmit(async (values, { setErrors }) => {
+  if (readOnly.value) {
+    setErrors({ apiError: 'Изменения запрещены для выбранного реестра' })
+    return
+  }
   saving.value = true
   try {
     const payload = buildPayload(values)
@@ -378,7 +400,18 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
       router.back()
     }
   } catch (error) {
-    if (error?.message?.includes && error.message.includes('409')) {
+    if (
+      error?.status === 409
+      && String(error?.message || '').includes('Изменения запрещены')
+    ) {
+      currentScanjob.value = currentScanjob.value
+        ? { ...currentScanjob.value, readOnly: true }
+        : null
+      currentRegister.value = currentRegister.value
+        ? { ...currentRegister.value, readOnly: true }
+        : null
+      setErrors({ apiError: 'Изменения запрещены для выбранного реестра' })
+    } else if (error?.status === 409 || String(error?.message || '').includes('409')) {
       setErrors({ apiError: 'Такое задание на сканирование уже существует' })
     } else {
       setErrors({ apiError: error.message || 'Ошибка при сохранении задания на сканирование' })
@@ -406,7 +439,7 @@ async function refreshScanjobStatus() {
 }
 
 async function startScanjob() {
-  if (runningAction.value || isCreate.value) return
+  if (runningAction.value || isCreate.value || readOnly.value) return
   runningAction.value = true
   try {
     const saved = await saveScanjobQuiet()
@@ -427,7 +460,7 @@ async function startScanjob() {
 }
 
 async function pauseScanjob() {
-  if (runningAction.value || isCreate.value) return
+  if (runningAction.value || isCreate.value || readOnly.value) return
   runningAction.value = true
   try {
     const saved = await saveScanjobQuiet()
@@ -448,7 +481,7 @@ async function pauseScanjob() {
 }
 
 async function finishScanjob() {
-  if (runningAction.value || isCreate.value) return
+  if (runningAction.value || isCreate.value || readOnly.value) return
   runningAction.value = true
   try {
     const actionName = name.value || currentScanjob.value?.name || props.scanjobId
@@ -500,7 +533,7 @@ defineExpose({ onSubmit, cancel })
             icon-size="2x"
             tooltip-text="Начать сканирование"
             data-testid="scanjob-start-action"
-            :disabled="saving || loading || runningAction || !canStart"
+            :disabled="readOnly || saving || loading || runningAction || !canStart"
             @click="startScanjob"
           />
           <ActionButton
@@ -509,7 +542,7 @@ defineExpose({ onSubmit, cancel })
             icon-size="2x"
             tooltip-text="Приостановить сканирование"
             data-testid="scanjob-pause-action"
-            :disabled="saving || loading || runningAction || !canPause"
+            :disabled="readOnly || saving || loading || runningAction || !canPause"
             @click="pauseScanjob"
           />
           <ActionButton
@@ -518,7 +551,7 @@ defineExpose({ onSubmit, cancel })
             icon-size="2x"
             tooltip-text="Завершить сканирование"
             data-testid="scanjob-finish-action"
-            :disabled="saving || loading || runningAction || !canFinish"
+            :disabled="readOnly || saving || loading || runningAction || !canFinish"
             v-if="authStore.isShiftLeadPlus"
             @click="finishScanjob"
           />
@@ -530,7 +563,7 @@ defineExpose({ onSubmit, cancel })
             icon-size="2x"
             tooltip-text="Сохранить"
             data-testid="scanjob-save-action"
-            :disabled="saving || loading || runningAction"
+            :disabled="readOnly || saving || loading || runningAction"
             @click="onSubmit"
           />
           <ActionButton
@@ -550,7 +583,11 @@ defineExpose({ onSubmit, cancel })
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
 
-    <form v-else @submit.prevent="onSubmit">
+    <div v-if="readOnly" class="alert alert-warning read-only-notice">
+      Изменения и операции сканирования запрещены. Просмотр задания доступен.
+    </div>
+
+    <form v-if="!loading" @submit.prevent="onSubmit" :class="{ 'read-only-form': readOnly }">
       <input type="hidden" name="registerId" v-model="fieldRegisterId" />
       <input type="hidden" name="warehouseId" v-model="fieldWarehouseId" />
 

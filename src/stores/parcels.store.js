@@ -293,21 +293,57 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function update(id, data) {
-    const response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+    const response = await runParcelMutation(
+      id,
+      () => fetchWrapper.put(`${baseUrl}/${id}`, data)
+    )
+    const numericId = Number(id)
 
     // Update the item in the store if it's currently loaded
-    if (item.value && item.value.id === id) {
+    if (item.value && Number(item.value.id) === numericId) {
       // Merge the updated data with the existing item
       item.value = { ...item.value, ...data }
     }
 
     // Update the item in the items array if it exists
-    const itemIndex = items.value.findIndex(parcel => parcel.id === id)
+    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
     if (itemIndex !== -1) {
       items.value[itemIndex] = { ...items.value[itemIndex], ...data }
     }
     
     return response
+  }
+
+  async function markCurrentParcelReadOnlyOnConflict(id, err) {
+    if (
+      err?.status !== 409
+      || !String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
+    ) return
+    const numericId = Number(id)
+    let refreshed = null
+    if (Number(item.value?.id) === numericId) {
+      try {
+        refreshed = await fetchWrapper.get(`${baseUrl}/a/${numericId}`)
+        item.value = refreshed
+      } catch {
+        item.value = { ...item.value, readOnly: true }
+      }
+    }
+    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
+    if (itemIndex !== -1) {
+      items.value[itemIndex] = refreshed
+        ? { ...items.value[itemIndex], ...refreshed }
+        : { ...items.value[itemIndex], readOnly: true }
+    }
+  }
+
+  async function runParcelMutation(id, action) {
+    try {
+      return await action()
+    } catch (err) {
+      await markCurrentParcelReadOnlyOnConflict(id, err)
+      throw err
+    }
   }
 
   async function generate(id, filename, applyWeightCorrection = false) {
@@ -342,6 +378,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       return true
     } catch (err) {
       error.value = err
+      await markCurrentParcelReadOnlyOnConflict(id, err)
       return false
     } finally {
       loading.value = false
@@ -352,42 +389,42 @@ export const useParcelsStore = defineStore('parcels', () => {
     const query = buildApproveQueryParams(approvalMode)
     const url = `${baseUrl}/${id}/approve?${query}`
 
-    await fetchWrapper.post(url)
+    await runParcelMutation(id, () => fetchWrapper.post(url))
     return true
   }
 
   async function lookupFeacnCode(id) {
-    const result = await fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`)
+    const result = await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`))
     return result
   }
 
   async function clearCheckStatus(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/clear`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/clear`))
     return true
   }
 
   async function checkForDuplicate(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/check-duplicate`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/check-duplicate`))
     return true
   }
 
   async function checkPassport(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/check-passport`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/check-passport`))
     return true
   }
 
   async function clearPassportCheck(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/clear-passport-check`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/clear-passport-check`))
     return true
   }
 
   async function setDefect(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/set-defect`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/set-defect`))
     return true
   }
 
   async function clearDefect(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/clear-defect`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/clear-defect`))
     return true
   }
 
@@ -422,17 +459,17 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function clearExtId(id) {
-    await fetchWrapper.post(`${baseUrl}/${id}/clear-ext-id`)
+    await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/clear-ext-id`))
     setParcelExtId(id, null)
     return true
   }
 
   async function bulkAssignTnved(parcelIds, tnVed) {
-    await fetchWrapper.post(`${baseUrl}/assign-tnved`, {
+    const result = await fetchWrapper.post(`${baseUrl}/assign-tnved`, {
       tnVed,
       parcelIds
     })
-    return true
+    return result ?? true
   }
 
   async function resolveStatusSelection(registerId, numbers) {
@@ -466,6 +503,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       return true
     } catch (err) {
       error.value = err
+      await markCurrentParcelReadOnlyOnConflict(id, err)
       throw err
     }
   }

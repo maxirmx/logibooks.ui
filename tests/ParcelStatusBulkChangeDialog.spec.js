@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
   alertSuccess: vi.fn(),
   alertError: vi.fn(),
+  getRegisterById: vi.fn(),
   registerItems: [],
   registerItem: null
 }))
@@ -30,6 +31,7 @@ vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
     items: mocks.registerItems,
     item: mocks.registerItem,
+    getById: mocks.getRegisterById,
     setParcelStatuses: mocks.setParcelStatuses
   })
 }))
@@ -107,6 +109,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     })
     mocks.updateStatusSelection.mockResolvedValue({ updatedCount: 0, skippedCount: 0 })
     mocks.setParcelStatuses.mockResolvedValue()
+    mocks.getRegisterById.mockResolvedValue()
     mocks.confirm.mockResolvedValue(true)
     mocks.registerItems = []
     mocks.registerItem = null
@@ -273,6 +276,27 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await flushPromises()
 
     expect(mocks.alertError).toHaveBeenCalledWith('update found failed')
+  })
+
+  it('refreshes the register after a read-only update conflict', async () => {
+    mocks.resolveStatusSelection.mockResolvedValue({
+      parcelIds: [11],
+      missingNumbers: [],
+      blockedItems: []
+    })
+    const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    mocks.updateStatusSelection.mockRejectedValue(conflict)
+    const wrapper = mountDialog()
+
+    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
+    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
+    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="parcel-status-bulk-update-found"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getRegisterById).toHaveBeenCalledWith(7)
+    expect(mocks.alertError).toHaveBeenCalledWith('Изменения запрещены')
   })
 
   it('updates all parcels in the register through the existing register endpoint', async () => {

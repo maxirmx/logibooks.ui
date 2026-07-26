@@ -68,7 +68,7 @@ function openScanjobMonitor(scanJob) {
 }
 
 async function deleteScanjob(scanJob) {
-  if (runningAction.value) return
+  if (runningAction.value || scanJob?.readOnly) return
   runningAction.value = true
   try {
     const content = 'Удалить задание на сканирование "' + scanJob.name + '" ?'
@@ -103,7 +103,7 @@ async function deleteScanjob(scanJob) {
 }
 
 async function startScanjob(scanJob) {
-  if (runningAction.value) return
+  if (runningAction.value || scanJob?.readOnly) return
   runningAction.value = true
   try {
     await scanJobsStore.start(scanJob.id)
@@ -122,7 +122,7 @@ async function startScanjob(scanJob) {
 }
 
 async function pauseScanjob(scanJob) {
-  if (runningAction.value) return
+  if (runningAction.value || scanJob?.readOnly) return
   runningAction.value = true
   try {
     await scanJobsStore.pause(scanJob.id)
@@ -142,7 +142,7 @@ async function pauseScanjob(scanJob) {
 
 
 async function finishScanjob(scanJob) {
-  if (runningAction.value) return
+  if (runningAction.value || scanJob?.readOnly) return
   runningAction.value = true
   try {
     const content = 'Завершить задание на сканирование "' + scanJob.name + '" ?'
@@ -311,6 +311,7 @@ defineExpose({
 
         <template v-slot:[`item.status`]="{ item }">
           {{ scanJobsStore.getOpsLabel(ops?.statuses, item.status) }}
+          <span v-if="item.readOnly" class="text-warning" title="Изменения запрещены"> 🔒</span>
         </template>
 
         <template v-slot:[`item.warehouseId`]="{ item }">
@@ -324,7 +325,7 @@ defineExpose({
               icon="fa-solid fa-play"
               tooltip-text="Начать сканирование"
               @click="startScanjob"
-              :disabled="runningAction || loading || item.allowStart !== true"
+              :disabled="runningAction || loading || item.readOnly || item.allowStart !== true"
               v-if="authStore.isWhManagerPlus"
             />
             <ActionButton
@@ -332,7 +333,7 @@ defineExpose({
               icon="fa-solid fa-pause"
               tooltip-text="Приостановить сканирование"
               @click="pauseScanjob"
-              :disabled="runningAction || loading || item.allowPause !== true"
+              :disabled="runningAction || loading || item.readOnly || item.allowPause !== true"
               v-if="authStore.isWhManagerPlus"
             />
             <ActionButton
@@ -340,7 +341,7 @@ defineExpose({
               icon="fa-solid fa-check-circle"
               tooltip-text="Завершить сканирование"
               @click="finishScanjob"
-              :disabled="runningAction || loading || item.allowFinish !== true"
+              :disabled="runningAction || loading || item.readOnly || item.allowFinish !== true"
               v-if="authStore.isShiftLeadPlus"
             />
             <ActionButton
@@ -363,7 +364,7 @@ defineExpose({
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить задание на сканирование"
               @click="deleteScanjob"
-              :disabled="runningAction || loading"
+              :disabled="runningAction || loading || item.readOnly"
               v-if="authStore.isAdmin"
             />
           </div>

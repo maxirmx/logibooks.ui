@@ -106,6 +106,11 @@ const closedInfo = computed(() => {
 })
 const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
 const registerId = computed(() => scanjob.value?.registerId ?? null)
+const readOnly = computed(() =>
+  visibleSnapshot.value?.readOnly === true
+  || scanjob.value?.readOnly === true
+  || activeRegisterItem.value?.readOnly === true
+)
 const activeRegisterItem = computed(() => {
   const currentRegisterId = scanjob.value?.registerId
   const storeRegister = registersStore.item
@@ -331,7 +336,7 @@ async function refreshCurrentScopeSnapshot() {
 
 async function runParcelDefectAction(item, action, getErrorMessage) {
   const parcelId = item?.id ?? item?.parcelId
-  if (defectActionRunning.value || isLoading.value || !parcelId) {
+  if (readOnly.value || defectActionRunning.value || isLoading.value || !parcelId) {
     return
   }
 
@@ -953,6 +958,9 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+    <div v-if="readOnly" class="alert alert-warning read-only-notice">
+      Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
+    </div>
 
     <div class="scanjob-monitor-panel">
       <div v-if="isLoading && !visibleSnapshot" class="monitor-empty" data-testid="scanjob-monitor-loading">
@@ -987,7 +995,7 @@ defineExpose({
           :register-type="visibleSnapshot?.registerType ?? 0"
           :register="monitorWeightRegister"
           :loading="isLoading"
-          :defect-action-loading="defectActionRunning"
+          :defect-action-loading="defectActionRunning || readOnly"
           :selected-parcel-id="selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setParcelDefect"

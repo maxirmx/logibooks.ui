@@ -639,6 +639,29 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function markScanJobReadOnly(id, err) {
+    if (
+      err?.status !== 409
+      || !String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
+    ) return
+    const numericId = Number(id)
+    let refreshed = null
+    if (Number(scanjob.value?.id) === numericId) {
+      try {
+        refreshed = await fetchWrapper.get(`${baseUrl}/${numericId}`)
+        scanjob.value = refreshed
+      } catch {
+        scanjob.value = { ...scanjob.value, readOnly: true }
+      }
+    }
+    const index = items.value.findIndex(job => Number(job.id) === numericId)
+    if (index !== -1) {
+      items.value[index] = refreshed
+        ? { ...items.value[index], ...refreshed }
+        : { ...items.value[index], readOnly: true }
+    }
+  }
+
   async function create(scanJobData) {
     loading.value = true
     error.value = null
@@ -669,6 +692,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return true
     } catch (err) {
       error.value = err
+      await markScanJobReadOnly(id, err)
       throw err
     } finally {
       loading.value = false
@@ -684,6 +708,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return true
     } catch (err) {
       error.value = err
+      await markScanJobReadOnly(id, err)
       throw err
     } finally {
       loading.value = false
@@ -698,6 +723,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return true
     } catch (err) {
       error.value = err
+      await markScanJobReadOnly(id, err)
       throw err
     } finally {
       loading.value = false
@@ -712,6 +738,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return true
     } catch (err) {
       error.value = err
+      await markScanJobReadOnly(id, err)
       throw err
     } finally {
       loading.value = false
@@ -725,6 +752,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return true
     } catch (err) {
       error.value = err
+      await markScanJobReadOnly(id, err)
       throw err
     } finally {
       loading.value = false

@@ -42,22 +42,24 @@ function filterRegisterStatuses(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isShiftLeadPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
   { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
   { title: 'Название статуса', key: 'title', sortable: true },
   { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
 ]
 
 function openEditDialog(item) {
+  if (!authStore.isShiftLeadPlus) return
   router.push(`/registerstatus/edit/${item.id}`)
 }
 
 function openCreateDialog() {
+  if (!authStore.isShiftLeadPlus) return
   router.push('/registerstatus/create')
 }
 
 async function deleteRegisterStatus(registerStatus) {
-  if (runningAction.value) return
+  if (!authStore.isShiftLeadPlus || runningAction.value) return
   runningAction.value = true
   try {
     const content = 'Удалить статус партии "' + registerStatus.title + '" ?'
@@ -108,7 +110,7 @@ defineExpose({
   <div class="settings table-2" data-testid="register-statuses-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Статусы партий</h1>
-      <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
+      <div class="header-actions-bar" v-if="authStore.isShiftLeadPlus">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -157,7 +159,7 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isSrLogistPlus" class="actions-container">
+          <div v-if="authStore.isShiftLeadPlus" class="actions-container">
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
@@ -180,7 +182,7 @@ defineExpose({
             type="button"
             class="status-icon-button"
             aria-label="Редактировать статус партии"
-            :disabled="!authStore.isSrLogistPlus || runningAction || loading"
+            :disabled="!authStore.isShiftLeadPlus || runningAction || loading"
             @click="openEditDialog(item)"
           >
             <RegisterStatusIcon :status="item" />

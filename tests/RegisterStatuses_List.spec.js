@@ -18,6 +18,8 @@ const removeRegisterStatus = vi.hoisted(() => vi.fn())
 const getRegisterStatusById = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
+const mockIsShiftLeadPlus = ref(true)
+const mockIsSrLogistPlus = ref(false)
 
 // Mock router
 vi.mock('@/router', () => ({
@@ -57,7 +59,12 @@ vi.mock('@/stores/auth.store.js', () => ({
     isAdmin: ref(true),
     isSrLogist: ref(false),
     isLogist: ref(false),
-    isSrLogistPlus: ref(true),
+    get isShiftLeadPlus() {
+      return mockIsShiftLeadPlus.value
+    },
+    get isSrLogistPlus() {
+      return mockIsSrLogistPlus.value
+    },
     hasLogistRole: ref(false),
     user: ref({ id: 1, roles: [roleAdmin] }),
     registerstatuses_per_page: ref(10),
@@ -108,6 +115,8 @@ describe('RegisterStatuses_List.vue', () => {
       { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF', readOnly: true },
       { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
     ]
+    mockIsShiftLeadPlus.value = true
+    mockIsSrLogistPlus.value = false
 
     wrapper = mount(RegisterStatusesList, {
       global: {
@@ -165,8 +174,8 @@ describe('RegisterStatuses_List.vue', () => {
     })
   })
 
-  describe('Admin Actions', () => {
-    it('shows header actions for admin users', () => {
+  describe('Authorized Actions', () => {
+    it('shows header actions for administrator and shift-lead users', () => {
       const headerActions = wrapper.find('.header-actions')
       expect(headerActions.exists()).toBe(true)
     })
@@ -192,6 +201,29 @@ describe('RegisterStatuses_List.vue', () => {
       await iconButton.trigger('click')
 
       expect(mockPush).toHaveBeenCalledWith('/registerstatus/edit/1')
+    })
+
+    it('hides mutation actions from senior logist users', async () => {
+      wrapper.unmount()
+      mockIsShiftLeadPlus.value = false
+      mockIsSrLogistPlus.value = true
+      wrapper = mount(RegisterStatusesList, {
+        global: {
+          stubs: extendedStubs
+        }
+      })
+
+      expect(wrapper.find('.header-actions-bar').exists()).toBe(false)
+      expect(wrapper.find('.actions-container').exists()).toBe(false)
+      expect(wrapper.get('.status-icon-button').attributes('disabled')).toBeDefined()
+
+      await wrapper.vm.openCreateDialog()
+      await wrapper.vm.openEditDialog(mockRegisterStatuses.value[0])
+      await wrapper.vm.deleteRegisterStatus(mockRegisterStatuses.value[0])
+
+      expect(mockPush).not.toHaveBeenCalled()
+      expect(mockConfirm).not.toHaveBeenCalled()
+      expect(removeRegisterStatus).not.toHaveBeenCalled()
     })
   })
 

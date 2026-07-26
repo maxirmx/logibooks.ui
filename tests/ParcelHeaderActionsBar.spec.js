@@ -134,6 +134,50 @@ describe('ParcelHeaderActionsBar', () => {
     }
   })
 
+  it('keeps navigation and downloads available while mutations are disabled', async () => {
+    getByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'Read-only scheme',
+      actions: [
+        { id: 1, action: 1, keyCode: 'F1', shift: false, ctrl: false, alt: false, schemeId: 1 },
+        { id: 2, action: 4, keyCode: 'F4', shift: false, ctrl: false, alt: false, schemeId: 1 },
+        { id: 3, action: 6, keyCode: 'F6', shift: false, ctrl: false, alt: false, schemeId: 1 },
+        { id: 4, action: 7, keyCode: 'F7', shift: false, ctrl: false, alt: false, schemeId: 1 }
+      ]
+    })
+
+    const wrapper = mount(ParcelHeaderActionsBar, {
+      props: { mutationDisabled: true },
+      global: { stubs: { ActionButton: actionButtonStub } }
+    })
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const buttons = wrapper.findAll('button')
+    expect(buttons[0].attributes('disabled')).toBeUndefined()
+    expect(buttons[1].attributes('disabled')).toBeUndefined()
+    expect(buttons[2].attributes('disabled')).toBeUndefined()
+    expect(buttons[3].attributes('disabled')).toBeDefined()
+    expect(buttons[4].attributes('disabled')).toBeUndefined()
+    expect(buttons[5].attributes('disabled')).toBeDefined()
+
+    for (const code of ['F1', 'F4', 'F6', 'F7']) {
+      window.dispatchEvent(new KeyboardEvent('keydown', {
+        code,
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false
+      }))
+      await wrapper.vm.$nextTick()
+    }
+
+    expect(wrapper.emitted()['next-parcel']).toHaveLength(1)
+    expect(wrapper.emitted()['download']).toHaveLength(1)
+    expect(wrapper.emitted()['save']).toBeUndefined()
+    expect(wrapper.emitted()['lookup']).toBeUndefined()
+  })
+
   it('disables all action buttons except cancel when actionsDisabled is true', () => {
     const wrapper = mount(ParcelHeaderActionsBar, {
       props: { actionsDisabled: true },

@@ -138,6 +138,17 @@ function getErrorMessage(error, fallback) {
   return error?.message || error?.msg || error?.reason || fallback
 }
 
+async function handleMutationError(error, fallback) {
+  if (
+    error?.status === 409 &&
+    String(error?.message || error?.data?.msg || '').includes('Изменения запрещены') &&
+    hasRegister.value
+  ) {
+    await registersStore.getById(Number(props.registerId))
+  }
+  alertStore.error(getErrorMessage(error, fallback))
+}
+
 async function findParcels() {
   if (!canFind.value) {
     return
@@ -175,7 +186,7 @@ async function updateFound() {
     alertStore.success(`Статус изменен для ${updatedCount} посылок${skippedCount > 0 ? `. Пропущено: ${skippedCount}` : ''}`)
     emit('updated')
   } catch (error) {
-    alertStore.error(getErrorMessage(error, 'Ошибка при изменении статусов найденных посылок'))
+    await handleMutationError(error, 'Ошибка при изменении статусов найденных посылок')
   } finally {
     updateFoundInProgress.value = false
   }
@@ -214,7 +225,7 @@ async function updateAll() {
     alertStore.success('Статус успешно применен ко всем посылкам в реестре')
     emit('updated')
   } catch (error) {
-    alertStore.error(getErrorMessage(error, 'Ошибка при изменении статусов всех посылок'))
+    await handleMutationError(error, 'Ошибка при изменении статусов всех посылок')
   } finally {
     updateAllInProgress.value = false
   }

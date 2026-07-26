@@ -424,8 +424,9 @@ describe('OzonParcels_List.vue – multi-select', () => {
     mockBulkAssignTnved.mockRejectedValueOnce(new Error('failed'))
     wrapper.vm.showAssignTnvedDialog = true
 
-    await expect(wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')).rejects.toThrow('failed')
+    await wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')
 
+    expect(alertError).toHaveBeenCalledWith('failed')
     expect(wrapper.vm.runningAction).toBe(false)
     expect(wrapper.vm.showAssignTnvedDialog).toBe(true)
   })

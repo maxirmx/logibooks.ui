@@ -153,7 +153,6 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
   } catch (error) {
     if (error?.status === 409) await fetchRegister()
     alertStore.error(error?.message || 'Ошибка при назначении кода ТН ВЭД')
-    throw error
   } finally {
     runningAction.value = false
   }

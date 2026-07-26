@@ -293,32 +293,20 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function update(id, data) {
-    let response
-    try {
-      response = await fetchWrapper.put(`${baseUrl}/${id}`, data)
-    } catch (err) {
-      if (
-        err?.status === 409
-        && String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
-        && item.value?.id === id
-      ) {
-        try {
-          item.value = await fetchWrapper.get(`${baseUrl}/a/${id}`)
-        } catch {
-          item.value = { ...item.value, readOnly: true }
-        }
-      }
-      throw err
-    }
+    const response = await runParcelMutation(
+      id,
+      () => fetchWrapper.put(`${baseUrl}/${id}`, data)
+    )
+    const numericId = Number(id)
 
     // Update the item in the store if it's currently loaded
-    if (item.value && item.value.id === id) {
+    if (item.value && Number(item.value.id) === numericId) {
       // Merge the updated data with the existing item
       item.value = { ...item.value, ...data }
     }
 
     // Update the item in the items array if it exists
-    const itemIndex = items.value.findIndex(parcel => parcel.id === id)
+    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
     if (itemIndex !== -1) {
       items.value[itemIndex] = { ...items.value[itemIndex], ...data }
     }

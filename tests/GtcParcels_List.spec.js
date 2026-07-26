@@ -287,7 +287,7 @@ describe('GtcParcels_List.vue', () => {
     registerItem.value = { dealNumber: 'D-1' }
     const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
     bulkAssignTnved.mockRejectedValue(conflict)
-    await expect(wrapper.vm.handleAssignTnvedConfirm([1], '6403999300')).rejects.toBe(conflict)
+    await wrapper.vm.handleAssignTnvedConfirm([1], '6403999300')
     expect(getById).toHaveBeenCalledWith(1)
     expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
     expect(wrapper.vm.runningAction).toBe(false)

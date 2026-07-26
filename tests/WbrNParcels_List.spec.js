@@ -741,7 +741,7 @@ describe('WbrNParcels_List.vue', () => {
 
     const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
     bulkAssignTnved.mockRejectedValue(conflict)
-    await expect(wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')).rejects.toBe(conflict)
+    await wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')
     expect(getRegisterById).toHaveBeenCalledWith(7)
     expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
     expect(wrapper.vm.runningAction).toBe(false)
@@ -777,7 +777,7 @@ describe('WbrNParcels_List.vue', () => {
     delete registerItem.readOnly
     const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
     bulkAssignTnved.mockRejectedValue(conflict)
-    await expect(wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')).rejects.toBe(conflict)
+    await wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')
     expect(getRegisterById).toHaveBeenCalledWith(7)
     expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
     expect(wrapper.vm.runningAction).toBe(false)

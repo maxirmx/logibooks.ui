@@ -608,13 +608,13 @@ describe('parcels store', () => {
 
       const store = useParcelsStore()
       // Set up current item
-      store.item = { id: 5, statusId: 1, tnVed: 'Original' }
+      store.item = { id: '5', statusId: 1, tnVed: 'Original' }
 
       const updateData = { statusId: 2, tnVed: 'Updated' }
       await store.update(5, updateData)
 
       expect(store.item).toEqual({
-        id: 5,
+        id: '5',
         statusId: 2,
         tnVed: 'Updated'
       })
@@ -627,7 +627,7 @@ describe('parcels store', () => {
       // Set up items array
       store.items = [
         { id: 4, statusId: 1, tnVed: 'Other' },
-        { id: 5, statusId: 1, tnVed: 'Original' },
+        { id: '5', statusId: 1, tnVed: 'Original' },
         { id: 6, statusId: 1, tnVed: 'Another' }
       ]
 
@@ -635,7 +635,7 @@ describe('parcels store', () => {
       await store.update(5, updateData)
 
       expect(store.items[1]).toEqual({
-        id: 5,
+        id: '5',
         statusId: 2,
         tnVed: 'Updated'
       })
@@ -654,12 +654,18 @@ describe('parcels store', () => {
         readOnly: true
       })
       const store = useParcelsStore()
-      store.item = { id: 5, statusId: 1, tnVed: 'old', readOnly: false }
+      store.item = { id: '5', statusId: 1, tnVed: 'old', readOnly: false }
+      store.items = [{ id: '5', statusId: 1, tnVed: 'old', readOnly: false }]
 
       await expect(store.update(5, { tnVed: 'local-value' })).rejects.toBe(conflict)
 
       expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/5`)
       expect(store.item).toMatchObject({
+        id: 5,
+        tnVed: 'server-value',
+        readOnly: true
+      })
+      expect(store.items[0]).toMatchObject({
         id: 5,
         tnVed: 'server-value',
         readOnly: true
@@ -671,11 +677,13 @@ describe('parcels store', () => {
       fetchWrapper.put.mockRejectedValue(conflict)
       fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
       const store = useParcelsStore()
-      store.item = { id: 5, statusId: 1, readOnly: false }
+      store.item = { id: '5', statusId: 1, readOnly: false }
+      store.items = [{ id: '5', statusId: 1, readOnly: false }]
 
       await expect(store.update(5, { statusId: 2 })).rejects.toBe(conflict)
 
-      expect(store.item).toEqual({ id: 5, statusId: 1, readOnly: true })
+      expect(store.item).toEqual({ id: '5', statusId: 1, readOnly: true })
+      expect(store.items[0]).toEqual({ id: '5', statusId: 1, readOnly: true })
     })
 
     it('does not update item when loaded item has different id', async () => {

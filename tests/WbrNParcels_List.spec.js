@@ -539,6 +539,22 @@ describe('WbrNParcels_List.vue', () => {
 
   beforeEach(resetState)
 
+  it('includes Duplicate2 in both check-status filter selectors', () => {
+    const wrapper = mount(WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: globalStubs }
+    })
+
+    expect(wrapper.vm.checkStatusOptionsSw).toContainEqual({
+      value: SWCheckStatus.Duplicate2,
+      title: 'Дубликат'
+    })
+    expect(wrapper.vm.checkStatusOptionsFc).toContainEqual({
+      value: FCCheckStatus.Duplicate2,
+      title: 'Дубликат'
+    })
+  })
+
   it('defines WbrN regular list headers and excludes hidden backend-owned fields', () => {
     const wrapper = mount(WbrNParcelsList, {
       props: { registerId: 7 },

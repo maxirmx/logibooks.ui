@@ -10,6 +10,7 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
+import { FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
 import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { getRowPropsForParcel } from '@/helpers/parcels.list.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
@@ -370,6 +371,23 @@ describe.each([
     await resolveAll()
 
     expect(useParcelMultiSelectMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('includes Duplicate2 in both check-status filter selectors', () => {
+    const wrapper = mount(Component, {
+      props: { registerId: 11 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const filterSelectors = wrapper.findComponent({ name: 'ParcelFilterSelectors' })
+    expect(filterSelectors.props('checkStatusOptionsSw')).toContainEqual({
+      value: SWCheckStatus.Duplicate2,
+      title: 'Дубликат'
+    })
+    expect(filterSelectors.props('checkStatusOptionsFc')).toContainEqual({
+      value: FCCheckStatus.Duplicate2,
+      title: 'Дубликат'
+    })
   })
 
   it('uses frozenOrder as the first table header key', async () => {

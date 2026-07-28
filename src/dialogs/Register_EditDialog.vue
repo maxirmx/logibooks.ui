@@ -19,6 +19,7 @@ import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZO
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ErrorDialog from '@/l2/ErrorDialog.vue'
+import RegisterCurrencySelectionDialog from '@/l2/RegisterCurrencySelectionDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
@@ -74,8 +75,41 @@ const errorDialogState = ref({
   missingColumns: []
 })
 
+const currencySelectionDialogState = ref({
+  show: false,
+  currencies: []
+})
+let resolveCurrencySelection = null
+
 function hideErrorDialog() {
   errorDialogState.value.show = false
+}
+
+function requestCurrencySelection(currencies) {
+  hideActionDialog()
+  currencySelectionDialogState.value = {
+    show: true,
+    currencies: [...currencies]
+  }
+
+  return new Promise((resolve) => {
+    resolveCurrencySelection = resolve
+  })
+}
+
+function finishCurrencySelection(currency) {
+  currencySelectionDialogState.value.show = false
+  const resolve = resolveCurrencySelection
+  resolveCurrencySelection = null
+  resolve?.(currency)
+}
+
+function selectCurrency(currency) {
+  finishCurrencySelection(currency)
+}
+
+function cancelCurrencySelection() {
+  finishCurrencySelection(null)
 }
 
 // Id = 1 --> Code = 10 (Экспорт) 
@@ -481,6 +515,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isComponentMounted.value = false
+  if (resolveCurrencySelection) {
+    finishCurrencySelection(null)
+  }
 })
 
 const schema = Yup.object().shape({
@@ -809,13 +846,34 @@ async function onSubmit(values) {
     if (props.create) {
       showActionDialog('upload-register')
       try {
-        const result = await registersStore.upload(
+        const uploadArgs = [
           uploadFile.value,
           item.value.registerType,
           payload.customsProcedureCode,
           Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
           Boolean(isRe.value && values.transfer2Re)
-        )
+        ]
+        let selectedCurrency = null
+        let result
+
+        while (true) {
+          result = selectedCurrency
+            ? await registersStore.upload(...uploadArgs, selectedCurrency)
+            : await registersStore.upload(...uploadArgs)
+
+          if (!isComponentMounted.value) return
+          if (!result?.requiresCurrencySelection) break
+
+          const availableCurrencies = Array.isArray(result.availableCurrencies)
+            ? result.availableCurrencies
+            : []
+          if (availableCurrencies.length < 2) break
+
+          selectedCurrency = await requestCurrencySelection(availableCurrencies)
+          if (!selectedCurrency || !isComponentMounted.value) return
+          showActionDialog('upload-register')
+        }
+
         if (!isComponentMounted.value) return
         if (result?.success) {
           try {
@@ -954,6 +1012,7 @@ const loadReportFields = computed(() => {
   return [
     { key: 'processed', label: 'Обработано строк', value: formatReportCounter(report.processed) },
     { key: 'failed', label: 'Ошибочных строк', value: formatReportCounter(report.failed) },
+    { key: 'skippedByCurrency', label: 'Пропущено по валюте', value: formatReportCounter(report.skippedByCurrency) },
     { key: 'markedByPartner', label: 'Исключено партнёром', value: formatReportCounter(report.markedByPartner) },
     { key: 'markedForExcise', label: 'Согласовано с акцизом', value: formatReportCounter(report.markedForExcise) },
     { key: 'markedForNotifications', label: 'Согласовано с нотификацией', value: formatReportCounter(report.markedForNotifications) },
@@ -1376,6 +1435,12 @@ const loadReportFields = computed(() => {
     </div>
 
     <ActionDialog :action-dialog="actionDialogState" />
+    <RegisterCurrencySelectionDialog
+      :show="currencySelectionDialogState.show"
+      :currencies="currencySelectionDialogState.currencies"
+      @select="selectCurrency"
+      @cancel="cancelCurrencySelection"
+    />
     <ErrorDialog 
       :show="errorDialogState.show"
       :title="errorDialogState.title"

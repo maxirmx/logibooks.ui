@@ -256,6 +256,13 @@ const ErrorDialogStub = {
   }
 }
 
+const CurrencySelectionDialogStub = {
+  name: 'RegisterCurrencySelectionDialog',
+  props: ['show', 'currencies'],
+  emits: ['select', 'cancel'],
+  template: '<div v-if="show" data-testid="currency-selection-dialog">{{ currencies.join(\', \') }}</div>'
+}
+
 function getGroupByLabel(wrapper, text) {
   return wrapper
     .findAll('.form-group')
@@ -1413,6 +1420,7 @@ describe('Register_EditDialog', () => {
         createdAt,
         processed: 10,
         failed: -1,
+        skippedByCurrency: 2,
         markedByPartner: 2,
         markedForExcise: 3,
         duplicates: 4,
@@ -1450,6 +1458,7 @@ describe('Register_EditDialog', () => {
     expect(wrapper.findAll('.load-report-field .label').map((label) => label.text())).toEqual([
       'Обработано строк:',
       'Ошибочных строк:',
+      'Пропущено по валюте:',
       'Исключено партнёром:',
       'Согласовано с акцизом:',
       'Согласовано с нотификацией:',
@@ -1466,6 +1475,7 @@ describe('Register_EditDialog', () => {
     expect(getReportValue(wrapper, 'Время загрузки')).toBe(new Date(createdAt).toLocaleTimeString('ru-RU'))
     expect(getReportValue(wrapper, 'Обработано строк')).toBe('10')
     expect(getReportValue(wrapper, 'Ошибочных строк')).toBe('—')
+    expect(getReportValue(wrapper, 'Пропущено по валюте')).toBe('2')
     expect(getReportValue(wrapper, 'Исключено партнёром')).toBe('2')
     expect(getReportValue(wrapper, 'Согласовано с акцизом')).toBe('3')
     expect(getReportValue(wrapper, 'Дубликатов')).toBe('4 (5)')
@@ -1659,6 +1669,110 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(errorDialog.props('show')).toBe(false)
+  })
+
+  it('asks for a currency and retries the same upload with the selection', async () => {
+    upload
+      .mockResolvedValueOnce({
+        success: false,
+        requiresCurrencySelection: true,
+        availableCurrencies: ['USD', 'UZS']
+      })
+      .mockResolvedValueOnce({ success: true, registerId: 42 })
+    registersStore.uploadFile.value = new File(['data'], 'mixed.xlsx')
+    mockItem.value = { ...baseRegisterItem, fileName: 'mixed.xlsx', registerType: 2, companyId: 2 }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub,
+          RegisterCurrencySelectionDialog: CurrencySelectionDialogStub
+        }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    const submission = dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    const currencyDialog = wrapper.findComponent(CurrencySelectionDialogStub)
+    expect(currencyDialog.props('show')).toBe(true)
+    expect(currencyDialog.props('currencies')).toEqual(['USD', 'UZS'])
+    expect(dialog.vm.actionDialogState.show).toBe(false)
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(update).not.toHaveBeenCalled()
+    expect(router.push).not.toHaveBeenCalled()
+
+    currencyDialog.vm.$emit('select', 'UZS')
+    await submission
+    await resolveAll()
+
+    expect(upload).toHaveBeenNthCalledWith(
+      1,
+      registersStore.uploadFile.value,
+      mockItem.value.registerType,
+      mockItem.value.customsProcedureCode,
+      true,
+      false
+    )
+    expect(upload).toHaveBeenNthCalledWith(
+      2,
+      registersStore.uploadFile.value,
+      mockItem.value.registerType,
+      mockItem.value.customsProcedureCode,
+      true,
+      false,
+      'UZS'
+    )
+    expect(update).toHaveBeenCalledWith(42, expect.any(Object))
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
+  })
+
+  it('cancels a mixed-currency upload without retrying or updating', async () => {
+    upload.mockResolvedValueOnce({
+      success: false,
+      requiresCurrencySelection: true,
+      availableCurrencies: ['USD', 'UZS']
+    })
+    registersStore.uploadFile.value = new File(['data'], 'mixed.xlsx')
+    mockItem.value = { ...baseRegisterItem, fileName: 'mixed.xlsx', registerType: 2, companyId: 2 }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub,
+          RegisterCurrencySelectionDialog: CurrencySelectionDialogStub
+        }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    const submission = dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: vi.fn() })
+    await resolveAll()
+
+    wrapper.findComponent(CurrencySelectionDialogStub).vm.$emit('cancel')
+    await submission
+    await resolveAll()
+
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(update).not.toHaveBeenCalled()
+    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
   it('shows action dialog while upload is in progress', async () => {

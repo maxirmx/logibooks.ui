@@ -938,12 +938,12 @@ describe('Registers_List.vue', () => {
 
         const options = wrapper.vm.uploadMenuOptions
 
-        expect(options).toHaveLength(3)
+        expect(options).toHaveLength(2)
         expect(options.map((option) => option.label)).toEqual([
           'Озон',
-          'РВБ',
           'РВБ новый формат'
         ])
+        expect(options.some((option) => option.label === 'РВБ')).toBe(false)
         expect(options.every((option) => typeof option.action === 'function')).toBe(true)
       })
 
@@ -972,7 +972,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const options = wrapper.vm.uploadMenuOptions
-        expect(options).toHaveLength(3)
+        expect(options).toHaveLength(2)
 
         const [firstOption] = options
         expect(firstOption.label).toBe('Озон')

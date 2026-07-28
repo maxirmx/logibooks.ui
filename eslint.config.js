@@ -53,7 +53,14 @@ export default [
         URL: 'readonly',
         FormData: 'readonly',
         File: 'readonly',
+        FileReader: 'readonly',
+        Event: 'readonly',
         HTMLElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        KeyboardEvent: 'readonly',
+        MouseEvent: 'readonly',
+        Node: 'readonly',
+        Storage: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
         setTimeout: 'readonly',
@@ -63,6 +70,12 @@ export default [
   },
   // Base JavaScript configuration
   js.configs.recommended,
+  {
+    rules: {
+      // Keep the ESLint 9 policy when using ESLint 10's recommended rules.
+      'preserve-caught-error': 'off',
+    },
+  },
   // Vue configuration - use flat config format
   ...pluginVue.configs['flat/essential'],
   {

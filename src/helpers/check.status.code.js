@@ -104,6 +104,32 @@ export const FCCheckStatusNames = Object.freeze({
 })
 
 /**
+ * Build selector options with the exceptional EUR1000 status shown last.
+ * Numeric object keys are otherwise enumerated in ascending order.
+ */
+export function createCheckStatusFilterOptions(statusNames) {
+  const eur1000Key = String(WStatusValues.EUR1000)
+  const options = Object.entries(statusNames)
+    .filter(([value]) => value !== eur1000Key)
+    .map(([value, title]) => ({
+      value: Number(value),
+      title
+    }))
+
+  if (Object.prototype.hasOwnProperty.call(statusNames, eur1000Key)) {
+    options.push({
+      value: WStatusValues.EUR1000,
+      title: statusNames[eur1000Key]
+    })
+  }
+
+  return [
+    { value: null, title: 'Все' },
+    ...options
+  ]
+}
+
+/**
  * Class representing a combined check status code,
  * assembled from FCCheckStatus (upper word) and SWCheckStatus (lower word).
  * This type provides helper methods for composing and parsing the code.

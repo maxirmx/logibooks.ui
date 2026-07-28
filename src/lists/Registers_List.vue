@@ -115,7 +115,7 @@ const procedureFilterItems = computed(() => {
 const uploadMenuOptions = computed(() => {
   if (!companies.value) return []
   const list = companies.value
-    .filter((company) => company.id === OZON_COMPANY_ID || company.id === WBR_COMPANY_ID)
+    .filter((company) => company.id === OZON_COMPANY_ID)
     .map((company) => ({
       label: getCustomerName(company.id),
       action: () => startRegisterUpload(company.id)

@@ -21,7 +21,7 @@ const globalStubs = {
     props: ['item', 'icon', 'tooltipText', 'iconSize', 'variant', 'disabled'],
     emits: ['click'],
     template:
-      '<button class="action-button-stub" :data-tooltip="tooltipText" :data-variant="variant" :data-size="iconSize" @click="$emit(\'click\', item)">Action</button>'
+      '<button class="action-button-stub" :data-tooltip="tooltipText" :data-variant="variant" :data-size="iconSize" :disabled="disabled" @click="$emit(\'click\', item)">Action</button>'
   }
 }
 
@@ -87,5 +87,21 @@ describe('ArticleWithH', () => {
     
     await wrapper.find('.action-button-stub').trigger('click')
     expect(wrapper.emitted()['approve-notification']).toBeTruthy()
+  })
+
+  it('disables notification approval via approvalDisabled', async () => {
+    const wrapper = mount(ArticleWithH, {
+      props: {
+        item: { article: '123', notificationId: 10 },
+        errors: {},
+        disabled: false,
+        approvalDisabled: true
+      },
+      global: { stubs: globalStubs }
+    })
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.action-button-stub').attributes('disabled')).toBeDefined()
   })
 })

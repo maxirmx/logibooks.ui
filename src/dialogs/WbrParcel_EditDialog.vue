@@ -496,6 +496,7 @@ async function onLookup(values) {
         :get-check-status-class="getCheckStatusClass"
         :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
+        :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
         :disabled="readOnly || isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
         :clear-check-status-disabled="readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"

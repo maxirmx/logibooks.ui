@@ -41,6 +41,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  approvalDisabled: {
+    type: Boolean,
+    default: false
+  },
   noHistoricData: {
     type: Boolean,
     default: false
@@ -150,7 +154,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-check-circle"
             tooltip-text="Сохранить и согласовать"
-            :disabled="disabled"
+            :disabled="disabled || approvalDisabled"
             @click="$emit('approve', values)"
             variant="green"
             :iconSize="'2x'"
@@ -159,7 +163,7 @@ defineEmits([
             :item="item"
             icon="fa-solid fa-check-circle"
             tooltip-text="Сохранить и согласовать с акцизом"
-            :disabled="disabled"
+            :disabled="disabled || approvalDisabled"
             @click="$emit('approve-excise', values)"
             variant="orange"
             :iconSize="'2x'"

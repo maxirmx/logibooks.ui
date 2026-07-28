@@ -11,6 +11,7 @@ export const WStatusValues = Object.freeze({
   ApprovedWithExcise: 0x0230,
   ApprovedWithNotification: 0x0231,
   Duplicate2: 0x0232,
+  EUR1000: 0x017C,
   Defect: 0x017D,
   Duplicate: 0x017E,
   MarkedByPartner: 0x01FF
@@ -32,6 +33,7 @@ export const SWCheckStatus = Object.freeze({
   
   IssueStopWord: 0x0100,
   IssueStopWordInherited: 0x0100 | SwInheritanceFlag,
+  EUR1000: WStatusValues.EUR1000,
   Duplicate: WStatusValues.Duplicate,
   Defect: WStatusValues.Defect,
   MarkedByPartner: WStatusValues.MarkedByPartner
@@ -52,6 +54,7 @@ export const FCCheckStatus = Object.freeze({
   IssueFeacnCode: 0x0100,
   IssueNonexistingFeacn: 0x0101,
   IssueInvalidFeacnFormat: 0x0102,  
+  EUR1000: WStatusValues.EUR1000,
   Duplicate: WStatusValues.Duplicate,
   Defect: WStatusValues.Defect,
   MarkedByPartner: WStatusValues.MarkedByPartner
@@ -65,6 +68,7 @@ const ApprovedString = 'Согласовано'
 const ApprovedWithExciseString = 'Согл. с акцизом'
 const ApprovedWithNotificationString = 'Согл. с нотификацией'
 const IssueStopWordString = 'Стоп слово'
+const EUR1000String = '>1000€'
 const DuplicateString = 'Дубликат'
 const DefectString = 'Брак'
 const MarkedByPartnerString = 'Исключено партнёром'
@@ -80,7 +84,8 @@ export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
   [SWCheckStatus.Duplicate2]: DuplicateString,
   [SWCheckStatus.IssueStopWord]: IssueStopWordString,
-  [SWCheckStatus.IssueStopWordInherited]: FlagString + IssueStopWordString
+  [SWCheckStatus.IssueStopWordInherited]: FlagString + IssueStopWordString,
+  [SWCheckStatus.EUR1000]: EUR1000String
 })
 
 /**
@@ -94,7 +99,8 @@ export const FCCheckStatusNames = Object.freeze({
   [FCCheckStatus.Duplicate2]: DuplicateString,
   [FCCheckStatus.IssueFeacnCode]: 'Стоп ТН ВЭД',
   [FCCheckStatus.IssueNonexistingFeacn]: 'Нет ТН ВЭД',
-  [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД'
+  [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД',
+  [FCCheckStatus.EUR1000]: EUR1000String
 })
 
 /**
@@ -189,6 +195,14 @@ export class CheckStatusCode {
   }
 
   /**
+   * Check if the combined status is EUR1000
+   */
+  static isEUR1000(value) {
+    return CheckStatusCode.getFC(value) === FCCheckStatus.EUR1000 &&
+           CheckStatusCode.getSW(value) === SWCheckStatus.EUR1000
+  }
+
+  /**
    * Check if the combined status is MarkedByPartner
    */
   static isMarkedByPartner(value) {
@@ -242,6 +256,10 @@ export class CheckStatusCode {
 
     if (this.fc === FCCheckStatus.ApprovedWithNotification && this.sw === SWCheckStatus.ApprovedWithNotification) {
       return ApprovedWithNotificationString
+    }
+
+    if (CheckStatusCode.isEUR1000(this._value)) {
+      return EUR1000String
     }
 
     if (this.fc === FCCheckStatus.Duplicate && this.sw === SWCheckStatus.Duplicate) {
@@ -350,6 +368,10 @@ export class CheckStatusCode {
 
   static get Defect() {
     return CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
+  }
+
+  static get EUR1000() {
+    return CheckStatusCode.fromParts(FCCheckStatus.EUR1000, SWCheckStatus.EUR1000)
   }
 
   static get MarkedByPartner() {

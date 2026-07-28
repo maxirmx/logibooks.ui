@@ -6,7 +6,8 @@ import { describe, it, expect } from 'vitest'
 import CheckStatusCode, { 
   CheckStatusHelper, 
   FCCheckStatus, 
-  SWCheckStatus
+  SWCheckStatus,
+  WStatusValues
 } from '@/helpers/check.status.code.js'
 
 import { FCCheckStatusNames, SWCheckStatusNames } from '@/helpers/check.status.code.js'
@@ -79,6 +80,32 @@ describe('CheckStatusCode', () => {
     it('should detect Defect status as having issues', () => {
       const value = CheckStatusCode.compose(FCCheckStatus.Defect, SWCheckStatus.Defect)
       expect(CheckStatusCode.hasIssues(value)).toBe(true)
+    })
+
+    it('should detect EUR1000 status as having issues', () => {
+      expect(CheckStatusCode.hasIssues(CheckStatusCode.EUR1000.value)).toBe(true)
+    })
+  })
+
+  describe('EUR1000 status', () => {
+    it('should expose the exact reserved numeric value', () => {
+      expect(WStatusValues.EUR1000).toBe(0x017C)
+      expect(SWCheckStatus.EUR1000).toBe(0x017C)
+      expect(FCCheckStatus.EUR1000).toBe(0x017C)
+      expect(CheckStatusCode.EUR1000.value).toBe(0x017C017C)
+    })
+
+    it('should detect and render only the exact combined status', () => {
+      expect(CheckStatusCode.isEUR1000(CheckStatusCode.EUR1000.value)).toBe(true)
+      expect(CheckStatusCode.isEUR1000(
+        CheckStatusCode.compose(FCCheckStatus.EUR1000, SWCheckStatus.NotChecked)
+      )).toBe(false)
+      expect(CheckStatusCode.EUR1000.toString()).toBe('>1000€')
+    })
+
+    it('should expose EUR1000 in both selector name maps', () => {
+      expect(SWCheckStatusNames[SWCheckStatus.EUR1000]).toBe('>1000€')
+      expect(FCCheckStatusNames[FCCheckStatus.EUR1000]).toBe('>1000€')
     })
   })
 

@@ -16,7 +16,8 @@ const props = defineProps({
   nme: { type: String, default: 'article' },
   fullWidth: { type: Boolean, default: false },
   columnTitles: { type: Object, default: () => ozonRegisterColumnTitles },
-  inputReadonly: { type: Boolean, default: false }
+  inputReadonly: { type: Boolean, default: false },
+  approvalDisabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['approve-notification'])
@@ -69,7 +70,7 @@ function emitApproveWithNotification() {
         variant="magenta"
         :iconSize="'1x'"
         :tooltip-text="tooltipText"
-        :disabled="disabled"
+        :disabled="disabled || approvalDisabled"
         data-test="approve-notification"
         @click="emitApproveWithNotification"
       />

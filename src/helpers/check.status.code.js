@@ -112,11 +112,11 @@ export function createCheckStatusFilterOptions(statusNames) {
   const options = Object.entries(statusNames)
     .filter(([value]) => value !== eur1000Key)
     .map(([value, title]) => ({
-      value: parseInt(value),
+      value: Number(value),
       title
     }))
 
-  if (Object.hasOwn(statusNames, eur1000Key)) {
+  if (Object.prototype.hasOwnProperty.call(statusNames, eur1000Key)) {
     options.push({
       value: WStatusValues.EUR1000,
       title: statusNames[eur1000Key]

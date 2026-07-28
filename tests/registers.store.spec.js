@@ -862,6 +862,19 @@ describe('registers store', () => {
       expect(formData.get('file')).toBe(file)
     })
 
+    it('adds selectedCurrency only when retrying a mixed-currency upload', async () => {
+      const file = new File(['data'], 'mixed.xlsx')
+      fetchWrapper.postFile.mockResolvedValue({ success: true, registerId: 5 })
+
+      const store = useRegistersStore()
+      await store.upload(file, 123, 1, true, false, 'UZS')
+
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=true&transfer2Re=false&selectedCurrency=UZS`
+      )
+      expect(fetchWrapper.postFile.mock.calls[0][1].get('file')).toBe(file)
+    })
+
     it('throws when checkForDuplicates is missing', async () => {
       const file = new File(['data'], 'test.xlsx')
       const store = useRegistersStore()

@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest'
 import CheckStatusCode, { 
+  createCheckStatusFilterOptions,
   CheckStatusHelper, 
   FCCheckStatus, 
   SWCheckStatus,
@@ -106,6 +107,19 @@ describe('CheckStatusCode', () => {
     it('should expose EUR1000 in both selector name maps', () => {
       expect(SWCheckStatusNames[SWCheckStatus.EUR1000]).toBe('>1000€')
       expect(FCCheckStatusNames[FCCheckStatus.EUR1000]).toBe('>1000€')
+    })
+
+    it.each([
+      ['SW', SWCheckStatusNames],
+      ['FC', FCCheckStatusNames]
+    ])('should place EUR1000 last in %s filter options, after Duplicate', (_type, names) => {
+      const options = createCheckStatusFilterOptions(names)
+
+      expect(options.at(-2).title).toBe('Дубликат')
+      expect(options.at(-1)).toEqual({
+        value: WStatusValues.EUR1000,
+        title: '>1000€'
+      })
     })
   })
 

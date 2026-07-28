@@ -21,7 +21,12 @@ import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
-import { CheckStatusCode, SWCheckStatusNames, FCCheckStatusNames } from '@/helpers/check.status.code.js'
+import {
+  CheckStatusCode,
+  SWCheckStatusNames,
+  FCCheckStatusNames,
+  createCheckStatusFilterOptions
+} from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
@@ -365,21 +370,9 @@ const statusOptions = computed(() => [
   }))
 ])
 
-const checkStatusOptionsSw = computed(() => [
-  { value: null, title: 'Все' },
-  ...Object.entries(SWCheckStatusNames).map(([value, title]) => ({
-    value: parseInt(value),
-    title
-  }))
-])
+const checkStatusOptionsSw = computed(() => createCheckStatusFilterOptions(SWCheckStatusNames))
 
-const checkStatusOptionsFc = computed(() => [
-  { value: null, title: 'Все' },
-  ...Object.entries(FCCheckStatusNames).map(([value, title]) => ({
-    value: parseInt(value),
-    title
-  }))
-])
+const checkStatusOptionsFc = computed(() => createCheckStatusFilterOptions(FCCheckStatusNames))
 
 const headers = computed(() => {
   // Always keep FEACN lookup column at its original position.

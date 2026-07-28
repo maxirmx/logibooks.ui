@@ -262,6 +262,8 @@ describe('CheckStatusCode', () => {
       // Exported mappings should contain the NotChecked Russian string
       expect(SWCheckStatusNames[SWCheckStatus.NotChecked]).toBe('Не проверено')
       expect(FCCheckStatusNames[FCCheckStatus.NotChecked]).toBe('Не проверено')
+      expect(SWCheckStatusNames[SWCheckStatus.Duplicate2]).toBe('Дубликат')
+      expect(FCCheckStatusNames[FCCheckStatus.Duplicate2]).toBe('Дубликат')
 
       // When only FC is NotChecked and SW has NoIssues, toString uses SW string only
       const onlySw = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)

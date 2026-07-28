@@ -78,6 +78,7 @@ export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.ApprovedInherited]: FlagString + ApprovedString,
   [SWCheckStatus.ApprovedWithExcise]: ApprovedWithExciseString,
   [SWCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
+  [SWCheckStatus.Duplicate2]: DuplicateString,
   [SWCheckStatus.IssueStopWord]: IssueStopWordString,
   [SWCheckStatus.IssueStopWordInherited]: FlagString + IssueStopWordString
 })
@@ -90,6 +91,7 @@ export const FCCheckStatusNames = Object.freeze({
   [FCCheckStatus.NoIssues]: 'Ок ТН ВЭД',
   [FCCheckStatus.ApprovedWithExcise]: ApprovedWithExciseString,
   [FCCheckStatus.ApprovedWithNotification]: ApprovedWithNotificationString,
+  [FCCheckStatus.Duplicate2]: DuplicateString,
   [FCCheckStatus.IssueFeacnCode]: 'Стоп ТН ВЭД',
   [FCCheckStatus.IssueNonexistingFeacn]: 'Нет ТН ВЭД',
   [FCCheckStatus.IssueInvalidFeacnFormat]: 'Формат ТН ВЭД'

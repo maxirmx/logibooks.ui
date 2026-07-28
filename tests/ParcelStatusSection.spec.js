@@ -114,6 +114,19 @@ describe('ParcelStatusSection', () => {
     expect(buttons[4].props('disabled')).toBe(false)
   })
 
+  it('disables only approval controls via approvalDisabled', () => {
+    const wrapper = createWrapper({ approvalDisabled: true })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    expect(buttons[0].props('disabled')).toBe(false)
+    expect(buttons[1].props('disabled')).toBe(false)
+    expect(buttons[2].props('disabled')).toBe(false)
+    expect(buttons[3].props('disabled')).toBe(false)
+    expect(buttons[4].props('disabled')).toBe(false)
+    expect(buttons[5].props('disabled')).toBe(true)
+    expect(buttons[6].props('disabled')).toBe(true)
+  })
+
   it('disables all buttons when disabled and clearCheckStatusDisabled are both true', () => {
     const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: true })
 

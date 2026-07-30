@@ -3,16 +3,28 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, ref, watch } from 'vue'
+import { computed, ref, unref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useRegisterHistoryStore } from '@/stores/register.history.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
-import { formatDateTime } from '@/helpers/date.formatters.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
+import { useCompaniesStore } from '@/stores/companies.store.js'
+import { useAirportsStore } from '@/stores/airports.store.js'
+import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import {
+  WBR_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID
+} from '@/helpers/company.constants.js'
+import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
+import { formatDate, formatDateTime } from '@/helpers/date.formatters.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
   registerId: {
@@ -29,18 +41,32 @@ const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const historyStore = useRegisterHistoryStore()
 const registerStatusesStore = useRegisterStatusesStore()
+const registersStore = useRegistersStore()
+const countriesStore = useCountriesStore()
+const companiesStore = useCompaniesStore()
+const airportsStore = useAirportsStore()
+const warehousesStore = useWarehousesStore()
 const { items, totalCount, loading } = storeToRefs(historyStore)
 
 const page = ref(1)
 const itemsPerPage = ref(50)
+const pageLoading = ref(false)
 const canView = computed(() => Boolean(authStore.isShiftLeadPlus))
+const registerHeading = computed(() =>
+  buildParcelListHeading(
+    registersStore.item,
+    (id) => registersStore.getTransportationDocument(id),
+    'Реестр'
+  )
+)
 const historyItemsPerPageOptions = itemsPerPageOptions
   .filter(option => option.value > 0 && option.value <= 100)
+let referenceDataPromise = null
 
 const headers = [
-  { title: 'Дата и время', key: 'changedAt', sortable: false, width: '180px' },
-  { title: 'Пользователь', key: 'user', sortable: false, width: '240px' },
-  { title: 'Причина', key: 'reason', sortable: false, width: '260px' },
+  { title: 'Дата и время', key: 'changedAt', sortable: false },
+  { title: 'Пользователь', key: 'user', sortable: false },
+  { title: 'Причина', key: 'reason', sortable: false },
   { title: 'Что изменилось', key: 'changes', sortable: false }
 ]
 
@@ -72,14 +98,33 @@ const fieldLabels = {
   CustomsDuty: 'Таможенные пошлины'
 }
 
+function ensureReferenceData() {
+  if (!referenceDataPromise) {
+    referenceDataPromise = Promise.all([
+      registerStatusesStore.ensureLoaded(),
+      countriesStore.ensureLoaded(),
+      companiesStore.getAll(),
+      airportsStore.getAll(),
+      warehousesStore.ensureLoaded(),
+      registersStore.ensureOpsLoaded()
+    ]).catch((error) => {
+      referenceDataPromise = null
+      throw error
+    })
+  }
+  return referenceDataPromise
+}
+
 async function loadHistory() {
   if (!canView.value || !Number.isInteger(props.registerId) || props.registerId <= 0) {
     return
   }
 
+  pageLoading.value = true
   try {
     await Promise.all([
-      registerStatusesStore.ensureLoaded(),
+      ensureReferenceData(),
+      registersStore.getById(props.registerId),
       historyStore.getHistory(props.registerId, {
         page: page.value,
         pageSize: itemsPerPage.value
@@ -87,6 +132,8 @@ async function loadHistory() {
     ])
   } catch (error) {
     alertStore.error(error?.message || 'Не удалось загрузить историю реестра')
+  } finally {
+    pageLoading.value = false
   }
 }
 
@@ -94,15 +141,92 @@ function getFieldLabel(field) {
   return fieldLabels[field] || field
 }
 
+function getList(value) {
+  const list = unref(value)
+  return Array.isArray(list) ? list : []
+}
+
+function isEmptyReference(value) {
+  return value === null || value === undefined || value === '' || Number(value) === 0
+}
+
+function findByNumericValue(list, value, key = 'id') {
+  const numericValue = Number(value)
+  return getList(list).find((entry) => Number(entry?.[key]) === numericValue) || null
+}
+
+function getCompanyName(value) {
+  const company = findByNumericValue(companiesStore.companies, value)
+  return company?.shortName || company?.name || 'Неизвестная компания'
+}
+
+function getRegisterTypeName(value) {
+  const registerType = Number(value)
+  const wbrName = getCompanyName(WBR_COMPANY_ID)
+  if (registerType === WBR2_REGISTER_ID) return `${wbrName}, формат 2`
+  if (registerType === WBRN_REGISTER_ID) return `${wbrName}, новый формат`
+  return getCompanyName(registerType)
+}
+
+function getCountryName(value) {
+  const country = findByNumericValue(countriesStore.countries, value, 'isoNumeric')
+  if (country) {
+    return country.nameRuShort || country.nameRuOfficial || 'Неизвестная страна'
+  }
+  return Number(value) === 643 ? 'Россия' : 'Неизвестная страна'
+}
+
+function getAirportName(value) {
+  const airport = findByNumericValue(airportsStore.airports, value)
+  if (!airport) return 'Неизвестный аэропорт'
+  const name = airport.name || 'Неизвестный аэропорт'
+  return airport.codeIata ? `${name} (${airport.codeIata})` : name
+}
+
+function getOperationName(value, operationKey, unknownLabel) {
+  const operations = unref(registersStore.ops)
+  const operation = findByNumericValue(operations?.[operationKey], value, 'value')
+  return operation?.name || unknownLabel
+}
+
+function getWarehouseName(value) {
+  const warehouse = findByNumericValue(warehousesStore.warehouses, value)
+  return warehouse?.name || 'Неизвестный склад'
+}
+
+function getStatusName(value) {
+  return registerStatusesStore.getStatusById(Number(value))?.title || 'Неизвестный статус'
+}
+
+const referenceFormatters = {
+  CompanyId: getCompanyName,
+  RegisterType: getRegisterTypeName,
+  StatusId: getStatusName,
+  TheOtherCompanyId: getCompanyName,
+  TheOtherCountryCode: getCountryName,
+  DepartureAirportId: getAirportName,
+  ArrivalAirportId: getAirportName,
+  TransportationTypeCode: (value) =>
+    getOperationName(value, 'transportationTypes', 'Неизвестный тип транспорта'),
+  CustomsProcedureCode: (value) =>
+    getOperationName(value, 'customsProcedures', 'Неизвестная таможенная процедура'),
+  WarehouseId: getWarehouseName
+}
+
 function formatValue(change, value) {
   if (value === null || value === undefined || value === '') {
     return 'не указано'
   }
-  if (change?.field === 'StatusId') {
-    return registerStatusesStore.getStatusTitle(Number(value))
+  const referenceFormatter = referenceFormatters[change?.field]
+  if (referenceFormatter) {
+    return isEmptyReference(value) ? 'не указано' : referenceFormatter(value)
   }
   if (value === 'True' || value === 'true') return 'Да'
   if (value === 'False' || value === 'false') return 'Нет'
+  if (change?.field === 'DTime') return formatDateTime(value)
+  if (['InvoiceDate', 'WarehouseArrivalDate'].includes(change?.field)) {
+    return formatDate(value)
+  }
   return value
 }
 
@@ -127,11 +251,22 @@ watch(
 <template>
   <div class="settings table-3">
     <div class="header-with-actions">
-      <h1 class="primary-heading">История изменений реестра №{{ registerId }}</h1>
+      <h1 class="primary-heading">История изменений: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
-        <v-btn variant="text" prepend-icon="fa-solid fa-arrow-left" @click="returnToRegisters">
-          К списку реестров
-        </v-btn>
+        <div v-if="pageLoading || loading" class="header-actions header-actions-group">
+          <span class="spinner-border spinner-border-m" data-testid="register-history-spinner"></span>
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            iconSize="2x"
+            tooltip-text="Закрыть"
+            :disabled="pageLoading || loading"
+            data-testid="register-history-back"
+            @click="returnToRegisters"
+          />
+        </div>
       </div>
     </div>
 
@@ -148,7 +283,7 @@ watch(
         :headers="headers"
         :items="items"
         :items-length="totalCount"
-        :loading="loading"
+        :loading="pageLoading || loading"
         :items-per-page-options="historyItemsPerPageOptions"
         items-per-page-text="Записей на странице"
         page-text="{0}-{1} из {2}"

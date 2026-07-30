@@ -404,19 +404,19 @@ function getRegisterStatusTitle(item) {
             :disabled="runningAction || loading"
           />
           <ActionButton
-            v-if="isShiftLeadPlus"
-            :item="item"
-            icon="fa-solid fa-clock-rotate-left"
-            tooltip-text="История изменений"
-            @click="(row) => emit('open-history', row)"
-            :disabled="runningAction || loading"
-          />
-          <ActionButton
             v-if="isSrLogistPlus"
             :item="item"
             icon="fa-solid fa-pen"
             :tooltip-text="`Редактировать ${registerNouns.accusative}`"
             @click="(row) => emit('edit-register', row)"
+            :disabled="runningAction || loading"
+          />
+          <ActionButton
+            v-if="isShiftLeadPlus"
+            :item="item"
+            icon="fa-solid fa-clock-rotate-left"
+            tooltip-text="История изменений"
+            @click="(row) => emit('open-history', row)"
             :disabled="runningAction || loading"
           />
           <ActionButton

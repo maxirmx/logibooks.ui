@@ -45,6 +45,8 @@ const fontAwesomeStatusIconOptions = [
   'fa-solid fa-plane-departure',
   'fa-solid fa-plane-circle-check',
   'fa-solid fa-route',
+  'fa-solid fa-layer-group',
+  'fa-solid fa-gears',
   'fa-solid fa-lock'
 ].map(icon => ({
   value: icon,

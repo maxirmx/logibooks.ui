@@ -9,6 +9,7 @@ import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
 import { useStatusStore } from '@/stores/status.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
 import {
   roleShiftLead,
   roleSrLogist,
@@ -109,11 +110,13 @@ export const useAuthStore = defineStore('auth', () => {
   const registers_per_page = ref(50)
   const registers_search = ref('')
   const registers_procedure = ref('all')
+  const registers_status = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
   const registers_sort_by = ref([{ key: 'id', order: 'desc' }])
   const registers_page = ref(1)
   const registers_wh_per_page = ref(50)
   const registers_wh_search = ref('')
   const registers_wh_procedure = ref('all')
+  const registers_wh_status = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
   const registers_wh_sort_by = ref([{ key: 'id', order: 'desc' }])
   const registers_wh_page = ref(1)
   const registerevents_per_page = ref(50)
@@ -361,11 +364,13 @@ export const useAuthStore = defineStore('auth', () => {
     registers_per_page,
     registers_search,
     registers_procedure,
+    registers_status,
     registers_sort_by,
     registers_page,
     registers_wh_per_page,
     registers_wh_search,
     registers_wh_procedure,
+    registers_wh_status,
     registers_wh_sort_by,
     registers_wh_page,
     parcels_per_page,

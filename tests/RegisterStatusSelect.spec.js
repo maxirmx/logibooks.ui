@@ -6,6 +6,10 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
+import {
+  REGISTER_STATUS_FILTER_IN_PROGRESS,
+  buildRegisterStatusFilterOptions
+} from '@/helpers/register.status.filter.helpers.js'
 
 const statusOptions = [
   {
@@ -81,6 +85,31 @@ function mountSelect(props = {}, attrs = {}) {
 }
 
 describe('RegisterStatusSelect', () => {
+  it('renders icons and colors for synthetic register status filters', () => {
+    const wrapper = mountSelect({
+      modelValue: REGISTER_STATUS_FILTER_IN_PROGRESS,
+      items: buildRegisterStatusFilterOptions([
+        {
+          id: 2,
+          title: 'In Progress',
+          icon: 'svg:in-transit',
+          bkColor: '#FFEEDD',
+          fgColor: '#111111'
+        }
+      ])
+    })
+
+    const icons = wrapper.findAll('[data-testid="register-status-icon"]')
+    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
+      'fa-solid fa-gears',
+      'fa-solid fa-layer-group',
+      'fa-solid fa-gears',
+      'svg:in-transit'
+    ])
+    expect(icons[0].element.style.backgroundColor).toBe('rgb(231, 241, 255)')
+    expect(icons[0].element.style.color).toBe('rgb(13, 110, 253)')
+  })
+
   it('renders selected and menu statuses with register status icons', () => {
     const wrapper = mountSelect()
 

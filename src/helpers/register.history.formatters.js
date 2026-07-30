@@ -57,7 +57,7 @@ export function formatRegisterHistoryValue(
     case 'RegisterType':
       return isEmptyReference(value)
         ? 'не указано'
-        : getRegisterTypeDisplayName(companies, value, 'Неизвестная компания')
+: getRegisterTypeDisplayName(companies, value, 'Неизвестный тип реестра')
     case 'StatusId':
       return resolveReference(value, getStatusName, 'Неизвестный статус')
     case 'TheOtherCountryCode':

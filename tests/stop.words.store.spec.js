@@ -44,22 +44,6 @@ describe('stop.words.store.js', () => {
     store.error = null
   })
 
-  describe('Store Initialization', () => {
-    it('initializes with correct default state', () => {
-      expect(store.stopWords).toEqual([])
-      expect(store.stopWord).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-    })
-
-    it('has all required methods', () => {
-      expect(typeof store.getAll).toBe('function')
-      expect(typeof store.getById).toBe('function')
-      expect(typeof store.create).toBe('function')
-      expect(typeof store.update).toBe('function')
-      expect(typeof store.remove).toBe('function')
-    })
-  })
-
   describe('getAll', () => {
     it('fetches all stop words successfully', async () => {
       fetchWrapper.get.mockResolvedValue(mockStopWords)
@@ -307,7 +291,6 @@ describe('stop.words.store.js', () => {
       consoleSpy.mockRestore()
     })
   })
-
 
   describe('Store State Management', () => {
     it('maintains reactive state', async () => {

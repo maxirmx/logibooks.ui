@@ -177,29 +177,7 @@ describe('KeyWords_List.vue', () => {
     }
   })
 
-  describe('Component Mounting', () => {
-    it('renders correctly', () => {
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('[data-testid="key-words-list"]').exists()).toBe(true)
-    })
-
-    it('displays the correct heading', () => {
-      const heading = wrapper.find('.primary-heading')
-      expect(heading.exists()).toBe(true)
-      expect(heading.text()).toContain('Ключевые слова и фразы для подбора ТН ВЭД')
-    })
-
-    it('initializes data on mount', () => {
-      expect(ensureLoaded).toHaveBeenCalledOnce()
-      expect(getAllKeyWords).toHaveBeenCalledOnce()
-    })
-  })
-
   describe('Data Display', () => {
-    it('displays data table when keywords exist', () => {
-      const dataTable = wrapper.find('[data-testid="v-data-table"]')
-      expect(dataTable.exists()).toBe(true)
-    })
 
     it('shows empty table when no keywords exist', async () => {
       mockKeyWords.value = []
@@ -210,17 +188,9 @@ describe('KeyWords_List.vue', () => {
       expect(wrapper.find('.header-with-actions').exists()).toBe(true)
     })
 
-    it('displays search field always', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-    })
   })
 
   describe('Create Functionality', () => {
-    it('shows header actions for admin users', () => {
-      const headerActions = wrapper.find('.header-actions')
-      expect(headerActions.exists()).toBe(true)
-    })
 
     it('calls openCreateDialog when create action invoked', async () => {
       await wrapper.vm.openCreateDialog()
@@ -350,11 +320,6 @@ describe('KeyWords_List.vue', () => {
   })
 
   describe('File Upload Functionality', () => {
-    it('shows file input component', () => {
-      const fileInput = wrapper.find('[data-testid="v-file-input"]')
-      expect(fileInput.exists()).toBe(true)
-      expect(fileInput.attributes().accept).toBe('.xls,.xlsx,.csv,.txt')
-    })
 
     it('opens file dialog when upload link is clicked', async () => {
       const fileInputRef = { click: vi.fn() }

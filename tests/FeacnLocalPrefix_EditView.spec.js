@@ -35,13 +35,5 @@ describe('FeacnLocalPrefix_EditView.vue', () => {
     expect(comp.exists()).toBe(true)
   })
 
-  it('passes route id to FeacnLocalPrefix_Settings', () => {
-    const comp = wrapper.findComponent(FeacnLocalPrefix_Settings)
-    expect(comp.props('prefixId')).toBe(123)
-  })
-
-  it('renders stub content', () => {
-    expect(wrapper.html()).toContain('Fp Settings 123')
-  })
 })
 

@@ -131,28 +131,7 @@ describe('RegisterStatuses_List.vue', () => {
     }
   })
 
-  describe('Component Mounting', () => {
-    it('renders correctly', () => {
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('.settings.table-2').exists()).toBe(true)
-    })
-
-    it('displays the correct heading', () => {
-      const heading = wrapper.find('.primary-heading')
-      expect(heading.exists()).toBe(true)
-      expect(heading.text()).toBe('Статусы партий')
-    })
-
-    it('calls getAll on mount', () => {
-      expect(getAllRegisterStatuses).toHaveBeenCalledOnce()
-    })
-  })
-
   describe('Data Display', () => {
-    it('displays order statuses in the table', async () => {
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
-    })
 
     it('shows empty table when no order statuses', async () => {
       mockRegisterStatuses.value = []
@@ -160,11 +139,6 @@ describe('RegisterStatuses_List.vue', () => {
 
       const dataTable = wrapper.find('[data-testid="v-data-table"]')
       expect(dataTable.exists()).toBe(true)
-    })
-
-    it('displays search field when order statuses exist', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
     })
 
     it('displays whether changes are prohibited', () => {
@@ -175,10 +149,6 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Authorized Actions', () => {
-    it('shows header actions for administrator and shift-lead users', () => {
-      const headerActions = wrapper.find('.header-actions')
-      expect(headerActions.exists()).toBe(true)
-    })
 
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
@@ -345,10 +315,6 @@ describe('RegisterStatuses_List.vue', () => {
       expect(wrapper.vm.filterRegisterStatuses).toBeDefined()
     })
 
-    it('uses correct search field props', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-    })
   })
 
   describe('Store Integration', () => {

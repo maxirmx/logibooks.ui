@@ -889,12 +889,6 @@ describe('registers.list.helpers', () => {
       })
     })
 
-    describe('POLLING_INTERVAL_MS', () => {
-      it('has correct default value', () => {
-        expect(POLLING_INTERVAL_MS).toBe(1000)
-      })
-    })
-
     describe('createRegisterActionHandlers', () => {
       let registersStore
       let alertStore

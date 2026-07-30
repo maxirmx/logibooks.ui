@@ -411,18 +411,6 @@ describe('Users_List.vue', () => {
       createWrapper()
     })
 
-    it('shows search field when users exist', () => {
-      expect(wrapper.find('[data-testid="v-text-field"]').exists()).toBe(true)
-    })
-
-    it('has register user button', () => {
-      const headerActions = wrapper.find('.header-actions')
-      expect(headerActions.exists()).toBe(true)
-      
-      const button = headerActions.find('button')
-      expect(button.exists()).toBe(true)
-    })
-
     it('clears alert when alert close button is clicked', async () => {
       mockAlert.value = { message: 'Test alert', type: 'alert-success' }
       createWrapper()

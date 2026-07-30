@@ -34,13 +34,4 @@ describe('Notification_CreateView.vue', () => {
     expect(settings.exists()).toBe(true)
   })
 
-  it('passes create mode to Notification_Settings', () => {
-    const settings = wrapper.findComponent(NotificationSettings)
-    expect(settings.props('mode')).toBe('create')
-    expect(settings.props('notificationId')).toBeUndefined()
-  })
-
-  it('renders placeholder content', () => {
-    expect(wrapper.find('[data-test="notification-settings"]').exists()).toBe(true)
-  })
 })

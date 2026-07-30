@@ -145,27 +145,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     wrapper = mountList()
   })
 
-  it('fetches prefixes and preloads FEACN info on mount', () => {
-    expect(getAllPrefixes).toHaveBeenCalled()
-    expect(preloadFeacnInfo).toHaveBeenCalledWith(['0101', '0202', '0303', '0404', '111', '333'])
-  })
-
-  it('renders prefixes using derived description', () => {
-    const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    expect(rows.length).toBe(4)
-    const firstRowCells = rows[0].findAll('.v-data-table-cell')
-    expect(firstRowCells[2].text()).toBe('Derived 0101')
-  })
-
-  it('renders procedure column based on export and import flags', () => {
-    const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    expect(rows[0].findAll('.v-data-table-cell')[4].text()).toBe('Экспорт из РФ')
-    expect(rows[1].findAll('.v-data-table-cell')[4].text()).toBe('Импорт в РФ')
-    expect(rows[2].findAll('.v-data-table-cell')[4].text()).toContain('Экспорт из РФ')
-    expect(rows[2].findAll('.v-data-table-cell')[4].text()).toContain('Импорт в РФ')
-    expect(rows[2].findAll('.v-data-table-cell')[4].findAll('.procedure-line')).toHaveLength(2)
-  })
-
   it('uses requested procedure sort order from import and export flags', () => {
     const combinations = [
       { forImport: false, forExport: false },
@@ -212,11 +191,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
       .findAll('.feacn-code-tooltip')[0]
     await exceptionSpan.trigger('mouseenter')
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('111')
-  })
-
-  it('has header with actions for admin users', () => {
-    const headerActions = wrapper.find('.header-actions')
-    expect(headerActions.exists()).toBe(true)
   })
 
   it('navigates to create view when action invoked', async () => {

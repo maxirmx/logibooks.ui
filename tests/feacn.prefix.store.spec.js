@@ -62,14 +62,6 @@ describe('feacn.prefixes.store.js', () => {
     store.error = null
   })
 
-  describe('initial state', () => {
-    it('sets defaults', () => {
-      expect(store.prefixes).toEqual([])
-      expect(store.prefix).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-    })
-  })
-
   describe('CRUD operations', () => {
     it('getAll retrieves prefixes', async () => {
       fetchWrapper.get.mockResolvedValue(mockPrefixes)

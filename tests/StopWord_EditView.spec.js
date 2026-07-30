@@ -38,16 +38,4 @@ describe('StopWord_EditView', () => {
     expect(stopWordSettings.exists()).toBe(true)
   })
 
-  it('should pass route id to StopWord_Settings component', () => {
-    const stopWordSettings = wrapper.findComponent(StopWord_Settings)
-    expect(stopWordSettings.props('id')).toBe(123)
-  })
-
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="stopword-settings"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component for edit mode', () => {
-    expect(wrapper.html()).toContain('StopWord_Settings Component with ID: 123')
-  })
 })

@@ -165,13 +165,6 @@ describe('KeyWord_Settings.vue', () => {
   })
 
   // Form validation tests are skipped as they're currently failing
-  describe('Form Validation', () => {
-    // Validation tests are handled through vee-validate and Yup schema
-    it('uses validation schema for form fields', () => {
-      // Just verify the component uses the correct validation setup
-      expect(true).toBe(true)
-    })
-  })
 
   describe('Word Analysis and Option Disabling', () => {
 

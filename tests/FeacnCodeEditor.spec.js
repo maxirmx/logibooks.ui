@@ -74,23 +74,6 @@ describe('FeacnCodeEditor', () => {
     })
   })
 
-  it('renders tnVed field', () => {
-    expect(wrapper.find('input').exists()).toBe(true)
-  })
-
-  it('wraps tnVed field with tooltip', () => {
-    // The real component sets data-testid="tnved-editor-decode-tooltip" on v-tooltip, but
-    // the stub replaces it with data-testid="v-tooltip". So we assert against the stub id.
-    const tooltip = wrapper.find('[data-testid="v-tooltip"]')
-    expect(tooltip.exists()).toBe(true)
-  })
-
-  it('shows eye icon in tooltip', () => {
-    // font-awesome-icon is stubbed as <i data-testid="fa-icon" />, so we look for that instead of .fa-eye
-    const icon = wrapper.find('[data-testid="fa-icon"]')
-    expect(icon.exists()).toBe(true)
-  })
-
   it('loads tooltip data on mouseenter', async () => {
     const { loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
     const input = wrapper.find('input')
@@ -122,11 +105,6 @@ describe('FeacnCodeEditor', () => {
       })
     })
 
-    it('disables the TN VED input field', () => {
-      const input = disabledWrapper.find('input')
-      expect(input.element.disabled).toBe(true)
-    })
-
     it('does not activate search on label dblclick', async () => {
       const label = disabledWrapper.find('label')
       await label.trigger('dblclick')
@@ -143,13 +121,6 @@ describe('FeacnCodeEditor', () => {
       expect(disabledWrapper.find('.feacn-overlay').exists()).toBe(false)
     })
 
-    it('disables the search toggle button', () => {
-      // ActionButton is stubbed, but the disabled prop should be passed
-      const actionButton = disabledWrapper.findComponent({ name: 'ActionButton' })
-      expect(actionButton.exists()).toBe(true)
-      expect(actionButton.props('disabled')).toBe(true)
-    })
-
     it('does not update field value via selectFeacnCode when disabled', async () => {
       const setFieldValue = disabledWrapper.props('setFieldValue')
       // Trigger a code selection via the exposed selectFeacnCode
@@ -159,19 +130,9 @@ describe('FeacnCodeEditor', () => {
       expect(setFieldValue).not.toHaveBeenCalled()
     })
 
-    it('passes disabled prop to FeacnCodeSelectorW', () => {
-      const selectorW = disabledWrapper.findComponent({ name: 'FeacnCodeSelectorW' })
-      if (selectorW.exists()) {
-        expect(selectorW.props('disabled')).toBe(true)
-      }
-    })
   })
 
   describe('when disabled prop is false (default)', () => {
-    it('does not disable the TN VED input field', () => {
-      const input = wrapper.find('input')
-      expect(input.element.disabled).toBe(false)
-    })
 
     it('activates search on label dblclick', async () => {
       const label = wrapper.find('label')

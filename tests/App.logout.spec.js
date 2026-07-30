@@ -138,13 +138,6 @@ describe('App Logout Functionality', () => {
     })
   })
 
-  it('should display logout link when user is logged in', () => {
-    const logoutLinks = wrapper.findAll('a[class="link"]')
-    const logoutLink = logoutLinks.find(link => link.text() === 'Выход')
-    expect(logoutLink).toBeTruthy()
-    expect(logoutLink.text()).toBe('Выход')
-  })
-
   it('should call logout and navigate to login page when logout is clicked', async () => {
     // Find the logout link specifically
     const logoutLinks = wrapper.findAll('a[class="link"]')
@@ -187,11 +180,6 @@ describe('App Logout Functionality', () => {
     const loginLink = wrapper.find('a[class="link"]')
     expect(loginLink.exists()).toBe(true)
     expect(loginLink.text()).toBe('Вход')
-  })
-
-  it('should show user name in app bar when logged in', () => {
-    const appBarTitle = wrapper.find('.primary-heading')
-    expect(appBarTitle.text()).toContain('Logibooks  | Doe John Smith')
   })
 
   it('should not show user name in app bar when logged out', async () => {

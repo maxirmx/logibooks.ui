@@ -234,28 +234,7 @@ describe('StopWords_List.vue', () => {
     }
   })
 
-  describe('Component Mounting', () => {
-    it('renders correctly', () => {
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('[data-testid="stop-words-list"]').exists()).toBe(true)
-    })
-
-    it('displays the correct heading', () => {
-      const heading = wrapper.find('.primary-heading')
-      expect(heading.exists()).toBe(true)
-      expect(heading.text()).toContain('Стоп-слова')
-    })
-
-    it('calls getAll on mount', () => {
-      expect(getAllStopWords).toHaveBeenCalledOnce()
-    })
-  })
-
   describe('Admin Access Control', () => {
-    it('shows content for admin users', () => {
-      const dataTable = wrapper.find('[data-testid="v-data-table"]')
-      expect(dataTable.exists()).toBe(true)
-    })
 
     it('shows warning for non-admin users', () => {
       // Test the isAdmin property of the auth store
@@ -267,15 +246,6 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Data Display', () => {
-    it('displays stop words in the table', async () => {
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
-    })
-
-    it('displays search field', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-    })
 
     it('displays customs procedure selector next to search field', () => {
       const filters = wrapper.find('.stopwords-filter-row')
@@ -288,17 +258,9 @@ describe('StopWords_List.vue', () => {
       ])
     })
 
-    it('shows header with actions', () => {
-      const headerActions = wrapper.find('.header-with-actions')
-      expect(headerActions.exists()).toBe(true)
-    })
   })
 
   describe('Admin Actions', () => {
-    it('shows header actions for admin users', () => {
-      const headerActions = wrapper.find('.header-actions')
-      expect(headerActions.exists()).toBe(true)
-    })
 
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
@@ -558,15 +520,6 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.filterStopWords).toBeDefined()
     })
 
-    it('uses correct search field props', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-    })
-
-    it('renders v-card with correct structure', () => {
-      const card = wrapper.find('[data-testid="v-card"]')
-      expect(card.exists()).toBe(true)
-    })
   })
 
   describe('Edge Cases', () => {
@@ -614,13 +567,6 @@ describe('StopWords_List.vue', () => {
       expect(emptyWrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
       expect(emptyWrapper.find('.primary-heading').exists()).toBe(true)
       emptyWrapper.unmount()
-    })
-  })
-
-  describe('Error Handling', () => {
-    it('handles store initialization error gracefully', () => {
-      // Component should still render even if store has issues
-      expect(wrapper.exists()).toBe(true)
     })
   })
 

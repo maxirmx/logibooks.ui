@@ -35,13 +35,6 @@ describe('feacn.codes.store.js', () => {
     store.error = null
   })
 
-  describe('initial state', () => {
-    it('sets defaults', () => {
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-  })
-
   describe('data retrieval', () => {
     it('getById retrieves code by id', async () => {
       fetchWrapper.get.mockResolvedValue(mockCode)

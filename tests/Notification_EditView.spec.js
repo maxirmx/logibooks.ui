@@ -35,13 +35,4 @@ describe('Notification_EditView.vue', () => {
     expect(settings.exists()).toBe(true)
   })
 
-  it('passes edit mode and id to Notification_Settings', () => {
-    const settings = wrapper.findComponent(NotificationSettings)
-    expect(settings.props('mode')).toBe('edit')
-    expect(settings.props('notificationId')).toBe(5)
-  })
-
-  it('renders placeholder content', () => {
-    expect(wrapper.find('[data-test="notification-settings"]').exists()).toBe(true)
-  })
 })

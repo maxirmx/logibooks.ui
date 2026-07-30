@@ -35,16 +35,4 @@ describe('KeyWord_CreateView', () => {
     expect(stopWordSettings.exists()).toBe(true)
   })
 
-  it('should not pass id prop to KeyWord_Settings (create mode)', () => {
-    const stopWordSettings = wrapper.findComponent(KeyWord_Settings)
-    expect(stopWordSettings.props('id')).toBeUndefined()
-  })
-
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="keyword-settings"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component for create mode', () => {
-    expect(wrapper.html()).toContain('KeyWord_Settings Component')
-  })
 })

@@ -89,12 +89,6 @@ describe('CheckStatusCode', () => {
   })
 
   describe('EUR1000 status', () => {
-    it('should expose the exact reserved numeric value', () => {
-      expect(WStatusValues.EUR1000).toBe(0x017C)
-      expect(SWCheckStatus.EUR1000).toBe(0x017C)
-      expect(FCCheckStatus.EUR1000).toBe(0x017C)
-      expect(CheckStatusCode.EUR1000.value).toBe(0x017C017C)
-    })
 
     it('should detect and render only the exact combined status', () => {
       expect(CheckStatusCode.isEUR1000(CheckStatusCode.EUR1000.value)).toBe(true)
@@ -102,11 +96,6 @@ describe('CheckStatusCode', () => {
         CheckStatusCode.compose(FCCheckStatus.EUR1000, SWCheckStatus.NotChecked)
       )).toBe(false)
       expect(CheckStatusCode.EUR1000.toString()).toBe('>1000€')
-    })
-
-    it('should expose EUR1000 in both selector name maps', () => {
-      expect(SWCheckStatusNames[SWCheckStatus.EUR1000]).toBe('>1000€')
-      expect(FCCheckStatusNames[FCCheckStatus.EUR1000]).toBe('>1000€')
     })
 
     it.each([

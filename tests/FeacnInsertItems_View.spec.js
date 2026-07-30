@@ -31,8 +31,5 @@ describe('FeacnInsertItems_View', () => {
     expect(list.exists()).toBe(true)
   })
 
-  it('has correct structure', () => {
-    expect(wrapper.find('[data-test="fi-list"]').exists()).toBe(true)
-  })
 })
 

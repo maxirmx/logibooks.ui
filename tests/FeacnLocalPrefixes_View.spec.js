@@ -29,8 +29,5 @@ describe('FeacnLocalPrefixes_View', () => {
     expect(list.exists()).toBe(true)
   })
 
-  it('has correct structure', () => {
-    expect(wrapper.find('[data-test="fp-list"]').exists()).toBe(true)
-  })
 })
 

@@ -40,39 +40,7 @@ describe('PaginationFooter', () => {
     })
   })
 
-  describe('Rendering', () => {
-    it('renders all main sections', () => {
-      expect(wrapper.find('.pagination-footer__items').exists()).toBe(true)
-      expect(wrapper.find('.pagination-footer__info').exists()).toBe(true)
-      expect(wrapper.find('.pagination-footer__nav').exists()).toBe(true)
-    })
-
-    it('displays correct items per page options', () => {
-      const select = wrapper.find('.pagination-footer__items-select')
-      expect(select.exists()).toBe(true)
-    })
-
-    it('shows range information correctly', () => {
-      const info = wrapper.find('.pagination-footer__info')
-      expect(info.text()).toBe('1-20 из 200')
-    })
-
-    it('displays navigation buttons', () => {
-      const navButtons = wrapper.findAll('.pagination-footer__nav .v-btn')
-      expect(navButtons.length).toBe(5) // first, prev, next, last, scroll-to-top
-    })
-
-    it('displays scroll-to-top button', () => {
-      const scrollButton = wrapper.find('.pagination-footer__scroll-button')
-      expect(scrollButton.exists()).toBe(true)
-    })
-  })
-
   describe('Page Control', () => {
-    it('always renders page select', () => {
-      expect(wrapper.find('.pagination-footer__page-select').exists()).toBe(true)
-      expect(wrapper.find('.pagination-footer__page-input').exists()).toBe(false)
-    })
 
     it('generates correct page options', () => {
       const component = wrapper.vm

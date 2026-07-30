@@ -56,6 +56,7 @@ const emit = defineEmits([
   'update:page',
   'update:sortBy',
   'open-parcels',
+  'open-history',
   'edit-register',
   'delete-register'
 ])
@@ -400,6 +401,14 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-list"
             tooltip-text="Список посылок"
             @click="(row) => emit('open-parcels', row)"
+            :disabled="runningAction || loading"
+          />
+          <ActionButton
+            v-if="isShiftLeadPlus"
+            :item="item"
+            icon="fa-solid fa-clock-rotate-left"
+            tooltip-text="История изменений"
+            @click="(row) => emit('open-history', row)"
             :disabled="runningAction || loading"
           />
           <ActionButton

@@ -311,6 +311,10 @@ function openParcels(item) {
   router.push(`/registers/${item.id}/parcels?mode=${OP_MODE_PAPERWORK}`)
 }
 
+function openHistory(item) {
+  router.push(`/registers/${item.id}/history?mode=${OP_MODE_PAPERWORK}`)
+}
+
 function editRegister(item) {
   router.push(`/register/edit/${item.id}?mode=${OP_MODE_PAPERWORK}`)
 }
@@ -442,6 +446,7 @@ defineExpose({
       :apply-register-status-change="applyRegisterStatusToRegister"
       :calculate-customs-charges="runCalculateCustomsCharges"
       @open-parcels="openParcels"
+      @open-history="openHistory"
       @edit-register="editRegister"
       @delete-register="deleteRegister"
     />

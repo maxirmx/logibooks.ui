@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 let authStore
 const alertClear = vi.fn()
@@ -520,6 +521,24 @@ describe('router guards', () => {
 
       expect(router.currentRoute.value.fullPath).toBe('/login')
       expect(authStore.returnUrl).toBe('/registerstatus/create')
+    })
+  })
+
+  describe('register history route', () => {
+    it('is a separate administrator/shift-lead route with normalized props', () => {
+      const route = router.getRoutes()
+        .find((item) => item.path === '/registers/:registerId/history')
+
+      expect(route?.name).toBe('История изменений реестра')
+      expect(route?.meta.reqShiftLeadPlus).toBe(true)
+      expect(route?.meta.hideSidebar).toBe(true)
+      expect(route?.props.default({
+        params: { registerId: '42' },
+        query: { mode: OP_MODE_WAREHOUSE }
+      })).toEqual({
+        registerId: 42,
+        mode: OP_MODE_WAREHOUSE
+      })
     })
   })
 

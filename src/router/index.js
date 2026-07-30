@@ -433,6 +433,22 @@ const router = createRouter({
       meta: { reqAnyRole: true, hideSidebar: true }
     },
     {
+      path: '/registers/:registerId/history',
+      name: 'История изменений реестра',
+      component: () => import('@/views/RegisterHistory_View.vue'),
+      props: (route) => {
+        const validModes = [OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE]
+        const rawMode = route.query.mode
+        const queryMode = typeof rawMode === 'string' ? rawMode : undefined
+        const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
+        return {
+          registerId: Number(route.params.registerId),
+          mode
+        }
+      },
+      meta: { reqShiftLeadPlus: true, hideSidebar: true }
+    },
+    {
       path: '/parcels/by-number',
       name: 'Посылки по номеру',
       component: () => import('@/views/ParcelsByNumber_View.vue'),

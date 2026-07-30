@@ -5,6 +5,7 @@
 
 import { computed } from 'vue'
 import { Field } from 'vee-validate'
+import { formatAirportDisplayName } from '@/helpers/register.display.helpers.js'
 
 const props = defineProps({
   label: { type: String, required: true },
@@ -20,12 +21,6 @@ const airportOptions = computed(() => {
   return props.airports
 })
 
-function formatAirport(airport) {
-  if (!airport) return ''
-  const name = airport.name || '—'
-  const code = airport.codeIata || ''
-  return code ? `${name} (${code})` : name
-}
 </script>
 
 <template>
@@ -41,7 +36,7 @@ function formatAirport(airport) {
     >
       <option :value="0">Не выбрано</option>
       <option v-for="airport in airportOptions" :key="airport.id" :value="airport.id">
-        {{ formatAirport(airport) }}
+        {{ formatAirportDisplayName(airport) }}
       </option>
     </Field>
   </div>

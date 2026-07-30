@@ -84,7 +84,8 @@ import {
   faCalculator,
   faPassport,
   faCheckToSlot,
-  faFileSignature
+  faFileSignature,
+  faClockRotateLeft
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -161,7 +162,8 @@ library.add(
   faCalculator,
   faPassport,
   faCheckToSlot,
-  faFileSignature
+  faFileSignature,
+  faClockRotateLeft
 )
 
 import 'vuetify/styles'

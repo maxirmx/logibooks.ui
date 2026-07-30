@@ -234,6 +234,10 @@ function openParcels(item) {
   router.push(`/registers/${item.id}/parcels?mode=${OP_MODE_WAREHOUSE}`)
 }
 
+function openHistory(item) {
+  router.push(`/registers/${item.id}/history?mode=${OP_MODE_WAREHOUSE}`)
+}
+
 function editRegister(item) {
   router.push(`/register/edit/${item.id}?mode=${OP_MODE_WAREHOUSE}`)
 }
@@ -380,6 +384,7 @@ defineExpose({
       :apply-register-status-change="applyRegisterStatusToRegister"
       show-register-status-icon
       @open-parcels="openParcels"
+      @open-history="openHistory"
       @edit-register="editRegister"
       @delete-register="deleteRegister"
       @open-unregistered-parcels="openUnregisteredParcels"

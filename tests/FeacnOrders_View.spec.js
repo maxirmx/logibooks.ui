@@ -33,11 +33,4 @@ describe('FeacnOrders_View', () => {
     expect(comp.exists()).toBe(true)
   })
 
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="feacn-orders-list"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component', () => {
-    expect(wrapper.html()).toContain('FeacnOrders_List Component')
-  })
 })

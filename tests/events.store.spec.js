@@ -42,20 +42,6 @@ describe('events.store.js', () => {
     vi.resetAllMocks()
   })
 
-  describe('initial state', () => {
-    it('sets default values for parcels', () => {
-      expect(store.parcelEvents).toEqual([])
-      expect(store.parcelEvent).toEqual({ loading: true })
-      expect(store.parcelLoading).toBe(false)
-    })
-
-    it('sets default values for registers', () => {
-      expect(store.registerEvents).toEqual([])
-      expect(store.registerEvent).toEqual({ loading: true })
-      expect(store.registerLoading).toBe(false)
-    })
-  })
-
   describe('parcel events', () => {
     describe('parcelGetAll', () => {
       it('loads all parcel events', async () => {

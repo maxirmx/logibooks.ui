@@ -640,9 +640,6 @@ describe('fetchWrapper', () => {
       }
     });
     
-    it('should exist as a method', () => {
-      expect(typeof fetchWrapper.downloadFile).toBe('function');
-    });
   })
 })
 

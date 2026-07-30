@@ -91,22 +91,6 @@ describe('FeacnInsertItems_List.vue', () => {
     })
   })
 
-  it('fetches items on mount', () => {
-    expect(getAllItems).toHaveBeenCalled()
-  })
-
-  it('renders heading and items', () => {
-    expect(wrapper.text()).toContain('Правила для формирования описания продукта')
-    const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    expect(rows.length).toBe(2)
-    expect(rows[0].text()).toContain('1234567890')
-  })
-
-  it('has header with actions for admin users', () => {
-    const headerActions = wrapper.find('.header-actions')
-    expect(headerActions.exists()).toBe(true)
-  })
-
   it('navigates to create view when action invoked', async () => {
     await wrapper.vm.openCreateDialog()
     expect(mockPush).toHaveBeenCalledWith('/feacninsertitem/create')

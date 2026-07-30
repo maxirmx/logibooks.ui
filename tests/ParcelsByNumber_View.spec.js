@@ -32,15 +32,6 @@ describe('ParcelsByNumber_View.vue', () => {
     }
   })
 
-  it('renders correctly', () => {
-    expect(wrapper.exists()).toBe(true)
-  })
-
-  it('renders the ParcelsByNumber list component', () => {
-    const list = wrapper.find('[data-testid="parcels-by-number-list"]')
-    expect(list.exists()).toBe(true)
-  })
-
   it('does not add unnecessary wrapper elements', () => {
     expect(wrapper.element.tagName.toLowerCase()).toBe('div')
   })

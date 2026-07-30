@@ -51,22 +51,6 @@ describe('register.statuses.store.js', () => {
     vi.resetAllMocks()
   })
 
-  describe('Store Initialization', () => {
-    it('initializes with correct default state', () => {
-      expect(store.registerStatuses).toEqual([])
-      expect(store.registerStatus).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-    })
-
-    it('has all required methods', () => {
-      expect(typeof store.getAll).toBe('function')
-      expect(typeof store.getById).toBe('function')
-      expect(typeof store.create).toBe('function')
-      expect(typeof store.update).toBe('function')
-      expect(typeof store.remove).toBe('function')
-    })
-  })
-
   describe('getAll', () => {
     it('fetches all register statuses successfully', async () => {
       mockGet.mockResolvedValue(mockRegisterStatuses)

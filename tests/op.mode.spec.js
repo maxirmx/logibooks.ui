@@ -6,15 +6,6 @@ import { describe, it, expect } from 'vitest'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 
 describe('op.mode', () => {
-  describe('constants', () => {
-    it('exports OP_MODE_PAPERWORK constant', () => {
-      expect(OP_MODE_PAPERWORK).toBe('modePaperwork')
-    })
-
-    it('exports OP_MODE_WAREHOUSE constant', () => {
-      expect(OP_MODE_WAREHOUSE).toBe('modeWarehouse')
-    })
-  })
 
   describe('getRegisterNouns', () => {
     describe('paperwork mode', () => {

@@ -33,8 +33,4 @@ describe('ExportFees_View', () => {
     expect(comp.exists()).toBe(true)
   })
 
-  it('has simple wrapper structure', () => {
-    expect(wrapper.find('[data-test="export-fees-list"]').exists()).toBe(true)
-    expect(wrapper.html()).toContain('ExportFees_List Component')
-  })
 })

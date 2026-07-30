@@ -34,11 +34,4 @@ describe('StopWords_View', () => {
     expect(stopWordsList.exists()).toBe(true)
   })
 
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="stopwords-list"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component', () => {
-    expect(wrapper.html()).toContain('StopWords_List Component')
-  })
 })

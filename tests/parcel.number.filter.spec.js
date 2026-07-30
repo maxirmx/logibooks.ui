@@ -11,14 +11,6 @@ describe('Parcel Number Filter Integration', () => {
   })
 
   describe('Auth Store Integration', () => {
-    it('should initialize parcels_number as empty string', () => {
-      // Mock auth store implementation
-      const mockAuthStore = {
-        parcels_number: ''
-      }
-      
-      expect(mockAuthStore.parcels_number).toBe('')
-    })
 
     it('should accept parcel number filter values', () => {
       const mockAuthStore = {

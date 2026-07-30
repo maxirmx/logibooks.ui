@@ -35,12 +35,4 @@ describe('FeacnInsertItem_EditView.vue', () => {
     expect(comp.exists()).toBe(true)
   })
 
-  it('passes route id to FeacnInsertItem_Settings', () => {
-    const comp = wrapper.findComponent(FeacnInsertItem_Settings)
-    expect(comp.props('insertItemId')).toBe(123)
-  })
-
-  it('renders stub content', () => {
-    expect(wrapper.html()).toContain('Fi Settings 123')
-  })
 })

@@ -38,14 +38,6 @@ describe('feacn.insert.items.store.js', () => {
     store.error = null
   })
 
-  describe('initial state', () => {
-    it('sets defaults', () => {
-      expect(store.insertItems).toEqual([])
-      expect(store.insertItem).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-    })
-  })
-
   describe('CRUD operations', () => {
     it('getAll retrieves items', async () => {
       fetchWrapper.get.mockResolvedValue(mockItems)

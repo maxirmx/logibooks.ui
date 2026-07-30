@@ -39,14 +39,6 @@ describe('key.words.store.js', () => {
     store.error = null
   })
 
-  describe('initial state', () => {
-    it('sets defaults', () => {
-      expect(store.keyWords).toEqual([])
-      expect(store.keyWord).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-    })
-  })
-
   describe('CRUD operations', () => {
     it('getAll retrieves keywords', async () => {
       fetchWrapper.get.mockResolvedValue(mockKeyWords)

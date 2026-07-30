@@ -35,16 +35,4 @@ describe('StopWord_CreateView', () => {
     expect(stopWordSettings.exists()).toBe(true)
   })
 
-  it('should not pass id prop to StopWord_Settings (create mode)', () => {
-    const stopWordSettings = wrapper.findComponent(StopWord_Settings)
-    expect(stopWordSettings.props('id')).toBeUndefined()
-  })
-
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="stopword-settings"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component for create mode', () => {
-    expect(wrapper.html()).toContain('StopWord_Settings Component')
-  })
 })

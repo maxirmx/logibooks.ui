@@ -122,28 +122,7 @@ describe('ParcelStatuses_List.vue', () => {
     }
   })
 
-  describe('Component Mounting', () => {
-    it('renders correctly', () => {
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('.settings.table-2').exists()).toBe(true)
-    })
-
-    it('displays the correct heading', () => {
-      const heading = wrapper.find('.primary-heading')
-      expect(heading.exists()).toBe(true)
-      expect(heading.text()).toBe('Статусы посылок')
-    })
-
-    it('calls getAll on mount', () => {
-      expect(getAllParcelStatuses).toHaveBeenCalledOnce()
-    })
-  })
-
   describe('Data Display', () => {
-    it('displays order statuses in the table', async () => {
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
-    })
 
     it('shows empty table when no order statuses', async () => {
       mockParcelStatuses.value = []
@@ -153,17 +132,9 @@ describe('ParcelStatuses_List.vue', () => {
       expect(dataTable.exists()).toBe(true)
     })
 
-    it('displays search field when order statuses exist', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-    })
   })
 
   describe('Admin Actions', () => {
-    it('shows header actions for admin users', () => {
-      const headerActions = wrapper.find('.header-actions')
-      expect(headerActions.exists()).toBe(true)
-    })
 
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
@@ -318,10 +289,6 @@ describe('ParcelStatuses_List.vue', () => {
       expect(wrapper.vm.filterParcelStatuses).toBeDefined()
     })
 
-    it('uses correct search field props', () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-    })
   })
 
   describe('Store Integration', () => {

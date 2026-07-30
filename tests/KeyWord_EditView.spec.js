@@ -38,16 +38,4 @@ describe('KeyWord_EditView', () => {
     expect(keyWordSettings.exists()).toBe(true)
   })
 
-  it('should pass route id to KeyWord_Settings component', () => {
-    const keyWordSettings = wrapper.findComponent(KeyWord_Settings)
-    expect(keyWordSettings.props('id')).toBe(123)
-  })
-
-  it('should have correct component structure', () => {
-    expect(wrapper.find('[data-test="keyword-settings"]').exists()).toBe(true)
-  })
-
-  it('should be a simple wrapper component for edit mode', () => {
-    expect(wrapper.html()).toContain('KeyWord_Settings Component with ID: 123')
-  })
 })

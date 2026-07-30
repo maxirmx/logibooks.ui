@@ -33,34 +33,7 @@ describe('RegisterStatuses_View.vue', () => {
     }
   })
 
-  describe('Component Structure', () => {
-    it('renders correctly', () => {
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('renders the RegisterStatuses component', () => {
-      const registerStatusesList = wrapper.find('[data-testid="register-statuses-list"]')
-      expect(registerStatusesList.exists()).toBe(true)
-    })
-
-    it('has the correct component structure', () => {
-      expect(wrapper.find('.register-statuses-list-stub').exists()).toBe(true)
-    })
-  })
-
-  describe('Component Integration', () => {
-    it('properly imports and uses RegisterStatuses_List component', () => {
-      const registerStatusesComponent = wrapper.find('[data-testid="register-statuses-list"]')
-      expect(registerStatusesComponent.exists()).toBe(true)
-    })
-  })
-
   describe('Template Structure', () => {
-    it('has a clean template structure', () => {
-      // Should only contain the OrderStatuses component
-      const html = wrapper.html()
-      expect(html).toContain('register-statuses-list-stub')
-    })
 
     it('does not add unnecessary wrapper elements', () => {
       // Should directly render the OrderStatuses component

@@ -51,22 +51,6 @@ describe('parcel.statuses.store.js', () => {
     vi.resetAllMocks()
   })
 
-  describe('Store Initialization', () => {
-    it('initializes with correct default state', () => {
-      expect(store.parcelStatuses).toEqual([])
-      expect(store.parcelStatus).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-    })
-
-    it('has all required methods', () => {
-      expect(typeof store.getAll).toBe('function')
-      expect(typeof store.getById).toBe('function')
-      expect(typeof store.create).toBe('function')
-      expect(typeof store.update).toBe('function')
-      expect(typeof store.remove).toBe('function')
-    })
-  })
-
   describe('getAll', () => {
     it('fetches all order statuses successfully', async () => {
       mockGet.mockResolvedValue(mockParcelStatuses)

@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import RegisterHistoryList from '@/lists/RegisterHistory_List.vue'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
 const mocks = vi.hoisted(() => ({
@@ -78,6 +79,8 @@ vi.mock('@/stores/registers.store.js', () => ({
     },
     getById: mocks.getRegister,
     ensureOpsLoaded: mocks.ensureOps,
+    getOpsLabel: (list, value) =>
+      list?.find((item) => Number(item.value) === Number(value))?.name || String(value),
     getTransportationDocument: () => 'Авианакладная'
   })
 }))
@@ -86,6 +89,13 @@ vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
     get countries() {
       return mocks.countries
+    },
+    getCountryShortName: (value) => {
+      if (Number(value) === 643) return 'Россия'
+      const country = mocks.countries.find(
+        (item) => Number(item.isoNumeric) === Number(value)
+      )
+      return country?.nameRuShort || country?.nameRuOfficial || value
     },
     ensureLoaded: mocks.ensureCountries
   })
@@ -114,6 +124,8 @@ vi.mock('@/stores/warehouses.store.js', () => ({
     get warehouses() {
       return mocks.warehouses
     },
+    getWarehouseName: (value) =>
+      mocks.warehouses.find((item) => Number(item.id) === Number(value))?.name || String(value),
     ensureLoaded: mocks.ensureWarehouses
   })
 }))
@@ -226,9 +238,21 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.findComponent({ name: 'v-data-table-server' }).exists()).toBe(false)
   })
 
+  it('uses the batch label in the header for warehouse context', async () => {
+    const wrapper = mount(RegisterHistoryList, {
+      props: { registerId: 42, mode: OP_MODE_WAREHOUSE },
+      global: { stubs: defaultGlobalStubs }
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.primary-heading').text()).toBe(
+      'История изменений: Партия DEAL-42 (Авианакладная INV-42)'
+    )
+  })
+
   it('uses an action button to return to the register list preserving the operation mode', async () => {
     const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42, mode: 'warehouse' },
+      props: { registerId: 42, mode: OP_MODE_WAREHOUSE },
       global: { stubs: defaultGlobalStubs }
     })
     await flushPromises()
@@ -236,7 +260,7 @@ describe('RegisterHistory_List.vue', () => {
     await wrapper.get('[data-testid="register-history-back"]').trigger('click')
     expect(mocks.routerPush).toHaveBeenCalledWith({
       path: '/registers',
-      query: { mode: 'warehouse' }
+      query: { mode: OP_MODE_WAREHOUSE }
     })
   })
 
@@ -285,7 +309,7 @@ describe('RegisterHistory_List.vue', () => {
 
     const text = wrapper.text()
     expect(text).toContain('Компания: Озон → РВБ')
-    expect(text).toContain('Тип реестра: Озон → РВБ, новый формат')
+    expect(text).toContain('Тип реестра: Озон → РВБ новый формат')
     expect(text).toContain('Статус: Получен → На складе')
     expect(text).toContain('Контрагент: Старый контрагент → Новый контрагент')
     expect(text).toContain('Страна: Узбекистан → Грузия')

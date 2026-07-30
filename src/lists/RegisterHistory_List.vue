@@ -15,15 +15,11 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
-import {
-  WBR_COMPANY_ID,
-  WBR2_REGISTER_ID,
-  WBRN_REGISTER_ID
-} from '@/helpers/company.constants.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
-import { formatDate, formatDateTime } from '@/helpers/date.formatters.js'
+import { formatRegisterHistoryValue } from '@/helpers/register.history.formatters.js'
+import { formatDateTime } from '@/helpers/date.formatters.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { getRegisterNouns, OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -56,7 +52,7 @@ const registerHeading = computed(() =>
   buildParcelListHeading(
     registersStore.item,
     (id) => registersStore.getTransportationDocument(id),
-    'Реестр'
+    getRegisterNouns(props.mode).singular
   )
 )
 const historyItemsPerPageOptions = itemsPerPageOptions
@@ -141,93 +137,19 @@ function getFieldLabel(field) {
   return fieldLabels[field] || field
 }
 
-function getList(value) {
-  const list = unref(value)
-  return Array.isArray(list) ? list : []
-}
-
-function isEmptyReference(value) {
-  return value === null || value === undefined || value === '' || Number(value) === 0
-}
-
-function findByNumericValue(list, value, key = 'id') {
-  const numericValue = Number(value)
-  return getList(list).find((entry) => Number(entry?.[key]) === numericValue) || null
-}
-
-function getCompanyName(value) {
-  const company = findByNumericValue(companiesStore.companies, value)
-  return company?.shortName || company?.name || 'Неизвестная компания'
-}
-
-function getRegisterTypeName(value) {
-  const registerType = Number(value)
-  const wbrName = getCompanyName(WBR_COMPANY_ID)
-  if (registerType === WBR2_REGISTER_ID) return `${wbrName}, формат 2`
-  if (registerType === WBRN_REGISTER_ID) return `${wbrName}, новый формат`
-  return getCompanyName(registerType)
-}
-
-function getCountryName(value) {
-  const country = findByNumericValue(countriesStore.countries, value, 'isoNumeric')
-  if (country) {
-    return country.nameRuShort || country.nameRuOfficial || 'Неизвестная страна'
-  }
-  return Number(value) === 643 ? 'Россия' : 'Неизвестная страна'
-}
-
-function getAirportName(value) {
-  const airport = findByNumericValue(airportsStore.airports, value)
-  if (!airport) return 'Неизвестный аэропорт'
-  const name = airport.name || 'Неизвестный аэропорт'
-  return airport.codeIata ? `${name} (${airport.codeIata})` : name
-}
-
-function getOperationName(value, operationKey, unknownLabel) {
-  const operations = unref(registersStore.ops)
-  const operation = findByNumericValue(operations?.[operationKey], value, 'value')
-  return operation?.name || unknownLabel
-}
-
-function getWarehouseName(value) {
-  const warehouse = findByNumericValue(warehousesStore.warehouses, value)
-  return warehouse?.name || 'Неизвестный склад'
-}
-
-function getStatusName(value) {
-  return registerStatusesStore.getStatusById(Number(value))?.title || 'Неизвестный статус'
-}
-
-const referenceFormatters = {
-  CompanyId: getCompanyName,
-  RegisterType: getRegisterTypeName,
-  StatusId: getStatusName,
-  TheOtherCompanyId: getCompanyName,
-  TheOtherCountryCode: getCountryName,
-  DepartureAirportId: getAirportName,
-  ArrivalAirportId: getAirportName,
-  TransportationTypeCode: (value) =>
-    getOperationName(value, 'transportationTypes', 'Неизвестный тип транспорта'),
-  CustomsProcedureCode: (value) =>
-    getOperationName(value, 'customsProcedures', 'Неизвестная таможенная процедура'),
-  WarehouseId: getWarehouseName
-}
-
 function formatValue(change, value) {
-  if (value === null || value === undefined || value === '') {
-    return 'не указано'
-  }
-  const referenceFormatter = referenceFormatters[change?.field]
-  if (referenceFormatter) {
-    return isEmptyReference(value) ? 'не указано' : referenceFormatter(value)
-  }
-  if (value === 'True' || value === 'true') return 'Да'
-  if (value === 'False' || value === 'false') return 'Нет'
-  if (change?.field === 'DTime') return formatDateTime(value)
-  if (['InvoiceDate', 'WarehouseArrivalDate'].includes(change?.field)) {
-    return formatDate(value)
-  }
-  return value
+  const operations = unref(registersStore.ops)
+  return formatRegisterHistoryValue(change?.field, value, {
+    companies: unref(companiesStore.companies),
+    airports: unref(airportsStore.airports),
+    getCountryName: countriesStore.getCountryShortName,
+    getTransportationTypeName: (id) =>
+      registersStore.getOpsLabel(operations?.transportationTypes, id),
+    getCustomsProcedureName: (id) =>
+      registersStore.getOpsLabel(operations?.customsProcedures, id),
+    getWarehouseName: warehousesStore.getWarehouseName,
+    getStatusName: (id) => registerStatusesStore.getStatusById(Number(id))?.title
+  })
 }
 
 function formatChange(change) {

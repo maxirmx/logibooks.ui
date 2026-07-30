@@ -325,7 +325,7 @@ describe('Registers_List.vue', () => {
     expect(alertErrorFn).toHaveBeenCalledWith('load registers failed')
   })
 
-  describe('getCustomerName function', () => {
+  describe('getRegisterTypeName function', () => {
     let wrapper
 
     beforeEach(() => {
@@ -344,45 +344,45 @@ describe('Registers_List.vue', () => {
     })
 
     it('returns shortName when available', () => {
-      const customerName = wrapper.vm.getCustomerName(1)
-      expect(customerName).toBe('РВБ')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(1)
+      expect(registerTypeName).toBe('РВБ')
     })
 
     it('returns name when shortName is null', () => {
-      const customerName = wrapper.vm.getCustomerName(2)
-      expect(customerName).toBe('ООО "Интернет решения"')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(2)
+      expect(registerTypeName).toBe('ООО "Интернет решения"')
     })
 
     it('returns name when shortName is empty string', () => {
-      const customerName = wrapper.vm.getCustomerName(3)
-      expect(customerName).toBe('ООО "Длинное название компании"')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(3)
+      expect(registerTypeName).toBe('ООО "Длинное название компании"')
     })
 
     it('returns "Неизвестно" for non-existent customer ID', () => {
-      const customerName = wrapper.vm.getCustomerName(999)
-      expect(customerName).toBe('Неизвестно')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(999)
+      expect(registerTypeName).toBe('Неизвестно')
     })
 
     it('returns "Неизвестно" for null customer ID', () => {
-      const customerName = wrapper.vm.getCustomerName(null)
-      expect(customerName).toBe('Неизвестно')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(null)
+      expect(registerTypeName).toBe('Неизвестно')
     })
 
     it('returns "Неизвестно" for undefined customer ID', () => {
-      const customerName = wrapper.vm.getCustomerName(undefined)
-      expect(customerName).toBe('Неизвестно')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(undefined)
+      expect(registerTypeName).toBe('Неизвестно')
     })
 
     it('returns "Неизвестно" when a company has no usable display name', () => {
       mockCompanies.value = [{ id: 4, shortName: '', name: '' }]
-      const customerName = wrapper.vm.getCustomerName(4)
-      expect(customerName).toBe('Неизвестно')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(4)
+      expect(registerTypeName).toBe('Неизвестно')
     })
 
     it('returns "Неизвестно" when companies array is empty', () => {
       mockCompanies.value = []
-      const customerName = wrapper.vm.getCustomerName(1)
-      expect(customerName).toBe('Неизвестно')
+      const registerTypeName = wrapper.vm.getRegisterTypeName(1)
+      expect(registerTypeName).toBe('Неизвестно')
     })
   })
 
@@ -544,9 +544,9 @@ describe('Registers_List.vue', () => {
 
       await wrapper.vm.$nextTick()
 
-      // Test that getCustomerName works with the mock data
-      expect(wrapper.vm.getCustomerName(1)).toBe('РВБ')
-      expect(wrapper.vm.getCustomerName(2)).toBe('ООО "Интернет решения"')
+      // Test that register type labels use the shared display helper.
+      expect(wrapper.vm.getRegisterTypeName(1)).toBe('РВБ')
+      expect(wrapper.vm.getRegisterTypeName(2)).toBe('ООО "Интернет решения"')
     })
 
     it('reports initialization failures', async () => {

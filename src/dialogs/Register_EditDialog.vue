@@ -16,6 +16,7 @@ import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
+import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ErrorDialog from '@/l2/ErrorDialog.vue'
@@ -944,10 +945,7 @@ async function showErrorAndAwaitClose(title, message, missingHeaders = [], missi
 
 
 function getCustomerName(customerId) {
-  if (!customerId || !companies.value) return 'Неизвестно'
-  const company = companies.value.find((c) => c.id === customerId)
-  if (!company) return 'Неизвестно'
-  return company.shortName || company.name || 'Неизвестно'
+  return getCompanyDisplayName(companies.value, customerId)
 }
 
 function toggleLoadReport() {

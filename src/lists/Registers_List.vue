@@ -5,6 +5,7 @@
 
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { getRegisterTypeDisplayName } from '@/helpers/register.display.helpers.js'
 import {
   startRegisterStatusEditMode,
   cancelRegisterStatusChange,
@@ -128,13 +129,13 @@ const uploadMenuOptions = computed(() => {
   const list = companies.value
     .filter((company) => company.id === OZON_COMPANY_ID)
     .map((company) => ({
-      label: getCustomerName(company.id),
+      label: getRegisterTypeName(company.id),
       action: () => startRegisterUpload(company.id)
     }))
 
   if (companies.value.some((company) => company.id === WBR_COMPANY_ID)) {
     list.push({
-      label: `${getCustomerName(WBR_COMPANY_ID)} новый формат`,
+      label: getRegisterTypeName(WBRN_REGISTER_ID),
       action: () => startRegisterUpload(WBRN_REGISTER_ID)
     })
   }
@@ -180,11 +181,8 @@ function setSelectedRegisterStatusId(registerId, statusId) {
   setRegisterStatusSelectedId(registerId, statusId, registerStatusState)
 }
 
-function getCustomerName(customerId) {
-  if (!customerId || !companies?.value) return 'Неизвестно'
-  const company = companies.value.find((c) => c.id === customerId)
-  if (!company) return 'Неизвестно'
-  return company.shortName || company.name || 'Неизвестно'
+function getRegisterTypeName(registerType) {
+  return getRegisterTypeDisplayName(companies?.value, registerType)
 }
 
 onMounted(async () => {

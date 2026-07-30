@@ -14,6 +14,10 @@ import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import {
+  REGISTER_STATUS_FILTER_ALL,
+  REGISTER_STATUS_FILTER_IN_PROGRESS
+} from '@/helpers/register.status.filter.helpers.js'
 
 const baseUrl = `${apiUrl}/registers`
 
@@ -174,6 +178,24 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  function getRegisterStatusFilterParams(filterValue) {
+    if (filterValue === REGISTER_STATUS_FILTER_IN_PROGRESS) {
+      return { inProgressOnly: true }
+    }
+
+    if (filterValue === REGISTER_STATUS_FILTER_ALL ||
+        filterValue === undefined ||
+        filterValue === null ||
+        filterValue === '') {
+      return {}
+    }
+
+    const registerStatusId = Number(filterValue)
+    return Number.isInteger(registerStatusId) && registerStatusId > 0
+      ? { registerStatusId }
+      : {}
+  }
+
   /**
    * Appends the shared return-register criteria used by pair lookup, source rows, and creation.
    * Omitted values preserve the backend defaults: Return + RedZone.
@@ -197,7 +219,9 @@ export const useRegistersStore = defineStore('registers', () => {
     search = '',
     customsProcedureCode,
     parcelSelectionMode,
-    parcelStatusId
+    parcelStatusId,
+    registerStatusId,
+    inProgressOnly = false
   } = {}) {
     const passportCheckStateWatermark = livePassportCheckStateArrival
     loading.value = true
@@ -226,6 +250,10 @@ export const useRegistersStore = defineStore('registers', () => {
       appendDefinedParam(queryParams, 'warehouseId', warehouseId)
       appendDefinedParam(queryParams, 'senderCompanyId', senderCompanyId)
       appendDefinedParam(queryParams, 'receiverCompanyId', receiverCompanyId)
+      appendDefinedParam(queryParams, 'registerStatusId', registerStatusId)
+      if (inProgressOnly) {
+        queryParams.append('inProgressOnly', 'true')
+      }
       if (search) {
         queryParams.append('search', search)
       }
@@ -261,9 +289,11 @@ export const useRegistersStore = defineStore('registers', () => {
     const sortBy = warehouseMode ? authStore.registers_wh_sort_by : authStore.registers_sort_by
     const search = warehouseMode ? authStore.registers_wh_search : authStore.registers_search
     const procedure = warehouseMode ? authStore.registers_wh_procedure : authStore.registers_procedure
+    const statusFilter = warehouseMode ? authStore.registers_wh_status : authStore.registers_status
     const customsProcedureCode = procedure !== 'all'
       ? procedure
       : undefined
+    const registerStatusFilterParams = getRegisterStatusFilterParams(statusFilter)
 
     try {
       const response = await getRegisters({
@@ -273,7 +303,8 @@ export const useRegistersStore = defineStore('registers', () => {
         sortOrder: sortBy?.[0]?.order || 'desc',
         whOnly: warehouseMode,
         search,
-        customsProcedureCode
+        customsProcedureCode,
+        ...registerStatusFilterParams
       })
 
       // API format with pagination metadata

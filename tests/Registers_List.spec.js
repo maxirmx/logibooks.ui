@@ -9,9 +9,16 @@ import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import {
+  REGISTER_STATUS_FILTER_ALL,
+  REGISTER_STATUS_FILTER_ALL_ICON,
+  REGISTER_STATUS_FILTER_IN_PROGRESS,
+  REGISTER_STATUS_FILTER_IN_PROGRESS_ICON
+} from '@/helpers/register.status.filter.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import ActionButton from '@/components/ActionButton.vue'
 import RegisterStatusInlineEditor from '@/components/RegisterStatusInlineEditor.vue'
+import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import router from '@/router'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { formatDate } from '@/helpers/date.formatters.js'
@@ -81,6 +88,7 @@ const confirmMock = vi.fn()
 const mockIsShiftLeadPlus = ref(false)
 const mockIsSrLogistPlus = ref(false)
 const mockPaperworkRegistersProcedure = ref('all')
+const mockPaperworkRegistersStatus = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -115,6 +123,7 @@ vi.mock('pinia', async () => {
           registers_per_page: ref(10),
           registers_search: ref(''),
           registers_procedure: mockPaperworkRegistersProcedure,
+          registers_status: mockPaperworkRegistersStatus,
           registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
           registers_page: ref(1),
           registers_wh_per_page: ref(25),
@@ -226,6 +235,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_per_page: ref(10),
     registers_search: ref(''),
     registers_procedure: mockPaperworkRegistersProcedure,
+    registers_status: mockPaperworkRegistersStatus,
     registers_sort_by: ref([{ key: 'id', order: 'asc' }]),
     registers_page: ref(1),
     registers_wh_per_page: ref(25),
@@ -282,6 +292,7 @@ describe('Registers_List.vue', () => {
     mockIsShiftLeadPlus.value = false
     mockIsSrLogistPlus.value = false
     mockPaperworkRegistersProcedure.value = 'all'
+    mockPaperworkRegistersStatus.value = REGISTER_STATUS_FILTER_IN_PROGRESS
     getAirportsAll.mockClear()
     ensureOrderStatusesLoadedFn.mockClear()
     ensureRegisterStatusesLoadedFn.mockClear()
@@ -1260,7 +1271,7 @@ describe('Registers_List.vue', () => {
       expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'price', order: 'desc' }])
     })
 
-    it('renders ops-backed procedure selector to the left of search field', async () => {
+    it('renders procedure and status selectors to the left of search field', async () => {
       mockOps.value = {
         customsProcedures: [
           { value: 1, charCode: '01', name: 'Возврат' },
@@ -1280,15 +1291,64 @@ describe('Registers_List.vue', () => {
       await flushPromises()
 
       const filters = wrapper.find('.registers-filter-row')
-      expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+      const selectors = filters.findAll('[data-testid="v-select"]')
+      expect(selectors).toHaveLength(2)
       expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
-      expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
+      expect(filters.element.children[0]).toBe(selectors[0].element)
+      expect(filters.element.children[1]).toBe(selectors[1].element)
       expect(wrapper.vm.procedureFilterItems).toEqual([
         { title: 'Все', value: 'all' },
         { title: 'ЭК10 Экспорт', value: 10 },
         { title: 'ЭК31 Реэкспорт', value: 31 },
         { title: 'ИМ40 Импорт', value: 40 }
       ])
+      expect(wrapper.vm.statusFilterItems).toEqual([
+        {
+          id: REGISTER_STATUS_FILTER_ALL,
+          title: 'Все',
+          icon: REGISTER_STATUS_FILTER_ALL_ICON,
+          bkColor: '#EEF2F6',
+          fgColor: '#495057'
+        },
+        {
+          id: REGISTER_STATUS_FILTER_IN_PROGRESS,
+          title: 'В работе',
+          icon: REGISTER_STATUS_FILTER_IN_PROGRESS_ICON,
+          bkColor: '#E7F1FF',
+          fgColor: '#0D6EFD'
+        },
+        {
+          id: 2,
+          title: 'Register Status 2',
+          icon: null,
+          bkColor: null,
+          fgColor: null
+        },
+        {
+          id: 5,
+          title: 'Register Status 5',
+          icon: null,
+          bkColor: null,
+          fgColor: null
+        }
+      ])
+      expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(wrapper.vm.statusFilterItems)
+      expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_IN_PROGRESS)
+    })
+
+    it('shows all statuses for a persisted empty status filter', async () => {
+      mockPaperworkRegistersStatus.value = ''
+
+      const wrapper = mount(RegistersList, {
+        global: {
+          stubs: vuetifyStubs
+        }
+      })
+
+      await flushPromises()
+
+      expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_ALL)
+      expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(REGISTER_STATUS_FILTER_ALL)
     })
 
     it('falls back to only all-procedures option when ops procedures are missing', async () => {
@@ -1334,6 +1394,45 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         expect(mockPaperworkRegistersProcedure.value).toBe(10)
+        expect(getAll).not.toHaveBeenCalled()
+
+        vi.advanceTimersByTime(300)
+        await flushPromises()
+
+        expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
+      } finally {
+        wrapper?.unmount()
+        vi.useRealTimers()
+      }
+    })
+
+    it('syncs selected status and reloads paperwork registers', async () => {
+      vi.useFakeTimers()
+      getAll.mockResolvedValue()
+      let wrapper
+      try {
+        wrapper = mount(RegistersList, {
+          global: {
+            stubs: {
+              ...vuetifyStubs,
+              'v-select': {
+                name: 'v-select',
+                props: ['modelValue', 'items'],
+                emits: ['update:modelValue'],
+                template: '<select data-testid="v-select" :value="modelValue"></select>'
+              }
+            }
+          }
+        })
+
+        await flushPromises()
+        getAll.mockClear()
+
+        const statusSelect = wrapper.findAllComponents({ name: 'v-select' })[1]
+        statusSelect.vm.$emit('update:modelValue', 5)
+        await wrapper.vm.$nextTick()
+
+        expect(mockPaperworkRegistersStatus.value).toBe(5)
         expect(getAll).not.toHaveBeenCalled()
 
         vi.advanceTimersByTime(300)

@@ -27,6 +27,10 @@ import {
   CUSTOMS_PROCEDURE_ALL,
   buildRegisterProcedureFilterOptions
 } from '@/helpers/customs.procedure.helpers.js'
+import {
+  buildRegisterStatusFilterOptions,
+  normalizeRegisterStatusFilterValue
+} from '@/helpers/register.status.filter.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
@@ -35,6 +39,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
+import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 
 const registersStore = useRegistersStore()
@@ -69,6 +74,7 @@ const {
   registers_per_page: paperworkRegistersPerPage,
   registers_search: paperworkRegistersSearch,
   registers_procedure: paperworkRegistersProcedure,
+  registers_status: paperworkRegistersStatus,
   registers_sort_by: paperworkRegistersSortBy,
   registers_page: paperworkRegistersPage,
   isShiftLeadPlus,
@@ -93,6 +99,7 @@ const registerNouns = computed(() => getRegisterNouns(OP_MODE_PAPERWORK))
 const registers_per_page = paperworkRegistersPerPage
 const registers_search = paperworkRegistersSearch
 const registers_procedure = paperworkRegistersProcedure
+const registers_status = paperworkRegistersStatus
 const registers_sort_by = paperworkRegistersSortBy
 const registers_page = paperworkRegistersPage
 
@@ -102,9 +109,13 @@ const localSearch = ref('')
 localSearch.value = registers_search.value || ''
 const localProcedure = ref(CUSTOMS_PROCEDURE_ALL)
 localProcedure.value = registers_procedure.value || CUSTOMS_PROCEDURE_ALL
+const localStatus = ref(normalizeRegisterStatusFilterValue(registers_status.value))
 
 const parcelStatusOptions = computed(() => unref(parcelStatusesStore.parcelStatuses) || [])
 const registerStatusOptions = computed(() => unref(registerStatusesStore.registerStatuses) || [])
+const statusFilterItems = computed(() => {
+  return buildRegisterStatusFilterOptions(unref(registerStatusesStore.registerStatuses))
+})
 const procedureFilterItems = computed(() => {
   return buildRegisterProcedureFilterOptions(
     unref(registersStore.ops)?.customsProcedures,
@@ -284,7 +295,8 @@ async function runCalculateCustomsCharges(item) {
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [
     { local: localSearch, store: registers_search },
-    { local: localProcedure, store: registers_procedure }
+    { local: localProcedure, store: registers_procedure },
+    { local: localStatus, store: registers_status }
   ],
   loadFn: loadRegisters,
   isComponentMounted,
@@ -340,7 +352,8 @@ async function deleteRegister(item) {
 defineExpose({
   validationState,
   progressPercent,
-  procedureFilterItems
+  procedureFilterItems,
+  statusFilterItems
 })
 </script>
 
@@ -385,6 +398,16 @@ defineExpose({
         :loading="loading || isInitializing"
         :disabled="runningAction || isInitializing"
         class="procedure-filter"
+      />
+      <RegisterStatusSelect
+        v-model="localStatus"
+        :items="statusFilterItems"
+        label="Статус реестра"
+        variant="solo"
+        hide-details
+        :loading="loading || isInitializing"
+        :disabled="runningAction || isInitializing"
+        class="status-filter"
       />
       <v-text-field
         v-model="localSearch"
@@ -461,8 +484,20 @@ defineExpose({
   min-width: 220px;
 }
 
-.procedure-filter :deep(.v-field__input) {
+.status-filter {
+  flex: 0 0 320px !important;
+  width: 320px;
+  max-width: 320px;
+  min-width: 320px;
+}
+
+.procedure-filter :deep(.v-field__input),
+.status-filter :deep(.v-field__input) {
   min-width: 0;
+}
+
+.status-filter :deep(.v-label.v-field-label--floating) {
+  margin-inline-start: calc(var(--v-field-padding-start) + 36px);
 }
 
 @media (max-width: 700px) {
@@ -470,7 +505,8 @@ defineExpose({
     flex-direction: column;
   }
 
-  .procedure-filter {
+  .procedure-filter,
+  .status-filter {
     flex: 0 1 auto !important;
     width: 100%;
     max-width: none;

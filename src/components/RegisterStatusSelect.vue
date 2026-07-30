@@ -146,9 +146,23 @@ function getRegisterStatusListItemProps(itemProps) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   font-family: inherit;
   font-size: inherit;
+}
+
+.register-status-select-row [data-testid='register-status-selection-title'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.register-status-select-row :deep(.register-status-icon) {
+  flex: 0 0 auto;
 }
 
 .register-status-select-option {

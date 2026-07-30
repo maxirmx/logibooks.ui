@@ -12,6 +12,10 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import {
+  REGISTER_STATUS_FILTER_ALL,
+  REGISTER_STATUS_FILTER_IN_PROGRESS
+} from '@/helpers/register.status.filter.helpers.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: { get: vi.fn(), postFile: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn(), downloadFile: vi.fn() }
@@ -129,6 +133,60 @@ describe('registers store', () => {
         expect(store.items).toEqual(mockResponse.items)
         expect(store.loading).toBe(false)
         expect(store.error).toBeNull()
+      })
+
+      it('requests in-progress registers for the paperwork status filter', async () => {
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_status: REGISTER_STATUS_FILTER_IN_PROGRESS
+        })
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0 }
+        })
+
+        const store = useRegistersStore()
+        await store.getAll()
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&inProgressOnly=true`
+        )
+      })
+
+      it('requests an exact status for the warehouse status filter', async () => {
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_wh_status: 5
+        })
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0 }
+        })
+
+        const store = useRegistersStore()
+        await store.getAll({ mode: OP_MODE_WAREHOUSE })
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=true&registerStatusId=5`
+        )
+      })
+
+      it('omits status parameters when all statuses are selected', async () => {
+        useAuthStore.mockReturnValueOnce({
+          ...defaultAuthStore,
+          registers_status: REGISTER_STATUS_FILTER_ALL
+        })
+        fetchWrapper.get.mockResolvedValue({
+          items: [],
+          pagination: { totalCount: 0 }
+        })
+
+        const store = useRegistersStore()
+        await store.getAll()
+
+        expect(fetchWrapper.get).toHaveBeenCalledWith(
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
+        )
       })
 
       it('fetches data with custom auth store settings', async () => {

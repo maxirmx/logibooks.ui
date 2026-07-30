@@ -11,6 +11,13 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import {
+  REGISTER_STATUS_FILTER_ALL,
+  REGISTER_STATUS_FILTER_ALL_ICON,
+  REGISTER_STATUS_FILTER_IN_PROGRESS,
+  REGISTER_STATUS_FILTER_IN_PROGRESS_ICON
+} from '@/helpers/register.status.filter.helpers.js'
+import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import {
   createAirportsById,
@@ -42,6 +49,7 @@ const mockAlert = ref(null)
 const mockWhPerPage = ref(25)
 const mockWhSearch = ref('warehouse search')
 const mockWhProcedure = ref('all')
+const mockWhStatus = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
 const mockWhSortBy = ref([{ key: 'warehouseArrivalDate', order: 'asc' }])
 const mockWhPage = ref(3)
 const mockIsShiftLeadPlus = ref(true)
@@ -110,6 +118,7 @@ vi.mock('pinia', async () => {
         registers_wh_per_page: mockWhPerPage,
         registers_wh_search: mockWhSearch,
         registers_wh_procedure: mockWhProcedure,
+        registers_wh_status: mockWhStatus,
         registers_wh_sort_by: mockWhSortBy,
         registers_wh_page: mockWhPage,
         isShiftLeadPlus: mockIsShiftLeadPlus,
@@ -195,6 +204,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     registers_wh_per_page: mockWhPerPage,
     registers_wh_search: mockWhSearch,
     registers_wh_procedure: mockWhProcedure,
+    registers_wh_status: mockWhStatus,
     registers_wh_sort_by: mockWhSortBy,
     registers_wh_page: mockWhPage,
     isShiftLeadPlus: mockIsShiftLeadPlus,
@@ -248,6 +258,7 @@ describe('Registers_WhList.vue', () => {
     mockWhPerPage.value = 25
     mockWhSearch.value = 'warehouse search'
     mockWhProcedure.value = 'all'
+    mockWhStatus.value = REGISTER_STATUS_FILTER_IN_PROGRESS
     mockWhSortBy.value = [{ key: 'warehouseArrivalDate', order: 'asc' }]
     mockWhPage.value = 3
     mockIsShiftLeadPlus.value = true
@@ -526,6 +537,17 @@ describe('Registers_WhList.vue', () => {
     ])
     expect(wrapper.vm.localSearch).toBe('warehouse search')
     expect(wrapper.vm.localProcedure).toBe('all')
+    expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_IN_PROGRESS)
+  })
+
+  it('shows all statuses for a persisted empty warehouse status filter', async () => {
+    mockWhStatus.value = ''
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_ALL)
+    expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(REGISTER_STATUS_FILTER_ALL)
   })
 
   it('enables the register-status icon column on the warehouse table', async () => {
@@ -564,7 +586,7 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'warehouseId', order: 'desc' }])
   })
 
-  it('renders ops-backed procedure selector with Return to the left of search field', async () => {
+  it('renders procedure and status selectors to the left of search field', async () => {
     mockOps.value = {
       customsProcedures: [
         { value: 1, charCode: '01', name: 'Возврат' },
@@ -578,15 +600,48 @@ describe('Registers_WhList.vue', () => {
     await flushPromises()
 
     const filters = wrapper.find('.registers-filter-row')
-    expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+    const selectors = filters.findAll('[data-testid="v-select"]')
+    expect(selectors).toHaveLength(2)
     expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
-    expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
+    expect(filters.element.children[0]).toBe(selectors[0].element)
+    expect(filters.element.children[1]).toBe(selectors[1].element)
     expect(wrapper.vm.procedureFilterItems).toEqual([
       { title: 'Все', value: 'all' },
       { title: '01 Возврат', value: 1 },
       { title: 'ЭК10 Экспорт', value: 10 },
       { title: 'ИМ40 Импорт', value: 40 }
     ])
+    expect(wrapper.vm.statusFilterItems).toEqual([
+      {
+        id: REGISTER_STATUS_FILTER_ALL,
+        title: 'Все',
+        icon: REGISTER_STATUS_FILTER_ALL_ICON,
+        bkColor: '#EEF2F6',
+        fgColor: '#495057'
+      },
+      {
+        id: REGISTER_STATUS_FILTER_IN_PROGRESS,
+        title: 'В работе',
+        icon: REGISTER_STATUS_FILTER_IN_PROGRESS_ICON,
+        bkColor: '#E7F1FF',
+        fgColor: '#0D6EFD'
+      },
+      {
+        id: 2,
+        title: 'Status 2',
+        icon: null,
+        bkColor: null,
+        fgColor: null
+      },
+      {
+        id: 5,
+        title: 'Status 5',
+        icon: null,
+        bkColor: null,
+        fgColor: null
+      }
+    ])
+    expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(wrapper.vm.statusFilterItems)
   })
 
   it('falls back to only all-procedures option when warehouse ops procedures are missing', async () => {
@@ -627,6 +682,45 @@ describe('Registers_WhList.vue', () => {
       await wrapper.vm.$nextTick()
 
       expect(mockWhProcedure.value).toBe(1)
+      expect(getAll).not.toHaveBeenCalled()
+
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+
+      expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
+    } finally {
+      wrapper?.unmount()
+      vi.useRealTimers()
+    }
+  })
+
+  it('syncs selected warehouse status and reloads warehouse registers', async () => {
+    vi.useFakeTimers()
+    getAll.mockResolvedValue()
+    let wrapper
+    try {
+      wrapper = mount(RegistersWhList, {
+        global: {
+          stubs: {
+            ...vuetifyStubs,
+            'v-select': {
+              name: 'v-select',
+              props: ['modelValue', 'items'],
+              emits: ['update:modelValue'],
+              template: '<select data-testid="v-select" :value="modelValue"></select>'
+            }
+          }
+        }
+      })
+
+      await flushPromises()
+      getAll.mockClear()
+
+      const statusSelect = wrapper.findAllComponents({ name: 'v-select' })[1]
+      statusSelect.vm.$emit('update:modelValue', 2)
+      await wrapper.vm.$nextTick()
+
+      expect(mockWhStatus.value).toBe(2)
       expect(getAll).not.toHaveBeenCalled()
 
       vi.advanceTimersByTime(300)

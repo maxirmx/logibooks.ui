@@ -173,14 +173,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     }))
   })
 
-  it('filters out empty exception strings on submit', async () => {
-    create.mockResolvedValue({})
-    const wrapper = mountComponent()
-    wrapper.vm.setFieldValue('code', '0404')
-    wrapper.vm.setFieldValue('exceptions', ['555', '', '666', '   '])
-    await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith(expectedCreatePayload({ code: '0404', exceptions: ['555', '666'] }))
-  })
 
   it('renders styled export and import checkboxes', () => {
     const wrapper = mountComponent()

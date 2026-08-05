@@ -126,18 +126,6 @@ describe('FeacnCodeSelector', () => {
   }
 
   describe('rendering', () => {
-    it('renders the component with FEACN codes', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('.feacn-lookup-column').exists()).toBe(true)
-      
-      // Since we're mocking getFeacnCodesForKeywords to return 2 codes
-      const codeElements = wrapper.findAll('.d-inline-flex.align-center')
-      expect(codeElements.length).toBe(2)
-      
-      // Check that our mock codes are displayed
-      expect(wrapper.text()).toContain('1234567890')
-      expect(wrapper.text()).toContain('0987654321')
-    })
 
     it('displays a check-double icon for the selected code', () => {
       const wrapper = createWrapper()

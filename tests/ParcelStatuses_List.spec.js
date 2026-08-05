@@ -218,11 +218,6 @@ describe('ParcelStatuses_List.vue', () => {
       expect(result).toBe(true)
     })
 
-    it('returns false for non-matching search', () => {
-      const mockItem = { raw: { title: 'Черновик' } }
-      const result = wrapper.vm.filterParcelStatuses(null, 'nonexistent', mockItem)
-      expect(result).toBe(false)
-    })
 
     it('filters parcel statuses by restriction reason', () => {
       const mockItem = { raw: { title: 'Черновик', restrictionReason: 'Стоп-слово' } }

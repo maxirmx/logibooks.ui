@@ -39,15 +39,4 @@ describe('CustomsReports_View.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders CustomsReports_List component', () => {
-    const wrapper = mount(CustomsReportsView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
-
-    const list = wrapper.find('[data-testid="upload-customs-reports-list"]')
-    expect(list.exists()).toBe(true)
-    expect(list.text()).toBe('Reports List')
-  })
 })

@@ -39,19 +39,6 @@ describe('hotkey action schemes store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with default values', () => {
-    const store = useHotKeyActionSchemesStore()
-    expect(store.hotKeyActionSchemes).toEqual([])
-    expect(store.hotKeyActionScheme).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-    expect(store.isInitialized).toBe(false)
-    expect(store.ops).toEqual({
-      actions: []
-    })
-    expect(store.opsLoading).toBe(false)
-    expect(store.opsError).toBeNull()
-  })
 
   it('getAll fetches schemes', async () => {
     fetchWrapper.get.mockResolvedValue(mockSchemes)

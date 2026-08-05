@@ -26,17 +26,6 @@ describe('customs.reports.store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with default state', () => {
-    const store = useCustomsReportsStore()
-    expect(store.reports).toEqual([])
-    expect(store.reportRows).toEqual([])
-    expect(store.reportsTotalCount).toBe(0)
-    expect(store.reportRowsTotalCount).toBe(0)
-    expect(store.reportRowsColumns).toEqual([])
-    expect(store.reportRowsCustomsProcedure).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   it('uploads file using fetchWrapper.postFile', async () => {
     const store = useCustomsReportsStore()

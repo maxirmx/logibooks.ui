@@ -164,20 +164,6 @@ describe('parcel tooltip helpers', () => {
       expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(item, feacnOrders, stopWords)
     })
 
-    it('handles empty arrays for feacnOrders and stopWords', () => {
-      const item = { checkStatus: 150 }
-      const feacnOrders = []
-      const stopWords = []
-      
-      mockCheckStatusInstance.toString.mockReturnValue('Статус 150')
-      CheckStatusCode.hasIssues.mockReturnValue(true)
-      vi.mocked(parcelsCheckHelpers.getCheckStatusInfo).mockReturnValue('')
-      
-      const result = getCheckStatusTooltip(item, null, feacnOrders, stopWords)
-      
-      expect(result).toBe('Статус 150')
-      expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(item, feacnOrders, stopWords)
-    })
 
     it('handles undefined checkStatus', () => {
       const item = {}

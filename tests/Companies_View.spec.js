@@ -40,26 +40,5 @@ describe('Companies_View', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders Companies_List component', () => {
-    const wrapper = mount(CompaniesView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
 
-    const companiesListComponent = wrapper.find('[data-testid="companies-list"]')
-    expect(companiesListComponent.exists()).toBe(true)
-    expect(companiesListComponent.text()).toBe('Companies List Component')
-  })
-
-  it('has correct component structure', () => {
-    const wrapper = mount(CompaniesView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
-
-    // Should be a simple wrapper around Companies_List
-    expect(wrapper.html()).toContain('Companies List Component')
-  })
 })

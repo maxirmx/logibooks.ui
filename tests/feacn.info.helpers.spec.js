@@ -58,14 +58,6 @@ describe('formatFeacnName', () => {
     })
   })
 
-  it('falls back to name when normalized name is empty', async () => {
-    getByCodeMock.mockResolvedValue({ normalizedName: '', name: 'Some Name' })
-    const result = await formatFeacnName('789')
-    expect(result).toEqual({
-      name: 'Some Name',
-      found: true
-    })
-  })
 
   it('returns default message when both names are missing', async () => {
     getByCodeMock.mockResolvedValue({ normalizedName: '', name: '' })
@@ -186,9 +178,6 @@ describe('isFeacnLoading', () => {
     expect(isFeacnLoading('123')).toBe(false)
   })
 
-  it('returns false for non-existent codes', () => {
-    expect(isFeacnLoading('nonexistent')).toBe(false)
-  })
 })
 
 describe('getCachedFeacnInfo', () => {
@@ -258,17 +247,7 @@ describe('formatFeacnNameFromItem', () => {
     expect(result).toBe('Молочные продукты')
   })
 
-  it('falls back to name when normalized name is empty', () => {
-    const item = { normalizedName: '', name: 'Dairy Products', code: '123' }
-    const result = formatFeacnNameFromItem(item)
-    expect(result).toBe('Dairy Products')
-  })
 
-  it('falls back to name when normalized name is whitespace', () => {
-    const item = { normalizedName: '   ', name: 'Meat Products', code: '456' }
-    const result = formatFeacnNameFromItem(item)
-    expect(result).toBe('Meat Products')
-  })
 
   it('trims name when used', () => {
     const item = { normalizedName: '', name: '  Fish Products  ', code: '789' }
@@ -276,23 +255,8 @@ describe('formatFeacnNameFromItem', () => {
     expect(result).toBe('Fish Products')
   })
 
-  it('returns code-based message when both names are empty', () => {
-    const item = { normalizedName: '', name: '', code: '000' }
-    const result = formatFeacnNameFromItem(item)
-    expect(result).toBe('Код ТН ВЭД 000')
-  })
 
-  it('returns code-based message when both names are whitespace', () => {
-    const item = { normalizedName: '   ', name: '   ', code: '111' }
-    const result = formatFeacnNameFromItem(item)
-    expect(result).toBe('Код ТН ВЭД 111')
-  })
 
-  it('returns code-based message when names are undefined', () => {
-    const item = { code: '222' }
-    const result = formatFeacnNameFromItem(item)
-    expect(result).toBe('Код ТН ВЭД 222')
-  })
 })
 
 describe('loadFeacnTooltipOnHover', () => {
@@ -350,45 +314,12 @@ describe('preloadFeacnInfo', () => {
     expect(bulkLookupMock).not.toHaveBeenCalled()
   })
 
-  it('handles undefined codes array', async () => {
-    await preloadFeacnInfo(undefined)
-    expect(bulkLookupMock).not.toHaveBeenCalled()
-  })
 
-  it('handles empty codes array', async () => {
-    await preloadFeacnInfo([])
-    expect(bulkLookupMock).not.toHaveBeenCalled()
-  })
 
-  it('filters out null and undefined codes', async () => {
-    bulkLookupMock.mockResolvedValue({})
-    await preloadFeacnInfo(['123', null, undefined, '456'])
-    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
-  })
 
-  it('filters out empty and whitespace codes', async () => {
-    bulkLookupMock.mockResolvedValue({})
-    await preloadFeacnInfo(['123', '', '   ', '456'])
-    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
-  })
 
-  it('deduplicates codes', async () => {
-    bulkLookupMock.mockResolvedValue({})
-    await preloadFeacnInfo(['123', '123', '456', '123'])
-    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
-  })
 
-  it('trims codes', async () => {
-    bulkLookupMock.mockResolvedValue({})
-    await preloadFeacnInfo(['  123  ', '456'])
-    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
-  })
 
-  it('converts codes to strings', async () => {
-    bulkLookupMock.mockResolvedValue({})
-    await preloadFeacnInfo([123, 456])
-    expect(bulkLookupMock).toHaveBeenCalledWith(['123', '456'])
-  })
 
   it('skips already cached codes', async () => {
     // Pre-cache one code

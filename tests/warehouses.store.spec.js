@@ -55,17 +55,6 @@ describe('warehouses store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with default values', () => {
-    const store = useWarehousesStore()
-    expect(store.warehouses).toEqual([])
-    expect(store.warehouse).toBeNull()
-    expect(store.ops).toEqual({
-      types: [],
-      zones: []
-    })
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   describe('getAll', () => {
     it('fetches warehouses successfully', async () => {

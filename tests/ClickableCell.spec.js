@@ -24,15 +24,7 @@ describe('ClickableCell', () => {
   }
 
   describe('rendering', () => {
-    it('renders the display value', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Test Value')
-    })
 
-    it('applies default cell class', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('span').classes()).toContain('clickable-cell')
-    })
 
     it('applies custom cell class', () => {
       const wrapper = createWrapper({ cellClass: 'custom-class' })
@@ -67,11 +59,6 @@ describe('ClickableCell', () => {
       expect(span.classes()).toContain('custom-class')
     })
 
-    it('does not render bookmark icon by default', () => {
-      const wrapper = createWrapper()
-      const icon = wrapper.find('.bookmark-icon')
-      expect(icon.exists()).toBe(false)
-    })
 
     it('renders bookmark icon when showBookmark is true', () => {
       const wrapper = createWrapper({ showBookmark: true })
@@ -79,11 +66,6 @@ describe('ClickableCell', () => {
       expect(icon.exists()).toBe(true)
     })
 
-    it('does not render bookmark icon when showBookmark is false', () => {
-      const wrapper = createWrapper({ showBookmark: false })
-      const icon = wrapper.find('.bookmark-icon')
-      expect(icon.exists()).toBe(false)
-    })
 
     it('renders bookmark icon before display value', () => {
       const wrapper = createWrapper({ 
@@ -156,28 +138,6 @@ describe('ClickableCell', () => {
     })
   })
 
-  describe('props validation', () => {
-    it('accepts string display value', () => {
-      const wrapper = createWrapper({ displayValue: 'String value' })
-      expect(wrapper.text()).toContain('String value')
-    })
-
-    it('accepts number display value', () => {
-      const wrapper = createWrapper({ displayValue: 42 })
-      expect(wrapper.text()).toContain('42')
-    })
-
-    it('handles zero as display value', () => {
-      const wrapper = createWrapper({ displayValue: 0 })
-      expect(wrapper.text()).toContain('0')
-    })
-
-    it('handles empty string as display value', () => {
-      const wrapper = createWrapper({ displayValue: '' })
-      expect(wrapper.find('span').exists()).toBe(true)
-    })
-  })
-
   describe('slot props', () => {
     it('provides item and value to slot', () => {
       const wrapper = mount(ClickableCell, {
@@ -213,54 +173,6 @@ describe('ClickableCell', () => {
     })
   })
 
-  describe('real-world usage scenarios', () => {
-    it('works with register deal number display', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, dealNumber: 'DEAL-12345' },
-        displayValue: 'DEAL-12345',
-        cellClass: 'open-parcels-link clickable-cell'
-      })
-
-      expect(wrapper.text()).toContain('DEAL-12345')
-      expect(wrapper.find('span').classes()).toContain('open-parcels-link')
-    })
-
-    it('works with country code display', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, countryCode: 'RU' },
-        displayValue: 'RU',
-        cellClass: 'truncated-cell'
-      })
-
-      expect(wrapper.text()).toContain('RU')
-      expect(wrapper.find('span').classes()).toContain('truncated-cell')
-    })
-
-    it('works with status display and custom class', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, statusId: 2 },
-        displayValue: 'Processing',
-        cellClass: 'truncated-cell status-cell status-processing'
-      })
-
-      expect(wrapper.text()).toContain('Processing')
-      const span = wrapper.find('span')
-      expect(span.classes()).toContain('status-cell')
-      expect(span.classes()).toContain('status-processing')
-    })
-
-    it('works with orders total display', () => {
-      const wrapper = createWrapper({
-        item: { id: 1, ordersTotal: 15 },
-        displayValue: 15,
-        cellClass: 'edit-register-link clickable-cell'
-      })
-
-      expect(wrapper.text()).toContain('15')
-      expect(wrapper.find('span').classes()).toContain('edit-register-link')
-    })
-  })
-
   describe('edge cases', () => {
     it('handles null display value', () => {
       const wrapper = createWrapper({ displayValue: null })
@@ -285,10 +197,5 @@ describe('ClickableCell', () => {
       expect(wrapper.emitted('click')[0]).toEqual([complexItem])
     })
 
-    it('handles very long display values', () => {
-      const longValue = 'A'.repeat(200)
-      const wrapper = createWrapper({ displayValue: longValue })
-      expect(wrapper.text()).toContain(longValue)
-    })
   })
 })

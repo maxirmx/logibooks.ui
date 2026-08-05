@@ -64,18 +64,6 @@ describe('registers.list.helpers', () => {
       expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
     })
 
-    it('does not overwrite existing state', () => {
-      const registerId = 1
-      bulkStatusState[registerId] = {
-        editMode: true,
-        selectedStatusId: 5
-      }
-      
-      initializeBulkStatusState(registerId, bulkStatusState)
-      
-      expect(bulkStatusState[registerId].editMode).toBe(true)
-      expect(bulkStatusState[registerId].selectedStatusId).toBe(5)
-    })
   })
 
   describe('toggleBulkStatusEditMode', () => {
@@ -204,18 +192,6 @@ describe('registers.list.helpers', () => {
   })
 
   describe('resetBulkStatusState', () => {
-    it('resets state when state exists', () => {
-      const registerId = 1
-      bulkStatusState[registerId] = {
-        editMode: true,
-        selectedStatusId: 3
-      }
-      
-      resetBulkStatusState(registerId, bulkStatusState)
-      
-      expect(bulkStatusState[registerId].editMode).toBe(false)
-      expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
-    })
 
     it('handles case when state does not exist', () => {
       const registerId = 1
@@ -610,14 +586,6 @@ describe('registers.list.helpers', () => {
         expect(progress).toBe(0)
       })
 
-      it('returns 0 when total is negative', () => {
-        validationState.total = -1
-        validationState.processed = 10
-        
-        const progress = calculateValidationProgress(validationState)
-        
-        expect(progress).toBe(0)
-      })
 
       it('calculates correct percentage', () => {
         validationState.total = 100

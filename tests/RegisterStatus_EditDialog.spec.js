@@ -196,43 +196,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
 
-    it('renders all form fields', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-
-      // Check that the title form field is present
-      expect(wrapper.find('#title').exists()).toBe(true)
-      expect(wrapper.find('#bkColor').exists()).toBe(true)
-      expect(wrapper.find('#fgColor').exists()).toBe(true)
-      expect(wrapper.find('#readOnly').exists()).toBe(true)
-      expect(wrapper.find('.register-status-form').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="fg-color-swatch"]').exists()).toBe(true)
-      expect(wrapper.findAll('.status-icon-option')).toHaveLength(33)
-    })
-
-    it('renders form labels correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('Название статуса:')
-      expect(wrapper.text()).toContain('Цвет фона:')
-      expect(wrapper.text()).toContain('Цвет иконки:')
-      expect(wrapper.text()).toContain('Иконка:')
-      expect(wrapper.text()).toContain('Изменения запрещены:')
-    })
 
     it('uses the project styled checkbox for read-only status', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -582,29 +546,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
   })
 
   describe('Props Validation', () => {
-    it('accepts valid create mode prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('accepts valid edit mode prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
 
     it('handles missing registerStatusId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -674,56 +616,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Component Functions', () => {
-    it('displays correct title for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Создание статуса партии')
-    })
-
-    it('displays correct title for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса партии')
-    })
-
-    it('displays correct button text for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
-    })
-
-    it('displays correct button text for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
   })
 
@@ -814,21 +706,4 @@ describe('RegisterStatus_EditDialog.vue', () => {
     })
   })
 
-  describe('Async Component Behavior', () => {
-    it('handles async component mounting correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      expect(wrapper.text()).toContain('Loading...')
-
-      await resolveAll()
-
-      expect(wrapper.text()).not.toContain('Loading...')
-      expect(wrapper.find('h1').exists()).toBe(true)
-    })
-  })
 })

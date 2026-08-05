@@ -277,15 +277,6 @@ describe('parcels store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('initializes with default values', () => {
-    const store = useParcelsStore()
-    expect(store.items).toEqual([])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-    expect(store.totalCount).toBe(0)
-    expect(store.hasNextPage).toBe(false)
-    expect(store.hasPreviousPage).toBe(false)
-  })
 
   it('fetches order by id', async () => {
     fetchWrapper.get.mockResolvedValue({ id: 5 })

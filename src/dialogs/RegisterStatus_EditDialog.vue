@@ -54,7 +54,8 @@ if (isCreate.value) {
     icon: null,
     bkColor: null,
     fgColor: null,
-    readOnly: false
+    readOnly: false,
+    transit: false
   })
 } else {
   const refs = storeToRefs(registerStatusesStore)
@@ -210,6 +211,37 @@ function onSubmit(values, { setErrors } = {}) {
         <FieldError name="title" :errors="errors" />
       </div>
 
+      <div class="status-settings-row">
+        <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
+        <div class="checkbox-item">
+          <Field
+            id="readOnly"
+            name="readOnly"
+            type="checkbox"
+            class="checkbox checkbox-styled"
+            :value="true"
+            :unchecked-value="false"
+            :disabled="!authStore.isAdmin"
+          />
+          <label for="readOnly" aria-hidden="true"></label>
+        </div>
+      </div>
+
+      <div class="status-settings-row">
+        <label for="transit" class="label status-settings-label">Транзит:</label>
+        <div class="checkbox-item">
+          <Field
+            id="transit"
+            name="transit"
+            type="checkbox"
+            class="checkbox checkbox-styled"
+            :value="true"
+            :unchecked-value="false"
+          />
+          <label for="transit" aria-hidden="true"></label>
+        </div>
+      </div>
+
       <Field name="bkColor" v-slot="{ field, handleChange }">
         <div class="status-settings-row">
           <label for="bkColor" class="label status-settings-label">Цвет фона:</label>
@@ -260,22 +292,6 @@ function onSubmit(values, { setErrors } = {}) {
           <FieldError name="fgColor" :errors="errors" />
         </div>
       </Field>
-
-      <div class="status-settings-row">
-        <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
-        <div class="checkbox-item">
-          <Field
-            id="readOnly"
-            name="readOnly"
-            type="checkbox"
-            class="checkbox checkbox-styled"
-            :value="true"
-            :unchecked-value="false"
-            :disabled="!authStore.isAdmin"
-          />
-          <label for="readOnly" aria-hidden="true"></label>
-        </div>
-      </div>
 
       <Field name="icon" v-slot="{ field, handleChange }">
         <div class="status-settings-row status-settings-row--icons">

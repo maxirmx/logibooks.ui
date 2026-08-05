@@ -321,6 +321,16 @@ function getReportValue(wrapper, label) {
   return field?.find('.load-report-value').text()
 }
 
+function getActionButton(wrapper, testId) {
+  return wrapper
+    .findAllComponents({ name: 'ActionButton' })
+    .find(
+      (button) =>
+        button.attributes('data-testid') === testId ||
+        button.find(`[data-testid="${testId}"]`).exists()
+    )
+}
+
 function getWeightValue(wrapper, label) {
   const field = wrapper
     .findAll('.weight-field')
@@ -1541,6 +1551,103 @@ describe('Register_EditDialog', () => {
 
     expect(wrapper.find('[data-testid="register-deal-section-title"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="register-weight-section"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="register-additional-info-section"]').exists()).toBe(false)
+  })
+
+  it('renders additional 1C information collapsed below weight in edit mode', async () => {
+    mockItem.value = {
+      ...baseRegisterItem,
+      totalWeightKg: 12,
+      totalWeightKgToRelease: 10,
+      inspectionsCount: 3,
+      withTransit: true
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
+    })
+
+    await resolveAll()
+
+    const weightSection = wrapper.get('[data-testid="register-weight-section"]')
+    const additionalSection = wrapper.get('[data-testid="register-additional-info-section"]')
+    expect(additionalSection.get('.section-title').text()).toBe('Доп. информация для 1С')
+    expect(wrapper.find('#register-additional-info-body').exists()).toBe(false)
+    let toggle = getActionButton(wrapper, 'register-additional-info-toggle')
+    expect(toggle).toBeTruthy()
+    expect(toggle.find('button').exists()).toBe(true)
+    expect(toggle.props('icon')).toBe('fa-solid fa-angles-down')
+    expect(
+      Boolean(
+        weightSection.element.compareDocumentPosition(additionalSection.element) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true)
+
+    await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('#register-additional-info-body').exists()).toBe(true)
+    toggle = getActionButton(wrapper, 'register-additional-info-toggle')
+    expect(toggle.props('icon')).toBe('fa-solid fa-angles-up')
+    expect(wrapper.get('label[for="inspectionsCount"]').text()).toBe('Досмотрено посылок:')
+    expect(wrapper.get('#inspectionsCount').attributes('type')).toBe('number')
+    expect(wrapper.get('#withTransit').attributes('type')).toBe('checkbox')
+    expect(wrapper.get('#withTransit').classes()).toContain('custom-checkbox-input')
+    expect(wrapper.get('label[for="withTransit"] .custom-checkbox-label').text()).toBe('Транзит:')
+  })
+
+  it('validates and submits additional 1C information only in edit mode', async () => {
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    const blankValues = await dialog.vm.schema.validate({
+      inspectionsCount: '',
+      theOtherCountryCode: 840
+    })
+    expect(blankValues.inspectionsCount).toBe(0)
+    await expect(
+      dialog.vm.schema.validate({ inspectionsCount: -1, theOtherCountryCode: 840 })
+    ).rejects.toThrow('Количество досмотренных посылок')
+    await expect(
+      dialog.vm.schema.validate({ inspectionsCount: 1.5, theOtherCountryCode: 840 })
+    ).rejects.toThrow('Количество досмотренных посылок')
+
+    await dialog.vm.onSubmit(
+      { inspectionsCount: '7', withTransit: true },
+      { setErrors: vi.fn() }
+    )
+    await resolveAll()
+
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ inspectionsCount: 7, withTransit: true })
+    )
   })
 
   it('places weight section before load report section', async () => {
@@ -1782,12 +1889,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
-    const reportButtons = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .filter((button) =>
-        ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon'))
-      )
-    expect(reportButtons).toHaveLength(0)
+    expect(getActionButton(wrapper, 'register-load-report-toggle')).toBeUndefined()
   })
 
   it('renders load report collapsed by default and expands with approved labels', async () => {
@@ -1829,9 +1931,7 @@ describe('Register_EditDialog', () => {
     expect(wrapper.text()).toContain('Отчёт о загрузке файла реестра')
     expect(wrapper.find('#register-load-report-body').exists()).toBe(false)
 
-    let toggle = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .find((button) => button.props('icon') === 'fa-solid fa-angles-down')
+    let toggle = getActionButton(wrapper, 'register-load-report-toggle')
     expect(toggle).toBeTruthy()
     expect(toggle.props('tooltipText')).toBe('Показать отчет загрузки')
 
@@ -1851,9 +1951,8 @@ describe('Register_EditDialog', () => {
       'С предшествующими:',
       'Время загрузки:'
     ])
-    toggle = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .find((button) => button.props('icon') === 'fa-solid fa-angles-up')
+    toggle = getActionButton(wrapper, 'register-load-report-toggle')
+    expect(toggle.props('icon')).toBe('fa-solid fa-angles-up')
     expect(toggle).toBeTruthy()
     expect(toggle.props('tooltipText')).toBe('Скрыть отчет загрузки')
 
@@ -1877,10 +1976,9 @@ describe('Register_EditDialog', () => {
     await nextTick()
 
     expect(wrapper.find('#register-load-report-body').exists()).toBe(false)
-    toggle = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .find((button) => button.props('icon') === 'fa-solid fa-angles-down')
+    toggle = getActionButton(wrapper, 'register-load-report-toggle')
     expect(toggle).toBeTruthy()
+    expect(toggle.props('icon')).toBe('fa-solid fa-angles-down')
   })
 
   it('does not render load report controls for users without administrator or shift lead role', async () => {
@@ -1912,12 +2010,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
-    const reportButtons = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .filter((button) =>
-        ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon'))
-      )
-    expect(reportButtons).toHaveLength(0)
+    expect(getActionButton(wrapper, 'register-load-report-toggle')).toBeUndefined()
   })
 
   it('renders load report controls for shift lead users', async () => {
@@ -1951,10 +2044,9 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(true)
-    const toggle = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .find((button) => button.props('icon') === 'fa-solid fa-angles-down')
+    const toggle = getActionButton(wrapper, 'register-load-report-toggle')
     expect(toggle).toBeTruthy()
+    expect(toggle.props('icon')).toBe('fa-solid fa-angles-down')
 
     await wrapper.find('[data-testid="register-load-report-toggle"]').trigger('click')
     await nextTick()

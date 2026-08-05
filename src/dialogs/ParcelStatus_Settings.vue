@@ -40,7 +40,8 @@ let parcelStatus = ref({
   title: '',
   useAtCustomsProcessing: false,
   bkColor: null,
-  restrictionReason: ''
+  restrictionReason: '',
+  inspection: false
 })
 
 if (!isCreate.value) {
@@ -147,7 +148,7 @@ function onSubmit(values, { setErrors } = {}) {
       @submit="onSubmit"
       :initial-values="parcelStatus"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting, handleSubmit }"
+      v-slot="{ errors, values, isSubmitting, handleSubmit }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ getTitle() }}</h1>
@@ -190,6 +191,7 @@ function onSubmit(values, { setErrors } = {}) {
       </div>
 
       <div class="form-group">
+        <label for="useAtCustomsProcessing" class="label">Таможенное оформление:</label>
         <div class="checkbox-item">
           <Field
             id="useAtCustomsProcessing"
@@ -199,7 +201,22 @@ function onSubmit(values, { setErrors } = {}) {
             :value="true"
             :unchecked-value="false"
           />
-          <label for="useAtCustomsProcessing" class="label">Таможенное оформление:</label>
+          <label for="useAtCustomsProcessing" aria-hidden="true"></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="inspection" class="label">Досмотр:</label>
+        <div class="checkbox-item">
+          <Field
+            id="inspection"
+            type="checkbox"
+            name="inspection"
+            class="checkbox checkbox-styled"
+            :value="true"
+            :unchecked-value="false"
+          />
+          <label for="inspection" aria-hidden="true"></label>
         </div>
       </div>
 
@@ -244,7 +261,11 @@ function onSubmit(values, { setErrors } = {}) {
         </div>
       </Field>
 
-      <div class="form-group">
+      <div
+        v-if="!values.useAtCustomsProcessing"
+        class="form-group"
+        data-testid="restriction-reason-group"
+      >
         <label for="restrictionReason" class="label">Причина запрета:</label>
         <Field
           id="restrictionReason"
@@ -268,29 +289,25 @@ function onSubmit(values, { setErrors } = {}) {
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
-.checkbox-item label {
+.checkbox-item .checkbox-styled + label {
   margin: 0;
   padding: 0;
   width: auto;
-  display: inline-block;
-}
-
-/* Override checkbox-styled label width for table */
-.checkbox-item .checkbox-styled + label {
-  width: auto;
-  min-width: 20px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .checkbox-item .checkbox-styled + label:after {
-  margin-left: 130px;
-  margin-right: 10px;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .checkbox-item .checkbox-styled + label:before {
-  right: 12px;
+  top: 0;
+  right: 2px;
 }
 
 .status-color-control {

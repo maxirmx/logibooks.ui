@@ -48,6 +48,7 @@ const headers = [
     : []),
   { title: 'Название статуса', key: 'title', sortable: true },
   { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true },
+  { title: 'Досмотр', key: 'inspection', sortable: true },
   { title: 'Цвет при выгрузке', align: 'center', key: 'bkColor', sortable: false },
   { title: 'Причина запрета', key: 'restrictionReason', sortable: true }
 ]
@@ -196,6 +197,9 @@ defineExpose({
         </template>
         <template v-slot:[`item.useAtCustomsProcessing`]="{ item }">
           {{ item.useAtCustomsProcessing ? 'Да' : 'Нет' }}
+        </template>
+        <template v-slot:[`item.inspection`]="{ item }">
+          {{ item.inspection ? 'Да' : 'Нет' }}
         </template>
       </v-data-table>
     </v-card>

@@ -17,7 +17,8 @@ const mockRegisterStatus = {
   icon: 'svg:registered',
   bkColor: '#FFFFFF',
   fgColor: '#000000',
-  readOnly: true
+  readOnly: true,
+  transit: true
 }
 
 // Mock stores using test-utils
@@ -223,6 +224,10 @@ describe('RegisterStatus_EditDialog.vue', () => {
         'Изменения запрещены:'
       )
       expect(wrapper.get('.checkbox-styled + label').attributes('aria-hidden')).toBe('true')
+      const transitCheckbox = wrapper.get('#transit')
+      expect(transitCheckbox.attributes('type')).toBe('checkbox')
+      expect(transitCheckbox.classes()).toContain('checkbox-styled')
+      expect(wrapper.get('.status-settings-label[for="transit"]').text()).toBe('Транзит:')
     })
 
     it('allows only administrators to change the read-only flag', async () => {
@@ -265,6 +270,25 @@ describe('RegisterStatus_EditDialog.vue', () => {
         'svg:registered'
       )
       expect(wrapper.find('.status-icon-option.selected').attributes('title')).toBeUndefined()
+    })
+
+    it('places color selectors immediately before the icon selector', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', registerStatusId: 1 },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const rows = wrapper.findAll('.status-settings-row')
+      const backgroundColorRow = rows.find((row) => row.find('#bkColor').exists())
+      const foregroundColorRow = rows.find((row) => row.find('#fgColor').exists())
+      const iconRow = rows.find((row) => row.find('.status-icon-selector').exists())
+
+      expect(rows.indexOf(backgroundColorRow)).toBe(rows.indexOf(iconRow) - 2)
+      expect(rows.indexOf(foregroundColorRow)).toBe(rows.indexOf(iconRow) - 1)
     })
 
     it('updates color preview values through color selectors', async () => {
@@ -372,7 +396,8 @@ describe('RegisterStatus_EditDialog.vue', () => {
         icon: null,
         bkColor: null,
         fgColor: null,
-        readOnly: false
+        readOnly: false,
+        transit: false
       })
     })
 

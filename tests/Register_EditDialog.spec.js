@@ -1620,6 +1620,48 @@ describe('Register_EditDialog', () => {
     expect(wrapper.get('#releaseDate').attributes('type')).toBe('date')
   })
 
+  it('allows a read-only register to expand additional 1C information', async () => {
+    mockIsAdmin.value = false
+    mockItem.value = {
+      ...baseRegisterItem,
+      readOnly: true,
+      inspectionsCount: 3,
+      withTransit: true,
+      decDate: '2026-07-20',
+      releaseDate: '2026-07-21'
+    }
+
+    const Parent = {
+      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      components: { RegisterEditDialog }
+    }
+    const wrapper = mount(Parent, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
+    })
+
+    await resolveAll()
+
+    const additionalSection = wrapper.get('[data-testid="register-additional-info-section"]')
+    expect(additionalSection.element.closest('fieldset')).toBeNull()
+    expect(wrapper.find('#register-additional-info-body').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('#register-additional-info-body').exists()).toBe(true)
+    expect(wrapper.get('#inspectionsCount').element.disabled).toBe(true)
+    expect(wrapper.get('#withTransit').element.disabled).toBe(true)
+    expect(wrapper.get('#decDate').element.disabled).toBe(true)
+    expect(wrapper.get('#releaseDate').element.disabled).toBe(true)
+  })
+
   it('validates and submits additional 1C information only in edit mode', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',

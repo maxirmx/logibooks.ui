@@ -1540,81 +1540,86 @@ const loadReportFields = computed(() => {
             <FieldError name="realWeightKg" :errors="errors" />
           </div>
 
+        </fieldset>
+
+        <div
+          v-if="!props.create"
+          class="additional-info-section"
+          data-testid="register-additional-info-section"
+        >
+          <div class="additional-info-header">
+            <h2 class="section-title additional-info-title">Доп. информация для 1С</h2>
+            <ActionButton
+              :item="{}"
+              :icon="additionalInfoToggleIcon"
+              :iconSize="'2x'"
+              :tooltip-text="additionalInfoToggleTooltip"
+              :aria-expanded="isAdditionalInfoExpanded"
+              aria-controls="register-additional-info-body"
+              data-testid="register-additional-info-toggle"
+              @click="toggleAdditionalInfo"
+            />
+          </div>
           <div
-            v-if="!props.create"
-            class="additional-info-section"
-            data-testid="register-additional-info-section"
+            v-if="isAdditionalInfoExpanded"
+            id="register-additional-info-body"
+            class="form-row additional-info-grid"
           >
-            <div class="additional-info-header">
-              <h2 class="section-title additional-info-title">Доп. информация для 1С</h2>
-              <ActionButton
-                :item="{}"
-                :icon="additionalInfoToggleIcon"
-                :iconSize="'2x'"
-                :tooltip-text="additionalInfoToggleTooltip"
-                :aria-expanded="isAdditionalInfoExpanded"
-                aria-controls="register-additional-info-body"
-                data-testid="register-additional-info-toggle"
-                @click="toggleAdditionalInfo"
+            <div class="form-group additional-info-field">
+              <label for="inspectionsCount" class="label">Досмотрено посылок:</label>
+              <Field
+                id="inspectionsCount"
+                name="inspectionsCount"
+                type="number"
+                min="0"
+                step="1"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.inspectionsCount }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
               />
+              <FieldError name="inspectionsCount" :errors="errors" />
             </div>
-            <div
-              v-if="isAdditionalInfoExpanded"
-              id="register-additional-info-body"
-              class="form-row additional-info-grid"
-            >
-              <div class="form-group additional-info-field">
-                <label for="inspectionsCount" class="label">Досмотрено посылок:</label>
+            <div class="form-group additional-info-field">
+              <label for="withTransit" class="custom-checkbox">
                 <Field
-                  id="inspectionsCount"
-                  name="inspectionsCount"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="form-control input"
-                  :class="{ 'is-invalid': errors.inspectionsCount }"
+                  id="withTransit"
+                  name="withTransit"
+                  type="checkbox"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                  :disabled="readOnly || isInitializing || registerLoadFailed"
                 />
-                <FieldError name="inspectionsCount" :errors="errors" />
-              </div>
-              <div class="form-group additional-info-field">
-                <label for="withTransit" class="custom-checkbox">
-                  <Field
-                    id="withTransit"
-                    name="withTransit"
-                    type="checkbox"
-                    :value="true"
-                    :unchecked-value="false"
-                    class="custom-checkbox-input"
-                  />
-                  <span class="custom-checkbox-box"></span>
-                  <span class="label custom-checkbox-label">Транзит:</span>
-                </label>
-              </div>
-              <div class="form-group additional-info-field">
-                <label for="decDate" class="label">Дата подачи ДТЭГ:</label>
-                <Field
-                  id="decDate"
-                  name="decDate"
-                  type="date"
-                  class="form-control input"
-                  :class="{ 'is-invalid': errors.decDate }"
-                />
-                <FieldError name="decDate" :errors="errors" />
-              </div>
-              <div class="form-group additional-info-field">
-                <label for="releaseDate" class="label">Дата выпуска:</label>
-                <Field
-                  id="releaseDate"
-                  name="releaseDate"
-                  type="date"
-                  class="form-control input"
-                  :class="{ 'is-invalid': errors.releaseDate }"
-                />
-                <FieldError name="releaseDate" :errors="errors" />
-              </div>
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label">Транзит:</span>
+              </label>
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="decDate" class="label">Дата подачи ДТЭГ:</label>
+              <Field
+                id="decDate"
+                name="decDate"
+                type="date"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.decDate }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              />
+              <FieldError name="decDate" :errors="errors" />
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="releaseDate" class="label">Дата выпуска:</label>
+              <Field
+                id="releaseDate"
+                name="releaseDate"
+                type="date"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.releaseDate }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              />
+              <FieldError name="releaseDate" :errors="errors" />
             </div>
           </div>
-        </fieldset>
+        </div>
 
         <div v-if="hasLoadReport" class="load-report-section" data-testid="register-load-report">
           <div class="load-report-header">

@@ -1238,6 +1238,7 @@ describe('Registers_List.vue', () => {
 
       expect(sortableByKey.actions).toBe(false)
       expect(sortableByKey.registerStatusIcon).toBeUndefined()
+      expect(sortableByKey.id).toBe(true)
       expect(sortableByKey.dealNumber).toBe(true)
       expect(sortableByKey.invoice).toBe(true)
       expect(sortableByKey.countries).toBe(true)
@@ -1263,6 +1264,11 @@ describe('Registers_List.vue', () => {
         getTableHeaders(wrapper).map((header) => [header.key, header])
       )
 
+      expect(headersByKey.id).toMatchObject({
+        title: '№',
+        align: 'start',
+        width: '80px'
+      })
       expect(headersByKey.parcelsTotal.align).toBe('end')
       expect(headersByKey.weight.align).toBe('end')
       expect(headersByKey.price.align).toBe('end')

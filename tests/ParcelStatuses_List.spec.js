@@ -37,6 +37,7 @@ const mockParcelStatuses = ref([
     id: 1,
     title: 'Черновик',
     useAtCustomsProcessing: true,
+    inspection: true,
     bkColor: '#112233',
     restrictionReason: 'Стоп-слово'
   },
@@ -44,10 +45,18 @@ const mockParcelStatuses = ref([
     id: 2,
     title: 'Подтвержден',
     useAtCustomsProcessing: false,
+    inspection: false,
     bkColor: '#445566',
     restrictionReason: 'Запрет'
   },
-  { id: 3, title: 'Выполнен', useAtCustomsProcessing: false, bkColor: null, restrictionReason: '' }
+  {
+    id: 3,
+    title: 'Выполнен',
+    useAtCustomsProcessing: false,
+    inspection: false,
+    bkColor: null,
+    restrictionReason: ''
+  }
 ])
 
 // Mock stores
@@ -120,6 +129,7 @@ describe('ParcelStatuses_List.vue', () => {
         id: 1,
         title: 'Черновик',
         useAtCustomsProcessing: true,
+        inspection: true,
         bkColor: '#112233',
         restrictionReason: 'Стоп-слово'
       },
@@ -127,6 +137,7 @@ describe('ParcelStatuses_List.vue', () => {
         id: 2,
         title: 'Подтвержден',
         useAtCustomsProcessing: false,
+        inspection: false,
         bkColor: '#445566',
         restrictionReason: 'Запрет'
       },
@@ -134,6 +145,7 @@ describe('ParcelStatuses_List.vue', () => {
         id: 3,
         title: 'Выполнен',
         useAtCustomsProcessing: false,
+        inspection: false,
         bkColor: null,
         restrictionReason: ''
       }

@@ -9,7 +9,12 @@ import { ref } from 'vue'
 import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
-import { roleLogist, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
+import {
+  roleAdapter1C,
+  roleLogist,
+  roleWhManager,
+  roleWhOperator
+} from '@/helpers/user.roles.js'
 
 // simple stubs for vee-validate components
 const FormStub = {
@@ -147,6 +152,33 @@ beforeEach(() => {
 })
 
 describe('User_Settings.vue real component', () => {
+  it('blocks an automated account opened through the human-user route', async () => {
+    mockUser.value = {
+      id: 7,
+      firstName: '',
+      lastName: 'Production 1C',
+      patronymic: '',
+      email: 'adapter-1c/prod',
+      roles: [roleAdapter1C]
+    }
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 7 },
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub
+        }
+      }
+    })
+    await resolveAll()
+    const child = wrapper.findComponent(UserSettings)
+
+    expect(child.vm.$.setupState.initializationFailed).toBe(true)
+    await child.vm.$.setupState.onSubmit({ firstName: 'Should not save' }, { setErrors: vi.fn() })
+    expect(updateUser).not.toHaveBeenCalled()
+  })
+
   it('fetches user by id when editing', async () => {
     mount(Parent, {
       props: { register: false, id: 5 },

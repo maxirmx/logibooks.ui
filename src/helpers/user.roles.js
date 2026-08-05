@@ -9,6 +9,7 @@ export const roleLogist = 'logist'
 export const roleSrLogist = 'sr-logist'
 export const roleShiftLead = 'shift-lead'
 export const roleAdmin = 'administrator'
+export const roleAdapter1C = 'adapter-1c'
 
 export const keyWhManager = 'WH_MANAGER'
 export const keyWhOperator = 'WH_OPERATOR'
@@ -16,6 +17,7 @@ export const keyLogist = 'LOGIST'
 export const keySrLogist = 'SR_LOGIST'
 export const keyShiftLead = 'SHIFT_LEAD'
 export const keyAdmin = 'ADMIN'
+export const keyAdapter1C = 'ADAPTER_1C'
 export const keyNone = 'NONE'
 
 export const userRoles = [
@@ -27,6 +29,8 @@ export const userRoles = [
   roleWhManager
 ]
 
+export const automatedSystemRoles = [roleAdapter1C]
+
 export const userRoleKeys = {
   roleAdmin: keyAdmin,
   roleShiftLead: keyShiftLead,
@@ -34,6 +38,7 @@ export const userRoleKeys = {
   roleLogist: keyLogist,
   roleWhOperator: keyWhOperator,
   roleWhManager: keyWhManager,
+  roleAdapter1C: keyAdapter1C,
   roleNone: keyNone
 }
 
@@ -43,7 +48,8 @@ const roleLabels = [
   { role: roleSrLogist, label: 'Старший логист' },
   { role: roleLogist, label: 'Логист' },
   { role: roleWhManager, label: 'Менеджер склада' },
-  { role: roleWhOperator, label: 'Оператор склада' }
+  { role: roleWhOperator, label: 'Оператор склада' },
+  { role: roleAdapter1C, label: 'Адаптер 1С' }
 ]
 
 const roleFields = [
@@ -76,6 +82,10 @@ export function getCredentials(user) {
     .filter(({ role }) => user?.roles?.includes(role))
     .map(({ label }) => label)
     .join(', ')
+}
+
+export function isAutomatedSystem(user) {
+  return (user?.roles ?? []).some((role) => automatedSystemRoles.includes(role))
 }
 
 export function hasOnlyWarehouseRoles(user) {

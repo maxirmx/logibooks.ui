@@ -29,7 +29,8 @@ import {
   keyWhManager,
   keyWhOperator,
   getCredentials,
-  hasOnlyWarehouseRoles
+  hasOnlyWarehouseRoles,
+  isAutomatedSystem
 } from '@/helpers/user.roles.js'
 
 const props = defineProps({
@@ -92,6 +93,11 @@ async function initialize() {
     await Promise.all([hotKeyActionSchemesStore.ensureLoaded(), warehousesStore.ensureLoaded()])
     if (!isRegister()) {
       await usersStore.getById(props.id, true)
+      if (isAutomatedSystem(user.value)) {
+        initializationFailed.value = true
+        alertStore.error('Выбранная учетная запись является автоматизированной системой')
+        return
+      }
       if (user.value.schemeId == null) user.value.schemeId = 0
       selectedWarehouseIds.value = [...(user.value.warehouseIds ?? [])]
     }
@@ -180,6 +186,8 @@ function toggleAllWarehouses(selected) {
 }
 
 function onSubmit(values, { setErrors } = {}) {
+  if (initializationFailed.value) return
+
   if (asAdmin()) {
     values.warehouseIds = [...selectedWarehouseIds.value]
   } else {
@@ -259,7 +267,7 @@ function onSubmit(values, { setErrors } = {}) {
             icon-size="2x"
             :tooltip-text="getButton()"
             :disabled="isSubmitting || initializationFailed"
-            @click="handleSubmit(onSubmit)()"
+            @click="handleSubmit(onSubmit)"
           />
           <ActionButton
             v-if="asAdmin() || !isRegister()"

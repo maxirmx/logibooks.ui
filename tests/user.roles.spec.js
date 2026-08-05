@@ -7,11 +7,13 @@ import {
   getCredentials,
   hasAllWarehouseAccess,
   hasOnlyWarehouseRoles,
+  isAutomatedSystem,
   keyNone,
   keyShiftLead,
   keyWhManager,
   keyWhOperator,
   roleAdmin,
+  roleAdapter1C,
   roleLogist,
   roleShiftLead,
   roleSrLogist,
@@ -60,5 +62,12 @@ describe('user role helpers', () => {
     expect(hasAllWarehouseAccess({ roles: [roleWhManager, roleLogist] })).toBe(true)
     expect(hasAllWarehouseAccess({ roles: [roleWhManager, roleWhOperator] })).toBe(false)
     expect(hasAllWarehouseAccess({ roles: [] })).toBe(false)
+  })
+
+  it('formats and detects automated-system roles', () => {
+    const automatedSystem = { roles: [roleAdapter1C] }
+    expect(isAutomatedSystem(automatedSystem)).toBe(true)
+    expect(isAutomatedSystem({ roles: [roleAdmin] })).toBe(false)
+    expect(getCredentials(automatedSystem)).toBe('Адаптер 1С')
   })
 })

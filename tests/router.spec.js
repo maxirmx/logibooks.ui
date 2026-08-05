@@ -34,6 +34,7 @@ vi.mock('@/views/User_RecoverView.vue', () => ({ default: { template: '<div />' 
 vi.mock('@/views/User_RegisterView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Users_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/AutomatedSystem_SettingsView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Parcels_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/ExportFees_View.vue', () => ({ default: { template: '<div />' } }))
@@ -94,6 +95,35 @@ describe('router guards', () => {
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(authStore.returnUrl).toBe('/users')
+  })
+
+  it('defines dedicated admin-only automated-system routes', () => {
+    const createRoute = router.getRoutes().find((route) => route.path === '/automated-system/register')
+    const editRoute = router.getRoutes().find((route) => route.path === '/automated-system/edit/:id')
+
+    expect(createRoute?.meta.reqAdmin).toBe(true)
+    expect(editRoute?.meta.reqAdmin).toBe(true)
+  })
+
+  it('enforces reqAdmin for automated-system management', async () => {
+    authStore.user = { id: 2 }
+    authStore.isAdmin = false
+
+    await router.push('/automated-system/register')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+    expect(authStore.returnUrl).toBe('/automated-system/register')
+  })
+
+  it('allows administrators to open automated-system management', async () => {
+    authStore.user = { id: 1 }
+    authStore.isAdmin = true
+
+    await router.push('/automated-system/edit/7')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/automated-system/edit/7')
   })
 
   it('clears the alert that belonged to the previous route', async () => {

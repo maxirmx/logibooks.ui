@@ -14,9 +14,14 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { getCredentials, hasAllWarehouseAccess } from '@/helpers/user.roles.js'
+import {
+  getCredentials,
+  hasAllWarehouseAccess,
+  isAutomatedSystem
+} from '@/helpers/user.roles.js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const authStore = useAuthStore()
@@ -38,8 +43,34 @@ const confirm = useConfirm()
 
 function userSettings(item) {
   const id = item.id
-  router.push('user/edit/' + id)
+  router.push(isAutomatedSystem(item) ? `/automated-system/edit/${id}` : `/user/edit/${id}`)
 }
+
+function getDisplayName(item) {
+  if (isAutomatedSystem(item)) return item?.lastName ?? ''
+  return [item?.lastName, item?.firstName, item?.patronymic].filter(Boolean).join(' ')
+}
+
+function getAccountTypeIcon(item) {
+  return isAutomatedSystem(item) ? 'fa-solid fa-robot' : 'fa-solid fa-user'
+}
+
+function getAccountTypeLabel(item) {
+  return isAutomatedSystem(item) ? 'Автоматизированная система' : 'Пользователь'
+}
+
+const createOptions = [
+  {
+    label: 'Зарегистрировать пользователя',
+    icon: 'fa-solid fa-user',
+    action: () => router.push('/register')
+  },
+  {
+    label: 'Зарегистрировать автоматизированную систему',
+    icon: 'fa-solid fa-robot',
+    action: () => router.push('/automated-system/register')
+  }
+]
 
 function getWarehouseNames(item) {
   if (hasAllWarehouseAccess(item)) {
@@ -85,7 +116,10 @@ async function deleteUser(item) {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    const content = 'Удалить пользователя "' + item.firstName + ' ' + item.lastName + '" ?'
+    const accountType = isAutomatedSystem(item)
+      ? 'автоматизированную систему'
+      : 'пользователя'
+    const content = `Удалить ${accountType} "${getDisplayName(item)}" ?`
     const result = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -101,14 +135,12 @@ async function deleteUser(item) {
     })
 
     if (result) {
-      usersStore
-        .delete(item.id)
-        .then(() => {
-          usersStore.getAll()
-        })
-        .catch((error) => {
-          alertStore.error(error)
-        })
+      try {
+        await usersStore.delete(item.id)
+        await usersStore.getAll()
+      } catch (error) {
+        alertStore.error(error)
+      }
     }
   } finally {
     runningAction.value = false
@@ -117,8 +149,8 @@ async function deleteUser(item) {
 
 const headers = [
   { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
-  { title: 'Пользователь', align: 'start', key: 'id' },
-  { title: 'E-mail', align: 'start', key: 'email' },
+  { title: 'Пользователь / система', align: 'start', key: 'id' },
+  { title: 'E-mail / идентификатор', align: 'start', key: 'email' },
   { title: 'Права', align: 'start', key: 'credentials', sortable: false },
   { title: 'Доступ к складам', align: 'start', key: 'warehouses', sortable: false }
 ]
@@ -133,13 +165,13 @@ const headers = [
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">
-          <ActionButton
+          <ActionButton2L
             :item="{}"
             icon="fa-solid fa-user-plus"
-            tooltip-text="Зарегистрировать пользователя"
+            tooltip-text="Зарегистрировать"
             iconSize="2x"
             :disabled="runningAction || loading"
-            @click="() => router.push('/register')"
+            :options="createOptions"
           />
         </div>
       </div>
@@ -178,7 +210,16 @@ const headers = [
         fixed-header
       >
         <template v-slot:[`item.id`]="{ item }">
-          {{ item['lastName'] }} {{ item['firstName'] }} {{ item['patronymic'] }}
+          <span class="account-name">
+            <font-awesome-icon
+              :icon="getAccountTypeIcon(item)"
+              class="account-type-icon"
+              role="img"
+              :aria-label="getAccountTypeLabel(item)"
+              :title="getAccountTypeLabel(item)"
+            />
+            <span>{{ getDisplayName(item) }}</span>
+          </span>
         </template>
 
         <template v-slot:[`item.credentials`]="{ item }">
@@ -199,14 +240,14 @@ const headers = [
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"
-              tooltip-text="Редактировать информацию о пользователе"
+              tooltip-text="Редактировать учетную запись"
               @click="userSettings"
               :disabled="runningAction || loading"
             />
             <ActionButton
               :item="item"
               icon="fa-solid fa-trash-can"
-              tooltip-text="Удалить информацию о пользователе"
+              tooltip-text="Удалить учетную запись"
               @click="deleteUser"
               :disabled="runningAction || loading"
             />
@@ -219,4 +260,16 @@ const headers = [
 
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
+
+.account-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.account-type-icon {
+  width: 1em;
+  flex: 0 0 auto;
+  color: var(--primary-color);
+}
 </style>

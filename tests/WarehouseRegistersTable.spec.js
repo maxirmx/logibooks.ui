@@ -151,7 +151,11 @@ describe('WarehouseRegistersTable matching-count column', () => {
       showRegisterStatusIcon: true
     })
 
-    expect(headers.map((header) => header.key).slice(0, 2)).toEqual(['actions', 'dealNumber'])
+    expect(headers.map((header) => header.key).slice(0, 3)).toEqual([
+      'actions',
+      'id',
+      'dealNumber'
+    ])
     expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
   })
 

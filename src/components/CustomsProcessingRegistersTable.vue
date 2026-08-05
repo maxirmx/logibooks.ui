@@ -94,6 +94,7 @@ const sortByModel = computed({
 
 const headers = [
   { title: '', key: 'actions', sortable: false, align: 'center' },
+  { title: '№', key: 'id', sortable: true, align: 'start', width: '80px' },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
   { title: 'ТСД', key: 'invoice', sortable: true },
   { title: 'Страны', key: 'countries', sortable: true },

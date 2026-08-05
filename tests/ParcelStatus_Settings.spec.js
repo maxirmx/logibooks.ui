@@ -16,7 +16,8 @@ const mockParcelStatus = {
   title: 'Черновик',
   useAtCustomsProcessing: true,
   bkColor: '#112233',
-  restrictionReason: 'Причина запрета'
+  restrictionReason: 'Причина запрета',
+  inspection: true
 }
 
 // Mock stores using test-utils
@@ -69,13 +70,27 @@ vi.mock('vee-validate', () => ({
     emits: ['submit'],
     template: `
       <form @submit.prevent="handleSubmit">
-        <slot :errors="errors" :isSubmitting="isSubmitting" :handleSubmit="runSubmit" />
+        <slot
+          :errors="errors"
+          :values="values"
+          :isSubmitting="isSubmitting"
+          :handleSubmit="runSubmit"
+        />
       </form>
     `,
     data() {
       return {
         errors: {},
-        isSubmitting: false
+        isSubmitting: false,
+        values: { ...(this.initialValues || {}) }
+      }
+    },
+    provide() {
+      return {
+        getFormValue: (name) => this.values[name],
+        setFormValue: (name, value) => {
+          this.values[name] = value
+        }
       }
     },
     methods: {
@@ -83,13 +98,13 @@ vi.mock('vee-validate', () => ({
         const actions = {
           setErrors: this.setErrors.bind(this)
         }
-        this.$emit('submit', this.$props.initialValues || {}, actions)
+        this.$emit('submit', this.values, actions)
       },
       runSubmit(callback) {
         const actions = {
           setErrors: this.setErrors.bind(this)
         }
-        return callback(this.$props.initialValues || {}, actions)
+        return callback(this.values, actions)
       },
       setErrors(newErrors) {
         this.errors = { ...this.errors, ...newErrors }
@@ -98,23 +113,43 @@ vi.mock('vee-validate', () => ({
   },
   Field: {
     name: 'Field',
-    props: ['name', 'id', 'type', 'as', 'class', 'placeholder', 'rows'],
+    props: [
+      'name',
+      'id',
+      'type',
+      'as',
+      'class',
+      'placeholder',
+      'rows',
+      'value',
+      'uncheckedValue'
+    ],
+    inject: ['getFormValue', 'setFormValue'],
     template: `
-      <slot v-if="$slots.default" :field="{ value }" :handleChange="handleChange" />
-      <input v-else-if="!as || as === 'input'" v-bind="$props" />
-      <textarea v-else-if="as === 'textarea'" v-bind="$props"></textarea>
+      <slot v-if="$slots.default" :field="{ value: fieldValue }" :handleChange="handleChange" />
+      <input
+        v-else-if="!as || as === 'input'"
+        v-bind="$props"
+        :checked="type === 'checkbox' ? Boolean(getFormValue(name)) : undefined"
+        @change="handleInput"
+      />
+      <textarea v-else-if="as === 'textarea'" v-bind="$props" @change="handleInput"></textarea>
       <component v-else :is="as" v-bind="$props">
         <slot />
       </component>
     `,
     data() {
       return {
-        value: undefined
+        fieldValue: undefined
       }
     },
     methods: {
       handleChange(value) {
-        this.value = value
+        this.fieldValue = value
+        this.setFormValue(this.name, value)
+      },
+      handleInput(event) {
+        this.handleChange(this.type === 'checkbox' ? event.target.checked : event.target.value)
       }
     }
   }
@@ -175,6 +210,20 @@ describe('ParcelStatus_Settings.vue', () => {
       )
       expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
       expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
+      expect(wrapper.get('#inspection').attributes('type')).toBe('checkbox')
+      expect(wrapper.get('.form-group > label[for="inspection"]').text()).toBe('Досмотр:')
+      expect(
+        wrapper.get('.checkbox-item label[for="inspection"]').attributes('aria-hidden')
+      ).toBe('true')
+      expect(
+        wrapper.get('.form-group > label[for="useAtCustomsProcessing"]').text()
+      ).toBe('Таможенное оформление:')
+      expect(
+        wrapper
+          .get('.checkbox-item label[for="useAtCustomsProcessing"]')
+          .attributes('aria-hidden')
+      ).toBe('true')
+      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
       expect(mockParcelStatusesStore.getById).not.toHaveBeenCalled()
     })
 
@@ -192,6 +241,27 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
         'Сохранить'
       )
+      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(false)
+    })
+
+    it('shows restriction reason only while customs processing is unchecked', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: {
+          stubs: defaultGlobalStubs
+        }
+      })
+
+      await resolveAll()
+
+      const customsProcessing = wrapper.get('#useAtCustomsProcessing')
+      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
+
+      await customsProcessing.setValue(true)
+      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(false)
+
+      await customsProcessing.setValue(false)
+      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
     })
 
     it('renders empty export color as no color in create mode', async () => {
@@ -272,7 +342,8 @@ describe('ParcelStatus_Settings.vue', () => {
         title: '',
         useAtCustomsProcessing: false,
         bkColor: null,
-        restrictionReason: ''
+        restrictionReason: '',
+        inspection: false
       })
     })
 

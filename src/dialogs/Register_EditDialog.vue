@@ -134,6 +134,7 @@ const isSubmitting = ref(false)
 const checkForDuplicates = ref(true)
 const originalCustomsProcedureCode = ref(null)
 const isLoadReportExpanded = ref(false)
+const isAdditionalInfoExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
 const isRealWeightEdited = ref(false)
 const isRegisterStatusEdited = ref(false)
@@ -189,6 +190,14 @@ const loadReportToggleIcon = computed(() =>
 )
 const loadReportToggleTooltip = computed(() =>
   isLoadReportExpanded.value ? 'Скрыть отчет загрузки' : 'Показать отчет загрузки'
+)
+const additionalInfoToggleIcon = computed(() =>
+  isAdditionalInfoExpanded.value ? 'fa-solid fa-angles-up' : 'fa-solid fa-angles-down'
+)
+const additionalInfoToggleTooltip = computed(() =>
+  isAdditionalInfoExpanded.value
+    ? 'Скрыть дополнительную информацию для 1С'
+    : 'Показать дополнительную информацию для 1С'
 )
 const uploadDateDisplay = computed(() => formatDate(item.value?.date))
 const realWeightValidationMessage =
@@ -556,6 +565,21 @@ onUnmounted(() => {
   }
 })
 
+function isValidIsoCalendarDate(value) {
+  if (value === null || value === undefined) return true
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return false
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (year < 1 || month < 1 || month > 12) return false
+
+  const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  const daysInMonth = [31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  return day >= 1 && day <= daysInMonth[month - 1]
+}
+
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   statusId: Yup.number().nullable(),
@@ -599,6 +623,24 @@ const schema = Yup.object().shape({
     .typeError(realWeightValidationMessage)
     .moreThan(0, realWeightValidationMessage)
     .nullable(),
+  inspectionsCount: Yup.number()
+    .transform((value, originalValue) =>
+      originalValue === '' || originalValue === null || originalValue === undefined
+        ? 0
+        : Number(originalValue)
+    )
+    .typeError('Количество досмотренных посылок должно быть целым неотрицательным числом')
+    .integer('Количество досмотренных посылок должно быть целым неотрицательным числом')
+    .min(0, 'Количество досмотренных посылок должно быть целым неотрицательным числом'),
+  withTransit: Yup.boolean().default(false),
+  decDate: Yup.string()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .nullable()
+    .test('valid-dec-date', 'Укажите корректную дату подачи ДТЭГ', isValidIsoCalendarDate),
+  releaseDate: Yup.string()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .nullable()
+    .test('valid-release-date', 'Укажите корректную дату выпуска', isValidIsoCalendarDate),
   lookupByArticle: Yup.boolean().default(false),
   checkForDuplicates: Yup.boolean().default(true)
 })
@@ -830,6 +872,14 @@ function parseRealWeightPayloadValue(value) {
   return parseDecimal(value, null)
 }
 
+function getNullableEditDate(formValues, propertyName) {
+  const value = Object.prototype.hasOwnProperty.call(formValues, propertyName)
+    ? formValues[propertyName]
+    : item.value?.[propertyName]
+
+  return value === '' || value === null || value === undefined ? null : value
+}
+
 function prepareRegisterPayload(formValues) {
   ensureDefaultCustomsProcedure()
   const payload = { ...formValues }
@@ -869,6 +919,20 @@ function prepareRegisterPayload(formValues) {
   payload.warehouseArrivalDate =
     formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
   payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
+  if (!props.create) {
+    payload.inspectionsCount = parseNumber(
+      formValues.inspectionsCount ?? item.value?.inspectionsCount,
+      0
+    )
+    payload.withTransit = Boolean(formValues.withTransit ?? item.value?.withTransit ?? false)
+    payload.decDate = getNullableEditDate(formValues, 'decDate')
+    payload.releaseDate = getNullableEditDate(formValues, 'releaseDate')
+  } else {
+    delete payload.inspectionsCount
+    delete payload.withTransit
+    delete payload.decDate
+    delete payload.releaseDate
+  }
   if (hasProcedureChangedToNonReturn(payload.customsProcedureCode)) {
     payload.checkForDuplicates = Boolean(
       formValues.checkForDuplicates ??
@@ -1009,6 +1073,10 @@ function getCustomerName(customerId) {
 
 function toggleLoadReport() {
   isLoadReportExpanded.value = !isLoadReportExpanded.value
+}
+
+function toggleAdditionalInfo() {
+  isAdditionalInfoExpanded.value = !isAdditionalInfoExpanded.value
 }
 
 function formatNumberValue(value) {
@@ -1471,7 +1539,87 @@ const loadReportFields = computed(() => {
             </Field>
             <FieldError name="realWeightKg" :errors="errors" />
           </div>
+
         </fieldset>
+
+        <div
+          v-if="!props.create"
+          class="additional-info-section"
+          data-testid="register-additional-info-section"
+        >
+          <div class="additional-info-header">
+            <h2 class="section-title additional-info-title">Доп. информация для 1С</h2>
+            <ActionButton
+              :item="{}"
+              :icon="additionalInfoToggleIcon"
+              :iconSize="'2x'"
+              :tooltip-text="additionalInfoToggleTooltip"
+              :aria-expanded="isAdditionalInfoExpanded"
+              aria-controls="register-additional-info-body"
+              data-testid="register-additional-info-toggle"
+              @click="toggleAdditionalInfo"
+            />
+          </div>
+          <div
+            v-if="isAdditionalInfoExpanded"
+            id="register-additional-info-body"
+            class="form-row additional-info-grid"
+          >
+            <div class="form-group additional-info-field">
+              <label for="inspectionsCount" class="label">Досмотрено посылок:</label>
+              <Field
+                id="inspectionsCount"
+                name="inspectionsCount"
+                type="number"
+                min="0"
+                step="1"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.inspectionsCount }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              />
+              <FieldError name="inspectionsCount" :errors="errors" />
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="withTransit" class="custom-checkbox">
+                <Field
+                  id="withTransit"
+                  name="withTransit"
+                  type="checkbox"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                  :disabled="readOnly || isInitializing || registerLoadFailed"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label">Транзит:</span>
+              </label>
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="decDate" class="label">Дата подачи ДТЭГ:</label>
+              <Field
+                id="decDate"
+                name="decDate"
+                type="date"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.decDate }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              />
+              <FieldError name="decDate" :errors="errors" />
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="releaseDate" class="label">Дата выпуска:</label>
+              <Field
+                id="releaseDate"
+                name="releaseDate"
+                type="date"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.releaseDate }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              />
+              <FieldError name="releaseDate" :errors="errors" />
+            </div>
+          </div>
+        </div>
 
         <div v-if="hasLoadReport" class="load-report-section" data-testid="register-load-report">
           <div class="load-report-header">
@@ -1605,6 +1753,7 @@ const loadReportFields = computed(() => {
 }
 
 .weight-section,
+.additional-info-section,
 .load-report-section {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -1612,6 +1761,7 @@ const loadReportFields = computed(() => {
 }
 
 .weight-section-header,
+.additional-info-header,
 .load-report-header {
   display: flex;
   align-items: center;
@@ -1620,17 +1770,20 @@ const loadReportFields = computed(() => {
 }
 
 .weight-section-title,
+.additional-info-title,
 .load-report-title {
   flex: 1;
   margin-bottom: 0;
 }
 
 .weight-grid,
+.additional-info-grid,
 .load-report-grid {
   margin-top: 0.75rem;
 }
 
 .weight-field,
+.additional-info-field,
 .load-report-field {
   min-width: 0;
 }

@@ -41,7 +41,8 @@ const mockRegisterStatuses = ref([
     icon: 'svg:registered',
     bkColor: '#FFFFFF',
     fgColor: '#000000',
-    readOnly: false
+    readOnly: false,
+    transit: false
   },
   {
     id: 2,
@@ -49,9 +50,18 @@ const mockRegisterStatuses = ref([
     icon: 'svg:very-delivered',
     bkColor: '#00AA00',
     fgColor: '#FFFFFF',
-    readOnly: true
+    readOnly: true,
+    transit: true
   },
-  { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
+  {
+    id: 3,
+    title: 'Выполнен',
+    icon: null,
+    bkColor: null,
+    fgColor: null,
+    readOnly: false,
+    transit: false
+  }
 ])
 
 // Mock stores
@@ -131,7 +141,8 @@ describe('RegisterStatuses_List.vue', () => {
         icon: 'svg:registered',
         bkColor: '#FFFFFF',
         fgColor: '#000000',
-        readOnly: false
+        readOnly: false,
+        transit: false
       },
       {
         id: 2,
@@ -139,9 +150,18 @@ describe('RegisterStatuses_List.vue', () => {
         icon: 'svg:very-delivered',
         bkColor: '#00AA00',
         fgColor: '#FFFFFF',
-        readOnly: true
+        readOnly: true,
+        transit: true
       },
-      { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
+      {
+        id: 3,
+        title: 'Выполнен',
+        icon: null,
+        bkColor: null,
+        fgColor: null,
+        readOnly: false,
+        transit: false
+      }
     ]
     mockIsShiftLeadPlus.value = true
     mockIsSrLogistPlus.value = false
@@ -170,6 +190,14 @@ describe('RegisterStatuses_List.vue', () => {
 
     it('displays whether changes are prohibited', () => {
       expect(wrapper.findAll('.register-status-read-only').map((cell) => cell.text())).toEqual([
+        'Нет',
+        'Да',
+        'Нет'
+      ])
+    })
+
+    it('displays transit flags', () => {
+      expect(wrapper.findAll('.register-status-transit').map((cell) => cell.text())).toEqual([
         'Нет',
         'Да',
         'Нет'
@@ -321,6 +349,7 @@ describe('RegisterStatuses_List.vue', () => {
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
         { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
         { title: 'Название статуса', key: 'title', sortable: true },
+        { title: 'Транзит', align: 'center', key: 'transit', sortable: true },
         { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
       ])
     })

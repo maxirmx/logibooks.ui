@@ -46,6 +46,7 @@ const headers = [
     : []),
   { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
   { title: 'Название статуса', key: 'title', sortable: true },
+  { title: 'Транзит', align: 'center', key: 'transit', sortable: true },
   { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
 ]
 
@@ -196,6 +197,9 @@ defineExpose({
 
         <template v-slot:[`item.readOnly`]="{ item }">
           <span class="register-status-read-only">{{ item.readOnly ? 'Да' : 'Нет' }}</span>
+        </template>
+        <template v-slot:[`item.transit`]="{ item }">
+          <span class="register-status-transit">{{ item.transit ? 'Да' : 'Нет' }}</span>
         </template>
       </v-data-table>
     </v-card>

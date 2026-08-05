@@ -565,6 +565,21 @@ onUnmounted(() => {
   }
 })
 
+function isValidIsoCalendarDate(value) {
+  if (value === null || value === undefined) return true
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return false
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (year < 1 || month < 1 || month > 12) return false
+
+  const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  const daysInMonth = [31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  return day >= 1 && day <= daysInMonth[month - 1]
+}
+
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   statusId: Yup.number().nullable(),
@@ -618,6 +633,14 @@ const schema = Yup.object().shape({
     .integer('Количество досмотренных посылок должно быть целым неотрицательным числом')
     .min(0, 'Количество досмотренных посылок должно быть целым неотрицательным числом'),
   withTransit: Yup.boolean().default(false),
+  decDate: Yup.string()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .nullable()
+    .test('valid-dec-date', 'Укажите корректную дату подачи ДТЭГ', isValidIsoCalendarDate),
+  releaseDate: Yup.string()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .nullable()
+    .test('valid-release-date', 'Укажите корректную дату выпуска', isValidIsoCalendarDate),
   lookupByArticle: Yup.boolean().default(false),
   checkForDuplicates: Yup.boolean().default(true)
 })
@@ -849,6 +872,14 @@ function parseRealWeightPayloadValue(value) {
   return parseDecimal(value, null)
 }
 
+function getNullableEditDate(formValues, propertyName) {
+  const value = Object.prototype.hasOwnProperty.call(formValues, propertyName)
+    ? formValues[propertyName]
+    : item.value?.[propertyName]
+
+  return value === '' || value === null || value === undefined ? null : value
+}
+
 function prepareRegisterPayload(formValues) {
   ensureDefaultCustomsProcedure()
   const payload = { ...formValues }
@@ -894,9 +925,13 @@ function prepareRegisterPayload(formValues) {
       0
     )
     payload.withTransit = Boolean(formValues.withTransit ?? item.value?.withTransit ?? false)
+    payload.decDate = getNullableEditDate(formValues, 'decDate')
+    payload.releaseDate = getNullableEditDate(formValues, 'releaseDate')
   } else {
     delete payload.inspectionsCount
     delete payload.withTransit
+    delete payload.decDate
+    delete payload.releaseDate
   }
   if (hasProcedureChangedToNonReturn(payload.customsProcedureCode)) {
     payload.checkForDuplicates = Boolean(
@@ -1554,6 +1589,28 @@ const loadReportFields = computed(() => {
                   <span class="custom-checkbox-box"></span>
                   <span class="label custom-checkbox-label">Транзит:</span>
                 </label>
+              </div>
+              <div class="form-group additional-info-field">
+                <label for="decDate" class="label">Дата подачи ДТЭГ:</label>
+                <Field
+                  id="decDate"
+                  name="decDate"
+                  type="date"
+                  class="form-control input"
+                  :class="{ 'is-invalid': errors.decDate }"
+                />
+                <FieldError name="decDate" :errors="errors" />
+              </div>
+              <div class="form-group additional-info-field">
+                <label for="releaseDate" class="label">Дата выпуска:</label>
+                <Field
+                  id="releaseDate"
+                  name="releaseDate"
+                  type="date"
+                  class="form-control input"
+                  :class="{ 'is-invalid': errors.releaseDate }"
+                />
+                <FieldError name="releaseDate" :errors="errors" />
               </div>
             </div>
           </div>

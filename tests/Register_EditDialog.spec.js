@@ -1552,6 +1552,12 @@ describe('Register_EditDialog', () => {
     expect(wrapper.find('[data-testid="register-deal-section-title"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="register-weight-section"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="register-additional-info-section"]').exists()).toBe(false)
+
+    const payload = wrapper
+      .findComponent(RegisterEditDialog)
+      .vm.prepareRegisterPayload({ decDate: '2026-07-20', releaseDate: '2026-07-21' })
+    expect(payload).not.toHaveProperty('decDate')
+    expect(payload).not.toHaveProperty('releaseDate')
   })
 
   it('renders additional 1C information collapsed below weight in edit mode', async () => {
@@ -1560,7 +1566,9 @@ describe('Register_EditDialog', () => {
       totalWeightKg: 12,
       totalWeightKgToRelease: 10,
       inspectionsCount: 3,
-      withTransit: true
+      withTransit: true,
+      decDate: '2026-07-20',
+      releaseDate: '2026-07-21'
     }
 
     const Parent = {
@@ -1606,6 +1614,10 @@ describe('Register_EditDialog', () => {
     expect(wrapper.get('#withTransit').attributes('type')).toBe('checkbox')
     expect(wrapper.get('#withTransit').classes()).toContain('custom-checkbox-input')
     expect(wrapper.get('label[for="withTransit"] .custom-checkbox-label').text()).toBe('Транзит:')
+    expect(wrapper.get('label[for="decDate"]').text()).toBe('Дата подачи ДТЭГ:')
+    expect(wrapper.get('#decDate').attributes('type')).toBe('date')
+    expect(wrapper.get('label[for="releaseDate"]').text()).toBe('Дата выпуска:')
+    expect(wrapper.get('#releaseDate').attributes('type')).toBe('date')
   })
 
   it('validates and submits additional 1C information only in edit mode', async () => {
@@ -1637,17 +1649,37 @@ describe('Register_EditDialog', () => {
     await expect(
       dialog.vm.schema.validate({ inspectionsCount: 1.5, theOtherCountryCode: 840 })
     ).rejects.toThrow('Количество досмотренных посылок')
+    await expect(
+      dialog.vm.schema.validate({ decDate: '2026-02-30', theOtherCountryCode: 840 })
+    ).rejects.toThrow('Укажите корректную дату подачи ДТЭГ')
+    await expect(
+      dialog.vm.schema.validate({ releaseDate: 'not-a-date', theOtherCountryCode: 840 })
+    ).rejects.toThrow('Укажите корректную дату выпуска')
 
     await dialog.vm.onSubmit(
-      { inspectionsCount: '7', withTransit: true },
+      {
+        inspectionsCount: '7',
+        withTransit: true,
+        decDate: '2026-07-20',
+        releaseDate: '2026-07-21'
+      },
       { setErrors: vi.fn() }
     )
     await resolveAll()
 
     expect(update).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ inspectionsCount: 7, withTransit: true })
+      expect.objectContaining({
+        inspectionsCount: 7,
+        withTransit: true,
+        decDate: '2026-07-20',
+        releaseDate: '2026-07-21'
+      })
     )
+
+    const clearedPayload = dialog.vm.prepareRegisterPayload({ decDate: '', releaseDate: null })
+    expect(clearedPayload.decDate).toBeNull()
+    expect(clearedPayload.releaseDate).toBeNull()
   })
 
   it('places weight section before load report section', async () => {

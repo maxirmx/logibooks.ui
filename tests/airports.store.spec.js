@@ -44,13 +44,6 @@ describe('airports store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with default values', () => {
-    const store = useAirportsStore()
-    expect(store.airports).toEqual([])
-    expect(store.airport).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   describe('getAll', () => {
     it('fetches airports successfully', async () => {

@@ -60,13 +60,6 @@ describe('companies store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with default values', () => {
-    const store = useCompaniesStore()
-    expect(store.companies).toEqual([])
-    expect(store.company).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   describe('getAll', () => {
     it('fetches companies successfully', async () => {

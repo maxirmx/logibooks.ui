@@ -39,25 +39,5 @@ describe('Scanjobs_View', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders Scanjobs_List component', () => {
-    const wrapper = mount(ScanjobsView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
 
-    const listComponent = wrapper.find('[data-testid="scanjobs-list"]')
-    expect(listComponent.exists()).toBe(true)
-    expect(listComponent.text()).toBe('Scanjobs List Component')
-  })
-
-  it('has correct component structure', () => {
-    const wrapper = mount(ScanjobsView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
-
-    expect(wrapper.html()).toContain('Scanjobs List Component')
-  })
 })

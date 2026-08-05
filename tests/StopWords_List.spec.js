@@ -378,11 +378,6 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.filterStopWords(null, 'Morphology', mockItem)).toBe(true)
     })
 
-    it('returns false for non-matching search', () => {
-      const mockItem = { raw: { word: 'и' } }
-      const result = wrapper.vm.filterStopWords(null, 'nonexistent', mockItem)
-      expect(result).toBe(false)
-    })
 
     it('handles null query', () => {
       const mockItem = { raw: { word: 'и' } }

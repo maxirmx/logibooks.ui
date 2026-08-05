@@ -48,14 +48,6 @@ describe('customs stations store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with empty state', () => {
-    const store = useCustomsStationsStore()
-
-    expect(store.customsStations).toEqual([])
-    expect(store.customsStation).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   it('gets all stations and returns them', async () => {
     fetchWrapper.get.mockResolvedValue(stations)

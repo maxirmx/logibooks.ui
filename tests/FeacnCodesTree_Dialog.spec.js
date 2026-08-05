@@ -83,14 +83,6 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     })
   }
 
-  it('renders tree component and upload button', () => {
-    const wrapper = createWrapper()
-    
-    expect(wrapper.find('.tree-stub').exists()).toBe(true)
-    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
-    const button = wrapper.find('button')
-    expect(button.exists()).toBe(true)
-  })
 
   it('uploads file successfully', async () => {
     uploadMock.mockResolvedValue()

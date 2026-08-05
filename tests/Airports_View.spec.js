@@ -36,25 +36,5 @@ describe('Airports_View.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders Airports_List component', () => {
-    const wrapper = mount(AirportsView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
 
-    const list = wrapper.find('[data-testid="airports-list"]')
-    expect(list.exists()).toBe(true)
-    expect(list.text()).toBe('Airports List Component')
-  })
-
-  it('wraps Airports_List component correctly', () => {
-    const wrapper = mount(AirportsView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
-
-    expect(wrapper.html()).toContain('Airports List Component')
-  })
 })

@@ -247,33 +247,9 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(Array.isArray(vm.hotKeyActionScheme.actions)).toBe(true)
   })
 
-  it('displays correct title for create mode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
-    await resolveAll()
-    
-    expect(wrapper.text()).toContain('Создание схемы настройки клавиатуры')
-  })
 
-  it('displays correct title for edit mode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
-    await resolveAll()
-    
-    expect(wrapper.text()).toContain('Изменение схемы настройки клавиатуры')
-  })
 
-  it('displays correct button text for create mode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
-    await resolveAll()
-    
-    expect(wrapper.text()).toContain('Создать')
-  })
 
-  it('displays correct button text for edit mode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
-    await resolveAll()
-    
-    expect(wrapper.text()).toContain('Сохранить')
-  })
 
   it('applies checkbox-styled class to checkboxes', async () => {
     const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })

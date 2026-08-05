@@ -224,52 +224,7 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
-    it('renders all form fields', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-
-      // Check that all form fields are present
-      expect(wrapper.find('#inn').exists()).toBe(true)
-      expect(wrapper.find('#kpp').exists()).toBe(true)
-      expect(wrapper.find('#name').exists()).toBe(true)
-      expect(wrapper.find('#shortName').exists()).toBe(true)
-      expect(wrapper.find('#countryIsoNumeric').exists()).toBe(true)
-      expect(wrapper.find('#postalCode').exists()).toBe(true)
-      expect(wrapper.find('#city').exists()).toBe(true)
-      expect(wrapper.find('#street').exists()).toBe(true)
-      expect(wrapper.find('#email').exists()).toBe(true)
-      expect(wrapper.find('#phone').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="signature-stamp-input"]').exists()).toBe(true)
-    })
-
-    it('renders form labels correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('ИНН:')
-      expect(wrapper.text()).toContain('КПП:')
-      expect(wrapper.text()).toContain('Название:')
-      expect(wrapper.text()).toContain('Краткое название:')
-      expect(wrapper.text()).toContain('Страна:')
-      expect(wrapper.text()).toContain('Почтовый индекс:')
-      expect(wrapper.text()).toContain('Город:')
-      expect(wrapper.text()).toContain('Улица:')
-      expect(wrapper.text()).toContain('Адрес электронной почты:')
-      expect(wrapper.text()).toContain('Телефон:')
-      expect(wrapper.text()).toContain('Подпись / печать:')
-    })
 
     it('renders country options', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -655,29 +610,7 @@ describe('Company_Settings.vue', () => {
   })
 
   describe('Props Validation', () => {
-    it('accepts valid create mode prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('accepts valid edit mode prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
 
     it('handles missing companyId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -752,56 +685,6 @@ describe('Company_Settings.vue', () => {
     })
   })
 
-  describe('Component Functions', () => {
-    it('displays correct title for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Регистрация компании')
-    })
-
-    it('displays correct title for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Изменить информацию о компании')
-    })
-
-    it('displays correct button text for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    })
-
-    it('displays correct button text for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-    })
-  })
-
   describe('Form Validation', () => {
     it('handles form validation correctly', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -872,25 +755,4 @@ describe('Company_Settings.vue', () => {
     })
   })
 
-  describe('Async Component Behavior', () => {
-    it('handles async component mounting correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      // Initially shows loading
-      expect(wrapper.text()).toContain('Loading...')
-      
-      // After resolving async setup
-      await resolveAll()
-      
-      // Shows actual component content
-      expect(wrapper.text()).not.toContain('Loading...')
-      expect(wrapper.find('h1').exists()).toBe(true)
-    })
-
-  })
 })

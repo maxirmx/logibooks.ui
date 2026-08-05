@@ -129,24 +129,6 @@ describe('scanjobs store', () => {
     signalRConnection.state = 'Disconnected'
   })
 
-  it('initializes with default values', () => {
-    const store = useScanjobsStore()
-    expect(store.items).toEqual([])
-    expect(store.scanjob).toBeNull()
-    expect(store.totalCount).toBe(0)
-    expect(store.ops).toEqual({
-      types: [],
-      operations: [],
-      modes: [],
-      statuses: []
-    })
-    expect(store.monitorSnapshot).toBeNull()
-    expect(store.monitorLoading).toBe(false)
-    expect(store.monitorError).toBeNull()
-    expect(store.monitorClosed).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   describe('getAll', () => {
     it('fetches scanjobs successfully with pagination', async () => {

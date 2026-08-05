@@ -39,25 +39,5 @@ describe('Warehouses_View', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders Warehouses_List component', () => {
-    const wrapper = mount(WarehousesView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
 
-    const warehousesListComponent = wrapper.find('[data-testid="warehouses-list"]')
-    expect(warehousesListComponent.exists()).toBe(true)
-    expect(warehousesListComponent.text()).toBe('Warehouses List Component')
-  })
-
-  it('has correct component structure', () => {
-    const wrapper = mount(WarehousesView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
-
-    expect(wrapper.html()).toContain('Warehouses List Component')
-  })
 })

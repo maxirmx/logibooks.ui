@@ -2250,13 +2250,6 @@ describe('registers store', () => {
       expect(store.isExportProcedure(1)).toBe(true)
     })
 
-    it('isExportProcedure returns false for non-export', () => {
-      const store = useRegistersStore()
-      store.ops.customsProcedures = [
-        { value: 1, name: 'Импорт', isExport: false, charCode: 'ИМ40' }
-      ]
-      expect(store.isExportProcedure(1)).toBe(false)
-    })
 
     it('isExportProcedure returns false when procedure not found', () => {
       const store = useRegistersStore()

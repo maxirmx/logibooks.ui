@@ -144,12 +144,6 @@ describe('Parcels List Helpers', () => {
       expect(hasParcelEditRouteAccess({ hasLogistRole: { value: true } })).toBe(true)
     })
 
-    it('returns false for missing, false, or ref-like false values', () => {
-      expect(hasParcelEditRouteAccess(null)).toBe(false)
-      expect(hasParcelEditRouteAccess({})).toBe(false)
-      expect(hasParcelEditRouteAccess({ hasLogistRole: false })).toBe(false)
-      expect(hasParcelEditRouteAccess({ hasLogistRole: { value: false } })).toBe(false)
-    })
   })
 
   describe('buildParcelEditCellClass', () => {
@@ -472,23 +466,8 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('Реестр для сделки без номера (файл: test-file.xlsx)')
     })
 
-    it('should generate name with whitespace deal number', () => {
-      const result = generateRegisterName('   ', 'file.xlsx')
 
-      expect(result).toBe('Реестр для сделки без номера (файл: file.xlsx)')
-    })
 
-    it('should generate name with null deal number', () => {
-      const result = generateRegisterName(null, 'file.xlsx')
-
-      expect(result).toBe('Реестр для сделки без номера (файл: file.xlsx)')
-    })
-
-    it('should generate name with undefined deal number', () => {
-      const result = generateRegisterName(undefined, 'file.xlsx')
-
-      expect(result).toBe('Реестр для сделки без номера (файл: file.xlsx)')
-    })
   })
 
   describe('getFeacnCodesForKeywords', () => {

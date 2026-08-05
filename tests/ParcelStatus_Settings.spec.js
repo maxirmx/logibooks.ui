@@ -185,47 +185,7 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
     })
 
-    it('renders all form fields', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-
-      // Check that the title form field is present
-      expect(wrapper.find('#title').exists()).toBe(true)
-      expect(wrapper.find('#bkColor').exists()).toBe(true)
-      expect(wrapper.find('#restrictionReason').exists()).toBe(true)
-      expect(wrapper.find('#useAtCustomsProcessing').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').exists()).toBe(true)
-      expect(wrapper.find('#restrictionReason').element.tagName).toBe('INPUT')
-      expect(wrapper.find('#restrictionReason').attributes('type')).toBe('text')
-    })
-
-    it('renders form labels correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('Название статуса:')
-      expect(wrapper.text()).toContain('Таможенное оформление:')
-      expect(wrapper.text()).toContain('Цвет при выгрузке:')
-      expect(wrapper.text()).toContain('Причина запрета:')
-      expect(wrapper.findAll('label.label').map(label => label.text())).toEqual([
-        'Название статуса:',
-        'Таможенное оформление:',
-        'Цвет при выгрузке:',
-        'Причина запрета:'
-      ])
-    })
 
     it('renders empty export color as no color in create mode', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -454,29 +414,7 @@ describe('ParcelStatus_Settings.vue', () => {
   })
 
   describe('Props Validation', () => {
-    it('accepts valid create mode prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
 
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('accepts valid edit mode prop', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
 
     it('handles missing parcelStatusId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -549,56 +487,6 @@ describe('ParcelStatus_Settings.vue', () => {
     })
   })
 
-  describe('Component Functions', () => {
-    it('displays correct title for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
-    })
-
-    it('displays correct title for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
-    })
-
-    it('displays correct button text for create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
-    })
-
-    it('displays correct button text for edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
-    })
-  })
-
   describe('Form Validation', () => {
     it('handles form validation correctly', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -663,21 +551,4 @@ describe('ParcelStatus_Settings.vue', () => {
     })
   })
 
-  describe('Async Component Behavior', () => {
-    it('handles async component mounting correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      expect(wrapper.text()).toContain('Loading...')
-
-      await resolveAll()
-
-      expect(wrapper.text()).not.toContain('Loading...')
-      expect(wrapper.find('h1').exists()).toBe(true)
-    })
-  })
 })

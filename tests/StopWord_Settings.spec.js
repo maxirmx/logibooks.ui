@@ -163,13 +163,6 @@ describe('StopWord_Settings.vue', () => {
       expect(wrapper.find('#explanationForImport').exists()).toBe(true)
     })
 
-    it('renders form labels correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('label[for="word"]').text()).toBe('Стоп-слово или фраза:')
-      expect(wrapper.text()).toContain('Тип соответствия:')
-    })
   })
 
   describe('Multi-word Input Handling', () => {

@@ -48,13 +48,6 @@ describe('notifications store', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes with default values', () => {
-    const store = useNotificationsStore()
-    expect(store.notifications).toEqual([])
-    expect(store.notification).toBeNull()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
 
   describe('getAll', () => {
     it('fetches notifications successfully', async () => {

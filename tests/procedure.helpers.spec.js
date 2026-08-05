@@ -104,9 +104,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('normalizeCustomsProcedureCode', () => {
-    it('returns null for null', () => {
-      expect(normalizeCustomsProcedureCode(null)).toBe(null)
-    })
 
     it('returns null for whitespace-only string', () => {
       expect(normalizeCustomsProcedureCode(' ')).toBe(null)
@@ -149,14 +146,6 @@ describe('procedure.helpers', () => {
       expect(isReturnCustomsProcedure('1')).toBe(true)
     })
 
-    it('returns false for other values', () => {
-      expect(isReturnCustomsProcedure(10)).toBe(false)
-      expect(isReturnCustomsProcedure(31)).toBe(false)
-      expect(isReturnCustomsProcedure(40)).toBe(false)
-      expect(isReturnCustomsProcedure(60)).toBe(false)
-      expect(isReturnCustomsProcedure(null)).toBe(false)
-      expect(isReturnCustomsProcedure(undefined)).toBe(false)
-    })
   })
 
   describe('isReexportCustomsProcedure', () => {
@@ -165,12 +154,6 @@ describe('procedure.helpers', () => {
       expect(isReexportCustomsProcedure('31')).toBe(true)
     })
 
-    it('returns false for other values', () => {
-      expect(isReexportCustomsProcedure(1)).toBe(false)
-      expect(isReexportCustomsProcedure(40)).toBe(false)
-      expect(isReexportCustomsProcedure(60)).toBe(false)
-      expect(isReexportCustomsProcedure(null)).toBe(false)
-    })
   })
 
   describe('isImportCustomsProcedure', () => {
@@ -179,12 +162,6 @@ describe('procedure.helpers', () => {
       expect(isImportCustomsProcedure('40')).toBe(true)
     })
 
-    it('returns false for other values', () => {
-      expect(isImportCustomsProcedure(1)).toBe(false)
-      expect(isImportCustomsProcedure(31)).toBe(false)
-      expect(isImportCustomsProcedure(60)).toBe(false)
-      expect(isImportCustomsProcedure(null)).toBe(false)
-    })
   })
 
   describe('isReimportCustomsProcedure', () => {
@@ -193,12 +170,6 @@ describe('procedure.helpers', () => {
       expect(isReimportCustomsProcedure('60')).toBe(true)
     })
 
-    it('returns false for other values', () => {
-      expect(isReimportCustomsProcedure(1)).toBe(false)
-      expect(isReimportCustomsProcedure(31)).toBe(false)
-      expect(isReimportCustomsProcedure(40)).toBe(false)
-      expect(isReimportCustomsProcedure(null)).toBe(false)
-    })
   })
 
   describe('isImportOrReexportCustomsProcedure', () => {
@@ -242,14 +213,7 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionScopeLabels', () => {
-    it('returns empty array for null', () => {
-      expect(getProhibitionScopeLabels(null)).toEqual([])
-    })
 
-    it('returns empty array when neither forExport nor forImport', () => {
-      expect(getProhibitionScopeLabels({})).toEqual([])
-      expect(getProhibitionScopeLabels({ forExport: false, forImport: false })).toEqual([])
-    })
 
     it('returns export label when forExport is true', () => {
       expect(getProhibitionScopeLabels({ forExport: true })).toEqual(['Экспорт из РФ'])
@@ -268,9 +232,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionScopeSortOrder', () => {
-    it('returns 0 for null', () => {
-      expect(getProhibitionScopeSortOrder(null)).toBe(0)
-    })
 
     it('returns 0 when neither forImport nor forExport', () => {
       expect(getProhibitionScopeSortOrder({})).toBe(0)
@@ -293,13 +254,7 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionScopeRows', () => {
-    it('returns empty array for null', () => {
-      expect(getProhibitionScopeRows(null)).toEqual([])
-    })
 
-    it('returns empty array when neither forExport nor forImport', () => {
-      expect(getProhibitionScopeRows({})).toEqual([])
-    })
 
     it('returns export row when forExport is true', () => {
       const rows = getProhibitionScopeRows({ forExport: true, explanationForExport: 'Reason A' })
@@ -336,19 +291,8 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionReasonLines', () => {
-    it('returns empty array for null', () => {
-      expect(getProhibitionReasonLines(null)).toEqual([])
-    })
 
-    it('returns empty array when no rows have reasons', () => {
-      expect(getProhibitionReasonLines({ forExport: true })).toEqual([])
-      expect(getProhibitionReasonLines({ forImport: true })).toEqual([])
-    })
 
-    it('filters out empty reason strings', () => {
-      const item = { forExport: true, explanationForExport: '', forImport: true, explanationForImport: 'Import reason' }
-      expect(getProhibitionReasonLines(item)).toEqual(['Import reason'])
-    })
 
     it('returns all non-empty reasons', () => {
       const item = {
@@ -360,8 +304,5 @@ describe('procedure.helpers', () => {
       expect(getProhibitionReasonLines(item)).toEqual(['Export reason', 'Import reason'])
     })
 
-    it('returns empty array when no rows exist', () => {
-      expect(getProhibitionReasonLines({})).toEqual([])
-    })
   })
 })

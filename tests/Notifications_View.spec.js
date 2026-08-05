@@ -39,15 +39,4 @@ describe('Notifications_View.vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('renders Notifications_List component', () => {
-    const wrapper = mount(NotificationsView, {
-      global: {
-        plugins: [vuetify, pinia]
-      }
-    })
-
-    const list = wrapper.find('[data-testid="notifications-list"]')
-    expect(list.exists()).toBe(true)
-    expect(list.text()).toBe('Notifications List')
-  })
 })

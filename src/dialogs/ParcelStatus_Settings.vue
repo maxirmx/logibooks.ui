@@ -1,8 +1,14 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -10,6 +16,8 @@ import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+
+const alertStore = useAlertStore()
 
 const props = defineProps({
   mode: {
@@ -37,7 +45,9 @@ let parcelStatus = ref({
 
 if (!isCreate.value) {
   ;({ parcelStatus } = storeToRefs(parcelStatusesStore))
-  await parcelStatusesStore.getById(props.orderStatusId)
+  await runWithRetryAlert(() => parcelStatusesStore.getById(props.orderStatusId), {
+    fallback: 'Не удалось загрузить статус посылки'
+  })
 }
 
 // Get page title
@@ -94,7 +104,7 @@ function handleBackgroundColorClear(handleChange) {
 }
 
 // Form submission
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   if (isCreate.value) {
     return parcelStatusesStore
       .create(values)
@@ -103,9 +113,13 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такой статус посылки уже существует' })
+          alertStore.error('Такой статус посылки уже существует')
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании статуса посылки' })
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Ошибка при создании статуса посылки'
+          })
         }
       })
   } else {
@@ -115,7 +129,11 @@ function onSubmit(values, { setErrors }) {
         router.push('/parcelstatuses')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса посылки' })
+        reportFormError(error, {
+          setErrors,
+          alertStore,
+          fallback: 'Ошибка при сохранении статуса посылки'
+        })
       })
   }
 }
@@ -124,6 +142,7 @@ function onSubmit(values, { setErrors }) {
 <template>
   <div class="settings form-2">
     <Form
+      @invalid-submit="focusFirstInvalidField"
       class="parcel-status-form"
       @submit="onSubmit"
       :initial-values="parcelStatus"
@@ -155,6 +174,8 @@ function onSubmit(values, { setErrors }) {
       </div>
       <hr class="hr" />
 
+      <PageAlertRegion />
+
       <div class="form-group">
         <label for="title" class="label">Название статуса:</label>
         <Field
@@ -165,6 +186,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.title }"
           placeholder="Название статуса"
         />
+        <FieldError name="title" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -207,17 +229,18 @@ function onSubmit(values, { setErrors }) {
                 @input="(event) => handleBackgroundColorInput(event, handleChange)"
               />
             </label>
-          <div class="status-color-control status-color-control-brush">
-            <ActionButton
-              :item="{}"
-              icon="fa-solid fa-broom"
-              tooltip-text="Очистить"
-              :disabled="!hasBackgroundColor(field?.value)"
-              data-testid="bk-color-clear-action"
-              @click="handleBackgroundColorClear(handleChange)"
-            />
+            <div class="status-color-control status-color-control-brush">
+              <ActionButton
+                :item="{}"
+                icon="fa-solid fa-broom"
+                tooltip-text="Очистить"
+                :disabled="!hasBackgroundColor(field?.value)"
+                data-testid="bk-color-clear-action"
+                @click="handleBackgroundColorClear(handleChange)"
+              />
+            </div>
           </div>
-          </div>
+          <FieldError name="bkColor" :errors="errors" />
         </div>
       </Field>
 
@@ -231,15 +254,11 @@ function onSubmit(values, { setErrors }) {
           placeholder="Причина запрета"
         />
       </div>
-
-      <div v-if="errors.title" class="alert alert-danger mt-3 mb-0">{{ errors.title }}</div>
-      <div v-if="errors.bkColor" class="alert alert-danger mt-3 mb-0">{{ errors.bkColor }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>
 
-<style scoped>  
+<style scoped>
 .primary-heading {
   margin: 0;
   flex: 1;

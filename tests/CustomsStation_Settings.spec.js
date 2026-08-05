@@ -20,16 +20,14 @@ const existing = {
 }
 
 const stationRef = ref({ ...existing })
-const countriesRef = ref([
-  { isoNumeric: 643, nameRuOfficial: 'Российская Федерация' }
-])
+const countriesRef = ref([{ isoNumeric: 643, nameRuOfficial: 'Российская Федерация' }])
 const getById = vi.hoisted(() => vi.fn())
 const create = vi.hoisted(() => vi.fn())
 const update = vi.hoisted(() => vi.fn().mockResolvedValue())
 const ensureLoaded = vi.hoisted(() => vi.fn().mockResolvedValue())
 const push = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
-const alertClear = vi.hoisted(() => vi.fn())
+const alertDismiss = vi.hoisted(() => vi.fn())
 const alertRef = ref(null)
 
 const stationsStore = {
@@ -45,9 +43,11 @@ const countriesStore = {
 }
 
 const alertStore = {
-  alert: alertRef,
+  get alert() {
+    return alertRef.value
+  },
   error: alertError,
-  clear: alertClear
+  dismiss: alertDismiss
 }
 
 vi.mock('@/stores/customs.stations.store.js', () => ({
@@ -66,14 +66,17 @@ vi.mock('@/router', () => ({
   default: { push }
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store === stationsStore) return { customsStation: stationRef }
-    if (store === countriesStore) return { countries: countriesRef }
-    if (store === alertStore) return { alert: alertRef }
-    return {}
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store === stationsStore) return { customsStation: stationRef }
+      if (store === countriesStore) return { countries: countriesRef }
+      return {}
+    }
   }
-}))
+})
 
 vi.mock('vee-validate', () => ({
   Form: {
@@ -158,12 +161,19 @@ describe('CustomsStation_Settings.vue', () => {
   })
 
   it('reports an edit loading failure through the alert store and returns to the list', async () => {
-    getById.mockResolvedValueOnce(null)
+    const error = new Error('Ошибка загрузки')
+    getById.mockRejectedValueOnce(error)
 
     await mountSettings({ mode: 'edit', customsStationId: 7 })
 
-    expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных таможенного поста')
-    expect(push).toHaveBeenCalledWith('/customsstations')
+    expect(alertError).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        fallback: 'Ошибка при загрузке данных таможенного поста',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
+    expect(push).not.toHaveBeenCalled()
   })
 
   it('configures number as a digit-preserving text field', async () => {
@@ -175,62 +185,70 @@ describe('CustomsStation_Settings.vue', () => {
     expect(number.attributes('pattern')).toBe('[0-9]*')
 
     const schema = wrapper.findComponent({ name: 'Form' }).props('validationSchema')
-    await expect(schema.validate({
-      id: 0,
-      number: '00102030',
-      name: 'Пост',
-      countryIsoNumeric: 643
-    })).resolves.toMatchObject({ number: '00102030' })
-    await expect(schema.validate({
-      id: 0,
-      number: '12A',
-      name: 'Пост',
-      countryIsoNumeric: 643
-    })).rejects.toThrow('только цифры')
+    await expect(
+      schema.validate({
+        id: 0,
+        number: '00102030',
+        name: 'Пост',
+        countryIsoNumeric: 643
+      })
+    ).resolves.toMatchObject({ number: '00102030' })
+    await expect(
+      schema.validate({
+        id: 0,
+        number: '12A',
+        name: 'Пост',
+        countryIsoNumeric: 643
+      })
+    ).rejects.toThrow('только цифры')
   })
 
   it('requires number, name, and country but permits an empty physical address', async () => {
     const wrapper = await mountSettings({ mode: 'create' })
     const schema = wrapper.findComponent({ name: 'Form' }).props('validationSchema')
 
-    await expect(schema.validate({
-      id: 0,
-      number: '',
-      name: 'Пост',
-      countryIsoNumeric: 643
-    })).rejects.toThrow('Код поста обязателен')
-    await expect(schema.validate({
-      id: 0,
-      number: '001',
-      name: '',
-      countryIsoNumeric: 643
-    })).rejects.toThrow('Название обязательно')
-    await expect(schema.validate({
-      id: 0,
-      number: '001',
-      name: 'Пост',
-      countryIsoNumeric: null
-    })).rejects.toThrow('Страна обязательна')
-    await expect(schema.validate({
-      id: 0,
-      number: '001',
-      name: 'Пост',
-      countryIsoNumeric: 643,
-      postalCode: '',
-      city: '',
-      street: ''
-    })).resolves.toBeTruthy()
+    await expect(
+      schema.validate({
+        id: 0,
+        number: '',
+        name: 'Пост',
+        countryIsoNumeric: 643
+      })
+    ).rejects.toThrow('Код поста обязателен')
+    await expect(
+      schema.validate({
+        id: 0,
+        number: '001',
+        name: '',
+        countryIsoNumeric: 643
+      })
+    ).rejects.toThrow('Название обязательно')
+    await expect(
+      schema.validate({
+        id: 0,
+        number: '001',
+        name: 'Пост',
+        countryIsoNumeric: null
+      })
+    ).rejects.toThrow('Страна обязательна')
+    await expect(
+      schema.validate({
+        id: 0,
+        number: '001',
+        name: 'Пост',
+        countryIsoNumeric: 643,
+        postalCode: '',
+        city: '',
+        street: ''
+      })
+    ).resolves.toBeTruthy()
   })
 
   it('creates with all fields and preserves leading zeroes', async () => {
     const wrapper = await mountSettings({ mode: 'create' })
     const values = { ...existing, id: 0 }
 
-    wrapper.findComponent({ name: 'Form' }).vm.$emit(
-      'submit',
-      values,
-      { setErrors: vi.fn() }
-    )
+    wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', values, { setErrors: vi.fn() })
     await resolveAll()
 
     expect(create).toHaveBeenCalledWith(values)
@@ -241,11 +259,9 @@ describe('CustomsStation_Settings.vue', () => {
   it('normalizes wrapped form values and updates the requested station', async () => {
     const wrapper = await mountSettings({ mode: 'edit', customsStationId: 7 })
 
-    wrapper.findComponent({ name: 'Form' }).vm.$emit(
-      'submit',
-      { value: { ...existing, city: 'Казань' } },
-      { setErrors: vi.fn() }
-    )
+    wrapper
+      .findComponent({ name: 'Form' })
+      .vm.$emit('submit', { value: { ...existing, city: 'Казань' } }, { setErrors: vi.fn() })
     await resolveAll()
 
     expect(update).toHaveBeenCalledWith(7, { ...existing, city: 'Казань' })
@@ -276,7 +292,8 @@ describe('CustomsStation_Settings.vue', () => {
     wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { ...existing }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: error.message })
+    expect(alertError).toHaveBeenCalledWith(error.message)
+    expect(setErrors).not.toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
   })
 
@@ -286,27 +303,33 @@ describe('CustomsStation_Settings.vue', () => {
     const createErrors = vi.fn()
     const updateErrors = vi.fn()
     const createWrapper = await mountSettings({ mode: 'create' })
-    createWrapper.findComponent({ name: 'Form' }).vm.$emit(
-      'submit',
-      { ...existing },
-      { setErrors: createErrors }
-    )
+    createWrapper
+      .findComponent({ name: 'Form' })
+      .vm.$emit('submit', { ...existing }, { setErrors: createErrors })
     await resolveAll()
 
     const editWrapper = await mountSettings({ mode: 'edit', customsStationId: 7 })
-    editWrapper.findComponent({ name: 'Form' }).vm.$emit(
-      'submit',
-      { ...existing },
-      { setErrors: updateErrors }
-    )
+    editWrapper
+      .findComponent({ name: 'Form' })
+      .vm.$emit('submit', { ...existing }, { setErrors: updateErrors })
     await resolveAll()
 
-    expect(createErrors).toHaveBeenCalledWith({
-      apiError: 'Ошибка при регистрации таможенного поста'
-    })
-    expect(updateErrors).toHaveBeenCalledWith({
-      apiError: 'Ошибка при сохранении информации о таможенном посте'
-    })
+    expect(alertError).toHaveBeenNthCalledWith(
+      1,
+      {},
+      {
+        fallback: 'Ошибка при регистрации таможенного поста'
+      }
+    )
+    expect(alertError).toHaveBeenNthCalledWith(
+      2,
+      {},
+      {
+        fallback: 'Ошибка при сохранении информации о таможенном посте'
+      }
+    )
+    expect(createErrors).not.toHaveBeenCalled()
+    expect(updateErrors).not.toHaveBeenCalled()
   })
 
   it('navigates back from the cancel button', async () => {
@@ -327,8 +350,7 @@ describe('CustomsStation_Settings.vue', () => {
       countryIsoNumeric: 'country error',
       postalCode: 'postal error',
       city: 'city error',
-      street: 'street error',
-      apiError: 'api error'
+      street: 'street error'
     })
     await resolveAll()
 
@@ -341,17 +363,14 @@ describe('CustomsStation_Settings.vue', () => {
       'street error'
     ]
 
-    expect(wrapper.findAll('.invalid-feedback').map(error => error.text()))
-      .toEqual(validationMessages)
-    expect(wrapper.findAll('.alert-danger')).toHaveLength(1)
-    expect(wrapper.find('.alert-danger').text()).toBe('api error')
+    expect(wrapper.findAll('.invalid-feedback').map((error) => error.text())).toEqual(
+      validationMessages
+    )
+    expect(wrapper.findAll('.alert-danger')).toHaveLength(0)
   })
 
   it('renders and dismisses alerts from the alert store', async () => {
-    alertRef.value = {
-      type: 'alert-danger',
-      message: 'Ошибка загрузки'
-    }
+    alertRef.value = { id: 7, severity: 'error', message: 'Ошибка загрузки', action: null }
     const wrapper = await mountSettings({ mode: 'create' })
 
     const alert = wrapper.find('.alert-dismissable')
@@ -360,6 +379,6 @@ describe('CustomsStation_Settings.vue', () => {
 
     await alert.find('.close').trigger('click')
 
-    expect(alertClear).toHaveBeenCalled()
+    expect(alertDismiss).toHaveBeenCalledWith(7)
   })
 })

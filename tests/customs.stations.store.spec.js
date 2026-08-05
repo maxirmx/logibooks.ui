@@ -48,7 +48,6 @@ describe('customs stations store', () => {
     vi.clearAllMocks()
   })
 
-
   it('gets all stations and returns them', async () => {
     fetchWrapper.get.mockResolvedValue(stations)
     const store = useCustomsStationsStore()
@@ -61,12 +60,12 @@ describe('customs stations store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('records get-all errors and returns null', async () => {
+  it('records and rethrows get-all errors', async () => {
     const error = new Error('network')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useCustomsStationsStore()
 
-    expect(await store.getAll()).toBeNull()
+    await expect(store.getAll()).rejects.toBe(error)
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)
   })
@@ -83,12 +82,12 @@ describe('customs stations store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('records get-one errors and returns null', async () => {
+  it('records and rethrows get-one errors', async () => {
     const error = new Error('missing')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useCustomsStationsStore()
 
-    expect(await store.getById(999)).toBeNull()
+    await expect(store.getById(999)).rejects.toBe(error)
     expect(store.customsStation).toEqual({ error })
     expect(store.error).toBe(error)
   })
@@ -99,10 +98,10 @@ describe('customs stations store', () => {
 
     const result = await store.create({ ...stations[0], id: 0 })
 
-    expect(fetchWrapper.post).toHaveBeenCalledWith(
-      `${apiUrl}/customsstations`,
-      { ...stations[0], id: 0 }
-    )
+    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/customsstations`, {
+      ...stations[0],
+      id: 0
+    })
     expect(result).toEqual(stations[0])
     expect(store.customsStations).toEqual([stations[0]])
   })
@@ -178,9 +177,11 @@ describe('customs stations store', () => {
 
   it('rethrows remove errors and exposes loading while pending', async () => {
     let rejectRequest
-    fetchWrapper.delete.mockReturnValue(new Promise((resolve, reject) => {
-      rejectRequest = reject
-    }))
+    fetchWrapper.delete.mockReturnValue(
+      new Promise((resolve, reject) => {
+        rejectRequest = reject
+      })
+    )
     const store = useCustomsStationsStore()
 
     const pending = store.remove(1)

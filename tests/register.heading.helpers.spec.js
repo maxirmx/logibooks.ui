@@ -3,9 +3,12 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi } from 'vitest'
-import { buildParcelListHeading, formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
+import {
+  buildParcelListHeading,
+  formatRegisterInvoice
+} from '@/helpers/register.heading.helpers.js'
 
-function mockGetTransportationDocument( ) {
+function mockGetTransportationDocument() {
   return `Документ`
 }
 
@@ -72,7 +75,12 @@ describe('register.heading.helpers', () => {
   it('formats invoice from transportation document and number', () => {
     const getTransportationDocument = vi.fn().mockReturnValue('AWB')
 
-    expect(formatRegisterInvoice({ transportationTypeCode: 0, invoiceNumber: 'INV-1' }, getTransportationDocument)).toBe('AWB INV-1')
+    expect(
+      formatRegisterInvoice(
+        { transportationTypeCode: 0, invoiceNumber: 'INV-1' },
+        getTransportationDocument
+      )
+    ).toBe('AWB INV-1')
     expect(getTransportationDocument).toHaveBeenCalledWith(0)
   })
 
@@ -85,5 +93,4 @@ describe('register.heading.helpers', () => {
     const heading = buildParcelListHeading(null, mockGetTransportationDocument)
     expect(heading).toBe('Загрузка...')
   })
-
 })

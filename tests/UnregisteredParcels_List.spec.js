@@ -27,7 +27,7 @@ const getOpsLabel = vi.fn((list, value) => {
 
 const mockRegisterItem = { item: {} }
 const getById = vi.fn()
-const getTransportationDocument = vi.fn((id) => Number(id) === 1 ? 'CMR' : `Документ ${id}`)
+const getTransportationDocument = vi.fn((id) => (Number(id) === 1 ? 'CMR' : `Документ ${id}`))
 
 vi.mock('@/stores/unregistered.parcels.store.js', () => ({
   useUnregisteredParcelsStore: () => ({
@@ -79,7 +79,9 @@ describe('UnregisteredParcels_List.vue', () => {
     mockRegisterItem.getTransportationDocument = getTransportationDocument
     getById.mockReset()
     getTransportationDocument.mockReset()
-    getTransportationDocument.mockImplementation((id) => Number(id) === 1 ? 'CMR' : `Документ ${id}`)
+    getTransportationDocument.mockImplementation((id) =>
+      Number(id) === 1 ? 'CMR' : `Документ ${id}`
+    )
   })
 
   it('loads rows on mount with register id', async () => {
@@ -97,9 +99,7 @@ describe('UnregisteredParcels_List.vue', () => {
 
   it('renders projected status and zone text instead of raw ids', async () => {
     getAll.mockResolvedValue([])
-    mockItems.value = [
-      { id: 1, registerId: 5, statusId: 7, zone: 1 }
-    ]
+    mockItems.value = [{ id: 1, registerId: 5, statusId: 7, zone: 1 }]
 
     const wrapper = mount(UnregisteredParcelsList, {
       props: { registerId: 5 },
@@ -132,7 +132,9 @@ describe('UnregisteredParcels_List.vue', () => {
 
     await resolveAll()
 
-    expect(wrapper.find('.primary-heading').text()).toBe('Стикеры не в реестре | Партия 3240 (CMR 211875606)')
+    expect(wrapper.find('.primary-heading').text()).toBe(
+      'Стикеры не в реестре | Партия 3240 (CMR 211875606)'
+    )
     expect(getById).toHaveBeenCalledWith(5)
     expect(getTransportationDocument).toHaveBeenCalledWith(1)
   })
@@ -150,8 +152,7 @@ describe('UnregisteredParcels_List.vue', () => {
   })
 
   it('reports store loading error when load fails', async () => {
-    getAll.mockResolvedValue([])
-    mockError.value = new Error('load error')
+    getAll.mockRejectedValueOnce(new Error('load error'))
 
     mount(UnregisteredParcelsList, {
       props: { registerId: 12 },
@@ -159,7 +160,13 @@ describe('UnregisteredParcels_List.vue', () => {
     })
 
     await resolveAll()
-    expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке незарегистрированных посылок')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'load error' }),
+      expect.objectContaining({
+        fallback: 'Ошибка при загрузке незарегистрированных посылок',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 
   it('loads projection dictionaries before loading rows', async () => {
@@ -192,7 +199,9 @@ describe('UnregisteredParcels_List.vue', () => {
     await resolveAll()
 
     const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Сформировать реестр')
+    const exportButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Сформировать реестр'
+    )
 
     expect(exportButton).toBeTruthy()
 
@@ -219,7 +228,9 @@ describe('UnregisteredParcels_List.vue', () => {
     await resolveAll()
 
     const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Сформировать реестр')
+    const exportButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Сформировать реестр'
+    )
 
     await exportButton.vm.$emit('click')
     await resolveAll()
@@ -241,7 +252,9 @@ describe('UnregisteredParcels_List.vue', () => {
     await resolveAll()
 
     const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Сформировать реестр')
+    const exportButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Сформировать реестр'
+    )
 
     await exportButton.vm.$emit('click')
     await resolveAll()
@@ -261,12 +274,13 @@ describe('UnregisteredParcels_List.vue', () => {
     await resolveAll()
 
     const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const exportButton = actionButtons.find((button) => button.props('tooltipText') === 'Сформировать реестр')
+    const exportButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Сформировать реестр'
+    )
 
     await exportButton.vm.$emit('click')
 
     expect(download).not.toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Некорректный идентификатор реестра')
   })
-
 })

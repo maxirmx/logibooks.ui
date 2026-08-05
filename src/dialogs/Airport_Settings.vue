@@ -3,12 +3,20 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useAirportsStore } from '@/stores/airports.store.js'
+
+const alertStore = useAlertStore()
 
 const props = defineProps({
   mode: {
@@ -33,7 +41,9 @@ let airport = ref({
 
 if (!isCreate.value) {
   ;({ airport } = storeToRefs(airportsStore))
-  await airportsStore.getById(props.airportId)
+  await runWithRetryAlert(() => airportsStore.getById(props.airportId), {
+    fallback: 'Не удалось загрузить аэропорт'
+  })
 }
 
 function getTitle() {
@@ -51,7 +61,7 @@ const schema = Yup.object({
   name: Yup.string().required('Название аэропорта обязательно')
 })
 
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   // Convert IATA code to uppercase
   const processedValues = {
     ...values,
@@ -66,9 +76,13 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Аэропорт с таким кодом ИАТА уже существует' })
+          alertStore.error('Аэропорт с таким кодом ИАТА уже существует')
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при регистрации аэропорта' })
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Ошибка при регистрации аэропорта'
+          })
         }
       })
   }
@@ -79,7 +93,11 @@ function onSubmit(values, { setErrors }) {
       router.push('/airports')
     })
     .catch((error) => {
-      setErrors({ apiError: error.message || 'Ошибка при сохранении информации об аэропорте' })
+      reportFormError(error, {
+        setErrors,
+        alertStore,
+        fallback: 'Ошибка при сохранении информации об аэропорте'
+      })
     })
 }
 </script>
@@ -88,7 +106,10 @@ function onSubmit(values, { setErrors }) {
   <div class="settings form-3">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="airport"
       :validation-schema="schema"
@@ -104,6 +125,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название аэропорта"
         />
+        <FieldError name="name" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -117,6 +139,7 @@ function onSubmit(values, { setErrors }) {
           placeholder="Код"
           maxlength="3"
         />
+        <FieldError name="codeIata" :errors="errors" />
       </div>
 
       <div class="form-group mt-8">
@@ -125,19 +148,11 @@ function onSubmit(values, { setErrors }) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
-        <button
-          class="button secondary"
-          type="button"
-          @click="$router.push('/airports')"
-        >
+        <button class="button secondary" type="button" @click="$router.push('/airports')">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
       </div>
-
-      <div v-if="errors.codeIata" class="alert alert-danger mt-3 mb-0">{{ errors.codeIata }}</div>
-      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>

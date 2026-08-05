@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -15,6 +16,7 @@ import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatNotificationDate } from '@/helpers/notification.helpers.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const notificationsStore = useNotificationsStore()
 const authStore = useAuthStore()
@@ -22,7 +24,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { notifications, loading } = storeToRefs(notificationsStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 function filterNotifications(value, query, item) {
@@ -36,7 +37,7 @@ function filterNotifications(value, query, item) {
   }
 
   const q = query.toLocaleUpperCase()
-  
+
   // Check if query matches any of the basic fields
   const basicFields = [
     notification.number,
@@ -45,21 +46,25 @@ function filterNotifications(value, query, item) {
     formatDate(notification.publicationDate),
     formatDate(notification.registrationDate)
   ]
-  
-  const matchesBasicFields = basicFields.some((field) => (field || '').toLocaleUpperCase().includes(q))
-  
+
+  const matchesBasicFields = basicFields.some((field) =>
+    (field || '').toLocaleUpperCase().includes(q)
+  )
+
   // Check if query matches any article in the articles array
   const articles = Array.isArray(notification.articles) ? notification.articles : []
-  const matchesArticles = articles.some(articleObj => {
+  const matchesArticles = articles.some((articleObj) => {
     const article = articleObj?.article || ''
     return article.toLocaleUpperCase().includes(q)
   })
-  
+
   return matchesBasicFields || matchesArticles
 }
 
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
+    : []),
   { title: 'Номер', key: 'number', sortable: true },
   { title: 'Дата регистрации', key: 'registrationDate', sortable: true },
   { title: 'Дата публикации', key: 'publicationDate', sortable: true },
@@ -115,9 +120,11 @@ async function deleteNotification(notification) {
   }
 }
 
-onMounted(async () => {
-  await notificationsStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(() => notificationsStore.getAll(), {
+    fallback: 'Не удалось загрузить нотификации'
+  })
+)
 
 defineExpose({
   openCreateDialog,
@@ -150,6 +157,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -222,11 +231,6 @@ defineExpose({
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

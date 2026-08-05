@@ -49,12 +49,10 @@ describe('useParcelEditAccess', () => {
     expect(access.parcelEditCellClass('truncated-cell')).toBe('truncated-cell clickable-cell')
     expect(access.openParcelEdit(item)).toBe(true)
     expect(onBeforeOpen).toHaveBeenCalledWith(item)
-    expect(navigateToEditParcelMock).toHaveBeenCalledWith(
-      router,
-      item,
-      'Редактирование посылки',
-      { registerId: 5, source: 'warehouse' }
-    )
+    expect(navigateToEditParcelMock).toHaveBeenCalledWith(router, item, 'Редактирование посылки', {
+      registerId: 5,
+      source: 'warehouse'
+    })
   })
 
   it('silently blocks users without parcel edit route access', () => {
@@ -137,11 +135,8 @@ describe('useParcelEditAccess', () => {
     })
 
     expect(access.openParcelEdit(item)).toBe(true)
-    expect(navigateToEditParcelMock).toHaveBeenCalledWith(
-      router,
-      item,
-      'custom-parcel-edit',
-      { registerId: 7 }
-    )
+    expect(navigateToEditParcelMock).toHaveBeenCalledWith(router, item, 'custom-parcel-edit', {
+      registerId: 7
+    })
   })
 })

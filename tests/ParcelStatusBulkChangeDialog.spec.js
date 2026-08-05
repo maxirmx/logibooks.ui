@@ -6,7 +6,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import {
+  GTC_COMPANY_ID,
+  OZON_COMPANY_ID,
+  WBR_COMPANY_ID,
+  WBR2_REGISTER_ID
+} from '@/helpers/company.constants.js'
 
 const mocks = vi.hoisted(() => ({
   resolveStatusSelection: vi.fn(),
@@ -53,7 +58,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
     props: ['item', 'icon', 'tooltipText', 'iconSize', 'disabled'],
     emits: ['click'],
     inheritAttrs: false,
-    template: '<button type="button" v-bind="$attrs" :data-icon="icon" :data-icon-size="iconSize" :title="tooltipText" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template:
+      '<button type="button" v-bind="$attrs" :data-icon="icon" :data-icon-size="iconSize" :title="tooltipText" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
@@ -118,16 +124,28 @@ describe('ParcelStatusBulkChangeDialog', () => {
   it('keeps action buttons disabled until required input is present', async () => {
     const wrapper = mountDialog()
 
-    expect(wrapper.find('[data-testid="parcel-status-bulk-find"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[data-testid="parcel-status-bulk-update-found"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[data-testid="parcel-status-bulk-update-all"]').attributes('disabled')).toBeDefined()
+    expect(
+      wrapper.find('[data-testid="parcel-status-bulk-find"]').attributes('disabled')
+    ).toBeDefined()
+    expect(
+      wrapper.find('[data-testid="parcel-status-bulk-update-found"]').attributes('disabled')
+    ).toBeDefined()
+    expect(
+      wrapper.find('[data-testid="parcel-status-bulk-update-all"]').attributes('disabled')
+    ).toBeDefined()
 
     await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
     await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
 
-    expect(wrapper.find('[data-testid="parcel-status-bulk-find"]').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('[data-testid="parcel-status-bulk-update-found"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[data-testid="parcel-status-bulk-update-all"]').attributes('disabled')).toBeUndefined()
+    expect(
+      wrapper.find('[data-testid="parcel-status-bulk-find"]').attributes('disabled')
+    ).toBeUndefined()
+    expect(
+      wrapper.find('[data-testid="parcel-status-bulk-update-found"]').attributes('disabled')
+    ).toBeDefined()
+    expect(
+      wrapper.find('[data-testid="parcel-status-bulk-update-all"]').attributes('disabled')
+    ).toBeUndefined()
   })
 
   it('uses the standard header action layout', () => {
@@ -140,8 +158,12 @@ describe('ParcelStatusBulkChangeDialog', () => {
     const actionGroups = header.findAll('.header-actions.header-actions-group')
     expect(actionGroups).toHaveLength(2)
     expect(actionGroups[0].find('[data-testid="parcel-status-bulk-find"]').exists()).toBe(true)
-    expect(actionGroups[0].find('[data-testid="parcel-status-bulk-update-found"]').exists()).toBe(true)
-    expect(actionGroups[1].find('[data-testid="parcel-status-bulk-update-all"]').exists()).toBe(true)
+    expect(actionGroups[0].find('[data-testid="parcel-status-bulk-update-found"]').exists()).toBe(
+      true
+    )
+    expect(actionGroups[1].find('[data-testid="parcel-status-bulk-update-all"]').exists()).toBe(
+      true
+    )
     expect(actionGroups[1].find('[data-testid="parcel-status-bulk-cancel"]').exists()).toBe(true)
     expect(wrapper.find('.parcel-status-bulk-header hr.hr').exists()).toBe(true)
     expect(wrapper.find('[data-testid="v-card-actions"]').exists()).toBe(false)
@@ -217,9 +239,15 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
     expect(mocks.resolveStatusSelection).toHaveBeenCalledWith(7, ['P-1', 'P-2', 'P-3'])
     expect(input.element.value).toBe(' P-1, P-2\nP-3\tP-1')
-    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toContain('MISSING-1')
-    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toContain('BLOCKED-1')
-    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain('Найдено: 2')
+    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toContain(
+      'MISSING-1'
+    )
+    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toContain(
+      'BLOCKED-1'
+    )
+    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain(
+      'Найдено: 2'
+    )
   })
 
   it('handles malformed resolve responses with safe defaults', async () => {
@@ -234,7 +262,9 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain('Найдено: 1')
+    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain(
+      'Найдено: 1'
+    )
     expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toBe('')
   })
 
@@ -320,7 +350,9 @@ describe('ParcelStatusBulkChangeDialog', () => {
       content: 'Изменить статус всех посылок в реестре на "Status 4"?'
     })
     expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 4)
-    expect(mocks.alertSuccess).toHaveBeenCalledWith('Статус успешно применен ко всем посылкам в реестре')
+    expect(mocks.alertSuccess).toHaveBeenCalledWith(
+      'Статус успешно применен ко всем посылкам в реестре'
+    )
     expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 
@@ -398,6 +430,8 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="parcel-status-bulk-input"]').element.value).toBe('')
-    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain('Введите номера')
+    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain(
+      'Введите номера'
+    )
   })
 })

@@ -20,7 +20,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['icon', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button class="action-btn" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\')"></button>'
+    template:
+      '<button class="action-btn" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\')"></button>'
   }
 }))
 
@@ -37,7 +38,8 @@ vi.mock('@/components/FeacnCodeSearchByKeyword.vue', () => ({
     name: 'FeacnCodeSearchByKeyword',
     props: ['modelValue'],
     emits: ['update:modelValue', 'select', 'refocus'],
-    template: '<div class="feacn-keyword-search-stub" data-testid="feacn-keyword-search-stub"></div>'
+    template:
+      '<div class="feacn-keyword-search-stub" data-testid="feacn-keyword-search-stub"></div>'
   }
 }))
 
@@ -46,7 +48,7 @@ function createWrapper(props = {}) {
     props: {
       show: true,
       selectedIds: [101, 102],
-      ...props,
+      ...props
     },
     global: {
       stubs: {
@@ -56,10 +58,11 @@ function createWrapper(props = {}) {
           name: 'v-btn',
           props: ['disabled', 'variant', 'color'],
           emits: ['click'],
-          template: '<button class="v-btn-stub" data-testid="v-btn" :disabled="disabled" @click="$emit(\'click\')"><slot></slot></button>'
+          template:
+            '<button class="v-btn-stub" data-testid="v-btn" :disabled="disabled" @click="$emit(\'click\')"><slot></slot></button>'
         }
-      },
-    },
+      }
+    }
   })
 }
 
@@ -70,7 +73,7 @@ describe('AssignTnvedDialog', () => {
     mockGetFeacnInfo.mockResolvedValue({
       name: 'Тестовое наименование ТН ВЭД',
       found: true,
-      loading: false,
+      loading: false
     })
   })
 
@@ -152,7 +155,7 @@ describe('AssignTnvedDialog', () => {
     mockGetFeacnInfo.mockResolvedValue({
       name: 'Несуществующий код ТН ВЭД',
       found: false,
-      loading: false,
+      loading: false
     })
     const wrapper = createWrapper()
 
@@ -160,7 +163,9 @@ describe('AssignTnvedDialog', () => {
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Несуществующий код ТН ВЭД')
+    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain(
+      'Несуществующий код ТН ВЭД'
+    )
   })
 
   it('disables confirm when lookup throws an error', async () => {
@@ -171,7 +176,7 @@ describe('AssignTnvedDialog', () => {
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Несуществующий код ТН ВЭД')
+    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Network error')
   })
 
   it('opens FEACN tree search overlay and applies selected code', async () => {
@@ -196,7 +201,9 @@ describe('AssignTnvedDialog', () => {
     await buttons[1].trigger('click')
     expect(wrapper.find('[data-testid="assign-tnved-feacn-keyword-overlay"]').exists()).toBe(true)
 
-    await wrapper.findComponent({ name: 'FeacnCodeSearchByKeyword' }).vm.$emit('select', '1111222233')
+    await wrapper
+      .findComponent({ name: 'FeacnCodeSearchByKeyword' })
+      .vm.$emit('select', '1111222233')
     await wrapper.vm.$nextTick()
 
     const input = wrapper.find('[data-testid="target-tnved-input"]')

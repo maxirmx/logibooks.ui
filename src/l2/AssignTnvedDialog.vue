@@ -8,10 +8,11 @@ import ActionButton from '@/components/ActionButton.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
 import { getFeacnInfo } from '@/helpers/feacn.info.helpers.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  selectedIds: { type: Array, required: true },
+  selectedIds: { type: Array, required: true }
 })
 
 const emit = defineEmits(['update:show', 'confirm'])
@@ -20,7 +21,7 @@ const inputRef = ref(null)
 
 function handleKeydown(event) {
   if (!props.show) return
-  
+
   if (event.key === 'Enter' && isTnVedValid.value) {
     event.preventDefault()
     confirm()
@@ -38,7 +39,7 @@ const normalizedTargetTnVed = computed(() => targetTnVed.value.trim())
 const hasCorrectFormat = computed(() => /^\d{10}$/.test(normalizedTargetTnVed.value))
 
 // FEACN code existence check state
-const tnvedExists = ref(null)    // null = not checked, true/false = result
+const tnvedExists = ref(null) // null = not checked, true/false = result
 const tnvedChecking = ref(false)
 const tnvedLookupError = ref('')
 const tnvedName = ref('')
@@ -77,13 +78,13 @@ async function lookupTnVed(code) {
     }
     tnvedExists.value = found === true
     tnvedName.value = found === true ? fetchedName : ''
-  } catch {
+  } catch (error) {
     // Ignore error if it relates to an outdated code
     if (code !== normalizedTargetTnVed.value) {
       return
     }
     tnvedExists.value = false
-    tnvedLookupError.value = notFoundMessage
+    tnvedLookupError.value = getErrorMessage(error, 'Не удалось проверить код ТН ВЭД')
   } finally {
     // Only clear the checking flag for the currently active code
     if (code === normalizedTargetTnVed.value) {
@@ -109,17 +110,20 @@ watch(normalizedTargetTnVed, (code) => {
 })
 
 // Add/remove keydown event listener when dialog opens/closes
-watch(() => props.show, (newValue) => {
-  if (newValue) {
-    document.addEventListener('keydown', handleKeydown)
-    // Focus input field when dialog opens
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
-  } else {
-    document.removeEventListener('keydown', handleKeydown)
+watch(
+  () => props.show,
+  (newValue) => {
+    if (newValue) {
+      document.addEventListener('keydown', handleKeydown)
+      // Focus input field when dialog opens
+      nextTick(() => {
+        inputRef.value?.focus()
+      })
+    } else {
+      document.removeEventListener('keydown', handleKeydown)
+    }
   }
-})
+)
 
 // Cleanup on unmount
 onUnmounted(() => {
@@ -184,11 +188,14 @@ function handleRefocus() {
   })
 }
 
-watch(() => props.show, (visible) => {
-  if (!visible) {
-    resetState()
+watch(
+  () => props.show,
+  (visible) => {
+    if (!visible) {
+      resetState()
+    }
   }
-})
+)
 </script>
 
 <template>
@@ -200,9 +207,7 @@ watch(() => props.show, (visible) => {
   >
     <div class="assign-tnved-layout">
       <v-card class="assign-tnved-card">
-        <v-card-title class="primary-heading">
-          Код ТН ВЭД для выбранных посылок
-        </v-card-title>
+        <v-card-title class="primary-heading"> Код ТН ВЭД для выбранных посылок </v-card-title>
         <v-card-text>
           <div class="target-input-row">
             <input
@@ -215,7 +220,7 @@ watch(() => props.show, (visible) => {
               placeholder="Код ТН ВЭД (10 цифр)"
               data-testid="target-tnved-input"
               autofocus
-            >
+            />
             <ActionButton
               :item="selectedIds"
               :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
@@ -226,30 +231,60 @@ watch(() => props.show, (visible) => {
             />
             <ActionButton
               :item="selectedIds"
-              :icon="keywordSearchActive ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'"
-              :tooltip-text="keywordSearchActive ? 'Скрыть подбор по ключевым словам' : 'Выбрать код (ключевые слова)'"
+              :icon="
+                keywordSearchActive ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'
+              "
+              :tooltip-text="
+                keywordSearchActive
+                  ? 'Скрыть подбор по ключевым словам'
+                  : 'Выбрать код (ключевые слова)'
+              "
               class="button-o-c"
               @click="toggleKeywordSearch"
               :iconSize="'1x'"
             />
           </div>
-          <div v-if="validationMessage || tnvedName" :class="validationMessageClass" data-testid="target-tnved-message">
-            <v-progress-circular v-if="tnvedChecking" indeterminate :size="14" :width="2" class="mr-1" />
+          <div
+            v-if="validationMessage || tnvedName"
+            :class="validationMessageClass"
+            data-testid="target-tnved-message"
+          >
+            <v-progress-circular
+              v-if="tnvedChecking"
+              indeterminate
+              :size="14"
+              :width="2"
+              class="mr-1"
+            />
             {{ tnvedName || validationMessage }}
           </div>
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="close">Отменить</v-btn>
-          <v-btn color="orange-darken-3" variant="flat" :disabled="!isTnVedValid" @click="confirm">Применить</v-btn>
+          <v-btn color="orange-darken-3" variant="flat" :disabled="!isTnVedValid" @click="confirm"
+            >Применить</v-btn
+          >
         </v-card-actions>
       </v-card>
 
-      <div v-if="show && searchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-search-overlay">
+      <div
+        v-if="show && searchActive"
+        class="main-window-overlay"
+        data-testid="assign-tnved-feacn-search-overlay"
+      >
         <FeacnCodeSearch @select="handleSearchSelect" @refocus="handleRefocus" />
       </div>
 
-      <div v-if="show && keywordSearchActive" class="main-window-overlay" data-testid="assign-tnved-feacn-keyword-overlay">
-        <FeacnCodeSearchByKeyword v-model="keywordSearchActive" @select="handleKeywordSearchSelect" @refocus="handleRefocus" />
+      <div
+        v-if="show && keywordSearchActive"
+        class="main-window-overlay"
+        data-testid="assign-tnved-feacn-keyword-overlay"
+      >
+        <FeacnCodeSearchByKeyword
+          v-model="keywordSearchActive"
+          @select="handleKeywordSearchSelect"
+          @refocus="handleRefocus"
+        />
       </div>
     </div>
   </v-dialog>
@@ -295,7 +330,7 @@ watch(() => props.show, (visible) => {
   margin-top: 8px;
   color: #1b5e20;
   font-size: 1em;
- }
+}
 
 .main-window-overlay {
   position: absolute;

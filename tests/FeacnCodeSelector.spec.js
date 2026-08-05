@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -25,6 +25,10 @@ vi.mock('@/stores/parcels.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ error: vi.fn() })
+}))
+
 // Mock helper functions - use individually named mocks for better control
 const mockGetFeacnCodesForKeywords = vi.fn()
 const mockGetFeacnCodeItemClass = vi.fn()
@@ -34,8 +38,10 @@ const mockGetMatchType = vi.fn()
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => ({
   getFeacnCodesForKeywords: (keyWordIds) => mockGetFeacnCodesForKeywords(keyWordIds),
-  getFeacnCodeItemClass: (code, selectedCode, codes) => mockGetFeacnCodeItemClass(code, selectedCode, codes),
-  getMatchingFeacnCodeItemClass: (code, selectedCode, codes) => mockGetMatchingFeacnCodeItemClass(code, selectedCode, codes),
+  getFeacnCodeItemClass: (code, selectedCode, codes) =>
+    mockGetFeacnCodeItemClass(code, selectedCode, codes),
+  getMatchingFeacnCodeItemClass: (code, selectedCode, codes) =>
+    mockGetMatchingFeacnCodeItemClass(code, selectedCode, codes),
   updateParcelTnVed: (...args) => mockUpdateParcelTnVed(...args),
   getMatchType: (code, tnVed) => mockGetMatchType(code, tnVed)
 }))
@@ -68,9 +74,9 @@ const mockLoadParcels = vi.fn()
 
 describe('FeacnCodeSelector', () => {
   const defaultProps = {
-    item: { 
-      id: 1, 
-      keyWordIds: [1, 2], 
+    item: {
+      id: 1,
+      keyWordIds: [1, 2],
       tnVed: '1234567890'
     }
   }
@@ -78,7 +84,7 @@ describe('FeacnCodeSelector', () => {
   // Setup default mock implementations for each test
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Set up mock implementation for getFeacnCodesForKeywords
     mockGetFeacnCodesForKeywords.mockImplementation((keyWordIds) => {
       if (keyWordIds && keyWordIds.length > 0) {
@@ -86,7 +92,7 @@ describe('FeacnCodeSelector', () => {
       }
       return []
     })
-    
+
     // Set up mock implementation for getFeacnCodeItemClass
     mockGetFeacnCodeItemClass.mockImplementation((code, selectedCode) => {
       return code === selectedCode ? 'selected-code' : 'unselected-code'
@@ -96,7 +102,7 @@ describe('FeacnCodeSelector', () => {
       const base = code === selectedCode ? 'selected-code' : 'unselected-code'
       return base + ' matching-feacn-code-item'
     })
-    
+
     // Set up mock implementation for getMatchType
     mockGetMatchType.mockImplementation((code, tnVed) => {
       if (!code || !tnVed) {
@@ -126,14 +132,13 @@ describe('FeacnCodeSelector', () => {
   }
 
   describe('rendering', () => {
-
     it('displays a check-double icon for the selected code', () => {
       const wrapper = createWrapper()
-      
+
       // Our mock setup has '1234567890' as the selected code
       const iconElement = wrapper.find('.fa-check-double')
       expect(iconElement.exists()).toBe(true)
-      
+
       // Verify it's in the same parent element as the selected code text
       const parentElement = wrapper.find('.d-inline-flex.align-center')
       expect(parentElement.text()).toContain('1234567890')
@@ -142,27 +147,28 @@ describe('FeacnCodeSelector', () => {
 
     it('does not display check-double icon for unselected codes', () => {
       const wrapper = createWrapper()
-      
+
       // Find all elements with the code text but not the selected one
-      const unselectedElements = wrapper.findAll('.d-inline-flex.align-center')
-        .filter(el => !el.text().includes('1234567890'))
-      
+      const unselectedElements = wrapper
+        .findAll('.d-inline-flex.align-center')
+        .filter((el) => !el.text().includes('1234567890'))
+
       // There should be at least one unselected code
       expect(unselectedElements.length).toBeGreaterThan(0)
-      
+
       // None of the unselected elements should have the check-double icon
-      unselectedElements.forEach(el => {
+      unselectedElements.forEach((el) => {
         expect(el.find('.fa-check-double').exists()).toBe(false)
       })
     })
 
     it('applies correct CSS classes to codes', () => {
       const wrapper = createWrapper()
-      
+
       // Selected code should have the 'selected-code' class
       const selectedCodeDiv = wrapper.find('.selected-code')
       expect(selectedCodeDiv.exists()).toBe(true)
-      
+
       // Unselected codes should have the 'unselected-code' class
       const unselectedCodeDivs = wrapper.findAll('.unselected-code')
       expect(unselectedCodeDivs.length).toBe(1) // Since we have 2 codes total and 1 is selected
@@ -171,21 +177,27 @@ describe('FeacnCodeSelector', () => {
     it('displays a fallback message when no codes are available', () => {
       // Setup mock to return empty array for this test
       mockGetFeacnCodesForKeywords.mockReturnValueOnce([])
-      
+
       const wrapper = createWrapper({
         item: { id: 2, keyWordIds: [], tnVed: '' }
       })
-      
+
       // Should not render the FEACN lookup column
       expect(wrapper.find('.feacn-lookup-column').exists()).toBe(false)
-      
+
       // Should render a fallback dash
       expect(wrapper.text()).toBe('-')
     })
 
     it('renders matchingFC above regular codes when provided (without comment)', () => {
       const wrapper = createWrapper({
-        item: { id: 3, keyWordIds: [1], tnVed: '1234567890', matchingFC: '5555555555', matchingFCComment: 'Лучшее совпадение' }
+        item: {
+          id: 3,
+          keyWordIds: [1],
+          tnVed: '1234567890',
+          matchingFC: '5555555555',
+          matchingFCComment: 'Лучшее совпадение'
+        }
       })
       const lookupColumn = wrapper.find('.feacn-lookup-column')
       expect(lookupColumn.exists()).toBe(true)
@@ -196,7 +208,13 @@ describe('FeacnCodeSelector', () => {
 
     it('applies matching special class to matchingFC', () => {
       const wrapper = createWrapper({
-        item: { id: 4, keyWordIds: [1], tnVed: '1234567890', matchingFC: '5555555555', matchingFCComment: 'Комментарий' }
+        item: {
+          id: 4,
+          keyWordIds: [1],
+          tnVed: '1234567890',
+          matchingFC: '5555555555',
+          matchingFCComment: 'Комментарий'
+        }
       })
       const matchingDiv = wrapper.find('.matching-feacn-code-item')
       expect(matchingDiv.exists()).toBe(true)
@@ -207,35 +225,41 @@ describe('FeacnCodeSelector', () => {
   describe('interactions', () => {
     it('calls updateParcelTnVed when clicking an unselected code', async () => {
       const wrapper = createWrapper()
-      
+
       // Find an unselected code element
       const unselectedCodeDiv = wrapper.find('.unselected-code')
       expect(unselectedCodeDiv.exists()).toBe(true)
-      
+
       // Click it
       await unselectedCodeDiv.trigger('click')
-      
+
       // Verify that updateParcelTnVed was called
       expect(mockUpdateParcelTnVed).toHaveBeenCalled()
     })
 
     it('does not call updateParcelTnVed when clicking the already selected code', async () => {
       const wrapper = createWrapper()
-      
+
       // Find the selected code element
       const selectedCodeDiv = wrapper.find('.selected-code')
       expect(selectedCodeDiv.exists()).toBe(true)
-      
+
       // Click it
       await selectedCodeDiv.trigger('click')
-      
+
       // Verify that updateParcelTnVed was not called
       expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
     })
 
     it('calls updateParcelTnVed when clicking matchingFC if not selected', async () => {
       const wrapper = createWrapper({
-        item: { id: 5, keyWordIds: [1], tnVed: '1234567890', matchingFC: '8888888888', matchingFCComment: 'Особый' }
+        item: {
+          id: 5,
+          keyWordIds: [1],
+          tnVed: '1234567890',
+          matchingFC: '8888888888',
+          matchingFCComment: 'Особый'
+        }
       })
       const matchingDiv = wrapper.find('.matching-feacn-code-item')
       expect(matchingDiv.exists()).toBe(true)
@@ -245,7 +269,13 @@ describe('FeacnCodeSelector', () => {
 
     it('does not call updateParcelTnVed when clicking matchingFC if it equals tnVed', async () => {
       const wrapper = createWrapper({
-        item: { id: 6, keyWordIds: [1], tnVed: '7777777777', matchingFC: '7777777777', matchingFCComment: 'Точный' }
+        item: {
+          id: 6,
+          keyWordIds: [1],
+          tnVed: '7777777777',
+          matchingFC: '7777777777',
+          matchingFCComment: 'Точный'
+        }
       })
       const matchingDiv = wrapper.find('.matching-feacn-code-item')
       expect(matchingDiv.exists()).toBe(true)

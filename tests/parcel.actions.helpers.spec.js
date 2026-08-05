@@ -1,9 +1,9 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { 
+import {
   validateParcelData,
   approveParcel,
   generateXml,
@@ -13,7 +13,6 @@ import {
 } from '@/helpers/parcel.actions.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
-
 
 // Mock the alert store
 vi.mock('@/stores/alert.store.js', () => ({
@@ -30,7 +29,7 @@ describe('parcel actions helpers', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     mockItem = {
       value: {
         id: parcelId,
@@ -38,7 +37,7 @@ describe('parcel actions helpers', () => {
         shk: '12345'
       }
     }
-    
+
     mockValues = {
       id: parcelId,
       statusId: 1,
@@ -57,10 +56,20 @@ describe('parcel actions helpers', () => {
 
   describe('validateParcelData', () => {
     it('should validate parcel successfully', async () => {
-      await validateParcelData(mockValues, mockItem, mockParcelsStore, true, SwValidationMatchMode.NoSwMatch)
+      await validateParcelData(
+        mockValues,
+        mockItem,
+        mockParcelsStore,
+        true,
+        SwValidationMatchMode.NoSwMatch
+      )
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.validate).toHaveBeenCalledWith(123, true, SwValidationMatchMode.NoSwMatch)
+      expect(mockParcelsStore.validate).toHaveBeenCalledWith(
+        123,
+        true,
+        SwValidationMatchMode.NoSwMatch
+      )
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
@@ -77,7 +86,6 @@ describe('parcel actions helpers', () => {
 
       await validateParcelData(mockValues, mockItem, mockParcelsStore, false)
       expect(mockParcelsStore.error).toBe('Validation failed')
-
     })
 
     it('should handle validation errors with default message', async () => {
@@ -100,19 +108,35 @@ describe('parcel actions helpers', () => {
     })
 
     it('should approve parcel successfully with excise', async () => {
-      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithExcise)
+      await approveParcel(
+        mockValues,
+        mockItem,
+        mockParcelsStore,
+        ParcelApprovalMode.ApproveWithExcise
+      )
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithExcise)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
+        123,
+        ParcelApprovalMode.ApproveWithExcise
+      )
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
 
     it('should approve parcel successfully with notification', async () => {
-      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithNotification)
+      await approveParcel(
+        mockValues,
+        mockItem,
+        mockParcelsStore,
+        ParcelApprovalMode.ApproveWithNotification
+      )
 
       expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithNotification)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
+        123,
+        ParcelApprovalMode.ApproveWithNotification
+      )
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
       expect(mockParcelsStore.error).toBeNull()
     })
@@ -129,7 +153,12 @@ describe('parcel actions helpers', () => {
       const error = new Error('Approval failed')
       mockParcelsStore.approve.mockRejectedValue(error)
 
-      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithExcise)
+      await approveParcel(
+        mockValues,
+        mockItem,
+        mockParcelsStore,
+        ParcelApprovalMode.ApproveWithExcise
+      )
       expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
     })
 
@@ -137,7 +166,12 @@ describe('parcel actions helpers', () => {
       const error = new Error('Approval failed')
       mockParcelsStore.approve.mockRejectedValue(error)
 
-      await approveParcel(mockValues, mockItem, mockParcelsStore, ParcelApprovalMode.ApproveWithNotification)
+      await approveParcel(
+        mockValues,
+        mockItem,
+        mockParcelsStore,
+        ParcelApprovalMode.ApproveWithNotification
+      )
       expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
     })
 
@@ -158,9 +192,12 @@ describe('parcel actions helpers', () => {
 
   describe('approveParcelWithExcise', () => {
     it('should call approveParcel with withExcise=true', async () => {
-      await approveParcelWithExcise(mockValues,  mockItem,  mockParcelsStore)
+      await approveParcelWithExcise(mockValues, mockItem, mockParcelsStore)
 
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithExcise)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
+        123,
+        ParcelApprovalMode.ApproveWithExcise
+      )
     })
   })
 
@@ -168,7 +205,10 @@ describe('parcel actions helpers', () => {
     it('should call approveParcel with ApproveWithNotification mode', async () => {
       await approveParcelWithNotification(mockValues, mockItem, mockParcelsStore)
 
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.ApproveWithNotification)
+      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
+        123,
+        ParcelApprovalMode.ApproveWithNotification
+      )
     })
   })
 
@@ -222,9 +262,11 @@ describe('parcel actions helpers', () => {
         register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
       })
 
-      expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-        content: 'Применить поправочный коэффициент 0,500 для веса посылки?'
-      }))
+      expect(confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Применить поправочный коэффициент 0,500 для веса посылки?'
+        })
+      )
       expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file', true)
     })
 
@@ -257,16 +299,21 @@ describe('parcel actions helpers', () => {
 
     it('should run action successfully', async () => {
       await runCheckStatusAction(
-        mockValues, mockActionFn,
-        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
-        mockEnsureNextParcelsPromise, mockParcelsStore
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore
       )
 
       expect(mockEnsureNextParcelsPromise).toHaveBeenCalled()
       expect(mockParcelsStore.update).toHaveBeenCalledWith(parcelId, mockValues)
       expect(mockActionFn).toHaveBeenCalledWith(parcelId)
-      expect(mockParcelsStore.update.mock.invocationCallOrder[0])
-        .toBeLessThan(mockActionFn.mock.invocationCallOrder[0])
+      expect(mockParcelsStore.update.mock.invocationCallOrder[0]).toBeLessThan(
+        mockActionFn.mock.invocationCallOrder[0]
+      )
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
       expect(mockRunningAction.value).toBe(false)
     })
@@ -275,9 +322,13 @@ describe('parcel actions helpers', () => {
       mockIsComponentMounted.value = false
 
       await runCheckStatusAction(
-        mockValues, mockActionFn,
-        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
-        mockEnsureNextParcelsPromise, mockParcelsStore
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore
       )
 
       expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
@@ -288,9 +339,13 @@ describe('parcel actions helpers', () => {
       mockRunningAction.value = true
 
       await runCheckStatusAction(
-        mockValues, mockActionFn,
-        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
-        mockEnsureNextParcelsPromise, mockParcelsStore
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore
       )
 
       expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
@@ -301,9 +356,13 @@ describe('parcel actions helpers', () => {
       mockCurrentParcelId.value = 999
 
       await runCheckStatusAction(
-        mockValues, mockActionFn,
-        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
-        mockEnsureNextParcelsPromise, mockParcelsStore
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore
       )
 
       expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
@@ -314,9 +373,13 @@ describe('parcel actions helpers', () => {
       mockActionFn.mockRejectedValue(new Error('Action failed'))
 
       await runCheckStatusAction(
-        mockValues, mockActionFn,
-        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
-        mockEnsureNextParcelsPromise, mockParcelsStore
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore
       )
 
       expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
@@ -329,9 +392,13 @@ describe('parcel actions helpers', () => {
       })
 
       await runCheckStatusAction(
-        mockValues, mockActionFn,
-        mockIsComponentMounted, mockRunningAction, mockCurrentParcelId,
-        mockEnsureNextParcelsPromise, mockParcelsStore
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore
       )
 
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()

@@ -27,7 +27,6 @@ describe('number.formatters', () => {
       expect(formatWeight(null)).toBe('0.000')
       expect(formatWeight('   ')).toBe('0.000')
     })
-
   })
 
   describe('formatPrice', () => {

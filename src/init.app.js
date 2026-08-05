@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -89,20 +89,20 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
-  faEye, 
-  faEyeSlash, 
-  faPen, 
-  faPenToSquare, 
-  faPlay, 
-  faPlus, 
+  faEye,
+  faEyeSlash,
+  faPen,
+  faPenToSquare,
+  faPlay,
+  faPlus,
   faMinus,
-  faTrashCan, 
-  faUserPlus, 
-  faList, 
+  faTrashCan,
+  faUserPlus,
+  faList,
   faListCheck,
-  faUpload, 
-  faCheck, 
-  faXmark, 
+  faUpload,
+  faCheck,
+  faXmark,
   faToggleOn,
   faToggleOff,
   faCheckCircle,
@@ -176,6 +176,28 @@ import App from '@/App.vue'
 import router from '@/router'
 
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
+
+let globalErrorHandlersInstalled = false
+const UNEXPECTED_ERROR_MESSAGE = 'Произошла непредвиденная ошибка. Обновите страницу и повторите попытку.'
+
+function publishUnexpectedError(error, context) {
+  reportError(error, { context })
+  useAlertStore().error(UNEXPECTED_ERROR_MESSAGE)
+}
+
+export function installGlobalErrorHandlers(app) {
+  app.config.errorHandler = (error, _instance, info) => {
+    publishUnexpectedError(error, `Vue: ${info || 'component error'}`)
+  }
+
+  if (globalErrorHandlersInstalled) return
+  globalErrorHandlersInstalled = true
+  window.addEventListener('unhandledrejection', (event) => {
+    publishUnexpectedError(event.reason, 'Unhandled promise rejection')
+  })
+}
 
 export function initializeApp() {
   // Create custom Russian translations with missing keys
@@ -236,6 +258,8 @@ export function initializeApp() {
     .use(router)
     .use(vuetify)
     .use(VuetifyUseDialog)
+
+  installGlobalErrorHandlers(app)
 
   const queryString = window.location.search
   const urlParams = new URLSearchParams(queryString)

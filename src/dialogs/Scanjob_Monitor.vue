@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import router from '@/router'
@@ -18,6 +19,7 @@ import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import {
   getClearParcelDefectErrorMessage,
   getSetParcelDefectErrorMessage
@@ -51,7 +53,6 @@ const authStore = useAuthStore()
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
 const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
 const isComponentMounted = ref(true)
 const scanjobIdRef = computed(() => props.scanjobId)
@@ -76,16 +77,11 @@ const loadedScanjobId = ref(null)
 const jumpNumber = ref('')
 const jumpLoading = ref(false)
 const selectedParcelId = ref(null)
-const lastJumpErrorMessage = ref(null)
+const lastJumpNotificationId = ref(null)
 
 const JUMP_EMPTY_MESSAGE = 'Введите номер посылки или коробки'
 const JUMP_NOT_FOUND_MESSAGE = 'Посылка или коробка не найдена'
 const JUMP_FALLBACK_ERROR_MESSAGE = 'Ошибка при поиске посылки или коробки'
-const jumpKnownErrorMessages = new Set([
-  JUMP_EMPTY_MESSAGE,
-  JUMP_NOT_FOUND_MESSAGE,
-  JUMP_FALLBACK_ERROR_MESSAGE
-])
 
 let pendingSnapshot = null
 let throttleTimer = null
@@ -106,10 +102,11 @@ const closedInfo = computed(() => {
 })
 const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
 const registerId = computed(() => scanjob.value?.registerId ?? null)
-const readOnly = computed(() =>
-  visibleSnapshot.value?.readOnly === true
-  || scanjob.value?.readOnly === true
-  || activeRegisterItem.value?.readOnly === true
+const readOnly = computed(
+  () =>
+    visibleSnapshot.value?.readOnly === true ||
+    scanjob.value?.readOnly === true ||
+    activeRegisterItem.value?.readOnly === true
 )
 const activeRegisterItem = computed(() => {
   const currentRegisterId = scanjob.value?.registerId
@@ -124,13 +121,15 @@ const activeRegisterItem = computed(() => {
 const basicHeading = computed(() => {
   if (!registerId.value) return 'Реестр не указан'
   if (registerLoading.value || !activeRegisterItem.value) return 'Загрузка...'
-  return buildParcelListHeading(activeRegisterItem.value, (id) => registersStore.getTransportationDocument(id))
+  return buildParcelListHeading(activeRegisterItem.value, (id) =>
+    registersStore.getTransportationDocument(id)
+  )
 })
 const scopeHeading = computed(() => {
   if (isBoxMode.value) {
     if (
-      Number(selectedArea.value) === scanJobsStore.scanjobMonitorArea.Unassigned
-      || isUnassignedMonitorBox(selectedBox.value)
+      Number(selectedArea.value) === scanJobsStore.scanjobMonitorArea.Unassigned ||
+      isUnassignedMonitorBox(selectedBox.value)
     ) {
       return selectedBox.value?.boxCode || 'Без коробки'
     }
@@ -140,15 +139,19 @@ const scopeHeading = computed(() => {
 
   return 'Коробки'
 })
-const monitorHeading = computed(() => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`)
+const monitorHeading = computed(
+  () => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`
+)
 const monitorWeightRegister = computed(() => {
   const snapshot = visibleSnapshot.value
   const register = activeRegisterItem.value
   return {
-    realWeightKg: hasOwnProperty(snapshot, 'realWeightKg') ? snapshot.realWeightKg : (register?.realWeightKg ?? null),
+    realWeightKg: hasOwnProperty(snapshot, 'realWeightKg')
+      ? snapshot.realWeightKg
+      : register?.realWeightKg ?? null,
     totalWeightKgToRelease: hasOwnProperty(snapshot, 'totalWeightKgToRelease')
       ? snapshot.totalWeightKgToRelease
-      : (register?.totalWeightKgToRelease ?? null)
+      : register?.totalWeightKgToRelease ?? null
   }
 })
 const followUserOptions = computed(() => [
@@ -158,9 +161,9 @@ const followUserOptions = computed(() => [
     value: toNumberOrNull(user?.id)
   }))
 ])
-const isJumpDisabled = computed(() => (
-  isLoading.value || jumpLoading.value || !jumpNumber.value.trim()
-))
+const isJumpDisabled = computed(
+  () => isLoading.value || jumpLoading.value || !jumpNumber.value.trim()
+)
 
 function close() {
   router.back()
@@ -193,7 +196,9 @@ function openUnregisteredParcels() {
 }
 
 function getFollowUserLabel(user) {
-  return user?.displayName || user?.userName || user?.email || `Пользователь ${user?.id ?? ''}`.trim()
+  return (
+    user?.displayName || user?.userName || user?.email || `Пользователь ${user?.id ?? ''}`.trim()
+  )
 }
 
 function clearFollowUserSelection() {
@@ -202,11 +207,7 @@ function clearFollowUserSelection() {
 
 function monitorScopeKey(scope = props.monitorScope) {
   const normalized = normalizeMonitorScope(scope)
-  return [
-    normalized.area,
-    normalized.boxId ?? '',
-    normalized.bucketIndex ?? ''
-  ].join(':')
+  return [normalized.area, normalized.boxId ?? '', normalized.bucketIndex ?? ''].join(':')
 }
 
 function monitorRouteKey() {
@@ -240,7 +241,7 @@ function monitorRouteForScope(scope) {
 function updateMonitorRoute(scope, { replace = false } = {}) {
   const route = monitorRouteForScope(scope)
   const navigate = replace ? router.replace(route) : router.push(route)
-  return Promise.resolve(navigate).catch(error => {
+  return Promise.resolve(navigate).catch((error) => {
     if (isNavigationFailure(error, NavigationFailureType.duplicated)) {
       return false
     }
@@ -268,11 +269,14 @@ function navigateToBoxMonitor(box, { replace = false } = {}) {
   }
 
   selectedParcelId.value = null
-  return updateMonitorRoute({
-    area: isUnassigned ? scanjobMonitorArea.Unassigned : scanjobMonitorArea.Box,
-    boxId: isUnassigned ? null : boxId,
-    bucketIndex: isUnassigned ? bucketIndex : null
-  }, { replace })
+  return updateMonitorRoute(
+    {
+      area: isUnassigned ? scanjobMonitorArea.Unassigned : scanjobMonitorArea.Box,
+      boxId: isUnassigned ? null : boxId,
+      bucketIndex: isUnassigned ? bucketIndex : null
+    },
+    { replace }
+  )
 }
 
 async function loadRegister(scanjobData) {
@@ -317,12 +321,9 @@ function editParcel(item) {
     return
   }
 
-  navigateToEditParcel(
-    router,
-    { ...item, id: parcelId },
-    'Редактирование посылки',
-    { registerId: registerId.value }
-  )
+  navigateToEditParcel(router, { ...item, id: parcelId }, 'Редактирование посылки', {
+    registerId: registerId.value
+  })
 }
 
 function getCurrentScope() {
@@ -386,9 +387,12 @@ function buildScope(area, boxId = null, bucketIndex = null) {
 function scopesAreEqual(left, right) {
   const normalizedLeft = normalizeMonitorScope(left)
   const normalizedRight = normalizeMonitorScope(right)
-  return Number(normalizedLeft.area) === Number(normalizedRight.area)
-    && toNumberOrNull(normalizedLeft.boxId) === toNumberOrNull(normalizedRight.boxId)
-    && (toNumberOrNull(normalizedLeft.bucketIndex) ?? null) === (toNumberOrNull(normalizedRight.bucketIndex) ?? null)
+  return (
+    Number(normalizedLeft.area) === Number(normalizedRight.area) &&
+    toNumberOrNull(normalizedLeft.boxId) === toNumberOrNull(normalizedRight.boxId) &&
+    (toNumberOrNull(normalizedLeft.bucketIndex) ?? null) ===
+      (toNumberOrNull(normalizedRight.bucketIndex) ?? null)
+  )
 }
 
 function currentArea() {
@@ -429,7 +433,9 @@ async function resetMonitorObservation() {
   await clearFollowUserSubscription()
   closedStatus.value = null
   visibleSnapshot.value = null
-  await scanJobsStore.stopMonitor().catch(() => {})
+  await scanJobsStore.stopMonitor().catch((error) => {
+    reportError(error, { context: 'scan job monitor reset cleanup' })
+  })
 }
 
 function toNumberOrNull(value) {
@@ -468,8 +474,8 @@ async function loadFollowUsers() {
     followUsers.value = Array.isArray(users) ? users : []
     const selectedUserId = toNumberOrNull(selectedFollowUserId.value)
     if (
-      selectedUserId != null
-      && !followUsers.value.some((user) => Number(user?.id) === selectedUserId)
+      selectedUserId != null &&
+      !followUsers.value.some((user) => Number(user?.id) === selectedUserId)
     ) {
       selectedFollowUserId.value = null
       authStore.setScanjobMonitorFollowUserId(null)
@@ -520,22 +526,17 @@ function getMonitorTargetErrorMessage(error) {
 }
 
 function showJumpError(message) {
-  lastJumpErrorMessage.value = message
-  alertStore.error(message)
+  if (lastJumpNotificationId.value != null) {
+    alertStore.dismiss(lastJumpNotificationId.value)
+  }
+  lastJumpNotificationId.value = alertStore.error(message)
 }
 
 function clearJumpError() {
-  const currentMessage = alert.value?.message
-  if (
-    currentMessage
-    && (
-      currentMessage === lastJumpErrorMessage.value
-      || jumpKnownErrorMessages.has(currentMessage)
-    )
-  ) {
-    alertStore.clear()
+  if (lastJumpNotificationId.value != null) {
+    alertStore.dismiss(lastJumpNotificationId.value)
   }
-  lastJumpErrorMessage.value = null
+  lastJumpNotificationId.value = null
 }
 
 async function navigateToResolvedScope(scope, { reloadIfSame = false } = {}) {
@@ -637,10 +638,15 @@ function normalizeFollowTarget(target) {
 }
 
 async function clearFollowUserSubscription() {
-  await scanJobsStore.clearMonitorFollowUser().catch(() => {})
+  await scanJobsStore.clearMonitorFollowUser().catch((error) => {
+    reportError(error, { context: 'scan job follow-user cleanup' })
+  })
 }
 
-async function startFollowUserSubscription({ subscribe = true, version = scopeVersion.value } = {}) {
+async function startFollowUserSubscription({
+  subscribe = true,
+  version = scopeVersion.value
+} = {}) {
   await clearFollowUserSubscription()
 
   const userId = toNumberOrNull(selectedFollowUserId.value)
@@ -695,8 +701,15 @@ async function handleFollowEvent(followEvent, version = scopeVersion.value) {
   await updateMonitorRoute(targetScope, { replace: true })
 }
 
-function applySnapshot(snapshot, { version = scopeVersion.value, immediate = false, source = 'manual' } = {}) {
-  if (!isComponentMounted.value || version !== scopeVersion.value || !snapshotMatchesScope(snapshot)) {
+function applySnapshot(
+  snapshot,
+  { version = scopeVersion.value, immediate = false, source = 'manual' } = {}
+) {
+  if (
+    !isComponentMounted.value ||
+    version !== scopeVersion.value ||
+    !snapshotMatchesScope(snapshot)
+  ) {
     return
   }
 
@@ -716,7 +729,11 @@ function applySnapshot(snapshot, { version = scopeVersion.value, immediate = fal
     pendingSnapshot = null
     throttleTimer = null
     if (nextSnapshot?.snapshot) {
-      applySnapshot(nextSnapshot.snapshot, { version, immediate: true, source: nextSnapshot.source })
+      applySnapshot(nextSnapshot.snapshot, {
+        version,
+        immediate: true,
+        source: nextSnapshot.source
+      })
     }
   }, MONITOR_THROTTLE_MS)
 }
@@ -732,8 +749,12 @@ function handleMonitorClosed(scanJobId, status, version) {
 
   closedStatus.value = { scanJobId, status }
   clearPendingSnapshot()
-  clearFollowUserSubscription().catch(() => {})
-  scanJobsStore.stopMonitor().catch(() => {})
+  clearFollowUserSubscription().catch((error) => {
+    reportError(error, { context: 'scan job route follow-user cleanup' })
+  })
+  scanJobsStore.stopMonitor().catch((error) => {
+    reportError(error, { context: 'scan job route monitor cleanup' })
+  })
 }
 
 function getMonitorErrorMessage(error) {
@@ -755,7 +776,9 @@ async function observeScope(scope, { subscribe = true } = {}) {
 
   try {
     await clearFollowUserSubscription()
-    await scanJobsStore.clearMonitor().catch(() => {})
+    await scanJobsStore.clearMonitor().catch((error) => {
+      reportError(error, { context: 'scan job scope monitor cleanup' })
+    })
 
     const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, scope)
     applySnapshot(snapshot, { version, immediate: true, source: 'initial' })
@@ -804,23 +827,36 @@ async function openMonitorScope(scope, { subscribe = canSubscribeToMonitor(scanj
     selectedArea.value = scanjobMonitorArea.Unassigned
     selectedBoxId.value = null
     selectedBucketIndex.value = normalized.bucketIndex
-    await observeScope(buildScope(selectedArea.value, null, selectedBucketIndex.value), { subscribe })
+    await observeScope(buildScope(selectedArea.value, null, selectedBucketIndex.value), {
+      subscribe
+    })
     return
   }
 
   await openRegisterMonitor({ subscribe })
 }
 
-onMounted(async () => {
-  const loaded = await loadScanjobAndRegister()
-  if (loaded) {
-    await loadFollowUsers()
-    await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })
-  } else if (isComponentMounted.value) {
-    registerLoading.value = false
-    monitorStatusOnly.value = true
+async function initializeMonitor() {
+  try {
+    const loaded = await loadScanjobAndRegister()
+    if (loaded) {
+      await loadFollowUsers()
+      await openMonitorScope(props.monitorScope, { subscribe: canSubscribeToMonitor(loaded) })
+    } else if (isComponentMounted.value) {
+      registerLoading.value = false
+      monitorStatusOnly.value = true
+    }
+  } catch (error) {
+    if (isComponentMounted.value) {
+      alertStore.error(error, {
+        fallback: 'Не удалось открыть монитор задания на сканирование',
+        action: { label: 'Повторить', handler: initializeMonitor }
+      })
+    }
   }
-})
+}
+
+onMounted(initializeMonitor)
 
 watch(
   () => monitorRouteKey(),
@@ -847,27 +883,28 @@ watch(
   }
 )
 
-watch(
-  selectedFollowUserId,
-  async (userId) => {
-    authStore.setScanjobMonitorFollowUserId(userId)
-    if (!scanjobLoaded.value || !isComponentMounted.value || switchingScope.value) {
-      return
-    }
-
-    await startFollowUserSubscription({
-      subscribe: canSubscribeToMonitor(scanjob.value),
-      version: scopeVersion.value
-    })
+watch(selectedFollowUserId, async (userId) => {
+  authStore.setScanjobMonitorFollowUserId(userId)
+  if (!scanjobLoaded.value || !isComponentMounted.value || switchingScope.value) {
+    return
   }
-)
+
+  await startFollowUserSubscription({
+    subscribe: canSubscribeToMonitor(scanjob.value),
+    version: scopeVersion.value
+  })
+})
 
 onUnmounted(() => {
   isComponentMounted.value = false
   scopeVersion.value += 1
   clearPendingSnapshot()
-  clearFollowUserSubscription().catch(() => {})
-  scanJobsStore.stopMonitor().catch(() => {})
+  clearFollowUserSubscription().catch((error) => {
+    reportError(error, { context: 'scan job unmount follow-user cleanup' })
+  })
+  scanJobsStore.stopMonitor().catch((error) => {
+    reportError(error, { context: 'scan job unmount monitor cleanup' })
+  })
 })
 
 defineExpose({
@@ -884,9 +921,13 @@ defineExpose({
       <h1 class="primary-heading">{{ monitorHeading }}</h1>
       <div class="header-actions-bar">
         <div v-if="isLoading" class="header-actions header-actions-group">
-            <span class="spinner-border spinner-border-m"></span>
+          <span class="spinner-border spinner-border-m"></span>
         </div>
-        <form class="header-actions header-actions-group scanjob-monitor-jump" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
+        <form
+          class="header-actions header-actions-group scanjob-monitor-jump"
+          data-testid="scanjob-monitor-jump"
+          @submit.prevent="handleJumpToNumber"
+        >
           <v-text-field
             id="scanjob-monitor-jump-input"
             v-model="jumpNumber"
@@ -910,7 +951,11 @@ defineExpose({
             :disabled="isJumpDisabled"
             @click="handleJumpToNumber"
           />
-          <span v-if="jumpLoading" class="spinner-border spinner-border-m" data-testid="scanjob-monitor-jump-loading"></span>
+          <span
+            v-if="jumpLoading"
+            class="spinner-border spinner-border-m"
+            data-testid="scanjob-monitor-jump-loading"
+          ></span>
         </form>
         <div class="header-actions header-actions-group scanjob-monitor-follow-user">
           <v-select
@@ -929,7 +974,7 @@ defineExpose({
           />
         </div>
         <div v-if="!isBoxMode" class="header-actions header-actions-group">
-          <ActionButton           
+          <ActionButton
             :item="{}"
             icon="fa-solid fa-rectangle-list"
             icon-size="2x"
@@ -958,25 +1003,43 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
     </div>
 
     <div class="scanjob-monitor-panel">
-      <div v-if="isLoading && !visibleSnapshot" class="monitor-empty" data-testid="scanjob-monitor-loading">
+      <div
+        v-if="isLoading && !visibleSnapshot"
+        class="monitor-empty"
+        data-testid="scanjob-monitor-loading"
+      >
         <span class="spinner-border spinner-border-m"></span>
         <span>Загрузка монитора сканирования...</span>
       </div>
 
-      <div v-else-if="closedInfo" class="monitor-empty monitor-closed" data-testid="scanjob-monitor-closed">
+      <div
+        v-else-if="closedInfo"
+        class="monitor-empty monitor-closed"
+        data-testid="scanjob-monitor-closed"
+      >
         Мониторинг остановлен. Задание больше не выполняется.
       </div>
 
-      <div v-else-if="monitorStatusOnly" class="monitor-empty monitor-closed" data-testid="scanjob-monitor-status-only">
+      <div
+        v-else-if="monitorStatusOnly"
+        class="monitor-empty monitor-closed"
+        data-testid="scanjob-monitor-status-only"
+      >
         Задание сканирования: {{ scanjobStatusText }}. Онлайн-обновления отключены.
       </div>
 
-      <div v-else-if="monitorError && !visibleSnapshot" class="monitor-empty" data-testid="scanjob-monitor-unavailable">
+      <div
+        v-else-if="monitorError && !visibleSnapshot"
+        class="monitor-empty"
+        data-testid="scanjob-monitor-unavailable"
+      >
         {{ getMonitorErrorMessage(monitorError) }}
       </div>
 
@@ -1002,11 +1065,6 @@ defineExpose({
           @clear-defect="clearParcelDefect"
         />
       </template>
-    </div>
-
-    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
     </div>
   </div>
 </template>

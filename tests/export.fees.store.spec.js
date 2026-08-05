@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -42,7 +42,7 @@ describe('export fees store', () => {
     fetchWrapper.get.mockRejectedValue(testError)
 
     const store = useExportFeesStore()
-    await store.getAll()
+    await expect(store.getAll()).rejects.toBe(testError)
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportfees`)
     expect(store.fees).toEqual([])

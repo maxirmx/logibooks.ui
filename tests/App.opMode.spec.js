@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -19,7 +19,7 @@ import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn(),
+  disconnect: vi.fn()
 }))
 
 vi.mock('vuetify', async (importOriginal) => {
@@ -34,7 +34,7 @@ vi.mock('vuetify', async (importOriginal) => {
 
 const vuetify = createVuetify({
   components,
-  directives,
+  directives
 })
 
 const router = createRouter({
@@ -66,7 +66,7 @@ const router = createRouter({
     { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
     { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
     { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } },
-    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } },
+    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } }
   ]
 })
 
@@ -106,14 +106,18 @@ describe('App navigation for registers', () => {
           'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
           'v-navigation-drawer': {
-            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
+            template:
+              '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
           },
           'v-list': { template: '<ul><slot /></ul>' },
           'v-list-item': { template: '<li><slot /></li>' },
-          'v-list-group': { template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>' },
+          'v-list-group': {
+            template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>'
+          },
           'v-main': { template: '<main><slot /></main>' },
           'v-tooltip': {
-            template: '<div class="v-tooltip-stub"><slot name="activator" :props="{}" /><slot /></div>'
+            template:
+              '<div class="v-tooltip-stub"><slot name="activator" :props="{}" /><slot /></div>'
           },
           'font-awesome-icon': { template: '<span class="fa-icon-stub"></span>' },
           ActionDialog: {
@@ -129,9 +133,9 @@ describe('App navigation for registers', () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const link = wrapper.findAll('a').find((item) =>
-      item.text().includes(warehouseRegisterNouns.plural)
-    )
+    const link = wrapper
+      .findAll('a')
+      .find((item) => item.text().includes(warehouseRegisterNouns.plural))
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toContain(
@@ -143,9 +147,7 @@ describe('App navigation for registers', () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const link = wrapper.findAll('a').find((item) =>
-      item.text().includes('Сборы')
-    )
+    const link = wrapper.findAll('a').find((item) => item.text().includes('Сборы'))
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toBe('/export-fees')
@@ -155,9 +157,7 @@ describe('App navigation for registers', () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const link = wrapper.findAll('a').find((item) =>
-      item.text().includes('Таможенные посты')
-    )
+    const link = wrapper.findAll('a').find((item) => item.text().includes('Таможенные посты'))
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toBe('/customsstations')
@@ -167,9 +167,7 @@ describe('App navigation for registers', () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const link = wrapper.findAll('a').find((item) =>
-      item.text().includes('Настройки WD4')
-    )
+    const link = wrapper.findAll('a').find((item) => item.text().includes('Настройки WD4'))
 
     expect(link).toBeTruthy()
     expect(link?.attributes('href')).toBe('/scanner/wd4')

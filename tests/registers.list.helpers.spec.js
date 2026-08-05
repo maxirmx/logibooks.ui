@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reactive } from 'vue'
@@ -56,23 +56,22 @@ describe('registers.list.helpers', () => {
   describe('initializeBulkStatusState', () => {
     it('initializes state if it does not exist', () => {
       const registerId = 1
-      
+
       initializeBulkStatusState(registerId, bulkStatusState)
-      
+
       expect(bulkStatusState[registerId]).toBeDefined()
       expect(bulkStatusState[registerId].editMode).toBe(false)
       expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
     })
-
   })
 
   describe('toggleBulkStatusEditMode', () => {
     it('toggles edit mode from false to true', () => {
       const registerId = 1
       const loading = false
-      
+
       toggleBulkStatusEditMode(registerId, bulkStatusState, loading)
-      
+
       expect(bulkStatusState[registerId].editMode).toBe(true)
       expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
     })
@@ -80,38 +79,38 @@ describe('registers.list.helpers', () => {
     it('toggles edit mode from true to false', () => {
       const registerId = 1
       const loading = false
-      
+
       // First toggle to enter edit mode
       toggleBulkStatusEditMode(registerId, bulkStatusState, loading)
       bulkStatusState[registerId].selectedStatusId = 3
-      
+
       // Second toggle to exit edit mode
       toggleBulkStatusEditMode(registerId, bulkStatusState, loading)
-      
+
       expect(bulkStatusState[registerId].editMode).toBe(false)
     })
 
     it('does not toggle when loading is true', () => {
       const registerId = 1
       const loading = true
-      
+
       toggleBulkStatusEditMode(registerId, bulkStatusState, loading)
-      
+
       expect(bulkStatusState[registerId]).toBeUndefined()
     })
 
     it('clears selectedStatusId when entering edit mode', () => {
       const registerId = 1
       const loading = false
-      
+
       // Initialize with some state
       bulkStatusState[registerId] = {
         editMode: false,
         selectedStatusId: 5
       }
-      
+
       toggleBulkStatusEditMode(registerId, bulkStatusState, loading)
-      
+
       expect(bulkStatusState[registerId].editMode).toBe(true)
       expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
     })
@@ -124,16 +123,16 @@ describe('registers.list.helpers', () => {
         editMode: true,
         selectedStatusId: 3
       }
-      
+
       cancelBulkStatusChange(registerId, bulkStatusState)
-      
+
       expect(bulkStatusState[registerId].editMode).toBe(false)
       expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
     })
 
     it('handles case when state does not exist', () => {
       const registerId = 1
-      
+
       expect(() => {
         cancelBulkStatusChange(registerId, bulkStatusState)
       }).not.toThrow()
@@ -143,59 +142,58 @@ describe('registers.list.helpers', () => {
   describe('validateBulkStatusParams', () => {
     it('returns invalid for missing registerId', () => {
       const result = validateBulkStatusParams(null, 1)
-      
+
       expect(result.isValid).toBe(false)
       expect(result.error).toBe('Не указан реестр или статус для изменения')
     })
 
     it('returns invalid for missing statusId', () => {
       const result = validateBulkStatusParams(1, null)
-      
+
       expect(result.isValid).toBe(false)
       expect(result.error).toBe('Не указан реестр или статус для изменения')
     })
 
     it('returns invalid for statusId = 0', () => {
       const result = validateBulkStatusParams(1, 0)
-      
+
       expect(result.isValid).toBe(false)
       expect(result.error).toBe('Не указан реестр или статус для изменения')
     })
 
     it('returns invalid for negative statusId', () => {
       const result = validateBulkStatusParams(1, -1)
-      
+
       expect(result.isValid).toBe(false)
       expect(result.error).toBe('Некорректный идентификатор статуса')
     })
 
     it('returns invalid for non-numeric statusId', () => {
       const result = validateBulkStatusParams(1, 'invalid')
-      
+
       expect(result.isValid).toBe(false)
       expect(result.error).toBe('Некорректный идентификатор статуса')
     })
 
     it('returns valid for valid parameters', () => {
       const result = validateBulkStatusParams(1, 5)
-      
+
       expect(result.isValid).toBe(true)
       expect(result.numericStatusId).toBe(5)
     })
 
     it('converts string statusId to number', () => {
       const result = validateBulkStatusParams(1, '5')
-      
+
       expect(result.isValid).toBe(true)
       expect(result.numericStatusId).toBe(5)
     })
   })
 
   describe('resetBulkStatusState', () => {
-
     it('handles case when state does not exist', () => {
       const registerId = 1
-      
+
       expect(() => {
         resetBulkStatusState(registerId, bulkStatusState)
       }).not.toThrow()
@@ -205,7 +203,7 @@ describe('registers.list.helpers', () => {
   describe('applyBulkStatusToAllOrders', () => {
     it('validates parameters and shows error for invalid input', async () => {
       await applyBulkStatusToAllOrders(null, 1, bulkStatusState, mockRegistersStore, mockAlertStore)
-      
+
       expect(mockAlertStore.error).toHaveBeenCalledWith('Не указан реестр или статус для изменения')
       expect(mockRegistersStore.setParcelStatuses).not.toHaveBeenCalled()
     })
@@ -213,19 +211,27 @@ describe('registers.list.helpers', () => {
     it('successfully applies status and shows success message', async () => {
       const registerId = 1
       const statusId = 5
-      
+
       mockRegistersStore.setParcelStatuses.mockResolvedValueOnce()
-      
+
       // Initialize state
       bulkStatusState[registerId] = {
         editMode: true,
         selectedStatusId: statusId
       }
-      
-      await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, mockRegistersStore, mockAlertStore)
-      
+
+      await applyBulkStatusToAllOrders(
+        registerId,
+        statusId,
+        bulkStatusState,
+        mockRegistersStore,
+        mockAlertStore
+      )
+
       expect(mockRegistersStore.setParcelStatuses).toHaveBeenCalledWith(registerId, statusId)
-      expect(mockAlertStore.success).toHaveBeenCalledWith('Статус успешно применен ко всем посылкам в реестре')
+      expect(mockAlertStore.success).toHaveBeenCalledWith(
+        'Статус успешно применен ко всем посылкам в реестре'
+      )
       expect(bulkStatusState[registerId].editMode).toBe(false)
       expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
       expect(mockRegistersStore.getAll).toHaveBeenCalled()
@@ -235,17 +241,23 @@ describe('registers.list.helpers', () => {
       const registerId = 1
       const statusId = 5
       const errorMessage = 'Server error'
-      
+
       mockRegistersStore.setParcelStatuses.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       // Initialize state
       bulkStatusState[registerId] = {
         editMode: true,
         selectedStatusId: statusId
       }
-      
-      await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, mockRegistersStore, mockAlertStore)
-      
+
+      await applyBulkStatusToAllOrders(
+        registerId,
+        statusId,
+        bulkStatusState,
+        mockRegistersStore,
+        mockAlertStore
+      )
+
       expect(mockRegistersStore.setParcelStatuses).toHaveBeenCalledWith(registerId, statusId)
       expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
       expect(bulkStatusState[registerId].editMode).toBe(false)
@@ -257,34 +269,46 @@ describe('registers.list.helpers', () => {
       const registerId = 1
       const statusId = 5
       const storeErrorMessage = 'Store error'
-      
+
       mockRegistersStore.setParcelStatuses.mockRejectedValueOnce(new Error())
       mockRegistersStore.error = { message: storeErrorMessage }
-      
+
       bulkStatusState[registerId] = {
         editMode: true,
         selectedStatusId: statusId
       }
-      
-      await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, mockRegistersStore, mockAlertStore)
-      
+
+      await applyBulkStatusToAllOrders(
+        registerId,
+        statusId,
+        bulkStatusState,
+        mockRegistersStore,
+        mockAlertStore
+      )
+
       expect(mockAlertStore.error).toHaveBeenCalledWith(storeErrorMessage)
     })
 
     it('uses default error message when no error message available', async () => {
       const registerId = 1
       const statusId = 5
-      
+
       mockRegistersStore.setParcelStatuses.mockRejectedValueOnce(new Error())
       mockRegistersStore.error = null
-      
+
       bulkStatusState[registerId] = {
         editMode: true,
         selectedStatusId: statusId
       }
-      
-      await applyBulkStatusToAllOrders(registerId, statusId, bulkStatusState, mockRegistersStore, mockAlertStore)
-      
+
+      await applyBulkStatusToAllOrders(
+        registerId,
+        statusId,
+        bulkStatusState,
+        mockRegistersStore,
+        mockAlertStore
+      )
+
       expect(mockAlertStore.error).toHaveBeenCalledWith('Ошибка при обновлении статусов посылок')
     })
   })
@@ -296,9 +320,9 @@ describe('registers.list.helpers', () => {
         editMode: true,
         selectedStatusId: null
       }
-      
+
       const result = isBulkStatusEditMode(registerId, bulkStatusState)
-      
+
       expect(result).toBe(true)
     })
 
@@ -308,17 +332,17 @@ describe('registers.list.helpers', () => {
         editMode: false,
         selectedStatusId: null
       }
-      
+
       const result = isBulkStatusEditMode(registerId, bulkStatusState)
-      
+
       expect(result).toBe(false)
     })
 
     it('returns false when state does not exist', () => {
       const registerId = 1
-      
+
       const result = isBulkStatusEditMode(registerId, bulkStatusState)
-      
+
       expect(result).toBe(false)
     })
   })
@@ -331,9 +355,9 @@ describe('registers.list.helpers', () => {
         editMode: true,
         selectedStatusId: statusId
       }
-      
+
       const result = getBulkStatusSelectedId(registerId, bulkStatusState)
-      
+
       expect(result).toBe(statusId)
     })
 
@@ -343,17 +367,17 @@ describe('registers.list.helpers', () => {
         editMode: true,
         selectedStatusId: null
       }
-      
+
       const result = getBulkStatusSelectedId(registerId, bulkStatusState)
-      
+
       expect(result).toBeNull()
     })
 
     it('returns null when state does not exist', () => {
       const registerId = 1
-      
+
       const result = getBulkStatusSelectedId(registerId, bulkStatusState)
-      
+
       expect(result).toBeNull()
     })
   })
@@ -362,9 +386,9 @@ describe('registers.list.helpers', () => {
     it('sets selected status ID and initializes state if needed', () => {
       const registerId = 1
       const statusId = 7
-      
+
       setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
-      
+
       expect(bulkStatusState[registerId]).toBeDefined()
       expect(bulkStatusState[registerId].selectedStatusId).toBe(statusId)
       expect(bulkStatusState[registerId].editMode).toBe(false) // initialized as false
@@ -377,9 +401,9 @@ describe('registers.list.helpers', () => {
         editMode: true,
         selectedStatusId: 3
       }
-      
+
       setBulkStatusSelectedId(registerId, statusId, bulkStatusState)
-      
+
       expect(bulkStatusState[registerId].selectedStatusId).toBe(statusId)
       expect(bulkStatusState[registerId].editMode).toBe(true) // preserved
     })
@@ -566,7 +590,7 @@ describe('registers.list.helpers', () => {
     describe('createValidationState', () => {
       it('creates initial validation state object', () => {
         const state = createValidationState()
-        
+
         expect(state).toEqual({
           show: false,
           handleId: null,
@@ -580,28 +604,27 @@ describe('registers.list.helpers', () => {
       it('returns 0 when total is 0', () => {
         validationState.total = 0
         validationState.processed = 10
-        
+
         const progress = calculateValidationProgress(validationState)
-        
+
         expect(progress).toBe(0)
       })
-
 
       it('calculates correct percentage', () => {
         validationState.total = 100
         validationState.processed = 25
-        
+
         const progress = calculateValidationProgress(validationState)
-        
+
         expect(progress).toBe(25)
       })
 
       it('rounds percentage correctly', () => {
         validationState.total = 3
         validationState.processed = 1
-        
+
         const progress = calculateValidationProgress(validationState)
-        
+
         expect(progress).toBe(33) // Math.round(33.333...)
       })
     })
@@ -616,9 +639,9 @@ describe('registers.list.helpers', () => {
 
       it('does nothing when no handleId', async () => {
         validationState.handleId = null
-        
+
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
-        
+
         expect(mockRegistersStore.getValidationProgress).not.toHaveBeenCalled()
       })
 
@@ -629,9 +652,9 @@ describe('registers.list.helpers', () => {
           finished: false
         }
         mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
-        
+
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
-        
+
         expect(mockRegistersStore.getValidationProgress).toHaveBeenCalledWith('test-handle-123')
         expect(validationState.total).toBe(100)
         expect(validationState.processed).toBe(50)
@@ -647,9 +670,9 @@ describe('registers.list.helpers', () => {
           finished: true
         }
         mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
-        
+
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
-        
+
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
         expect(mockRegistersStore.getAll).toHaveBeenCalled()
@@ -663,9 +686,9 @@ describe('registers.list.helpers', () => {
           finished: false
         }
         mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
-        
+
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
-        
+
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
         expect(mockRegistersStore.getAll).toHaveBeenCalled()
@@ -679,9 +702,9 @@ describe('registers.list.helpers', () => {
           finished: false
         }
         mockRegistersStore.getValidationProgress.mockResolvedValueOnce(progressData)
-        
+
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
-        
+
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
         expect(mockRegistersStore.getAll).toHaveBeenCalled()
@@ -691,9 +714,9 @@ describe('registers.list.helpers', () => {
         validationState.show = true
         const errorMessage = 'Polling failed'
         mockRegistersStore.getValidationProgress.mockRejectedValueOnce(new Error(errorMessage))
-        
+
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
-        
+
         expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
@@ -720,8 +743,16 @@ describe('registers.list.helpers', () => {
           processed: 0,
           finished: false
         })
-        
-        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn, true)
+
+        await validateRegister(
+          item,
+          validationState,
+          mockRegistersStore,
+          mockAlertStore,
+          stopPollingFn,
+          startPollingFn,
+          true
+        )
 
         expect(stopPollingFn).toHaveBeenCalled()
         // validate may receive an optional swMatchMode third arg, so only assert on the first two args
@@ -738,8 +769,16 @@ describe('registers.list.helpers', () => {
       it('handles validation start errors', async () => {
         const errorMessage = 'Validation failed to start'
         mockRegistersStore.validate.mockRejectedValueOnce(new Error(errorMessage))
-        
-        await validateRegister(item, validationState, mockRegistersStore, mockAlertStore, stopPollingFn, startPollingFn, false)
+
+        await validateRegister(
+          item,
+          validationState,
+          mockRegistersStore,
+          mockAlertStore,
+          stopPollingFn,
+          startPollingFn,
+          false
+        )
 
         expect(stopPollingFn).toHaveBeenCalled()
         expect(mockRegistersStore.validate).toHaveBeenCalled()
@@ -762,9 +801,9 @@ describe('registers.list.helpers', () => {
         validationState.handleId = 'test-handle-123'
         validationState.show = true
         mockRegistersStore.cancelValidation.mockResolvedValueOnce({})
-        
+
         cancelValidation(validationState, mockRegistersStore, stopPollingFn)
-        
+
         expect(mockRegistersStore.cancelValidation).toHaveBeenCalledWith('test-handle-123')
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
@@ -773,9 +812,9 @@ describe('registers.list.helpers', () => {
       it('cancels validation without handleId', () => {
         validationState.handleId = null
         validationState.show = true
-        
+
         cancelValidation(validationState, mockRegistersStore, stopPollingFn)
-        
+
         expect(mockRegistersStore.cancelValidation).not.toHaveBeenCalled()
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
@@ -785,11 +824,11 @@ describe('registers.list.helpers', () => {
         validationState.handleId = 'test-handle-123'
         validationState.show = true
         mockRegistersStore.cancelValidation.mockRejectedValueOnce(new Error('Cancellation failed'))
-        
+
         expect(() => {
           cancelValidation(validationState, mockRegistersStore, stopPollingFn)
         }).not.toThrow()
-        
+
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
       })
@@ -809,15 +848,15 @@ describe('registers.list.helpers', () => {
 
       it('creates timer with default interval', () => {
         const timer = createPollingTimer(pollFunction)
-        
+
         expect(timer.isRunning()).toBe(false)
-        
+
         timer.start()
         expect(timer.isRunning()).toBe(true)
-        
+
         vi.advanceTimersByTime(POLLING_INTERVAL_MS)
         expect(pollFunction).toHaveBeenCalledTimes(1)
-        
+
         timer.stop()
         expect(timer.isRunning()).toBe(false)
       })
@@ -825,33 +864,33 @@ describe('registers.list.helpers', () => {
       it('creates timer with custom interval', () => {
         const customInterval = 500
         const timer = createPollingTimer(pollFunction, customInterval)
-        
+
         timer.start()
-        
+
         vi.advanceTimersByTime(customInterval)
         expect(pollFunction).toHaveBeenCalledTimes(1)
-        
+
         vi.advanceTimersByTime(customInterval)
         expect(pollFunction).toHaveBeenCalledTimes(2)
-        
+
         timer.stop()
       })
 
       it('prevents multiple starts', () => {
         const timer = createPollingTimer(pollFunction)
-        
+
         timer.start()
         timer.start() // Should not create another timer
-        
+
         vi.advanceTimersByTime(POLLING_INTERVAL_MS)
         expect(pollFunction).toHaveBeenCalledTimes(1)
-        
+
         timer.stop()
       })
 
       it('handles stop when not running', () => {
         const timer = createPollingTimer(pollFunction)
-        
+
         expect(() => timer.stop()).not.toThrow()
         expect(timer.isRunning()).toBe(false)
       })
@@ -872,8 +911,12 @@ describe('registers.list.helpers', () => {
           download: vi.fn().mockResolvedValue(),
           validate: vi.fn().mockResolvedValue({ id: 1 }),
           lookupFeacnCodes: vi.fn().mockResolvedValue({ id: 2 }),
-          getValidationProgress: vi.fn().mockResolvedValue({ total: 1, processed: 1, finished: true }),
-          getLookupFeacnCodesProgress: vi.fn().mockResolvedValue({ total: 1, processed: 1, finished: true }),
+          getValidationProgress: vi
+            .fn()
+            .mockResolvedValue({ total: 1, processed: 1, finished: true }),
+          getLookupFeacnCodesProgress: vi
+            .fn()
+            .mockResolvedValue({ total: 1, processed: 1, finished: true }),
           cancelValidation: vi.fn().mockResolvedValue(),
           cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
           getAll: vi.fn().mockResolvedValue()

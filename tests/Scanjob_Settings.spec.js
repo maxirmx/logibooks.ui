@@ -13,7 +13,6 @@ import ActionButton from '@/components/ActionButton.vue'
 import { resolveAll, vuetifyStubs } from './helpers/test-utils'
 import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 
-
 const vuetify = createVuetify()
 
 const mockOps = ref({
@@ -119,13 +118,14 @@ vi.mock('@/stores/warehouses.store.js', () => ({
   })
 }))
 
-
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
-    get item() { return registerItem },
+    get item() {
+      return registerItem
+    },
     getById: getRegisterById,
     ensureOpsLoaded: ensureRegisterOpsLoaded,
-    getTransportationDocument: (value) => Number(value) === 0 ? 'AWB' : `[Тип ${value}]`
+    getTransportationDocument: (value) => (Number(value) === 0 ? 'AWB' : `[Тип ${value}]`)
   })
 }))
 
@@ -245,7 +245,9 @@ describe('Scanjob_Settings.vue', () => {
     // 1) alertError was called with the appropriate message
     // 2) routerBack was called to navigate away
     expect(() => mountComponent({ mode: 'edit' })).toThrow()
-    expect(alertError).toHaveBeenCalledWith('Невозможно редактировать задание на сканирование: отсутствует идентификатор')
+    expect(alertError).toHaveBeenCalledWith(
+      'Невозможно редактировать задание на сканирование: отсутствует идентификатор'
+    )
     expect(routerBack).toHaveBeenCalled()
   })
 
@@ -263,7 +265,9 @@ describe('Scanjob_Settings.vue', () => {
     expect(wrapper.find('[data-testid="status-display"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="status-display"]').element.value).toBe('Draft')
     expect(wrapper.find('[data-testid="invoice-display"]').element.value).toBe('AWB INV-001')
-    expect(wrapper.find('[data-testid="sender-recipient-display"]').element.value).toBe('Отправитель ООО / Получатель полное')
+    expect(wrapper.find('[data-testid="sender-recipient-display"]').element.value).toBe(
+      'Отправитель ООО / Получатель полное'
+    )
     const formRows = wrapper.findAll('form > .form-row')
     expect(formRows[0].text()).toContain('ТСД')
     expect(formRows[0].text()).toContain('Отправитель/Получатель')
@@ -294,13 +298,15 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
 
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Сканирование сделки ABC-1',
-      registerId: 22,
-      warehouseId: 11,
-      status: 4,
-      lookupStatusId: 101
-    }))
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Сканирование сделки ABC-1',
+        registerId: 22,
+        warehouseId: 11,
+        status: 4,
+        lookupStatusId: 101
+      })
+    )
     // After successful create, navigate to scanjobs list
     expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
@@ -323,12 +329,15 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(11, expect.objectContaining({
-      name: 'Test scanjob',
-      registerId: 22,
-      warehouseId: 11,
-      lookupStatusId: 101
-    }))
+    expect(update).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({
+        name: 'Test scanjob',
+        registerId: 22,
+        warehouseId: 11,
+        lookupStatusId: 101
+      })
+    )
     // After successful edit, return to caller
     expect(routerBack).toHaveBeenCalled()
   })
@@ -418,7 +427,7 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
 
-    expect(wrapper.text()).toContain('Такое задание на сканирование уже существует')
+    expect(alertError).toHaveBeenCalledWith('Такое задание на сканирование уже существует')
   })
 
   it('locks the form and all scanjob mutations for read-only data', async () => {
@@ -431,10 +440,7 @@ describe('Scanjob_Settings.vue', () => {
 
     expect(wrapper.text()).toContain('Изменения и операции сканирования запрещены')
     expect(wrapper.get('form').classes()).toContain('read-only-form')
-    for (const testId of [
-      'scanjob-start-action',
-      'scanjob-save-action'
-    ]) {
+    for (const testId of ['scanjob-start-action', 'scanjob-save-action']) {
       expect(wrapper.get(`[data-testid="${testId}"]`).attributes('disabled')).toBeDefined()
     }
 
@@ -454,7 +460,9 @@ describe('Scanjob_Settings.vue', () => {
   })
 
   it('enters read-only mode when a status action save receives a mutation conflict', async () => {
-    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
+    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), {
+      status: 409
+    })
     update.mockRejectedValue(conflict)
     const wrapper = mountComponent({
       mode: 'edit',
@@ -488,7 +496,9 @@ describe('Scanjob_Settings.vue', () => {
   })
 
   it('enters read-only mode when form submission receives a mutation conflict', async () => {
-    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
+    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), {
+      status: 409
+    })
     update.mockRejectedValue(conflict)
     const wrapper = mountComponent({
       mode: 'edit',
@@ -499,11 +509,9 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.vm.$.setupState.onSubmit()
     await resolveAll()
 
-    expect(wrapper.text()).toContain('Изменения запрещены для выбранного реестра')
+    expect(alertError).toHaveBeenCalledWith('Изменения запрещены для выбранного реестра')
     expect(wrapper.get('form').classes()).toContain('read-only-form')
   })
-
-
 
   it('enables and validates lookup status only for lookup operation', async () => {
     const wrapper = mountComponent({
@@ -530,7 +538,9 @@ describe('Scanjob_Settings.vue', () => {
 
     await wrapper.find('#operation').setValue('9')
     await resolveAll()
-    expect(wrapper.find('[data-testid="lookup-status-select"]').attributes('disabled')).toBeDefined()
+    expect(
+      wrapper.find('[data-testid="lookup-status-select"]').attributes('disabled')
+    ).toBeDefined()
   })
 
   it('limits operations to lookup for GTC registers', async () => {
@@ -567,8 +577,4 @@ describe('Scanjob_Settings.vue', () => {
 
     expect(alertError).toHaveBeenCalledWith('Не удалось обновить задание на сканирование')
   })
-
-
-
-
 })

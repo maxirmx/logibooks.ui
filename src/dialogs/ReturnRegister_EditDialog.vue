@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
@@ -14,6 +15,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
@@ -35,6 +37,7 @@ const countriesStore = useCountriesStore()
 const airportsStore = useAirportsStore()
 const registerStatusesStore = useRegisterStatusesStore()
 const parcelStatusesStore = useParcelStatusesStore()
+const alertStore = useAlertStore()
 const { warehouses } = storeToRefs(warehousesStore)
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
 
@@ -55,24 +58,27 @@ const isInitializing = ref(true)
 const pairsLoading = ref(false)
 const registersLoading = ref(false)
 const isSubmitting = ref(false)
-const errorMessage = ref('')
+const initializationFailed = ref(false)
 
-const warehouseOptions = computed(() => Array.isArray(warehouses.value) ? warehouses.value : [])
+const warehouseOptions = computed(() => (Array.isArray(warehouses.value) ? warehouses.value : []))
 const selectedWarehouseNumber = computed(() => Number(selectedWarehouseId.value) || 0)
-const selectedCustomsProcedureNumber = computed(() =>
-  Number(selectedCustomsProcedureCode.value) || RETURN_REGISTER_CUSTOMS_PROCEDURE.Return
+const selectedCustomsProcedureNumber = computed(
+  () => Number(selectedCustomsProcedureCode.value) || RETURN_REGISTER_CUSTOMS_PROCEDURE.Return
 )
-const selectedParcelSelectionModeNumber = computed(() =>
-  Number(selectedParcelSelectionMode.value) || RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone
+const selectedParcelSelectionModeNumber = computed(
+  () => Number(selectedParcelSelectionMode.value) || RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone
 )
 const selectedParcelStatusNumber = computed(() => Number(selectedParcelStatusId.value) || 0)
-const requiresParcelStatus = computed(() =>
-  selectedParcelSelectionModeNumber.value === RETURN_REGISTER_PARCEL_SELECTION_MODE.ParcelStatus
+const requiresParcelStatus = computed(
+  () =>
+    selectedParcelSelectionModeNumber.value === RETURN_REGISTER_PARCEL_SELECTION_MODE.ParcelStatus
 )
-const hasValidParcelCriteria = computed(() =>
-  !requiresParcelStatus.value || selectedParcelStatusNumber.value > 0
+const hasValidParcelCriteria = computed(
+  () => !requiresParcelStatus.value || selectedParcelStatusNumber.value > 0
 )
-const selectedPair = computed(() => pairs.value.find((pair) => getPairKey(pair) === selectedPairKey.value) || null)
+const selectedPair = computed(
+  () => pairs.value.find((pair) => getPairKey(pair) === selectedPairKey.value) || null
+)
 const registerNouns = computed(() => getRegisterNouns(OP_MODE_WAREHOUSE))
 const returnRegisterProcedureOptions = computed(() => {
   return buildReturnRegisterProcedureOptions(registersStore.ops?.customsProcedures)
@@ -86,7 +92,9 @@ const parcelSelectionModeOptions = [
   { value: String(RETURN_REGISTER_PARCEL_SELECTION_MODE.RedZone), label: 'Красная зона' },
   { value: String(RETURN_REGISTER_PARCEL_SELECTION_MODE.ParcelStatus), label: 'Статус посылки' }
 ]
-const parcelStatusOptions = computed(() => Array.isArray(parcelStatuses.value) ? parcelStatuses.value : [])
+const parcelStatusOptions = computed(() =>
+  Array.isArray(parcelStatuses.value) ? parcelStatuses.value : []
+)
 
 /**
  * Shared API criteria; pair lookup, source list, and create payload must use the same values.
@@ -96,34 +104,33 @@ const returnRegisterCriteria = computed(() => ({
   parcelSelectionMode: selectedParcelSelectionModeNumber.value,
   parcelStatusId: requiresParcelStatus.value ? selectedParcelStatusNumber.value : null
 }))
-const canSubmit = computed(() =>
-  selectedWarehouseNumber.value > 0 &&
-  hasValidCustomsProcedure.value &&
-  hasValidParcelCriteria.value &&
-  selectedPair.value !== null &&
-  selectedRegisterIds.value.length > 0 &&
-  !isInitializing.value &&
-  !pairsLoading.value &&
-  !registersLoading.value &&
-  !isSubmitting.value
+const canSubmit = computed(
+  () =>
+    selectedWarehouseNumber.value > 0 &&
+    hasValidCustomsProcedure.value &&
+    hasValidParcelCriteria.value &&
+    selectedPair.value !== null &&
+    selectedRegisterIds.value.length > 0 &&
+    !isInitializing.value &&
+    !pairsLoading.value &&
+    !registersLoading.value &&
+    !isSubmitting.value
 )
-const isBusy = computed(() => isInitializing.value || pairsLoading.value || registersLoading.value || isSubmitting.value)
+const isBusy = computed(
+  () => isInitializing.value || pairsLoading.value || registersLoading.value || isSubmitting.value
+)
 const sourceTableDisabled = computed(() => !selectedPair.value || isSubmitting.value)
 
 let pairRequestId = 0
 let registerRequestId = 0
 let sourceSearchTimer = null
 
-onMounted(async () => {
-  try {
-    await warehousesStore.ensureLoaded()
-  } catch (error) {
-    errorMessage.value = getErrorText(error, 'Не удалось загрузить склады')
-    isInitializing.value = false
-    return
-  }
+async function initialize() {
+  isInitializing.value = true
+  initializationFailed.value = false
 
   try {
+    await warehousesStore.ensureLoaded()
     await countriesStore.ensureLoaded()
     await registersStore.ensureOpsLoaded()
     await registerStatusesStore.ensureLoaded()
@@ -135,11 +142,17 @@ onMounted(async () => {
       selectedWarehouseId.value = String(warehouseOptions.value[0].id)
     }
   } catch (error) {
-    errorMessage.value = error?.message || 'Не удалось загрузить данные'
+    initializationFailed.value = true
+    alertStore.error(error, {
+      fallback: 'Не удалось загрузить данные для создания реестра возврата',
+      action: { label: 'Повторить', handler: initialize }
+    })
   } finally {
     isInitializing.value = false
   }
-})
+}
+
+onMounted(initialize)
 
 onUnmounted(() => {
   clearSourceSearchTimer()
@@ -156,7 +169,12 @@ watch([selectedWarehouseId, returnRegisterCriteria, hasValidCustomsProcedure], a
   pairs.value = []
   clearSourceRegisters()
 
-  if (!selectedWarehouseNumber.value || !hasValidCustomsProcedure.value || !hasValidParcelCriteria.value) return
+  if (
+    !selectedWarehouseNumber.value ||
+    !hasValidCustomsProcedure.value ||
+    !hasValidParcelCriteria.value
+  )
+    return
 
   await loadPairs()
 })
@@ -173,12 +191,16 @@ watch(selectedPairKey, async () => {
   await loadSourceRegisters()
 })
 
-watch([sourcePage, sourcePerPage, sourceSortBy], () => {
-  if (!selectedPair.value) return
+watch(
+  [sourcePage, sourcePerPage, sourceSortBy],
+  () => {
+    if (!selectedPair.value) return
 
-  clearSourceSearchTimer()
-  loadSourceRegisters()
-}, { immediate: false })
+    clearSourceSearchTimer()
+    loadSourceRegisters()
+  },
+  { immediate: false }
+)
 
 watch(sourceSearch, () => {
   if (!selectedPair.value) return
@@ -223,17 +245,9 @@ function getPairLabel(pair) {
     : `${sender} / ${receiver}`
 }
 
-function getErrorText(error, fallback) {
-  if (error == null) return fallback
-  if (typeof error === 'string') return error
-  const message = error?.message || error?.msg
-  return message ? message : fallback
-}
-
 async function loadPairs() {
   const requestId = ++pairRequestId
   pairsLoading.value = true
-  errorMessage.value = ''
   try {
     const result = await registersStore.getReturnRegisterPairs(
       selectedWarehouseNumber.value,
@@ -246,7 +260,10 @@ async function loadPairs() {
   } catch (error) {
     /* v8 ignore next -- stale async response guard */
     if (requestId === pairRequestId) {
-      errorMessage.value = getErrorText(error, 'Не удалось загрузить отправителей и получателей')
+      alertStore.error(error, {
+        fallback: 'Не удалось загрузить отправителей и получателей',
+        action: { label: 'Повторить', handler: loadPairs }
+      })
     }
   } finally {
     /* v8 ignore next -- stale async response guard */
@@ -263,7 +280,6 @@ async function loadSourceRegisters() {
 
   const requestId = ++registerRequestId
   registersLoading.value = true
-  errorMessage.value = ''
   try {
     const result = await registersStore.getRegisters({
       warehouseId: selectedWarehouseNumber.value,
@@ -280,15 +296,18 @@ async function loadSourceRegisters() {
     })
     /* v8 ignore next -- stale async response guard */
     if (requestId === registerRequestId) {
-      sourceRegisters.value = Array.isArray(result) ? result : (result?.items || [])
+      sourceRegisters.value = Array.isArray(result) ? result : result?.items || []
       sourceTotalCount.value = Array.isArray(result)
         ? result.length
-        : (result?.pagination?.totalCount || 0)
+        : result?.pagination?.totalCount || 0
     }
   } catch (error) {
     /* v8 ignore next -- stale async response guard */
     if (requestId === registerRequestId) {
-      errorMessage.value = getErrorText(error, 'Не удалось загрузить реестры')
+      alertStore.error(error, {
+        fallback: 'Не удалось загрузить реестры',
+        action: { label: 'Повторить', handler: loadSourceRegisters }
+      })
     }
   } finally {
     /* v8 ignore next -- stale async response guard */
@@ -305,7 +324,6 @@ async function submit() {
   }
 
   isSubmitting.value = true
-  errorMessage.value = ''
   try {
     const created = await registersStore.createReturnRegister({
       warehouseId: selectedWarehouseNumber.value,
@@ -323,7 +341,7 @@ async function submit() {
 
     router.push(`/registers/${createdId}/parcels?mode=${OP_MODE_WAREHOUSE}`)
   } catch (error) {
-    errorMessage.value = getErrorText(error, 'Не удалось создать реестр возврата')
+    alertStore.error(error, { fallback: 'Не удалось создать реестр возврата' })
   } finally {
     isSubmitting.value = false
   }
@@ -365,7 +383,9 @@ function cancel() {
 
     <hr class="hr" />
 
-    <div class="form-section">
+    <PageAlertRegion />
+
+    <div v-if="!initializationFailed" class="form-section">
       <div class="form-row">
         <div class="form-group">
           <label class="label" for="return-register-warehouse">Склад:</label>
@@ -377,7 +397,11 @@ function cancel() {
             data-testid="warehouse-select"
           >
             <option value="">Не выбрано</option>
-            <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="String(warehouse.id)">
+            <option
+              v-for="warehouse in warehouseOptions"
+              :key="warehouse.id"
+              :value="String(warehouse.id)"
+            >
               {{ warehouse.name }}
             </option>
           </select>
@@ -392,7 +416,11 @@ function cancel() {
             :disabled="isInitializing || isSubmitting"
             data-testid="return-type-select"
           >
-            <option v-for="procedure in returnRegisterProcedureOptions" :key="procedure.value" :value="procedure.value">
+            <option
+              v-for="procedure in returnRegisterProcedureOptions"
+              :key="procedure.value"
+              :value="procedure.value"
+            >
               {{ procedure.label }}
             </option>
           </select>
@@ -409,7 +437,11 @@ function cancel() {
             :disabled="isInitializing || isSubmitting"
             data-testid="selection-mode-select"
           >
-            <option v-for="mode in parcelSelectionModeOptions" :key="mode.value" :value="mode.value">
+            <option
+              v-for="mode in parcelSelectionModeOptions"
+              :key="mode.value"
+              :value="mode.value"
+            >
               {{ mode.label }}
             </option>
           </select>
@@ -425,7 +457,11 @@ function cancel() {
             data-testid="parcel-status-select"
           >
             <option value="">Не выбрано</option>
-            <option v-for="status in parcelStatusOptions" :key="status.id" :value="String(status.id)">
+            <option
+              v-for="status in parcelStatusOptions"
+              :key="status.id"
+              :value="String(status.id)"
+            >
               {{ status.title }}
             </option>
           </select>
@@ -439,7 +475,13 @@ function cancel() {
             id="return-register-pair"
             v-model="selectedPairKey"
             class="form-control input"
-            :disabled="!selectedWarehouseNumber || !hasValidCustomsProcedure || !hasValidParcelCriteria || pairsLoading || isSubmitting"
+            :disabled="
+              !selectedWarehouseNumber ||
+              !hasValidCustomsProcedure ||
+              !hasValidParcelCriteria ||
+              pairsLoading ||
+              isSubmitting
+            "
             data-testid="pair-select"
           >
             <option value="">Не выбрано</option>
@@ -451,7 +493,7 @@ function cancel() {
       </div>
     </div>
 
-    <section class="return-register-source-section">
+    <section v-if="!initializationFailed" class="return-register-source-section">
       <h2 class="secondary-heading">{{ registerNouns.plural }}</h2>
 
       <v-text-field
@@ -480,10 +522,6 @@ function cancel() {
         :selection-disabled="sourceTableDisabled || registersLoading"
       />
     </section>
-
-    <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0" data-testid="return-register-error">
-      {{ errorMessage }}
-    </div>
   </div>
 </template>
 
@@ -498,5 +536,4 @@ function cancel() {
   font-weight: 600;
   margin: 0 0 0.75rem;
 }
-
 </style>

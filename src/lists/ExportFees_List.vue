@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
@@ -11,13 +12,13 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const exportFeesStore = useExportFeesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { fees, loading } = storeToRefs(exportFeesStore)
-const { alert } = storeToRefs(alertStore)
 const {
   exportfees_per_page,
   exportfees_search,
@@ -26,14 +27,14 @@ const {
   isSrLogistPlus
 } = storeToRefs(authStore)
 
-onMounted(loadFees)
+onMounted(() =>
+  runWithRetryAlert(loadFees, {
+    fallback: 'Не удалось загрузить таможенные сборы'
+  })
+)
 
 async function loadFees() {
   await exportFeesStore.getAll()
-  const storeError = unref(exportFeesStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
-  }
 }
 
 function filterFees(value, query, item) {
@@ -105,6 +106,8 @@ const customKeySort = {
 
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div>
       <v-text-field
         v-model="exportfees_search"
@@ -138,10 +141,6 @@ const customKeySort = {
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

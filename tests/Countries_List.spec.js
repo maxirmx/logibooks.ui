@@ -1,10 +1,10 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import CountriesList from '@/lists/Countries_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -68,6 +68,7 @@ vi.mock('@/helpers/items.per.page.js', () => ({
 describe('Countries_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getAll.mockReset().mockResolvedValue()
     mockItems.value = [
       { isoNumeric: 840, isoAlpha2: 'US', nameEnOfficial: 'United States', nameRuOfficial: 'США' },
       { isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }
@@ -126,23 +127,34 @@ describe('Countries_List.vue', () => {
 
   it('shows spinner and reports store error through alertStore', async () => {
     mockLoading.value = true
-    mockError.value = 'bad'
+    getAll.mockRejectedValueOnce('bad')
     // spinner is only rendered for admin users in header-actions
     mockIsAdmin.value = true
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    await Promise.resolve()
+    await flushPromises()
 
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).not.toContain('Ошибка при загрузке информации')
-    expect(error).toHaveBeenCalledWith('bad')
+    expect(error).toHaveBeenCalledWith(
+      'bad',
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить страны',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 
   it('reports Error object store error as message string through alertStore', async () => {
-    mockError.value = new Error('load countries failed')
+    getAll.mockRejectedValueOnce(new Error('load countries failed'))
     mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    await Promise.resolve()
+    await flushPromises()
 
-    expect(error).toHaveBeenCalledWith('load countries failed')
+    expect(error).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'load countries failed' }),
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить страны',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 })
-

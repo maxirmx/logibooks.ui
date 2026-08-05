@@ -51,10 +51,12 @@ describe('PassportCheckStatusIndicator', () => {
     expect(icon.attributes('aria-label')).toBe('Проверен')
     expect(icon.attributes('title')).toBe('Проверен')
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
-    expect(icon.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__icon',
-      'passport-check-status__icon--color-no-issues'
-    ]))
+    expect(icon.classes()).toEqual(
+      expect.arrayContaining([
+        'passport-check-status__icon',
+        'passport-check-status__icon--color-no-issues'
+      ])
+    )
     expect(wrapper.get('.tooltip-stub').attributes('data-text')).toBe('Проверен')
     expect(wrapper.text()).toContain('AB1234567')
   })
@@ -76,9 +78,9 @@ describe('PassportCheckStatusIndicator', () => {
     const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
     expect(icon.attributes('aria-label')).toBeUndefined()
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-question')
-    expect(icon.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__icon--color-not-checked'
-    ]))
+    expect(icon.classes()).toEqual(
+      expect.arrayContaining(['passport-check-status__icon--color-not-checked'])
+    )
     expect(wrapper.get('.tooltip-stub').attributes('data-disabled')).toBe('true')
   })
 })

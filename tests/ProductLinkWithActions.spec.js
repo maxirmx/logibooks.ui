@@ -348,7 +348,9 @@ describe('ProductLinkWithActions', () => {
     expect(snap.parcels_status).toEqual(mockAuthStore.parcels_status)
     expect(snap.parcels_check_status_sw).toEqual(mockAuthStore.parcels_check_status_sw)
     expect(snap.parcels_check_status_fc).toEqual(mockAuthStore.parcels_check_status_fc)
-    expect(snap.parcels_hide_legacy_restrictions).toEqual(mockAuthStore.parcels_hide_legacy_restrictions)
+    expect(snap.parcels_hide_legacy_restrictions).toEqual(
+      mockAuthStore.parcels_hide_legacy_restrictions
+    )
     expect(snap.parcels_tnved).toEqual(mockAuthStore.parcels_tnved)
     expect(snap.parcels_number).toEqual(mockAuthStore.parcels_number)
     expect(snap.parcels_product_name).toEqual(mockAuthStore.parcels_product_name)

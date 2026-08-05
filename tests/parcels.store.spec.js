@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -151,7 +151,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
     mockAuthStore.parcels_status = 3
     mockAuthStore.parcels_tnved = 'AA'
-    
+
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(2)
@@ -162,7 +162,7 @@ describe('parcels store', () => {
 
   it('fetches data with check status filtering', async () => {
     mockAuthStore.parcels_check_status_sw = 5
-    
+
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(1)
@@ -175,7 +175,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_status = 2
     mockAuthStore.parcels_check_status_fc = 4
     mockAuthStore.parcels_tnved = 'BB'
-    
+
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(3)
@@ -220,7 +220,7 @@ describe('parcels store', () => {
 
   it('fetches data with parcel number filtering', async () => {
     mockAuthStore.parcels_number = 'TEST123'
-    
+
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(1)
@@ -233,7 +233,7 @@ describe('parcels store', () => {
     mockAuthStore.parcels_tnved = 'AA'
     mockAuthStore.parcels_number = 'OZON456'
     mockAuthStore.parcels_product_name = 'Notebook'
-    
+
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
     await store.getAll(2)
@@ -241,7 +241,6 @@ describe('parcels store', () => {
       `${apiUrl}/parcels?registerId=2&page=1&pageSize=100&sortBy=id&sortOrder=asc&tnVed=AA&number=OZON456&productName=Notebook`
     )
   })
-
 
   it('fetches data with product name filtering', async () => {
     mockAuthStore.parcels_product_name = 'Телефон'
@@ -259,9 +258,7 @@ describe('parcels store', () => {
     fetchWrapper.get.mockResolvedValue([{ id: 1, number: 'PN-001' }])
     const store = useParcelsStore()
     await store.getByNumber()
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels/by-number?number=PN-001`
-    )
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/by-number?number=PN-001`)
     expect(store.items_bn).toEqual([{ id: 1, number: 'PN-001' }])
     expect(store.loading).toBe(false)
   })
@@ -277,7 +274,6 @@ describe('parcels store', () => {
     expect(store.loading).toBe(false)
   })
 
-
   it('fetches order by id', async () => {
     fetchWrapper.get.mockResolvedValue({ id: 5 })
     const store = useParcelsStore()
@@ -290,7 +286,7 @@ describe('parcels store', () => {
     const error = new Error('Failed to fetch order')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useParcelsStore()
-    await store.getById(5)
+    await expect(store.getById(5)).rejects.toBe(error)
     expect(store.item).toEqual({ error })
   })
 
@@ -405,9 +401,7 @@ describe('parcels store', () => {
       { id: 11, extId: '4' },
       { id: 12, extId: '5', number: 'P-12' }
     ]
-    store.items_bn = [
-      { id: 12, extId: '5', number: 'P-12' }
-    ]
+    store.items_bn = [{ id: 12, extId: '5', number: 'P-12' }]
 
     const result = await store.clearExtId(12)
 
@@ -418,9 +412,7 @@ describe('parcels store', () => {
       { id: 11, extId: '4' },
       { id: 12, extId: null, number: 'P-12' }
     ])
-    expect(store.items_bn).toEqual([
-      { id: 12, extId: null, number: 'P-12' }
-    ])
+    expect(store.items_bn).toEqual([{ id: 12, extId: null, number: 'P-12' }])
   })
 
   it('applies ExtId subscription changes and ignores stale revisions', () => {
@@ -504,7 +496,11 @@ describe('parcels store', () => {
 
   it('preserves live check updates that arrive during a list REST request', async () => {
     let resolveRequest
-    fetchWrapper.get.mockReturnValue(new Promise(resolve => { resolveRequest = resolve }))
+    fetchWrapper.get.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      })
+    )
     const store = useParcelsStore()
 
     const request = store.getAll(7, { updateStore: false })
@@ -587,10 +583,7 @@ describe('parcels store', () => {
 
       const result = await store.update(5, updateData)
 
-      expect(fetchWrapper.put).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/5`,
-        updateData
-      )
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/parcels/5`, updateData)
       expect(result).toEqual({ success: true })
     })
 
@@ -699,23 +692,23 @@ describe('parcels store', () => {
       const updateData = { statusId: 2 }
 
       await expect(store.update(5, updateData)).rejects.toThrow(errorMessage)
-      expect(fetchWrapper.put).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/5`,
-        updateData
-      )
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/parcels/5`, updateData)
     })
   })
 
   describe('generate methods', () => {
     it('generate calls downloadFile with correct parameters', async () => {
       const store = useParcelsStore()
-      
+
       // Mock fetchWrapper.downloadFile
       fetchWrapper.downloadFile = vi.fn().mockResolvedValue(true)
-      
+
       const result = await store.generate(123)
-      
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/parcels/123/generate`, 'IndPost_123.xml')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/generate`,
+        'IndPost_123.xml'
+      )
       expect(result).toBe(true)
     })
 
@@ -734,13 +727,15 @@ describe('parcels store', () => {
     it('throws error when generate fails', async () => {
       const store = useParcelsStore()
       const error = new Error('Generation failed')
-      
-      fetchWrapper.downloadFile = vi.fn().mockRejectedValue(error)
-      
-      await expect(store.generate(123)).rejects.toThrow('Generation failed')
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(`${apiUrl}/parcels/123/generate`, 'IndPost_123.xml')
-    })
 
+      fetchWrapper.downloadFile = vi.fn().mockRejectedValue(error)
+
+      await expect(store.generate(123)).rejects.toThrow('Generation failed')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/generate`,
+        'IndPost_123.xml'
+      )
+    })
   })
 
   describe('validateSw method', () => {
@@ -750,21 +745,24 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.validate(789, true)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw?withSwMatch=0`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/789/validate-sw?withSwMatch=0`
+      )
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(null)
     })
 
-    it('returns false and sets error when validateSw fails', async () => {
+    it('rethrows and sets error when validateSw fails', async () => {
       const error = new Error('Validation failed')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useParcelsStore()
-      const result = await store.validate(789, true)
+      await expect(store.validate(789, true)).rejects.toBe(error)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/789/validate-sw?withSwMatch=0`)
-      expect(result).toBe(false)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/789/validate-sw?withSwMatch=0`
+      )
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
@@ -783,15 +781,14 @@ describe('parcels store', () => {
       expect(store.error).toBe(null)
     })
 
-    it('returns false and sets error when validateFc fails', async () => {
+    it('rethrows and sets error when validateFc fails', async () => {
       const error = new Error('Validation failed')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useParcelsStore()
-      const result = await store.validate(123, false)
+      await expect(store.validate(123, false)).rejects.toBe(error)
 
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/validate-fc`)
-      expect(result).toBe(false)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
@@ -804,7 +801,9 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.approve(123)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`
+      )
       expect(result).toBe(true)
     })
 
@@ -814,7 +813,9 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.approve(123, ParcelApprovalMode.SimpleApprove)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`
+      )
       expect(result).toBe(true)
     })
 
@@ -824,7 +825,9 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.approve(123, ParcelApprovalMode.ApproveWithExcise)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`
+      )
       expect(result).toBe(true)
     })
 
@@ -834,7 +837,9 @@ describe('parcels store', () => {
       const store = useParcelsStore()
       const result = await store.approve(123, ParcelApprovalMode.ApproveWithNotification)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithNotification`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/approve?approveMode=ApproveWithNotification`
+      )
       expect(result).toBe(true)
     })
 
@@ -845,7 +850,9 @@ describe('parcels store', () => {
       const store = useParcelsStore()
 
       await expect(store.approve(123)).rejects.toThrow('Approval failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`
+      )
     })
 
     it('throws error when approve fails with ApproveWithExcise', async () => {
@@ -854,8 +861,12 @@ describe('parcels store', () => {
 
       const store = useParcelsStore()
 
-      await expect(store.approve(123, ParcelApprovalMode.ApproveWithExcise)).rejects.toThrow('Approval with excise failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`)
+      await expect(store.approve(123, ParcelApprovalMode.ApproveWithExcise)).rejects.toThrow(
+        'Approval with excise failed'
+      )
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        `${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`
+      )
     })
 
     it('refreshes the loaded and listed parcel after a read-only mutation conflict', async () => {
@@ -888,44 +899,44 @@ describe('parcels store', () => {
     })
   })
 
-    describe('deleteImage method', () => {
-      it('calls DELETE endpoint and refreshes item when current', async () => {
-        fetchWrapper.delete.mockResolvedValue(undefined)
-        fetchWrapper.get.mockResolvedValue({ id: 42, hasImage: false })
+  describe('deleteImage method', () => {
+    it('calls DELETE endpoint and refreshes item when current', async () => {
+      fetchWrapper.delete.mockResolvedValue(undefined)
+      fetchWrapper.get.mockResolvedValue({ id: 42, hasImage: false })
 
-        const store = useParcelsStore()
-        // simulate currently loaded item
-        store.item = { id: 42, hasImage: true }
+      const store = useParcelsStore()
+      // simulate currently loaded item
+      store.item = { id: 42, hasImage: true }
 
-        const result = await store.deleteImage(42)
-        expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/parcels/42/image`)
-        expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/42`)
-        expect(result).toBe(true)
-        expect(store.item).toEqual({ id: 42, hasImage: false })
-      })
-
-      it('returns false without calling API when parcel has no image', async () => {
-        fetchWrapper.delete.mockResolvedValue(undefined)
-
-        const store = useParcelsStore()
-        // simulate currently loaded item without an image
-        store.item = { id: 42, hasImage: false }
-
-        const result = await store.deleteImage(42)
-        expect(fetchWrapper.delete).not.toHaveBeenCalled()
-        expect(result).toBe(false)
-      })
-
-      it('propagates error when delete fails', async () => {
-        const error = new Error('Not found')
-        fetchWrapper.delete.mockRejectedValue(error)
-
-        const store = useParcelsStore()
-
-        await expect(store.deleteImage(100)).rejects.toBe(error)
-        expect(store.error).toBe(error)
-      })
+      const result = await store.deleteImage(42)
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/parcels/42/image`)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/42`)
+      expect(result).toBe(true)
+      expect(store.item).toEqual({ id: 42, hasImage: false })
     })
+
+    it('returns false without calling API when parcel has no image', async () => {
+      fetchWrapper.delete.mockResolvedValue(undefined)
+
+      const store = useParcelsStore()
+      // simulate currently loaded item without an image
+      store.item = { id: 42, hasImage: false }
+
+      const result = await store.deleteImage(42)
+      expect(fetchWrapper.delete).not.toHaveBeenCalled()
+      expect(result).toBe(false)
+    })
+
+    it('propagates error when delete fails', async () => {
+      const error = new Error('Not found')
+      fetchWrapper.delete.mockRejectedValue(error)
+
+      const store = useParcelsStore()
+
+      await expect(store.deleteImage(100)).rejects.toBe(error)
+      expect(store.error).toBe(error)
+    })
+  })
 
   describe('lookupFeacnCode method', () => {
     it('calls lookup-feacn-code endpoint and returns result', async () => {
@@ -971,5 +982,4 @@ describe('parcels store', () => {
       await expect(store.getImageBlob(77)).rejects.toThrow('Image not found')
     })
   })
-
 })

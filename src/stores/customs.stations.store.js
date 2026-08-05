@@ -23,7 +23,7 @@ export const useCustomsStationsStore = defineStore('customsStations', () => {
       return customsStations.value
     } catch (err) {
       error.value = err
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -39,7 +39,7 @@ export const useCustomsStationsStore = defineStore('customsStations', () => {
     } catch (err) {
       error.value = err
       customsStation.value = { error: err }
-      return null
+      throw err
     } finally {
       loading.value = false
     }

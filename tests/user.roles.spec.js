@@ -21,9 +21,11 @@ import {
 
 describe('user role helpers', () => {
   it('formats user credentials in display order', () => {
-    expect(getCredentials({
-      roles: [roleWhOperator, roleAdmin, roleShiftLead, roleSrLogist, roleLogist, roleWhManager]
-    })).toBe('Администратор, Старший смены, Старший логист, Логист, Менеджер склада, Оператор склада')
+    expect(
+      getCredentials({
+        roles: [roleWhOperator, roleAdmin, roleShiftLead, roleSrLogist, roleLogist, roleWhManager]
+      })
+    ).toBe('Администратор, Старший смены, Старший логист, Логист, Менеджер склада, Оператор склада')
     expect(getCredentials({ roles: [] })).toBe('')
     expect(getCredentials(null)).toBe('')
   })
@@ -36,17 +38,21 @@ describe('user role helpers', () => {
   })
 
   it('detects users with only warehouse roles from translated role fields', () => {
-    expect(hasOnlyWarehouseRoles({
-      roles: [roleLogist],
-      isLogist: keyNone,
-      isWhManager: keyWhManager,
-      isWhOperator: keyWhOperator
-    })).toBe(true)
-    expect(hasOnlyWarehouseRoles({
-      roles: [roleWhManager],
-      isShiftLead: keyShiftLead,
-      isWhManager: keyWhManager
-    })).toBe(false)
+    expect(
+      hasOnlyWarehouseRoles({
+        roles: [roleLogist],
+        isLogist: keyNone,
+        isWhManager: keyWhManager,
+        isWhOperator: keyWhOperator
+      })
+    ).toBe(true)
+    expect(
+      hasOnlyWarehouseRoles({
+        roles: [roleWhManager],
+        isShiftLead: keyShiftLead,
+        isWhManager: keyWhManager
+      })
+    ).toBe(false)
   })
 
   it('detects unrestricted warehouse access for non-warehouse roles', () => {

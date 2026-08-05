@@ -1,8 +1,14 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -19,6 +25,8 @@ import {
   normalizeRegisterStatusPresentationPayload,
   registerStatusIconOptions
 } from '@/helpers/register.status.icons.js'
+
+const alertStore = useAlertStore()
 
 const props = defineProps({
   mode: {
@@ -51,7 +59,9 @@ if (isCreate.value) {
 } else {
   const refs = storeToRefs(registerStatusesStore)
   registerStatus = refs.registerStatus
-  await registerStatusesStore.getById(props.registerStatusId)
+  await runWithRetryAlert(() => registerStatusesStore.getById(props.registerStatusId), {
+    fallback: 'Не удалось загрузить статус партии'
+  })
 }
 
 // Get page title
@@ -111,12 +121,10 @@ function handleColorInput(event, handleChange, fieldName) {
 }
 
 // Form submission
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   const payload = normalizeRegisterStatusPresentationPayload(values)
   if (!authStore.isAdmin) {
-    payload.readOnly = isCreate.value
-      ? false
-      : registerStatus.value?.readOnly === true
+    payload.readOnly = isCreate.value ? false : registerStatus.value?.readOnly === true
   }
   if (isCreate.value) {
     return registerStatusesStore
@@ -126,9 +134,13 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Такой статус партии уже существует' })
+          alertStore.error('Такой статус партии уже существует')
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании статуса партии' })
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Ошибка при создании статуса партии'
+          })
         }
       })
   } else {
@@ -138,7 +150,11 @@ function onSubmit(values, { setErrors }) {
         router.push('/registerstatuses')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении статуса партии' })
+        reportFormError(error, {
+          setErrors,
+          alertStore,
+          fallback: 'Ошибка при сохранении статуса партии'
+        })
       })
   }
 }
@@ -147,6 +163,7 @@ function onSubmit(values, { setErrors }) {
 <template>
   <div class="settings form-2">
     <Form
+      @invalid-submit="focusFirstInvalidField"
       class="register-status-form"
       @submit="onSubmit"
       :initial-values="registerStatus"
@@ -178,6 +195,8 @@ function onSubmit(values, { setErrors }) {
       </div>
       <hr class="hr" />
 
+      <PageAlertRegion />
+
       <div class="status-settings-row">
         <label for="title" class="label status-settings-label">Название статуса:</label>
         <Field
@@ -188,6 +207,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.title }"
           placeholder="Название статуса"
         />
+        <FieldError name="title" :errors="errors" />
       </div>
 
       <Field name="bkColor" v-slot="{ field, handleChange }">
@@ -199,7 +219,9 @@ function onSubmit(values, { setErrors }) {
               :style="{ backgroundColor: getColorFieldValue(field?.value, 'bkColor') }"
               data-testid="bk-color-swatch"
             ></span>
-            <span class="status-color-value">{{ getColorFieldValue(field?.value, 'bkColor') }}</span>
+            <span class="status-color-value">{{
+              getColorFieldValue(field?.value, 'bkColor')
+            }}</span>
             <input
               id="bkColor"
               type="color"
@@ -210,6 +232,7 @@ function onSubmit(values, { setErrors }) {
               @input="(event) => handleColorInput(event, handleChange, 'bkColor')"
             />
           </label>
+          <FieldError name="bkColor" :errors="errors" />
         </div>
       </Field>
       <Field name="fgColor" v-slot="{ field, handleChange }">
@@ -221,7 +244,9 @@ function onSubmit(values, { setErrors }) {
               :style="{ backgroundColor: getColorFieldValue(field?.value, 'fgColor') }"
               data-testid="fg-color-swatch"
             ></span>
-            <span class="status-color-value">{{ getColorFieldValue(field?.value, 'fgColor') }}</span>
+            <span class="status-color-value">{{
+              getColorFieldValue(field?.value, 'fgColor')
+            }}</span>
             <input
               id="fgColor"
               type="color"
@@ -232,6 +257,7 @@ function onSubmit(values, { setErrors }) {
               @input="(event) => handleColorInput(event, handleChange, 'fgColor')"
             />
           </label>
+          <FieldError name="fgColor" :errors="errors" />
         </div>
       </Field>
 
@@ -275,14 +301,9 @@ function onSubmit(values, { setErrors }) {
               </button>
             </div>
           </div>
+          <FieldError name="icon" :errors="errors" />
         </div>
       </Field>
-
-      <div v-if="errors.title" class="alert alert-danger mt-3 mb-0">{{ errors.title }}</div>
-      <div v-if="errors.icon" class="alert alert-danger mt-3 mb-0">{{ errors.icon }}</div>
-      <div v-if="errors.bkColor" class="alert alert-danger mt-3 mb-0">{{ errors.bkColor }}</div>
-      <div v-if="errors.fgColor" class="alert alert-danger mt-3 mb-0">{{ errors.fgColor }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>
@@ -329,6 +350,12 @@ function onSubmit(values, { setErrors }) {
   align-items: center;
   column-gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.status-settings-row > .invalid-feedback {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .status-settings-row--icons {
@@ -476,6 +503,10 @@ function onSubmit(values, { setErrors }) {
   .status-settings-row {
     grid-template-columns: 1fr;
     row-gap: 0.35rem;
+  }
+
+  .status-settings-row > .invalid-feedback {
+    grid-column: 1;
   }
 
   .status-settings-label {

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -55,7 +55,6 @@ describe('warehouses store', () => {
     vi.clearAllMocks()
   })
 
-
   describe('getAll', () => {
     it('fetches warehouses successfully', async () => {
       fetchWrapper.get.mockResolvedValue(mockWarehouses)
@@ -74,7 +73,7 @@ describe('warehouses store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useWarehousesStore()
 
-      await store.getAll()
+      await expect(store.getAll()).rejects.toBe(error)
 
       expect(store.warehouses).toEqual([])
       expect(store.loading).toBe(false)
@@ -101,9 +100,7 @@ describe('warehouses store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useWarehousesStore()
 
-      const result = await store.getById(999)
-
-      expect(result).toBeNull()
+      await expect(store.getById(999)).rejects.toBe(error)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
@@ -244,9 +241,7 @@ describe('warehouses store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useWarehousesStore()
 
-      const result = await store.getOps()
-
-      expect(result).toBeNull()
+      await expect(store.getOps()).rejects.toBe(error)
       expect(store.opsLoading).toBe(false)
       expect(store.opsError).toBe(error)
     })

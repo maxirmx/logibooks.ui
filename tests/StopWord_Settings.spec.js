@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -26,7 +26,7 @@ const create = vi.hoisted(() => vi.fn(() => Promise.resolve(mockStopWord)))
 const update = vi.hoisted(() => vi.fn(() => Promise.resolve(mockStopWord)))
 const routerPush = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
-const alertClear = vi.hoisted(() => vi.fn())
+const alertDismiss = vi.hoisted(() => vi.fn())
 
 const mockAlert = ref(null)
 
@@ -53,18 +53,13 @@ vi.mock('@/stores/word.match.types.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
+    get alert() {
+      return mockAlert.value
+    },
     error: alertError,
-    clear: alertClear
+    dismiss: alertDismiss
   })
 }))
-
-vi.mock('pinia', async () => {
-  const actual = await vi.importActual('pinia')
-  return { 
-    ...actual, 
-    storeToRefs: () => ({ alert: mockAlert })
-  }
-})
 
 // Mock the router
 vi.mock('@/router', () => ({
@@ -162,7 +157,6 @@ describe('StopWord_Settings.vue', () => {
       await wrapper.find('#forImport').setValue(true)
       expect(wrapper.find('#explanationForImport').exists()).toBe(true)
     })
-
   })
 
   describe('Multi-word Input Handling', () => {
@@ -241,12 +235,12 @@ describe('StopWord_Settings.vue', () => {
       component.forExport = true
       component.explanationForExport = ' export text '
       component.explanationForImport = ' import text '
-      
+
       await wrapper.vm.$nextTick()
-      
+
       // Call onSubmit directly since the form validation might interfere with submit event
       await component.onSubmit()
-      
+
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
         matchTypeId: 1,
@@ -264,7 +258,7 @@ describe('StopWord_Settings.vue', () => {
       const component = wrapper.vm
       component.word = 'новое'
       component.matchTypeId = 1
-      
+
       await component.onSubmit()
       await resolveAll()
 
@@ -279,21 +273,13 @@ describe('StopWord_Settings.vue', () => {
       const component = wrapper.vm
       component.word = 'существующее'
       component.matchTypeId = 1
-      
-      try {
-        await component.onSubmit()
-      } catch {
-        // Expected error
-      }
-      
+
+      await component.onSubmit()
       await wrapper.vm.$nextTick()
 
-      // Check if error is displayed (the API error should be set in the errors object)
-      const errorElements = wrapper.findAll('.alert-danger')
-      const hasErrorMessage = errorElements.some(el =>
-        el.text().includes('409')
-      )
-      expect(hasErrorMessage).toBe(true)
+      expect(alertError).toHaveBeenCalledWith('409', {
+        fallback: 'Ошибка при сохранении стоп-слова'
+      })
     })
 
     it('handles morphology error on create', async () => {
@@ -308,18 +294,12 @@ describe('StopWord_Settings.vue', () => {
       component.word = 'abc'
       component.matchTypeId = 41
 
-      try {
-        await component.onSubmit()
-      } finally {
-        await wrapper.vm.$nextTick()
-      }
+      await component.onSubmit()
+      await wrapper.vm.$nextTick()
 
-
-      const errorElements = wrapper.findAll('.alert-danger')
-      const hasErrorMessage = errorElements.some(el =>
-        el.text().includes('Morphology unsupported')
-      )
-      expect(hasErrorMessage).toBe(true)
+      expect(alertError).toHaveBeenCalledWith(err, {
+        fallback: 'Ошибка при сохранении стоп-слова'
+      })
     })
   })
 
@@ -335,7 +315,7 @@ describe('StopWord_Settings.vue', () => {
       component.forImport = true
       component.explanationForExport = ' hidden export reason '
       component.explanationForImport = ' import update '
-      
+
       await component.onSubmit()
 
       expect(update).toHaveBeenCalledWith(1, {
@@ -354,7 +334,7 @@ describe('StopWord_Settings.vue', () => {
       await resolveAll()
 
       expect(getById).toHaveBeenCalledWith(1)
-      
+
       const wordInput = wrapper.find('input[name="word"]')
       expect(wordInput.element.value).toBe('тест')
       expect(wrapper.vm.forExport).toBe(true)
@@ -364,12 +344,16 @@ describe('StopWord_Settings.vue', () => {
     })
 
     it('handles loading errors', async () => {
-      getById.mockRejectedValueOnce(new Error('Not found'))
+      const error = new Error('Not found')
+      getById.mockRejectedValueOnce(error)
       mountComponent({ id: 1 })
       await resolveAll()
 
-      expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных стоп слова')
-      expect(routerPush).toHaveBeenCalledWith('/stopwords')
+      expect(alertError).toHaveBeenCalledWith(error, {
+        fallback: 'Ошибка при загрузке данных стоп-слова',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+      expect(routerPush).not.toHaveBeenCalled()
     })
   })
 
@@ -407,7 +391,7 @@ describe('StopWord_Settings.vue', () => {
 
   describe('Alert Handling', () => {
     it('displays alert when present', async () => {
-      mockAlert.value = { type: 'success', message: 'Успешно сохранено' }
+      mockAlert.value = { id: 2, severity: 'success', message: 'Успешно сохранено', action: null }
       const wrapper = mountComponent()
       await resolveAll()
 
@@ -415,14 +399,19 @@ describe('StopWord_Settings.vue', () => {
     })
 
     it('clears alert on close button click', async () => {
-      mockAlert.value = { type: 'success', message: 'Тестовое сообщение' }
+      mockAlert.value = {
+        id: 3,
+        severity: 'success',
+        message: 'Тестовое сообщение',
+        action: null
+      }
       const wrapper = mountComponent()
       await resolveAll()
 
       const closeButton = wrapper.find('.close')
       await closeButton.trigger('click')
 
-      expect(alertClear).toHaveBeenCalled()
+      expect(alertDismiss).toHaveBeenCalledWith(3)
     })
   })
 

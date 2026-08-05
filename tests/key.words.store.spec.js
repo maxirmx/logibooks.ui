@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { setActivePinia, createPinia } from 'pinia'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
@@ -59,7 +59,10 @@ describe('key.words.store.js', () => {
       fetchWrapper.post.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockKeyWords)
       await store.create(mockKeyWord)
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/keywords', mockKeyWord)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/keywords',
+        mockKeyWord
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/keywords')
     })
 
@@ -67,7 +70,10 @@ describe('key.words.store.js', () => {
       fetchWrapper.put.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockKeyWords)
       await store.update(1, mockKeyWord)
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/keywords/1', mockKeyWord)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:3000/api/keywords/1',
+        mockKeyWord
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/keywords')
     })
 
@@ -84,9 +90,9 @@ describe('key.words.store.js', () => {
     it('uploads file successfully', async () => {
       const file = new File(['content'], 'keywords.xlsx')
       fetchWrapper.postFile.mockResolvedValue()
-      
+
       await store.upload(file)
-      
+
       expect(fetchWrapper.postFile).toHaveBeenCalledTimes(1)
       const [url, formData] = fetchWrapper.postFile.mock.calls[0]
       expect(url).toBe('http://localhost:3000/api/keywords/upload')
@@ -142,4 +148,3 @@ describe('key.words.store.js', () => {
     })
   })
 })
-

@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -13,6 +14,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 const authStore = useAuthStore()
@@ -20,8 +22,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { hotKeyActionSchemes, loading } = storeToRefs(hotKeyActionSchemesStore)
-const { alert } = storeToRefs(alertStore)
-
 const runningAction = ref(false)
 
 function filterHotKeyActionSchemes(value, query, item) {
@@ -88,9 +88,11 @@ async function deleteHotKeyActionScheme(hotKeyActionScheme) {
   }
 }
 
-onMounted(async () => {
-  await hotKeyActionSchemesStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(() => hotKeyActionSchemesStore.getAll(), {
+    fallback: 'Не удалось загрузить схемы настройки клавиатуры'
+  })
+)
 
 defineExpose({
   openCreateDialog,
@@ -121,6 +123,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -171,11 +175,6 @@ defineExpose({
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

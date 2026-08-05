@@ -20,6 +20,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
   let currentRegisterId = null
   let updatesHandler = null
   let resyncHandler = null
+  let connectionErrorHandler = null
   let lifecycleVersion = 0
 
   function accessToken() {
@@ -37,15 +38,16 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
   }
 
   async function resynchronize(version, activeConnection) {
-    if (version !== lifecycleVersion || activeConnection !== connection || currentRegisterId == null) return
+    if (
+      version !== lifecycleVersion ||
+      activeConnection !== connection ||
+      currentRegisterId == null
+    )
+      return
 
     useParcelsStore().resetLiveParcelCheckStatuses()
     useRegistersStore().resetLivePassportCheckStates()
-    try {
-      await resyncHandler?.()
-    } catch (err) {
-      error.value = err
-    }
+    await resyncHandler?.()
   }
 
   function ensureConnection() {
@@ -63,6 +65,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     activeConnection.onclose((err) => {
       if (activeConnection === connection && err) {
         error.value = err
+        connectionErrorHandler?.(err)
       }
     })
     activeConnection.onreconnected?.(async () => {
@@ -75,6 +78,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
       } catch (err) {
         if (activeConnection === connection) {
           error.value = err
+          connectionErrorHandler?.(err)
         }
       }
     })
@@ -99,7 +103,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     await startPromise.promise
   }
 
-  async function start(registerId, { onUpdates = null, onResync = null } = {}) {
+  async function start(registerId, { onUpdates = null, onResync = null, onError = null } = {}) {
     const normalizedRegisterId = Number(registerId)
     if (!Number.isInteger(normalizedRegisterId) || normalizedRegisterId <= 0) return false
 
@@ -107,6 +111,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     currentRegisterId = normalizedRegisterId
     updatesHandler = onUpdates
     resyncHandler = onResync
+    connectionErrorHandler = onError
     error.value = null
     useParcelsStore().resetLiveParcelCheckStatuses()
     useRegistersStore().resetLivePassportCheckStates()
@@ -122,6 +127,7 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     } catch (err) {
       if (version === lifecycleVersion && activeConnection === connection) {
         error.value = err
+        throw err
       }
       return false
     }
@@ -132,22 +138,23 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
     currentRegisterId = null
     updatesHandler = null
     resyncHandler = null
+    connectionErrorHandler = null
     useParcelsStore().resetLiveParcelCheckStatuses()
     useRegistersStore().resetLivePassportCheckStates()
 
-    if (!connection) return false
+    if (!connection) return true
 
     const activeConnection = connection
     connection = null
     if (startPromise?.connection === activeConnection) startPromise = null
 
-    let stoppedCleanly = true
+    let stopError = null
     if (activeConnection.state === signalR.HubConnectionState.Connected) {
       try {
         await activeConnection.invoke('ClearRegister')
       } catch (err) {
         error.value = err
-        stoppedCleanly = false
+        stopError = err
       }
     }
 
@@ -155,10 +162,11 @@ export const useParcelChecksStore = defineStore('parcel-checks', () => {
       await activeConnection.stop()
     } catch (err) {
       error.value = err
-      stoppedCleanly = false
+      stopError ??= err
     }
 
-    return stoppedCleanly
+    if (stopError) throw stopError
+    return true
   }
 
   return {

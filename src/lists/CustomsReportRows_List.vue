@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onUnmounted, computed, watch, ref, toRef, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
@@ -36,8 +37,8 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } = storeToRefs(customsReportsStore)
-const { alert } = storeToRefs(alertStore)
+const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
+  storeToRefs(customsReportsStore)
 const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
@@ -45,7 +46,9 @@ const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
 const SORT_ONLY_COLUMN_KEYS = new Set(['rowNumber'])
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
-const procedureHeadingLabel = computed(() => formatProcedureForHeading(reportRowsCustomsProcedure.value))
+const procedureHeadingLabel = computed(() =>
+  formatProcedureForHeading(reportRowsCustomsProcedure.value)
+)
 const headingText = computed(() => {
   const procedure = procedureHeadingLabel.value
   return procedure
@@ -70,7 +73,11 @@ function openParcel(item) {
 }
 
 function getColumnAlignmentClass(column) {
-  return column.align === 'center' ? 'text-center' : column.align === 'end' ? 'text-right' : 'text-start'
+  return column.align === 'center'
+    ? 'text-center'
+    : column.align === 'end'
+    ? 'text-right'
+    : 'text-start'
 }
 
 function joinDisplayParts(...parts) {
@@ -95,7 +102,12 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [customsreportrows_page, customsreportrows_per_page, customsreportrows_sort_by, () => props.reportId],
+  [
+    customsreportrows_page,
+    customsreportrows_per_page,
+    customsreportrows_sort_by,
+    () => props.reportId
+  ],
   () => {
     triggerLoad()
   },
@@ -129,7 +141,12 @@ const allHeaders = [
   { title: 'Пред. месяц', key: 'previousMonthValueOrWeight', align: 'start' },
   { title: 'Пошлины, налоги', key: 'customsDutiesAndTaxes', align: 'start' },
   { title: 'Сборы', key: 'customsFees', align: 'start' },
-  { title: 'Запреты и ограничения', key: 'prohibitionsAndRestrictions', align: 'start', width: '220px' },
+  {
+    title: 'Запреты и ограничения',
+    key: 'prohibitionsAndRestrictions',
+    align: 'start',
+    width: '220px'
+  },
   { title: 'ID резервирования', key: 'customsPaymentReservationId', align: 'start' },
   { title: 'Дата и время', key: 'dateTime', align: 'start', width: '150px' },
   { title: 'Комментарии', key: 'comments', align: 'start', width: '250px' }
@@ -166,7 +183,9 @@ onUnmounted(() => {
   columnMetadataStop()
 })
 
-const maxPage = computed(() => Math.max(1, Math.ceil((reportRowsTotalCount.value || 0) / customsreportrows_per_page.value)))
+const maxPage = computed(() =>
+  Math.max(1, Math.ceil((reportRowsTotalCount.value || 0) / customsreportrows_per_page.value))
+)
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
@@ -180,7 +199,9 @@ const pageOptions = computed(() => {
   for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
   for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
 
-  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
+  return Array.from(set)
+    .sort((a, b) => a - b)
+    .map((n) => ({ value: n, title: String(n) }))
 })
 
 // Navigation handled by parent view; no local back action
@@ -194,10 +215,11 @@ const pageOptions = computed(() => {
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        
       </div>
     </div>
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div class="mb-4">
       <v-text-field
@@ -267,10 +289,7 @@ const pageOptions = computed(() => {
             <td
               v-for="col in columns"
               :key="col.key"
-              :class="[
-                col.class,
-                getColumnAlignmentClass(col)
-              ]"
+              :class="[col.class, getColumnAlignmentClass(col)]"
               :data-column-key="col.key"
             >
               <ClickableCell
@@ -297,10 +316,14 @@ const pageOptions = computed(() => {
 
                 <!-- Combined value/unit columns -->
                 <template v-else-if="col.key === 'totalWeight'">
-                  <span class="nowrap-cell">{{ joinDisplayParts(item.totalWeight, item.weightUnit) }}</span>
+                  <span class="nowrap-cell">{{
+                    joinDisplayParts(item.totalWeight, item.weightUnit)
+                  }}</span>
                 </template>
                 <template v-else-if="col.key === 'totalCost'">
-                  <span class="nowrap-cell">{{ joinDisplayParts(item.totalCost, item.currency) }}</span>
+                  <span class="nowrap-cell">{{
+                    joinDisplayParts(item.totalCost, item.currency)
+                  }}</span>
                 </template>
 
                 <!-- Date/time columns: local date on line 1, local time on line 2 -->
@@ -342,11 +365,6 @@ const pageOptions = computed(() => {
         />
       </div>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 
@@ -373,5 +391,4 @@ const pageOptions = computed(() => {
 .col-text {
   min-width: 140px;
 }
-
 </style>

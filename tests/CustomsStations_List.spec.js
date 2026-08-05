@@ -31,11 +31,17 @@ const runningStore = {
 const ensureLoaded = vi.hoisted(() => vi.fn())
 const countriesStore = {
   ensureLoaded,
-  getCountryShortName: vi.fn((code) => code === 643 ? 'Россия' : code)
+  getCountryShortName: vi.fn((code) => (code === 643 ? 'Россия' : code))
 }
 const alertError = vi.hoisted(() => vi.fn())
-const alertClear = vi.hoisted(() => vi.fn())
-const alertStore = { alert, error: alertError, clear: alertClear }
+const alertDismiss = vi.hoisted(() => vi.fn())
+const alertStore = {
+  get alert() {
+    return alert.value
+  },
+  error: alertError,
+  dismiss: alertDismiss
+}
 const authStore = {
   isSrLogistPlus: true,
   customsstations_per_page: 100,
@@ -46,13 +52,16 @@ const authStore = {
 const confirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const push = vi.hoisted(() => vi.fn())
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store === runningStore) return { customsStations: stations, loading }
-    if (store === alertStore) return { alert }
-    return {}
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store === runningStore) return { customsStations: stations, loading }
+      return {}
+    }
   }
-}))
+})
 
 vi.mock('@/stores/customs.stations.store.js', () => ({
   useCustomsStationsStore: () => runningStore
@@ -83,7 +92,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
     emits: ['click'],
-    template: '<button class="action-button" :title="tooltipText" @click="$emit(\'click\', item)" />'
+    template:
+      '<button class="action-button" :title="tooltipText" @click="$emit(\'click\', item)" />'
   }
 }))
 
@@ -96,15 +106,17 @@ async function mountList() {
 }
 
 beforeEach(() => {
-  stations.value = [{
-    id: 1,
-    number: '00102030',
-    name: 'Центральный пост',
-    countryIsoNumeric: 643,
-    postalCode: '101000',
-    city: 'Москва',
-    street: 'ул. Таможенная'
-  }]
+  stations.value = [
+    {
+      id: 1,
+      number: '00102030',
+      name: 'Центральный пост',
+      countryIsoNumeric: 643,
+      postalCode: '101000',
+      city: 'Москва',
+      street: 'ул. Таможенная'
+    }
+  ]
   loading.value = false
   alert.value = null
   authStore.isSrLogistPlus = true
@@ -205,9 +217,11 @@ describe('CustomsStations_List.vue', () => {
 
     await wrapper.vm.deleteCustomsStation(stations.value[0])
 
-    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'Удалить таможенный пост "Центральный пост"?'
-    }))
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Удалить таможенный пост "Центральный пост"?'
+      })
+    )
     expect(runningStore.remove).toHaveBeenCalledWith(1)
   })
 
@@ -233,9 +247,11 @@ describe('CustomsStations_List.vue', () => {
 
   it('ignores a duplicate deletion while another action is running', async () => {
     let resolveConfirmation
-    confirm.mockReturnValueOnce(new Promise((resolve) => {
-      resolveConfirmation = resolve
-    }))
+    confirm.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveConfirmation = resolve
+      })
+    )
     const wrapper = await mountList()
 
     const first = wrapper.vm.deleteCustomsStation(stations.value[0])
@@ -256,11 +272,11 @@ describe('CustomsStations_List.vue', () => {
   })
 
   it('shows and clears alerts', async () => {
-    alert.value = { type: 'alert-danger', message: 'Ошибка' }
+    alert.value = { id: 43, severity: 'error', message: 'Ошибка', action: null }
     const wrapper = await mountList()
 
     expect(wrapper.text()).toContain('Ошибка')
     await wrapper.find('button.close').trigger('click')
-    expect(alertClear).toHaveBeenCalled()
+    expect(alertDismiss).toHaveBeenCalledWith(43)
   })
 })

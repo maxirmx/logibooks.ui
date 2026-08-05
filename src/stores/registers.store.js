@@ -1,12 +1,13 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -61,9 +62,13 @@ export const useRegistersStore = defineStore('registers', () => {
   function applyPassportCheckState(registerId, state) {
     const normalizedRegisterId = Number(registerId)
     const revision = Number(state?.revision)
-    if (!Number.isInteger(normalizedRegisterId) || normalizedRegisterId <= 0 ||
-        typeof state?.hasPendingPassportChecks !== 'boolean' ||
-        !Number.isSafeInteger(revision) || revision <= 0) {
+    if (
+      !Number.isInteger(normalizedRegisterId) ||
+      normalizedRegisterId <= 0 ||
+      typeof state?.hasPendingPassportChecks !== 'boolean' ||
+      !Number.isSafeInteger(revision) ||
+      revision <= 0
+    ) {
       return false
     }
 
@@ -84,7 +89,9 @@ export const useRegistersStore = defineStore('registers', () => {
       }
     }
 
-    const itemIndex = items.value.findIndex(register => Number(register?.id) === normalizedRegisterId)
+    const itemIndex = items.value.findIndex(
+      (register) => Number(register?.id) === normalizedRegisterId
+    )
     if (itemIndex !== -1) {
       items.value[itemIndex] = {
         ...items.value[itemIndex],
@@ -103,13 +110,13 @@ export const useRegistersStore = defineStore('registers', () => {
 
   function getTransportationDocument(value) {
     const num = Number(value)
-    const type = ops.value?.transportationTypes?.find(t => Number(t.value) === num)
+    const type = ops.value?.transportationTypes?.find((t) => Number(t.value) === num)
     return type ? type.document : `[Тип ${value}]`
   }
 
   function isExportProcedure(customsProcedureValue) {
     const num = Number(customsProcedureValue)
-    const proc = ops.value?.customsProcedures?.find(p => Number(p.value) === num)
+    const proc = ops.value?.customsProcedures?.find((p) => Number(p.value) === num)
     return proc ? proc.isExport : false
   }
 
@@ -141,7 +148,11 @@ export const useRegistersStore = defineStore('registers', () => {
     opsError.value = null
     try {
       const response = await fetchWrapper.get(`${baseUrl}/ops`)
-      if (response && Array.isArray(response.customsProcedures) && Array.isArray(response.transportationTypes)) {
+      if (
+        response &&
+        Array.isArray(response.customsProcedures) &&
+        Array.isArray(response.transportationTypes)
+      ) {
         ops.value = {
           ...response,
           passportCheckStatuses: Array.isArray(response.passportCheckStatuses)
@@ -153,7 +164,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return ops.value
     } catch (err) {
       opsError.value = err
-      return null
+      throw err
     } finally {
       opsLoading.value = false
     }
@@ -183,17 +194,17 @@ export const useRegistersStore = defineStore('registers', () => {
       return { inProgressOnly: true }
     }
 
-    if (filterValue === REGISTER_STATUS_FILTER_ALL ||
-        filterValue === undefined ||
-        filterValue === null ||
-        filterValue === '') {
+    if (
+      filterValue === REGISTER_STATUS_FILTER_ALL ||
+      filterValue === undefined ||
+      filterValue === null ||
+      filterValue === ''
+    ) {
       return {}
     }
 
     const registerStatusId = Number(filterValue)
-    return Number.isInteger(registerStatusId) && registerStatusId > 0
-      ? { registerStatusId }
-      : {}
+    return Number.isInteger(registerStatusId) && registerStatusId > 0 ? { registerStatusId } : {}
   }
 
   /**
@@ -266,7 +277,7 @@ export const useRegistersStore = defineStore('registers', () => {
           response[index] = merged
         })
       } else if (Array.isArray(response?.items)) {
-        response.items = response.items.map(register => {
+        response.items = response.items.map((register) => {
           const merged = mergeLivePassportCheckState(register, passportCheckStateWatermark)
           setDestinationField(merged)
           return merged
@@ -288,11 +299,11 @@ export const useRegistersStore = defineStore('registers', () => {
     const pageSize = warehouseMode ? authStore.registers_wh_per_page : authStore.registers_per_page
     const sortBy = warehouseMode ? authStore.registers_wh_sort_by : authStore.registers_sort_by
     const search = warehouseMode ? authStore.registers_wh_search : authStore.registers_search
-    const procedure = warehouseMode ? authStore.registers_wh_procedure : authStore.registers_procedure
+    const procedure = warehouseMode
+      ? authStore.registers_wh_procedure
+      : authStore.registers_procedure
     const statusFilter = warehouseMode ? authStore.registers_wh_status : authStore.registers_status
-    const customsProcedureCode = procedure !== 'all'
-      ? procedure
-      : undefined
+    const customsProcedureCode = procedure !== 'all' ? procedure : undefined
     const registerStatusFilterParams = getRegisterStatusFilterParams(statusFilter)
 
     try {
@@ -314,10 +325,18 @@ export const useRegistersStore = defineStore('registers', () => {
       hasPreviousPage.value = response.pagination?.hasPreviousPage || false
     } catch (err) {
       error.value = err
+      throw err
     }
   }
 
-  async function upload(file, registerType, customsProcedure, checkForDuplicates, transfer2Re = false, selectedCurrency = null) {
+  async function upload(
+    file,
+    registerType,
+    customsProcedure,
+    checkForDuplicates,
+    transfer2Re = false,
+    selectedCurrency = null
+  ) {
     loading.value = true
     error.value = null
     try {
@@ -326,7 +345,7 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       const formData = new FormData()
       formData.append('file', file)
-      
+
       // Build query parameters - always send all parameters
       const params = new URLSearchParams()
       params.append('registerType', registerType)
@@ -336,9 +355,9 @@ export const useRegistersStore = defineStore('registers', () => {
       if (selectedCurrency) {
         params.append('selectedCurrency', selectedCurrency)
       }
-      
+
       const url = `${baseUrl}/upload?${params.toString()}`
-      
+
       return await fetchWrapper.postFile(url, formData)
     } catch (err) {
       error.value = err
@@ -358,6 +377,7 @@ export const useRegistersStore = defineStore('registers', () => {
       setDestinationField(item.value)
     } catch (err) {
       item.value = { error: err }
+      throw err
     }
   }
 
@@ -367,16 +387,17 @@ export const useRegistersStore = defineStore('registers', () => {
       res = await fetchWrapper.put(`${baseUrl}/${id}`, data)
     } catch (err) {
       if (
-        err?.status === 409
-        && String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
+        err?.status === 409 &&
+        String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
       ) {
         let refreshed = null
         try {
           refreshed = await fetchWrapper.get(`${baseUrl}/${id}`)
           setDestinationField(refreshed)
-        } catch {
+        } catch (refreshError) {
           // The conflict already proves the server-side lock; keep the UI safe
           // even if the follow-up refresh cannot be completed.
+          reportError(refreshError, { context: 'registers.update conflict refresh' })
         }
 
         if (item.value?.id === id) {
@@ -722,9 +743,7 @@ export const useRegistersStore = defineStore('registers', () => {
     applyWeightCorrection = true
   ) {
     const allowedOptionalColumns =
-      InvoiceOptionalColumns.BagNumber |
-      InvoiceOptionalColumns.Uin |
-      InvoiceOptionalColumns.Url
+      InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Uin | InvoiceOptionalColumns.Url
     const sanitizedOptionalColumns = optionalColumns & allowedOptionalColumns
 
     loading.value = true
@@ -733,16 +752,12 @@ export const useRegistersStore = defineStore('registers', () => {
       const trimmedInvoiceNumber =
         typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
       const hasInvoiceNumber =
-        trimmedInvoiceNumber !== null && trimmedInvoiceNumber !== undefined &&
+        trimmedInvoiceNumber !== null &&
+        trimmedInvoiceNumber !== undefined &&
         String(trimmedInvoiceNumber).length > 0
       const filename = `ДО1_${hasInvoiceNumber ? trimmedInvoiceNumber : id}.xlsx`
       return await fetchWrapper.downloadFile(
-        buildInvoiceRequestUrl(
-          id,
-          'download-do1',
-          sanitizedOptionalColumns,
-          applyWeightCorrection
-        ),
+        buildInvoiceRequestUrl(id, 'download-do1', sanitizedOptionalColumns, applyWeightCorrection),
         filename
       )
     } catch (err) {
@@ -760,19 +775,19 @@ export const useRegistersStore = defineStore('registers', () => {
       const trimmedInvoiceNumber =
         typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
       const hasInvoiceNumber =
-        trimmedInvoiceNumber !== null && trimmedInvoiceNumber !== undefined &&
+        trimmedInvoiceNumber !== null &&
+        trimmedInvoiceNumber !== undefined &&
         String(trimmedInvoiceNumber).length > 0
       const filename = `CMR_${hasInvoiceNumber ? trimmedInvoiceNumber : id}.docx`
-      const result = await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-cmr`,
-        filename,
-        { method: 'POST', body: payload }
-      )
+      const result = await fetchWrapper.downloadFile(`${baseUrl}/${id}/download-cmr`, filename, {
+        method: 'POST',
+        body: payload
+      })
 
       if (item.value?.id === id) {
         item.value = { ...item.value, invoiceDate: payload.documentDate }
       }
-      const index = items.value.findIndex(register => register.id === id)
+      const index = items.value.findIndex((register) => register.id === id)
       if (index !== -1) {
         items.value[index] = { ...items.value[index], invoiceDate: payload.documentDate }
       }
@@ -789,11 +804,8 @@ export const useRegistersStore = defineStore('registers', () => {
     loading.value = true
     error.value = null
     try {
-    const filename = `тех-документация_${invoiceNumber || id}-акциз.docx`
-      return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download-techdoc`,
-        filename
-      )
+      const filename = `тех-документация_${invoiceNumber || id}-акциз.docx`
+      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/download-techdoc`, filename)
     } catch (err) {
       error.value = err
       throw err
@@ -902,7 +914,13 @@ export const useRegistersStore = defineStore('registers', () => {
     return `${filename.slice(0, dotIndex)}${suffix}${filename.slice(dotIndex)}`
   }
 
-  async function download(id, filename, forZone = null, zoneLabel = null, applyWeightCorrection = false) {
+  async function download(
+    id,
+    filename,
+    forZone = null,
+    zoneLabel = null,
+    applyWeightCorrection = false
+  ) {
     const baseFilename = filename || `register_${id}.xlsx`
     const suffix = normalizeDownloadSuffix(forZone, zoneLabel)
     const targetFilename = withZoneSuffix(baseFilename, suffix)
@@ -922,28 +940,26 @@ export const useRegistersStore = defineStore('registers', () => {
     error.value = null
     try {
       // Use downloadFile helper to trigger browser download
-      return await fetchWrapper.downloadFile(
-        `${baseUrl}/${id}/download${query}`,
-        targetFilename
-      )
+      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/download${query}`, targetFilename)
     } catch (err) {
       error.value = err
-    }
-    finally {
+      throw err
+    } finally {
       loading.value = false
     }
-    return null
   }
 
   async function nextParcels(parcelId) {
     const authStore = useAuthStore()
-    
+
     loading.value = true
     error.value = null
     try {
       const params = buildParcelsFilterParams(authStore)
 
-      const result = await fetchWrapper.get(`${baseUrl}/nextparcels/${parcelId}?${params.toString()}`)
+      const result = await fetchWrapper.get(
+        `${baseUrl}/nextparcels/${parcelId}?${params.toString()}`
+      )
       if (!result) {
         return { withoutIssues: null, withIssues: null }
       }
@@ -953,13 +969,11 @@ export const useRegistersStore = defineStore('registers', () => {
       }
     } catch (err) {
       error.value = err
-    }
-    finally {
+      throw err
+    } finally {
       loading.value = false
     }
-    return null
   }
-
 
   async function remove(id) {
     loading.value = true
@@ -969,8 +983,8 @@ export const useRegistersStore = defineStore('registers', () => {
       await getAll()
     } catch (err) {
       error.value = err
-    }
-    finally {
+      throw err
+    } finally {
       loading.value = false
     }
   }

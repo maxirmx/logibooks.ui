@@ -17,6 +17,8 @@ vi.mock('@/dialogs/ParcelEvents_Settings.vue', () => ({
 describe('ParcelEvents_View.vue', () => {
   it('renders settings dialog wrapper', () => {
     const wrapper = mount(ParcelEventsView)
-    expect(wrapper.find('[data-testid="parcel-events-processing-settings-stub"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="parcel-events-processing-settings-stub"]').exists()).toBe(
+      true
+    )
   })
 })

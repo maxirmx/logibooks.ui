@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { setActivePinia, createPinia } from 'pinia'
 import { useFeacnInsertItemsStore } from '@/stores/feacn.insert.items.store.js'
@@ -58,7 +58,10 @@ describe('feacn.insert.items.store.js', () => {
       fetchWrapper.post.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockItems)
       await store.create(mockItem)
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems', mockItem)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacninsertitems',
+        mockItem
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems')
     })
 
@@ -66,7 +69,10 @@ describe('feacn.insert.items.store.js', () => {
       fetchWrapper.put.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockItems)
       await store.update(1, mockItem)
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems/1', mockItem)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacninsertitems/1',
+        mockItem
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems')
     })
 
@@ -74,7 +80,9 @@ describe('feacn.insert.items.store.js', () => {
       fetchWrapper.delete.mockResolvedValue()
       fetchWrapper.get.mockResolvedValue([])
       await store.remove(1)
-      expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems/1')
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacninsertitems/1'
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems')
     })
 
@@ -129,4 +137,3 @@ describe('feacn.insert.items.store.js', () => {
     })
   })
 })
-

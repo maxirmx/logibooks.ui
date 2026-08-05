@@ -166,14 +166,20 @@ describe('ParcelStatusSection', () => {
   })
 
   it('shows stopword info with issue styling when issues exist', () => {
-    const wrapper = createWrapper({ checkStatusInfo: 'Проблема с кодом', hasCheckStatusIssues: true })
+    const wrapper = createWrapper({
+      checkStatusInfo: 'Проблема с кодом',
+      hasCheckStatusIssues: true
+    })
 
     expect(wrapper.find('.stopwords-info').exists()).toBe(true)
     expect(wrapper.find('.stopwords-text').text()).toContain('Проблема с кодом')
   })
 
   it('shows approved styling when no issues exist', () => {
-    const wrapper = createWrapper({ checkStatusInfo: 'Проверка пройдена', hasCheckStatusIssues: false })
+    const wrapper = createWrapper({
+      checkStatusInfo: 'Проверка пройдена',
+      hasCheckStatusIssues: false
+    })
 
     expect(wrapper.find('.stopwords-info-approved').exists()).toBe(true)
     expect(wrapper.find('.stopwords-text-approved').text()).toContain('Проверка пройдена')
@@ -212,7 +218,11 @@ describe('ParcelStatusSection', () => {
   })
 
   it('disables all buttons when disabled, clearCheckStatusDisabled, and noHistoricData are true', () => {
-    const wrapper = createWrapper({ noHistoricData: true, disabled: true, clearCheckStatusDisabled: true })
+    const wrapper = createWrapper({
+      noHistoricData: true,
+      disabled: true,
+      clearCheckStatusDisabled: true
+    })
     const buttons = wrapper.findAllComponents(ActionButton)
 
     buttons.forEach((button) => {

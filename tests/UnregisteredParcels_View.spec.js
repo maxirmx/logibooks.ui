@@ -59,7 +59,8 @@ describe('UnregisteredParcels_View.vue', () => {
           UnregisteredParcelsList: {
             props: ['registerId'],
             emits: ['close'],
-            template: '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
+            template:
+              '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
           }
         }
       }
@@ -79,7 +80,8 @@ describe('UnregisteredParcels_View.vue', () => {
           UnregisteredParcelsList: {
             props: ['registerId'],
             emits: ['close'],
-            template: '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
+            template:
+              '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
           }
         }
       }
@@ -101,7 +103,8 @@ describe('UnregisteredParcels_View.vue', () => {
           UnregisteredParcelsList: {
             props: ['registerId'],
             emits: ['close'],
-            template: '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
+            template:
+              '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
           }
         }
       }

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -22,10 +22,11 @@ export const useWordMatchTypesStore = defineStore('wordMatchTypes', () => {
     try {
       const response = await fetchWrapper.get(`${baseUrl}`)
       matchTypes.value = response || []
-      matchTypeMap.value = new Map(matchTypes.value.map(t => [t.id, t]))
+      matchTypeMap.value = new Map(matchTypes.value.map((t) => [t.id, t]))
       initialized.value = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }

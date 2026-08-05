@@ -21,10 +21,34 @@ if (!global.ResizeObserver) {
 }
 
 const mockEvents = ref([
-  { id: 1001, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 1, registerStatusId: null },
-  { id: 2001, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 1, registerStatusId: 3 },
-  { id: 1, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 10, registerStatusId: null },
-  { id: 2, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 10, registerStatusId: 3 }
+  {
+    id: 1001,
+    eventId: 'Created',
+    eventName: 'Создана',
+    customsProcedureCode: 1,
+    registerStatusId: null
+  },
+  {
+    id: 2001,
+    eventId: 'Processing',
+    eventName: 'В обработке',
+    customsProcedureCode: 1,
+    registerStatusId: 3
+  },
+  {
+    id: 1,
+    eventId: 'Created',
+    eventName: 'Создана',
+    customsProcedureCode: 10,
+    registerStatusId: null
+  },
+  {
+    id: 2,
+    eventId: 'Processing',
+    eventName: 'В обработке',
+    customsProcedureCode: 10,
+    registerStatusId: 3
+  }
 ])
 const mockRegisterOps = ref({
   customsProcedures: [
@@ -46,6 +70,7 @@ const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
+const alertError = vi.hoisted(() => vi.fn())
 
 const mockAuthStore = {
   registerevents_per_page: ref(50),
@@ -80,13 +105,30 @@ vi.mock('@/stores/auth.store.js', () => ({
 }))
 
 vi.mock('@/helpers/items.per.page.js', () => ({
-  itemsPerPageOptions: [{ value: 10, title: '10' }, { value: 25, title: '25' }, { value: 50, title: '50' }]
+  itemsPerPageOptions: [
+    { value: 10, title: '10' },
+    { value: 25, title: '25' },
+    { value: 50, title: '50' }
+  ]
 }))
 
 vi.mock('@/router', () => ({
   default: {
     back: routerBack
   }
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    alert: null,
+    activePageHosts: 0,
+    error: alertError,
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    registerPageHost: vi.fn(),
+    unregisterPageHost: vi.fn()
+  })
 }))
 
 vi.mock('pinia', async () => {
@@ -106,7 +148,8 @@ const mountComponent = () =>
       stubs: {
         'font-awesome-icon': true,
         ActionButton: {
-          template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
+          template:
+            '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
           props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
         },
         'v-select': {
@@ -148,10 +191,34 @@ describe('RegisterEvents_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockEvents.value = [
-      { id: 1001, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 1, registerStatusId: null },
-      { id: 2001, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 1, registerStatusId: 3 },
-      { id: 1, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 10, registerStatusId: null },
-      { id: 2, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 10, registerStatusId: 3 }
+      {
+        id: 1001,
+        eventId: 'Created',
+        eventName: 'Создана',
+        customsProcedureCode: 1,
+        registerStatusId: null
+      },
+      {
+        id: 2001,
+        eventId: 'Processing',
+        eventName: 'В обработке',
+        customsProcedureCode: 1,
+        registerStatusId: 3
+      },
+      {
+        id: 1,
+        eventId: 'Created',
+        eventName: 'Создана',
+        customsProcedureCode: 10,
+        registerStatusId: null
+      },
+      {
+        id: 2,
+        eventId: 'Processing',
+        eventName: 'В обработке',
+        customsProcedureCode: 10,
+        registerStatusId: 3
+      }
     ]
     mockStatuses.value = [
       { id: 1, title: 'Новый', icon: 'svg:registered', bkColor: '#FFEEDD', fgColor: '#111111' },
@@ -257,7 +324,9 @@ describe('RegisterEvents_Settings.vue', () => {
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
-    expect(wrapper.text()).toContain('Save failed')
+    expect(alertError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Save failed' }), {
+      fallback: 'Не удалось сохранить изменения'
+    })
   })
 
   it('handles empty ("Не менять") status selection as 0', async () => {
@@ -268,7 +337,7 @@ describe('RegisterEvents_Settings.vue', () => {
     expect(select1.exists()).toBe(true)
     expect(select1.element.value).toBe('0')
 
-    const optionTexts1 = select1.findAll('option').map(o => o.text())
+    const optionTexts1 = select1.findAll('option').map((o) => o.text())
     expect(optionTexts1).toContain('Не менять')
 
     const select2 = wrapper.find('#status-select-2001')

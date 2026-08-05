@@ -29,14 +29,21 @@ vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => parcelsMock
 }))
 
-const ensureLoadedFactory = () => ({ ensureLoaded: vi.fn().mockResolvedValue(), add: vi.fn().mockResolvedValue() })
+const ensureLoadedFactory = () => ({
+  ensureLoaded: vi.fn().mockResolvedValue(),
+  add: vi.fn().mockResolvedValue()
+})
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), parcelStatuses: [] })
 }))
 vi.mock('@/stores/stop.words.store.js', () => ({ useStopWordsStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () => ensureLoadedFactory() }))
+vi.mock('@/stores/feacn.orders.store.js', () => ({
+  useFeacnOrdersStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/feacn.prefixes.store.js', () => ({
+  useFeacnPrefixesStore: () => ensureLoadedFactory()
+}))
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] })
 }))
@@ -126,7 +133,8 @@ describe('GtcParcel_EditDialog passport verification', () => {
             template: '<input :name="name" :id="id" :class="classes" />'
           },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -135,7 +143,8 @@ describe('GtcParcel_EditDialog passport verification', () => {
           ParcelWeightAutoField: true,
           GtcFormField: {
             props: ['name', 'disabled'],
-            template: '<div data-testid="gtc-form-field" :data-name="name" :data-disabled="String(disabled)">{{ name }}</div>'
+            template:
+              '<div data-testid="gtc-form-field" :data-name="name" :data-disabled="String(disabled)">{{ name }}</div>'
           },
           ActionButton: true,
           DTagSection: true,
@@ -187,29 +196,33 @@ describe('GtcParcel_EditDialog passport verification', () => {
       `
     }
     const mountDialog = async () => {
-      const wrapper = mount({
-        components: { GtcParcel_EditDialog },
-        template: '<Suspense><GtcParcel_EditDialog :registerId="1" :id="5" /></Suspense>'
-      }, {
-        global: {
-          stubs: {
-            Field: { template: '<input />' },
-            Form: {
-              template: '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-            },
-            ParcelHeaderActionsBar: actionBarStub,
-            ParcelStatusSection: true,
-            FeacnCodeEditor: true,
-            ParcelNumberExt: true,
-            ParcelWeightAutoField: true,
-            GtcFormField: true,
-            ActionButton: true,
-            DTagSection: true,
-            'font-awesome-icon': true,
-            VTooltip: true
+      const wrapper = mount(
+        {
+          components: { GtcParcel_EditDialog },
+          template: '<Suspense><GtcParcel_EditDialog :registerId="1" :id="5" /></Suspense>'
+        },
+        {
+          global: {
+            stubs: {
+              Field: { template: '<input />' },
+              Form: {
+                template:
+                  '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+              },
+              ParcelHeaderActionsBar: actionBarStub,
+              ParcelStatusSection: true,
+              FeacnCodeEditor: true,
+              ParcelNumberExt: true,
+              ParcelWeightAutoField: true,
+              GtcFormField: true,
+              ActionButton: true,
+              DTagSection: true,
+              'font-awesome-icon': true,
+              VTooltip: true
+            }
           }
         }
-      })
+      )
       await nextTick()
       await resolveAll()
       return wrapper
@@ -242,7 +255,9 @@ describe('GtcParcel_EditDialog passport verification', () => {
     parcelsMock.update.mockClear()
 
     expect(wrapper.text()).toContain('Изменения запрещены')
-    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe(
+      'true'
+    )
     for (const testId of ['next', 'back', 'save', 'download', 'lookup']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()

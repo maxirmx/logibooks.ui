@@ -51,18 +51,24 @@ vi.mock('@/stores/alert.store.js', () => ({
     const alert = ref(null)
     return {
       alert,
-      error: (msg) => { alert.value = { message: msg, type: 'alert-danger' } },
-      success: (msg) => { alert.value = { message: msg, type: 'alert-success' } },
-      clear: () => { alert.value = null }
+      error: (msg) => {
+        alert.value = { message: msg, type: 'alert-danger' }
+      },
+      success: (msg) => {
+        alert.value = { message: msg, type: 'alert-success' }
+      },
+      clear: () => {
+        alert.value = null
+      }
     }
   }
 }))
 
-vi.mock('@/router', () => ({ 
-  default: { 
+vi.mock('@/router', () => ({
+  default: {
     push: vi.fn(() => Promise.resolve()),
     go: vi.fn(() => Promise.resolve())
-  } 
+  }
 }))
 
 // Stub vee-validate Form used in component
@@ -76,7 +82,9 @@ function mountDialog(props = { id: 77 }) {
   const Parent = {
     template: '<Suspense><InvoiceSettings v-bind="props" /></Suspense>',
     components: { InvoiceSettings },
-    setup() { return { props } }
+    setup() {
+      return { props }
+    }
   }
   return mount(Parent, {
     global: { stubs: { ...defaultGlobalStubs, Form: FormStub } }
@@ -112,7 +120,7 @@ describe('Invoice_Settings.vue', () => {
     await resolveAll()
     const select = wrapper.find('#parcelSelection')
     expect(select.exists()).toBe(true)
-    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
+    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map((l) => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
     expect(labels).toContain('Предшествующий ДТЭГ')
@@ -128,7 +136,7 @@ describe('Invoice_Settings.vue', () => {
     const wrapper = mountDialog()
     await resolveAll()
 
-    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map(l => l.text())
+    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map((l) => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
     expect(labels).toContain('УИН')
@@ -289,7 +297,9 @@ describe('Invoice_Settings.vue', () => {
 
     expect(wrapper.find('h1').text()).toContain('Настройки формы ДО1')
     expect(wrapper.find('#parcelSelection').exists()).toBe(false)
-    const labels = wrapper.findAll('.optional-columns-row .custom-checkbox-label').map(label => label.text())
+    const labels = wrapper
+      .findAll('.optional-columns-row .custom-checkbox-label')
+      .map((label) => label.text())
     expect(labels).toEqual(['Номер мешка', 'УИН', 'Ссылка'])
   })
 
@@ -316,9 +326,7 @@ describe('Invoice_Settings.vue', () => {
     expect(downloadDo1FileMock).toHaveBeenCalledWith(
       77,
       'INV-77',
-      InvoiceOptionalColumns.BagNumber |
-        InvoiceOptionalColumns.Uin |
-        InvoiceOptionalColumns.Url,
+      InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Uin | InvoiceOptionalColumns.Url,
       false
     )
     expect(downloadInvoiceFileMock).not.toHaveBeenCalled()
@@ -326,9 +334,12 @@ describe('Invoice_Settings.vue', () => {
 
   it('shows ДО1 progress title while file is prepared', async () => {
     let resolveDownload
-    downloadDo1FileMock.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveDownload = resolve
-    }))
+    downloadDo1FileMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDownload = resolve
+        })
+    )
     const wrapper = mountDialog({ id: 77, documentType: 'do1' })
     await resolveAll()
     const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState

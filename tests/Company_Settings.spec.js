@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -46,7 +46,9 @@ const mockCountriesStore = createMockStore({
 })
 
 const mockAlertStore = createMockStore({
-  success: vi.fn()
+  success: vi.fn(),
+  error: vi.fn(),
+  alert: null
 })
 
 const originalFileReader = global.FileReader
@@ -79,18 +81,22 @@ vi.mock('@/router', () => ({
   }
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store.countries !== undefined) {
-      // Return the actual countries array from the store, not the mock constant
-      return { countries: { value: store.countries } }
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store.countries !== undefined) {
+        // Return the actual countries array from the store, not the mock constant
+        return { countries: { value: store.countries } }
+      }
+      if (store.company !== undefined) {
+        return { company: { value: store.company } }
+      }
+      return {}
     }
-    if (store.company !== undefined) {
-      return { company: { value: store.company } }
-    }
-    return {}
   }
-}))
+})
 
 // Mock vee-validate with proper form submission handling
 vi.mock('vee-validate', () => ({
@@ -112,7 +118,7 @@ vi.mock('vee-validate', () => ({
     methods: {
       handleSubmit() {
         // Properly provide setErrors function in the second parameter
-        const actions = { 
+        const actions = {
           setErrors: this.setErrors.bind(this)
         }
         // Emit the submit event with proper parameters (values, actions)
@@ -180,7 +186,6 @@ beforeEach(async () => {
   mockCountriesStore.loading = false
   mockCountriesStore.error = null
   mockAlertStore.loading = false
-  mockAlertStore.error = null
   // Reset countries state for each test
   mockCountriesStore.countries = mockCountries
 })
@@ -204,7 +209,7 @@ describe('Company_Settings.vue', () => {
       })
 
       await resolveAll()
-      
+
       expect(wrapper.find('h1').text()).toBe('Регистрация компании')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
       expect(mockCompaniesStore.getById).not.toHaveBeenCalled()
@@ -219,12 +224,10 @@ describe('Company_Settings.vue', () => {
       })
 
       await resolveAll()
-      
+
       expect(wrapper.find('h1').text()).toBe('Изменить информацию о компании')
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
-
-
 
     it('renders country options', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -252,9 +255,9 @@ describe('Company_Settings.vue', () => {
 
       // Before resolving, should show loading
       expect(wrapper.text()).toContain('Loading...')
-      
+
       await resolveAll()
-      
+
       // After resolving, should show actual content
       expect(wrapper.text()).not.toContain('Loading...')
     })
@@ -270,13 +273,13 @@ describe('Company_Settings.vue', () => {
       })
 
       await resolveAll()
-      
+
       expect(mockCountriesStore.ensureLoaded).toHaveBeenCalled()
     })
 
     it('handles store loading states', async () => {
       mockCountriesStore.loading = true
-      
+
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
         global: {
@@ -285,13 +288,13 @@ describe('Company_Settings.vue', () => {
       })
 
       await resolveAll()
-      
+
       expect(wrapper.exists()).toBe(true)
     })
 
     it('handles store error states', async () => {
       mockCountriesStore.error = 'Failed to load countries'
-      
+
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
         global: {
@@ -300,7 +303,7 @@ describe('Company_Settings.vue', () => {
       })
 
       await resolveAll()
-      
+
       expect(wrapper.exists()).toBe(true)
     })
   })
@@ -610,8 +613,6 @@ describe('Company_Settings.vue', () => {
   })
 
   describe('Props Validation', () => {
-
-
     it('handles missing companyId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit' },
@@ -624,8 +625,6 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
   })
-
-
 
   describe('Error Handling', () => {
     it('handles network errors gracefully during creation', async () => {
@@ -754,5 +753,4 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
   })
-
 })

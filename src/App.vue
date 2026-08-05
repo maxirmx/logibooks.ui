@@ -1,13 +1,16 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
 import { computed, onMounted } from 'vue'
 import { useStatusStore } from '@/stores/status.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
+import { reportError } from '@/helpers/error.helpers.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
@@ -16,33 +19,43 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
+const alertStore = useAlertStore()
 
 const baseUrl = import.meta.env.BASE_URL
 const paperworkRegisterNouns = getRegisterNouns(OP_MODE_PAPERWORK)
 const warehouseRegisterNouns = getRegisterNouns(OP_MODE_WAREHOUSE)
 
 onMounted(() => {
-  statusStore.fetchStatus().catch(() => {})
+  statusStore.fetchStatus().catch((error) => {
+    reportError(error, { context: 'App.fetchStatus' })
+    alertStore.error(error, { fallback: 'Не удалось загрузить состояние сервера' })
+  })
 })
 
-const ruDateFormatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+const ruDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: '2-digit'
+})
 const rateNumberFormatter = new Intl.NumberFormat('ru-RU', {
   minimumFractionDigits: 4,
-  maximumFractionDigits: 4,
+  maximumFractionDigits: 4
 })
 const unitNumberFormatter = new Intl.NumberFormat('ru-RU', {
-  maximumFractionDigits: 0,
+  maximumFractionDigits: 0
 })
 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/
 
 function findRate(code) {
-  return statusStore.exchangeRates?.find(r => r?.alphabeticCode?.toUpperCase() === code) || null
+  return statusStore.exchangeRates?.find((r) => r?.alphabeticCode?.toUpperCase() === code) || null
 }
 
 function isSameDay(dateA, dateB) {
-  return dateA.getFullYear() === dateB.getFullYear() &&
+  return (
+    dateA.getFullYear() === dateB.getFullYear() &&
     dateA.getMonth() === dateB.getMonth() &&
     dateA.getDate() === dateB.getDate()
+  )
 }
 
 function toLocalDateKey(date) {
@@ -90,7 +103,7 @@ const exchangeRatesLine = computed(() => {
   const eurText = formatEntry(eur)
   const uzsText = formatEntry(uzs)
   const uzsLabel = formatUzsLabel(uzs)
-//  const eurUzsText = formatEntry(eurUzs)
+  //  const eurUzsText = formatEntry(eurUzs)
 
   return `${todayStr} USD ${usdText} EUR ${eurText} ${uzsLabel} ${uzsText}`
 })
@@ -111,7 +124,6 @@ function getUserName() {
         authStore.user.patronymic
     : ''
 }
-
 </script>
 
 <template>
@@ -130,7 +142,7 @@ function getUserName() {
           <img alt="Logibooks" class="logo" src="@/assets/logo.png" />
         </div>
       </template>
-        <v-list v-if="authStore.user">
+      <v-list v-if="authStore.user">
         <v-list-item v-if="authStore.hasLogistRole">
           <RouterLink to="/registers" class="link">{{ paperworkRegisterNouns.plural }}</RouterLink>
         </v-list-item>
@@ -170,7 +182,7 @@ function getUserName() {
         </v-list-item>
 
         <!-- Справочники -->
-        <v-list-group  v-if="authStore.hasLogistRole">
+        <v-list-group v-if="authStore.hasLogistRole">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Справочники"></v-list-item>
           </template>
@@ -193,7 +205,7 @@ function getUserName() {
             <RouterLink to="/keywords" class="link">Подбор ТН ВЭД</RouterLink>
           </v-list-item>
           <v-list-item>
-          <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
+            <RouterLink to="/feacn/insertitems" class="link">До и После</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/companies" class="link">Компании</RouterLink>
@@ -238,15 +250,27 @@ function getUserName() {
         </v-list-group>
 
         <!-- Загрузки -->
-        <v-list-group  v-if="authStore.hasAnyRole">
+        <v-list-group v-if="authStore.hasAnyRole">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Скачать"></v-list-item>
           </template>
           <v-list-item v-if="authStore.hasLogistRole">
-            <a :href="`${baseUrl}downloads/extension-latest.zip`" target="_blank" rel="noopener" class="link">Расширение</a>
+            <a
+              :href="`${baseUrl}downloads/extension-latest.zip`"
+              target="_blank"
+              rel="noopener"
+              class="link"
+              >Расширение</a
+            >
           </v-list-item>
           <v-list-item v-if="authStore.hasWhRole">
-            <a :href="`${baseUrl}downloads/app-latest.apk`" target="_blank" rel="noopener" class="link">Сканнер apk</a>
+            <a
+              :href="`${baseUrl}downloads/app-latest.apk`"
+              target="_blank"
+              rel="noopener"
+              class="link"
+              >Сканнер apk</a
+            >
           </v-list-item>
           <v-list-item>
             <RouterLink to="/scanner/wd4" class="link">Настройки WD4</RouterLink>
@@ -265,11 +289,11 @@ function getUserName() {
       <template v-slot:append>
         <div class="pa-2">
           <span class="primary-heading version-info"> Клиент {{ version }} </span>
-          <br v-if="statusStore.coreVersion"/>
+          <br v-if="statusStore.coreVersion" />
           <span v-if="statusStore.coreVersion" class="primary-heading version-info">
             Сервер {{ statusStore.coreVersion }}
           </span>
-          <br v-if="statusStore.dbVersion"/>
+          <br v-if="statusStore.dbVersion" />
           <span v-if="statusStore.dbVersion" class="primary-heading version-info">
             БД {{ statusStore.dbVersion }}
           </span>
@@ -279,6 +303,7 @@ function getUserName() {
 
     <v-main class="d-flex align-center justify-center vvv">
       <RouterView />
+      <PageAlertRegion fallback />
     </v-main>
   </v-app>
 </template>
@@ -323,17 +348,17 @@ function getUserName() {
 }
 
 :deep(.v-list-item:hover) {
-    color: #eeeeee;
-    background-color: var(--primary-color);
+  color: #eeeeee;
+  background-color: var(--primary-color);
 }
 
 /* Ensure links inside list items also change color on hover */
 :deep(.v-list-item:hover .link) {
-    color: #eeeeee !important;
+  color: #eeeeee !important;
 }
 
 :deep(.v-list-item:hover a) {
-    color: #eeeeee !important;
+  color: #eeeeee !important;
 }
 
 :deep(.v-list-item .router-link-exact-active) {

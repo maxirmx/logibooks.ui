@@ -33,6 +33,7 @@ export const useWarehousesStore = defineStore('warehouses', () => {
       initialized = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -46,7 +47,7 @@ export const useWarehousesStore = defineStore('warehouses', () => {
       return warehouse.value
     } catch (err) {
       error.value = err
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -72,7 +73,7 @@ export const useWarehousesStore = defineStore('warehouses', () => {
     error.value = null
     try {
       await fetchWrapper.put(`${baseUrl}/${id}`, warehouseData)
-      const index = warehouses.value.findIndex(w => w.id === id)
+      const index = warehouses.value.findIndex((w) => w.id === id)
       if (index !== -1) {
         warehouses.value[index] = { ...warehouses.value[index], ...warehouseData }
       }
@@ -93,7 +94,7 @@ export const useWarehousesStore = defineStore('warehouses', () => {
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      warehouses.value = warehouses.value.filter(w => w.id !== id)
+      warehouses.value = warehouses.value.filter((w) => w.id !== id)
       return true
     } catch (err) {
       error.value = err
@@ -124,7 +125,7 @@ export const useWarehousesStore = defineStore('warehouses', () => {
       return ops.value
     } catch (err) {
       opsError.value = err
-      return null
+      throw err
     } finally {
       opsLoading.value = false
     }

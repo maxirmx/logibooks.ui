@@ -3,8 +3,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import {
+  OZON_COMPANY_ID,
+  WBR_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID
+} from '@/helpers/company.constants.js'
 import { getRegisterTypeDisplayName } from '@/helpers/register.display.helpers.js'
 import {
   startRegisterStatusEditMode,
@@ -60,15 +66,10 @@ const countriesStore = useCountriesStore()
 const airportsStore = useAirportsStore()
 
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
 
-const {
-  validationState,
-  progressPercent,
-  calculateCustomsCharges,
-  stopPolling
-} = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
+const { validationState, progressPercent, calculateCustomsCharges, stopPolling } =
+  createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
 
 const authStore = useAuthStore()
 const {
@@ -118,10 +119,9 @@ const statusFilterItems = computed(() => {
   return buildRegisterStatusFilterOptions(unref(registerStatusesStore.registerStatuses))
 })
 const procedureFilterItems = computed(() => {
-  return buildRegisterProcedureFilterOptions(
-    unref(registersStore.ops)?.customsProcedures,
-    { includeReturn: false }
-  )
+  return buildRegisterProcedureFilterOptions(unref(registersStore.ops)?.customsProcedures, {
+    includeReturn: false
+  })
 })
 
 const uploadMenuOptions = computed(() => {
@@ -185,7 +185,7 @@ function getRegisterTypeName(registerType) {
   return getRegisterTypeDisplayName(companies?.value, registerType)
 }
 
-onMounted(async () => {
+async function initializeList() {
   try {
     if (!isComponentMounted.value) return
 
@@ -208,14 +208,19 @@ onMounted(async () => {
   } catch (error) {
     if (isComponentMounted.value) {
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
-      alertStore.error(registersStore.error)
+      alertStore.error(error, {
+        fallback: 'Ошибка при загрузке данных',
+        action: { label: 'Повторить', handler: initializeList }
+      })
     }
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeList)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -235,7 +240,9 @@ async function fileSelected(files) {
     return
   }
 
-  const customerId = [WBR2_REGISTER_ID, WBRN_REGISTER_ID].includes(selectedRegisterType.value) ? WBR_COMPANY_ID : selectedRegisterType.value
+  const customerId = [WBR2_REGISTER_ID, WBRN_REGISTER_ID].includes(selectedRegisterType.value)
+    ? WBR_COMPANY_ID
+    : selectedRegisterType.value
   registersStore.item = {
     fileName: file.name,
     registerType: selectedRegisterType.value,
@@ -301,9 +308,13 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   debounceMs: 300
 })
 
-const watcherStop = watch([registers_page, registers_per_page, registers_sort_by], () => {
-  triggerLoad()
-}, { immediate: false })
+const watcherStop = watch(
+  [registers_page, registers_per_page, registers_sort_by],
+  () => {
+    triggerLoad()
+  },
+  { immediate: false }
+)
 
 function openParcels(item) {
   router.push(`/registers/${item.id}/parcels?mode=${OP_MODE_PAPERWORK}`)
@@ -342,7 +353,7 @@ async function deleteRegister(item) {
       } catch (err) {
         alertStore.error(
           `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
-          (err.message ? `: ${err.message}` : '')
+            (err.message ? `: ${err.message}` : '')
         )
       }
     }
@@ -364,7 +375,10 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div class="header-actions-bar">
-        <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
+        <div
+          v-if="runningAction || loading || isInitializing"
+          class="header-actions header-actions-group"
+        >
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
@@ -389,6 +403,8 @@ defineExpose({
     />
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div class="registers-filter-row">
       <v-select
@@ -458,11 +474,6 @@ defineExpose({
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

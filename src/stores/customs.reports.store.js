@@ -68,6 +68,7 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       reportsTotalCount.value = 0
       reportsHasNextPage.value = false
       reportsHasPreviousPage.value = false
+      throw err
     } finally {
       loading.value = false
     }
@@ -104,7 +105,9 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
         queryParams.append('search', authStore.customsreportrows_search)
       }
 
-      const response = await fetchWrapper.get(`${baseUrl}/${reportId}/rows?${queryParams.toString()}`)
+      const response = await fetchWrapper.get(
+        `${baseUrl}/${reportId}/rows?${queryParams.toString()}`
+      )
 
       reportRows.value = response?.items || []
       reportRowsTotalCount.value = response?.pagination?.totalCount || 0
@@ -120,6 +123,7 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       reportRowsHasPreviousPage.value = false
       reportRowsColumns.value = []
       reportRowsCustomsProcedure.value = null
+      throw err
     } finally {
       loading.value = false
     }

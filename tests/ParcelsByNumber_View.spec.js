@@ -11,7 +11,8 @@ import { defaultGlobalStubs } from './helpers/test-utils.js'
 vi.mock('@/lists/ParcelsByNumber_List.vue', () => ({
   default: {
     name: 'ParcelsByNumberList',
-    template: '<div class="parcels-by-number-list-stub" data-testid="parcels-by-number-list">Parcels by number List Component</div>'
+    template:
+      '<div class="parcels-by-number-list-stub" data-testid="parcels-by-number-list">Parcels by number List Component</div>'
   }
 }))
 

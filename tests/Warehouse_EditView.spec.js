@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -14,7 +14,8 @@ vi.mock('@/dialogs/Warehouse_Settings.vue', () => ({
   default: {
     name: 'Warehouse_Settings',
     props: ['mode', 'warehouseId'],
-    template: '<div data-testid="warehouse-settings">Warehouse Settings (mode: {{ mode }}, id: {{ warehouseId }})</div>'
+    template:
+      '<div data-testid="warehouse-settings">Warehouse Settings (mode: {{ mode }}, id: {{ warehouseId }})</div>'
   }
 }))
 

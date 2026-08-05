@@ -8,37 +8,40 @@ import { mount } from '@vue/test-utils'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
 
 describe('ParcelFilterSelectors', () => {
-  const mountComponent = (props = {}) => mount(ParcelFilterSelectors, {
-    props: {
-      statusOptions: [{ title: 'Все', value: null }],
-      checkStatusOptionsSw: [{ title: 'Все', value: null }],
-      checkStatusOptionsFc: [{ title: 'Все', value: null }],
-      passportCheckStatusOptions: [{ title: 'Все', value: null }],
-      parcelsStatus: null,
-      parcelsCheckStatusSw: null,
-      parcelsCheckStatusFc: null,
-      parcelsPassportCheckStatus: null,
-      parcelsHideLegacyRestrictions: false,
-      localTnvedSearch: '',
-      localParcelNumberSearch: '',
-      localProductNameSearch: '',
-      ...props,
-    },
-    global: {
-      stubs: {
-        'v-select': {
-          name: 'v-select',
-          props: ['disabled', 'itemTitle', 'itemValue', 'label'],
-          template: '<div class="v-select-stub" :data-label="label" :data-disabled="String(disabled)" :data-item-title="itemTitle" :data-item-value="itemValue"></div>',
-        },
-        'v-text-field': {
-          name: 'v-text-field',
-          props: ['disabled', 'label'],
-          template: '<div class="v-text-field-stub" :data-label="label" :data-disabled="String(disabled)"></div>',
-        },
+  const mountComponent = (props = {}) =>
+    mount(ParcelFilterSelectors, {
+      props: {
+        statusOptions: [{ title: 'Все', value: null }],
+        checkStatusOptionsSw: [{ title: 'Все', value: null }],
+        checkStatusOptionsFc: [{ title: 'Все', value: null }],
+        passportCheckStatusOptions: [{ title: 'Все', value: null }],
+        parcelsStatus: null,
+        parcelsCheckStatusSw: null,
+        parcelsCheckStatusFc: null,
+        parcelsPassportCheckStatus: null,
+        parcelsHideLegacyRestrictions: false,
+        localTnvedSearch: '',
+        localParcelNumberSearch: '',
+        localProductNameSearch: '',
+        ...props
       },
-    },
-  })
+      global: {
+        stubs: {
+          'v-select': {
+            name: 'v-select',
+            props: ['disabled', 'itemTitle', 'itemValue', 'label'],
+            template:
+              '<div class="v-select-stub" :data-label="label" :data-disabled="String(disabled)" :data-item-title="itemTitle" :data-item-value="itemValue"></div>'
+          },
+          'v-text-field': {
+            name: 'v-text-field',
+            props: ['disabled', 'label'],
+            template:
+              '<div class="v-text-field-stub" :data-label="label" :data-disabled="String(disabled)"></div>'
+          }
+        }
+      }
+    })
 
   const assertDisabledState = (wrapper, expectedSelectDisabled, expectedTextFieldDisabled) => {
     const selectNodes = wrapper.findAll('.v-select-stub')
@@ -75,7 +78,6 @@ describe('ParcelFilterSelectors', () => {
     const wrapper = mountComponent({ runningAction: false, loading: false, isInitializing: true })
     assertDisabledState(wrapper, true, true)
   })
-
 
   it('emits update events for all v-model bindings', async () => {
     const wrapper = mountComponent()
@@ -146,7 +148,7 @@ describe('ParcelFilterSelectors', () => {
     const wrapper = mountComponent({
       parcelsPassportCheckStatus: 30,
       showPassportCheckStatus: false,
-      isInitializing: false,
+      isInitializing: false
     })
 
     await wrapper.vm.$nextTick()
@@ -158,7 +160,7 @@ describe('ParcelFilterSelectors', () => {
     const wrapper = mountComponent({
       parcelsPassportCheckStatus: 30,
       showPassportCheckStatus: false,
-      isInitializing: true,
+      isInitializing: true
     })
 
     await wrapper.vm.$nextTick()
@@ -174,12 +176,12 @@ describe('ParcelFilterSelectors', () => {
     const wrapper = mountComponent({
       parcelsPassportCheckStatus: 30,
       showPassportCheckStatus: false,
-      isInitializing: true,
+      isInitializing: true
     })
 
     await wrapper.setProps({
       showPassportCheckStatus: true,
-      isInitializing: false,
+      isInitializing: false
     })
 
     expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toBeUndefined()
@@ -189,5 +191,4 @@ describe('ParcelFilterSelectors', () => {
     const wrapper = mountComponent({ runningAction: true, loading: true, isInitializing: true })
     assertDisabledState(wrapper, true, true)
   })
-
 })

@@ -58,7 +58,7 @@ describe('ArticleWithH', () => {
 
     // Wait for the async tooltip to be populated
     await wrapper.vm.$nextTick()
-    
+
     const button = wrapper.find('.action-button-stub')
     expect(button.exists()).toBe(true)
     expect(button.attributes('data-tooltip')).toContain('NT-99')
@@ -84,7 +84,7 @@ describe('ArticleWithH', () => {
 
     // Wait for the component to be fully mounted and async tooltip to load
     await wrapper.vm.$nextTick()
-    
+
     await wrapper.find('.action-button-stub').trigger('click')
     expect(wrapper.emitted()['approve-notification']).toBeTruthy()
   })

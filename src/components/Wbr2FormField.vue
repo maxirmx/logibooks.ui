@@ -1,10 +1,11 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks UI application 
+// This file is a part of Logibooks UI application
 
 import { Field } from 'vee-validate'
 import { wbr2RegisterColumnTitles } from '@/helpers/wbr2.register.mapping.js'
+import FieldError from '@/components/FieldError.vue'
 
 defineProps({
   name: { type: String, required: true },
@@ -20,31 +21,37 @@ defineProps({
 
 <template>
   <div :class="fullWidth ? 'form-group-1' : 'form-group'">
-    <label 
-      :for="name" 
-      :class="fullWidth ? 'label-1' : 'label'" 
-    >
+    <label :for="name" :class="fullWidth ? 'label-1' : 'label'">
       {{ wbr2RegisterColumnTitles[name] }}:
     </label>
-    <Field 
+    <Field
       v-if="as === 'select'"
-      :name="name" 
-      :id="name" 
+      :name="name"
+      :id="name"
       as="select"
       :disabled="disabled"
-      :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
+      :class="[
+        'form-control',
+        fullWidth ? 'input-1' : 'input',
+        { 'is-invalid': errors && errors[name] }
+      ]"
     >
       <slot />
     </Field>
-    <Field 
+    <Field
       v-else
-      :name="name" 
-      :id="name" 
+      :name="name"
+      :id="name"
       :type="type || 'text'"
       :step="step"
       :disabled="disabled"
       :readonly="readonly"
-      :class="['form-control', fullWidth ? 'input-1' : 'input', { 'is-invalid': errors && errors[name] }]"
+      :class="[
+        'form-control',
+        fullWidth ? 'input-1' : 'input',
+        { 'is-invalid': errors && errors[name] }
+      ]"
     />
+    <FieldError :name="name" :errors="errors" />
   </div>
 </template>

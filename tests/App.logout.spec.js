@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -19,7 +19,7 @@ import { roleAdmin } from '@/helpers/user.roles.js'
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn(),
+  disconnect: vi.fn()
 }))
 
 // Mock Vuetify display composable
@@ -36,7 +36,7 @@ vi.mock('vuetify', async (importOriginal) => {
 // Create a Vuetify instance
 const vuetify = createVuetify({
   components,
-  directives,
+  directives
 })
 
 // Mock the router with all necessary routes
@@ -99,7 +99,7 @@ describe('App Logout Functionality', () => {
       lastName: 'Doe',
       patronymic: 'Smith',
       email: 'john@example.com',
-      roles: [roleAdmin] 
+      roles: [roleAdmin]
     }
 
     // Mock the logout method to properly clear user data
@@ -122,11 +122,14 @@ describe('App Logout Functionality', () => {
           'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
           'v-navigation-drawer': {
-            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
+            template:
+              '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
           },
           'v-list': { template: '<ul><slot /></ul>' },
           'v-list-item': { template: '<li><slot /></li>' },
-          'v-list-group': { template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>' },
+          'v-list-group': {
+            template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>'
+          },
           'v-main': { template: '<main><slot /></main>' },
           ActionDialog: {
             props: ['actionDialog'],
@@ -141,7 +144,7 @@ describe('App Logout Functionality', () => {
   it('should call logout and navigate to login page when logout is clicked', async () => {
     // Find the logout link specifically
     const logoutLinks = wrapper.findAll('a[class="link"]')
-    const logoutLink = logoutLinks.find(link => link.text() === 'Выход')
+    const logoutLink = logoutLinks.find((link) => link.text() === 'Выход')
     expect(logoutLink).toBeTruthy()
     expect(logoutLink.text()).toBe('Выход')
 
@@ -159,7 +162,7 @@ describe('App Logout Functionality', () => {
 
     // Find and click logout link
     const logoutLinks = wrapper.findAll('a[class="link"]')
-    const logoutLink = logoutLinks.find(link => link.text() === 'Выход')
+    const logoutLink = logoutLinks.find((link) => link.text() === 'Выход')
     await logoutLink.trigger('click')
 
     // Verify user data is cleared

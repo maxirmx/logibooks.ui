@@ -1,9 +1,10 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
-import { Field, FieldArray } from 'vee-validate'
+import { computed, onMounted } from 'vue'
+import { Field, useFieldArray } from 'vee-validate'
 import ActionButton from '@/components/ActionButton.vue'
 
 const props = defineProps({
@@ -54,6 +55,13 @@ const props = defineProps({
   }
 })
 
+const fieldPath = computed(() => props.name)
+const { fields, push, remove } = useFieldArray(fieldPath)
+
+onMounted(() => {
+  if (fields.value.length === 0) push(props.defaultValue)
+})
+
 // Helper function to get field props for a specific index
 function getFieldProps(index) {
   return typeof props.fieldProps === 'function' ? props.fieldProps({ index }) : props.fieldProps
@@ -61,53 +69,54 @@ function getFieldProps(index) {
 </script>
 
 <template>
-  <FieldArray :name="name" v-slot="{ fields, push, remove }">
-    <div v-for="(field, idx) in fields" :key="field.key" class="form-group mb-2">
-      <label v-if="idx === 0" class="label">{{ label }}:</label>
-      <div v-else class="label"></div>
+  <div v-for="(field, idx) in fields" :key="field.key" class="form-group mb-2">
+    <label v-if="idx === 0" class="label">{{ label }}:</label>
+    <div v-else class="label"></div>
 
-      <div class="field-container">
-        <!-- Plus button positioned to the left for first option -->
-        <ActionButton
-          v-if="idx === 0"
-          icon="fa-solid fa-plus"
-          :item="defaultValue"
-          @click="push(defaultValue)"
-          class="button-o-c field-container-plus"
-          :tooltip-text="addTooltip"
-          :disabled="disabled"
-        />
+    <div class="field-container">
+      <!-- Plus button positioned to the left for first option -->
+      <ActionButton
+        v-if="idx === 0"
+        icon="fa-solid fa-plus"
+        :item="defaultValue"
+        @click="push(defaultValue)"
+        class="button-o-c field-container-plus"
+        :tooltip-text="addTooltip"
+        :disabled="disabled"
+      />
 
-        <Field :name="`${name}[${idx}]`" :as="fieldType" :id="`${name}_${idx}`"
-          class="form-control input field-container-select" :class="{ 'is-invalid': hasError }"
-          v-bind="{ ...getFieldProps(idx), disabled }"
-        >
-          <option v-if="fieldType === 'select'" value="">{{ placeholder }}</option>
-          <template v-if="fieldType === 'select'">
-            <option v-for="option in options" :key="option.value" :value="option.value">
-              {{ option.text }}
-            </option>
-          </template>
-        </Field>
+      <Field
+        :name="`${name}[${idx}]`"
+        :as="fieldType"
+        :id="`${name}_${idx}`"
+        class="form-control input field-container-select"
+        :class="{ 'is-invalid': hasError }"
+        v-bind="{ ...getFieldProps(idx), disabled }"
+      >
+        <option v-if="fieldType === 'select'" value="">{{ placeholder }}</option>
+        <template v-if="fieldType === 'select'">
+          <option v-for="option in options" :key="option.value" :value="option.value">
+            {{ option.text }}
+          </option>
+        </template>
+      </Field>
 
-        <slot name="extra" :index="idx" />
+      <slot name="extra" :index="idx" />
 
-        <!-- Minus button always after select -->
-        <ActionButton
-          icon="fa-solid fa-minus"
-          :item="idx"
-          @click="remove(idx)"
-          :disabled="disabled || fields.length === 1"
-          class="button-o-c ml-2"
-          :tooltip-text="removeTooltip"
-        />
-      </div>
+      <!-- Minus button always after select -->
+      <ActionButton
+        icon="fa-solid fa-minus"
+        :item="idx"
+        @click="remove(idx)"
+        :disabled="disabled || fields.length === 1"
+        class="button-o-c ml-2"
+        :tooltip-text="removeTooltip"
+      />
     </div>
-  </FieldArray>
+  </div>
 </template>
 
 <style scoped>
-
 .field-container {
   display: flex;
   align-items: center;

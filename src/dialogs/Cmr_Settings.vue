@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Form } from 'vee-validate'
@@ -27,11 +29,7 @@ const customsStationsStore = useCustomsStationsStore()
 const alertStore = useAlertStore()
 
 const { item, loading: registerLoading } = storeToRefs(registersStore)
-const {
-  companies,
-  loading: companiesLoading,
-  error: companiesError
-} = storeToRefs(companiesStore)
+const { companies, loading: companiesLoading, error: companiesError } = storeToRefs(companiesStore)
 const {
   warehouses,
   loading: warehousesLoading,
@@ -59,20 +57,22 @@ const vehicleMakeModel = ref('')
 const customsStationId = ref(null)
 const documentDate = ref('')
 
-const currentRegister = computed(() => item.value?.id === props.id ? item.value : null)
+const currentRegister = computed(() => (item.value?.id === props.id ? item.value : null))
 const heading = computed(() => {
   const number = currentRegister.value?.invoiceNumber
   return number ? `Настройки CMR (${number})` : 'Настройки CMR'
 })
-const isReferencesLoading = computed(() =>
-  isInitializing.value ||
-  registerLoading.value ||
-  companiesLoading.value ||
-  warehousesLoading.value ||
-  customsStationsLoading.value
+const isReferencesLoading = computed(
+  () =>
+    isInitializing.value ||
+    registerLoading.value ||
+    companiesLoading.value ||
+    warehousesLoading.value ||
+    customsStationsLoading.value
 )
-const isFormDisabled = computed(() =>
-  isReferencesLoading.value || isSubmitting.value || loadFailed.value || !currentRegister.value
+const isFormDisabled = computed(
+  () =>
+    isReferencesLoading.value || isSubmitting.value || loadFailed.value || !currentRegister.value
 )
 
 function localToday() {
@@ -130,10 +130,9 @@ function initializeDefaults() {
 }
 
 function referenceError() {
-  return item.value?.error ||
-    companiesError.value ||
-    warehousesError.value ||
-    customsStationsError.value
+  return (
+    item.value?.error || companiesError.value || warehousesError.value || customsStationsError.value
+  )
 }
 
 async function loadReferences() {
@@ -156,7 +155,10 @@ async function loadReferences() {
     initializeDefaults()
   } catch (error) {
     loadFailed.value = true
-    alertStore.error(normalizeError(error, 'Не удалось загрузить данные для CMR'))
+    alertStore.error(error, {
+      fallback: 'Не удалось загрузить данные для CMR',
+      action: { label: 'Повторить', handler: loadReferences }
+    })
   } finally {
     isInitializing.value = false
   }
@@ -211,7 +213,7 @@ onMounted(loadReferences)
 
 <template>
   <div class="settings form-3 cmr-settings-dialog form-compact">
-    <Form :initial-values="{}" @submit="onSubmit">
+    <Form :initial-values="{}" @submit="onSubmit" @invalid-submit="focusFirstInvalidField">
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ heading }}</h1>
         <div class="header-actions">
@@ -235,20 +237,36 @@ onMounted(loadReferences)
       </div>
       <hr class="hr" />
 
+      <PageAlertRegion />
+
       <div class="form-section" data-testid="cmr-fields">
         <div class="form-row" data-testid="cmr-row-1">
           <div class="form-group">
             <label class="label" for="senderCompanyId">Отправитель:</label>
-            <select id="senderCompanyId" v-model="senderCompanyId" class="form-control input" :disabled="isFormDisabled">
+            <select
+              id="senderCompanyId"
+              v-model="senderCompanyId"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            >
               <option :value="null">Не выбрано</option>
-              <option v-for="company in companies" :key="company.id" :value="company.id">{{ companyLabel(company) }}</option>
+              <option v-for="company in companies" :key="company.id" :value="company.id">
+                {{ companyLabel(company) }}
+              </option>
             </select>
           </div>
           <div class="form-group">
             <label class="label" for="recipientCompanyId">Получатель:</label>
-            <select id="recipientCompanyId" v-model="recipientCompanyId" class="form-control input" :disabled="isFormDisabled">
+            <select
+              id="recipientCompanyId"
+              v-model="recipientCompanyId"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            >
               <option :value="null">Не выбрано</option>
-              <option v-for="company in companies" :key="company.id" :value="company.id">{{ companyLabel(company) }}</option>
+              <option v-for="company in companies" :key="company.id" :value="company.id">
+                {{ companyLabel(company) }}
+              </option>
             </select>
           </div>
         </div>
@@ -256,56 +274,111 @@ onMounted(loadReferences)
         <div class="form-row" data-testid="cmr-row-2">
           <div class="form-group">
             <label class="label" for="loadingWarehouseId">Место погрузки:</label>
-            <select id="loadingWarehouseId" v-model="loadingWarehouseId" class="form-control input" :disabled="isFormDisabled">
+            <select
+              id="loadingWarehouseId"
+              v-model="loadingWarehouseId"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            >
               <option :value="null">Не выбрано</option>
-              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name }}</option>
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
             </select>
           </div>
           <div class="form-group">
             <label class="label" for="loadingDate">Дата погрузки:</label>
-            <input id="loadingDate" v-model="loadingDate" type="date" class="form-control input" :disabled="isFormDisabled" />
+            <input
+              id="loadingDate"
+              v-model="loadingDate"
+              type="date"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            />
           </div>
         </div>
 
         <div class="form-row" data-testid="cmr-row-3">
           <div class="form-group">
             <label class="label" for="carrierCompanyId">Перевозчик:</label>
-            <select id="carrierCompanyId" v-model="carrierCompanyId" class="form-control input" :disabled="isFormDisabled">
+            <select
+              id="carrierCompanyId"
+              v-model="carrierCompanyId"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            >
               <option :value="null">Не выбрано</option>
-              <option v-for="company in companies" :key="company.id" :value="company.id">{{ companyLabel(company) }}</option>
+              <option v-for="company in companies" :key="company.id" :value="company.id">
+                {{ companyLabel(company) }}
+              </option>
             </select>
           </div>
           <div class="form-group">
             <label class="label" for="deliveryWarehouseId">Место разгрузки:</label>
-            <select id="deliveryWarehouseId" v-model="deliveryWarehouseId" class="form-control input" :disabled="isFormDisabled">
+            <select
+              id="deliveryWarehouseId"
+              v-model="deliveryWarehouseId"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            >
               <option :value="null">Не выбрано</option>
-              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name }}</option>
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
             </select>
           </div>
         </div>
 
         <div class="form-row" data-testid="cmr-row-4">
           <div class="form-group">
-            <label class="label" for="vehicleRegistrationNumber">Регистрац. номер тягач/полуприцеп:</label>
-            <input id="vehicleRegistrationNumber" v-model="vehicleRegistrationNumber" type="text" class="form-control input" :disabled="isFormDisabled" />
+            <label class="label" for="vehicleRegistrationNumber"
+              >Регистрац. номер тягач/полуприцеп:</label
+            >
+            <input
+              id="vehicleRegistrationNumber"
+              v-model="vehicleRegistrationNumber"
+              type="text"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            />
           </div>
           <div class="form-group">
             <label class="label" for="vehicleMakeModel">Марка тягач/полуприцеп:</label>
-            <input id="vehicleMakeModel" v-model="vehicleMakeModel" type="text" class="form-control input" :disabled="isFormDisabled" />
+            <input
+              id="vehicleMakeModel"
+              v-model="vehicleMakeModel"
+              type="text"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            />
           </div>
         </div>
 
         <div class="form-row" data-testid="cmr-row-5">
           <div class="form-group">
             <label class="label" for="customsStationId">Таможенный пост:</label>
-            <select id="customsStationId" v-model="customsStationId" class="form-control input" :disabled="isFormDisabled">
+            <select
+              id="customsStationId"
+              v-model="customsStationId"
+              class="form-control input"
+              :disabled="isFormDisabled"
+            >
               <option :value="null">Не выбрано</option>
-              <option v-for="station in customsStations" :key="station.id" :value="station.id">{{ customsStationLabel(station) }}</option>
+              <option v-for="station in customsStations" :key="station.id" :value="station.id">
+                {{ customsStationLabel(station) }}
+              </option>
             </select>
           </div>
           <div class="form-group">
             <label class="label" for="documentDate">Дата:</label>
-            <input id="documentDate" v-model="documentDate" type="date" class="form-control input" required :disabled="isFormDisabled" />
+            <input
+              id="documentDate"
+              v-model="documentDate"
+              type="date"
+              class="form-control input"
+              required
+              :disabled="isFormDisabled"
+            />
           </div>
         </div>
       </div>

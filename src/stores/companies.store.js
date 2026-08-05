@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -22,6 +22,7 @@ export const useCompaniesStore = defineStore('companies', () => {
       companies.value = await fetchWrapper.get(baseUrl)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -37,7 +38,7 @@ export const useCompaniesStore = defineStore('companies', () => {
     } catch (err) {
       error.value = err
       company.value = { error: err }
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -64,7 +65,7 @@ export const useCompaniesStore = defineStore('companies', () => {
     try {
       await fetchWrapper.put(`${baseUrl}/${id}`, companyData)
       // Update the company in the list
-      const index = companies.value.findIndex(c => c.id === id)
+      const index = companies.value.findIndex((c) => c.id === id)
       if (index !== -1) {
         companies.value[index] = { ...companies.value[index], ...companyData }
       }
@@ -85,7 +86,7 @@ export const useCompaniesStore = defineStore('companies', () => {
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      companies.value = companies.value.filter(c => c.id !== id)
+      companies.value = companies.value.filter((c) => c.id !== id)
       return true
     } catch (err) {
       error.value = err

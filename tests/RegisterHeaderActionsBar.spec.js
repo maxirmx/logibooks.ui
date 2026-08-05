@@ -54,15 +54,15 @@ describe('RegisterHeaderActionsBar', () => {
   }
 
   function findActionButtonByTooltip(wrapper, tooltipText) {
-    return wrapper.findAllComponents(ActionButton).find(
-      (button) => button.props('tooltipText') === tooltipText
-    )
+    return wrapper
+      .findAllComponents(ActionButton)
+      .find((button) => button.props('tooltipText') === tooltipText)
   }
 
   function findActionMenuByTooltip(wrapper, tooltipText) {
-    return wrapper.findAllComponents(ActionButton2L).find(
-      (component) => component.props('tooltipText') === tooltipText
-    )
+    return wrapper
+      .findAllComponents(ActionButton2L)
+      .find((component) => component.props('tooltipText') === tooltipText)
   }
 
   function optionPresentation(options) {
@@ -88,7 +88,8 @@ describe('RegisterHeaderActionsBar', () => {
     const invoiceMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(invoiceMenu).toBeTruthy()
 
-    const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption, do1Option] = invoiceMenu.props('options')
+    const [allOption, withExciseOption, withNotificationsOption, withoutExciseOption, do1Option] =
+      invoiceMenu.props('options')
 
     expect(invoiceMenu.props('icon')).toBe('fa-solid fa-file-invoice')
     expect(optionPresentation(invoiceMenu.props('options'))).toEqual([
@@ -181,12 +182,12 @@ describe('RegisterHeaderActionsBar', () => {
     const invoiceMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(invoiceMenu).toBeTruthy()
 
-    const allOption = invoiceMenu.props('options').find(
-      option => option.label === 'инвойс-манифест (все)'
-    )
-    const do1Option = invoiceMenu.props('options').find(
-      option => option.label === 'отчёт ДО1 (все)'
-    )
+    const allOption = invoiceMenu
+      .props('options')
+      .find((option) => option.label === 'инвойс-манифест (все)')
+    const do1Option = invoiceMenu
+      .props('options')
+      .find((option) => option.label === 'отчёт ДО1 (все)')
 
     await allOption.action(baseProps.item)
     await do1Option.action(baseProps.item)
@@ -204,9 +205,7 @@ describe('RegisterHeaderActionsBar', () => {
     })
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-    const cmrOption = documentMenu.props('options').find(
-      option => option.label === 'CMR (все)'
-    )
+    const cmrOption = documentMenu.props('options').find((option) => option.label === 'CMR (все)')
     expect(cmrOption).toMatchObject({
       label: 'CMR (все)',
       icon: 'fa-solid fa-file-signature',
@@ -227,8 +226,7 @@ describe('RegisterHeaderActionsBar', () => {
       global: { stubs: vuetifyStubs }
     })
     const nonAutoMenu = findActionMenuByTooltip(nonAutoWrapper, 'Сформировать документы')
-    expect(nonAutoMenu.props('options').map(option => option.label))
-      .not.toContain('CMR (все)')
+    expect(nonAutoMenu.props('options').map((option) => option.label)).not.toContain('CMR (все)')
   })
 
   it('does not route to CMR settings when the action bar is disabled', async () => {
@@ -242,9 +240,10 @@ describe('RegisterHeaderActionsBar', () => {
     })
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-    await documentMenu.props('options').find(
-      option => option.label === 'CMR (все)'
-    ).action()
+    await documentMenu
+      .props('options')
+      .find((option) => option.label === 'CMR (все)')
+      .action()
     expect(pushMock).not.toHaveBeenCalled()
   })
 
@@ -263,7 +262,7 @@ describe('RegisterHeaderActionsBar', () => {
     })
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-    const labels = documentMenu.props('options').map(option => option.label)
+    const labels = documentMenu.props('options').map((option) => option.label)
     expect(labels).not.toContain('отчёт ДО1 (все)')
     expect(labels).toEqual([
       'инвойс-манифест (все)',
@@ -329,12 +328,12 @@ describe('RegisterHeaderActionsBar', () => {
 
     const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
     expect(documentMenu).toBeTruthy()
-    const additionalRestrictionsOption = documentMenu.props('options').find(
-      (option) => option.label === 'реестр дополнительных изъятий'
-    )
-    const techdocOption = documentMenu.props('options').find(
-      (option) => option.label === 'тех. документация (с акцизом)'
-    )
+    const additionalRestrictionsOption = documentMenu
+      .props('options')
+      .find((option) => option.label === 'реестр дополнительных изъятий')
+    const techdocOption = documentMenu
+      .props('options')
+      .find((option) => option.label === 'тех. документация (с акцизом)')
 
     await additionalRestrictionsOption.action(baseProps.item)
     await techdocOption.action(baseProps.item)
@@ -347,12 +346,12 @@ describe('RegisterHeaderActionsBar', () => {
     })
     const disabledDocumentMenu = findActionMenuByTooltip(disabledWrapper, 'Сформировать документы')
     expect(disabledDocumentMenu).toBeTruthy()
-    const disabledAdditionalRestrictionsOption = disabledDocumentMenu.props('options').find(
-      (option) => option.label === 'реестр дополнительных изъятий'
-    )
-    const disabledTechdocOption = disabledDocumentMenu.props('options').find(
-      (option) => option.label === 'тех. документация (с акцизом)'
-    )
+    const disabledAdditionalRestrictionsOption = disabledDocumentMenu
+      .props('options')
+      .find((option) => option.label === 'реестр дополнительных изъятий')
+    const disabledTechdocOption = disabledDocumentMenu
+      .props('options')
+      .find((option) => option.label === 'тех. документация (с акцизом)')
 
     await disabledAdditionalRestrictionsOption.action(baseProps.item)
     await disabledTechdocOption.action(baseProps.item)
@@ -521,9 +520,18 @@ describe('RegisterHeaderActionsBar', () => {
     const cases = [
       { title: 'missing procedure', item: { id: 1, invoiceNumber: 'INV-1' } },
       { title: 'null procedure', item: { ...baseProps.item, customsProcedureCode: null } },
-      { title: 'return procedure', item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_RETURN } },
-      { title: 'export procedure', item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT } },
-      { title: 'reexport procedure', item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT } }
+      {
+        title: 'return procedure',
+        item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_RETURN }
+      },
+      {
+        title: 'export procedure',
+        item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT }
+      },
+      {
+        title: 'reexport procedure',
+        item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT }
+      }
     ]
 
     for (const testCase of cases) {
@@ -535,7 +543,10 @@ describe('RegisterHeaderActionsBar', () => {
         global: { stubs: vuetifyStubs }
       })
 
-      expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины'), testCase.title).toBeUndefined()
+      expect(
+        findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины'),
+        testCase.title
+      ).toBeUndefined()
       wrapper.unmount()
     }
   })
@@ -631,9 +642,7 @@ describe('RegisterHeaderActionsBar', () => {
     const freezeButton = actionButtons.find(
       (button) => button.props('tooltipText') === 'Зафиксировать сортировку по кодам ТН ВЭД'
     )
-    const closeButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Закрыть'
-    )
+    const closeButton = actionButtons.find((button) => button.props('tooltipText') === 'Закрыть')
 
     expect(freezeCheckStatusButton).toBeTruthy()
     expect(freezeButton).toBeTruthy()

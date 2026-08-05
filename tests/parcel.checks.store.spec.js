@@ -40,10 +40,18 @@ vi.mock('@microsoft/signalr', () => {
           connection.state = 'Connected'
         }),
         invoke: vi.fn(async () => {}),
-        stop: vi.fn(async () => { connection.state = 'Disconnected' }),
-        on: vi.fn((name, handler) => { connection.handlers[name] = handler }),
-        onclose: vi.fn(handler => { connection.handlers.onclose = handler }),
-        onreconnected: vi.fn(handler => { connection.handlers.onreconnected = handler })
+        stop: vi.fn(async () => {
+          connection.state = 'Disconnected'
+        }),
+        on: vi.fn((name, handler) => {
+          connection.handlers[name] = handler
+        }),
+        onclose: vi.fn((handler) => {
+          connection.handlers.onclose = handler
+        }),
+        onreconnected: vi.fn((handler) => {
+          connection.handlers.onreconnected = handler
+        })
       }
       signalRState.connections.push(connection)
       return connection
@@ -136,11 +144,11 @@ describe('parcel checks subscription store', () => {
     expect(onResync).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps initial connection failures non-blocking', async () => {
+  it('rejects initial connection failures while retaining reactive error state', async () => {
     signalRState.nextStartError = new Error('offline')
     const store = useParcelChecksStore()
 
-    expect(await store.start(7)).toBe(false)
+    await expect(store.start(7)).rejects.toThrow('offline')
     expect(store.error?.message).toBe('offline')
   })
 })

@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import {
   startRegisterStatusEditMode,
@@ -61,14 +62,13 @@ const warehousesStore = useWarehousesStore()
 const registerStatusesStore = useRegisterStatusesStore()
 
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
 const confirm = useConfirm()
 
-const {
-  validationState,
-  progressPercent,
-  stopPolling
-} = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_WAREHOUSE })
+const { validationState, progressPercent, stopPolling } = createRegisterActionHandlers(
+  registersStore,
+  alertStore,
+  { mode: OP_MODE_WAREHOUSE }
+)
 
 const authStore = useAuthStore()
 const {
@@ -110,10 +110,9 @@ const statusFilterItems = computed(() => {
   return buildRegisterStatusFilterOptions(unref(registerStatusesStore.registerStatuses))
 })
 const procedureFilterItems = computed(() => {
-  return buildRegisterProcedureFilterOptions(
-    unref(registersStore.ops)?.customsProcedures,
-    { includeReturn: true }
-  )
+  return buildRegisterProcedureFilterOptions(unref(registersStore.ops)?.customsProcedures, {
+    includeReturn: true
+  })
 })
 
 function startRegisterStatusChange(registerId, currentStatusId) {
@@ -153,7 +152,7 @@ function setSelectedRegisterStatusId(registerId, statusId) {
   setRegisterStatusSelectedId(registerId, statusId, registerStatusState)
 }
 
-onMounted(async () => {
+async function initializeList() {
   try {
     if (!isComponentMounted.value) return
 
@@ -179,14 +178,19 @@ onMounted(async () => {
   } catch (error) {
     if (isComponentMounted.value) {
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
-      alertStore.error(registersStore.error)
+      alertStore.error(error, {
+        fallback: 'Ошибка при загрузке данных',
+        action: { label: 'Повторить', handler: initializeList }
+      })
     }
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeList)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -226,9 +230,13 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   debounceMs: 300
 })
 
-const watcherStop = watch([registers_page, registers_per_page, registers_sort_by], () => {
-  triggerLoad()
-}, { immediate: false })
+const watcherStop = watch(
+  [registers_page, registers_per_page, registers_sort_by],
+  () => {
+    triggerLoad()
+  },
+  { immediate: false }
+)
 
 function openParcels(item) {
   router.push(`/registers/${item.id}/parcels?mode=${OP_MODE_WAREHOUSE}`)
@@ -266,7 +274,7 @@ async function deleteRegister(item) {
       } catch (err) {
         alertStore.error(
           `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
-          (err.message ? `: ${err.message}` : '')
+            (err.message ? `: ${err.message}` : '')
         )
       }
     }
@@ -302,7 +310,6 @@ defineExpose({
   procedureFilterItems,
   statusFilterItems
 })
-
 </script>
 
 <template>
@@ -310,7 +317,10 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div class="header-actions-bar">
-        <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
+        <div
+          v-if="runningAction || loading || isInitializing"
+          class="header-actions header-actions-group"
+        >
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group" v-if="isWhManagerPlus">
@@ -327,6 +337,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div class="registers-filter-row">
       <v-select
@@ -400,11 +412,6 @@ defineExpose({
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

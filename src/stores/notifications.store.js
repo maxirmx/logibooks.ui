@@ -22,6 +22,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
       notifications.value = await fetchWrapper.get(baseUrl)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -37,7 +38,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     } catch (err) {
       error.value = err
       notification.value = { error: err }
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -63,7 +64,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     error.value = null
     try {
       await fetchWrapper.put(`${baseUrl}/${id}`, notificationData)
-      const index = notifications.value.findIndex(n => n.id === id)
+      const index = notifications.value.findIndex((n) => n.id === id)
       if (index !== -1) {
         notifications.value[index] = { ...notifications.value[index], ...notificationData }
       }
@@ -81,7 +82,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      notifications.value = notifications.value.filter(n => n.id !== id)
+      notifications.value = notifications.value.filter((n) => n.id !== id)
       return true
     } catch (err) {
       error.value = err

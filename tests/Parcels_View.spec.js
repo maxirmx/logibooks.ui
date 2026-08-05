@@ -1,14 +1,20 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import ParcelsView from '@/views/Parcels_View.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import {
+  OZON_COMPANY_ID,
+  WBR_COMPANY_ID,
+  GTC_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID
+} from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const pushMock = vi.hoisted(() => vi.fn())
@@ -139,17 +145,20 @@ describe('Parcels_View', () => {
     ['warehouse mode', OP_MODE_WAREHOUSE, 40, ['sr-logist']],
     ['non-import procedure', OP_MODE_PAPERWORK, 10, ['sr-logist']],
     ['ineligible role', OP_MODE_PAPERWORK, 40, ['logist']]
-  ])('does not enable passport subscriptions for %s', async (_name, mode, customsProcedureCode, roles) => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    useAuthStore().user = { roles }
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode })
+  ])(
+    'does not enable passport subscriptions for %s',
+    async (_name, mode, customsProcedureCode, roles) => {
+      const { useAuthStore } = await import('@/stores/auth.store.js')
+      useAuthStore().user = { roles }
+      mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode })
 
-    mount(ParcelsView, { props: { id: 16, mode } })
-    await nextTick()
-    await nextTick()
+      mount(ParcelsView, { props: { id: 16, mode } })
+      await nextTick()
+      await nextTick()
 
-    expect(subscriptionOptions[0].enabled.value).toBe(false)
-  })
+      expect(subscriptionOptions[0].enabled.value).toBe(false)
+    }
+  )
 
   it('coalesces filtered passport updates into one authoritative refresh', async () => {
     let wrapper
@@ -205,7 +214,7 @@ describe('Parcels_View', () => {
 
   it('renders WbrParcels_List when register has WBR registerType', async () => {
     mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    
+
     const wrapper = mount(ParcelsView, {
       props: {
         id: 1
@@ -242,7 +251,7 @@ describe('Parcels_View', () => {
 
   it('renders OzonParcels_List when register has OZON registerType', async () => {
     mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
-    
+
     const wrapper = mount(ParcelsView, {
       props: {
         id: 2
@@ -279,7 +288,7 @@ describe('Parcels_View', () => {
 
   it('renders Wbr2Parcels_List when register has WBR2 registerType', async () => {
     mockGet.mockResolvedValue({ registerType: WBR2_REGISTER_ID })
-    
+
     const wrapper = mount(ParcelsView, {
       props: {
         id: 3
@@ -370,7 +379,7 @@ describe('Parcels_View', () => {
 
   it('renders nothing when registerType is unknown', async () => {
     mockGet.mockResolvedValue({ registerType: 999 }) // Unknown register type
-    
+
     const wrapper = mount(ParcelsView, {
       props: {
         id: 3
@@ -388,7 +397,7 @@ describe('Parcels_View', () => {
 
   it('passes the register id prop to the selected component', async () => {
     mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    
+
     const wrapper = mount(ParcelsView, {
       props: {
         id: 123

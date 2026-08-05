@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -41,7 +41,6 @@ describe('PaginationFooter', () => {
   })
 
   describe('Page Control', () => {
-
     it('generates correct page options', () => {
       const component = wrapper.vm
       expect(component.pageSelectItems).toHaveLength(10)
@@ -75,7 +74,7 @@ describe('PaginationFooter', () => {
     it('emits update:page when page changes', async () => {
       const component = wrapper.vm
       component.setPage(5)
-      
+
       await wrapper.vm.$nextTick()
       expect(wrapper.emitted('update:page')).toBeTruthy()
       expect(wrapper.emitted('update:page')[0]).toEqual([5])
@@ -84,7 +83,7 @@ describe('PaginationFooter', () => {
     it('emits update:itemsPerPage when items per page changes', async () => {
       const component = wrapper.vm
       component.itemsPerPageModel = 50
-      
+
       await wrapper.vm.$nextTick()
       expect(wrapper.emitted('update:itemsPerPage')).toBeTruthy()
       expect(wrapper.emitted('update:itemsPerPage')[0]).toEqual([50])
@@ -142,15 +141,15 @@ describe('PaginationFooter', () => {
   describe('Scroll to Top', () => {
     it('calls window.scrollTo when scroll button is clicked', async () => {
       const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-      
+
       const scrollButton = wrapper.find('.pagination-footer__scroll-button')
       await scrollButton.trigger('click')
-      
+
       expect(scrollToSpy).toHaveBeenCalledWith({
         top: 0,
         behavior: 'smooth'
       })
-      
+
       scrollToSpy.mockRestore()
     })
   })
@@ -158,7 +157,7 @@ describe('PaginationFooter', () => {
   describe('Edge Cases', () => {
     it('handles maxPage of 1', async () => {
       await wrapper.setProps({ maxPage: 1, page: 1 })
-      
+
       const component = wrapper.vm
       // All navigation buttons should be disabled when there's only one page
       expect(component.isFirstDisabled).toBe(true)
@@ -187,7 +186,7 @@ describe('PaginationFooter', () => {
         { value: 5, title: 'Middle' },
         { value: 10, title: 'Last' }
       ]
-      
+
       await wrapper.setProps({ pageOptions: customOptions })
       const component = wrapper.vm
       expect(component.pageSelectItems).toEqual(customOptions)

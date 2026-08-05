@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -13,6 +14,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 
 const registerStatusesStore = useRegisterStatusesStore()
@@ -21,7 +23,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { registerStatuses, loading } = storeToRefs(registerStatusesStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 // Custom filter function for v-data-table
@@ -35,14 +36,14 @@ function filterRegisterStatuses(value, query, item) {
   }
   const q = query.toLocaleUpperCase()
 
-  return (
-    i.title?.toLocaleUpperCase().indexOf(q) !== -1
-  )
+  return i.title?.toLocaleUpperCase().indexOf(q) !== -1
 }
 
 // Table headers
 const headers = [
-  ...(authStore.isShiftLeadPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isShiftLeadPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }]
+    : []),
   { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
   { title: 'Название статуса', key: 'title', sortable: true },
   { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
@@ -94,9 +95,11 @@ async function deleteRegisterStatus(registerStatus) {
 }
 
 // Initialize data
-onMounted(async () => {
-  await registerStatusesStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(() => registerStatusesStore.getAll(), {
+    fallback: 'Не удалось загрузить статусы партий'
+  })
+)
 
 // Expose functions for testing
 defineExpose({
@@ -128,6 +131,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -196,10 +201,6 @@ defineExpose({
     </v-card>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, computed, ref, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -21,6 +22,7 @@ import {
   getProhibitionReasonLines
 } from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const stopWordsStore = useStopWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
@@ -29,7 +31,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { stopWords, loading } = storeToRefs(stopWordsStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 // Custom filter function for v-data-table
@@ -59,22 +60,26 @@ function filterStopWords(value, query, item) {
 const filteredStopWords = computed(() => {
   const procedureFilter = unref(authStore.stopwords_procedure)
   if (procedureFilter === 'export') {
-    return stopWords.value.filter(word => word.forExport)
+    return stopWords.value.filter((word) => word.forExport)
   }
   if (procedureFilter === 'import') {
-    return stopWords.value.filter(word => word.forImport)
+    return stopWords.value.filter((word) => word.forImport)
   }
   return stopWords.value
 })
 
-const tableStopWords = computed(() => filteredStopWords.value.map(word => ({
-  ...word,
-  procedure: getProhibitionScopeSortOrder(word)
-})))
+const tableStopWords = computed(() =>
+  filteredStopWords.value.map((word) => ({
+    ...word,
+    procedure: getProhibitionScopeSortOrder(word)
+  }))
+)
 
 // Table headers
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }]
+    : []),
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
   { title: 'Процедура', key: 'procedure', align: 'start' },
@@ -129,12 +134,11 @@ async function deleteStopWord(stopWord) {
 }
 
 // Initialize data
-onMounted(async () => {
-  await Promise.all([
-    matchTypesStore.ensureLoaded(),
-    stopWordsStore.getAll()
-  ])
-})
+onMounted(() =>
+  runWithRetryAlert(() => Promise.all([matchTypesStore.ensureLoaded(), stopWordsStore.getAll()]), {
+    fallback: 'Не удалось загрузить стоп-слова'
+  })
+)
 
 // Expose functions for testing
 defineExpose({
@@ -176,6 +180,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div class="stopwords-filter-row">
       <v-select
@@ -238,44 +244,45 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.procedure`]="{ item }">
-          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
-            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
-              <span
-                v-for="row in procedureRows"
-                :key="row.key"
-                class="procedure-line"
-              >
+          <template
+            v-for="procedureRows in [getProhibitionScopeRows(item)]"
+            :key="procedureRows.map((row) => row.key).join('-')"
+          >
+            <span
+              v-if="procedureRows.length"
+              :key="`${procedureRows.map((row) => row.key).join('-')}-lines`"
+              class="procedure-lines"
+            >
+              <span v-for="row in procedureRows" :key="row.key" class="procedure-line">
                 {{ row.label }}
               </span>
             </span>
-            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
+            <span v-else :key="`${procedureRows.map((row) => row.key).join('-')}-empty`">-</span>
           </template>
         </template>
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
-          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
-            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="reason-lines">
-              <span
-                v-for="row in procedureRows"
-                :key="row.key"
-                class="reason-line"
-              >
+          <template
+            v-for="procedureRows in [getProhibitionScopeRows(item)]"
+            :key="procedureRows.map((row) => row.key).join('-')"
+          >
+            <span
+              v-if="procedureRows.length"
+              :key="`${procedureRows.map((row) => row.key).join('-')}-lines`"
+              class="reason-lines"
+            >
+              <span v-for="row in procedureRows" :key="row.key" class="reason-line">
                 <template v-if="row.reason">{{ row.reason }}</template>
                 <template v-else>&nbsp;</template>
               </span>
             </span>
-            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
+            <span v-else :key="`${procedureRows.map((row) => row.key).join('-')}-empty`">-</span>
           </template>
         </template>
       </v-data-table>
     </v-card>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
   </div>
 </template>
 

@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -17,6 +18,7 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
@@ -32,22 +34,24 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { items, loading, ops, totalCount } = storeToRefs(scanJobsStore)
-const { alert } = storeToRefs(alertStore)
 const { companies } = storeToRefs(companiesStore)
 
 const runningAction = ref(false)
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 
-const { scanjobs_per_page, scanjobs_search, scanjobs_sort_by, scanjobs_page } = storeToRefs(authStore)
+const { scanjobs_per_page, scanjobs_search, scanjobs_sort_by, scanjobs_page } =
+  storeToRefs(authStore)
 
 // Local search variable for debounced calls
 const localSearch = ref('')
 localSearch.value = scanjobs_search.value || ''
 
 const headers = [
-  ...(authStore.hasWhRole ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '140px' }] : []),
-//  { title: 'Номер', key: 'id', sortable: true },
+  ...(authStore.hasWhRole
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '140px' }]
+    : []),
+  //  { title: 'Номер', key: 'id', sortable: true },
   { title: 'Номер сделки', key: 'dealNumber', sortable: true },
   { title: 'ТСД', key: 'invoice', sortable: true },
   { title: 'Отправитель/Получатель', key: 'senderRecipient', sortable: true },
@@ -56,7 +60,7 @@ const headers = [
   { title: 'Операция', key: 'operation', sortable: true },
   { title: 'Режим', key: 'mode', sortable: true },
   { title: 'Статус', key: 'status', sortable: true },
-  { title: 'Склад', key: 'warehouseId', sortable: true },
+  { title: 'Склад', key: 'warehouseId', sortable: true }
 ]
 
 function openEditDialog(scanJob) {
@@ -91,7 +95,9 @@ async function deleteScanjob(scanJob) {
         await scanJobsStore.remove(scanJob.id)
       } catch (error) {
         if (error.message?.includes('409')) {
-          alertStore.error('Нельзя удалить задание на сканирование, у которого есть связанные записи')
+          alertStore.error(
+            'Нельзя удалить задание на сканирование, у которого есть связанные записи'
+          )
         } else {
           alertStore.error('Ошибка при удалении задания на сканирование')
         }
@@ -140,7 +146,6 @@ async function pauseScanjob(scanJob) {
   }
 }
 
-
 async function finishScanjob(scanJob) {
   if (runningAction.value || scanJob?.readOnly) return
   runningAction.value = true
@@ -188,17 +193,34 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   debounceMs: 300
 })
 
-const watcherStop = watch([scanjobs_page, scanjobs_per_page, scanjobs_sort_by], () => {
-  triggerLoad()
-}, { immediate: false })
+const watcherStop = watch(
+  [scanjobs_page, scanjobs_per_page, scanjobs_sort_by],
+  () => {
+    triggerLoad()
+  },
+  { immediate: false }
+)
 
-onMounted(async () => {
+async function startLiveUpdates() {
+  try {
+    await scanJobsStore.startScanJobsListMonitor({
+      onChanged: triggerLoad
+    })
+  } catch (error) {
+    alertStore.warning(error, {
+      fallback: 'Автоматическое обновление недоступно; используйте обновление списка',
+      action: { label: 'Повторить', handler: startLiveUpdates }
+    })
+  }
+}
+
+async function initializeList() {
   try {
     if (!isComponentMounted.value) return
-    
+
     await scanJobsStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
-    
+
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
@@ -207,23 +229,22 @@ onMounted(async () => {
 
     await warehousesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    try {
-      await scanJobsStore.startScanJobsListMonitor({
-        onChanged: triggerLoad
-      })
-    } catch {
-      // The list remains usable through explicit REST refreshes when live updates are unavailable.
-    }
+    await startLiveUpdates()
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error('Ошибка при загрузке данных: ' + (error?.message || 'Неизвестная ошибка'))
+      alertStore.error(error, {
+        fallback: 'Ошибка при загрузке данных',
+        action: { label: 'Повторить', handler: initializeList }
+      })
     }
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeList)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -231,7 +252,9 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
-  scanJobsStore.stopScanJobsListMonitor().catch(() => {})
+  scanJobsStore.stopScanJobsListMonitor().catch((error) => {
+    reportError(error, { context: 'scan jobs list monitor cleanup' })
+  })
 })
 
 defineExpose({
@@ -242,7 +265,6 @@ defineExpose({
   pauseScanjob,
   finishScanjob
 })
-
 </script>
 
 <template>
@@ -250,13 +272,18 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Задания на сканирование</h1>
       <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
-        <div v-if="runningAction || loading || isInitializing" class="header-actions header-actions-group">
+        <div
+          v-if="runningAction || loading || isInitializing"
+          class="header-actions header-actions-group"
+        >
           <span class="spinner-border spinner-border-m"></span>
         </div>
       </div>
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -389,12 +416,6 @@ defineExpose({
         </template>
       </v-data-table-server>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
   </div>
 </template>
 

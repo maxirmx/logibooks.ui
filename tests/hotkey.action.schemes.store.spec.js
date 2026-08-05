@@ -39,7 +39,6 @@ describe('hotkey action schemes store', () => {
     vi.clearAllMocks()
   })
 
-
   it('getAll fetches schemes', async () => {
     fetchWrapper.get.mockResolvedValue(mockSchemes)
     const store = useHotKeyActionSchemesStore()
@@ -56,9 +55,7 @@ describe('hotkey action schemes store', () => {
     fetchWrapper.get.mockRejectedValue(error)
     const store = useHotKeyActionSchemesStore()
 
-    const result = await store.getById(99)
-
-    expect(result).toBeNull()
+    await expect(store.getById(99)).rejects.toBe(error)
     expect(store.hotKeyActionScheme).toEqual({ error })
     expect(store.error).toBe(error)
   })
@@ -85,7 +82,9 @@ describe('hotkey action schemes store', () => {
 
     await store.update(1, { name: 'Default v2' })
 
-    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`, { name: 'Default v2' })
+    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`, {
+      name: 'Default v2'
+    })
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
     expect(store.hotKeyActionSchemes[0]).toEqual(updated)
   })
@@ -111,12 +110,12 @@ describe('hotkey action schemes store', () => {
     expect(result).toEqual({ id: 10, name: 'A' })
   })
 
-  it('getAll stores error on failure without throwing', async () => {
+  it('getAll stores and rethrows failures', async () => {
     const error = new Error('boom')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useHotKeyActionSchemesStore()
 
-    await store.getAll()
+    await expect(store.getAll()).rejects.toBe(error)
 
     expect(store.error).toBe(error)
     expect(store.isInitialized).toBe(false)
@@ -180,9 +179,7 @@ describe('hotkey action schemes store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useHotKeyActionSchemesStore()
 
-      const result = await store.getOps()
-
-      expect(result).toBeNull()
+      await expect(store.getOps()).rejects.toBe(error)
       expect(store.opsLoading).toBe(false)
       expect(store.opsError).toBe(error)
     })
@@ -351,7 +348,7 @@ describe('hotkey action schemes store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useHotKeyActionSchemesStore()
 
-      await store.ensureLoaded()
+      await expect(store.ensureLoaded()).rejects.toBe(error)
 
       expect(store.isInitialized).toBe(false)
       expect(store.error).toBe(error)

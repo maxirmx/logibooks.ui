@@ -18,7 +18,7 @@ if (!global.ResizeObserver) {
   global.ResizeObserver = vi.fn().mockImplementation(() => ({
     observe: vi.fn(),
     unobserve: vi.fn(),
-    disconnect: vi.fn(),
+    disconnect: vi.fn()
   }))
 }
 
@@ -28,14 +28,14 @@ vi.mock('vuetify', async (importOriginal) => {
   return {
     ...actual,
     useDisplay: () => ({
-      height: { value: 600 },
-    }),
+      height: { value: 600 }
+    })
   }
 })
 
 const vuetify = createVuetify({
   components,
-  directives,
+  directives
 })
 
 const router = createRouter({
@@ -45,8 +45,8 @@ const router = createRouter({
     { path: '/login', component: { template: '<div>Login</div>' } },
     { path: '/scanjobs', component: { template: '<div>Scanjobs</div>' } },
     { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
-    { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
-  ],
+    { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } }
+  ]
 })
 
 describe('App exchange rates display', () => {
@@ -77,11 +77,14 @@ describe('App exchange rates display', () => {
           'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
           'v-navigation-drawer': {
-            template: '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>',
+            template:
+              '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
           },
           'v-list': { template: '<ul><slot /></ul>' },
           'v-list-item': { template: '<li><slot /></li>' },
-          'v-list-group': { template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>' },
+          'v-list-group': {
+            template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>'
+          },
           'v-main': { template: '<main><slot /></main>' },
           ActionDialog: {
             props: ['actionDialog'],
@@ -96,20 +99,31 @@ describe('App exchange rates display', () => {
   it('shows current date with rates and EUR/UZS cross rate when they are for today', async () => {
     const today = new Date()
     const isoToday = today.toISOString()
-    const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const ruDate = new Intl.DateTimeFormat('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    }).format(today)
     const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: isoToday },
       { alphabeticCode: 'EUR', rate: 101.9876, date: isoToday },
-      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: isoToday },
+      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: isoToday }
     ]
-    statusStore.eurUzs = { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 20000.1234, date: isoToday }
+    statusStore.eurUzs = {
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'UZS',
+      rate: 20000.1234,
+      date: isoToday
+    }
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`)
+    expect(line).toBe(
+      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`
+    )
   })
 
   it('shows rates when API returns date-only values for today', async () => {
@@ -117,34 +131,49 @@ describe('App exchange rates display', () => {
     const today = new Date(2024, 5, 24, 12, 0, 0)
     vi.setSystemTime(today)
 
-    const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
+    const ruDate = new Intl.DateTimeFormat('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    }).format(today)
     const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: '2024-06-24' },
       { alphabeticCode: 'EUR', rate: 101.9876, date: '2024-06-24' },
-      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: '2024-06-24' },
+      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: '2024-06-24' }
     ]
-    statusStore.eurUzs = { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 20000.1234, date: '2024-06-24' }
+    statusStore.eurUzs = {
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'UZS',
+      rate: 20000.1234,
+      date: '2024-06-24'
+    }
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`)
+    expect(line).toBe(
+      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`
+    )
   })
 
   it('shows failure text when rate date is stale', async () => {
     const today = new Date()
-    const ruDate = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(today)
-    const yesterday = new Date(today.getTime() - 24*60*60*1000).toISOString()
-    statusStore.exchangeRates = [
-      { alphabeticCode: 'USD', rate: 95.5, date: yesterday },
-    ]
+    const ruDate = new Intl.DateTimeFormat('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    }).format(today)
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString()
+    statusStore.exchangeRates = [{ alphabeticCode: 'USD', rate: 95.5, date: yesterday }]
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
     const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(`${ruDate} USD не удалось получить курс EUR не удалось получить курс UZS не удалось получить курс`)
+    expect(line).toBe(
+      `${ruDate} USD не удалось получить курс EUR не удалось получить курс UZS не удалось получить курс`
+    )
   })
 })

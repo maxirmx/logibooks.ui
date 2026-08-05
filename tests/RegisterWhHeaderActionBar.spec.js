@@ -85,12 +85,8 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     })
 
     const actionButton2L = wrapper.findComponent(ActionButton2LStub)
-    const labels = actionButton2L.props('options').map(option => option.label)
-    expect(labels).toEqual([
-      'Все посылки',
-      'Зона 1',
-      'Без зоны (не найдены)'
-    ])
+    const labels = actionButton2L.props('options').map((option) => option.label)
+    expect(labels).toEqual(['Все посылки', 'Зона 1', 'Без зоны (не найдены)'])
   })
 
   it('shows export action when user is warehouse manager plus', () => {
@@ -228,9 +224,11 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     const zoneOption = actionButton2L.props('options')[1]
     await zoneOption.action()
 
-    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
-    }))
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
+      })
+    )
     expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 8, 'Зона A', true)
   })
 

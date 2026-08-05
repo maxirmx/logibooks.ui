@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -18,8 +18,9 @@ const additionalStubs = {
   'v-spacer': {
     template: '<div class="v-spacer-stub" data-testid="v-spacer"></div>'
   },
-  'CompanySettings': {
-    template: '<div class="company-settings-stub" data-testid="company-settings"><slot></slot></div>',
+  CompanySettings: {
+    template:
+      '<div class="company-settings-stub" data-testid="company-settings"><slot></slot></div>',
     props: ['modelValue', 'mode', 'company'],
     emits: ['update:modelValue', 'company-saved']
   },
@@ -36,7 +37,18 @@ const testStubs = {
 
 // Centralized mock data
 const mockCompanies = ref([
-  { id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' }
+  {
+    id: 1,
+    inn: '123456789',
+    kpp: '987654321',
+    name: 'Test Company',
+    shortName: 'TC',
+    countryIsoNumeric: 643,
+    city: 'Moscow',
+    street: 'Test Street',
+    email: 'contact@example.com',
+    phone: '+7 900 123-45-67'
+  }
 ])
 
 const mockCountries = ref([
@@ -94,7 +106,7 @@ vi.mock('@/stores/countries.store.js', () => ({
     ensureLoaded: countriesEnsureLoaded,
     getCountryShortName: vi.fn((code) => {
       const num = Number(code)
-      const country = mockCountries.value.find(c => c.isoNumeric === num)
+      const country = mockCountries.value.find((c) => c.isoNumeric === num)
       if (!country) return code
       return country.nameRuShort || country.nameRuOfficial || code
     })
@@ -124,9 +136,13 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
-vi.mock('@/router', () => ({
-  default: router
-}), { virtual: true })
+vi.mock(
+  '@/router',
+  () => ({
+    default: router
+  }),
+  { virtual: true }
+)
 
 // Mock helpers
 vi.mock('@/helpers/items.per.page.js', () => ({
@@ -205,7 +221,20 @@ describe('Companies_List.vue', () => {
     })
     expect(wrapper.exists()).toBe(true)
     // Reset mock data for other tests
-    mockCompanies.value = [{ id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' }]
+    mockCompanies.value = [
+      {
+        id: 1,
+        inn: '123456789',
+        kpp: '987654321',
+        name: 'Test Company',
+        shortName: 'TC',
+        countryIsoNumeric: 643,
+        city: 'Moscow',
+        street: 'Test Street',
+        email: 'contact@example.com',
+        phone: '+7 900 123-45-67'
+      }
+    ]
   })
 
   it('handles search input', async () => {
@@ -218,7 +247,8 @@ describe('Companies_List.vue', () => {
     // Get auth store from the wrapper
     const authStore = wrapper.vm.authStore
 
-    const searchInput = wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
+    const searchInput =
+      wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
     if (searchInput.exists()) {
       await searchInput.setValue('Test Company')
       await searchInput.trigger('input')
@@ -231,8 +261,30 @@ describe('Companies_List.vue', () => {
   it('filters companies based on search term', async () => {
     // Add another company to test filtering
     mockCompanies.value = [
-      { id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' },
-      { id: 2, inn: '987654321', kpp: '123456789', name: 'Another Company', shortName: 'AC', countryIsoNumeric: 840, city: 'New York', street: 'Broadway', email: 'other@example.com', phone: '+1 212 555-01-00' }
+      {
+        id: 1,
+        inn: '123456789',
+        kpp: '987654321',
+        name: 'Test Company',
+        shortName: 'TC',
+        countryIsoNumeric: 643,
+        city: 'Moscow',
+        street: 'Test Street',
+        email: 'contact@example.com',
+        phone: '+7 900 123-45-67'
+      },
+      {
+        id: 2,
+        inn: '987654321',
+        kpp: '123456789',
+        name: 'Another Company',
+        shortName: 'AC',
+        countryIsoNumeric: 840,
+        city: 'New York',
+        street: 'Broadway',
+        email: 'other@example.com',
+        phone: '+1 212 555-01-00'
+      }
     ]
 
     const wrapper = mount(CompaniesList, {
@@ -263,7 +315,20 @@ describe('Companies_List.vue', () => {
     expect(authStore.companies_search).toBe('росс')
 
     // Reset mock data
-    mockCompanies.value = [{ id: 1, inn: '123456789', kpp: '987654321', name: 'Test Company', shortName: 'TC', countryIsoNumeric: 643, city: 'Moscow', street: 'Test Street', email: 'contact@example.com', phone: '+7 900 123-45-67' }]
+    mockCompanies.value = [
+      {
+        id: 1,
+        inn: '123456789',
+        kpp: '987654321',
+        name: 'Test Company',
+        shortName: 'TC',
+        countryIsoNumeric: 643,
+        city: 'Moscow',
+        street: 'Test Street',
+        email: 'contact@example.com',
+        phone: '+7 900 123-45-67'
+      }
+    ]
   })
 
   it('renders company contact columns and values', async () => {
@@ -332,7 +397,8 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template:
+              '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }
@@ -351,7 +417,8 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template:
+              '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }
@@ -381,7 +448,8 @@ describe('Companies_List.vue', () => {
         stubs: {
           ...testStubs,
           'v-data-table': {
-            template: '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
+            template:
+              '<div><slot name="item.actions" :item="{ id: 1, inn: \'123456789\', name: \'Test Company\', countryIsoNumeric: 643 }"></slot></div>'
           }
         }
       }

@@ -50,7 +50,12 @@ describe('useDebouncedFilterSync', () => {
     const local = ref('')
     const store = ref('')
     let resolveLoad
-    const loadFn = vi.fn(() => new Promise((resolve) => { resolveLoad = resolve }))
+    const loadFn = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveLoad = resolve
+        })
+    )
     const isComponentMounted = ref(true)
 
     useDebouncedFilterSync({

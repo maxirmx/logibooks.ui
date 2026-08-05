@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -66,7 +66,7 @@ describe('Parcels List Helpers', () => {
     // Mock console.error to suppress expected error logs during testing
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
-  
+
   afterEach(() => {
     // Restore console.error after each test
     vi.restoreAllMocks()
@@ -109,10 +109,10 @@ describe('Parcels List Helpers', () => {
       }
       const order = { id: 123 }
 
-      navigateToEditParcel(mockRouter, order, 'parcel-edit', { 
-        registerId: 456, 
+      navigateToEditParcel(mockRouter, order, 'parcel-edit', {
+        registerId: 456,
         returnTo: 'list',
-        tab: 'details' 
+        tab: 'details'
       })
 
       expect(mockRouter.push).toHaveBeenCalledWith({
@@ -143,7 +143,6 @@ describe('Parcels List Helpers', () => {
       expect(hasParcelEditRouteAccess({ hasLogistRole: true })).toBe(true)
       expect(hasParcelEditRouteAccess({ hasLogistRole: { value: true } })).toBe(true)
     })
-
   })
 
   describe('buildParcelEditCellClass', () => {
@@ -176,10 +175,11 @@ describe('Parcels List Helpers', () => {
       const mockLoadOrders = vi.fn()
       const item = { id: 123 }
 
-      await validateParcelData(item, mockStore, mockLoadOrders, true)
+      const result = await validateParcelData(item, mockStore, mockLoadOrders, true)
 
       expect(mockStore.validate).toHaveBeenCalledWith(123, true)
       expect(mockLoadOrders).toHaveBeenCalled()
+      expect(result).toBe(true)
     })
 
     it('should validate FC parcel successfully when sw=false', async () => {
@@ -268,7 +268,7 @@ describe('Parcels List Helpers', () => {
       CheckStatusCode.hasIssues.mockReturnValue(true)
 
       // Duplicate combined value: compose(0x01FE, 0x01FE) = 0x01FE01FE
-      const duplicateValue = 0x01FE01FE
+      const duplicateValue = 0x01fe01fe
       const data = {
         item: { checkStatus: duplicateValue }
       }
@@ -294,17 +294,20 @@ describe('Parcels List Helpers', () => {
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicate2Value)
     })
 
-    it.each([10, 40, 50])('should return class for passport check issue status %s', async (passportCheckStatus) => {
-      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
-      CheckStatusCode.hasIssues.mockReturnValue(false)
+    it.each([10, 40, 50])(
+      'should return class for passport check issue status %s',
+      async (passportCheckStatus) => {
+        const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
+        CheckStatusCode.hasIssues.mockReturnValue(false)
 
-      const result = getRowPropsForParcel(
-        { item: { checkStatus: 0x00010001, passportCheckStatus } },
-        passportCheckStatuses
-      )
+        const result = getRowPropsForParcel(
+          { item: { checkStatus: 0x00010001, passportCheckStatus } },
+          passportCheckStatuses
+        )
 
-      expect(result).toEqual({ class: 'parcel-has-issues' })
-    })
+        expect(result).toEqual({ class: 'parcel-has-issues' })
+      }
+    )
 
     it('should return empty class for a non-issue passport check status', async () => {
       const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
@@ -361,9 +364,7 @@ describe('Parcels List Helpers', () => {
 
       const result = filterGenericTemplateHeadersForParcel(headers)
 
-      expect(result).toEqual([
-        { key: 'productName', title: 'Product Name' }
-      ])
+      expect(result).toEqual([{ key: 'productName', title: 'Product Name' }])
     })
 
     it('should filter out actions with different suffixes', () => {
@@ -375,25 +376,27 @@ describe('Parcels List Helpers', () => {
 
       const result = filterGenericTemplateHeadersForParcel(headers)
 
-      expect(result).toEqual([
-        { key: 'productName', title: 'Product Name' }
-      ])
+      expect(result).toEqual([{ key: 'productName', title: 'Product Name' }])
     })
   })
 
   describe('formatPassport', () => {
     it('formats passport parts with issuer and issue date', () => {
-      expect(formatPassport({
-        passportSeries: 'AA',
-        passportNumber: '123456',
-        passportIssuedBy: 'ОВД',
-        passportIssueDate: '2020-01-01'
-      })).toBe('AA 123456 выдан ОВД 01.01.2020')
+      expect(
+        formatPassport({
+          passportSeries: 'AA',
+          passportNumber: '123456',
+          passportIssuedBy: 'ОВД',
+          passportIssueDate: '2020-01-01'
+        })
+      ).toBe('AA 123456 выдан ОВД 01.01.2020')
     })
 
     it('formats partial passport data without extra spaces', () => {
       expect(formatPassport({ passportSeries: 'AA', passportNumber: '123' })).toBe('AA 123')
-      expect(formatPassport({ passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe('123 выдан 01.01.2020')
+      expect(formatPassport({ passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe(
+        '123 выдан 01.01.2020'
+      )
       expect(formatPassport({})).toBe('')
       expect(formatPassport(null)).toBe('')
     })
@@ -420,19 +423,21 @@ describe('Parcels List Helpers', () => {
     })
 
     it('returns only headers with non-null register values', () => {
-      expect(getCustomsChargeHeaders({ customsFee: null, customsDuty: 750 }).map(header => header.key)).toEqual([
-        'customsDuty'
-      ])
-      expect(getCustomsChargeHeaders({ customsFee: 689, customsDuty: null }).map(header => header.key)).toEqual([
-        'customsFee'
-      ])
+      expect(
+        getCustomsChargeHeaders({ customsFee: null, customsDuty: 750 }).map((header) => header.key)
+      ).toEqual(['customsDuty'])
+      expect(
+        getCustomsChargeHeaders({ customsFee: 689, customsDuty: null }).map((header) => header.key)
+      ).toEqual(['customsFee'])
       expect(getCustomsChargeHeaders({ customsFee: null, customsDuty: null })).toEqual([])
     })
 
     it('accepts ref-like register values', () => {
-      expect(getCustomsChargeHeaders({ value: { customsFee: 689, customsDuty: null } }).map(header => header.key)).toEqual([
-        'customsFee'
-      ])
+      expect(
+        getCustomsChargeHeaders({ value: { customsFee: 689, customsDuty: null } }).map(
+          (header) => header.key
+        )
+      ).toEqual(['customsFee'])
     })
   })
 
@@ -445,11 +450,21 @@ describe('Parcels List Helpers', () => {
 
     it('returns asc or desc only when frozenOrder is the primary sort', () => {
       expect(getFrozenOrderSortDir([{ key: 'frozenOrder', order: 'asc' }])).toBe('asc')
-      expect(getFrozenOrderSortDir([{ key: 'frozenOrder', order: 'desc' }, { key: 'id', order: 'asc' }])).toBe('desc')
+      expect(
+        getFrozenOrderSortDir([
+          { key: 'frozenOrder', order: 'desc' },
+          { key: 'id', order: 'asc' }
+        ])
+      ).toBe('desc')
     })
 
     it('returns null when frozenOrder is only a secondary sort', () => {
-      expect(getFrozenOrderSortDir([{ key: 'id', order: 'asc' }, { key: 'frozenOrder', order: 'desc' }])).toBeNull()
+      expect(
+        getFrozenOrderSortDir([
+          { key: 'id', order: 'asc' },
+          { key: 'frozenOrder', order: 'desc' }
+        ])
+      ).toBeNull()
     })
   })
 
@@ -465,9 +480,6 @@ describe('Parcels List Helpers', () => {
 
       expect(result).toBe('Реестр для сделки без номера (файл: test-file.xlsx)')
     })
-
-
-
   })
 
   describe('getFeacnCodesForKeywords', () => {
@@ -490,10 +502,7 @@ describe('Parcels List Helpers', () => {
 
     it('should handle keywords without feacnCodes', () => {
       const store = {
-        keyWords: [
-          { id: 1 },
-          { id: 2, feacnCodes: null }
-        ]
+        keyWords: [{ id: 1 }, { id: 2, feacnCodes: null }]
       }
       const result = getFeacnCodesForKeywords([1, 2], store)
       expect(result).toEqual([])
@@ -501,9 +510,7 @@ describe('Parcels List Helpers', () => {
 
     it('should filter out null and empty codes', () => {
       const store = {
-        keyWords: [
-          { id: 1, feacnCodes: ['123', null, '', '456'] }
-        ]
+        keyWords: [{ id: 1, feacnCodes: ['123', null, '', '456'] }]
       }
       const result = getFeacnCodesForKeywords([1], store)
       expect(result).toEqual(['123', '456'])
@@ -511,9 +518,7 @@ describe('Parcels List Helpers', () => {
 
     it('should handle keywords not found in store', () => {
       const store = {
-        keyWords: [
-          { id: 1, feacnCodes: ['123'] }
-        ]
+        keyWords: [{ id: 1, feacnCodes: ['123'] }]
       }
       const result = getFeacnCodesForKeywords([1, 999], store)
       expect(result).toEqual(['123'])
@@ -555,9 +560,7 @@ describe('Parcels List Helpers', () => {
 
     it('should filter out null and empty codes', () => {
       const store = {
-        keyWords: [
-          { id: 1, word: 'alpha', feacnCodes: ['123', null, '', '456'] }
-        ]
+        keyWords: [{ id: 1, word: 'alpha', feacnCodes: ['123', null, '', '456'] }]
       }
       const result = getKeywordFeacnPairs([1], store)
       expect(result).toEqual([
@@ -675,7 +678,7 @@ describe('Parcels List Helpers', () => {
     })
 
     it('should return matched-weak when first 6 characters match', async () => {
-      // Mock the FEACN info to return found=true  
+      // Mock the FEACN info to return found=true
       getCachedFeacnInfo.mockReturnValue({ found: true })
       preloadFeacnInfo.mockResolvedValue()
 
@@ -720,7 +723,11 @@ describe('Parcels List Helpers', () => {
       preloadFeacnInfo.mockResolvedValue()
 
       // tnVed not in feacnCodes but matchingFC equals tnVed
-      const result = await getTnVedCellClass('7777777777', ['1234561111', '9876543210'], '7777777777')
+      const result = await getTnVedCellClass(
+        '7777777777',
+        ['1234561111', '9876543210'],
+        '7777777777'
+      )
       expect(result).toBe('tnved-cell matched')
     })
 
@@ -773,10 +780,11 @@ describe('Parcels List Helpers', () => {
       const item = { id: 123, tnVed: 'old-code' }
       const feacnCode = 'new-code'
 
-      await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
+      const result = await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
 
       expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' })
       expect(mockLoadOrders).toHaveBeenCalled()
+      expect(result).toBe(true)
     })
 
     it('should update parcel TN VED without calling loadOrdersFn when not provided', async () => {
@@ -878,7 +886,10 @@ describe('Parcels List Helpers', () => {
       await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore)
 
       expect(preloadFeacnInfo).toHaveBeenCalledWith(['1234567890'])
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Не удалось загрузить информацию о кодах ТН ВЭД')
+      expect(mockAlertStore.error).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'preload failed' }),
+        { fallback: 'Не удалось загрузить информацию о кодах ТН ВЭД' }
+      )
       expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
     })
 
@@ -899,5 +910,4 @@ describe('Parcels List Helpers', () => {
       expect(mockParcelsStore.updateItems).not.toHaveBeenCalled()
     })
   })
-
 })

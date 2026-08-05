@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { setActivePinia, createPinia } from 'pinia'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
@@ -24,34 +24,34 @@ describe('feacn.prefixes.store.js', () => {
   let pinia
 
   const mockPrefixes = [
-    { 
-      id: 1, 
-      code: '0101', 
-      intervalCode: '0', 
-      description: 'd1', 
-      comment: 'c1', 
-      exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }] 
+    {
+      id: 1,
+      code: '0101',
+      intervalCode: '0',
+      description: 'd1',
+      comment: 'c1',
+      exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }]
     },
-    { 
-      id: 2, 
-      code: '0202', 
-      intervalCode: '0', 
-      description: 'd2', 
-      comment: 'c2', 
+    {
+      id: 2,
+      code: '0202',
+      intervalCode: '0',
+      description: 'd2',
+      comment: 'c2',
       exceptions: [
-        { id: 2, code: '222', feacnPrefixId: 2 }, 
+        { id: 2, code: '222', feacnPrefixId: 2 },
         { id: 3, code: '333', feacnPrefixId: 2 }
-      ] 
+      ]
     }
   ]
 
-  const mockPrefix = { 
-    id: 1, 
-    code: '0101', 
-    intervalCode: '0', 
-    description: 'd1', 
-    comment: 'c1', 
-    exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }] 
+  const mockPrefix = {
+    id: 1,
+    code: '0101',
+    intervalCode: '0',
+    description: 'd1',
+    comment: 'c1',
+    exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }]
   }
 
   beforeEach(() => {
@@ -86,7 +86,10 @@ describe('feacn.prefixes.store.js', () => {
       fetchWrapper.post.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockPrefixes)
       await store.create(mockPrefix)
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes', mockPrefix)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacnprefixes',
+        mockPrefix
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes')
     })
 
@@ -94,7 +97,10 @@ describe('feacn.prefixes.store.js', () => {
       fetchWrapper.put.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockPrefixes)
       await store.update(1, mockPrefix)
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes/1', mockPrefix)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacnprefixes/1',
+        mockPrefix
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes')
     })
 
@@ -129,7 +135,10 @@ describe('feacn.prefixes.store.js', () => {
       fetchWrapper.post.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockPrefixes)
       await store.create(createDto)
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes', createDto)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacnprefixes',
+        createDto
+      )
     })
 
     it('handles update DTO format with string exceptions', async () => {
@@ -137,7 +146,10 @@ describe('feacn.prefixes.store.js', () => {
       fetchWrapper.put.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue(mockPrefixes)
       await store.update(1, updateDto)
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes/1', updateDto)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacnprefixes/1',
+        updateDto
+      )
     })
 
     it('ensureLoaded fetches prefixes when not initialized', async () => {
@@ -222,4 +234,3 @@ describe('feacn.prefixes.store.js', () => {
     })
   })
 })
-

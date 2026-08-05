@@ -87,7 +87,7 @@ describe('ParcelsByNumber_List.vue', () => {
     template: '<button data-testid="parcels-by-number-search" @click="$emit(\'click\')"></button>'
   }
 
-  it('calls getByNumber on mount when number is set', () => {
+  it('calls getByNumber on mount when number is set', async () => {
     parcelsNumber.value = 'TEST-001'
     mount(ParcelsByNumberList, {
       global: {
@@ -100,6 +100,8 @@ describe('ParcelsByNumber_List.vue', () => {
         }
       }
     })
+    await Promise.resolve()
+    await Promise.resolve()
     expect(getByNumber).toHaveBeenCalledWith('TEST-001')
     expect(ensureLoaded).toHaveBeenCalled()
   })
@@ -150,7 +152,9 @@ describe('ParcelsByNumber_List.vue', () => {
       }
     })
 
-    await wrapper.find('[data-testid="parcels-by-number-cell-registerDealNumber-42"]').trigger('click')
+    await wrapper
+      .find('[data-testid="parcels-by-number-cell-registerDealNumber-42"]')
+      .trigger('click')
 
     expect(router.push).toHaveBeenCalledWith('/register/edit/7')
   })
@@ -185,8 +189,12 @@ describe('ParcelsByNumber_List.vue', () => {
     })
 
     expect(getStatusTitle).toHaveBeenCalledWith(7)
-    expect(wrapper.find('[data-testid="parcels-by-number-cell-statusId-99"]').text()).toContain('Status 7')
-    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain('Не проверено')
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-statusId-99"]').text()).toContain(
+      'Status 7'
+    )
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain(
+      'Не проверено'
+    )
   })
 
   it('renders Defect check status text', () => {
@@ -218,7 +226,9 @@ describe('ParcelsByNumber_List.vue', () => {
       }
     })
 
-    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-101"]').text()).toContain('Брак')
+    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-101"]').text()).toContain(
+      'Брак'
+    )
   })
 
   it('navigates to parcel view when status or check status cells are clicked', async () => {
@@ -344,8 +354,28 @@ describe('ParcelsByNumber_List.vue', () => {
     parcelsBnPerPage.value = 1
     parcelsBnPage.value = 2
     mockItems.value = [
-      { id: 1, registerId: 1, registerDealNumber: 'D1', number: 'N1', productName: 'P1', tnVed: 'T1', dTag: 'DT1', dTagComment: 'C1', previousDTagComment: 'PC1' },
-      { id: 2, registerId: 2, registerDealNumber: 'D2', number: 'N2', productName: 'P2', tnVed: 'T2', dTag: 'DT2', dTagComment: 'C2', previousDTagComment: 'PC2' }
+      {
+        id: 1,
+        registerId: 1,
+        registerDealNumber: 'D1',
+        number: 'N1',
+        productName: 'P1',
+        tnVed: 'T1',
+        dTag: 'DT1',
+        dTagComment: 'C1',
+        previousDTagComment: 'PC1'
+      },
+      {
+        id: 2,
+        registerId: 2,
+        registerDealNumber: 'D2',
+        number: 'N2',
+        productName: 'P2',
+        tnVed: 'T2',
+        dTag: 'DT2',
+        dTagComment: 'C2',
+        previousDTagComment: 'PC2'
+      }
     ]
     mount(ParcelsByNumberList, {
       global: {
@@ -382,5 +412,4 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(parcelsBnPerPage.value).toBe(50)
     expect(parcelsBnSortBy.value).toEqual([{ key: 'number', order: 'desc' }])
   })
-
 })

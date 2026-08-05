@@ -20,5 +20,4 @@ describe('wbrn.register.mapping', () => {
       recipientAddress: 'Адрес получателя'
     })
   })
-
 })

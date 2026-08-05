@@ -1,21 +1,25 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { ref } from 'vue'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
-import { storeToRefs } from 'pinia'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
 
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useCompaniesStore } from '@/stores/companies.store.js'
+
+const alertStore = useAlertStore()
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
 const registersStore = useRegistersStore()
@@ -32,10 +36,7 @@ const schema = Yup.object().shape({
 
 const showPassword = ref(false)
 
-const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
-
-function onSubmit(values, { setErrors }) {
+function onSubmit(values) {
   const authStore = useAuthStore()
   const { login_email, login_password } = values
 
@@ -48,7 +49,7 @@ function onSubmit(values, { setErrors }) {
       await companiesStore.getAll()
       router.push(getHomeRoute())
     })
-    .catch((error) => setErrors({ apiError: error.message || String(error) }))
+    .catch((error) => alertStore.error(error.message || String(error)))
 }
 </script>
 
@@ -56,7 +57,14 @@ function onSubmit(values, { setErrors }) {
   <div class="settings form-1">
     <h1 class="primary-heading">Вход</h1>
     <hr class="hr" />
-    <Form @submit="onSubmit" :validation-schema="schema" v-slot="{ errors, isSubmitting }">
+
+    <PageAlertRegion />
+    <Form
+      @submit="onSubmit"
+      @invalid-submit="focusFirstInvalidField"
+      :validation-schema="schema"
+      v-slot="{ errors, isSubmitting }"
+    >
       <div class="form-group">
         <label for="login_email" class="label">Адрес электронной почты:</label>
         <Field
@@ -68,42 +76,46 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.login_email }"
           placeholder="Адрес электронной почты"
         />
+        <FieldError name="login_email" :errors="errors" />
       </div>
       <div class="form-group">
         <label for="login_password" class="label">Пароль:</label>
         <div class="password-wrapper">
-          <Field
-            name="login_password"
-            autocomplete="current-password"
-            id="login_password"
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control input password"
-            :class="{ 'is-invalid': errors.login_password }"
-            placeholder="Пароль"
-          />
-          <button
-            type="button"
-            @click="
-              (event) => {
-                event.preventDefault()
-                showPassword = !showPassword
-              }
-            "
-            class="button-o"
-          >
-            <font-awesome-icon
-              size="1x"
-              v-if="!showPassword"
-              icon="fa-solid fa-eye"
-              class="button-o-c"
+          <div class="password-input-row">
+            <Field
+              name="login_password"
+              autocomplete="current-password"
+              id="login_password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-control input password"
+              :class="{ 'is-invalid': errors.login_password }"
+              placeholder="Пароль"
             />
-            <font-awesome-icon
-              size="1x"
-              v-if="showPassword"
-              icon="fa-solid fa-eye-slash"
-              class="button-o-c"
-            />
-          </button>
+            <button
+              type="button"
+              @click="
+                (event) => {
+                  event.preventDefault()
+                  showPassword = !showPassword
+                }
+              "
+              class="button-o"
+            >
+              <font-awesome-icon
+                size="1x"
+                v-if="!showPassword"
+                icon="fa-solid fa-eye"
+                class="button-o-c"
+              />
+              <font-awesome-icon
+                size="1x"
+                v-if="showPassword"
+                icon="fa-solid fa-eye-slash"
+                class="button-o-c"
+              />
+            </button>
+          </div>
+          <FieldError name="login_password" :errors="errors" />
         </div>
       </div>
       <div class="form-group">
@@ -111,17 +123,6 @@ function onSubmit(values, { setErrors }) {
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           Войти
         </button>
-      </div>
-      <div v-if="errors.login_email" class="alert alert-danger mt-3 mb-0">
-        {{ errors.login_email }}
-      </div>
-      <div v-if="errors.login_password" class="alert alert-danger mt-3 mb-0">
-        {{ errors.login_password }}
-      </div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
-      <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-        <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-        {{ alert.message }}
       </div>
     </Form>
   </div>

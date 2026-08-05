@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -26,7 +27,6 @@ const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
 
 const { items, loading } = storeToRefs(unregisteredParcelsStore)
-const { alert } = storeToRefs(alertStore)
 const { ops } = storeToRefs(warehousesStore)
 
 const isExporting = ref(false)
@@ -35,7 +35,11 @@ const registerLoading = ref(true)
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка...'
   if (registersStore.item?.error) return 'Реестр не загружен'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id), 'Партия')
+  return buildParcelListHeading(
+    registersStore.item,
+    (id) => registersStore.getTransportationDocument(id),
+    'Партия'
+  )
 })
 const pageHeading = computed(() => `Стикеры не в реестре | ${registerHeading.value}`)
 
@@ -67,18 +71,16 @@ async function loadItems() {
     return
   }
 
-  await loadRegister(registerId)
-
   try {
+    await loadRegister(registerId)
     await parcelStatusStore.ensureLoaded()
     await warehousesStore.ensureOpsLoaded()
-    const rows = await unregisteredParcelsStore.getAll(registerId)
-
-    if (!rows.length && unregisteredParcelsStore.error) {
-      alertStore.error('Ошибка при загрузке незарегистрированных посылок')
-    }
-  } catch {
-    alertStore.error('Ошибка при загрузке незарегистрированных посылок')
+    await unregisteredParcelsStore.getAll(registerId)
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Ошибка при загрузке незарегистрированных посылок',
+      action: { label: 'Повторить', handler: loadItems }
+    })
   }
 }
 
@@ -107,8 +109,8 @@ async function exportRegister() {
     if (!ok) {
       alertStore.error('Ошибка при экспорте реестра')
     }
-  } catch {
-    alertStore.error('Ошибка при экспорте реестра')
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Ошибка при экспорте реестра' })
   } finally {
     isExporting.value = false
   }
@@ -125,7 +127,7 @@ function closeList() {
       <h1 class="primary-heading">{{ pageHeading }}</h1>
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
-            <span class="spinner-border spinner-border-m"></span>
+          <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">
           <ActionButton
@@ -153,6 +155,8 @@ function closeList() {
 
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <v-card class="table-card">
       <v-data-table
         :headers="headers"
@@ -173,10 +177,6 @@ function closeList() {
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
 import {
@@ -84,21 +84,20 @@ describe('match.type.validation', () => {
     })
   })
 
-
   describe('isMatchTypeDisabled', () => {
     it('handles boundary values correctly', () => {
       // Test exact boundaries
       expect(isMatchTypeDisabled(20, 'test')).toBe(false) // Just below disabled range for single
-      expect(isMatchTypeDisabled(21, 'test')).toBe(true)  // Start of disabled range for single
-      expect(isMatchTypeDisabled(40, 'test')).toBe(true)  // End of disabled range for single
+      expect(isMatchTypeDisabled(21, 'test')).toBe(true) // Start of disabled range for single
+      expect(isMatchTypeDisabled(40, 'test')).toBe(true) // End of disabled range for single
       expect(isMatchTypeDisabled(41, 'test')).toBe(false) // Just above disabled range for single
 
       expect(isMatchTypeDisabled(10, 'test word')).toBe(false) // Just below disabled range for multi
-      expect(isMatchTypeDisabled(11, 'test word')).toBe(true)  // Start of disabled range for multi
-      expect(isMatchTypeDisabled(20, 'test word')).toBe(true)  // End of disabled range for multi
+      expect(isMatchTypeDisabled(11, 'test word')).toBe(true) // Start of disabled range for multi
+      expect(isMatchTypeDisabled(20, 'test word')).toBe(true) // End of disabled range for multi
       expect(isMatchTypeDisabled(21, 'test word')).toBe(false) // Between ranges for multi
       expect(isMatchTypeDisabled(40, 'test word')).toBe(false) // Just below second disabled range for multi
-      expect(isMatchTypeDisabled(41, 'test word')).toBe(true)  // Start of second disabled range for multi
+      expect(isMatchTypeDisabled(41, 'test word')).toBe(true) // Start of second disabled range for multi
     })
 
     it('handles zero and negative values', () => {
@@ -119,7 +118,7 @@ describe('validateMatchType', () => {
       { matchTypeId: 41, word: 'test', expected: true },
       { matchTypeId: 11, word: 'test word', expected: false },
       { matchTypeId: 31, word: 'test word', expected: true },
-      { matchTypeId: 25, word: 'test word', expected: true },
+      { matchTypeId: 25, word: 'test word', expected: true }
     ]
 
     testCases.forEach(({ matchTypeId, word, expected }) => {
@@ -132,7 +131,7 @@ describe('validateMatchType', () => {
 describe('createMatchTypeValidationTest', () => {
   it('creates a validation function that works with Yup context', () => {
     const validationTest = createMatchTypeValidationTest()
-    
+
     // Mock Yup context
     const mockContext = {
       parent: { word: 'test' }
@@ -140,14 +139,14 @@ describe('createMatchTypeValidationTest', () => {
 
     // Test with valid match type for single word
     expect(validationTest.call(mockContext, 41)).toBe(true)
-    
+
     // Test with invalid match type for single word
     expect(validationTest.call(mockContext, 25)).toBe(false)
   })
 
   it('creates a validation function for multi-word input', () => {
     const validationTest = createMatchTypeValidationTest()
-    
+
     // Mock Yup context with multi-word
     const mockContext = {
       parent: { word: 'test word' }
@@ -155,7 +154,7 @@ describe('createMatchTypeValidationTest', () => {
 
     // Test with valid match type for multi-word
     expect(validationTest.call(mockContext, 25)).toBe(true)
-    
+
     // Test with invalid match type for multi-word
     expect(validationTest.call(mockContext, 15)).toBe(false)
     expect(validationTest.call(mockContext, 45)).toBe(false)
@@ -163,7 +162,7 @@ describe('createMatchTypeValidationTest', () => {
 
   it('handles empty word in context', () => {
     const validationTest = createMatchTypeValidationTest()
-    
+
     // Mock Yup context with empty word
     const mockContext = {
       parent: { word: '' }
@@ -176,7 +175,7 @@ describe('createMatchTypeValidationTest', () => {
 
   it('handles missing word in context', () => {
     const validationTest = createMatchTypeValidationTest()
-    
+
     // Mock Yup context without word
     const mockContext = {
       parent: {}
@@ -190,7 +189,7 @@ describe('createMatchTypeValidationTest', () => {
   it('accepts custom error message', () => {
     const customMessage = 'Custom validation error'
     const validationTest = createMatchTypeValidationTest(customMessage)
-    
+
     // Function should be created successfully (message is used by Yup, not returned by function)
     expect(typeof validationTest).toBe('function')
   })
@@ -209,7 +208,7 @@ describe('comprehensive integration tests', () => {
       { word: 'автомобиль', matchTypeId: 30, expected: false }, // Disabled for single
       { word: 'автомобиль', matchTypeId: 31, expected: false },
       { word: 'автомобиль', matchTypeId: 41, expected: true },
-      
+
       // Multi-word scenarios
       { word: 'автомобильные запчасти', matchTypeId: 1, expected: true },
       { word: 'автомобильные запчасти', matchTypeId: 10, expected: true },
@@ -221,11 +220,11 @@ describe('comprehensive integration tests', () => {
       { word: 'автомобильные запчасти', matchTypeId: 30, expected: true },
       { word: 'автомобильные запчасти', matchTypeId: 31, expected: true }, // Disabled for multi
       { word: 'автомобильные запчасти', matchTypeId: 41, expected: false }, // Disabled for multi
-      
+
       // Edge cases
       { word: 'test-word', matchTypeId: 25, expected: true }, // Hyphenated = multi-word now
       { word: 'test123', matchTypeId: 25, expected: false }, // With numbers = single word
-      { word: '', matchTypeId: 25, expected: false }, // Empty = single word
+      { word: '', matchTypeId: 25, expected: false } // Empty = single word
     ]
 
     scenarios.forEach(({ word, matchTypeId, expected }) => {

@@ -7,7 +7,7 @@ import { ref } from 'vue'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
 
 function makeItems(ids) {
-  return ids.map(id => ({ id }))
+  return ids.map((id) => ({ id }))
 }
 
 function makeOptions(overrides = {}) {
@@ -22,7 +22,7 @@ function makeOptions(overrides = {}) {
     selectedParcelId,
     page,
     dataTableRef,
-    ...overrides,
+    ...overrides
   }
 }
 
@@ -31,7 +31,7 @@ function clickEvent(modifiers = {}) {
     shiftKey: false,
     ctrlKey: false,
     metaKey: false,
-    ...modifiers,
+    ...modifiers
   }
 }
 
@@ -208,7 +208,8 @@ describe('useParcelMultiSelect', () => {
   describe('updateSelectedParcelIds', () => {
     it('removes ids no longer present in items', () => {
       const opts = makeOptions()
-      const { handleRowClick, updateSelectedParcelIds, selectedParcelIds } = useParcelMultiSelect(opts)
+      const { handleRowClick, updateSelectedParcelIds, selectedParcelIds } =
+        useParcelMultiSelect(opts)
 
       handleRowClick(clickEvent(), { item: { id: 3 } })
       handleRowClick(clickEvent({ ctrlKey: true }), { item: { id: 5 } })
@@ -283,7 +284,7 @@ describe('useParcelMultiSelect', () => {
       handleRowClick(clickEvent(), { item: { id: 1 } })
       handleRowClick(clickEvent({ ctrlKey: true }), { item: { id: 3 } })
 
-      const ids = selectedItems.value.map(i => i.id).sort()
+      const ids = selectedItems.value.map((i) => i.id).sort()
       expect(ids).toEqual([1, 3])
     })
   })

@@ -1,8 +1,10 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -15,10 +17,10 @@ import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { keywordMatchesSearch } from '@/helpers/keywords.filter.js'
-import { 
-  loadFeacnTooltipOnHover, 
-  useFeacnTooltips, 
-  clearFeacnTooltipCache 
+import {
+  loadFeacnTooltipOnHover,
+  useFeacnTooltips,
+  clearFeacnTooltipCache
 } from '@/helpers/feacn.info.helpers.js'
 
 const keyWordsStore = useKeyWordsStore()
@@ -28,7 +30,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { keyWords, loading } = storeToRefs(keyWordsStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 // File upload reference
@@ -60,7 +61,9 @@ function filterKeyWords(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }]
+    : []),
   { title: 'Ключевое слово или фраза', key: 'word', sortable: true },
   { title: 'Коды ТН ВЭД', key: 'feacnCodes', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true }
@@ -83,17 +86,18 @@ function openFileDialog() {
 }
 
 async function fileSelected(files) {
-  alertStore.clear()
   const file = Array.isArray(files) ? files[0] : files
   if (!file) return
 
   try {
     await keyWordsStore.upload(file)
-    await keyWordsStore.getAll() 
+    await keyWordsStore.getAll()
     // Clear cached tooltips since data may have changed
     clearFeacnTooltipCache()
   } catch (error) {
-      alertStore.error('Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : ""))
+    alertStore.error(
+      'Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : '')
+    )
   } finally {
     if (fileInput.value) {
       fileInput.value.value = null
@@ -136,11 +140,15 @@ async function deleteKeyWord(keyWord) {
   }
 }
 
-// Initialize data
-onMounted(async () => {
-  matchTypesStore.ensureLoaded()
-  await keyWordsStore.getAll()
-})
+async function initializeList() {
+  await Promise.all([matchTypesStore.ensureLoaded(), keyWordsStore.getAll()])
+}
+
+onMounted(() =>
+  runWithRetryAlert(initializeList, {
+    fallback: 'Не удалось загрузить ключевые слова'
+  })
+)
 
 // Expose functions for testing
 defineExpose({
@@ -192,6 +200,8 @@ defineExpose({
 
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div>
       <v-text-field
         v-model="authStore.keywords_search"
@@ -241,14 +251,10 @@ defineExpose({
 
         <template v-slot:[`item.feacnCodes`]="{ item }">
           <div v-for="code in item.feacnCodes" :key="code">
-            <v-tooltip 
-              location="top"
-              content-class="feacn-tooltip"
-              :max-width="tooltipMaxWidth"
-            >
+            <v-tooltip location="top" content-class="feacn-tooltip" :max-width="tooltipMaxWidth">
               <template v-slot:activator="{ props }">
-                <span 
-                  v-bind="props" 
+                <span
+                  v-bind="props"
                   class="feacn-code-tooltip"
                   @mouseenter="loadFeacnTooltipOnHover(code)"
                 >
@@ -267,11 +273,6 @@ defineExpose({
     </v-card>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
   </div>
 </template>
 

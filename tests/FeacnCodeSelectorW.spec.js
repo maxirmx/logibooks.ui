@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -44,23 +44,30 @@ describe('FeacnCodeSelectorW', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
     mockOnSelect = vi.fn()
-    
+
     // Import the mocked functions
-  const { getKeywordFeacnPairs, getFeacnCodeItemClass, getFeacnCodesForKeywords, getMatchingFeacnCodeItemClass } = await import('@/helpers/parcels.list.helpers.js')
-    const { useFeacnTooltips, loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
-    
+    const {
+      getKeywordFeacnPairs,
+      getFeacnCodeItemClass,
+      getFeacnCodesForKeywords,
+      getMatchingFeacnCodeItemClass
+    } = await import('@/helpers/parcels.list.helpers.js')
+    const { useFeacnTooltips, loadFeacnTooltipOnHover } = await import(
+      '@/helpers/feacn.info.helpers.js'
+    )
+
     // Reset mocks
     vi.mocked(getKeywordFeacnPairs).mockClear()
-  vi.mocked(getFeacnCodeItemClass).mockClear()
-  vi.mocked(getMatchingFeacnCodeItemClass).mockClear()
+    vi.mocked(getFeacnCodeItemClass).mockClear()
+    vi.mocked(getMatchingFeacnCodeItemClass).mockClear()
     vi.mocked(getFeacnCodesForKeywords).mockClear()
     vi.mocked(useFeacnTooltips).mockClear()
     vi.mocked(loadFeacnTooltipOnHover).mockClear()
-    
+
     // Default mock implementations
     vi.mocked(getFeacnCodesForKeywords).mockReturnValue([])
-  vi.mocked(getFeacnCodeItemClass).mockReturnValue('test-class')
-  vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue('test-class matching-feacn-code-item')
+    vi.mocked(getFeacnCodeItemClass).mockReturnValue('test-class')
+    vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue('test-class matching-feacn-code-item')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
     vi.mocked(useFeacnTooltips).mockReturnValue({ value: {} })
     vi.mocked(loadFeacnTooltipOnHover).mockResolvedValue('Test tooltip')
@@ -80,7 +87,7 @@ describe('FeacnCodeSelectorW', () => {
     if (!finalProps.onSelect || typeof finalProps.onSelect !== 'function') {
       finalProps.onSelect = mockOnSelect
     }
-    
+
     return mount(FeacnCodeSelectorW, {
       props: finalProps,
       global: {
@@ -98,9 +105,9 @@ describe('FeacnCodeSelectorW', () => {
   it('renders correctly with empty keywords', async () => {
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
-    
+
     wrapper = createWrapper()
-    
+
     expect(wrapper.find('.form-group').exists()).toBe(true)
     expect(wrapper.find('label').text()).toBe('Подбор ТН ВЭД')
     expect(wrapper.text()).toContain('-')
@@ -111,43 +118,41 @@ describe('FeacnCodeSelectorW', () => {
       { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
       { id: 2, word: 'test keyword 2', feacnCode: '0987654321' }
     ]
-    
+
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    
+
     wrapper = createWrapper()
-    
+
     expect(wrapper.text()).toContain('1234567890 - "test keyword 1"')
     expect(wrapper.text()).toContain('0987654321 - "test keyword 2"')
   })
 
   it('calls onSelect when keyword code is clicked', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' }
-    ]
-    
+    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
+
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    
+
     wrapper = createWrapper()
-    
+
     const keywordCode = wrapper.find('.keyword-code')
     await keywordCode.trigger('click')
-    
+
     expect(mockOnSelect).toHaveBeenCalledWith('1234567890')
   })
 
   it('applies correct CSS classes to keyword items', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' }
-    ]
-    
-    const { getKeywordFeacnPairs, getFeacnCodeItemClass } = await import('@/helpers/parcels.list.helpers.js')
+    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
+
+    const { getKeywordFeacnPairs, getFeacnCodeItemClass } = await import(
+      '@/helpers/parcels.list.helpers.js'
+    )
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
     vi.mocked(getFeacnCodeItemClass).mockReturnValue('selected-item')
-    
+
     wrapper = createWrapper()
-    
+
     const keywordCode = wrapper.find('.keyword-code')
     expect(keywordCode.classes()).toContain('keyword-code')
     expect(keywordCode.classes()).toContain('feacn-edit-dialog-item')
@@ -158,28 +163,28 @@ describe('FeacnCodeSelectorW', () => {
       { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
       { id: 2, word: 'test keyword 2', feacnCode: '0987654321' }
     ]
-    
+
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    
+
     wrapper = createWrapper()
-    
-  // Count only ActionButton components that appear inside keyword items (exclude label toggle)
-  const keywordActionButtons = wrapper.findAll('.keyword-item').map(item => item.findComponent({ name: 'ActionButton' }))
-  const present = keywordActionButtons.filter(btn => btn.exists()).length
-  expect(present).toBe(2)
+
+    // Count only ActionButton components that appear inside keyword items (exclude label toggle)
+    const keywordActionButtons = wrapper
+      .findAll('.keyword-item')
+      .map((item) => item.findComponent({ name: 'ActionButton' }))
+    const present = keywordActionButtons.filter((btn) => btn.exists()).length
+    expect(present).toBe(2)
   })
 
   it('has correct structure when keywords are present', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' }
-    ]
-    
+    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
+
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    
+
     wrapper = createWrapper()
-    
+
     expect(wrapper.find('.form-group').exists()).toBe(true)
     expect(wrapper.find('.feacn-lookup-column').exists()).toBe(true)
     expect(wrapper.find('.keyword-item').exists()).toBe(true)
@@ -190,47 +195,47 @@ describe('FeacnCodeSelectorW', () => {
       keyWordIds: [3, 4],
       tnVed: '5555555555'
     }
-    
+
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     const { useKeyWordsStore } = await import('@/stores/key.words.store.js')
-    
+
     wrapper = createWrapper({ item: testItem })
-    
+
     expect(getKeywordFeacnPairs).toHaveBeenCalledWith([3, 4], useKeyWordsStore())
   })
 
   it('loads tooltip on mouseenter using Vue tooltip system', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' }
-    ]
-    
+    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
+
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
     const { loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
-    
+
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
     vi.mocked(loadFeacnTooltipOnHover).mockResolvedValue('Test FEACN tooltip')
-    
+
     wrapper = createWrapper()
-    
+
     const keywordCode = wrapper.find('.keyword-code')
     await keywordCode.trigger('mouseenter')
-    
+
     // Wait for async tooltip loading
     await wrapper.vm.$nextTick()
-    
+
     expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('1234567890')
-    
+
     // Check that v-tooltip component is rendered
     expect(wrapper.find('[data-testid="v-tooltip"]').exists()).toBe(true)
   })
 
   it('renders matchingFC above keywords when provided', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'keyword one', feacnCode: '11111111' }
-    ]
-    const { getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } = await import('@/helpers/parcels.list.helpers.js')
+    const mockKeywords = [{ id: 1, word: 'keyword one', feacnCode: '11111111' }]
+    const { getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } = await import(
+      '@/helpers/parcels.list.helpers.js'
+    )
     vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue('feacn-code-item clickable matched matching-feacn-code-item')
+    vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue(
+      'feacn-code-item clickable matched matching-feacn-code-item'
+    )
 
     wrapper = createWrapper({
       item: {
@@ -264,10 +269,12 @@ describe('FeacnCodeSelectorW', () => {
       }
     })
 
-  // Find ActionButton inside the first keyword-item (matchingFC should be the first item)
-  const firstKeywordActionBtn = wrapper.find('.keyword-item').findComponent({ name: 'ActionButton' })
-  expect(firstKeywordActionBtn.exists()).toBe(true)
-  expect(firstKeywordActionBtn.props('disabled')).toBe(true)
+    // Find ActionButton inside the first keyword-item (matchingFC should be the first item)
+    const firstKeywordActionBtn = wrapper
+      .find('.keyword-item')
+      .findComponent({ name: 'ActionButton' })
+    expect(firstKeywordActionBtn.exists()).toBe(true)
+    expect(firstKeywordActionBtn.props('disabled')).toBe(true)
   })
 
   it('calls onSelect when matchingFC clicked', async () => {

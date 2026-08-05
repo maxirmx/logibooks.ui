@@ -90,7 +90,7 @@ const ensureFeacnOrdersLoaded = vi.fn().mockResolvedValue()
 const bulkAssignTnved = vi.fn().mockResolvedValue()
 const alertError = vi.fn()
 const alertSuccess = vi.fn()
-const alertClear = vi.fn()
+const alertDismiss = vi.fn()
 
 const headerActions = {
   validateRegisterSw: vi.fn(),
@@ -109,7 +109,7 @@ const headerActions = {
   calculateCustomsCharges: vi.fn().mockResolvedValue(),
   checkPassports: vi.fn().mockResolvedValue(),
   finishPassportCheck: vi.fn().mockResolvedValue(),
-  cancelValidation: vi.fn(),
+  cancelValidation: vi.fn()
 }
 
 let routeQuery = {}
@@ -153,30 +153,38 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
     loadParcels,
     navigateToEditParcel,
     getRowPropsForParcel: (data, passportStatuses = []) => ({
-      class: passportStatuses.some((status) =>
-        Number(status?.value) === Number(data?.item?.passportCheckStatus) &&
-        ['CheckError', 'Invalid', 'NotExists'].includes(status?.code)
-      ) ? 'parcel-has-issues' : ''
+      class: passportStatuses.some(
+        (status) =>
+          Number(status?.value) === Number(data?.item?.passportCheckStatus) &&
+          ['CheckError', 'Invalid', 'NotExists'].includes(status?.code)
+      )
+        ? 'parcel-has-issues'
+        : ''
     }),
-    filterGenericTemplateHeadersForParcel: (headers) => headers.filter(header => ![
-      'frozenOrder',
-      'checkStatus',
-      'tnVed',
-      'feacnLookup',
-      'productLink',
-      'weightKg',
-      'quantity',
-      'unitPrice',
-      'shk',
-      'statusId',
-      'dTag',
-      'customsFee',
-      'customsDuty',
-      'passportNumber',
-      'previousDTagComment'
-    ].includes(header.key)),
-    getFeacnCodesForKeywords: (ids) => (ids || []).map(id => `TN-${id}`),
-    getFrozenOrderSortDir: (sortBy) => sortBy?.find(item => item.key === 'frozenOrder')?.order ?? null
+    filterGenericTemplateHeadersForParcel: (headers) =>
+      headers.filter(
+        (header) =>
+          ![
+            'frozenOrder',
+            'checkStatus',
+            'tnVed',
+            'feacnLookup',
+            'productLink',
+            'weightKg',
+            'quantity',
+            'unitPrice',
+            'shk',
+            'statusId',
+            'dTag',
+            'customsFee',
+            'customsDuty',
+            'passportNumber',
+            'previousDTagComment'
+          ].includes(header.key)
+      ),
+    getFeacnCodesForKeywords: (ids) => (ids || []).map((id) => `TN-${id}`),
+    getFrozenOrderSortDir: (sortBy) =>
+      sortBy?.find((item) => item.key === 'frozenOrder')?.order ?? null
   }
 })
 
@@ -218,7 +226,9 @@ vi.mock('@/composables/useParcelMultiSelect.js', () => ({
       handleRowContextMenu,
       updateSelectedParcelIds,
       scrollToSelectedItem,
-      getRowProps: (data) => ({ class: data?.item?.id === selectedParcelId.value ? 'selected-parcel-row' : '' }),
+      getRowProps: (data) => ({
+        class: data?.item?.id === selectedParcelId.value ? 'selected-parcel-row' : ''
+      }),
       stop: stopMultiSelect
     }
   }
@@ -248,7 +258,7 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     parcelStatuses,
     ensureLoaded: ensureParcelStatusesLoaded,
-    getStatusTitle: vi.fn(id => `Status ${id}`)
+    getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
 
@@ -273,7 +283,7 @@ vi.mock('@/stores/feacn.orders.store.js', () => ({
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
-    getCountryAlpha2: vi.fn(code => code)
+    getCountryAlpha2: vi.fn((code) => code)
   })
 }))
 
@@ -299,10 +309,12 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: mockAlert,
+    get alert() {
+      return mockAlert.value
+    },
     success: alertSuccess,
     error: alertError,
-    clear: alertClear
+    dismiss: alertDismiss
   })
 }))
 
@@ -311,7 +323,8 @@ const sampleParcel = {
   registerId: 7,
   shk: 'SHK-N-1',
   article: '29817781',
-  checkStatus: new CheckStatusCode({ fc: FCCheckStatus.NoIssues, sw: SWCheckStatus.NoIssues }).value,
+  checkStatus: new CheckStatusCode({ fc: FCCheckStatus.NoIssues, sw: SWCheckStatus.NoIssues })
+    .value,
   tnVed: '6403999300',
   keyWordIds: [3],
   productName: 'Wildberries new product',
@@ -340,7 +353,17 @@ const globalStubs = {
   ...vuetifyStubs,
   'v-data-table-server': {
     name: 'v-data-table-server',
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'rowProps'],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsLength',
+      'itemsPerPage',
+      'page',
+      'sortBy',
+      'itemsPerPageOptions',
+      'rowProps'
+    ],
     emits: ['update:itemsPerPage', 'update:page', 'update:sortBy', 'click:row', 'contextmenu:row'],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
@@ -410,7 +433,13 @@ const globalStubs = {
     `
   },
   ParcelFilterSelectors: {
-    props: ['statusOptions', 'checkStatusOptionsSw', 'checkStatusOptionsFc', 'passportCheckStatusOptions', 'showPassportCheckStatus'],
+    props: [
+      'statusOptions',
+      'checkStatusOptionsSw',
+      'checkStatusOptionsFc',
+      'passportCheckStatusOptions',
+      'showPassportCheckStatus'
+    ],
     emits: [
       'update:parcelsStatus',
       'update:parcelsCheckStatusSw',
@@ -438,12 +467,14 @@ const globalStubs = {
   ClickableCell: {
     props: ['item', 'displayValue', 'cellClass'],
     emits: ['click'],
-    template: '<button type="button" :class="cellClass" :title="displayValue" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></button>'
+    template:
+      '<button type="button" :class="cellClass" :title="displayValue" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></button>'
   },
   FeacnCodeCurrent: {
     props: ['item', 'feacnCodes'],
     emits: ['click'],
-    template: '<button type="button" data-testid="feacn-current" @click="$emit(\'click\', item)">{{ item.tnVed }} {{ feacnCodes.join(\',\') }}</button>'
+    template:
+      '<button type="button" data-testid="feacn-current" @click="$emit(\'click\', item)">{{ item.tnVed }} {{ feacnCodes.join(\',\') }}</button>'
   },
   FeacnCodeSelector: {
     props: ['item'],
@@ -452,7 +483,8 @@ const globalStubs = {
   ParcelNumberExt: {
     props: ['item', 'fieldName'],
     emits: ['click', 'fellows'],
-    template: '<button type="button" data-testid="parcel-number-ext" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\', item)">fellows</span></button>'
+    template:
+      '<button type="button" data-testid="parcel-number-ext" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\', item)">fellows</span></button>'
   },
   CorrectedWeightDisplay: {
     props: ['weight'],
@@ -461,7 +493,8 @@ const globalStubs = {
   ActionButton: {
     props: ['item', 'disabled'],
     emits: ['click'],
-    template: '<button type="button" data-testid="row-action" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>'
+    template:
+      '<button type="button" data-testid="row-action" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>'
   },
   'font-awesome-icon': {
     props: ['icon'],
@@ -469,7 +502,8 @@ const globalStubs = {
   },
   PaginationFooter: {
     emits: ['update:itemsPerPage', 'update:page'],
-    template: '<div data-testid="pagination-footer"><button data-testid="update-items-per-page" @click="$emit(\'update:itemsPerPage\', 25)"></button><button data-testid="update-page" @click="$emit(\'update:page\', 2)"></button></div>'
+    template:
+      '<div data-testid="pagination-footer"><button data-testid="update-items-per-page" @click="$emit(\'update:itemsPerPage\', 25)"></button><button data-testid="update-page" @click="$emit(\'update:page\', 2)"></button></div>'
   },
   RegisterActionsDialogs: {
     props: ['validationState', 'progressPercent', 'actionDialog'],
@@ -478,12 +512,14 @@ const globalStubs = {
   AssignTnvedDialog: {
     props: ['show', 'selectedIds'],
     emits: ['confirm', 'update:show'],
-    template: '<div data-testid="assign-tnved-dialog" :data-show="String(show)" :data-selected="selectedIds.join(\',\')"><button type="button" data-testid="assign-confirm" @click="$emit(\'confirm\', selectedIds, \'6403999300\')"></button><button type="button" data-testid="assign-close" @click="$emit(\'update:show\', false)"></button></div>'
+    template:
+      '<div data-testid="assign-tnved-dialog" :data-show="String(show)" :data-selected="selectedIds.join(\',\')"><button type="button" data-testid="assign-confirm" @click="$emit(\'confirm\', selectedIds, \'6403999300\')"></button><button type="button" data-testid="assign-close" @click="$emit(\'update:show\', false)"></button></div>'
   },
   ParcelStatusBulkChangeDialog: {
     props: ['show', 'registerId', 'register', 'disabled'],
     emits: ['updated', 'update:show'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="bulk-updated" @click="$emit(\'updated\')"></button><button type="button" data-testid="bulk-close" @click="$emit(\'update:show\', false)"></button></div>'
+    template:
+      '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="bulk-updated" @click="$emit(\'updated\')"></button><button type="button" data-testid="bulk-close" @click="$emit(\'update:show\', false)"></button></div>'
   }
 }
 
@@ -561,7 +597,7 @@ describe('WbrNParcels_List.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    const headerKeys = wrapper.vm.headers.map(header => header.key)
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual([
       'frozenOrder',
       'id',
@@ -589,14 +625,14 @@ describe('WbrNParcels_List.vue', () => {
     expect(headerKeys).not.toContain('countryCode')
     expect(headerKeys).not.toContain('paymentAmount')
     expect(headerKeys).not.toContain('paymentCurrency')
-    const customsFeeHeader = wrapper.vm.headers.find(header => header.key === 'customsFee')
+    const customsFeeHeader = wrapper.vm.headers.find((header) => header.key === 'customsFee')
     expect(customsFeeHeader).toMatchObject({
       title: 'Сбор, руб',
       sortable: false,
       align: 'end',
       width: '120px'
     })
-    const customsDutyHeader = wrapper.vm.headers.find(header => header.key === 'customsDuty')
+    const customsDutyHeader = wrapper.vm.headers.find((header) => header.key === 'customsDuty')
     expect(customsDutyHeader).toMatchObject({
       title: 'Пошлина, руб',
       sortable: false,
@@ -614,7 +650,7 @@ describe('WbrNParcels_List.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    let headerKeys = wrapper.vm.headers.map(header => header.key)
+    let headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).not.toContain('customsFee')
     expect(headerKeys).toContain('customsDuty')
     wrapper.unmount()
@@ -626,7 +662,7 @@ describe('WbrNParcels_List.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    headerKeys = wrapper.vm.headers.map(header => header.key)
+    headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toContain('customsFee')
     expect(headerKeys).not.toContain('customsDuty')
     wrapper.unmount()
@@ -648,7 +684,9 @@ describe('WbrNParcels_List.vue', () => {
     expect(text).toContain('Ivanovich')
     expect(text).toContain('689.00')
     expect(text).toContain('750.00')
-    expect(wrapper.get('a.product-link-in-list').attributes('href')).toBe('https://www.wildberries.ru/catalog/29817781/detail.aspx')
+    expect(wrapper.get('a.product-link-in-list').attributes('href')).toBe(
+      'https://www.wildberries.ru/catalog/29817781/detail.aspx'
+    )
   })
 
   it('loads supporting stores and restores selected parcel state on mount', async () => {
@@ -712,11 +750,18 @@ describe('WbrNParcels_List.vue', () => {
     expect(getRegisterById).toHaveBeenCalledWith(7)
 
     await wrapper.get('[data-testid="bulk-status"]').trigger('click')
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
+      'true'
+    )
     loadParcels.mockClear()
     await wrapper.get('[data-testid="bulk-updated"]').trigger('click')
     await resolveAll()
-    expect(loadParcels).toHaveBeenCalledWith(7, expect.any(Object), expect.any(Object), expect.any(Object))
+    expect(loadParcels).toHaveBeenCalledWith(
+      7,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    )
 
     await wrapper.get('[data-testid="assign-confirm"]').trigger('click')
     await resolveAll()
@@ -807,17 +852,27 @@ describe('WbrNParcels_List.vue', () => {
     })
     await resolveAll()
 
-    expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('true')
-    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('true')
-    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')).toBe('5')
-    expect(parcelMultiSelectOptions.getBaseRowClass({
-      item: { ...sampleParcel, passportCheckStatus: 10 }
-    })).toBe('parcel-has-issues')
+    expect(
+      wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')
+    ).toBe('true')
+    expect(
+      wrapper
+        .get('[data-testid="parcel-filter-selectors"]')
+        .attributes('data-show-passport-check-status')
+    ).toBe('true')
+    expect(
+      wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-passport-options')
+    ).toBe('5')
+    expect(
+      parcelMultiSelectOptions.getBaseRowClass({
+        item: { ...sampleParcel, passportCheckStatus: 10 }
+      })
+    ).toBe('parcel-has-issues')
     const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
-    expect(icon.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__icon--color-no-issues'
-    ]))
+    expect(icon.classes()).toEqual(
+      expect.arrayContaining(['passport-check-status__icon--color-no-issues'])
+    )
 
     await wrapper.get('[data-testid="check-passports"]').trigger('click')
     expect(headerActions.checkPassports).toHaveBeenCalled()
@@ -833,14 +888,22 @@ describe('WbrNParcels_List.vue', () => {
       props: { registerId: 7 },
       global: { stubs: globalStubs }
     })
-    expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
-    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
+    expect(
+      wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')
+    ).toBe('false')
+    expect(
+      wrapper
+        .get('[data-testid="parcel-filter-selectors"]')
+        .attributes('data-show-passport-check-status')
+    ).toBe('false')
     expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="finish-passport-check"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
-    expect(parcelMultiSelectOptions.getBaseRowClass({
-      item: { ...sampleParcel, passportCheckStatus: 10 }
-    })).toBe('')
+    expect(
+      parcelMultiSelectOptions.getBaseRowClass({
+        item: { ...sampleParcel, passportCheckStatus: 10 }
+      })
+    ).toBe('')
     wrapper.unmount()
 
     registerItem.customsProcedureCode = CUSTOMS_PROCEDURE_IMPORT
@@ -849,8 +912,14 @@ describe('WbrNParcels_List.vue', () => {
       props: { registerId: 7 },
       global: { stubs: globalStubs }
     })
-    expect(wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')).toBe('false')
-    expect(wrapper.get('[data-testid="parcel-filter-selectors"]').attributes('data-show-passport-check-status')).toBe('false')
+    expect(
+      wrapper.get('[data-testid="register-header-actions"]').attributes('data-show-passport-check')
+    ).toBe('false')
+    expect(
+      wrapper
+        .get('[data-testid="parcel-filter-selectors"]')
+        .attributes('data-show-passport-check-status')
+    ).toBe('false')
     expect(wrapper.find('[data-testid="check-passports"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
   })
@@ -885,19 +954,19 @@ describe('WbrNParcels_List.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    const headerKeys = wrapper.vm.headers.map(header => header.key)
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).not.toContain('feacnLookup')
     expect(headerKeys).toContain('previousDTagComment')
     expect(wrapper.text()).toContain('previous comment')
     expect(wrapper.vm.pageOptions.length).toBeLessThan(200)
-    expect(wrapper.vm.pageOptions.map(option => option.value)).toEqual(
+    expect(wrapper.vm.pageOptions.map((option) => option.value)).toEqual(
       expect.arrayContaining([1, 10, 290, 300, 310, 491, 500])
     )
   })
 
   it('renders empty product links, alert clearing, and frozen-order sort icons', async () => {
     mockItems.value = [{ ...sampleParcel, productLink: '' }]
-    mockAlert.value = { type: 'alert-danger', message: 'WbrN list alert' }
+    mockAlert.value = { id: 23, severity: 'error', message: 'WbrN list alert', action: null }
     parcelsSortBy.value = [{ key: 'frozenOrder', order: 'asc' }]
 
     const wrapper = mount(WbrNParcelsList, {
@@ -911,7 +980,12 @@ describe('WbrNParcels_List.vue', () => {
     loadParcels.mockClear()
     await wrapper.get('[data-testid="freeze-tnved-order"]').trigger('click')
     await resolveAll()
-    expect(loadParcels).toHaveBeenCalledWith(7, expect.any(Object), expect.any(Object), expect.any(Object))
+    expect(loadParcels).toHaveBeenCalledWith(
+      7,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    )
 
     parcelsSortBy.value = [{ key: 'frozenOrder', order: 'desc' }]
     await wrapper.vm.$nextTick()
@@ -922,7 +996,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.get('[data-icon="fa-solid fa-arrows-to-eye"]').exists()).toBe(true)
 
     await wrapper.get('.alert .close').trigger('click')
-    expect(alertClear).toHaveBeenCalled()
+    expect(alertDismiss).toHaveBeenCalledWith(23)
   })
 
   it('clamps the current page when filters reduce max page', async () => {
@@ -947,7 +1021,7 @@ describe('WbrNParcels_List.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    expect(wrapper.vm.headers.map(header => header.key)).not.toContain('previousDTagComment')
+    expect(wrapper.vm.headers.map((header) => header.key)).not.toContain('previousDTagComment')
     expect(parcelMultiSelectOptions.getBaseRowClass({ item: sampleParcel })).toBe('')
 
     parcelMultiSelectOptions.onContextMenu()
@@ -992,10 +1066,14 @@ describe('WbrNParcels_List.vue', () => {
     expect(handleRowContextMenu).toHaveBeenCalledWith({}, { item: sampleParcel })
 
     await wrapper.get('[data-testid="bulk-status"]').trigger('click')
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
+      'true'
+    )
     await wrapper.get('[data-testid="bulk-close"]').trigger('click')
     await wrapper.vm.$nextTick()
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe('false')
+    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
+      'false'
+    )
   })
 
   it('reports initialization errors without leaving the component loading forever', async () => {
@@ -1007,7 +1085,13 @@ describe('WbrNParcels_List.vue', () => {
     })
     await resolveAll()
 
-    expect(alertError).toHaveBeenCalledWith('Ошибка при инициализации компонента')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'keywords failed' }),
+      expect.objectContaining({
+        fallback: 'Ошибка при инициализации компонента',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
     expect(wrapper.vm.isInitializing).toBe(false)
   })
 

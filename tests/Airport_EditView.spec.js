@@ -14,7 +14,8 @@ vi.mock('@/dialogs/Airport_Settings.vue', () => ({
   default: {
     name: 'Airport_Settings',
     props: ['mode', 'airportId'],
-    template: '<div data-testid="airport-settings">Airport Settings (mode: {{ mode }}, id: {{ airportId }})</div>'
+    template:
+      '<div data-testid="airport-settings">Airport Settings (mode: {{ mode }}, id: {{ airportId }})</div>'
   }
 }))
 

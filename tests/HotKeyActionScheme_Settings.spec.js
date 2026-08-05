@@ -28,6 +28,7 @@ const updateMock = vi.hoisted(() => vi.fn())
 const ensureOpsLoadedMock = vi.hoisted(() => vi.fn())
 const getOpsLabelMock = vi.hoisted(() => vi.fn())
 const pushMock = vi.hoisted(() => vi.fn())
+const alertError = vi.hoisted(() => vi.fn())
 
 let storeMock
 
@@ -46,19 +47,24 @@ vi.mock('@/stores/hotkey.action.schemes.store.js', () => ({
   useHotKeyActionSchemesStore: () => storeMock
 }))
 
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ alert: null, error: alertError })
+}))
+
 vi.mock('@/router', () => ({ default: { push: pushMock } }), { virtual: true })
 
 const AsyncWrapper = {
   components: { HotKeyActionSchemeSettings },
   props: ['mode', 'hotKeyActionSchemeId'],
-  template: '<Suspense><HotKeyActionSchemeSettings :mode="mode" :hot-key-action-scheme-id="hotKeyActionSchemeId" /></Suspense>'
+  template:
+    '<Suspense><HotKeyActionSchemeSettings :mode="mode" :hot-key-action-scheme-id="hotKeyActionSchemeId" /></Suspense>'
 }
 
 describe('HotKeyActionScheme_Settings.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getOpsLabelMock.mockImplementation((list, value) => {
-      const action = list?.find(a => a.value === value)
+      const action = list?.find((a) => a.value === value)
       return action ? action.name : `Action ${value}`
     })
     ensureOpsLoadedMock.mockResolvedValue(opsRef.value)
@@ -80,15 +86,21 @@ describe('HotKeyActionScheme_Settings.vue', () => {
   })
 
   it('loads item in edit mode', async () => {
-    mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
     expect(getByIdMock).toHaveBeenCalledWith(1)
   })
 
   it('initializes actions from ops in create mode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const vm = wrapper.findComponent(HotKeyActionSchemeSettings).vm
     expect(vm.hotKeyActionScheme.actions).toHaveLength(3)
     expect(vm.hotKeyActionScheme.actions[0].action).toBe(1)
@@ -97,9 +109,12 @@ describe('HotKeyActionScheme_Settings.vue', () => {
   })
 
   it('uses backend data for actions in edit mode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const vm = wrapper.findComponent(HotKeyActionSchemeSettings).vm
     expect(vm.hotKeyActionScheme.actions).toHaveLength(2)
     expect(vm.hotKeyActionScheme.actions[0].keyCode).toBe('F1')
@@ -108,34 +123,46 @@ describe('HotKeyActionScheme_Settings.vue', () => {
   })
 
   it('renders action names using getOpsLabel', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const table = wrapper.find('.actions-table')
     expect(table.exists()).toBe(true)
     expect(getOpsLabelMock).toHaveBeenCalled()
   })
 
   it('renders KeyCaptureInput for keyCode', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const keyCaptureInputs = wrapper.findAllComponents({ name: 'KeyCaptureInput' })
     expect(keyCaptureInputs.length).toBeGreaterThan(0)
   })
 
   it('renders checkboxes for shift, ctrl, alt', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const checkboxes = wrapper.findAll('input[type="checkbox"]')
     expect(checkboxes.length).toBeGreaterThanOrEqual(6) // 3 columns * 2 rows minimum
   })
 
   it('renders editable keyCode inputs with KeyCaptureInput', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const keyCaptureInputs = wrapper.findAllComponents({ name: 'KeyCaptureInput' })
     expect(keyCaptureInputs.length).toBe(2) // Should match the number of actions
     expect(keyCaptureInputs[0].props('modelValue')).toBe('F1')
@@ -143,30 +170,38 @@ describe('HotKeyActionScheme_Settings.vue', () => {
   })
 
   it('renders editable checkboxes', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const shiftCheckbox = wrapper.find('input[id="shift-0"]')
     const ctrlCheckbox = wrapper.find('input[id="ctrl-0"]')
     const altCheckbox = wrapper.find('input[id="alt-0"]')
-    
+
     expect(shiftCheckbox.exists()).toBe(true)
     expect(ctrlCheckbox.exists()).toBe(true)
     expect(altCheckbox.exists()).toBe(true)
-    
+
     // Verify initial checkbox states
     expect(shiftCheckbox.element.checked).toBe(false)
   })
 
   it('submits create with actions data', async () => {
-    const createWrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
+    const createWrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const vm = createWrapper.findComponent(HotKeyActionSchemeSettings).vm
     vm.hotKeyActionScheme.actions[0].keyCode = 'F10'
     vm.hotKeyActionScheme.actions[0].shift = true
-    
-    await createWrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'New Scheme' }, { setErrors: vi.fn() })
+
+    await createWrapper
+      .findComponent({ name: 'Form' })
+      .vm.$emit('submit', { name: 'New Scheme' }, { setErrors: vi.fn() })
     await resolveAll()
 
     expect(createMock).toHaveBeenCalled()
@@ -179,14 +214,19 @@ describe('HotKeyActionScheme_Settings.vue', () => {
   })
 
   it('submits edit with actions data', async () => {
-    const editWrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const editWrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const vm = editWrapper.findComponent(HotKeyActionSchemeSettings).vm
     vm.hotKeyActionScheme.actions[0].keyCode = 'F11'
     vm.hotKeyActionScheme.actions[0].ctrl = true
-    
-    await editWrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Updated Scheme' }, { setErrors: vi.fn() })
+
+    await editWrapper
+      .findComponent({ name: 'Form' })
+      .vm.$emit('submit', { name: 'Updated Scheme' }, { setErrors: vi.fn() })
     await resolveAll()
 
     expect(updateMock).toHaveBeenCalled()
@@ -202,36 +242,54 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     const setErrors = vi.fn()
     createMock.mockRejectedValueOnce(new Error('409 Conflict'))
 
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
     await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Схема настройки клавиатуры с таким названием уже существует' })
+    expect(alertError).toHaveBeenCalledWith(
+      'Схема настройки клавиатуры с таким названием уже существует'
+    )
+    expect(setErrors).not.toHaveBeenCalled()
   })
 
   it('sets api error for edit failures', async () => {
     const setErrors = vi.fn()
     updateMock.mockRejectedValueOnce(new Error('Ошибка при сохранении схемы настройки клавиатуры'))
 
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
     await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Ошибка при сохранении схемы настройки клавиатуры' })
+    expect(alertError).toHaveBeenCalledWith('Ошибка при сохранении схемы настройки клавиатуры', {
+      fallback: 'Ошибка при сохранении схемы настройки клавиатуры'
+    })
+    expect(setErrors).not.toHaveBeenCalled()
   })
 
   it('sets api error for create generic error', async () => {
     const setErrors = vi.fn()
     createMock.mockRejectedValueOnce(new Error('Network error'))
 
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'create' },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
     await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Network error' })
+    expect(alertError).toHaveBeenCalledWith('Network error', {
+      fallback: 'Ошибка при создании схемы настройки клавиатуры'
+    })
+    expect(setErrors).not.toHaveBeenCalled()
   })
 
   it('handles missing actions array in edit mode', async () => {
@@ -239,36 +297,41 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     storeMock.hotKeyActionScheme = schemeWithoutActions
     getByIdMock.mockResolvedValueOnce(schemeWithoutActions.value)
 
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const vm = wrapper.findComponent(HotKeyActionSchemeSettings).vm
     expect(vm.hotKeyActionScheme.actions).toBeDefined()
     expect(Array.isArray(vm.hotKeyActionScheme.actions)).toBe(true)
   })
 
-
-
-
-
   it('applies checkbox-styled class to checkboxes', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const checkboxes = wrapper.findAll('.checkbox-styled')
     expect(checkboxes.length).toBeGreaterThan(0)
   })
 
   it('renders table with correct structure', async () => {
-    const wrapper = mount(AsyncWrapper, { props: { mode: 'edit', hotKeyActionSchemeId: 1 }, global: { stubs: defaultGlobalStubs } })
+    const wrapper = mount(AsyncWrapper, {
+      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
+      global: { stubs: defaultGlobalStubs }
+    })
     await resolveAll()
-    
+
     const table = wrapper.find('.actions-table table')
     expect(table.exists()).toBe(true)
-    
+
     const thead = table.find('thead')
     expect(thead.exists()).toBe(true)
-    
+
     const headerCells = thead.findAll('th')
     expect(headerCells.length).toBe(5) // Action, KeyCode, Shift, Ctrl, Alt
     expect(headerCells[0].text()).toBe('Действие')

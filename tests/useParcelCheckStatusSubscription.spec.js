@@ -10,9 +10,14 @@ const parcelChecksStoreMock = vi.hoisted(() => ({
   start: vi.fn(),
   stop: vi.fn()
 }))
+const alertError = vi.hoisted(() => vi.fn())
 
 vi.mock('@/stores/parcel.checks.store.js', () => ({
   useParcelChecksStore: () => parcelChecksStoreMock
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ error: alertError })
 }))
 
 import { useParcelCheckStatusSubscription } from '@/composables/useParcelCheckStatusSubscription.js'
@@ -36,6 +41,7 @@ describe('useParcelCheckStatusSubscription', () => {
   beforeEach(() => {
     parcelChecksStoreMock.start.mockReset().mockResolvedValue(true)
     parcelChecksStoreMock.stop.mockReset().mockResolvedValue(true)
+    alertError.mockReset()
     wrapper = null
     returnedStore = null
   })
@@ -62,6 +68,7 @@ describe('useParcelCheckStatusSubscription', () => {
     expect(parcelChecksStoreMock.start).toHaveBeenCalledTimes(1)
     expect(parcelChecksStoreMock.start).toHaveBeenCalledWith(7, {
       onUpdates,
+      onError: expect.any(Function),
       onResync: expect.any(Function)
     })
     expect(parcelChecksStoreMock.stop).not.toHaveBeenCalled()
@@ -84,6 +91,7 @@ describe('useParcelCheckStatusSubscription', () => {
     const options = parcelChecksStoreMock.start.mock.calls[0][1]
     expect(parcelChecksStoreMock.start).toHaveBeenCalledWith(8, {
       onUpdates: null,
+      onError: expect.any(Function),
       onResync: expect.any(Function)
     })
     await expect(options.onResync()).resolves.toBeUndefined()
@@ -142,7 +150,11 @@ describe('useParcelCheckStatusSubscription', () => {
 
   it('invalidates pending work, stops watching, and absorbs stop failures on unmount', async () => {
     let finishStart
-    parcelChecksStoreMock.start.mockReturnValueOnce(new Promise(resolve => { finishStart = resolve }))
+    parcelChecksStoreMock.start.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishStart = resolve
+      })
+    )
     parcelChecksStoreMock.stop.mockRejectedValueOnce(new Error('stop failed'))
     const registerId = ref(7)
     const refresh = vi.fn().mockResolvedValue()
@@ -165,5 +177,17 @@ describe('useParcelCheckStatusSubscription', () => {
     await flushPromises()
     await staleResync()
     expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('publishes an observable error when the initial subscription fails', async () => {
+    const failure = new Error('offline')
+    parcelChecksStoreMock.start.mockRejectedValueOnce(failure)
+
+    mountComposable({ registerId: 7, enabled: true })
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledWith(failure, {
+      fallback: 'Не удалось обновить статусы проверок посылок'
+    })
   })
 })

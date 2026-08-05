@@ -1,88 +1,84 @@
-// Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useAlertStore } from '@/stores/alert.store.js'
 import { useNotificationsStore } from '@/stores/notifications.store.js'
 
-/**
- * Formats a notification date value to locale string
- * @param {string|Date|Object} value - Date value that can be string, Date, or {year, month, day}
- * @returns {string} Formatted date string or empty string if value is invalid
- */
 export function formatNotificationDate(value) {
-  if (!value) {
-    return ''
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleDateString('ru-RU')
-  }
+  if (!value) return ''
+  if (value instanceof Date) return value.toLocaleDateString('ru-RU')
 
   if (typeof value === 'string') {
     const date = new Date(value)
-    if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleDateString('ru-RU')
-    }
+    if (!Number.isNaN(date.getTime())) return date.toLocaleDateString('ru-RU')
     return value
   }
 
   if (typeof value === 'object' && value.year && value.month && value.day) {
     const date = new Date(value.year, value.month - 1, value.day)
-    if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleDateString('ru-RU')
-    }
+    if (!Number.isNaN(date.getTime())) return date.toLocaleDateString('ru-RU')
   }
 
   return ''
 }
 
-/**
- * Builds tooltip text for notification details
- * @param {Object} item - Source object containing notificationId
- * @returns {Promise<string>} Tooltip text with available notification details
- */
 export async function buildNotificationTooltip(item) {
   if (!item || item.notificationId === undefined || item.notificationId === null) return ''
 
   const notificationsStore = useNotificationsStore()
   const notification = await notificationsStore.getById(item.notificationId)
-  
-  if (!notification) {
-    return `Id нотификации: ${item.notificationId} (данные не загружены)`
+  if (!notification) return `Id нотификации: ${item.notificationId} (данные не загружены)`
+
+  const parts = ['Номер нотификации: ' + (notification.number || '(данные не загружены)')]
+
+  if (notification.registrationDate) {
+    const date = formatNotificationDate(notification.registrationDate)
+    if (date) parts.push(`Дата регистрации: ${date}`)
   }
 
-  const parts = [
-    'Номер нотификации: ' + (notification.number || '(данные не загружены)')
-  ] 
-  
-  if (notification.registrationDate) {
-    const formattedDate = formatNotificationDate(notification.registrationDate)
-    if (formattedDate) {
-      parts.push(`Дата регистрации: ${formattedDate}`)
-    }
-  }
-  
   if (notification.publicationDate) {
-    const formattedDate = formatNotificationDate(notification.publicationDate)
-    if (formattedDate) {
-      parts.push(`Дата публикации: ${formattedDate}`)
-    }
+    const date = formatNotificationDate(notification.publicationDate)
+    if (date) parts.push(`Дата публикации: ${date}`)
   }
-  
+
   if (notification.terminationDate) {
-    const formattedDate = formatNotificationDate(notification.terminationDate)
-    if (formattedDate) {
-      parts.push(`Срок действия: ${formattedDate}`)
-    }
+    const date = formatNotificationDate(notification.terminationDate)
+    if (date) parts.push(`Срок действия: ${date}`)
   }
 
   if (notification.comment) {
-    const c = String(notification.comment).trim()
-    if (c.length) {
+    const comment = String(notification.comment).trim()
+    if (comment.length) {
       parts.push('Комментарий:')
-      parts.push(`${c}`)
+      parts.push(comment)
     }
   }
 
   return parts.join('\n')
+}
+
+/**
+ * Runs a page load and turns a rejection into one persistent, retryable message.
+ * The rejection is handled here, so callers may safely use this from lifecycle hooks.
+ */
+export async function runWithRetryAlert(
+  operation,
+  { fallback = 'Не удалось загрузить данные', title = '', actionLabel = 'Повторить' } = {}
+) {
+  const alertStore = useAlertStore()
+
+  try {
+    return await operation()
+  } catch (error) {
+    alertStore.error(error, {
+      fallback,
+      title,
+      action: {
+        label: actionLabel,
+        handler: () => runWithRetryAlert(operation, { fallback, title, actionLabel })
+      }
+    })
+    return null
+  }
 }

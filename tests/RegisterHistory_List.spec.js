@@ -62,10 +62,11 @@ vi.mock('@/stores/register.history.store.js', () => ({
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
     ensureLoaded: mocks.ensureStatuses,
-    getStatusById: (id) => ({
-      1: { id: 1, title: 'Получен' },
-      2: { id: 2, title: 'На складе' }
-    })[id] || null
+    getStatusById: (id) =>
+      ({
+        1: { id: 1, title: 'Получен' },
+        2: { id: 2, title: 'На складе' }
+      }[id] || null)
   })
 }))
 
@@ -92,9 +93,7 @@ vi.mock('@/stores/countries.store.js', () => ({
     },
     getCountryShortName: (value) => {
       if (Number(value) === 643) return 'Россия'
-      const country = mocks.countries.find(
-        (item) => Number(item.isoNumeric) === Number(value)
-      )
+      const country = mocks.countries.find((item) => Number(item.isoNumeric) === Number(value))
       return country?.nameRuShort || country?.nameRuOfficial || value
     },
     ensureLoaded: mocks.ensureCountries
@@ -180,18 +179,22 @@ describe('RegisterHistory_List.vue', () => {
       { id: 1, name: 'Склад Север' },
       { id: 2, name: 'Склад Юг' }
     ]
-    mockRefs.items.value = [{
-      id: 1,
-      changedAt: '2026-07-30T12:00:00Z',
-      userName: 'Иванов Иван',
-      userEmail: 'ivan@example.com',
-      reason: 'Сохранение изменений',
-      changes: [{
-        field: 'StatusId',
-        oldValue: '1',
-        newValue: '2'
-      }]
-    }]
+    mockRefs.items.value = [
+      {
+        id: 1,
+        changedAt: '2026-07-30T12:00:00Z',
+        userName: 'Иванов Иван',
+        userEmail: 'ivan@example.com',
+        reason: 'Сохранение изменений',
+        changes: [
+          {
+            field: 'StatusId',
+            oldValue: '1',
+            newValue: '2'
+          }
+        ]
+      }
+    ]
     mockRefs.totalCount.value = 1
     mocks.ensureStatuses.mockResolvedValue()
     mocks.ensureCountries.mockResolvedValue()
@@ -266,9 +269,12 @@ describe('RegisterHistory_List.vue', () => {
 
   it('shows the standard list spinner while the history page is loading', async () => {
     let resolveHistory
-    mocks.getHistory.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveHistory = resolve
-    }))
+    mocks.getHistory.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveHistory = resolve
+        })
+    )
 
     const wrapper = mount(RegisterHistoryList, {
       props: { registerId: 42 },
@@ -279,13 +285,17 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.get('[data-testid="register-history-spinner"]').classes()).toEqual(
       expect.arrayContaining(['spinner-border', 'spinner-border-m'])
     )
-    expect(wrapper.get('[data-testid="register-history-back"]').attributes('disabled')).toBeDefined()
+    expect(
+      wrapper.get('[data-testid="register-history-back"]').attributes('disabled')
+    ).toBeDefined()
 
     resolveHistory()
     await flushPromises()
 
     expect(wrapper.find('[data-testid="register-history-spinner"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="register-history-back"]').attributes('disabled')).toBeUndefined()
+    expect(
+      wrapper.get('[data-testid="register-history-back"]').attributes('disabled')
+    ).toBeUndefined()
   })
 
   it('renders reference changes as text instead of identifiers', async () => {

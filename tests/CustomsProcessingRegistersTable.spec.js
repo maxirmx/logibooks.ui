@@ -55,9 +55,16 @@ vi.mock('@/stores/airports.store.js', () => ({
 
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
-    getStatusById: vi.fn((id) => id
-      ? { id, title: `Register Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
-      : null
+    getStatusById: vi.fn((id) =>
+      id
+        ? {
+            id,
+            title: `Register Status ${id}`,
+            icon: 'svg:very-delivered',
+            bkColor: '#00AA00',
+            fgColor: '#FFFFFF'
+          }
+        : null
     ),
     getStatusTitle: vi.fn((id) => `Register Status ${id}`)
   })
@@ -67,7 +74,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     props: ['item', 'icon', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button type="button" class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template:
+      '<button type="button" class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
@@ -75,7 +83,8 @@ vi.mock('@/components/ClickableCell.vue', () => ({
   default: {
     props: ['item', 'displayValue', 'cellClass'],
     emits: ['click'],
-    template: '<span :class="cellClass" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></span>'
+    template:
+      '<span :class="cellClass" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></span>'
   }
 }))
 
@@ -84,7 +93,8 @@ vi.mock('@/components/SenderRecipientCell.vue', () => ({ default: { template: '<
 vi.mock('@/components/SortableMultilineHeader.vue', () => ({
   default: {
     props: ['lines'],
-    template: '<span class="sortable-multiline-header-stub"><span v-for="line in lines" :key="line">{{ line }}</span></span>'
+    template:
+      '<span class="sortable-multiline-header-stub"><span v-for="line in lines" :key="line">{{ line }}</span></span>'
   }
 }))
 
@@ -165,12 +175,16 @@ describe('CustomsProcessingRegistersTable', () => {
     expect(wrapper.find('[data-testid="header-keys"]').text()).toBe(
       'actions,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,customsCharges,date'
     )
-    expect(wrapper.find('[data-testid="header-customsCharges"]').findAll('.sortable-multiline-header-stub > span').map(line => line.text())).toEqual([
-      'Сборы, руб.',
-      'Пошлины'
-    ])
+    expect(
+      wrapper
+        .find('[data-testid="header-customsCharges"]')
+        .findAll('.sortable-multiline-header-stub > span')
+        .map((line) => line.text())
+    ).toEqual(['Сборы, руб.', 'Пошлины'])
     expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
-    expect(wrapper.find('.register-status-action-button--readonly').attributes('title')).toBe('Register Status 2')
+    expect(wrapper.find('.register-status-action-button--readonly').attributes('title')).toBe(
+      'Register Status 2'
+    )
   })
 
   it('opens inline register status selector from the status icon', async () => {
@@ -253,7 +267,12 @@ describe('CustomsProcessingRegistersTable', () => {
       { id: 1, customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT },
       { id: 2, customsProcedureCode: CUSTOMS_PROCEDURE_REIMPORT },
       { id: 3, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT, customsFee: 0, customsDuty: null },
-      { id: 4, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT, customsFee: null, customsDuty: 750 }
+      {
+        id: 4,
+        customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT,
+        customsFee: null,
+        customsDuty: 750
+      }
     ]
 
     for (const item of cases) {
@@ -262,7 +281,9 @@ describe('CustomsProcessingRegistersTable', () => {
         isSrLogistPlus: true
       })
 
-      expect(wrapper.find('[data-icon="fa-solid fa-calculator"]').attributes('disabled')).toBeUndefined()
+      expect(
+        wrapper.find('[data-icon="fa-solid fa-calculator"]').attributes('disabled')
+      ).toBeUndefined()
       wrapper.unmount()
     }
   })
@@ -271,9 +292,24 @@ describe('CustomsProcessingRegistersTable', () => {
     const cases = [
       { id: 1 },
       { id: 2, customsProcedureCode: null, customsFee: null, customsDuty: null },
-      { id: 3, customsProcedureCode: CUSTOMS_PROCEDURE_RETURN, customsFee: null, customsDuty: null },
-      { id: 4, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT, customsFee: null, customsDuty: null },
-      { id: 5, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT, customsFee: null, customsDuty: null }
+      {
+        id: 3,
+        customsProcedureCode: CUSTOMS_PROCEDURE_RETURN,
+        customsFee: null,
+        customsDuty: null
+      },
+      {
+        id: 4,
+        customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
+        customsFee: null,
+        customsDuty: null
+      },
+      {
+        id: 5,
+        customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT,
+        customsFee: null,
+        customsDuty: null
+      }
     ]
 
     for (const item of cases) {
@@ -282,7 +318,9 @@ describe('CustomsProcessingRegistersTable', () => {
         isSrLogistPlus: true
       })
 
-      expect(wrapper.find('[data-icon="fa-solid fa-calculator"]').attributes('disabled')).toBeDefined()
+      expect(
+        wrapper.find('[data-icon="fa-solid fa-calculator"]').attributes('disabled')
+      ).toBeDefined()
       wrapper.unmount()
     }
   })
@@ -303,16 +341,18 @@ describe('CustomsProcessingRegistersTable', () => {
 
   it('keeps navigation cells and copied weight display behavior', async () => {
     const wrapper = mountTable({
-      items: [{
-        id: 3,
-        dealNumber: 'D-3',
-        statusId: 2,
-        totalWeightKg: 12.345,
-        totalWeightKgToRelease: 10,
-        realWeightKg: 5,
-        customsFee: 689,
-        customsDuty: 750
-      }]
+      items: [
+        {
+          id: 3,
+          dealNumber: 'D-3',
+          statusId: 2,
+          totalWeightKg: 12.345,
+          totalWeightKgToRelease: 10,
+          realWeightKg: 5,
+          customsFee: 689,
+          customsDuty: 750
+        }
+      ]
     })
 
     await wrapper.find('.open-parcels-link').trigger('click')
@@ -327,26 +367,32 @@ describe('CustomsProcessingRegistersTable', () => {
 
   it('renders dash for a missing customs charge when the other charge is present', () => {
     const wrapper = mountTable({
-      items: [{
-        id: 4,
-        customsFee: null,
-        customsDuty: 750
-      }]
+      items: [
+        {
+          id: 4,
+          customsFee: null,
+          customsDuty: 750
+        }
+      ]
     })
 
-    expect(wrapper.find('[data-testid="register-customs-charges-cell"]').findAll('div').map(line => line.text())).toEqual([
-      '-',
-      '750.00'
-    ])
+    expect(
+      wrapper
+        .find('[data-testid="register-customs-charges-cell"]')
+        .findAll('div')
+        .map((line) => line.text())
+    ).toEqual(['-', '750.00'])
   })
 
   it('keeps customs charges cell empty when both values are missing', () => {
     const wrapper = mountTable({
-      items: [{
-        id: 5,
-        customsFee: null,
-        customsDuty: null
-      }]
+      items: [
+        {
+          id: 5,
+          customsFee: null,
+          customsDuty: null
+        }
+      ]
     })
 
     expect(wrapper.find('[data-testid="register-customs-charges-cell"]').text()).toBe('')

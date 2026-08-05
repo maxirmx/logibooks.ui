@@ -1,12 +1,11 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 
 describe('check.status.code.js hasIssues', () => {
-
   describe('hasIssues', () => {
     it('returns true for status codes with issues', () => {
       expect(CheckStatusCode.hasIssues(0x01000000)).toBe(true) // FC has issues

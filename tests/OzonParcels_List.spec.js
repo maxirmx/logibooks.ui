@@ -119,12 +119,12 @@ vi.mock('@/helpers/parcels.check.helpers.js', () => ({
 // check.status.code.js uses real implementation (has static methods needed by template)
 
 vi.mock('@/helpers/number.formatters.js', () => ({
-  formatWeight: vi.fn(v => String(v)),
-  formatPrice: vi.fn(v => String(v))
+  formatWeight: vi.fn((v) => String(v)),
+  formatPrice: vi.fn((v) => String(v))
 }))
 
 vi.mock('@/helpers/url.helpers.js', () => ({
-  ensureHttps: vi.fn(v => v)
+  ensureHttps: vi.fn((v) => v)
 }))
 
 vi.mock('@/helpers/parcel.number.ext.helpers.js', () => ({
@@ -148,7 +148,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
-    getStatusTitle: vi.fn(id => `Status ${id}`),
+    getStatusTitle: vi.fn((id) => `Status ${id}`),
     parcelStatuses: []
   })
 }))
@@ -215,7 +215,7 @@ vi.mock('@/stores/feacn.orders.store.js', () => ({
 vi.mock('@/stores/countries.store.js', () => ({
   useCountriesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
-    getCountryAlpha2: vi.fn(code => code)
+    getCountryAlpha2: vi.fn((code) => code)
   })
 }))
 
@@ -263,7 +263,10 @@ describe('OzonParcels_List.vue – multi-select', () => {
   })
 
   it('plain click selects a single row', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[1] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[1] }
+    )
 
     expect(wrapper.vm.selectedParcelIds.size).toBe(1)
     expect(wrapper.vm.selectedParcelIds.has(2)).toBe(true)
@@ -271,8 +274,14 @@ describe('OzonParcels_List.vue – multi-select', () => {
   })
 
   it('plain click replaces previous selection', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[2] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[2] }
+    )
 
     expect(wrapper.vm.selectedParcelIds.size).toBe(1)
     expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
@@ -280,49 +289,81 @@ describe('OzonParcels_List.vue – multi-select', () => {
   })
 
   it('Ctrl+Click toggles individual rows', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: true, metaKey: false }, { item: mockItems.value[2] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: true, metaKey: false },
+      { item: mockItems.value[2] }
+    )
 
     expect(wrapper.vm.selectedParcelIds.size).toBe(2)
     expect(wrapper.vm.selectedParcelIds.has(1)).toBe(true)
     expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
 
     // Toggle off
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: true, metaKey: false }, { item: mockItems.value[0] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: true, metaKey: false },
+      { item: mockItems.value[0] }
+    )
     expect(wrapper.vm.selectedParcelIds.size).toBe(1)
     expect(wrapper.vm.selectedParcelIds.has(1)).toBe(false)
     expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
   })
 
   it('Shift+Click selects a range', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: true, ctrlKey: false, metaKey: false }, { item: mockItems.value[3] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: true, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[3] }
+    )
 
     expect(wrapper.vm.selectedParcelIds.size).toBe(4)
     expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([1, 2, 3, 4])
   })
 
   it('Shift+Click backwards selects a range', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[4] })
-    wrapper.vm.handleRowClick({ shiftKey: true, ctrlKey: false, metaKey: false }, { item: mockItems.value[1] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[4] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: true, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[1] }
+    )
 
     expect(wrapper.vm.selectedParcelIds.size).toBe(4)
     expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([2, 3, 4, 5])
   })
 
   it('Shift+Click replaces previous selection without Ctrl', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: true, metaKey: false }, { item: mockItems.value[4] })
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: true, ctrlKey: false, metaKey: false }, { item: mockItems.value[2] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: true, metaKey: false },
+      { item: mockItems.value[4] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: true, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[2] }
+    )
 
     // Only 1-3 selected, not 5
     expect(wrapper.vm.selectedParcelIds.has(5)).toBe(false)
     expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([1, 2, 3])
   })
 
-
   it('Shift+Click falls back to single selection when anchor leaves current items', async () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
 
     mockItems.value = [
       { id: 2, postingNumber: 'P-2', productName: 'Item2', checkStatus: 0 },
@@ -333,7 +374,10 @@ describe('OzonParcels_List.vue – multi-select', () => {
 
     expect(wrapper.vm.lastClickedId).toBe(null)
 
-    wrapper.vm.handleRowClick({ shiftKey: true, ctrlKey: false, metaKey: false }, { item: mockItems.value[1] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: true, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[1] }
+    )
 
     expect([...wrapper.vm.selectedParcelIds]).toEqual([3])
     expect(selectedParcelId.value).toBe(3)
@@ -342,29 +386,50 @@ describe('OzonParcels_List.vue – multi-select', () => {
 
   it('Ctrl+Shift+Click extends range onto existing selection', () => {
     // Select rows 1 and 2 via Ctrl
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: true, metaKey: false }, { item: mockItems.value[1] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: true, metaKey: false },
+      { item: mockItems.value[1] }
+    )
 
     // Shift+Ctrl from row 2 anchor to row 5
-    wrapper.vm.handleRowClick({ shiftKey: true, ctrlKey: true, metaKey: false }, { item: mockItems.value[4] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: true, ctrlKey: true, metaKey: false },
+      { item: mockItems.value[4] }
+    )
 
     // All 5 should be selected (1,2 from Ctrl, 2-5 from Shift range)
     expect(wrapper.vm.selectedParcelIds.size).toBe(5)
   })
 
   it('selectedItems returns the correct items', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: true, metaKey: false }, { item: mockItems.value[3] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: true, metaKey: false },
+      { item: mockItems.value[3] }
+    )
 
     const ids = wrapper.vm.selectedParcelIds
-    const selected = mockItems.value.filter(item => ids.has(item.id))
+    const selected = mockItems.value.filter((item) => ids.has(item.id))
     expect(selected).toHaveLength(2)
-    expect(selected.map(i => i.id)).toEqual([1, 4])
+    expect(selected.map((i) => i.id)).toEqual([1, 4])
   })
 
   it('Meta+Click works like Ctrl+Click (macOS)', () => {
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: false }, { item: mockItems.value[0] })
-    wrapper.vm.handleRowClick({ shiftKey: false, ctrlKey: false, metaKey: true }, { item: mockItems.value[2] })
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: false },
+      { item: mockItems.value[0] }
+    )
+    wrapper.vm.handleRowClick(
+      { shiftKey: false, ctrlKey: false, metaKey: true },
+      { item: mockItems.value[2] }
+    )
 
     expect(wrapper.vm.selectedParcelIds.size).toBe(2)
     expect(wrapper.vm.selectedParcelIds.has(1)).toBe(true)
@@ -402,10 +467,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
     mockRegisterItem.value = { dealNumber: 'D-1', readOnly: true }
     wrapper.vm.showAssignTnvedDialog = false
 
-    wrapper.vm.handleRowContextMenu(
-      { preventDefault: vi.fn() },
-      { item: mockItems.value[0] }
-    )
+    wrapper.vm.handleRowContextMenu({ preventDefault: vi.fn() }, { item: mockItems.value[0] })
     await wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')
 
     expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
@@ -443,12 +505,9 @@ describe('OzonParcels_List.vue – multi-select', () => {
       await resolveAll()
 
       const table = wrapper.findComponent({ name: 'v-data-table-server' })
-      const keys = table.props('headers').map(header => header.key)
+      const keys = table.props('headers').map((header) => header.key)
 
-      expect(keys).toEqual(expect.arrayContaining([
-        'inn',
-        'passport'
-      ]))
+      expect(keys).toEqual(expect.arrayContaining(['inn', 'passport']))
       expect(keys).not.toContain('passportSeries')
       expect(keys).not.toContain('passportIssueDate')
       expect(keys).not.toContain('passportIssuedBy')
@@ -457,7 +516,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
 
   it('keeps the legacy passport number column for other Ozon registers', () => {
     const table = wrapper.findComponent({ name: 'v-data-table-server' })
-    const keys = table.props('headers').map(header => header.key)
+    const keys = table.props('headers').map((header) => header.key)
 
     expect(keys).toContain('passportNumber')
     expect(keys).not.toContain('inn')

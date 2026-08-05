@@ -10,7 +10,8 @@ import ParcelHeaderActionsBar from '@/components/ParcelHeaderActionsBar.vue'
 
 const actionButtonStub = {
   inheritAttrs: false,
-  template: '<button :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+  template:
+    '<button :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
   props: {
     disabled: { type: Boolean, default: false },
     item: { type: Object, default: () => ({}) },
@@ -85,7 +86,7 @@ describe('ParcelHeaderActionsBar', () => {
     ensureOpsLoadedMock.mockResolvedValue(mockOps)
     getByIdMock.mockResolvedValue(mockScheme)
     getOpsEventMock.mockImplementation((actions, actionValue) => {
-      const action = actions.find(a => a.value === actionValue)
+      const action = actions.find((a) => a.value === actionValue)
       return action ? action.event : String(actionValue)
     })
   })
@@ -151,7 +152,7 @@ describe('ParcelHeaderActionsBar', () => {
       global: { stubs: { ActionButton: actionButtonStub } }
     })
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     const buttons = wrapper.findAll('button')
     expect(buttons[0].attributes('disabled')).toBeUndefined()
@@ -162,13 +163,15 @@ describe('ParcelHeaderActionsBar', () => {
     expect(buttons[5].attributes('disabled')).toBeDefined()
 
     for (const code of ['F1', 'F4', 'F6', 'F7']) {
-      window.dispatchEvent(new KeyboardEvent('keydown', {
-        code,
-        shiftKey: false,
-        ctrlKey: false,
-        metaKey: false,
-        altKey: false
-      }))
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          code,
+          shiftKey: false,
+          ctrlKey: false,
+          metaKey: false,
+          altKey: false
+        })
+      )
       await wrapper.vm.$nextTick()
     }
 
@@ -211,25 +214,29 @@ describe('ParcelHeaderActionsBar', () => {
     })
 
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    window.dispatchEvent(new KeyboardEvent('keydown', {
-      code: 'F1',
-      shiftKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      altKey: false
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel']).toBeUndefined()
 
-    window.dispatchEvent(new KeyboardEvent('keydown', {
-      code: 'Escape',
-      shiftKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      altKey: false
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'Escape',
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['cancel']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -306,16 +313,18 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+L should NOT trigger lookup when lookupDisabled is true
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyL', 
-      shiftKey: false, 
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyL',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['lookup']).toBeUndefined()
   })
@@ -336,16 +345,18 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+L should trigger lookup when lookupDisabled is false
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyL', 
-      shiftKey: false, 
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyL',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['lookup']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -357,7 +368,7 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(ensureOpsLoadedMock).toHaveBeenCalled()
     expect(getByIdMock).toHaveBeenCalledWith(1)
@@ -371,35 +382,41 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Dispatch F1 (configured as next-parcel without modifiers)
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
 
     // Dispatch F2 with Shift (configured as next-issue with shift)
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F2', 
-      shiftKey: true, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F2',
+        shiftKey: true,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-issue']?.length ?? 0).toBeGreaterThan(0)
 
     // Dispatch F3 (configured as back without modifiers)
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F3', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F3',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['back']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -412,14 +429,16 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
   })
@@ -431,28 +450,32 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // F2 without Shift (should not trigger because F2 requires Shift)
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F2', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F2',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-issue']).toBeUndefined()
 
     // F1 with Shift (should not trigger because F1 requires no modifiers)
     // Record count before to verify no new event is emitted
     const countBefore = wrapper.emitted()['next-parcel']?.length ?? 0
-    
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: true, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: true,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     const countAfter = wrapper.emitted()['next-parcel']?.length ?? 0
     expect(countAfter).toBe(countBefore)
@@ -471,18 +494,20 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(ensureOpsLoadedMock).toHaveBeenCalled()
     expect(getByIdMock).not.toHaveBeenCalled()
 
     // Should not respond to any hotkeys since no scheme is loaded
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
   })
@@ -496,17 +521,19 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(getByIdMock).toHaveBeenCalled()
 
     // Should not respond to hotkeys since loading failed
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
   })
@@ -524,15 +551,17 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Should not respond to hotkeys since no actions are configured
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
   })
@@ -550,15 +579,17 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Should not crash and should not respond to hotkeys
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
   })
@@ -580,25 +611,29 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // F1 should work
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
 
     // F3 should work
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F3', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F3',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['back']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -606,7 +641,7 @@ describe('ParcelHeaderActionsBar', () => {
   it('filters out actions with empty event', async () => {
     getOpsEventMock.mockImplementation((actions, actionValue) => {
       if (actionValue === 2) return '' // Return empty event for action 2
-      const action = actions.find(a => a.value === actionValue)
+      const action = actions.find((a) => a.value === actionValue)
       return action ? action.event : String(actionValue)
     })
 
@@ -616,25 +651,29 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // F2 should not work because its event is empty
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F2', 
-      shiftKey: true, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F2',
+        shiftKey: true,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-issue']).toBeUndefined()
 
     // F1 should still work
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'F1', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -655,36 +694,42 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+S should trigger save
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyS', 
-      shiftKey: false, 
-      ctrlKey: true, 
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyS',
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['save']?.length ?? 0).toBeGreaterThan(0)
 
     // Alt+Escape should trigger cancel
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'Escape', 
-      shiftKey: false, 
-      ctrlKey: false, 
-      altKey: true 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'Escape',
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: true
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['cancel']?.length ?? 0).toBeGreaterThan(0)
 
     // Ctrl+Alt+S should NOT trigger save (wrong modifiers)
     const saveBefore = wrapper.emitted()['save']?.length ?? 0
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyS', 
-      shiftKey: false, 
-      ctrlKey: true, 
-      altKey: true 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyS',
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: true
+      })
+    )
     await wrapper.vm.$nextTick()
     const saveAfter = wrapper.emitted()['save']?.length ?? 0
     expect(saveAfter).toBe(saveBefore)
@@ -699,7 +744,7 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(getByIdMock).not.toHaveBeenCalled()
   })
@@ -719,27 +764,31 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Cmd+S on Mac (metaKey instead of ctrlKey) should trigger save
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyS', 
-      shiftKey: false, 
-      ctrlKey: false,
-      metaKey: true,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyS',
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: true,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['save']?.length ?? 0).toBeGreaterThan(0)
 
     // Regular Ctrl+S should also work
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyS', 
-      shiftKey: false, 
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyS',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['save']?.length ?? 0).toBeGreaterThan(1)
   })
@@ -758,38 +807,44 @@ describe('ParcelHeaderActionsBar', () => {
     })
 
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+F1 should NOT trigger the action (action requires ctrl: false)
-    window.dispatchEvent(new KeyboardEvent('keydown', {
-      code: 'F1',
-      shiftKey: false,
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel'] ?? []).toHaveLength(0)
 
     // Cmd+F1 should also NOT trigger the action
-    window.dispatchEvent(new KeyboardEvent('keydown', {
-      code: 'F1',
-      shiftKey: false,
-      ctrlKey: false,
-      metaKey: true,
-      altKey: false
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: true,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel'] ?? []).toHaveLength(0)
 
     // Plain F1 (no modifiers) SHOULD trigger the action
-    window.dispatchEvent(new KeyboardEvent('keydown', {
-      code: 'F1',
-      shiftKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      altKey: false
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -801,24 +856,26 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Use a custom event handler to verify preventDefault is called
     let preventDefaultCalled = false
     const originalPreventDefault = KeyboardEvent.prototype.preventDefault
-    KeyboardEvent.prototype.preventDefault = function() {
+    KeyboardEvent.prototype.preventDefault = function () {
       preventDefaultCalled = true
       originalPreventDefault.call(this)
     }
 
     try {
-      window.dispatchEvent(new KeyboardEvent('keydown', { 
-        code: 'F1', 
-        shiftKey: false, 
-        ctrlKey: false, 
-        altKey: false,
-        cancelable: true
-      }))
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          code: 'F1',
+          shiftKey: false,
+          ctrlKey: false,
+          altKey: false,
+          cancelable: true
+        })
+      )
       await wrapper.vm.$nextTick()
 
       expect(preventDefaultCalled).toBe(true)
@@ -832,33 +889,35 @@ describe('ParcelHeaderActionsBar', () => {
   it('attaches event listener before async operations to prevent memory leaks', async () => {
     const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
-    
+
     // Create a promise that we can control
     let resolveOps
-    const slowOpsPromise = new Promise(resolve => { resolveOps = resolve })
+    const slowOpsPromise = new Promise((resolve) => {
+      resolveOps = resolve
+    })
     ensureOpsLoadedMock.mockReturnValue(slowOpsPromise)
-    
+
     const wrapper = mount(ParcelHeaderActionsBar, {
       global: { stubs: { ActionButton: actionButtonStub } }
     })
-    
+
     // Listener should be attached immediately, before async completes
     await wrapper.vm.$nextTick()
     expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
-    
+
     // Unmount before async completes
     wrapper.unmount()
-    
+
     // Listener should be removed
     expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
-    
+
     // Complete the async operation
     resolveOps(mockOps)
-    await new Promise(resolve => setTimeout(resolve, 0))
-    
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
     // Verify no additional listeners were added
     expect(addEventListenerSpy).toHaveBeenCalledTimes(1)
-    
+
     addEventListenerSpy.mockRestore()
     removeEventListenerSpy.mockRestore()
   })
@@ -879,16 +938,18 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+D should NOT trigger download when downloadDisabled is true
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyD', 
-      shiftKey: false, 
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyD',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['download']).toBeUndefined()
   })
@@ -902,19 +963,21 @@ describe('ParcelHeaderActionsBar', () => {
     })
 
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // getById should not have been called since we returned early when ops unavailable
     expect(getByIdMock).not.toHaveBeenCalled()
 
     // Key presses on this wrapper should not emit any event (hotkeyActions is empty)
-    window.dispatchEvent(new KeyboardEvent('keydown', {
-      code: 'F1',
-      shiftKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      altKey: false
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'F1',
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
 
     // No declared events should have been emitted by this wrapper
@@ -940,16 +1003,18 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+D should trigger download when downloadDisabled is false
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyD', 
-      shiftKey: false, 
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyD',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()['download']?.length ?? 0).toBeGreaterThan(0)
   })
@@ -970,16 +1035,18 @@ describe('ParcelHeaderActionsBar', () => {
 
     // Wait for onMounted to complete
     await wrapper.vm.$nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Ctrl+D should NOT trigger download when disabled is true
-    window.dispatchEvent(new KeyboardEvent('keydown', { 
-      code: 'KeyD', 
-      shiftKey: false, 
-      ctrlKey: true,
-      metaKey: false,
-      altKey: false 
-    }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        code: 'KeyD',
+        shiftKey: false,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false
+      })
+    )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
   })

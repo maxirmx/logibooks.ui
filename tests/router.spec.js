@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -10,12 +10,19 @@ import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 let authStore
 const alertClear = vi.fn()
 const alertError = vi.fn()
+const activeAlert = vi.hoisted(() => ({ value: null }))
 const checkMock = vi.fn()
 const logoutMock = vi.fn()
 const reMock = vi.fn()
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ clear: alertClear, error: alertError })
+  useAlertStore: () => ({
+    get alert() {
+      return activeAlert.value
+    },
+    clear: alertClear,
+    error: alertError
+  })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -36,9 +43,9 @@ vi.mock('@/views/Parcel_EditView.vue', () => ({ default: { template: '<div />' }
 
 import router from '@/router'
 
-async function resetRouter(to = "/recover") {
-  await router.replace(to);
-  await router.isReady();
+async function resetRouter(to = '/recover') {
+  await router.replace(to)
+  await router.isReady()
 }
 
 describe('router guards', () => {
@@ -47,20 +54,20 @@ describe('router guards', () => {
   beforeEach(async () => {
     // Set up Pinia for store access
     setActivePinia(createPinia())
-    
+
     // Mock console.error to suppress router guard error messages in tests
     originalConsoleError = console.error
     console.error = vi.fn()
 
-    authStore = { 
-      user: null, 
-      returnUrl: null, 
-      check: checkMock, 
-      isAdmin: false, 
+    authStore = {
+      user: null,
+      returnUrl: null,
+      check: checkMock,
+      isAdmin: false,
       isShiftLead: false,
       isShiftLeadPlus: false,
-      isLogist: false, 
-      permissionRedirect: false, 
+      isLogist: false,
+      permissionRedirect: false,
       logout: logoutMock,
       re: reMock,
       re_jwt: null,
@@ -71,9 +78,10 @@ describe('router guards', () => {
       authStore.user = null
     })
     reMock.mockResolvedValue()
+    activeAlert.value = null
+    await resetRouter('/recover')
     alertClear.mockClear()
-    alertError.mockClear()
-    await resetRouter("/recover")
+    alertError.mockReset()
   })
 
   afterEach(() => {
@@ -86,6 +94,16 @@ describe('router guards', () => {
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(authStore.returnUrl).toBe('/users')
+  })
+
+  it('clears the alert that belonged to the previous route', async () => {
+    activeAlert.value = { id: 71, message: 'Старое сообщение' }
+
+    await router.push('/register')
+    await router.isReady()
+
+    expect(router.currentRoute.value.fullPath).toBe('/register')
+    expect(alertClear).toHaveBeenCalledOnce()
   })
 
   it('redirects authenticated logist away from login to registers', async () => {
@@ -137,7 +155,7 @@ describe('router guards', () => {
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
 
-    await router.push('/')  
+    await router.push('/')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/user/edit/4')
   })
@@ -151,7 +169,7 @@ describe('router guards', () => {
 
     await router.push('/registers')
     await router.isReady()
-    
+
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(authStore.returnUrl).toBe('/registers')
   })
@@ -167,148 +185,155 @@ describe('router guards', () => {
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
-  
+
   it('redirects to login when server is unavailable', async () => {
     authStore.user = { id: 5 }
     authStore.hasAnyRole = false
+    activeAlert.value = { id: 72, message: 'Старое сообщение' }
+    alertError.mockImplementationOnce((message) => {
+      activeAlert.value = { id: 73, message }
+      return 73
+    })
     checkMock.mockRejectedValueOnce(new Error('Server unavailable'))
-    
+
     await router.push('/registers')
     await router.isReady()
-    
+
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(authStore.returnUrl).toBe('/registers')
     expect(logoutMock).toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Сервер недоступен. Пожалуйста, попробуйте позже.')
+    expect(activeAlert.value).toMatchObject({ id: 73 })
+    expect(alertClear).not.toHaveBeenCalled()
   })
-  
+
   it('allows access to login page when server is unavailable', async () => {
     authStore.user = null
     checkMock.mockRejectedValueOnce(new Error('Server unavailable'))
-    
+
     await router.push('/login')
     await router.isReady()
-    
+
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(alertError).not.toHaveBeenCalled()
   })
-  
+
   it('handles successful password recovery flow', async () => {
     // Set up the recovery token and user
     authStore.re_jwt = 'recovery_token'
     authStore.re_tgt = 'recover'
     authStore.user = { id: 6 }
-    
+
     // Clear mocks to verify just this navigation
     reMock.mockClear()
-    
+
     // Mock re() to resolve successfully and clear re_jwt as the real implementation does
     reMock.mockImplementationOnce(async () => {
-      authStore.re_jwt = null  // This is what the real re() method does: clears re_jwt
+      authStore.re_jwt = null // This is what the real re() method does: clears re_jwt
       return Promise.resolve()
     })
-    
+
     // Navigate to trigger the guard
     await router.push('/users')
     await router.isReady()
-    
+
     // Check that re was called
     expect(reMock).toHaveBeenCalled()
     // After successful recovery, user should be redirected to their edit page
     expect(router.currentRoute.value.fullPath).toBe('/user/edit/6')
   })
-  
+
   it('handles successful registration completion flow', async () => {
     // Set up registration token and admin user
     authStore.re_jwt = 'registration_token'
     authStore.re_tgt = 'register'
     authStore.user = { id: 7 }
-    authStore.isAdmin = true  // Make sure the user has admin privileges for /users/ access
+    authStore.isAdmin = true // Make sure the user has admin privileges for /users/ access
     authStore.isSrLogist = true
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-    
+
     // Clear mocks to verify just this navigation
     reMock.mockClear()
-    
+
     // Mock re() to resolve successfully and clear re_jwt as the real implementation does
     reMock.mockImplementationOnce(async () => {
-      authStore.re_jwt = null  // This is what the real re() method does in the implementation
+      authStore.re_jwt = null // This is what the real re() method does in the implementation
       return Promise.resolve()
     })
-    
+
     // Navigate to trigger the guard
     await router.push('/registers')
     await router.isReady()
-    
+
     // Check that re was called
     expect(reMock).toHaveBeenCalled()
     // After successful registration, user should be redirected to users page
     expect(router.currentRoute.value.fullPath).toBe('/users/')
   })
-  
+
   it('handles failed password recovery flow', async () => {
     // Reset auth store state
     authStore.re_jwt = null
     authStore.re_tgt = null
     authStore.user = null
-    
+
     // Go to a stable route first
     await router.push('/login')
     await router.isReady()
-    
+
     // Now set up failed recovery
     authStore.re_jwt = 'bad_token'
     authStore.re_tgt = 'recover'
     reMock.mockRejectedValueOnce(new Error('Invalid token'))
-    
+
     // Clear mocks to verify just this navigation
     logoutMock.mockClear()
     alertError.mockClear()
-    
+
     // Trigger guard with new navigation
     try {
       await resetRouter('/recover')
     } catch {
       // Expected in test environment
     }
-    
+
     // Verify side effects
     expect(logoutMock).toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Не удалось восстановить пароль. Error: Invalid token')
   })
-  
+
   it('handles failed registration completion flow', async () => {
     // Reset auth store state
     authStore.re_jwt = null
     authStore.re_tgt = null
     authStore.user = null
-    
+
     // Go to a stable route first
     await router.push('/login')
     await router.isReady()
-    
+
     // Now set up failed registration
     authStore.re_jwt = 'bad_token'
     authStore.re_tgt = 'register'
     reMock.mockRejectedValueOnce(new Error('Invalid token'))
-    
+
     // Clear mocks to verify just this navigation
     logoutMock.mockClear()
     alertError.mockClear()
-    
+
     // Trigger guard with new navigation
     try {
       await resetRouter('/recover')
     } catch {
       // Expected in test environment
     }
-    
+
     // Verify side effects
     expect(logoutMock).toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Не удалось завершить регистрацию. ')
   })
-  
+
   it('validates session before allowing access to protected routes', async () => {
     // Initially has user
     authStore.user = { id: 7 }
@@ -316,21 +341,21 @@ describe('router guards', () => {
     authStore.isSrLogist = true
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-    
+
     // But session check will invalidate it
     checkMock.mockImplementationOnce(() => {
       authStore.user = null
       return Promise.resolve()
     })
-    
+
     await router.push('/registers')
     await router.isReady()
-    
+
     expect(checkMock).toHaveBeenCalled()
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(authStore.returnUrl).toBe('/registers')
   })
-  
+
   it('allows access to protected route after checking valid session', async () => {
     authStore.user = { id: 8 }
     authStore.isLogist = true
@@ -338,10 +363,10 @@ describe('router guards', () => {
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
     authStore.hasAnyRole = true
-    
+
     await router.push('/registers')
     await router.isReady()
-    
+
     expect(checkMock).toHaveBeenCalled()
     expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
@@ -369,7 +394,7 @@ describe('router guards', () => {
   it('prevents non-logist user from accessing parcels', async () => {
     authStore.user = { id: 5 }
     authStore.isLogist = false
-    authStore.isSrLogist = false  // Changed from true to false to make user truly non-logist
+    authStore.isSrLogist = false // Changed from true to false to make user truly non-logist
     authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
     authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
 
@@ -425,7 +450,9 @@ describe('router guards', () => {
 
   describe('scanjob monitor route props', () => {
     it('maps register monitor route params to props', () => {
-      const routeRecord = router.getRoutes().find((route) => route.name === 'scanjob-monitor-register')
+      const routeRecord = router
+        .getRoutes()
+        .find((route) => route.name === 'scanjob-monitor-register')
       const props = routeRecord.props.default({ params: { id: '42' } })
 
       expect(props).toEqual({
@@ -453,7 +480,9 @@ describe('router guards', () => {
     })
 
     it('maps unassigned monitor route params to props', () => {
-      const routeRecord = router.getRoutes().find((route) => route.name === 'scanjob-monitor-unassigned')
+      const routeRecord = router
+        .getRoutes()
+        .find((route) => route.name === 'scanjob-monitor-unassigned')
       const props = routeRecord.props.default({ params: { id: '42', bucketIndex: '1' } })
 
       expect(props).toEqual({
@@ -526,16 +555,19 @@ describe('router guards', () => {
 
   describe('register history route', () => {
     it('is a separate administrator/shift-lead route with normalized props', () => {
-      const route = router.getRoutes()
+      const route = router
+        .getRoutes()
         .find((item) => item.path === '/registers/:registerId/history')
 
       expect(route?.name).toBe('История изменений реестра')
       expect(route?.meta.reqShiftLeadPlus).toBe(true)
       expect(route?.meta.hideSidebar).toBe(true)
-      expect(route?.props.default({
-        params: { registerId: '42' },
-        query: { mode: OP_MODE_WAREHOUSE }
-      })).toEqual({
+      expect(
+        route?.props.default({
+          params: { registerId: '42' },
+          query: { mode: OP_MODE_WAREHOUSE }
+        })
+      ).toEqual({
         registerId: 42,
         mode: OP_MODE_WAREHOUSE
       })
@@ -544,7 +576,7 @@ describe('router guards', () => {
 
   describe('CMR settings route', () => {
     it('uses invoice-equivalent protection and numeric id props', () => {
-      const route = router.getRoutes().find(value => value.name === 'Настройки CMR')
+      const route = router.getRoutes().find((value) => value.name === 'Настройки CMR')
 
       expect(route?.path).toBe('/register/:id/cmr-settings')
       expect(route?.meta).toMatchObject({

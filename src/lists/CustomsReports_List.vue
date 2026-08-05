@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onUnmounted, ref, toRef, unref, watch } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
@@ -25,8 +26,6 @@ const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
 const { reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
-const { alert } = storeToRefs(alertStore)
-
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
@@ -102,7 +101,7 @@ const baseHeaders = [
   { title: 'Имя файла', key: 'fileName', align: 'center', class: 'col-text' },
   { title: 'Результат загрузки', key: 'result', align: 'center' },
   { title: 'Процедура', key: 'customsProcedure', align: 'center' },
-  { title: 'Мастер накладная', key: 'masterInvoice', align: 'center', class: 'col-text'},
+  { title: 'Мастер накладная', key: 'masterInvoice', align: 'center', class: 'col-text' },
   { title: 'Всего записей', key: 'processedRows', align: 'center' },
   { title: 'Выпущено всего', key: 'releasedParcels', align: 'center' },
   { title: 'Выпущено с уплатой', key: 'releasedWithDutyParcels', align: 'center' },
@@ -119,7 +118,6 @@ const headers = computed(() => {
   }
   return list
 })
-
 
 // Labels for error breakdown tooltip
 const errorLabels = {
@@ -241,6 +239,8 @@ function viewReportRows(report) {
     </div>
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div class="mb-4">
       <v-text-field
         v-model="localSearch"
@@ -276,13 +276,21 @@ function viewReportRows(report) {
               :key="col.key"
               :class="[
                 col.class,
-                col.align === 'center' ? 'text-center' : col.align === 'end' ? 'text-right' : 'text-start'
+                col.align === 'center'
+                  ? 'text-center'
+                  : col.align === 'end'
+                  ? 'text-right'
+                  : 'text-start'
               ]"
               :data-column-key="col.key"
             >
               <!-- File / text columns with conditional truncation tooltip -->
-              <template v-if="['fileName','masterInvoice','errMsg'].includes(col.key)">
-                <ClickableCell :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+              <template v-if="['fileName', 'masterInvoice', 'errMsg'].includes(col.key)">
+                <ClickableCell
+                  :item="item"
+                  cell-class="truncated-cell clickable-cell"
+                  @click="() => viewReportRows(item)"
+                >
                   <template #default>
                     <TruncateTooltipCell :text="item[col.key]" />
                   </template>
@@ -291,14 +299,25 @@ function viewReportRows(report) {
 
               <!-- ID column - clickable cell to view rows -->
               <template v-else-if="col.key === 'id'">
-                <ClickableCell :item="item" :display-value="item.id" cell-class="truncated-cell clickable-cell" :data-testid="'report-id-link-' + item.id" @click="() => viewReportRows(item)" />
+                <ClickableCell
+                  :item="item"
+                  :display-value="item.id"
+                  cell-class="truncated-cell clickable-cell"
+                  :data-testid="'report-id-link-' + item.id"
+                  @click="() => viewReportRows(item)"
+                />
               </template>
 
               <!-- Error count with breakdown tooltip -->
               <template v-else-if="col.key === 'errorCount'">
                 <v-tooltip v-if="item.errorCount" location="top" open-delay="150">
                   <template #activator="{ props }">
-                    <ClickableCell v-bind="props" :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                    <ClickableCell
+                      v-bind="props"
+                      :item="item"
+                      cell-class="truncated-cell clickable-cell"
+                      @click="() => viewReportRows(item)"
+                    >
                       <template #default>
                         {{ item.errorCount }}
                       </template>
@@ -316,12 +335,13 @@ function viewReportRows(report) {
               <!-- Actions column -->
               <template v-else-if="col.key === 'actions'">
                 <div class="actions-container">
-                  <ActionButton 
-                    :item="item" 
-                    icon="fa-solid fa-list" 
-                    tooltip-text="Подробная информация" 
-                    @click="viewReportRows(item)" 
-                    :disabled="loading || runningAction" />
+                  <ActionButton
+                    :item="item"
+                    icon="fa-solid fa-list"
+                    tooltip-text="Подробная информация"
+                    @click="viewReportRows(item)"
+                    :disabled="loading || runningAction"
+                  />
                   <ActionButton
                     :item="item"
                     icon="fa-solid fa-trash-can"
@@ -335,7 +355,11 @@ function viewReportRows(report) {
 
               <!-- Fallback for all other columns - make clickable -->
               <template v-else>
-                <ClickableCell :item="item" cell-class="truncated-cell clickable-cell" @click="() => viewReportRows(item)">
+                <ClickableCell
+                  :item="item"
+                  cell-class="truncated-cell clickable-cell"
+                  @click="() => viewReportRows(item)"
+                >
                   <template #default>
                     {{ item[col.key] }}
                   </template>
@@ -346,11 +370,6 @@ function viewReportRows(report) {
         </template>
       </v-data-table-server>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
     <ActionDialog :action-dialog="actionDialogState" />
   </div>
 </template>
@@ -362,5 +381,4 @@ function viewReportRows(report) {
 .col-text {
   min-width: 140px;
 }
-
 </style>

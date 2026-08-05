@@ -12,7 +12,13 @@ import WbrParcelEditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
 import Wbr2ParcelsEditDialog from '@/dialogs/Wbr2Parcel_EditDialog.vue'
 import WbrNParcelEditDialog from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcParcelEditDialog from '@/dialogs/GtcParcel_EditDialog.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import {
+  OZON_COMPANY_ID,
+  WBR_COMPANY_ID,
+  GTC_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID
+} from '@/helpers/company.constants.js'
 
 const subscriptionOptions = vi.hoisted(() => [])
 vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
@@ -132,15 +138,15 @@ describe('Parcel_EditView.vue', () => {
       parcelId: 400
     }
   ])('$name', async ({ registerType, expectedComponent, registerId, parcelId }) => {
-    mockGet.mockResolvedValue({ 
-      id: registerId, 
-      registerType 
+    mockGet.mockResolvedValue({
+      id: registerId,
+      registerType
     })
 
     const wrapper = mount(ParcelEditView, {
-      props: { 
-        registerId, 
-        id: parcelId 
+      props: {
+        registerId,
+        id: parcelId
       },
       global: {
         stubs: commonStubs
@@ -159,9 +165,9 @@ describe('Parcel_EditView.vue', () => {
     mockGet.mockImplementation(() => new Promise(() => {}))
 
     const wrapper = mount(ParcelEditView, {
-      props: { 
-        registerId: 1, 
-        id: 100 
+      props: {
+        registerId: 1,
+        id: 100
       }
     })
 
@@ -173,9 +179,9 @@ describe('Parcel_EditView.vue', () => {
     mockGet.mockRejectedValue(new Error(errorMessage))
 
     const wrapper = mount(ParcelEditView, {
-      props: { 
-        registerId: 1, 
-        id: 100 
+      props: {
+        registerId: 1,
+        id: 100
       }
     })
 

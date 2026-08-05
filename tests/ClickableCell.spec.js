@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -24,8 +24,6 @@ describe('ClickableCell', () => {
   }
 
   describe('rendering', () => {
-
-
     it('applies custom cell class', () => {
       const wrapper = createWrapper({ cellClass: 'custom-class' })
       expect(wrapper.find('span').classes()).toContain('custom-class')
@@ -59,16 +57,14 @@ describe('ClickableCell', () => {
       expect(span.classes()).toContain('custom-class')
     })
 
-
     it('renders bookmark icon when showBookmark is true', () => {
       const wrapper = createWrapper({ showBookmark: true })
       const icon = wrapper.find('.bookmark-icon')
       expect(icon.exists()).toBe(true)
     })
 
-
     it('renders bookmark icon before display value', () => {
-      const wrapper = createWrapper({ 
+      const wrapper = createWrapper({
         showBookmark: true,
         displayValue: 'Test Value'
       })
@@ -196,6 +192,5 @@ describe('ClickableCell', () => {
       await wrapper.find('span').trigger('click')
       expect(wrapper.emitted('click')[0]).toEqual([complexItem])
     })
-
   })
 })

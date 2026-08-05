@@ -22,6 +22,7 @@ export const useAirportsStore = defineStore('airports', () => {
       airports.value = await fetchWrapper.get(baseUrl)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -37,7 +38,7 @@ export const useAirportsStore = defineStore('airports', () => {
     } catch (err) {
       error.value = err
       airport.value = { error: err }
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -63,7 +64,7 @@ export const useAirportsStore = defineStore('airports', () => {
     error.value = null
     try {
       await fetchWrapper.put(`${baseUrl}/${id}`, airportData)
-      const index = airports.value.findIndex(a => a.id === id)
+      const index = airports.value.findIndex((a) => a.id === id)
       if (index !== -1) {
         airports.value[index] = { ...airports.value[index], ...airportData }
       }
@@ -81,7 +82,7 @@ export const useAirportsStore = defineStore('airports', () => {
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      airports.value = airports.value.filter(a => a.id !== id)
+      airports.value = airports.value.filter((a) => a.id !== id)
       return true
     } catch (err) {
       error.value = err

@@ -26,10 +26,12 @@ describe('register status filter helpers', () => {
   })
 
   it('prepends all and in-progress choices to concrete register statuses', () => {
-    expect(buildRegisterStatusFilterOptions([
-      { id: 2, title: 'На проверке', readOnly: false },
-      { id: 5, title: 'Завершён', readOnly: true }
-    ])).toEqual([
+    expect(
+      buildRegisterStatusFilterOptions([
+        { id: 2, title: 'На проверке', readOnly: false },
+        { id: 5, title: 'Завершён', readOnly: true }
+      ])
+    ).toEqual([
       {
         id: REGISTER_STATUS_FILTER_ALL,
         title: 'Все',

@@ -3,9 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
@@ -22,8 +24,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { customsStations, loading } = storeToRefs(customsStationsStore)
-const { alert } = storeToRefs(alertStore)
-countriesStore.ensureLoaded()
 const runningAction = ref(false)
 
 function filterCustomsStations(value, query, item) {
@@ -96,9 +96,14 @@ async function deleteCustomsStation(station) {
   }
 }
 
-onMounted(async () => {
-  await customsStationsStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(
+    () => Promise.all([countriesStore.ensureLoaded(), customsStationsStore.getAll()]),
+    {
+      fallback: 'Не удалось загрузить таможенные посты'
+    }
+  )
+)
 
 defineExpose({
   filterCustomsStations,
@@ -130,6 +135,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -184,11 +191,6 @@ defineExpose({
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

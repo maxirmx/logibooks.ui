@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -23,7 +23,9 @@ describe('countries store', () => {
   })
 
   it('fetches codes from API', async () => {
-    const mockCodes = [{ isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }]
+    const mockCodes = [
+      { isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }
+    ]
     fetchWrapper.get.mockResolvedValue(mockCodes)
 
     const store = useCountriesStore()
@@ -49,7 +51,12 @@ describe('countries store', () => {
       const store = useCountriesStore()
       store.countries = [
         { isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' },
-        { isoNumeric: 840, isoAlpha2: 'US', nameEnOfficial: 'United States', nameRuOfficial: 'США' },
+        {
+          isoNumeric: 840,
+          isoAlpha2: 'US',
+          nameEnOfficial: 'United States',
+          nameRuOfficial: 'США'
+        },
         { isoNumeric: 276, isoAlpha2: 'DE', nameEnOfficial: 'Germany', nameRuOfficial: 'Германия' }
       ]
 
@@ -84,8 +91,8 @@ describe('countries store', () => {
         { isoNumeric: 643, isoAlpha2: 'RU', nameEnOfficial: 'Russia', nameRuOfficial: 'Россия' }
       ]
 
-    expect(store.getCountryAlpha2('643')).toBe('RU')
-  })
+      expect(store.getCountryAlpha2('643')).toBe('RU')
+    })
   })
 
   describe('getCountryShortName', () => {
@@ -113,13 +120,13 @@ describe('countries store', () => {
       fetchWrapper.get.mockResolvedValueOnce(mockCountries)
 
       const store = useCountriesStore()
-      
+
       // Initially no API call should have been made
       expect(fetchWrapper.get).not.toHaveBeenCalled()
-      
+
       // Call ensureLoaded
       store.ensureLoaded()
-      
+
       // Should trigger getAll which calls the API
       await vi.waitFor(() => {
         expect(fetchWrapper.get).toHaveBeenCalledOnce()
@@ -132,29 +139,29 @@ describe('countries store', () => {
       fetchWrapper.get.mockResolvedValue(mockCountries)
 
       const store = useCountriesStore()
-      
+
       // First call should initialize
       store.ensureLoaded()
-      
+
       await vi.waitFor(() => {
         expect(fetchWrapper.get).toHaveBeenCalledOnce()
       })
-      
+
       // Second call should not call API again
       store.ensureLoaded()
-      
+
       // Should still only have been called once
       expect(fetchWrapper.get).toHaveBeenCalledOnce()
     })
 
     it('does not call getAll when already loading', async () => {
       const store = useCountriesStore()
-      
+
       // Set loading state to true to simulate ongoing request
       store.loading = true
-      
+
       store.ensureLoaded()
-      
+
       // Should not make any API calls when loading is true
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
@@ -162,27 +169,27 @@ describe('countries store', () => {
     it('can be called multiple times safely', async () => {
       const mockCountries = [{ isoNumeric: 643, isoAlpha2: 'RU', nameRuShort: 'Россия' }]
       fetchWrapper.get.mockResolvedValueOnce(mockCountries)
-      
+
       const store = useCountriesStore()
-      
+
       // Call multiple times in quick succession
       store.ensureLoaded()
       store.ensureLoaded()
       store.ensureLoaded()
-      
+
       // Should only trigger one API call
       await vi.waitFor(() => {
         expect(fetchWrapper.get).toHaveBeenCalledOnce()
       })
-      
+
       // Even after loading completes, additional calls should not trigger more API calls
       await vi.waitFor(() => {
         expect(store.countries).toEqual(mockCountries)
       })
-      
+
       store.ensureLoaded()
       store.ensureLoaded()
-      
+
       expect(fetchWrapper.get).toHaveBeenCalledOnce()
     })
 
@@ -192,51 +199,47 @@ describe('countries store', () => {
         { isoNumeric: 643, isoAlpha2: 'RU', nameRuShort: 'Россия' },
         { isoNumeric: 840, isoAlpha2: 'US', nameRuShort: 'США' }
       ]
-      
+
       fetchWrapper.get.mockResolvedValueOnce(mockCountries)
-      
+
       // Simulate component mounting and calling ensureLoaded
       store.ensureLoaded()
-      
+
       // Wait for async getAll to complete
       await vi.waitFor(() => {
         expect(store.countries).toEqual(mockCountries)
       })
-      
+
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
-      
+
       // Subsequent calls should not trigger additional API calls
       const initialCallCount = fetchWrapper.get.mock.calls.length
       store.ensureLoaded()
       store.ensureLoaded()
-      
+
       expect(fetchWrapper.get).toHaveBeenCalledTimes(initialCallCount)
     })
 
-    it('handles errors gracefully but does not retry automatically', async () => {
+    it('rethrows failures and permits an explicit retry', async () => {
       const store = useCountriesStore()
-      
+
       // First call fails
       fetchWrapper.get.mockRejectedValueOnce(new Error('Network error'))
-      
-      store.ensureLoaded()
-      
-      // Wait for the error to be set
-      await vi.waitFor(() => {
-        expect(store.error).toBeTruthy()
-      })
-      
+
+      await expect(store.ensureLoaded()).rejects.toThrow('Network error')
+      expect(store.error).toBeTruthy()
+
       // Reset the mock for a successful call
       fetchWrapper.get.mockResolvedValueOnce([{ isoNumeric: 643, isoAlpha2: 'RU' }])
-      
+
       // ensureLoaded will retry since the previous attempt failed and error state is set
       // This is the expected behavior - it retries after errors
       await store.ensureLoaded()
-      
+
       // Should have been called twice now (failed call + retry)
       expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
-      
+
       // To retry, we need to call getAll() directly
       await store.getAll()
       expect(fetchWrapper.get).toHaveBeenCalledTimes(3)

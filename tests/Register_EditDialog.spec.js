@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -11,7 +11,13 @@ import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
-import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
+import {
+  WBR_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID,
+  GTC_COMPANY_ID,
+  OZON_COMPANY_ID
+} from '@/helpers/company.constants.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
 
@@ -45,10 +51,38 @@ const registerItems = ref([])
 
 const mockOps = ref({
   customsProcedures: [
-    { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
-    { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, initialRegisterStatusId: 1 },
-    { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
-    { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true, initialRegisterStatusId: 1 }
+    {
+      value: CUSTOMS_PROCEDURE_RETURN,
+      charCode: '01',
+      name: 'Возврат',
+      isExport: false,
+      isGtc: false,
+      initialRegisterStatusId: 1
+    },
+    {
+      value: CUSTOMS_PROCEDURE_EXPORT,
+      charCode: 'ЭК10',
+      name: 'Экспорт',
+      isExport: true,
+      isGtc: false,
+      initialRegisterStatusId: 1
+    },
+    {
+      value: CUSTOMS_PROCEDURE_IMPORT,
+      charCode: 'ИМ40',
+      name: 'Импорт',
+      isExport: false,
+      isGtc: false,
+      initialRegisterStatusId: 1
+    },
+    {
+      value: CUSTOMS_PROCEDURE_GTC_IMPORT,
+      charCode: 'ГТК1',
+      name: 'ГТК Импорт',
+      isExport: false,
+      isGtc: true,
+      initialRegisterStatusId: 1
+    }
   ],
   transportationTypes: [
     { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -67,11 +101,11 @@ const registersStore = createMockStore({
   ops: mockOps,
   ensureOpsLoaded: vi.fn(() => Promise.resolve()),
   getTransportationDocument: vi.fn((id) => {
-    const type = mockOps.value.transportationTypes.find(t => t.value === id)
+    const type = mockOps.value.transportationTypes.find((t) => t.value === id)
     return type ? type.document : `[Тип ${id}]`
   }),
   isExportProcedure: vi.fn((id) => {
-    const proc = mockOps.value.customsProcedures.find(p => p.value === id)
+    const proc = mockOps.value.customsProcedures.find((p) => p.value === id)
     return proc?.charCode === 'ЭК10'
   })
 })
@@ -112,11 +146,19 @@ const registerStatusesStore = createMockStore({
   registerStatuses: [
     { id: 1, title: 'New', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
     { id: 2, title: 'In Progress', icon: 'svg:in-transit', bkColor: '#FFEEDD', fgColor: '#111111' },
-    { id: 3, title: 'Completed', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
+    {
+      id: 3,
+      title: 'Completed',
+      icon: 'svg:very-delivered',
+      bkColor: '#00AA00',
+      fgColor: '#FFFFFF'
+    }
   ],
   ensureLoaded: vi.fn(() => Promise.resolve()),
-  getStatusById: vi.fn(id => registerStatusesStore.registerStatuses.find(status => status.id === id) || null),
-  getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Unknown')
+  getStatusById: vi.fn(
+    (id) => registerStatusesStore.registerStatuses.find((status) => status.id === id) || null
+  ),
+  getStatusTitle: vi.fn((id) => (id ? `Status ${id}` : 'Unknown'))
 })
 const mockIsAdmin = ref(true)
 const mockIsShiftLead = ref(false)
@@ -151,21 +193,24 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/registers.store.js', () => ({ 
+vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => registersStore
 }))
 vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => countriesStore }))
 vi.mock('@/stores/companies.store.js', () => ({ useCompaniesStore: () => companiesStore }))
 vi.mock('@/stores/airports.store.js', () => ({ useAirportsStore: () => airportsStore }))
 vi.mock('@/stores/warehouses.store.js', () => ({ useWarehousesStore: () => warehousesStore }))
-vi.mock('@/stores/register.statuses.store.js', () => ({ useRegisterStatusesStore: () => registerStatusesStore }))
+vi.mock('@/stores/register.statuses.store.js', () => ({
+  useRegisterStatusesStore: () => registerStatusesStore
+}))
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authStore }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(() => Promise.resolve()) } }))
 
 // Simple stubs for vee-validate components
 const FormStub = {
   name: 'Form',
-  template: '<form><slot :errors="{}" :isSubmitting="false" :values="{}" :setFieldValue="mockSetFieldValue" /></form>',
+  template:
+    '<form><slot :errors="{}" :isSubmitting="false" :values="{}" :setFieldValue="mockSetFieldValue" /></form>',
   setup() {
     const mockSetFieldValue = () => {
       // Mock implementation for tests
@@ -177,7 +222,8 @@ const FormStub = {
 const realWeightErrorMessage = 'Фактический вес к оформлению должен быть больше 0'
 const FormWithRealWeightErrorStub = {
   name: 'Form',
-  template: '<form><slot :errors="{ realWeightKg: realWeightErrorMessage }" :isSubmitting="false" :values="{}" :setFieldValue="mockSetFieldValue" :handleSubmit="mockHandleSubmit" /></form>',
+  template:
+    '<form><slot :errors="{ realWeightKg: realWeightErrorMessage }" :isSubmitting="false" :values="{}" :setFieldValue="mockSetFieldValue" :handleSubmit="mockHandleSubmit" /></form>',
   setup() {
     return {
       realWeightErrorMessage,
@@ -260,13 +306,12 @@ const CurrencySelectionDialogStub = {
   name: 'RegisterCurrencySelectionDialog',
   props: ['show', 'currencies'],
   emits: ['select', 'cancel'],
-  template: '<div v-if="show" data-testid="currency-selection-dialog">{{ currencies.join(\', \') }}</div>'
+  template:
+    '<div v-if="show" data-testid="currency-selection-dialog">{{ currencies.join(\', \') }}</div>'
 }
 
 function getGroupByLabel(wrapper, text) {
-  return wrapper
-    .findAll('.form-group')
-    .find((g) => g.find('label').text().includes(text))
+  return wrapper.findAll('.form-group').find((g) => g.find('label').text().includes(text))
 }
 
 function getReportValue(wrapper, label) {
@@ -298,6 +343,8 @@ describe('Register_EditDialog', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    upload.mockResolvedValue({ success: true, registerId: 42 })
+    update.mockResolvedValue()
     Object.keys(__fieldValueMap).forEach((key) => delete __fieldValueMap[key])
     // Create a fresh copy of baseRegisterItem to avoid reference issues
     mockItem.value = JSON.parse(JSON.stringify(baseRegisterItem))
@@ -311,10 +358,38 @@ describe('Register_EditDialog', () => {
     ]
     mockOps.value = {
       customsProcedures: [
-        { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
-        { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, initialRegisterStatusId: 1 },
-        { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: false, initialRegisterStatusId: 1 },
-        { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isExport: false, isGtc: true, initialRegisterStatusId: 1 }
+        {
+          value: CUSTOMS_PROCEDURE_RETURN,
+          charCode: '01',
+          name: 'Возврат',
+          isExport: false,
+          isGtc: false,
+          initialRegisterStatusId: 1
+        },
+        {
+          value: CUSTOMS_PROCEDURE_EXPORT,
+          charCode: 'ЭК10',
+          name: 'Экспорт',
+          isExport: true,
+          isGtc: false,
+          initialRegisterStatusId: 1
+        },
+        {
+          value: CUSTOMS_PROCEDURE_IMPORT,
+          charCode: 'ИМ40',
+          name: 'Импорт',
+          isExport: false,
+          isGtc: false,
+          initialRegisterStatusId: 1
+        },
+        {
+          value: CUSTOMS_PROCEDURE_GTC_IMPORT,
+          charCode: 'ГТК1',
+          name: 'ГТК Импорт',
+          isExport: false,
+          isGtc: true,
+          initialRegisterStatusId: 1
+        }
       ],
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
@@ -330,7 +405,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -397,7 +477,7 @@ describe('Register_EditDialog', () => {
     expect(statusIcons[0].attributes('data-icon-kind')).toBe('svg')
     expect(statusIcons[0].element.style.backgroundColor).toBe('rgb(255, 238, 221)')
     expect(statusIcons[0].element.style.color).toBe('rgb(17, 17, 17)')
-    expect(statusIcons.slice(1).map(icon => icon.attributes('data-icon'))).toEqual([
+    expect(statusIcons.slice(1).map((icon) => icon.attributes('data-icon'))).toEqual([
       'svg:registered',
       'svg:in-transit',
       'svg:very-delivered'
@@ -425,7 +505,8 @@ describe('Register_EditDialog', () => {
           RegisterStatusSelect: {
             props: ['modelValue', 'disabled'],
             emits: ['update:modelValue'],
-            template: '<button id="statusId" type="button" :disabled="disabled" @click="$emit(\'update:modelValue\', 3)">{{ modelValue }}</button>'
+            template:
+              '<button id="statusId" type="button" :disabled="disabled" @click="$emit(\'update:modelValue\', 3)">{{ modelValue }}</button>'
           }
         }
       }
@@ -460,7 +541,8 @@ describe('Register_EditDialog', () => {
           ErrorDialog: ErrorDialogStub,
           RegisterStatusSelect: {
             props: ['modelValue', 'disabled'],
-            template: '<button id="statusId" type="button" :disabled="disabled">{{ modelValue }}</button>'
+            template:
+              '<button id="statusId" type="button" :disabled="disabled">{{ modelValue }}</button>'
           }
         }
       }
@@ -487,7 +569,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -514,16 +601,42 @@ describe('Register_EditDialog', () => {
     }
     mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
 
     mockOps.value = {
       customsProcedures: [
-        { value: CUSTOMS_PROCEDURE_RETURN, charCode: '01', name: 'Возврат', isRe: false, isExport: false, isGtc: false },
-        { value: CUSTOMS_PROCEDURE_EXPORT, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true, isGtc: false },
-        { value: CUSTOMS_PROCEDURE_IMPORT, charCode: 'ИМ40', name: 'Импорт', isRe: true, isExport: false, isGtc: false },
+        {
+          value: CUSTOMS_PROCEDURE_RETURN,
+          charCode: '01',
+          name: 'Возврат',
+          isRe: false,
+          isExport: false,
+          isGtc: false
+        },
+        {
+          value: CUSTOMS_PROCEDURE_EXPORT,
+          charCode: 'ЭК10',
+          name: 'Экспорт',
+          isRe: false,
+          isExport: true,
+          isGtc: false
+        },
+        {
+          value: CUSTOMS_PROCEDURE_IMPORT,
+          charCode: 'ИМ40',
+          name: 'Импорт',
+          isRe: true,
+          isExport: false,
+          isGtc: false
+        },
         { value: CUSTOMS_PROCEDURE_GTC_IMPORT, charCode: 'ГТК1', name: 'ГТК Импорт', isGtc: true }
       ],
       transportationTypes: [
@@ -549,7 +662,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -574,7 +692,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -596,7 +719,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -623,7 +751,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -650,7 +783,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -673,7 +811,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -693,7 +836,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -717,7 +865,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -746,7 +899,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -805,7 +963,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -821,11 +984,14 @@ describe('Register_EditDialog', () => {
     )
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      transportationTypeCode: 0,
-      departureAirportId: 1,
-      arrivalAirportId: 2
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        transportationTypeCode: 0,
+        departureAirportId: 1,
+        arrivalAirportId: 2
+      })
+    )
   })
 
   it('submits warehouseId for WBR2 register type', async () => {
@@ -841,7 +1007,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -855,21 +1026,30 @@ describe('Register_EditDialog', () => {
     )
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      warehouseId: 11
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        warehouseId: 11
+      })
+    )
   })
 
   it('returns to registers list with warehouse mode when mode prop is warehouse', async () => {
     mockItem.value = { ...baseRegisterItem }
 
     const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
+      template:
+        '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -885,12 +1065,18 @@ describe('Register_EditDialog', () => {
     mockItem.value = { ...baseRegisterItem }
 
     const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
+      template:
+        '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modeWarehouse" /></Suspense>',
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -903,12 +1089,18 @@ describe('Register_EditDialog', () => {
     mockItem.value = { ...baseRegisterItem }
 
     const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modePaperwork" /></Suspense>',
+      template:
+        '<Suspense><RegisterEditDialog :id="1" :create="false" mode="modePaperwork" /></Suspense>',
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -930,7 +1122,12 @@ describe('Register_EditDialog', () => {
 
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
 
@@ -939,15 +1136,29 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeCode: 0, invoiceNumber: '123-12345678', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({
+        transportationTypeCode: 0,
+        invoiceNumber: '123-12345678',
+        theOtherCountryCode: 840
+      })
     ).resolves.toBeDefined()
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeCode: 0, invoiceNumber: '12-ABC', theOtherCountryCode: 840 })
-    ).rejects.toThrow('Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>')
+      dialog.vm.schema.validate({
+        transportationTypeCode: 0,
+        invoiceNumber: '12-ABC',
+        theOtherCountryCode: 840
+      })
+    ).rejects.toThrow(
+      'Номер накладной для авиаперевозки должен быть в формате <три цифры>-<восемь цифр>'
+    )
 
     await expect(
-      dialog.vm.schema.validate({ transportationTypeCode: 1, invoiceNumber: 'INVALID-FORMAT', theOtherCountryCode: 840 })
+      dialog.vm.schema.validate({
+        transportationTypeCode: 1,
+        invoiceNumber: 'INVALID-FORMAT',
+        theOtherCountryCode: 840
+      })
     ).resolves.toBeDefined()
   })
 
@@ -959,7 +1170,12 @@ describe('Register_EditDialog', () => {
 
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
 
@@ -968,22 +1184,18 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
 
     // Should fail validation when theOtherCountryCode is null/missing
-    await expect(
-      dialog.vm.schema.validate({ theOtherCountryCode: null })
-    ).rejects.toThrow('Необходимо выбрать страну')
+    await expect(dialog.vm.schema.validate({ theOtherCountryCode: null })).rejects.toThrow(
+      'Необходимо выбрать страну'
+    )
 
-    await expect(
-      dialog.vm.schema.validate({ theOtherCountryCode: undefined })
-    ).rejects.toThrow('Необходимо выбрать страну')
+    await expect(dialog.vm.schema.validate({ theOtherCountryCode: undefined })).rejects.toThrow(
+      'Необходимо выбрать страну'
+    )
 
     // Should pass validation when theOtherCountryCode is provided
-    await expect(
-      dialog.vm.schema.validate({ theOtherCountryCode: 840 })
-    ).resolves.toBeDefined()
+    await expect(dialog.vm.schema.validate({ theOtherCountryCode: 840 })).resolves.toBeDefined()
 
-    await expect(
-      dialog.vm.schema.validate({ theOtherCountryCode: 643 })
-    ).resolves.toBeDefined()
+    await expect(dialog.vm.schema.validate({ theOtherCountryCode: 643 })).resolves.toBeDefined()
   })
 
   it('allows a null register status when operations metadata is unavailable', async () => {
@@ -994,7 +1206,12 @@ describe('Register_EditDialog', () => {
 
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -1015,7 +1232,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1027,7 +1251,13 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit({}, { setErrors: () => {} })
     await resolveAll()
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, true, false)
+    expect(upload).toHaveBeenCalledWith(
+      registersStore.uploadFile.value,
+      mockItem.value.companyId,
+      mockItem.value.customsProcedureCode,
+      true,
+      false
+    )
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
 
@@ -1037,7 +1267,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1053,7 +1290,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1067,7 +1311,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1090,7 +1341,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1113,7 +1371,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1137,7 +1402,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1160,7 +1432,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1168,7 +1447,10 @@ describe('Register_EditDialog', () => {
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(wrapper.find('#checkForDuplicates').exists()).toBe(false)
 
-    dialog.vm.handleProcedureChange({ target: { value: String(CUSTOMS_PROCEDURE_EXPORT) } }, vi.fn())
+    dialog.vm.handleProcedureChange(
+      { target: { value: String(CUSTOMS_PROCEDURE_EXPORT) } },
+      vi.fn()
+    )
     await nextTick()
 
     expect(wrapper.find('#checkForDuplicates').exists()).toBe(true)
@@ -1181,10 +1463,13 @@ describe('Register_EditDialog', () => {
     )
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
-      checkForDuplicates: true
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
+        checkForDuplicates: true
+      })
+    )
   })
 
   it('renders weight section only in edit mode with approved fields', async () => {
@@ -1200,14 +1485,23 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
 
     expect(wrapper.find('[data-testid="register-deal-section-title"]').text()).toBe('Сделка')
     expect(wrapper.find('[data-testid="register-weight-section"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="register-weight-section"] .section-title').text()).toBe('Вес')
+    expect(wrapper.find('[data-testid="register-weight-section"] .section-title').text()).toBe(
+      'Вес'
+    )
     expect(wrapper.findAll('.weight-field .label').map((label) => label.text())).toEqual([
       'Общий вес, кг:',
       'К оформлению, кг:',
@@ -1233,7 +1527,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1258,7 +1559,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1266,7 +1574,11 @@ describe('Register_EditDialog', () => {
     const weightSection = wrapper.find('[data-testid="register-weight-section"]').element
     const loadReportSection = wrapper.find('[data-testid="register-load-report"]').element
 
-    expect(Boolean(weightSection.compareDocumentPosition(loadReportSection) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
+    expect(
+      Boolean(
+        weightSection.compareDocumentPosition(loadReportSection) & Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    ).toBe(true)
   })
 
   it('submits numeric real weight in edit mode', async () => {
@@ -1275,7 +1587,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1283,9 +1602,12 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({ realWeightKg: '12.5' }, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      realWeightKg: 12.5
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        realWeightKg: 12.5
+      })
+    )
   })
 
   it('submits zero real weight when field is blank', async () => {
@@ -1294,20 +1616,33 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
-    const validatedValues = await dialog.vm.schema.validate({ realWeightKg: '', theOtherCountryCode: 840 })
+    const validatedValues = await dialog.vm.schema.validate({
+      realWeightKg: '',
+      theOtherCountryCode: 840
+    })
     expect(validatedValues.realWeightKg).toBeNull()
 
     await dialog.vm.onSubmit(validatedValues, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      realWeightKg: 0
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        realWeightKg: 0
+      })
+    )
   })
 
   it('submits zero real weight when field is absent', async () => {
@@ -1316,7 +1651,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1324,9 +1666,12 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({}, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      realWeightKg: 0
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        realWeightKg: 0
+      })
+    )
   })
 
   it('submits zero real weight when field contains only whitespace', async () => {
@@ -1335,7 +1680,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1347,9 +1699,12 @@ describe('Register_EditDialog', () => {
     await dialog.vm.onSubmit({ realWeightKg: '   \t\n' }, { setErrors: vi.fn() })
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      realWeightKg: 0
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        realWeightKg: 0
+      })
+    )
   })
 
   it('shows validation error for negative real weight', async () => {
@@ -1358,7 +1713,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormWithRealWeightErrorStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormWithRealWeightErrorStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1368,7 +1730,7 @@ describe('Register_EditDialog', () => {
     ).rejects.toThrow(realWeightErrorMessage)
 
     expect(wrapper.find('#realWeightKg').classes()).toContain('is-invalid')
-    expect(wrapper.find('.alert-danger').text()).toContain(realWeightErrorMessage)
+    expect(wrapper.find('.invalid-feedback').text()).toContain(realWeightErrorMessage)
   })
 
   it('formats correction coefficient for empty zero and zero divisor cases', async () => {
@@ -1383,7 +1745,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1400,7 +1769,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1408,7 +1784,9 @@ describe('Register_EditDialog', () => {
     expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
     const reportButtons = wrapper
       .findAllComponents({ name: 'ActionButton' })
-      .filter((button) => ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon')))
+      .filter((button) =>
+        ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon'))
+      )
     expect(reportButtons).toHaveLength(0)
   })
 
@@ -1435,7 +1813,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1472,7 +1857,9 @@ describe('Register_EditDialog', () => {
     expect(toggle).toBeTruthy()
     expect(toggle.props('tooltipText')).toBe('Скрыть отчет загрузки')
 
-    expect(getReportValue(wrapper, 'Время загрузки')).toBe(new Date(createdAt).toLocaleTimeString('ru-RU'))
+    expect(getReportValue(wrapper, 'Время загрузки')).toBe(
+      new Date(createdAt).toLocaleTimeString('ru-RU')
+    )
     expect(getReportValue(wrapper, 'Обработано строк')).toBe('10')
     expect(getReportValue(wrapper, 'Ошибочных строк')).toBe('—')
     expect(getReportValue(wrapper, 'Пропущено по валюте')).toBe('2')
@@ -1512,7 +1899,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1520,7 +1914,9 @@ describe('Register_EditDialog', () => {
     expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
     const reportButtons = wrapper
       .findAllComponents({ name: 'ActionButton' })
-      .filter((button) => ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon')))
+      .filter((button) =>
+        ['fa-solid fa-angles-down', 'fa-solid fa-angles-up'].includes(button.props('icon'))
+      )
     expect(reportButtons).toHaveLength(0)
   })
 
@@ -1542,7 +1938,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1567,7 +1970,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1597,26 +2007,42 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     await dialog.vm.onSubmit(formValues, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, true, false)
-    
+    expect(upload).toHaveBeenCalledWith(
+      registersStore.uploadFile.value,
+      mockItem.value.companyId,
+      mockItem.value.customsProcedureCode,
+      true,
+      false
+    )
+
     // Verify update was called with the Id from the Reference object and the sanitized form values
-    expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
-      dealNumber: 'D42',
-      invoiceNumber: 'INV42',
-      transportationTypeCode: 1,
-      departureAirportId: 0,
-      arrivalAirportId: 0
-    }))
-    
+    expect(update).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        dealNumber: 'D42',
+        invoiceNumber: 'INV42',
+        transportationTypeCode: 1,
+        departureAirportId: 0,
+        arrivalAirportId: 0
+      })
+    )
+
     // Verify navigation occurred
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
@@ -1772,7 +2198,7 @@ describe('Register_EditDialog', () => {
 
     expect(upload).toHaveBeenCalledTimes(1)
     expect(update).not.toHaveBeenCalled()
-    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
+    expect(router.push).not.toHaveBeenCalled()
   })
 
   it('shows action dialog while upload is in progress', async () => {
@@ -1787,7 +2213,14 @@ describe('Register_EditDialog', () => {
     }
 
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
 
     await resolveAll()
@@ -1803,7 +2236,7 @@ describe('Register_EditDialog', () => {
     await nextTick()
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
-    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
+    expect(router.push).not.toHaveBeenCalled()
   })
 
   it('renders lookupByArticle checkbox with correct properties', async () => {
@@ -1813,7 +2246,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -1838,7 +2276,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1852,34 +2297,44 @@ describe('Register_EditDialog', () => {
     ['WBR2', WBR2_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
     ['WbrN', WBRN_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
     ['GTC', GTC_COMPANY_ID, GTC_COMPANY_ID, CUSTOMS_PROCEDURE_GTC_IMPORT]
-  ])('defaults missing transportation type to Auto for %s uploads', async (_label, registerType, companyId, customsProcedureCode) => {
-    mockOps.value = {
-      ...mockOps.value,
-      transportationTypes: [
-        { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
-        { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
-      ]
-    }
-    mockItem.value = {
-      ...baseRegisterItem,
-      registerType,
-      companyId,
-      customsProcedureCode,
-      transportationTypeCode: null
-    }
+  ])(
+    'defaults missing transportation type to Auto for %s uploads',
+    async (_label, registerType, companyId, customsProcedureCode) => {
+      mockOps.value = {
+        ...mockOps.value,
+        transportationTypes: [
+          { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
+          { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
+        ]
+      }
+      mockItem.value = {
+        ...baseRegisterItem,
+        registerType,
+        companyId,
+        customsProcedureCode,
+        transportationTypeCode: null
+      }
 
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
-    })
-    await resolveAll()
+      const Parent = {
+        template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+        components: { RegisterEditDialog }
+      }
+      const wrapper = mount(Parent, {
+        global: {
+          stubs: {
+            ...defaultGlobalStubs,
+            Form: FormStub,
+            Field: FieldStub,
+            ErrorDialog: ErrorDialogStub
+          }
+        }
+      })
+      await resolveAll()
 
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    expect(dialog.vm.item.transportationTypeCode).toBe(1)
-  })
+      const dialog = wrapper.findComponent(RegisterEditDialog)
+      expect(dialog.vm.item.transportationTypeCode).toBe(1)
+    }
+  )
 
   it('renders default transportation type and customs procedure in upload selectors', async () => {
     mockItem.value = {
@@ -1893,7 +2348,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1901,7 +2363,9 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.item.transportationTypeCode).toBe(1)
     expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
     expect(wrapper.find('#transportationTypeCode').element.value).toBe('1')
-    expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
+    expect(wrapper.find('#customsProcedureCode').element.value).toBe(
+      String(CUSTOMS_PROCEDURE_EXPORT)
+    )
     expect(wrapper.find('#customsProcedureCode option[value=""]').exists()).toBe(false)
     expect(wrapper.find('#customsProcedureCode option[value="0"]').exists()).toBe(false)
   })
@@ -1918,15 +2382,27 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
-    expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
+    expect(wrapper.find('#customsProcedureCode').element.value).toBe(
+      String(CUSTOMS_PROCEDURE_EXPORT)
+    )
 
-    await dialog.vm.onSubmit({ customsProcedureCode: 0, checkForDuplicates: true }, { setErrors: vi.fn() })
+    await dialog.vm.onSubmit(
+      { customsProcedureCode: 0, checkForDuplicates: true },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(upload).toHaveBeenCalledWith(
@@ -1936,9 +2412,12 @@ describe('Register_EditDialog', () => {
       true,
       false
     )
-    expect(update).toHaveBeenCalledWith(42, expect.objectContaining({
-      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
-    }))
+    expect(update).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
+      })
+    )
   })
 
   it('defaults missing transportation type to Auto when transportation types load later', async () => {
@@ -1956,7 +2435,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -1989,7 +2475,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2001,12 +2494,14 @@ describe('Register_EditDialog', () => {
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
-    expect(wrapper.find('#customsProcedureCode').element.value).toBe(String(CUSTOMS_PROCEDURE_EXPORT))
+    expect(wrapper.find('#customsProcedureCode').element.value).toBe(
+      String(CUSTOMS_PROCEDURE_EXPORT)
+    )
   })
 
   it('defaults missing register status to the event-derived status for uploads', async () => {
     mockOps.value.customsProcedures.find(
-      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+      (procedure) => procedure.value === CUSTOMS_PROCEDURE_IMPORT
     ).initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
@@ -2018,7 +2513,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2028,10 +2530,10 @@ describe('Register_EditDialog', () => {
 
   it('updates the procedure-derived status until the user selects a status', async () => {
     mockOps.value.customsProcedures.find(
-      procedure => procedure.value === CUSTOMS_PROCEDURE_EXPORT
+      (procedure) => procedure.value === CUSTOMS_PROCEDURE_EXPORT
     ).initialRegisterStatusId = 2
     mockOps.value.customsProcedures.find(
-      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+      (procedure) => procedure.value === CUSTOMS_PROCEDURE_IMPORT
     ).initialRegisterStatusId = 4
     mockItem.value = {
       ...baseRegisterItem,
@@ -2044,7 +2546,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2069,7 +2578,7 @@ describe('Register_EditDialog', () => {
     upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockOps.value.customsProcedures.find(
-      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+      (procedure) => procedure.value === CUSTOMS_PROCEDURE_IMPORT
     ).initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
@@ -2081,7 +2590,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2096,7 +2612,7 @@ describe('Register_EditDialog', () => {
     upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockOps.value.customsProcedures.find(
-      procedure => procedure.value === CUSTOMS_PROCEDURE_EXPORT
+      (procedure) => procedure.value === CUSTOMS_PROCEDURE_EXPORT
     ).initialRegisterStatusId = 2
     mockItem.value = {
       ...baseRegisterItem,
@@ -2108,7 +2624,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2122,7 +2645,7 @@ describe('Register_EditDialog', () => {
 
   it('does not fall back to the first status when operations omit the initial status', async () => {
     mockOps.value.customsProcedures.find(
-      procedure => procedure.value === CUSTOMS_PROCEDURE_IMPORT
+      (procedure) => procedure.value === CUSTOMS_PROCEDURE_IMPORT
     ).initialRegisterStatusId = null
     mockItem.value = {
       ...baseRegisterItem,
@@ -2134,7 +2657,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2160,7 +2690,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2179,7 +2716,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2203,7 +2747,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2222,7 +2773,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2241,7 +2799,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2261,7 +2826,12 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
@@ -2276,15 +2846,18 @@ describe('Register_EditDialog', () => {
     )
     await resolveAll()
 
-    expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-      lookupByArticle: true,
-      dealNumber: 'D123'
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        lookupByArticle: true,
+        dealNumber: 'D123'
+      })
+    )
   })
 
   it('handles errors in create mode with Reference object', async () => {
     // Mock upload success but update failure
-  upload.mockResolvedValueOnce({ success: true, Success: true, registerId: 42, ErrMsg: '' })
+    upload.mockResolvedValueOnce({ success: true, Success: true, registerId: 42, ErrMsg: '' })
     update.mockRejectedValueOnce(new Error('Update failed'))
 
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
@@ -2297,7 +2870,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2306,12 +2886,16 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(registersStore.uploadFile.value, mockItem.value.companyId, mockItem.value.customsProcedureCode, true, false)
-    
+    expect(upload).toHaveBeenCalledWith(
+      registersStore.uploadFile.value,
+      mockItem.value.companyId,
+      mockItem.value.customsProcedureCode,
+      true,
+      false
+    )
 
-    // Update may be attempted; ensure at least the upload was triggered and the dialog flow completed
-    // Verify navigation occurred (error dialog closes then navigation)
-    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
+    // The upload created register 42, so a metadata failure opens that register for correction.
+    expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modePaperwork')
 
     expect(dialog.vm.actionDialogState.show).toBe(false)
   })
@@ -2325,7 +2909,14 @@ describe('Register_EditDialog', () => {
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
-      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } }
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
+      }
     })
     await resolveAll()
 
@@ -2334,7 +2925,7 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(update).toHaveBeenCalled()
-    expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
+    expect(router.push).not.toHaveBeenCalled()
   })
 
   it('shows only GTC procedures when registerType is GTC_COMPANY_ID', async () => {
@@ -2350,14 +2941,19 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
 
     const procSelect = wrapper.find('#customsProcedureCode')
-    const options = procSelect.findAll('option').filter(o => o.attributes('value') !== '')
-    const optionTexts = options.map(o => o.text())
+    const options = procSelect.findAll('option').filter((o) => o.attributes('value') !== '')
+    const optionTexts = options.map((o) => o.text())
 
     expect(optionTexts).toContain('ГТК Импорт')
     expect(optionTexts).not.toContain('Импорт')
@@ -2377,14 +2973,19 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
 
     const procSelect = wrapper.find('#customsProcedureCode')
-    const options = procSelect.findAll('option').filter(o => o.attributes('value') !== '')
-    const optionTexts = options.map(o => o.text())
+    const options = procSelect.findAll('option').filter((o) => o.attributes('value') !== '')
+    const optionTexts = options.map((o) => o.text())
 
     expect(optionTexts).toContain('Импорт')
     expect(optionTexts).toContain('Экспорт')
@@ -2395,10 +2996,50 @@ describe('Register_EditDialog', () => {
     mockOps.value = {
       ...mockOps.value,
       customsProcedures: [
-        { value: 10, charCode: 'ЭК10', name: 'Экспорт', isExport: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID] },
-        { value: 31, charCode: 'ЭК31', name: 'Реэкспорт', isExport: true, isRe: true, isGtc: true, allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID] },
-        { value: 40, charCode: 'ИМ40', name: 'Импорт', isExport: false, isGtc: true, allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID] },
-        { value: 60, charCode: 'ИМ60', name: 'Реимпорт', isExport: false, isRe: true, isGtc: false, allowedRegisterTypes: [OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID] }
+        {
+          value: 10,
+          charCode: 'ЭК10',
+          name: 'Экспорт',
+          isExport: true,
+          isGtc: false,
+          allowedRegisterTypes: [
+            OZON_COMPANY_ID,
+            WBR_COMPANY_ID,
+            WBR2_REGISTER_ID,
+            WBRN_REGISTER_ID
+          ]
+        },
+        {
+          value: 31,
+          charCode: 'ЭК31',
+          name: 'Реэкспорт',
+          isExport: true,
+          isRe: true,
+          isGtc: true,
+          allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID]
+        },
+        {
+          value: 40,
+          charCode: 'ИМ40',
+          name: 'Импорт',
+          isExport: false,
+          isGtc: true,
+          allowedRegisterTypes: [OZON_COMPANY_ID, GTC_COMPANY_ID]
+        },
+        {
+          value: 60,
+          charCode: 'ИМ60',
+          name: 'Реимпорт',
+          isExport: false,
+          isRe: true,
+          isGtc: false,
+          allowedRegisterTypes: [
+            OZON_COMPANY_ID,
+            WBR_COMPANY_ID,
+            WBR2_REGISTER_ID,
+            WBRN_REGISTER_ID
+          ]
+        }
       ]
     }
     mockItem.value = {
@@ -2414,13 +3055,21 @@ describe('Register_EditDialog', () => {
     }
     const wrapper = mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()
 
     const procSelect = wrapper.find('#customsProcedureCode')
-    const optionTexts = procSelect.findAll('option').filter(o => o.attributes('value') !== '').map(o => o.text())
+    const optionTexts = procSelect
+      .findAll('option')
+      .filter((o) => o.attributes('value') !== '')
+      .map((o) => o.text())
     const dialog = wrapper.findComponent(RegisterEditDialog)
 
     expect(optionTexts).toEqual(['Экспорт', 'Реэкспорт', 'Импорт', 'Реимпорт'])
@@ -2447,7 +3096,12 @@ describe('Register_EditDialog', () => {
     }
     mount(Parent, {
       global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub }
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: ErrorDialogStub
+        }
       }
     })
     await resolveAll()

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -36,7 +36,8 @@ const vuetify = createVuetify({ components, directives })
 
 // Stub v-tooltip to avoid visualViewport errors in test env
 const vTooltipStub = {
-  template: '<div class="v-tooltip-stub"><slot name="activator" :props="{}"></slot><slot></slot></div>'
+  template:
+    '<div class="v-tooltip-stub"><slot name="activator" :props="{}"></slot><slot></slot></div>'
 }
 
 describe('FeacnCodeCurrent', () => {
@@ -48,7 +49,7 @@ describe('FeacnCodeCurrent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetTnVedCellClass.mockResolvedValue('feacn-code-tooltip')
-    mockUseFeacnTooltips.mockReturnValue({ '1234567890': { name: 'Test tooltip' } })
+    mockUseFeacnTooltips.mockReturnValue({ 1234567890: { name: 'Test tooltip' } })
     mockLoadFeacnTooltipOnHover.mockResolvedValue(undefined)
   })
 

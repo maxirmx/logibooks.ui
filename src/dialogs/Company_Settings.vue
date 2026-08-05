@@ -1,8 +1,13 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -27,7 +32,6 @@ const props = defineProps({
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
 const { countries } = storeToRefs(countriesStore)
 
 // Check if we're in create mode
@@ -54,6 +58,10 @@ const signatureStampMime = ref(null)
 const fileInputRef = ref(null)
 const alertStore = useAlertStore()
 
+await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
+  fallback: 'Не удалось загрузить страны'
+})
+
 function parseStampValue(value) {
   if (!value) return { base64: null, mime: null }
   if (typeof value === 'string' && value.startsWith('data:')) {
@@ -76,7 +84,9 @@ const signatureStamp = computed(() => {
 
 if (!isCreate.value) {
   ;({ company } = storeToRefs(companiesStore))
-  await companiesStore.getById(props.companyId)
+  await runWithRetryAlert(() => companiesStore.getById(props.companyId), {
+    fallback: 'Не удалось загрузить компанию'
+  })
   const parsed = parseStampValue(company.value?.titleSignatureStamp)
   signatureStampBase64.value = parsed.base64
   signatureStampMime.value = parsed.mime
@@ -177,7 +187,7 @@ function removeStamp() {
 }
 
 // Form submission
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   const normalizedValues = normalizeValues(values) || {}
   const payload = {
     ...normalizedValues,
@@ -194,9 +204,13 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Компания с таким ИНН уже существует' })
+          alertStore.error('Компания с таким ИНН уже существует')
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при регистрации компании' })
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Ошибка при регистрации компании'
+          })
         }
       })
   } else {
@@ -206,18 +220,24 @@ function onSubmit(values, { setErrors }) {
         router.push('/companies')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении информации о компании' })
+        reportFormError(error, {
+          setErrors,
+          alertStore,
+          fallback: 'Ошибка при сохранении информации о компании'
+        })
       })
   }
 }
-
 </script>
 
 <template>
   <div class="settings form-2">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="company"
       :validation-schema="schema"
@@ -233,6 +253,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.inn }"
           placeholder="ИНН"
         />
+        <FieldError name="inn" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -245,6 +266,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.kpp }"
           placeholder="КПП"
         />
+        <FieldError name="kpp" :errors="errors" />
       </div>
       <div class="form-group">
         <label for="ogrn" class="label">ОГРН:</label>
@@ -256,6 +278,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.ogrn }"
           placeholder="ОГРН"
         />
+        <FieldError name="ogrn" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -268,6 +291,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название"
         />
+        <FieldError name="name" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -280,6 +304,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.shortName }"
           placeholder="Краткое название"
         />
+        <FieldError name="shortName" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -292,14 +317,11 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.countryIsoNumeric }"
         >
           <option value="">Выберите страну</option>
-          <option
-            v-for="country in countries"
-            :key="country.id"
-            :value="country.isoNumeric"
-          >
+          <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
             {{ country.nameRuOfficial }}
           </option>
         </Field>
+        <FieldError name="countryIsoNumeric" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -312,6 +334,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.postalCode }"
           placeholder="Почтовый индекс"
         />
+        <FieldError name="postalCode" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -324,6 +347,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.city }"
           placeholder="Город"
         />
+        <FieldError name="city" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -336,6 +360,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.street }"
           placeholder="Улица"
         />
+        <FieldError name="street" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -348,6 +373,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.email }"
           placeholder="Адрес электронной почты"
         />
+        <FieldError name="email" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -360,6 +386,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.phone }"
           placeholder="Телефон"
         />
+        <FieldError name="phone" :errors="errors" />
       </div>
 
       <div class="form-group signature-stamp-group">
@@ -418,22 +445,7 @@ function onSubmit(values, { setErrors }) {
           Отменить
         </button>
       </div>
-      <div v-if="errors.inn" class="alert alert-danger mt-3 mb-0">{{ errors.inn }}</div>
-      <div v-if="errors.kpp" class="alert alert-danger mt-3 mb-0">{{ errors.kpp }}</div>
-      <div v-if="errors.ogrn" class="alert alert-danger mt-3 mb-0">{{ errors.ogrn }}</div>
-      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
-      <div v-if="errors.shortName" class="alert alert-danger mt-3 mb-0">{{ errors.shortName }}</div>
-      <div v-if="errors.countryIsoNumeric" class="alert alert-danger mt-3 mb-0">{{ errors.countryIsoNumeric }}</div>
-      <div v-if="errors.postalCode" class="alert alert-danger mt-3 mb-0">{{ errors.postalCode }}</div>
-      <div v-if="errors.city" class="alert alert-danger mt-3 mb-0">{{ errors.city }}</div>
-      <div v-if="errors.street" class="alert alert-danger mt-3 mb-0">{{ errors.street }}</div>
-      <div v-if="errors.email" class="alert alert-danger mt-3 mb-0">{{ errors.email }}</div>
-      <div v-if="errors.phone" class="alert alert-danger mt-3 mb-0">{{ errors.phone }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
       <!-- Global alert display (uses alert store) -->
-      <div v-if="alertStore.alert" class="mt-3">
-        <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
-      </div>
     </Form>
   </div>
 </template>

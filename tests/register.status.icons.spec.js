@@ -22,7 +22,7 @@ import {
 describe('register.status.icons helper', () => {
   it('contains the supported copied SVG status icons and Font Awesome status icons', () => {
     expect(registerStatusIconOptions).toHaveLength(33)
-    expect(registerStatusIconOptions.map(option => option.value)).toEqual([
+    expect(registerStatusIconOptions.map((option) => option.value)).toEqual([
       'svg:registered',
       'svg:waiting-for-shipment',
       'svg:collected',
@@ -57,13 +57,23 @@ describe('register.status.icons helper', () => {
       'fa-solid fa-lock',
       REGISTER_STATUS_DEFAULT_ICON
     ])
-    expect(registerStatusIconOptions.every(option => !('title' in option))).toBe(true)
-    expect(registerStatusIconOptions.slice(0, 25).every(option =>
-      option.kind === REGISTER_STATUS_ICON_KIND_SVG && typeof option.src === 'string'
-    )).toBe(true)
-    expect(registerStatusIconOptions.slice(25).every(option =>
-      option.kind === REGISTER_STATUS_ICON_KIND_FONT_AWESOME && option.icon === option.value
-    )).toBe(true)
+    expect(registerStatusIconOptions.every((option) => !('title' in option))).toBe(true)
+    expect(
+      registerStatusIconOptions
+        .slice(0, 25)
+        .every(
+          (option) =>
+            option.kind === REGISTER_STATUS_ICON_KIND_SVG && typeof option.src === 'string'
+        )
+    ).toBe(true)
+    expect(
+      registerStatusIconOptions
+        .slice(25)
+        .every(
+          (option) =>
+            option.kind === REGISTER_STATUS_ICON_KIND_FONT_AWESOME && option.icon === option.value
+        )
+    ).toBe(true)
     expect(registerStatusIconOptions.at(-1)).toMatchObject({
       kind: REGISTER_STATUS_ICON_KIND_FONT_AWESOME,
       icon: REGISTER_STATUS_DEFAULT_ICON
@@ -116,13 +126,15 @@ describe('register.status.icons helper', () => {
   })
 
   it('normalizes blank presentation values to null without changing other fields', () => {
-    expect(normalizeRegisterStatusPresentationPayload({
-      id: 1,
-      title: 'Черновик',
-      icon: '',
-      bkColor: undefined,
-      fgColor: null
-    })).toEqual({
+    expect(
+      normalizeRegisterStatusPresentationPayload({
+        id: 1,
+        title: 'Черновик',
+        icon: '',
+        bkColor: undefined,
+        fgColor: null
+      })
+    ).toEqual({
       id: 1,
       title: 'Черновик',
       icon: null,
@@ -157,11 +169,21 @@ describe('RegisterStatusIcon', () => {
 
     expect(wrapper.find('[data-testid="register-status-svg-icon"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="fa-icon"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe('svg:very-delivered')
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_SVG)
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('style')).toContain('background-color: rgb(0, 170, 0)')
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('style')).toContain('color: rgb(255, 255, 255)')
-    expect(wrapper.find('[data-testid="register-status-svg-icon"]').attributes('style')).toContain('mask-image')
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe(
+      'svg:very-delivered'
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(
+      REGISTER_STATUS_ICON_KIND_SVG
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('style')).toContain(
+      'background-color: rgb(0, 170, 0)'
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('style')).toContain(
+      'color: rgb(255, 255, 255)'
+    )
+    expect(wrapper.find('[data-testid="register-status-svg-icon"]').attributes('style')).toContain(
+      'mask-image'
+    )
     expect(wrapper.find('[data-testid="register-status-icon"]').attributes('title')).toBeUndefined()
   })
 
@@ -173,10 +195,18 @@ describe('RegisterStatusIcon', () => {
       fgColor: '#000000'
     })
 
-    expect(wrapper.find('[data-testid="register-status-icon"]').classes()).toContain('register-status-icon')
-    expect(wrapper.find('[data-testid="register-status-svg-icon"]').classes()).toContain('register-status-icon__svg')
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe('svg:customs-baggage-check')
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_SVG)
+    expect(wrapper.find('[data-testid="register-status-icon"]').classes()).toContain(
+      'register-status-icon'
+    )
+    expect(wrapper.find('[data-testid="register-status-svg-icon"]').classes()).toContain(
+      'register-status-icon__svg'
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe(
+      'svg:customs-baggage-check'
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(
+      REGISTER_STATUS_ICON_KIND_SVG
+    )
   })
 
   it('renders supported Font Awesome register status icons', () => {
@@ -187,17 +217,27 @@ describe('RegisterStatusIcon', () => {
       fgColor: '#004488'
     })
 
-    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe('fa-solid fa-plane-circle-check')
+    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe(
+      'fa-solid fa-plane-circle-check'
+    )
     expect(wrapper.find('[data-testid="register-status-svg-icon"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe('fa-solid fa-plane-circle-check')
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_FONT_AWESOME)
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe(
+      'fa-solid fa-plane-circle-check'
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(
+      REGISTER_STATUS_ICON_KIND_FONT_AWESOME
+    )
   })
 
   it('renders neutral placeholder for missing status', () => {
     const wrapper = mountIcon(null)
 
-    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe(REGISTER_STATUS_DEFAULT_ICON)
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(REGISTER_STATUS_ICON_KIND_FONT_AWESOME)
+    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe(
+      REGISTER_STATUS_DEFAULT_ICON
+    )
+    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(
+      REGISTER_STATUS_ICON_KIND_FONT_AWESOME
+    )
     expect(wrapper.find('[data-testid="register-status-icon"]').attributes('title')).toBeUndefined()
   })
 

@@ -1,13 +1,13 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import { 
-  getStopWordsText, 
-  getStopWordsInfo, 
-  getFeacnOrdersText, 
-  getFeacnOrdersInfo, 
+import {
+  getStopWordsText,
+  getStopWordsInfo,
+  getFeacnOrdersText,
+  getFeacnOrdersInfo,
   getFeacnPrefixesInfo,
   getCheckStatusInfo,
   getCheckStatusClass
@@ -159,7 +159,9 @@ describe('parcels.check.helpers', () => {
     it('returns formatted info text with prefix', () => {
       const item = { feacnOrderIds: [1, 2] }
       const result = getFeacnOrdersInfo(item, mockFeacnOrders)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'"
+      )
     })
 
     it('returns null when feacn orders text is empty', () => {
@@ -191,7 +193,9 @@ describe('parcels.check.helpers', () => {
     it('returns formatted feacn prefixes info text for multiple prefixes', () => {
       const item = { feacnPrefixIds: [1, 2, 3] }
       const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678', '9012'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678', '9012'"
+      )
     })
 
     it('filters out non-existent feacn prefix IDs', () => {
@@ -211,25 +215,33 @@ describe('parcels.check.helpers', () => {
     it('returns combined information when all three types are present', () => {
       const item = { feacnOrderIds: [1], stopWordIds: [1], feacnPrefixIds: [1] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'"
+      )
     })
 
     it('returns combined information when both feacn orders and stopwords are present', () => {
       const item = { feacnOrderIds: [1, 2], stopWordIds: [1, 2] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'"
+      )
     })
 
     it('returns combined information when both feacn orders and prefixes are present', () => {
       const item = { feacnOrderIds: [1], feacnPrefixIds: [1, 2] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678'"
+      )
     })
 
     it('returns combined information when both stopwords and prefixes are present', () => {
       const item = { stopWordIds: [1, 2], feacnPrefixIds: [1] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden', 'banned'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
+      expect(result).toBe(
+        "Стоп-слова и фразы: 'forbidden', 'banned'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'"
+      )
     })
 
     it('returns only feacn orders information when only feacn orders are present', () => {
@@ -276,33 +288,41 @@ describe('parcels.check.helpers', () => {
     it('handles case when stopwords have invalid IDs', () => {
       const item = { feacnOrderIds: [1], stopWordIds: [999], feacnPrefixIds: [1] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'"
+      )
     })
 
     it('handles case when feacn orders have invalid IDs', () => {
       const item = { feacnOrderIds: [999], stopWordIds: [1], feacnPrefixIds: [2] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '5678'")
+      expect(result).toBe(
+        "Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '5678'"
+      )
     })
 
     it('handles case when feacn prefixes have invalid IDs', () => {
       const item = { feacnOrderIds: [1], stopWordIds: [1], feacnPrefixIds: [999] }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'"
+      )
     })
 
     it('includes matchingSWComment when present with other info', () => {
-      const item = { 
+      const item = {
         feacnOrderIds: [1],
         stopWordIds: [1],
         matchingSWComment: 'Additional SW information'
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional SW information")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Additional SW information"
+      )
     })
 
     it('returns only matchingSWComment when no other info present', () => {
-      const item = { 
+      const item = {
         matchingSWComment: 'SW information only'
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
@@ -310,7 +330,7 @@ describe('parcels.check.helpers', () => {
     })
 
     it('ignores empty matchingSWComment', () => {
-      const item = { 
+      const item = {
         stopWordIds: [1],
         matchingSWComment: ''
       }
@@ -319,7 +339,7 @@ describe('parcels.check.helpers', () => {
     })
 
     it('ignores null matchingFCComment', () => {
-      const item = { 
+      const item = {
         stopWordIds: [1],
         matchingFCComment: null
       }
@@ -328,22 +348,33 @@ describe('parcels.check.helpers', () => {
     })
 
     it('includes matchingSWComment with prefixes', () => {
-      const item = { 
+      const item = {
         feacnPrefixIds: [1],
         matchingSWComment: 'Prefix comment'
       }
       const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment")
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment"
+      )
     })
   })
 
   describe('Status Check Functions', () => {
     describe('getCheckStatusClass', () => {
       it('returns "has-issues" for status codes with issues', () => {
-        const swIssue = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.IssueStopWord)
-        const fcIssue = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.NotChecked)
-        const bothIssues = CheckStatusCode.fromParts(FCCheckStatus.IssueNonexistingFeacn, SWCheckStatus.IssueStopWord)
-        
+        const swIssue = CheckStatusCode.fromParts(
+          FCCheckStatus.NotChecked,
+          SWCheckStatus.IssueStopWord
+        )
+        const fcIssue = CheckStatusCode.fromParts(
+          FCCheckStatus.IssueFeacnCode,
+          SWCheckStatus.NotChecked
+        )
+        const bothIssues = CheckStatusCode.fromParts(
+          FCCheckStatus.IssueNonexistingFeacn,
+          SWCheckStatus.IssueStopWord
+        )
+
         expect(getCheckStatusClass(swIssue.value)).toBe('has-issues')
         expect(getCheckStatusClass(fcIssue.value)).toBe('has-issues')
         expect(getCheckStatusClass(bothIssues.value)).toBe('has-issues')
@@ -354,7 +385,9 @@ describe('parcels.check.helpers', () => {
       })
 
       it('returns "is-approved-with-excise" for approved with excise status', () => {
-        expect(getCheckStatusClass(CheckStatusCode.ApprovedWithExcise.value)).toBe('is-approved-with-excise')
+        expect(getCheckStatusClass(CheckStatusCode.ApprovedWithExcise.value)).toBe(
+          'is-approved-with-excise'
+        )
       })
 
       it('returns "is-approved" for SW approved status', () => {
@@ -363,12 +396,18 @@ describe('parcels.check.helpers', () => {
       })
 
       it('returns "has-issues-with-inheritance" for IssueStopWordInherited status', () => {
-        const swIssueInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.IssueStopWordInherited)
+        const swIssueInherited = CheckStatusCode.fromParts(
+          FCCheckStatus.NoIssues,
+          SWCheckStatus.IssueStopWordInherited
+        )
         expect(getCheckStatusClass(swIssueInherited.value)).toBe('has-issues-with-inheritance')
       })
 
       it('returns "is-approved-with-inheritance" for ApprovedInherited status', () => {
-        const swApprovedInherited = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.ApprovedInherited)
+        const swApprovedInherited = CheckStatusCode.fromParts(
+          FCCheckStatus.NoIssues,
+          SWCheckStatus.ApprovedInherited
+        )
         expect(getCheckStatusClass(swApprovedInherited.value)).toBe('is-approved-with-inheritance')
       })
 
@@ -387,8 +426,11 @@ describe('parcels.check.helpers', () => {
 
       it('returns "no-issues" as default for other status codes', () => {
         const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
-        const swNoIssues = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)
-        
+        const swNoIssues = CheckStatusCode.fromParts(
+          FCCheckStatus.NotChecked,
+          SWCheckStatus.NoIssues
+        )
+
         expect(getCheckStatusClass(noIssues.value)).toBe('no-issues')
         expect(getCheckStatusClass(swNoIssues.value)).toBe('no-issues')
       })

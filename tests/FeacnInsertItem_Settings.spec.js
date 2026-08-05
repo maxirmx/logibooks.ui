@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -14,7 +14,8 @@ vi.mock('@/components/FeacnCodeSearch.vue', () => ({
   default: {
     name: 'FeacnCodeSearch',
     emits: ['select', 'refocus'],
-    template: '<div class="feacn-code-search-stub" @click="$emit(\'select\', \'9876543210\')"></div>'
+    template:
+      '<div class="feacn-code-search-stub" @click="$emit(\'select\', \'9876543210\')"></div>'
   }
 }))
 
@@ -88,7 +89,11 @@ describe('FeacnInsertItem_Settings.vue', () => {
     wrapper.vm.setFieldValue('insBefore', 'before')
     wrapper.vm.setFieldValue('insAfter', 'after')
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith({ code: '1234567890', insBefore: 'before', insAfter: 'after' })
+    expect(create).toHaveBeenCalledWith({
+      code: '1234567890',
+      insBefore: 'before',
+      insAfter: 'after'
+    })
   })
 
   it('loads data in edit mode and updates', async () => {

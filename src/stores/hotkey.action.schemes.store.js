@@ -33,6 +33,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
       isInitialized.value = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -48,7 +49,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
     } catch (err) {
       error.value = err
       hotKeyActionScheme.value = { error: err }
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -119,7 +120,7 @@ export const useHotKeyActionSchemesStore = defineStore('hotKeyActionSchemes', ()
       return ops.value
     } catch (err) {
       opsError.value = err
-      return null
+      throw err
     } finally {
       opsLoading.value = false
     }

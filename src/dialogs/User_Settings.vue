@@ -1,8 +1,12 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { computed, ref } from 'vue'
 
 import router from '@/router'
@@ -41,15 +45,11 @@ const props = defineProps({
 
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
+const alertStore = useAlertStore()
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 const warehousesStore = useWarehousesStore()
 const { hotKeyActionSchemes } = storeToRefs(hotKeyActionSchemesStore)
 const { warehouses, loading: warehousesLoading } = storeToRefs(warehousesStore)
-
-await Promise.all([
-  hotKeyActionSchemesStore.ensureLoaded(),
-  warehousesStore.ensureLoaded()
-])
 
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
@@ -72,10 +72,10 @@ const schema = Yup.object().shape({
     .oneOf([Yup.ref('password')], 'Пароли должны совпадать')
 })
 
-
 const showPassword = ref(false)
 const showPassword2 = ref(false)
 const selectedWarehouseIds = ref([])
+const initializationFailed = ref(false)
 
 let user = ref({
   schemeId: 0,
@@ -84,13 +84,27 @@ let user = ref({
 
 if (!isRegister()) {
   ;({ user } = storeToRefs(usersStore))
-  await usersStore.getById(props.id, true)
-  // Ensure schemeId defaults to 0 when null or undefined
-  if (user.value.schemeId == null) {
-    user.value.schemeId = 0
-  }
-  selectedWarehouseIds.value = [...(user.value.warehouseIds ?? [])]
 }
+
+async function initialize() {
+  initializationFailed.value = false
+  try {
+    await Promise.all([hotKeyActionSchemesStore.ensureLoaded(), warehousesStore.ensureLoaded()])
+    if (!isRegister()) {
+      await usersStore.getById(props.id, true)
+      if (user.value.schemeId == null) user.value.schemeId = 0
+      selectedWarehouseIds.value = [...(user.value.warehouseIds ?? [])]
+    }
+  } catch (error) {
+    initializationFailed.value = true
+    alertStore.error(error, {
+      fallback: 'Не удалось загрузить данные пользователя',
+      action: { label: 'Повторить', handler: initialize }
+    })
+  }
+}
+
+await initialize()
 
 const warehouseHeaders = [
   { title: '', key: 'selected', sortable: false, width: '56px' },
@@ -101,8 +115,12 @@ const warehouseHeaders = [
 const displayedWarehouses = computed(() => warehouses.value ?? [])
 
 const allWarehousesSelected = computed(() => {
-  return displayedWarehouses.value.length > 0
-    && displayedWarehouses.value.every((warehouse) => selectedWarehouseIds.value.includes(warehouse.id))
+  return (
+    displayedWarehouses.value.length > 0 &&
+    displayedWarehouses.value.every((warehouse) =>
+      selectedWarehouseIds.value.includes(warehouse.id)
+    )
+  )
 })
 
 function isRegister() {
@@ -114,7 +132,11 @@ function asAdmin() {
 }
 
 function getTitle() {
-  return isRegister() ? (asAdmin() ? 'Регистрация пользователя' : 'Регистрация') : 'Изменить информацию о пользователе'
+  return isRegister()
+    ? asAdmin()
+      ? 'Регистрация пользователя'
+      : 'Регистрация'
+    : 'Изменить информацию о пользователе'
 }
 
 function getButton() {
@@ -157,7 +179,7 @@ function toggleAllWarehouses(selected) {
     : []
 }
 
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   if (asAdmin()) {
     values.warehouseIds = [...selectedWarehouseIds.value]
   } else {
@@ -168,10 +190,14 @@ function onSubmit(values, { setErrors }) {
     if (asAdmin()) {
       return usersStore
         .add(values, true)
-        .then(() =>
-          router.push(getHomeRoute(true))
+        .then(() => router.push(getHomeRoute(true)))
+        .catch((error) =>
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Не удалось создать пользователя'
+          })
         )
-        .catch((error) => setErrors({ apiError: error.message || String(error) }))
     } else {
       values.roles = [roleLogist]
       values.host = window.location.href
@@ -180,7 +206,6 @@ function onSubmit(values, { setErrors }) {
         .register(values)
         .then(() => {
           router.push('/').then(() => {
-            const alertStore = useAlertStore()
             alertStore.success(
               'На Ваш адрес электронной почты отправлено письмо с подтверждением. ' +
                 'Пожалуйста, перейдите по ссылке для завершения регистрации. ' +
@@ -190,7 +215,13 @@ function onSubmit(values, { setErrors }) {
             )
           })
         })
-        .catch((error) => setErrors({ apiError: error.message || String(error) }))
+        .catch((error) =>
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Не удалось зарегистрировать пользователя'
+          })
+        )
     }
   } else {
     if (!asAdmin()) {
@@ -199,15 +230,21 @@ function onSubmit(values, { setErrors }) {
     return usersStore
       .update(props.id, values, true)
       .then(() => router.push(getHomeRoute(true)))
-      .catch((error) => setErrors({ apiError: error.message || String(error) }))
+      .catch((error) =>
+        reportFormError(error, {
+          setErrors,
+          alertStore,
+          fallback: 'Не удалось сохранить пользователя'
+        })
+      )
   }
 }
-
 </script>
 
 <template>
   <div class="settings form-3">
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="user"
       :validation-schema="schema"
@@ -221,7 +258,7 @@ function onSubmit(values, { setErrors }) {
             icon="fa-solid fa-check-double"
             icon-size="2x"
             :tooltip-text="getButton()"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || initializationFailed"
             @click="handleSubmit(onSubmit)()"
           />
           <ActionButton
@@ -236,272 +273,268 @@ function onSubmit(values, { setErrors }) {
         </div>
       </div>
       <hr class="hr" />
-      <div class="form-group">
-        <label for="lastName" class="label">Фамилия:</label>
-        <Field
-          name="lastName"
-          id="lastName"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.lastName }"
-          placeholder="Фамилия"
-        />
-      </div>
-      <div class="form-group">
-        <label for="firstName" class="label">Имя:</label>
-        <Field
-          name="firstName"
-          id="firstName"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.firstName }"
-          placeholder="Имя"
-        />
-      </div>
-      <div class="form-group">
-        <label for="patronymic" class="label">Отчество:</label>
-        <Field
-          name="patronymic"
-          id="patronymic"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.patronymic }"
-          placeholder="Отчество"
-        />
-      </div>
-      <div class="form-group">
-        <label for="email" class="label">Адрес электронной почты:</label>
-        <Field
-          name="email"
-          id="email"
-          autocomplete="off"
-          type="email"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.email }"
-          placeholder="Адрес электронной почты"
-        />
-      </div>
-      <div class="form-group">
-        <label for="password" class="label">Пароль:</label>
-        <div class="password-wrapper">
+
+      <PageAlertRegion />
+      <fieldset class="contents-fieldset" :disabled="initializationFailed">
+        <div class="form-group">
+          <label for="lastName" class="label">Фамилия:</label>
           <Field
-            name="password"
-            autocomplete="new-password"
-            id="password"
-            ref="password"
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control input password"
-            :class="{ 'is-invalid': errors.password }"
-            placeholder="Пароль"
+            name="lastName"
+            id="lastName"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.lastName }"
+            placeholder="Фамилия"
           />
-          <button
-            type="button"
-            @click="
-              (event) => {
-                event.preventDefault()
-                showPassword = !showPassword
-              }
-            "
-            class="button-o"
-          >
-            <font-awesome-icon
-              size="1x"
-              v-if="!showPassword"
-              icon="fa-solid fa-eye"
-              class="button-o-c"
-            />
-            <font-awesome-icon
-              size="1x"
-              v-if="showPassword"
-              icon="fa-solid fa-eye-slash"
-              class="button-o-c"
-            />
-          </button>
+          <FieldError name="lastName" :errors="errors" />
         </div>
-      </div>
-      <div class="form-group">
-        <label for="password2" class="label">Пароль ещё раз:</label>
-        <div class="password-wrapper">
+        <div class="form-group">
+          <label for="firstName" class="label">Имя:</label>
           <Field
-            name="password2"
-            id="password2"
-            autocomplete="new-password"
-            :type="showPassword2 ? 'text' : 'password'"
-            class="form-control input password"
-            :class="{ 'is-invalid': errors.password2 }"
-            placeholder="Пароль"
+            name="firstName"
+            id="firstName"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.firstName }"
+            placeholder="Имя"
           />
-          <button
-            type="button"
-            @click="
-              (event) => {
-                event.preventDefault()
-                showPassword2 = !showPassword2
-              }
-            "
-            class="button-o"
-          >
-            <font-awesome-icon
-              size="1x"
-              v-if="!showPassword2"
-              icon="fa-solid fa-eye"
-              class="button-o-c"
-            />
-            <font-awesome-icon
-              size="1x"
-              v-if="showPassword2"
-              icon="fa-solid fa-eye-slash"
-              class="button-o-c"
-            />
-          </button>
+          <FieldError name="firstName" :errors="errors" />
         </div>
-      </div>
-      <div v-if="showCredentials()" class="form-group">
-        <span class="label">Права:</span>
-        <span
-          ><em>{{ getCredentials(user) }}</em></span
-        >
-      </div>
-
-      <div v-if="showAndEditCredentials()" class="form-group">
-        <span class="label">Права:</span>
-        <div class="roles-grid">
-          <div class="role-item">
-            <Field
-              id="isAdmin"
-              type="checkbox"
-              name="isAdmin"
-              class="checkbox checkbox-styled"
-              :value="keyAdmin"
-            />
-            <label for="isAdmin">Администратор</label>
-          </div>
-
-          <div class="role-item">
-            <Field
-              id="isShiftLead"
-              type="checkbox"
-              name="isShiftLead"
-              class="checkbox checkbox-styled"
-              :value="keyShiftLead"
-            />
-            <label for="isShiftLead">Старший смены</label>
-          </div>
-
-          <div class="role-item">
-            <Field
-              id="isSrLogist"
-              type="checkbox"
-              name="isSrLogist"
-              class="checkbox checkbox-styled"
-              :value="keySrLogist"
-            />
-            <label for="isSrLogist">Старший логист</label>
-          </div>
-
-          <div class="role-item">
-            <Field
-              id="isLogist"
-              type="checkbox"
-              name="isLogist"
-              class="checkbox checkbox-styled"
-              :value="keyLogist"
-            />
-            <label for="isLogist">Логист</label>
-          </div>
-
-          <div class="role-item">
-            <Field
-              id="isWhManager"
-              type="checkbox"
-              name="isWhManager"
-              class="checkbox checkbox-styled"
-              :value="keyWhManager"
-            />
-            <label for="isWhManager">Менеджер склада</label>
-          </div>
-
-          <div class="role-item">
-            <Field
-              id="isWhOperator"
-              type="checkbox"
-              name="isWhOperator"
-              class="checkbox checkbox-styled"
-              :value="keyWhOperator"
-            />
-            <label for="isWhOperator">Оператор склада</label>
+        <div class="form-group">
+          <label for="patronymic" class="label">Отчество:</label>
+          <Field
+            name="patronymic"
+            id="patronymic"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.patronymic }"
+            placeholder="Отчество"
+          />
+          <FieldError name="patronymic" :errors="errors" />
+        </div>
+        <div class="form-group">
+          <label for="email" class="label">Адрес электронной почты:</label>
+          <Field
+            name="email"
+            id="email"
+            autocomplete="off"
+            type="email"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.email }"
+            placeholder="Адрес электронной почты"
+          />
+          <FieldError name="email" :errors="errors" />
+        </div>
+        <div class="form-group">
+          <label for="password" class="label">Пароль:</label>
+          <div class="password-wrapper">
+            <div class="password-input-row">
+              <Field
+                name="password"
+                autocomplete="new-password"
+                id="password"
+                ref="password"
+                :type="showPassword ? 'text' : 'password'"
+                class="form-control input password"
+                :class="{ 'is-invalid': errors.password }"
+                placeholder="Пароль"
+              />
+              <button
+                type="button"
+                @click="
+                  (event) => {
+                    event.preventDefault()
+                    showPassword = !showPassword
+                  }
+                "
+                class="button-o"
+              >
+                <font-awesome-icon
+                  size="1x"
+                  v-if="!showPassword"
+                  icon="fa-solid fa-eye"
+                  class="button-o-c"
+                />
+                <font-awesome-icon
+                  size="1x"
+                  v-if="showPassword"
+                  icon="fa-solid fa-eye-slash"
+                  class="button-o-c"
+                />
+              </button>
+            </div>
+            <FieldError name="password" :errors="errors" />
           </div>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label for="schemeId" class="label">Схема настройки клавиатуры:</label>
-        <Field
-          name="schemeId"
-          id="schemeId"
-          as="select"
-          class="form-control input"
-        >
-          <option :value="0">Без схемы</option>
-          <option v-for="scheme in hotKeyActionSchemes" :key="scheme.id" :value="scheme.id">
-            {{ scheme.name }}
-          </option>
-        </Field>
-      </div>
-
-      <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
-        <h2 class="label">Доступ к складам:</h2>
-        <div class="warehouse-associations-table">
-          <v-data-table
-            :headers="warehouseHeaders"
-            :items="displayedWarehouses"
-            :loading="warehousesLoading"
-            density="compact"
-            class="elevation-1 interlaced-table"
-            hide-default-footer
-            :items-per-page="-1"
+        <div class="form-group">
+          <label for="password2" class="label">Пароль ещё раз:</label>
+          <div class="password-wrapper">
+            <div class="password-input-row">
+              <Field
+                name="password2"
+                id="password2"
+                autocomplete="new-password"
+                :type="showPassword2 ? 'text' : 'password'"
+                class="form-control input password"
+                :class="{ 'is-invalid': errors.password2 }"
+                placeholder="Пароль"
+              />
+              <button
+                type="button"
+                @click="
+                  (event) => {
+                    event.preventDefault()
+                    showPassword2 = !showPassword2
+                  }
+                "
+                class="button-o"
+              >
+                <font-awesome-icon
+                  size="1x"
+                  v-if="!showPassword2"
+                  icon="fa-solid fa-eye"
+                  class="button-o-c"
+                />
+                <font-awesome-icon
+                  size="1x"
+                  v-if="showPassword2"
+                  icon="fa-solid fa-eye-slash"
+                  class="button-o-c"
+                />
+              </button>
+            </div>
+            <FieldError name="password2" :errors="errors" />
+          </div>
+        </div>
+        <div v-if="showCredentials()" class="form-group">
+          <span class="label">Права:</span>
+          <span
+            ><em>{{ getCredentials(user) }}</em></span
           >
-            <template v-slot:[`header.selected`]>
-              <div v-if="showAndEditCredentials()" data-testid="warehouse-select-all">
+        </div>
+
+        <div v-if="showAndEditCredentials()" class="form-group">
+          <span class="label">Права:</span>
+          <div class="roles-grid">
+            <div class="role-item">
+              <Field
+                id="isAdmin"
+                type="checkbox"
+                name="isAdmin"
+                class="checkbox checkbox-styled"
+                :value="keyAdmin"
+              />
+              <label for="isAdmin">Администратор</label>
+            </div>
+
+            <div class="role-item">
+              <Field
+                id="isShiftLead"
+                type="checkbox"
+                name="isShiftLead"
+                class="checkbox checkbox-styled"
+                :value="keyShiftLead"
+              />
+              <label for="isShiftLead">Старший смены</label>
+            </div>
+
+            <div class="role-item">
+              <Field
+                id="isSrLogist"
+                type="checkbox"
+                name="isSrLogist"
+                class="checkbox checkbox-styled"
+                :value="keySrLogist"
+              />
+              <label for="isSrLogist">Старший логист</label>
+            </div>
+
+            <div class="role-item">
+              <Field
+                id="isLogist"
+                type="checkbox"
+                name="isLogist"
+                class="checkbox checkbox-styled"
+                :value="keyLogist"
+              />
+              <label for="isLogist">Логист</label>
+            </div>
+
+            <div class="role-item">
+              <Field
+                id="isWhManager"
+                type="checkbox"
+                name="isWhManager"
+                class="checkbox checkbox-styled"
+                :value="keyWhManager"
+              />
+              <label for="isWhManager">Менеджер склада</label>
+            </div>
+
+            <div class="role-item">
+              <Field
+                id="isWhOperator"
+                type="checkbox"
+                name="isWhOperator"
+                class="checkbox checkbox-styled"
+                :value="keyWhOperator"
+              />
+              <label for="isWhOperator">Оператор склада</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="schemeId" class="label">Схема настройки клавиатуры:</label>
+          <Field name="schemeId" id="schemeId" as="select" class="form-control input">
+            <option :value="0">Без схемы</option>
+            <option v-for="scheme in hotKeyActionSchemes" :key="scheme.id" :value="scheme.id">
+              {{ scheme.name }}
+            </option>
+          </Field>
+        </div>
+
+        <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
+          <h2 class="label">Доступ к складам:</h2>
+          <div class="warehouse-associations-table">
+            <v-data-table
+              :headers="warehouseHeaders"
+              :items="displayedWarehouses"
+              :loading="warehousesLoading"
+              density="compact"
+              class="elevation-1 interlaced-table"
+              hide-default-footer
+              :items-per-page="-1"
+            >
+              <template v-slot:[`header.selected`]>
+                <div v-if="showAndEditCredentials()" data-testid="warehouse-select-all">
+                  <v-checkbox
+                    :model-value="allWarehousesSelected"
+                    aria-label="Выбрать все склады"
+                    :disabled="warehousesLoading || displayedWarehouses.length === 0"
+                    density="compact"
+                    hide-details
+                    @update:model-value="toggleAllWarehouses"
+                  />
+                </div>
+              </template>
+              <template v-slot:[`item.selected`]="{ item }">
                 <v-checkbox
-                  :model-value="allWarehousesSelected"
-                  aria-label="Выбрать все склады"
-                  :disabled="warehousesLoading || displayedWarehouses.length === 0"
+                  :model-value="isWarehouseSelected(item.id)"
+                  :disabled="!showAndEditCredentials()"
                   density="compact"
                   hide-details
-                  @update:model-value="toggleAllWarehouses"
+                  @update:model-value="(selected) => toggleWarehouse(item.id, selected)"
                 />
-              </div>
-            </template>
-            <template v-slot:[`item.selected`]="{ item }">
-              <v-checkbox
-                :model-value="isWarehouseSelected(item.id)"
-                :disabled="!showAndEditCredentials()"
-                density="compact"
-                hide-details
-                @update:model-value="(selected) => toggleWarehouse(item.id, selected)"
-              />
-            </template>
-          </v-data-table>
+              </template>
+            </v-data-table>
+          </div>
         </div>
-      </div>
-
-      <div v-if="errors.lastName" class="alert alert-danger mt-3 mb-0">{{ errors.lastName }}</div>
-      <div v-if="errors.firstName" class="alert alert-danger mt-3 mb-0">{{ errors.firstName }}</div>
-      <div v-if="errors.patronymic" class="alert alert-danger mt-3 mb-0">
-        {{ errors.patronymic }}
-      </div>
-      <div v-if="errors.email" class="alert alert-danger mt-3 mb-0">{{ errors.email }}</div>
-      <div v-if="errors.password" class="alert alert-danger mt-3 mb-0">{{ errors.password }}</div>
-      <div v-if="errors.password2" class="alert alert-danger mt-3 mb-0">{{ errors.password2 }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
+      </fieldset>
     </Form>
   </div>
   <div v-if="user?.loading" class="text-center m-5">
     <span class="spinner-border spinner-border-lg align-center"></span>
-  </div>
-  <div v-if="user?.error" class="text-center m-5">
-    <div class="text-danger">Ошибка при загрузке информации о пользователе: {{ user.error }}</div>
   </div>
 </template>
 
@@ -511,6 +544,13 @@ function onSubmit(values, { setErrors }) {
   grid-template-columns: 1fr 1fr;
   gap: 8px 16px;
   align-items: center;
+}
+
+.contents-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 .role-item {
   display: flex;
